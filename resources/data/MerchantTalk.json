@@ -1,0 +1,321 @@
+{
+  "1": {
+    "Welcome": {
+      "Talk 1": "欢迎来到希娜的小店。",
+      "Shop Name": "百货小店",
+      "Shop ID": 1,
+      "Talk 3": "你是来看货呢，还是来看我？",
+      "Event": "Welcome",
+      "Talk 2": "小店每6小时进一批新货，你一定要常来看看。"
+    },
+    "Purchase": {
+      "Shop Name": "百货小店",
+      "Shop ID": 1,
+      "Event": "Purchase"
+    },
+    "Expire": {
+      "Shop Name": "百货小店",
+      "Shop ID": 1,
+      "Event": "Expire"
+    },
+    "Refresh": {
+      "Talk 1": "我还有更多的商品。",
+      "Shop Name": "百货小店",
+      "Shop ID": 1,
+      "Event": "Refresh"
+    },
+    "Touch": {
+      "Talk 1": "我是饰品商人希娜，不过我也卖其他东西。",
+      "Shop Name": "百货小店",
+      "Talk 4": "我会在每天的9点，12点，18点和21点换上新的货物。",
+      "Shop ID": 1,
+      "Talk 3": "你的手指真灵活，我很喜欢。",
+      "Event": "Touch",
+      "Talk 2": "轻一点，亲爱的。"
+    },
+    "Soldout": {
+      "Talk 1": "已经卖完了，真可惜。",
+      "Shop Name": "百货小店",
+      "Shop ID": 1,
+      "Event": "Soldout",
+      "Talk 2": "你……还想要吗？"
+    }
+  },
+  "2": {
+    "Welcome": {
+      "Talk 7": "既然已经召唤了我,就多买一点吧。",
+      "Shop Name": "地精商人",
+      "Talk 1": "我只会在这里待一小会儿，看上什么就快点下单吧。",
+      "Talk 8": "被包养的感觉还不错。",
+      "Shop ID": 2,
+      "Event": "Welcome",
+      "Talk 2": "带够钱了么？"
+    },
+    "Purchase": {
+      "Talk 9": "买到就是赚到。",
+      "Talk 3": "买到就是赚到。",
+      "Event": "Purchase",
+      "Talk 7": "你真有眼光。",
+      "Shop Name": "地精商人",
+      "Talk 1": "你真有眼光。",
+      "Talk 8": "成交！",
+      "Shop ID": 2,
+      "Talk 2": "成交！"
+    },
+    "Expire": {
+      "Talk 7": "我在这里待得够久了。",
+      "Shop Name": "地精商人",
+      "Talk 1": "我在这里待得够久了。",
+      "Talk 8": "我还会回来的，老朋友。",
+      "Shop ID": 2,
+      "Event": "Expire",
+      "Talk 2": "我还会回来的，老朋友。"
+    },
+    "Refresh": {
+      "Talk 1": "都是好东西，物超所值。",
+      "Shop Name": "地精商人",
+      "Shop ID": 2,
+      "Talk 7": "都是好东西，全是你的。",
+      "Event": "Refresh"
+    },
+    "Touch": {
+      "Talk 4": "你不是每天都能见到我。",
+      "Talk 9": "快点，我还有很多生意要做。",
+      "Talk 3": "快点，我还有很多生意要做。",
+      "Event": "Touch",
+      "Talk 7": "时间就是金钱，我的朋友。",
+      "Shop Name": "地精商人",
+      "Talk 11": "不买就别动手动脚。",
+      "Talk 10": "我的货都是空运来的，成本很高。",
+      "Talk 8": "我的价格是全地图最公道的。",
+      "Talk 1": "时间就是金钱，我的朋友。",
+      "Shop ID": 2,
+      "Talk 2": "我的价格是全地图最公道的。"
+    },
+    "Soldout": {
+      "Talk 1": "已经卖完了。",
+      "Shop Name": "地精商人",
+      "Shop ID": 2,
+      "Talk 7": "已经卖完了。",
+      "Event": "Soldout"
+    }
+  },
+  "3": {
+    "Welcome": {
+      "Talk 7": "一手交钱一手交货。",
+      "Shop Name": "黑市商人",
+      "Talk 1": "一手交钱一手交货，我的时间有限。",
+      "Talk 8": "概不退换。",
+      "Shop ID": 3,
+      "Event": "Welcome",
+      "Talk 2": "概不退换。"
+    },
+    "Purchase": {
+      "Talk 1": "成交！",
+      "Shop Name": "黑市商人",
+      "Shop ID": 3,
+      "Talk 7": "成交！",
+      "Event": "Purchase"
+    },
+    "Expire": {
+      "Talk 1": "下次见面的时候你最好多带点儿钱。",
+      "Shop Name": "黑市商人",
+      "Shop ID": 3,
+      "Talk 7": "下次见面的时候你最好多带点儿钱。",
+      "Event": "Expire"
+    },
+    "Refresh": {
+      "Talk 9": "我会在你冒险的时候补货。",
+      "Event": "Refresh",
+      "Talk 7": "不要问我这些东西从哪儿来。",
+      "Shop Name": "黑市商人",
+      "Talk 1": "不要问我这些东西从哪儿来。",
+      "Talk 8": "只要开价合适，我什么都能搞到。",
+      "Shop ID": 3,
+      "Talk 2": "只要开价合适，我什么都能搞到。"
+    },
+    "Touch": {
+      "Talk 4": "我们的规矩，你是知道的。",
+      "Talk 9": "不要对任何人提起我。",
+      "Talk 3": "不要对任何人提起我。",
+      "Event": "Touch",
+      "Talk 7": "我们只做生意。",
+      "Shop Name": "黑市商人",
+      "Talk 10": "我们的规矩，你是知道的。",
+      "Talk 8": "你知道的太多了。",
+      "Talk 1": "我们只做生意。",
+      "Shop ID": 3,
+      "Talk 2": "你知道的太多了。"
+    },
+    "Soldout": {
+      "Talk 1": "已经卖完了。",
+      "Shop Name": "黑市商人",
+      "Shop ID": 3,
+      "Talk 7": "已经卖完了。",
+      "Event": "Soldout",
+      "Talk 8": "等我下次进货吧。还是你已经等不及了？"
+    }
+  },
+  "4": {
+    "Welcome": {
+      "Talk 1": "我有很多别处买不到的东西。",
+      "Shop Name": "远征军补给站",
+      "Shop ID": 4,
+      "Event": "Welcome",
+      "Talk 2": "我只收龙族硬币。"
+    },
+    "Purchase": {
+      "Talk 1": "你很懂行。",
+      "Shop Name": "远征军补给站",
+      "Shop ID": 4,
+      "Event": "Purchase"
+    },
+    "Expire": {
+      "Shop Name": "远征军补给站",
+      "Shop ID": 4,
+      "Event": "Expire"
+    },
+    "Refresh": {
+      "Talk 1": "要多少有多少。",
+      "Shop Name": "远征军补给站",
+      "Shop ID": 4,
+      "Event": "Refresh"
+    },
+    "Touch": {
+      "Talk 1": "你真以为我看不见？",
+      "Shop Name": "远征军补给站",
+      "Shop ID": 4,
+      "Talk 3": "别试了,这角是真的。",
+      "Event": "Touch",
+      "Talk 2": "这个眼罩是不卖的。"
+    },
+    "Soldout": {
+      "Talk 1": "很抱歉，卖完了。",
+      "Shop Name": "远征军补给站",
+      "Shop ID": 4,
+      "Event": "Soldout"
+    }
+  },
+  "5": {
+    "Welcome": {
+      "Talk 1": "哟，看看是谁来了",
+      "Shop Name": "竞技场军需商店",
+      "Shop ID": 5,
+      "Event": "Welcome",
+      "Talk 2": "这里的东西可不是钻石能买到的。"
+    },
+    "Purchase": {
+      "Talk 1": "对对，这个卖得最好了！",
+      "Shop Name": "竞技场军需商店",
+      "Shop ID": 5,
+      "Event": "Purchase"
+    },
+    "Expire": {
+      "Shop Name": "竞技场军需商店",
+      "Shop ID": 5,
+      "Event": "Expire"
+    },
+    "Refresh": {
+      "Talk 1": "你今天一定赢了不少。",
+      "Shop Name": "竞技场军需商店",
+      "Shop ID": 5,
+      "Event": "Refresh"
+    },
+    "Touch": {
+      "Talk 1": "我是军需官阿宽，我来自迷之大陆。",
+      "Shop Name": "竞技场军需商店",
+      "Shop ID": 5,
+      "Talk 3": "那个骑白喵的妹子是谁？",
+      "Event": "Touch",
+      "Talk 2": "你知道最强的武器是什么？"
+    },
+    "Soldout": {
+      "Talk 1": "这个卖完了呢。",
+      "Shop Name": "竞技场军需商店",
+      "Shop ID": 5,
+      "Event": "Soldout"
+    }
+  },
+  "6": {
+    "Welcome": {
+      "Talk 1": "你好，地球人。",
+      "Shop Name": "星际旅行商人",
+      "Shop ID": 6,
+      "Event": "Welcome"
+    },
+    "Purchase": {
+      "Talk 1": "成交！",
+      "Shop Name": "星际旅行商人",
+      "Shop ID": 6,
+      "Event": "Purchase",
+      "Talk 2": "我就知道你会买的。"
+    },
+    "Expire": {
+      "Talk 1": "我得走了。交易真愉快不是么~",
+      "Shop Name": "星际旅行商人",
+      "Shop ID": 6,
+      "Event": "Expire",
+      "Talk 2": "我还会再回来的，多的灵魂石千万留给我。"
+    },
+    "Refresh": {
+      "Talk 1": "我从另一个游戏里穿越而来。",
+      "Shop Name": "星际旅行商人",
+      "Shop ID": 6,
+      "Event": "Refresh"
+    },
+    "Touch": {
+      "Talk 1": "我们那的人也玩《英雄冲锋》",
+      "Shop Name": "星际旅行商人",
+      "Shop ID": 6,
+      "Talk 3": "MERCHANTTALK.WELL_THE_CENTAUR_YES_I_WILL_BE_THERE_SOON…",
+      "Event": "Touch",
+      "Talk 2": "我四处收集强大的灵魂能量。"
+    },
+    "Soldout": {
+      "Talk 1": "看来下次我要多带点货。",
+      "Shop Name": "星际旅行商人",
+      "Shop ID": 6,
+      "Event": "Soldout"
+    }
+  },
+  "7": {
+    "Welcome": {
+      "Talk 1": "你好，小家伙。",
+      "Shop Name": "公会商店",
+      "Shop ID": 7,
+      "Event": "Welcome",
+      "Talk 2": "欢迎来到公会商店。"
+    },
+    "Purchase": {
+      "Talk 1": "感谢你的支持。",
+      "Shop Name": "公会商店",
+      "Shop ID": 7,
+      "Event": "Purchase"
+    },
+    "Expire": {
+      "Shop Name": "公会商店",
+      "Shop ID": 7,
+      "Event": "Expire"
+    },
+    "Refresh": {
+      "Talk 1": "你一定很着急。",
+      "Shop Name": "公会商店",
+      "Shop ID": 7,
+      "Event": "Refresh"
+    },
+    "Touch": {
+      "Talk 1": "我也曾经是个冒险者，直到我膝盖中了一箭。",
+      "Shop Name": "公会商店",
+      "Shop ID": 7,
+      "Talk 3": "好久不打架，骨头都硬了。",
+      "Event": "Touch",
+      "Talk 2": "你能看见我，只是因为我让你看见我。"
+    },
+    "Soldout": {
+      "Talk 1": "暂时没货了哦。",
+      "Shop Name": "公会商店",
+      "Shop ID": 7,
+      "Event": "Soldout"
+    }
+  }
+}

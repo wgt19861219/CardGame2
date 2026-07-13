@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/view/battle/stage_done_scene.gd" id="1_stage_done"]
+
+[node name="StageDoneScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 960.0
+offset_bottom = 640.0
+script = ExtResource("1_stage_done")

@@ -1,0 +1,21 @@
+# Godot 4 编辑器/导入缓存（可重建，不入库）
+.godot/
+
+# Python 工具缓存（lint/pytest）
+.ruff_cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# 视觉验收临时截图
+screenshots/
+
+# 会话临时产物
+*.tmp
+
+# plan/worktree 工具临时产物
+.zcode/
+
+# OS
+Thumbs.db
+.DS_Store

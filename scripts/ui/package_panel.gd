@@ -1,0 +1,169 @@
+class_name PackagePanel
+extends PopWindow
+
+## 玩家背包（View 层）— 照源 ui/package.lua（721 行，两 identity 多 tab 4 列网格）。
+## identity="package" 装备/物品包（5 tab）/ "fragment" 碎片包（3 tab）。
+## Logic 走 EquipmentClassifier.classify（双容器适配，第 22 段交付）。
+## 本段主壳：多 tab + 4 列网格滚动（ScrollContainer+GridContainer，源 draglist 等价）+ cell 展示。
+## cell 点击 emit cell_clicked（第 24 段接 equipboard 浮层）。坐标用源 cocos 值（Phase 4 视觉校准）。
+## 单机化：去掉 lsr 统计上报 + framework statusbar 返回（用自带关闭按钮，源 close 注释掉靠 framework）。
+
+# ── identity（源 create(identity)）──
+const IDENTITY_PACKAGE: String = "package"
+const IDENTITY_FRAGMENT: String = "fragment"
+
+# ── tab 定义（照源 packageres.list_key）──
+const TABS_PACKAGE: Array[String] = ["all", "equip", "scroll", "stone", "consume"]
+const TABS_FRAGMENT: Array[String] = ["all", "equip", "scroll"]
+const TAB_NAMES: Dictionary = {
+	"all": "全部", "equip": "装备", "scroll": "卷轴",
+	"stone": "魂石", "consume": "消耗品",
+}
+
+# ── 坐标常量（源 cocos 值）──
+const BG_POS: Vector2 = Vector2(500.0, 213.0)             # 源 :622 equipbg
+const TAB_ORIGIN: Vector2 = Vector2(706.0, 363.0)         # 源 :379 ox,oy
+const TAB_DY: float = 60.0                                # 源 :380
+const TAB_SIZE: Vector2 = Vector2(90.0, 50.0)
+const SCROLL_POS: Vector2 = Vector2(355.0, 35.0)          # 源 :353 cliprect (355,35,295,355)
+const SCROLL_SIZE: Vector2 = Vector2(295.0, 355.0)
+const GRID_COLUMNS: int = 4                               # 源 4 列（refreshList :258）
+const CLOSE_BTN_POS: Vector2 = Vector2(850.0, 590.0)
+const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
+const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
+const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
+
+# ── 资源 ──
+const BG_PATH: String = "res://assets/ui/alpha/HVGA/package_equip_bg.png"
+
+signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
+
+var cm: Variant = null
+var pd: PlayerData = null
+var _identity: String = ""
+var _tabs: Array[String] = []
+var _both: Dictionary = {}        # classify 输出 {prop, fragment}
+var _cur_tab: String = "all"
+var _tab_buttons: Dictionary = {}  # tab_key(String) -> Button
+var _grid: GridContainer = null
+
+
+# 源 create(identity) + getListData :370-377。identity 从 PopWindow.identity（构造传入）取，
+# 决定 tab 集 + classify 输出取 prop/fragment。调用：PackagePanel.new("package"/"fragment", {}).setup_panel(cm, pd)。
+func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
+	_identity = identity
+	cm = p_cm
+	pd = p_pd
+	_tabs = TABS_PACKAGE if _identity == IDENTITY_PACKAGE else TABS_FRAGMENT
+	_both = EquipmentClassifier.classify(pd, cm)
+	setup()
+	_create_bg()
+	_create_close_button()
+	_create_tab_buttons()
+	_create_grid()
+	_select_tab("all")
+	cell_clicked.connect(_on_cell_clicked)
+	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+
+
+func _create_bg() -> void:
+	if not ResourceLoader.exists(BG_PATH):
+		return   # headless/缺图降级（不阻塞 Logic）
+	var bg := TextureRect.new()
+	bg.texture = load(BG_PATH)
+	bg.position = BG_POS - bg.get_minimum_size() / 2.0   # 源 setPosition 中心锚定
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
+
+
+func _create_close_button() -> void:
+	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
+	btn.pressed.connect(_on_close_pressed)
+	container.add_child(btn)
+
+
+# 源 createListButton :378-462：右侧竖排 tab 按钮，第 1 个默认选中。
+func _create_tab_buttons() -> void:
+	for i in range(_tabs.size()):
+		var key: String = _tabs[i]
+		var btn := Button.new()
+		btn.text = String(TAB_NAMES.get(key, key))
+		btn.position = Vector2(TAB_ORIGIN.x, TAB_ORIGIN.y - TAB_DY * i)
+		btn.size = TAB_SIZE
+		btn.toggle_mode = true
+		btn.pressed.connect(func() -> void: _select_tab(key))
+		container.add_child(btn)
+		_tab_buttons[key] = btn
+
+
+# 源 createListLayer :350-369：draglist 滚动区。本项目 ScrollContainer+GridContainer columns=4 等价。
+func _create_grid() -> void:
+	var scroll := ScrollContainer.new()
+	scroll.position = SCROLL_POS
+	scroll.size = SCROLL_SIZE
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED   # 源仅垂直滚动
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	container.add_child(scroll)
+	_grid = GridContainer.new()
+	_grid.columns = GRID_COLUMNS
+	scroll.add_child(_grid)
+
+
+# 源 doChangeList :202-229：切 tab toggle 可见 + createList(bothList[identity][name])。
+func _select_tab(key: String) -> void:
+	_cur_tab = key
+	AudioPlayer.play_sfx("common_click_feedback")
+	for k in _tab_buttons:
+		var btn: Button = _tab_buttons[k]
+		btn.button_pressed = (k == key)
+	_fill_grid()
+
+
+# 当前 tab 填充 grid（_select_tab + _on_sold 刷新共用）。
+func _fill_grid() -> void:
+	for c in _grid.get_children():
+		c.free()
+	var table: Dictionary = _both["prop"] if _identity == IDENTITY_PACKAGE else _both["fragment"]
+	var cells: Array = table.get(_cur_tab, [])
+	for cell_data in cells:
+		_grid.add_child(_make_cell(cell_data as Dictionary))
+
+
+# cell 点击 → 弹 EquipboardPanel（第 24 段，照源 doSelectEquip → equipboard ofpackage）。
+func _on_cell_clicked(cell_data: Dictionary) -> void:
+	var board := EquipboardPanel.new("equipboard", {})
+	board.setup_panel(cell_data, cm, pd)
+	board.sold.connect(_on_sold)
+	board.show_window(get_parent())
+
+
+# 卖出后重 classify + 重填当前 tab（持有量变化，cell 可能消失）。
+func _on_sold(_item_id: int) -> void:
+	_both = EquipmentClassifier.classify(pd, cm)
+	_fill_grid()
+
+
+# 源 loadEquip :278-318：package createIconWithAmount(id) / fragment createIconWithTag(makeId)。
+# package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
+func _make_cell(cell_data: Dictionary) -> Control:
+	var amount: int = int(cell_data["amount"])
+	var cell: Control
+	if _identity == IDENTITY_FRAGMENT:
+		cell = ReadequipIcon.create_icon_with_tag(int(cell_data["makeId"]), amount, cm, pd)
+	else:
+		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
+	cell.mouse_filter = Control.MOUSE_FILTER_STOP
+	cell.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
+	return cell
+
+
+# 源 doClickInList :162-177 → doSelectEquip(id) → equipboard。第 24 段接 equipboard 浮层。
+func _on_cell_gui_input(event: InputEvent, cell_data: Dictionary) -> void:
+	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		AudioPlayer.play_sfx("common_click_feedback")
+		cell_clicked.emit(cell_data)
+
+
+func _on_close_pressed() -> void:
+	AudioPlayer.play_sfx("common_close_popup_window")
+	remove_window()

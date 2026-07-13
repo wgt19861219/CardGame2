@@ -1,0 +1,8 @@
+{
+	"1": {"Equip Rank": 1, "Max Level": 0, "Unit Price": 100, "One-Click Unit Price": 3, "Price 1": 0, "Price 2": 0, "Price 3": 0, "Price 4": 0, "Price 5": 0, "Return 1": 0, "Return 2": 0, "Return 3": 0, "Return 4": 0, "Return 5": 0},
+	"2": {"Equip Rank": 2, "Max Level": 1, "Unit Price": 120, "One-Click Unit Price": 3, "Price 1": 20, "Price 2": 0, "Price 3": 0, "Price 4": 0, "Price 5": 0, "Return 1": 20, "Return 2": 0, "Return 3": 0, "Return 4": 0, "Return 5": 0},
+	"3": {"Equip Rank": 3, "Max Level": 3, "Unit Price": 150, "One-Click Unit Price": 3, "Price 1": 30, "Price 2": 50, "Price 3": 80, "Price 4": 0, "Price 5": 0, "Return 1": 20, "Return 2": 20, "Return 3": 20, "Return 4": 0, "Return 5": 0},
+	"4": {"Equip Rank": 4, "Max Level": 5, "Unit Price": 180, "One-Click Unit Price": 3, "Price 1": 60, "Price 2": 100, "Price 3": 160, "Price 4": 300, "Price 5": 500, "Return 1": 40, "Return 2": 40, "Return 3": 40, "Return 4": 60, "Return 5": 100},
+	"5": {"Equip Rank": 5, "Max Level": 5, "Unit Price": 240, "One-Click Unit Price": 3, "Price 1": 60, "Price 2": 100, "Price 3": 160, "Price 4": 300, "Price 5": 500, "Return 1": 40, "Return 2": 40, "Return 3": 40, "Return 4": 60, "Return 5": 100},
+	"6": {"Equip Rank": 6, "Max Level": 5, "Unit Price": 300, "One-Click Unit Price": 3, "Price 1": 90, "Price 2": 150, "Price 3": 240, "Price 4": 450, "Price 5": 750, "Return 1": 60, "Return 2": 60, "Return 3": 60, "Return 4": 100, "Return 5": 150}
+}

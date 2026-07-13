@@ -1,0 +1,41 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="CardGame2"
+config/description="Axmol/Lua 卡牌手游 Godot 全新重制（单机版）"
+run/main_scene="res://scenes/main_menu/loading_scene.tscn"
+config/features=PackedStringArray("4.7")
+
+[autoload]
+
+autoload/MCPBridge="*res://mcp_bridge.gd"
+MCPBridge="*res://mcp_bridge.gd"
+Events="*res://scripts/autoload/events.gd"
+SceneManager="*res://scripts/autoload/scene_manager.gd"
+Toast="*res://scripts/autoload/toast.gd"
+GameData="*res://scripts/autoload/game_data.gd"
+AudioPlayer="*res://scripts/autoload/audio_player.gd"
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=640
+window/stretch/mode="canvas_items"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/godot_mcp_server/plugin.cfg")
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

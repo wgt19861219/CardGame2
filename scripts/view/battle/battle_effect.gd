@@ -1,0 +1,104 @@
+class_name BattleEffect
+extends RefCounted
+
+## FCA 特效包装（View 层）— 复刻源 effect.lua EffectCreate + resource_manager.lua createFcaNode。
+## 把 FcaAnimation 包装为 effect_list 兼容对象（update/is_terminated 协议）。
+## .abc 资源加载失败时降级为空 Node2D（照源 createFcaNode stub 兜底）。
+
+const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
+const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
+
+var _fca: FcaAnimation = null
+var _node: Node2D = null
+var _terminated: bool = false
+var _loop: bool = false
+
+
+## 静态工厂（照源 createFcaNode + EffectCreate .cha 分支）。
+## effect_name 可能带 .cha 后缀（源 string.gsub 剥除）；返回 BattleEffect 或 null。
+static func create(effect_name: String) -> BattleEffect:
+	var name := effect_name.substr(0, effect_name.length() - 4) if effect_name.ends_with(".cha") else effect_name
+	# 照源 createFcaNode：先建 AtlasSprite + FcaAnimation 加载 .abc
+	# 注意：.abc/.ani 是 zip 非 Godot 资源，用 FileAccess.file_exists 而非 ResourceLoader.exists
+	var atlas := AtlasSprite.new()
+	var zip_path := "res://assets/anim_frames/" + name + ".abc"
+	var ani_path := "res://assets/anim_frames/" + name + ".ani"
+	var atlas_ok := false
+	if FileAccess.file_exists(zip_path):
+		atlas_ok = atlas.load_atlas_from_ani(zip_path)
+	elif FileAccess.file_exists(ani_path):
+		atlas_ok = atlas.load_atlas_from_ani(ani_path)
+	if not atlas_ok:
+		return null  # 降级：调用方建空 Node2D（照源 CCNode stub 兜底）
+
+	var fca := FcaAnimation.new()
+	if not fca.load_from_ani(name, atlas):
+		return null
+
+	var eff := BattleEffect.new()
+	eff._fca = fca
+	eff._node = fca  # FcaAnimation extends Node2D，直接作为场景节点
+	return eff
+
+
+func play(action: String = "Start", loop: bool = false) -> void:
+	_loop = loop
+	if _fca == null:
+		return
+	# 照源 LegendAnimationEffect（effect.lua 路径 A .cha → 直接返 LegendAminationEffect，
+	# Start/Loop 切换在 C++ 内部，不经 effect.lua:30/48）：enter → setStartAction（默认 "Start"）；
+	# onAnimFinished → 有 Loop 切 Loop 循环，否则 terminate。
+	# ⚠️ 原默认 "Play" 系误用 effect.lua 路径 B（XML）的 effect_group.start or "Play"——
+	# 实测 327 .abc：'Start'=304 / 'Loop'=130 / 无 'Play'，原代码永走 fallback 首个 action。
+	var start_action := action
+	if not _fca.has_action(start_action):
+		if _fca.get_action_names().size() > 0:
+			start_action = _fca.get_action_names()[0]  # 兜底首个（无 Start 的单次/角色特效）
+		else:
+			return
+	# Start→Loop 自动切换：先 play(Start) 再 set_next_action(Loop)——fca.play :207 会清 _next_action，
+	# 故 set 必须在 play 后（照 unit_sprite.gd:260-261 范式）；切时 loop=true 无限循环，靠外部 remove_effect 终止
+	if start_action != "Loop" and _fca.has_action("Loop"):
+		_fca.play(start_action, false)
+		_fca.set_next_action("Loop")
+	else:
+		_fca.play(start_action, loop)  # 无 Loop 配对：loop 参数控制单 action 循环
+	if not _fca.action_finished.is_connected(_on_action_finished):
+		_fca.action_finished.connect(_on_action_finished)
+
+
+# 照源 onAnimFinished :48-52：Start→Loop 切换中（Start emit）不 terminate，
+# Loop 无限循环靠外部 remove_effect 终止；其余 action 播完 terminate。
+func _on_action_finished(action_name: String) -> void:
+	if action_name == "Start" and _fca != null and _fca.has_action("Loop"):
+		return
+	_terminated = true
+
+
+## effect_list 协议：推进（FcaAnimation _process 自驱动，这里仅占位）。
+func update(_dt: float) -> void:
+	pass
+
+
+## effect_list 协议：是否终止（照源 isTerminated）。
+func is_terminated() -> bool:
+	if _terminated:
+		return true
+	if _fca != null and _fca.is_finished():
+		return true
+	return false
+
+
+func get_node() -> Node2D:
+	return _node
+
+
+## 降级占位特效（资源缺失时用，照源 createFcaNode CCNode stub 兜底）。
+class FallbackEffect:
+	var _node: Node2D; var _life: float
+	func _init(node: Node2D, life: float) -> void: _node = node; _life = life
+	func update(dt: float) -> void:
+		_life -= dt
+		if _life <= 0.0 and is_instance_valid(_node): _node.queue_free()
+	func is_terminated() -> bool: return _life <= 0.0
+	func get_node() -> Node2D: return _node
