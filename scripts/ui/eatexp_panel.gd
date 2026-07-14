@@ -59,6 +59,12 @@ var _cells: Dictionary = {}    # inst_id → {cell, level_label, exp_bar, displa
 var _keepeat_inst: int = -1    # 长按目标 inst_id（-1=空闲）
 
 
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
+# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（frame 内子元素已手工算 Godot 局部，只转 frame 全局位置）。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
 # 源 create(id, amount, param) :25-126。item_id=经验药物品 id；amount 从 pd.items 实时读。
 func setup_panel(item_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	_item_id = item_id
@@ -72,7 +78,7 @@ func setup_panel(item_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 
 func _build_ui() -> void:
 	var frame := Control.new()
-	frame.position = FRAME_POS - FRAME_SIZE / 2.0
+	frame.position = _g(FRAME_POS) - FRAME_SIZE / 2.0
 	frame.size = FRAME_SIZE
 	container.add_child(frame)
 	_add_bg(frame)

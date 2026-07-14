@@ -48,6 +48,12 @@ var _tab_buttons: Dictionary = {}  # tab_key(String) -> Button
 var _grid: GridContainer = null
 
 
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 daily_login/battle_view_coords 标准）。
+# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（CLOSE_BTN_POS 850,590 是 Godot-native 不转）。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
 # 源 create(identity) + getListData :370-377。identity 从 PopWindow.identity（构造传入）取，
 # 决定 tab 集 + classify 输出取 prop/fragment。调用：PackagePanel.new("package"/"fragment", {}).setup_panel(cm, pd)。
 func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
@@ -71,7 +77,7 @@ func _create_bg() -> void:
 		return   # headless/缺图降级（不阻塞 Logic）
 	var bg := TextureRect.new()
 	bg.texture = load(BG_PATH)
-	bg.position = BG_POS - bg.get_minimum_size() / 2.0   # 源 setPosition 中心锚定
+	bg.position = _g(BG_POS) - bg.get_minimum_size() / 2.0   # 源 setPosition 中心锚定→Godot
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(bg)
 
@@ -88,7 +94,7 @@ func _create_tab_buttons() -> void:
 		var key: String = _tabs[i]
 		var btn := Button.new()
 		btn.text = String(TAB_NAMES.get(key, key))
-		btn.position = Vector2(TAB_ORIGIN.x, TAB_ORIGIN.y - TAB_DY * i)
+		btn.position = _g(Vector2(TAB_ORIGIN.x, TAB_ORIGIN.y - TAB_DY * i))
 		btn.size = TAB_SIZE
 		btn.toggle_mode = true
 		btn.pressed.connect(func() -> void: _select_tab(key))
@@ -99,7 +105,7 @@ func _create_tab_buttons() -> void:
 # 源 createListLayer :350-369：draglist 滚动区。本项目 ScrollContainer+GridContainer columns=4 等价。
 func _create_grid() -> void:
 	var scroll := ScrollContainer.new()
-	scroll.position = SCROLL_POS
+	scroll.position = _g(SCROLL_POS)
 	scroll.size = SCROLL_SIZE
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED   # 源仅垂直滚动
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO

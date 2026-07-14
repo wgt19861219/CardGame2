@@ -13,7 +13,7 @@ static func create_wave_mark(scene) -> void:
 	if scene.wave_mark != null:
 		scene.wave_mark.queue_free()
 	var node := Control.new()
-	node.position = Vector2(380.0, 440.0)   # 源 :1295 ccp(380,440) anchor(0,0)
+	node.position = BattleViewCoords.to_godot(380.0, 440.0)   # 源 :1295 ccp(380,440)→Godot
 	var wave_id: int = int(scene.battle_info.get("Wave ID", 1))
 	var lbl := Label.new()
 	var ls := LabelSettings.new()
@@ -33,11 +33,11 @@ static func create_resource_markers(scene) -> void:
 	if scene.loot_marker != null:
 		scene.loot_marker.queue_free()
 	var gold := BattleResourceMarker.new()
-	gold.setup(BattleResourceMarker.Kind.GOLD, Vector2(10.0, 418.0))   # 源 :1313 ccp(110,440) → bg左上(10,418)
+	gold.setup(BattleResourceMarker.Kind.GOLD, BattleViewCoords.to_godot(110.0, 440.0))   # 源 :1313 ccp(110,440)→Godot
 	scene.ui_layer.add_child(gold)
 	scene.gold_marker = gold
 	var loot := BattleResourceMarker.new()
-	loot.setup(BattleResourceMarker.Kind.LOOT, Vector2(125.0, 418.0))  # 源 :1329 ccp(210,440) → bg左上(125,418)
+	loot.setup(BattleResourceMarker.Kind.LOOT, BattleViewCoords.to_godot(210.0, 440.0))  # 源 :1329 ccp(210,440)→Godot
 	scene.ui_layer.add_child(loot)
 	scene.loot_marker = loot
 	add_gold(scene, 0)          # 源 :1324 初始化 addGold(0)

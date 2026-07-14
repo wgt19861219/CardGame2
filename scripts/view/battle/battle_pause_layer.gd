@@ -24,6 +24,7 @@ signal sound_toggled
 var _container: Control = null
 var _sound_btn: TextureButton = null
 var _sound_on: bool = true
+var _label_y_godot: float = 0.0   # LABEL_Y 经 to_godot 翻 Y（源 800×480→Godot 960×640）
 
 
 # 源 createPauseLayer（:206-330）。sound_on：当前音效开关（决定初始 sound 按钮贴图，源 :257-263）。
@@ -40,16 +41,20 @@ func setup(ui_layer: Node, sound_on: bool) -> void:
 	_container.pivot_offset = CENTER   # 缩放绕中心（源 pauseContainer anchor 0.5,0.5）
 	add_child(_container)
 	_sound_on = sound_on
+	_label_y_godot = BattleViewCoords.to_godot(0.0, LABEL_Y).y
+	var _exit_pos: Vector2 = BattleViewCoords.to_godot(BTN_POS_EXIT.x, BTN_POS_EXIT.y)
+	var _sound_pos: Vector2 = BattleViewCoords.to_godot(BTN_POS_SOUND.x, BTN_POS_SOUND.y)
+	var _resume_pos: Vector2 = BattleViewCoords.to_godot(BTN_POS_RESUME.x, BTN_POS_RESUME.y)
 	# 源 :230-249 exit（back2mapbtn @ 255,265）
-	_add_button("exit", "back2mapbtn.png", BTN_POS_EXIT, "_on_exit_pressed")
-	_add_label("退出战斗", BTN_POS_EXIT.x)
+	_add_button("exit", "back2mapbtn.png", _exit_pos, "_on_exit_pressed")
+	_add_label("退出战斗", _exit_pos.x)
 	# 源 :250-285 sound（sound_on/off 按当前开关 @ 400,265）
 	var sound_tex: String = "sound_on.png" if _sound_on else "sound_off.png"
-	_sound_btn = _add_button("sound", sound_tex, BTN_POS_SOUND, "_on_sound_pressed")
-	_add_label("音效", BTN_POS_SOUND.x)
+	_sound_btn = _add_button("sound", sound_tex, _sound_pos, "_on_sound_pressed")
+	_add_label("音效", _sound_pos.x)
 	# 源 :286-318 resume（resume_battle @ 545,265）
-	_add_button("resume", "resume_battle.png", BTN_POS_RESUME, "_on_resume_pressed")
-	_add_label("继续战斗", BTN_POS_RESUME.x)
+	_add_button("resume", "resume_battle.png", _resume_pos, "_on_resume_pressed")
+	_add_label("继续战斗", _resume_pos.x)
 	# 源 :319-328 进场缩放（scale 0→1，EaseBackOut）
 	_container.scale = Vector2.ZERO
 	var t := create_tween()
@@ -70,7 +75,7 @@ func _add_button(btn_name: String, tex: String, pos: Vector2, method: String) ->
 func _add_label(text: String, x: float) -> void:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.position = Vector2(x, LABEL_Y)
+	lbl.position = Vector2(x, _label_y_godot)
 	_container.add_child(lbl)
 
 

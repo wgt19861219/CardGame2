@@ -20,7 +20,7 @@ var _button: Button = null
 # 源 resetUI auto_btn 装配 + autoCombatHandler。visible_default 源 pve stars<3 → false。
 func setup(initial_on: bool = false, visible_default: bool = true) -> void:
 	_on = initial_on
-	position = BUTTON_POS
+	position = BattleViewCoords.to_godot(BUTTON_POS.x, BUTTON_POS.y)
 	_button = Button.new()
 	_button.text = LABEL_ON if _on else LABEL_OFF
 	_button.pressed.connect(_on_pressed)

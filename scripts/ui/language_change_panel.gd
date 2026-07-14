@@ -24,6 +24,12 @@ const LABEL_COLOR: Color = Color(0.863, 0.690, 0.404)
 var _lm: LanguageManager
 
 
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
+# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
 func setup_panel(p_lm: LanguageManager) -> void:
 	_lm = p_lm
 	setup()
@@ -43,11 +49,11 @@ func _build_ui() -> void:
 		frame.patch_margin_right = int(frame_tex.get_width() - FRAME_CAP.position.x - FRAME_CAP.size.x)
 		frame.patch_margin_bottom = int(frame_tex.get_height() - FRAME_CAP.position.y - FRAME_CAP.size.y)
 	frame.size = FRAME_SIZE
-	frame.position = FRAME_CENTER - FRAME_SIZE * 0.5
+	frame.position = _g(FRAME_CENTER) - FRAME_SIZE * 0.5
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(frame)
 	# 源 languagechange.lua:71 common_tips_button_close X @ ccp(610,425)。
-	var close: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_POS)
+	var close: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, _g(CLOSE_POS))
 	close.pressed.connect(remove_window)
 	container.add_child(close)
 	# 7 语言按钮（源 createLanguageButton :125-192）。

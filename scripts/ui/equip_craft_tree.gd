@@ -60,6 +60,18 @@ const TEXT_SYNTHESIS: String = "合成"                     # 源 EQUIPCRAFT.SYN
 const TEXT_SYNTHESIS_COST: String = "合成费用 "           # 源 EQUIPCRAFT.SYNTHESIS_COST_
 const TEXT_WAY_TO_GET: String = "获取途径"                # 源 EQUIPCRAFT.WAY_TO_GET_
 const TEXT_EQUIPPED: String = "已装备"                    # 源 EQUIPCRAFT.EQUIPPED
+# ── craftWindow(bg)局部坐标翻转 ──────────────────────────────────────
+# 源 craftWindow.mainLayer = bg（equip_craft_bg 369×493 CCSprite），子节点原点 = bg 左下角 y-up
+# （Cocos CCSprite addChild 子坐标系原点 = 父 position - anchor*size/2，anchor(0.5,0.5)）。
+# panel._craft_window 代表 bg 中心（position=_g(CRAFT_WINDOW_POS)，bg.position=-size/2 对齐中心），
+# 故 bg 局部(cx,cy) → Godot 相对中心 = (cx - BG_HALF_W, BG_HALF_H - cy)。照源 equipcraft.lua:949-952。
+const BG_HALF_W: float = 184.5   # equip_craft_bg 369/2
+const BG_HALF_H: float = 246.5   # equip_craft_bg 493/2
+
+
+# 源 cocos bg 局部（相对 craftWindow.mainLayer=bg 左下角，y-up）→ Godot _craft_window 局部（相对 bg 中心，y-down）。
+static func _gl(pos: Vector2) -> Vector2:
+	return Vector2(pos.x - BG_HALF_W, BG_HALF_H - pos.y)
 
 
 # 源 createCraftTree :927-1233（核心合成树）。
@@ -81,7 +93,7 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 	# 源 ui_info :989-1024：name Label
 	var name_lbl := Label.new()
 	name_lbl.text = panel._equip_name(id)
-	name_lbl.position = NAME_LABEL_POS
+	name_lbl.position = _gl(NAME_LABEL_POS)
 	tree.add_child(name_lbl)
 	panel._tree_data["name"] = name_lbl
 	# 源 rootBg = createIcon(id, 60) :1031
@@ -91,7 +103,7 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 	panel._tree_data["rootBg"] = root_icon
 	var expense: int = 99999999   # 源 :1121 默认
 	if components > 0:
-		root_icon.position = ROOT_ICON_POS
+		root_icon.position = _gl(ROOT_ICON_POS)
 		_build_recipe_branch(panel, tree, row, components)   # 源 :1037-1132 配方分支
 		expense = int(row.get("Expense", 99999999))
 		panel._craft_window_data["expense"] = expense
@@ -109,7 +121,7 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 	# 源 trunk 连线 :1042-1056
 	var trunk := TextureRect.new()
 	trunk.texture = load(LINE_RES[components - 1])
-	trunk.position = TRUNK_POS - trunk.get_minimum_size() / 2.0
+	trunk.position = _gl(TRUNK_POS) - trunk.get_minimum_size() / 2.0
 	trunk.rotation_degrees = LINE_ROT[components - 1]
 	tree.add_child(trunk)
 	panel._craft_window_data["nodeid"] = []
@@ -145,7 +157,7 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 		# 源 childBg = createIcon(id, 45) :1080
 		var child_icon: Control = ReadequipIcon.create_icon(cid, 0, panel.cm)
 		child_icon.scale = Vector2(CHILD_ICON_SCALE, CHILD_ICON_SCALE)
-		child_icon.position = children_pos[i]
+		child_icon.position = _gl(children_pos[i])
 		child_icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		child_icon.gui_input.connect(panel._make_tree_node_handler(i))   # 源 doTreeNodeTouch :258
 		tree.add_child(child_icon)
@@ -155,20 +167,20 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 		if amount < 10000:
 			var lbl := Label.new()
 			lbl.text = str(amount)
-			lbl.position = Vector2(children_pos[i].x - 20.0, AMOUNT_LABEL_Y)
+			lbl.position = _gl(Vector2(children_pos[i].x - 20.0, AMOUNT_LABEL_Y))
 			lbl.modulate = COLOR_RED if amount < int(node_need[i]) else COLOR_BROWN
 			tree.add_child(lbl)
 			amount_labels.append(lbl)
 			# 源 amountNeed "/X" :1105-1108
 			var need_lbl := Label.new()
 			need_lbl.text = "/" + str(int(node_need[i]))
-			need_lbl.position = Vector2(children_pos[i].x + AMOUNT_NEED_OFFSET, AMOUNT_LABEL_Y)
+			need_lbl.position = _gl(Vector2(children_pos[i].x + AMOUNT_NEED_OFFSET, AMOUNT_LABEL_Y))
 			need_lbl.modulate = COLOR_BROWN
 			tree.add_child(need_lbl)
 		else:
 			var eq_lbl := Label.new()
 			eq_lbl.text = TEXT_EQUIPPED
-			eq_lbl.position = Vector2(children_pos[i].x, AMOUNT_LABEL_Y)
+			eq_lbl.position = _gl(Vector2(children_pos[i].x, AMOUNT_LABEL_Y))
 			eq_lbl.modulate = COLOR_BROWN
 			tree.add_child(eq_lbl)
 	panel._tree_data["children"] = children_icons
@@ -179,13 +191,13 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 static func _build_cost(panel, tree: Control, expense: int) -> void:
 	var cost_title := Label.new()
 	cost_title.text = TEXT_SYNTHESIS_COST
-	cost_title.position = COST_TITLE_POS
+	cost_title.position = _gl(COST_TITLE_POS)
 	cost_title.modulate = COLOR_BROWN
 	tree.add_child(cost_title)
 	panel._tree_data["costTitle"] = cost_title
 	var cost_lbl := Label.new()
 	cost_lbl.text = str(expense)
-	cost_lbl.position = COST_POS
+	cost_lbl.position = _gl(COST_POS)
 	var money: int = panel._player_money()
 	cost_lbl.modulate = COLOR_DARK_RED if expense <= money else COLOR_RED   # 源 :1123-1126
 	tree.add_child(cost_lbl)
@@ -208,16 +220,16 @@ static func _judge_lack_of_component(panel) -> void:
 
 # 源 :1133-1202 components<1 获取途径分支：getway_bg + board 贴图 + Drop1-3 过滤 + isElite + stage 图标 + elite + name 缩放。
 static func _build_getway_branch(panel, tree: Control, id: int) -> void:
-	(panel._tree_data["rootBg"] as Control).position = ROOT_ICON_NO_RECIPE_POS
+	(panel._tree_data["rootBg"] as Control).position = _gl(ROOT_ICON_NO_RECIPE_POS)
 	(panel._tree_data["rootBg"] as Control).scale = Vector2(ROOT_ICON_NO_RECIPE_SCALE, ROOT_ICON_NO_RECIPE_SCALE)
 	var bg := TextureRect.new()   # 源 :1136-1138 getway_bg 装饰背景
 	bg.texture = load(GETWAY_BG_PATH)
-	bg.position = GETWAY_BG_POS - bg.get_minimum_size() / 2.0   # 源 setPosition(142,177) 中心锢定
+	bg.position = _gl(GETWAY_BG_POS) - bg.get_minimum_size() / 2.0   # 源 setPosition(142,177) 中心锚定
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tree.add_child(bg)
 	var label := Label.new()
 	label.text = TEXT_WAY_TO_GET
-	label.position = GETWAY_LABEL_POS
+	label.position = _gl(GETWAY_LABEL_POS)
 	label.modulate = COLOR_DARK_RED
 	tree.add_child(label)
 	# 源 :1144-1156 收集 Drop1-3（Chapter ID <= MaxChapter 过滤）
@@ -243,7 +255,7 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 		var stage_row: Dictionary = stage_table.get(str(sid), {})
 		var board := TextureRect.new()   # 源 :1160 board 贴图（替降级 Panel）+ 可点击
 		board.texture = load(GETWAY_BOARD_PATH)
-		board.position = Vector2(142.0, GETWAY_BOARD_Y_BASE - GETWAY_BOARD_DY * i) - board.get_minimum_size() / 2.0
+		board.position = _gl(Vector2(142.0, GETWAY_BOARD_Y_BASE - GETWAY_BOARD_DY * i)) - board.get_minimum_size() / 2.0
 		board.mouse_filter = Control.MOUSE_FILTER_STOP
 		board.gui_input.connect(panel._make_get_way_handler(i))   # 源 doGetWayTouch :91-123
 		tree.add_child(board)
@@ -286,7 +298,7 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 static func _build_craft_button(panel, tree: Control, components: int) -> void:
 	var btn := Button.new()
 	btn.text = TEXT_SYNTHESIS if components >= 1 else TEXT_RETURN   # 源 :1204-1208
-	btn.position = CRAFT_BTN_POS - CRAFT_BTN_SIZE / 2.0
+	btn.position = _gl(CRAFT_BTN_POS) - CRAFT_BTN_SIZE / 2.0
 	btn.size = CRAFT_BTN_SIZE
 	btn.disabled = panel._lack_of_component or not panel._check_money_enough()
 	btn.pressed.connect(panel._on_craft_pressed)

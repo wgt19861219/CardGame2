@@ -22,7 +22,7 @@ var _label: Label = null
 
 # 源 resetUI 装配 speedBtn（:1235-1243）：setPosition(735,120) + registerScriptTapHandler(speedBtnHandler)。
 func setup(initial_state: int = 1) -> void:
-	position = BUTTON_POS
+	position = BattleViewCoords.to_godot(BUTTON_POS.x, BUTTON_POS.y)
 	_state = clampi(initial_state, 1, MAX_STATE)
 	_btn = TextureButton.new()
 	_btn.texture_normal = _load_texture(_state)

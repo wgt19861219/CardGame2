@@ -25,7 +25,7 @@ func test_damage_popup_position_and_label() -> void:
 	var p: Variant = BattlePopup.create("100", unit, false, "damage", "orange", layer)
 	assert_not_null(p, "damage popup 应创建")
 	assert_eq(p._label.text, "100", "label 文本 = 伤害值")
-	# _play_damage 设 position = to_view_position(100, 0, 75) = (100, 340)
+	# _play_damage 设 position = to_view_position(100, 0, 75) = to_godot(100,340) = (180,220)
 	var expected: Vector2 = BattleViewCoords.to_view_position(100.0, 0.0, 75.0)
 	assert_eq(p.position, expected, "damage popup 位置 = 单位头顶 75")
 	p.queue_free()

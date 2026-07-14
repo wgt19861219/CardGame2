@@ -15,10 +15,12 @@ signal pressed
 
 var _btn: TextureButton = null
 var _swing_tween: Tween = null
+var _godot_pos: Vector2 = Vector2.ZERO   # BUTTON_POS 经 to_godot 转换（源 800×480→Godot 960×640）
 
 
 func setup() -> void:
-	position = BUTTON_POS
+	_godot_pos = BattleViewCoords.to_godot(BUTTON_POS.x, BUTTON_POS.y)
+	position = _godot_pos
 	scale = Vector2(BUTTON_SCALE, BUTTON_SCALE)
 	_btn = TextureButton.new()
 	_btn.texture_normal = load(TEXTURE_PATH) as Texture2D
@@ -36,8 +38,8 @@ func show_button() -> void:
 		_swing_tween.kill()
 	# 源 :1400-1402 CCRepeatForever(MoveBy(30,0)+MoveBy(-30,0))
 	_swing_tween = create_tween().set_loops()
-	_swing_tween.tween_property(self, "position:x", BUTTON_POS.x + SWING_DIST, SWING_DURATION)
-	_swing_tween.tween_property(self, "position:x", BUTTON_POS.x, SWING_DURATION)
+	_swing_tween.tween_property(self, "position:x", _godot_pos.x + SWING_DIST, SWING_DURATION)
+	_swing_tween.tween_property(self, "position:x", _godot_pos.x, SWING_DURATION)
 
 
 func hide_button() -> void:
@@ -46,7 +48,7 @@ func hide_button() -> void:
 	if _swing_tween:
 		_swing_tween.kill()
 		_swing_tween = null
-	position.x = BUTTON_POS.x
+	position.x = _godot_pos.x
 
 
 func _on_pressed() -> void:

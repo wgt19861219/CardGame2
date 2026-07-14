@@ -6,7 +6,9 @@ extends PopWindow
 ## Step 4（playCraftEffect 特效 + history 历史记录 + createInfoButton/puton 穿戴）/ Step 5（入口集成 + 音效）后续轮。
 ## 单机化：从 HeroDetailPanel 装备槽进（hero/target_id/sid 已定），跳过源 equipboard 完整面板
 ## （equipLayer 用本地 ofcraft 装备展示照源翻译）。Logic 走 EquipCraftManager.synthesize_equip。
-## 坐标用源 cocos 值直接（视觉校准留 Phase 4 MCP 验收，同 EquipStrengthenPanel 约定）。
+## 坐标：全屏元素（_craft_window/_equip_layer/infoButton）走 _g(BattleViewCoords.to_godot)；
+## craftWindow(bg)内局部元素（tree/history，源 add craftWindow.mainLayer）走 EquipCraftTree._gl
+## （源 bg 369×493 CCSprite 子节点原点=左下角 y-up，_craft_window 代表 bg 中心，故 _gl 翻 Y + 减半宽高）。
 
 signal equipped_changed   # 穿戴后通知调用方刷新（HeroDetailPanel 接 → refresh_content 装备槽）
 signal jump_to_stage(stage_id: int)   # P1-10：获取途径跳转（源 doClickGetWay → stageselect.createByStage）
@@ -76,6 +78,12 @@ var _is_open: bool = true                # 源 self.isOpen（openCraftPanel/clos
 var _has_play_puton_effect: bool = false # 源 self.hasPlayPutonEffect
 
 
+# 源 cocos(800×480 左下) → Godot(960×640 左上)：cx+80, 560-cy（同 fragment_compose_panel 范式）。
+# 用于全屏元素（_craft_window/_equip_layer/infoButton，add container）。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
 # 源 create(config) :1301 + createPanel :1269。单机化：hero/target_id/sid 由 HeroDetailPanel 传入。
 func setup_panel(p_target_id: int, p_cm: Variant, p_pd: PlayerData, p_hero: HeroInstance = null, p_context: String = "heroDetail", p_sid: int = 0) -> void:
 	_target_id = p_target_id
@@ -111,7 +119,7 @@ func _on_close_pressed() -> void:
 # 本项目从 HeroDetailPanel 进（hero 已定），equipLayer 只展示合成目标装备图标 + 拥有数量。
 func _create_equip_layer() -> void:
 	_equip_layer = Control.new()
-	_equip_layer.position = EQUIP_LAYER_POS
+	_equip_layer.position = _g(EQUIP_LAYER_POS)
 	container.add_child(_equip_layer)
 	_refresh_amount()
 
@@ -131,7 +139,7 @@ func _refresh_amount() -> void:
 # 源 createCraftWindow :1246：合成窗口背景 equip_craft_bg + createCraftTree 初次 + 进场动画。
 func _create_craft_window(id: int) -> void:
 	_craft_window = Control.new()
-	_craft_window.position = CRAFT_WINDOW_POS
+	_craft_window.position = _g(CRAFT_WINDOW_POS)
 	container.add_child(_craft_window)
 	var bg := TextureRect.new()
 	bg.texture = load(CRAFT_BG_PATH)
@@ -235,7 +243,7 @@ func _play_craft_effect() -> void:
 	var children: Array = _tree_data.get("children", [])
 	if children.is_empty():
 		return
-	var end_pos: Vector2 = Vector2(142.0, 226.0)   # 源 :411
+	var end_pos: Vector2 = EquipCraftTree._gl(Vector2(142.0, 226.0))   # 源 :411（bg 局部→_craft_window 局部）
 	var node_need: Array = _craft_window_data.get("nodeNeed", [])
 	var nodeid: Array = _craft_window_data.get("nodeid", [])
 	for k in range(children.size()):
@@ -288,7 +296,7 @@ func _create_need_craft_prompt() -> void:
 			if i < children.size() and is_instance_valid(children[i]):
 				var prompt_bg := TextureRect.new()
 				prompt_bg.texture = load(PROMPT_BG_PATH)
-				prompt_bg.position = (children[i] as Control).position + Vector2(0.0, 20.0)  # 源 :334 y+20
+				prompt_bg.position = (children[i] as Control).position + Vector2(0.0, -20.0)  # 源 :334 y+20（y-up +20=图标上方 → GD y-down 翻方向 -20，T1 核实 2026-07-14 修）
 				prompt_bg.size = Vector2(180.0, 40.0)
 				_tree.add_child(prompt_bg)
 				var lbl := Label.new()
@@ -384,7 +392,7 @@ func _create_history_layer() -> Control:
 	if _history_layer != null and is_instance_valid(_history_layer):
 		return _history_layer
 	_history_layer = HBoxContainer.new()
-	_history_layer.position = HISTORY_ORIGIN
+	_history_layer.position = EquipCraftTree._gl(HISTORY_ORIGIN)
 	_history_layer.add_theme_constant_override("separation", 8)
 	_craft_window.add_child(_history_layer)
 	return _history_layer
@@ -461,12 +469,12 @@ func _create_info_button() -> void:
 		remark_text = TEXT_REQUIRED_HERO_LEVEL % elv     # 源 :657-658
 	_info_remark = Label.new()
 	_info_remark.text = remark_text
-	_info_remark.position = INFO_REMARK_POS
+	_info_remark.position = _g(INFO_REMARK_POS)
 	_info_remark.modulate = remark_color
 	container.add_child(_info_remark)
 	_info_button = Button.new()
 	_info_button.text = text
-	_info_button.position = INFO_BTN_POS - INFO_BTN_SIZE / 2.0
+	_info_button.position = _g(INFO_BTN_POS) - INFO_BTN_SIZE / 2.0
 	_info_button.size = INFO_BTN_SIZE
 	_info_button.pressed.connect(_on_info_pressed)
 	container.add_child(_info_button)

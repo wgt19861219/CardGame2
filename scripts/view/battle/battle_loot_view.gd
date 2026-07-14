@@ -160,7 +160,7 @@ func _fly_to_marker_and_cleanup() -> void:
 	_terminated = true
 	var t := create_tween()
 	t.set_parallel(true)
-	t.tween_property(self, "position", MARKER_POS, 0.3)
+	t.tween_property(self, "position", BattleViewCoords.to_godot(MARKER_POS.x, MARKER_POS.y), 0.3)
 	t.tween_property(self, "modulate:a", 0.0, 0.3)
 	t.tween_property(self, "scale", Vector2(0.5, 0.5), 0.3)
 	# 源 loot.lua flyToMarkerAndCleanup 末尾 ed.scene:addLootMarker(1)（拾取计数 +1）+ cleanup

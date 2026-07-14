@@ -1,16 +1,16 @@
 extends GutTest
 # equipstrengthen 6 槽布局测试（照源 getEquipPos:1566-1575，2列3行）。
-# 源 cocos (ox=235, oy=405) 左下原点 → Godot y=640-cocos_y。i=1,2 第1行；3,4 第2行；5,6 第3行。
+# 源 cocos (ox=235, oy=405) 左下原点 → Godot to_godot(cx+80, 560-cy)。i=1,2 第1行；3,4 第2行；5,6 第3行。
 
 func test_get_equip_pos_2cols_3rows() -> void:
 	var panel := EquipStrengthenPanel.new()
-	# 源 1-based i=1 中心 cocos(235,405) → Godot(235, 640-405=235)
-	assert_eq(EquipStrengthenAtt.get_equip_pos(0), Vector2(235.0, 235.0), "i=1 第1行左 (235,235)")
-	assert_eq(EquipStrengthenAtt.get_equip_pos(1), Vector2(307.0, 235.0), "i=2 第1行右 (307,235)")
-	assert_eq(EquipStrengthenAtt.get_equip_pos(2), Vector2(235.0, 307.0), "i=3 第2行左 (235,307)")
-	assert_eq(EquipStrengthenAtt.get_equip_pos(3), Vector2(307.0, 307.0), "i=4 第2行右 (307,307)")
-	assert_eq(EquipStrengthenAtt.get_equip_pos(4), Vector2(235.0, 379.0), "i=5 第3行左 (235,379)")
-	assert_eq(EquipStrengthenAtt.get_equip_pos(5), Vector2(307.0, 379.0), "i=6 第3行右 (307,379)")
+	# 源 1-based i=1 中心 cocos(235,405) → Godot to_godot(235+80, 560-405)=(315,155)
+	assert_eq(EquipStrengthenAtt.get_equip_pos(0), Vector2(315.0, 155.0), "i=1 第1行左 (315,155)")
+	assert_eq(EquipStrengthenAtt.get_equip_pos(1), Vector2(387.0, 155.0), "i=2 第1行右 (387,155)")
+	assert_eq(EquipStrengthenAtt.get_equip_pos(2), Vector2(315.0, 227.0), "i=3 第2行左 (315,227)")
+	assert_eq(EquipStrengthenAtt.get_equip_pos(3), Vector2(387.0, 227.0), "i=4 第2行右 (387,227)")
+	assert_eq(EquipStrengthenAtt.get_equip_pos(4), Vector2(315.0, 299.0), "i=5 第3行左 (315,299)")
+	assert_eq(EquipStrengthenAtt.get_equip_pos(5), Vector2(387.0, 299.0), "i=6 第3行右 (387,299)")
 	panel.free()
 
 

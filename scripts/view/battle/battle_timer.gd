@@ -19,21 +19,23 @@ var _value: int = -1   # 源 :1347 timer.value=-1（强制首帧更新）
 
 
 func setup() -> void:
+	var _bg_pos: Vector2 = BattleViewCoords.to_godot(BG_POS.x, BG_POS.y)
+	var _hg_pos: Vector2 = BattleViewCoords.to_godot(HOURGLASS_POS.x, HOURGLASS_POS.y)
 	var bg: Sprite2D = _load_sprite("battle_number_bg.png")
 	if bg:
-		bg.position = BG_POS
+		bg.position = _bg_pos
 		add_child(bg)
 	_mask = _load_sprite("timermask.png")
 	if _mask:
-		_mask.position = BG_POS   # 源 :1354-1357 mask 覆盖 bg 区域
+		_mask.position = _bg_pos   # 源 :1354-1357 mask 覆盖 bg 区域
 		_mask.visible = false
 		add_child(_mask)
 	var hourglass: Sprite2D = _load_sprite("hourglass.png")
 	if hourglass:
-		hourglass.position = HOURGLASS_POS
+		hourglass.position = _hg_pos
 		add_child(hourglass)
 	_text = Label.new()
-	_text.position = BG_POS + TEXT_LOCAL_POS   # 源 text 挂 bg 内 (12,22)
+	_text.position = _bg_pos + TEXT_LOCAL_POS   # 源 text 挂 bg 内 (12,22)
 	_text.add_theme_color_override("font_color", NORMAL_COLOR)
 	add_child(_text)
 

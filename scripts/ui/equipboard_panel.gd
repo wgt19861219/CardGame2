@@ -5,7 +5,8 @@ extends PopWindow
 ## 接 PackagePanel.cell_clicked 弹出。左卖出（始终）+ 右动态（prop 查看/consume 使用/fragment 合成）。
 ## propType 判定照源 refreshPropType :233-253（Category=FRAGMENT 有产物→fragment / CONSUMABLES+EXPERIENCE_PILL→consume / 其他→prop）。
 ## sell 接 PlayerData.sell_equip + compose 接 FragmentComposePanel（第 21 段）+ check 接 EquipdetailPanel（第 26 段）+ use 接 EatexpPanel（第 27 段）。
-## 坐标用源 cocos 值（board.lua + ofpackage.lua，Phase 4 视觉校准）。
+## 坐标：frame(package_detail_bg 369×493)内子元素走 _gl（源相对 frame sprite 左下角 y-up → Godot Control 左上角 y-down）；
+## frame 自身走 _g(FRAME_POS)（全屏），frame.position = _g(FRAME_POS) - FRAME_SIZE/2（左上角 = 中心 godot - 半尺寸）。
 
 # ── propType（源 refreshPropType）──
 const PROPTYPE_PROP: String = "prop"
@@ -19,7 +20,7 @@ const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 
 # ── 坐标常量（源 cocos 值，frame package_detail_bg.png 内相对）──
 const FRAME_POS: Vector2 = Vector2(400.0, 240.0)      # board.lua:426
-const FRAME_SIZE: Vector2 = Vector2(320.0, 400.0)     # package_detail_bg 估算（Phase 4 校准）
+const FRAME_SIZE: Vector2 = Vector2(369.0, 493.0)    # package_detail_bg 实际尺寸 369×493（Phase 4 校准）
 const ICON_POS: Vector2 = Vector2(50.0, 328.0)        # board.lua:320
 const NAME_POS: Vector2 = Vector2(92.0, 345.0)        # board.lua:328
 const AMOUNT_TITLE_POS: Vector2 = Vector2(90.0, 310.0)  # board.lua:65
@@ -49,6 +50,17 @@ var _cell_data: Dictionary = {}
 var _item_id: int = 0       # 装备/物品/碎片 id（源 param.id）
 var _make_id: int = 0       # 产物 tid（fragment 合成用，源 makeId）
 var _prop_type: String = PROPTYPE_PROP
+
+
+# 源 cocos(800×480 左下) → Godot(960×640 左上)：cx+80, 560-cy（全屏元素 _g，同 fragment_compose_panel 范式）。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
+# frame(package_detail_bg)内子元素：源相对 frame CCSprite 左下角 y-up（Cocos CCSprite 子节点原点=左下角），
+# Godot frame 是 Control（子节点相对左上角 y-down），故 _gl 翻 Y（x 不变）。
+func _gl(pos: Vector2) -> Vector2:
+	return Vector2(pos.x, FRAME_SIZE.y - pos.y)
 
 
 # 源 create(param) :264-278。param={id, doSell, doUse, doCheck, doCompose}（package.lua 注入）。
@@ -83,7 +95,7 @@ func _judge_prop_type() -> String:
 # 源 initFrame + initTitle + initAmount + initWindow。
 func _build_ui() -> void:
 	var frame := Control.new()
-	frame.position = FRAME_POS - FRAME_SIZE / 2.0
+	frame.position = _g(FRAME_POS) - FRAME_SIZE / 2.0
 	frame.size = FRAME_SIZE
 	container.add_child(frame)
 	if ResourceLoader.exists(FRAME_PATH):
@@ -94,41 +106,41 @@ func _build_ui() -> void:
 		frame.add_child(bg)
 	# icon（源 initTitle :320 createIcon）
 	var icon: Control = ReadequipIcon.create_icon(_item_id, 0, cm)
-	icon.position = ICON_POS
+	icon.position = _gl(ICON_POS)
 	frame.add_child(icon)
 	# name（源 initTitle :328）
 	var name_lbl := Label.new()
 	name_lbl.text = _equip_name()
-	name_lbl.position = NAME_POS
+	name_lbl.position = _gl(NAME_POS)
 	frame.add_child(name_lbl)
 	# 持有量（源 initAmount :65 "持有 X 个"）
 	var amount_lbl := Label.new()
 	amount_lbl.text = "持有: %d" % int(_cell_data.get("amount", 0))
-	amount_lbl.position = AMOUNT_TITLE_POS
+	amount_lbl.position = _gl(AMOUNT_TITLE_POS)
 	frame.add_child(amount_lbl)
 	# 卖出价（源 refreshPrice + money_board，price<=0 隐藏）
 	var sell_price: int = _sell_price()
 	if sell_price > 0:
 		var price_lbl := Label.new()
 		price_lbl.text = "售价: %d" % sell_price
-		price_lbl.position = MONEY_BOARD_POS
+		price_lbl.position = _gl(MONEY_BOARD_POS)
 		frame.add_child(price_lbl)
 	# 左卖出按钮（源 left_button :109，始终）
 	var sell_btn := Button.new()
 	sell_btn.text = TEXT_SELL
-	sell_btn.position = LEFT_BTN_POS
+	sell_btn.position = _gl(LEFT_BTN_POS)
 	sell_btn.size = BTN_SIZE
 	sell_btn.pressed.connect(_on_sell_pressed)
 	frame.add_child(sell_btn)
 	# 右动态按钮（源 right_button :154，按 propType 切文本）
 	var right_btn := Button.new()
 	right_btn.text = _right_button_label()
-	right_btn.position = RIGHT_BTN_POS
+	right_btn.position = _gl(RIGHT_BTN_POS)
 	right_btn.size = BTN_SIZE
 	right_btn.pressed.connect(_on_right_pressed)
 	frame.add_child(right_btn)
 	# 关闭（源 board.lua close :437 herodetail-detail-close）
-	var close_btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_POS)
+	var close_btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, _gl(CLOSE_POS))
 	close_btn.pressed.connect(_on_close_pressed)
 	frame.add_child(close_btn)
 

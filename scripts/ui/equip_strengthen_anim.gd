@@ -10,7 +10,7 @@ extends RefCounted
 # NPC 对话系统（源 :11-67 createnpcTalk/doTalk/doSpeak/hideTalk + :2148-2157 NPC 头像装配）
 const NPC_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_npc_head.png"
 const TALK_FRAME_RES: String = "res://assets/ui/alpha/HVGA/skill_talk_bg_down.png"
-const PANEL_HEIGHT: float = 640.0                          # 源 HVGA 高（cocos y 向上 → Godot y 向下 转换基准）
+const PANEL_HEIGHT: float = 560.0                          # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（480+80，照 battle_view_coords.gd BASE_Y）
 const NPC_POS: Vector2 = Vector2(638.0, 378.0)             # 源 cocos anchor(0,0) 左下
 const TALK_FRAME_TOP: Vector2 = Vector2(645.0, 305.0)      # 源 cocos anchor(0.5,1) 顶部中心
 const TALK_LABEL_TOP: Vector2 = Vector2(645.0, 282.0)      # 源 cocos anchor(0.5,1) 顶部中心
@@ -47,7 +47,7 @@ static func ensure_talk_container(panel) -> void:
 	panel._npc_sprite.texture = load(NPC_RES)
 	panel._npc_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var npc_size: Vector2 = panel._npc_sprite.texture.get_size()
-	panel._npc_sprite.position = Vector2(NPC_POS.x, PANEL_HEIGHT - NPC_POS.y - npc_size.y)
+	panel._npc_sprite.position = Vector2(NPC_POS.x + 80.0, PANEL_HEIGHT - NPC_POS.y - npc_size.y)
 	panel._talk_container.add_child(panel._npc_sprite)
 	# 气泡 Scale9（源 :20-24 anchor(0.5,1) 顶部中心 224×76；capInsets 30,30,145,20）
 	panel._talk_frame = NinePatchRect.new()
@@ -59,7 +59,7 @@ static func ensure_talk_container(panel) -> void:
 	panel._talk_frame.patch_margin_right = max(0, int(tex_size.x) - TALK_CAP_LEFT - TALK_CAP_CENTER_W)
 	panel._talk_frame.patch_margin_bottom = max(0, int(tex_size.y) - TALK_CAP_TOP - TALK_CAP_CENTER_H)
 	panel._talk_frame.size = TALK_FRAME_SIZE
-	panel._talk_frame.position = Vector2(TALK_FRAME_TOP.x - TALK_FRAME_SIZE.x / 2.0, PANEL_HEIGHT - TALK_FRAME_TOP.y)
+	panel._talk_frame.position = Vector2(TALK_FRAME_TOP.x - TALK_FRAME_SIZE.x / 2.0 + 80.0, PANEL_HEIGHT - TALK_FRAME_TOP.y)
 	panel._talk_container.add_child(panel._talk_frame)
 	# 文字 Label（源 :26-32 anchor(0.5,1) 顶部中心，18 号，200 宽，左对齐自动换行）
 	panel._talk_label = Label.new()
@@ -70,7 +70,7 @@ static func ensure_talk_container(panel) -> void:
 	panel._talk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel._talk_label.custom_minimum_size = Vector2(TALK_LABEL_WIDTH, 0.0)
 	panel._talk_label.size = Vector2(TALK_LABEL_WIDTH, 0.0)
-	panel._talk_label.position = Vector2(TALK_LABEL_TOP.x - TALK_LABEL_WIDTH / 2.0, PANEL_HEIGHT - TALK_LABEL_TOP.y)
+	panel._talk_label.position = Vector2(TALK_LABEL_TOP.x - TALK_LABEL_WIDTH / 2.0 + 80.0, PANEL_HEIGHT - TALK_LABEL_TOP.y)
 	panel._talk_container.add_child(panel._talk_label)
 
 

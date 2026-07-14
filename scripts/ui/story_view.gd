@@ -20,12 +20,21 @@ const NAME_FRAME_RIGHT: Vector2 = Vector2(620.0, 120.0)
 const CONTENT_POS: Vector2 = Vector2(400.0, 60.0)
 const ARROW_POS: Vector2 = Vector2(710.0, 40.0)
 const TEXT_COLOR: Color = Color(117.0 / 255.0, 77.0 / 255.0, 0.0)   # 源 ccc3(117,77,0)
+const SHADOW_CENTER: Vector2 = Vector2(400.0, 60.0)   # 源 storylayer.lua:28/42 shadowBg/storyBg ccp(400,60)（原 330 系注释造假+值错，T2 核实 2026-07-14 修）
+const SHADOW_SIZE: Vector2 = Vector2(960.0, 600.0)     # 源 800×500 按比例→Godot 960×600（源画布×1.2）
+const BG_SIZE: Vector2 = Vector2(600.0, 120.0)         # 源 storyBg 尺寸（保持原值）
 
 var _story_name: String = ""
 var _sections: Array = []   # StoryData 分节 [{icon,name,text,position}]
 var _current_section: int = 1
 var _ui: Dictionary = {}    # 节点引用
 var _shown_once: Dictionary = {}   # ShowOnce 持久化（会话内，源 CCUserDefault）
+
+
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
+# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
 
 
 ## 源 showStory（:218-249）：加载分节 + ShowOnce 检查 + 创建层 + 首节 + pauseBattle。
@@ -50,12 +59,12 @@ func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	gui_input.connect(_on_gui_input)
-	_add_texture_rect(SHADOW_RES, Vector2(400, 330), Vector2(800, 500))   # shadowBg
-	_add_texture_rect(BG_RES, Vector2(400, 330), Vector2(600, 120))       # storyBg
-	var arrow := _add_texture_rect(ARROW_RES, ARROW_POS + Vector2(310, 270), Vector2(20, 20))
+	_add_texture_rect(SHADOW_RES, _g(SHADOW_CENTER), SHADOW_SIZE)   # shadowBg
+	_add_texture_rect(BG_RES, _g(SHADOW_CENTER), BG_SIZE)           # storyBg
+	var arrow := _add_texture_rect(ARROW_RES, _g(ARROW_POS), Vector2(20, 20))
 	arrow.modulate.a = 0.5   # 源 getFadeAction 闪烁（简化为半透明）
 	# heroIcon + nameFrame + heroName + content 由 _show_section 动态定位
-	_ui["name_frame"] = _add_texture_rect(NAME_BG_RES, NAME_FRAME_LEFT, Vector2(120, 30))
+	_ui["name_frame"] = _add_texture_rect(NAME_BG_RES, _g(NAME_FRAME_LEFT), Vector2(120, 30))
 	var name_lbl := Label.new()
 	name_lbl.add_theme_font_size_override("font_size", 24)
 	name_lbl.modulate = TEXT_COLOR
@@ -63,7 +72,7 @@ func _build_ui() -> void:
 	add_child(name_lbl)
 	_ui["name"] = name_lbl
 	var content_lbl := Label.new()
-	content_lbl.position = CONTENT_POS
+	content_lbl.position = _g(CONTENT_POS)
 	content_lbl.add_theme_font_size_override("font_size", 22)
 	content_lbl.modulate = TEXT_COLOR
 	content_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -86,10 +95,10 @@ func _show_section() -> void:
 		(_ui["hero_icon"] as TextureRect).queue_free()
 	var icon_res: String = String(section.get("icon", ""))
 	if not icon_res.is_empty():
-		_ui["hero_icon"] = _add_texture_rect(icon_res, icon_pos, Vector2(120, 150))
+		_ui["hero_icon"] = _add_texture_rect(icon_res, _g(icon_pos), Vector2(120, 150))
 	# 名牌 + 名字位置（左右切换，源 changeStoryInfo:150-157）
-	(_ui["name_frame"] as TextureRect).position = NAME_FRAME_LEFT if position == "left" else NAME_FRAME_RIGHT
-	(_ui["name"] as Label).position = (NAME_FRAME_LEFT if position == "left" else NAME_FRAME_RIGHT) - Vector2(50, 12)
+	(_ui["name_frame"] as TextureRect).position = _g(NAME_FRAME_LEFT if position == "left" else NAME_FRAME_RIGHT)
+	(_ui["name"] as Label).position = _g(NAME_FRAME_LEFT if position == "left" else NAME_FRAME_RIGHT) - Vector2(50, 12)
 	(_ui["name"] as Label).text = String(section.get("name", ""))
 	(_ui["content"] as Label).text = String(section.get("text", ""))
 	_current_section += 1

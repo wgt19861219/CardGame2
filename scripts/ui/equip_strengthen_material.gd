@@ -8,7 +8,7 @@ extends RefCounted
 ## 主类 _add_material/_delete_material 转发本类（单测 panel._add_material 不变）。
 
 # 材料网格（源 createmt:110 ox=140,oy=155 dx=80,dy=75；本项目坐标适配）
-const MT_ORIGIN: Vector2 = Vector2(140.0, 485.0)   # 源 createmt:113 oy=155 cocos → Godot 640-155=485
+const MT_ORIGIN: Vector2 = Vector2(220.0, 405.0)   # 源 createmt:113 ox=140,oy=155 cocos → Godot (140+80, 560-155)
 const MT_DX: float = 80.0
 const MT_DY: float = 75.0
 const MT_PER_ROW: int = 6                          # 源 createmt:118 bi=6*(index-1)+1
@@ -23,7 +23,7 @@ const CT_ENCHANTING: String = "EQUIP.ENCHANTING"
 const NAME_UNIVERSAL_DEBRIS: String = "EQUIP.UNIVERSAL_DEBRIS"
 const TEXT_EXP_MAXED: String = "经验已满"           # 源 addMaterial:278
 const TEXT_MATERIAL_USED_UP: String = "该材料已用完" # 源 addMaterial:285
-const PANEL_HEIGHT: float = 640.0
+const PANEL_HEIGHT: float = 560.0   # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（480+80）
 # 材料层滑入（源 createmtListLayer:407 runLayerAction 0.2s fade+move EaseSineOut）
 const MT_LAYER_SLIDE_OFFSET: float = 20.0
 const MT_LAYER_FADE_DUR: float = 0.2
@@ -232,7 +232,7 @@ static func play_addmt_anim(panel, idx: int) -> void:
 	ti.position = icon.position
 	ti.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.container.add_child(ti)
-	var end_pos: Vector2 = Vector2(ADDMT_END.x, PANEL_HEIGHT - ADDMT_END.y)
+	var end_pos: Vector2 = Vector2(ADDMT_END.x + 80.0, PANEL_HEIGHT - ADDMT_END.y)
 	var tw: Tween = panel.create_tween()
 	tw.tween_property(ti, "position", end_pos, ADDMT_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(ti, "scale", Vector2(ADDMT_SCALE, ADDMT_SCALE), ADDMT_DURATION)
@@ -251,7 +251,7 @@ static func play_add_exp_anim(panel, idx: int) -> void:
 	label.text = "+" + str(ehc)
 	label.add_theme_font_size_override("font_size", 24)
 	label.modulate = Color("65cfff")
-	label.position = Vector2(ADDEXP_POS.x, PANEL_HEIGHT - ADDEXP_POS.y)
+	label.position = Vector2(ADDEXP_POS.x + 80.0, PANEL_HEIGHT - ADDEXP_POS.y)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.container.add_child(label)
 	label.modulate.a = 0.0

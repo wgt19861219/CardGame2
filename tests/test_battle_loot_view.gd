@@ -19,8 +19,8 @@ func test_create_initial_position() -> void:
 	var layer := _make_layer()
 	var loot: BattleLootView = BattleLootView.create(null, "gold", monster, 1, 100, layer)
 	assert_not_null(loot, "loot 应创建")
-	# _update_physics_and_sync(0)：logic(100,0) + height 0 → view (100, 265)
-	assert_eq(loot.position, Vector2(100, 265), "初始位置 = to_view_position(100,0,0)")
+	# _update_physics_and_sync(0)：logic(100,0) + height 0 → to_godot(100,265)=(180,295)
+	assert_eq(loot.position, BattleViewCoords.to_view_position(100.0, 0.0, 0.0), "初始位置 = to_view_position(100,0,0)")
 	loot.queue_free()
 	layer.queue_free()
 
@@ -31,7 +31,7 @@ func test_update_advances_physics() -> void:
 	var loot: BattleLootView = BattleLootView.create(null, "gold", monster, 1, 100, layer)
 	loot.update(0.1)
 	# idx=1 → vel_x=100；vel_y=-100；vel_z=300；dt=0.1
-	# logic: x=110, y=-10；height=30；view = (110, 265+30-10) = (110, 285)
+	# logic: x=110, y=-10；height=30；view = to_godot(110,285) = (190,275)
 	var expected: Vector2 = BattleViewCoords.to_view_position(110.0, -10.0, 30.0)
 	assert_eq(loot.position, expected, "update 物理：x+10 / y-10 / height+30")
 	loot.queue_free()

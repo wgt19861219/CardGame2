@@ -36,7 +36,7 @@ const TEXT_DIAMOND_SHORT: String = "钻石不足"       # 源 upFastStren:706 to
 const TEXT_ENCHANT: String = "附魔"                 # 源 EQUIPSTRENGTHEN.ENCHANTING
 const TEXT_ONECLICK: String = "一键附魔"            # 源 EQUIPSTRENGTHEN.ONECLICK_ENCHANTING
 # --- P1-11 主背景层（源 :1995-2027 mainLayer ui_info：bg+frame+heroIcon）---
-const PANEL_HEIGHT: float = 640.0
+const PANEL_HEIGHT: float = 560.0   # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（=源高 480 + 80 居中边距，照 battle_view_coords.gd BASE_Y）
 const BG_RES: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 const BG_SIZE: Vector2 = Vector2(960.0, 640.0)   # 全屏背景
 const FRAME_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_frame.png"
@@ -110,9 +110,9 @@ func _create_background() -> void:
 	_add_bg(HERO_ICON_RES, _cocos_center_to_topleft(HERO_ICON_COCOS, HERO_ICON_SIZE), HERO_ICON_SIZE)
 
 
-# 源 anchor 0.5,0.5 pos=中心 → Godot Control 左上 = (x - w/2, PANEL_H - y - h/2)
+# 源 anchor 0.5,0.5 pos=中心 → Godot Control 左上。Cocos(800×480,左下)→Godot(960×640,左上)：X+80 居中，Y 翻(PANEL_HEIGHT=560)。
 func _cocos_center_to_topleft(cocos: Vector2, sz: Vector2) -> Vector2:
-	return Vector2(cocos.x - sz.x * 0.5, PANEL_HEIGHT - cocos.y - sz.y * 0.5)
+	return Vector2(cocos.x - sz.x * 0.5 + 80.0, PANEL_HEIGHT - cocos.y - sz.y * 0.5)
 
 
 func _add_bg(path: String, pos: Vector2, sz: Vector2) -> void:

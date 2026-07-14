@@ -96,7 +96,7 @@ func test_actor_position_syncs_to_view() -> void:
 	assert_eq(scene.actor_list.size(), 1, "单单位 → 1 actor")
 	var actor: Variant = scene.actor_list[0]
 	var expected: Vector2 = BattleViewCoords.to_view_position(float(p.position.x), float(p.position.y), float(p.height))
-	# p 无目标不会移动，position 稳定 (100,0) → view (100, 265)
+	# p 无目标不会移动，position 稳定 (100,0) → view to_godot(100,265)=(180,295)
 	assert_eq(actor.position, expected, "actor 位置 = to_view_position(model.position)")
 	scene.queue_free()
 
@@ -149,8 +149,8 @@ func test_actor_interp_lerps_between_ticks() -> void:
 	actor._interp_to = Vector2(100.0, 0.0)
 	actor._interp_alpha = 0.0
 	actor.update_view(0.0165)   # 半 tick（0.0165/0.033=0.5）→ lerp(80,100,0.5)=90
-	# view = to_view_position(90, 0, 0) = (90, 265)
-	assert_almost_eq(actor.position, Vector2(90.0, 265.0), Vector2(0.5, 0.5), "interp alpha≈0.5 → lerp(80,100)≈90 中点")
+	# view = to_view_position(90, 0, 0) = to_godot(90,265) = (170,295)
+	assert_almost_eq(actor.position, BattleViewCoords.to_view_position(90.0, 0.0, 0.0), Vector2(0.5, 0.5), "interp alpha≈0.5 → lerp(80,100)≈90 中点")
 	scene.queue_free()
 
 
@@ -183,7 +183,7 @@ func test_add_big_blood_panel_for_boss() -> void:
 	assert_eq(scene.ui_list.size(), 1, "Boss hpLayer=3 → BigHpBar 入 ui_list")
 	var panel: Variant = scene.ui_list[0]
 	assert_not_null(panel, "BigHpBar 实例应就位")
-	assert_eq(panel.position, Vector2(375.0, 440.0), "Boss 血条固定 (375,440)（源 :544）")
+	assert_eq(panel.position, BattleViewCoords.to_godot(375.0, 440.0), "Boss 血条固定 源 ccp(375,440)→Godot(455,120)")
 	scene.queue_free()
 
 

@@ -322,7 +322,7 @@ func _advance_ui_list(dt: float) -> void:
 func add_big_blood_panel(unit: Variant) -> void:
 	var panel: BattleBigHpBar = BattleBigHpBar.create(unit, _calculate_big_hp_length())
 	ui_layer.add_child(panel)
-	panel.position = Vector2(375.0, 440.0)   # 源 :544
+	panel.position = BattleViewCoords.to_godot(375.0, 440.0)   # 源 :544 ccp(375,440)→Godot
 	ui_list.append(panel)
 
 
@@ -353,7 +353,7 @@ func _create_return_button() -> void:
 		return_btn.queue_free()
 	var btn := TextureButton.new()
 	btn.texture_normal = load("res://assets/ui/alpha/HVGA/pausebtn.png") as Texture2D
-	btn.position = Vector2(757.0, 440.0)   # 源 :1190 ccp(757-ox, header_y)，ox/oy=0→440
+	btn.position = BattleViewCoords.to_godot(757.0, 440.0)   # 源 :1190 ccp(757,440)→Godot
 	btn.pressed.connect(_on_return_pressed)
 	ui_layer.add_child(btn)
 	return_btn = btn
@@ -541,7 +541,7 @@ func _create_heroes_panel() -> void:
 		heroes_panel.queue_free()
 	_hero_panels.clear()
 	heroes_panel = Control.new()
-	heroes_panel.position = Vector2(70.0, 5.0)   # 源 :1285 ccp(70,5)
+	heroes_panel.position = BattleViewCoords.to_godot(70.0, 5.0)   # 源 :1285 ccp(70,5)→Godot
 	ui_layer.add_child(heroes_panel)
 
 

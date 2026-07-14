@@ -357,7 +357,7 @@ func _create_floating_bars() -> void:
 	else:
 		# Boss：ShieldBoss 挂 ui_layer 固定位置（源 :1558-1562）
 		bar_shield = BattleFloatingBar.create(model, "ShieldBoss")
-		bar_shield.position = BOSS_BAR_POS
+		bar_shield.position = BattleViewCoords.to_godot(BOSS_BAR_POS.x, BOSS_BAR_POS.y)
 		bar_shield.scale.x = -1.0
 		if _ui_layer != null:
 			_ui_layer.add_child(bar_shield)

@@ -14,7 +14,6 @@ const EQUIP_DY: float = 72.0         # 源 dy 行间距
 const HALF: float = 0.5              # 中心定位偏移（icon.size*0.5，源 cocos 锚点 0.5/0.5 等价）
 const EMPTY_SLOT_SIZE: Vector2 = Vector2(70.0, 70.0)
 const SLOT_DIM_ALPHA: float = 75.0 / 255.0         # 源 selectEquip:1674 未选槽 alpha 75
-const PANEL_HEIGHT: float = 640.0
 const ATT_TOP: float = 380.0
 const ATT_LINE: float = 26.0
 const ATT_LEFT: float = 340.0
@@ -38,8 +37,8 @@ const MATERIAL_BG_NARROW_COCOS: Vector2 = Vector2(335.0, 120.0) # 源 :1965 ccp(
 const MATERIAL_BG_CAP: int = 10                      # 源 createScale9Sprite cap 10,10,...
 const TEXT_MATERIAL_HINT: String = "点击此处开启背包，任意装备都可附魔"  # 源 :1971 CLICK_HERE_TO_OPEN
 # 源 createAttList 四列定位（refreshAttListPos :1334-1364）
-const ATT_LIST_LEFT: float = 347.0     # 源 ox
-const ATT_LIST_TOP: float = 285.0      # 源 oy=355 → Godot 640-355
+const ATT_LIST_LEFT: float = 427.0     # 源 refreshAttListPos :1335 ox=347 → Godot to_godot X+80=427
+const ATT_LIST_TOP: float = 205.0      # 源 oy=355 → Godot to_godot 560-355=205
 const ATT_PRE_W: float = 70.0          # pre 列宽（源 content size 累加，估）
 const ATT_ATT_W: float = 50.0
 const ATT_ADD_W: float = 50.0
@@ -49,14 +48,14 @@ const NAME_BG_COCOS: Vector2 = Vector2(345.0, 415.0)   # 源 :1452
 const NAME_BG_SIZE: Vector2 = Vector2(200.0, 30.0)    # 估
 
 
-# 源 getEquipPos:1566-1575：2列3行（ix 列 / iy 行）。返 Godot 中心坐标（cocos→Godot y 翻转）。
+# 源 getEquipPos:1566-1575：2列3行（ix 列 / iy 行）。返 Godot 中心坐标，to_godot(cx+80, 560-cy)（全屏 Cocos 800×480 → Godot 960×640）。
 # i 是 0-based（本项目），源 1-based → ix=i%2, iy=i/2 等价源 (i-1)%2/floor((i-1)/2)。
 static func get_equip_pos(i: int) -> Vector2:
 	var ix: int = i % 2
 	var iy: int = int(i / 2)
 	var cocos_x: float = EQUIP_OX + EQUIP_DX * ix
 	var cocos_y: float = EQUIP_OY_COCOS - EQUIP_DY * iy
-	return Vector2(cocos_x, PANEL_HEIGHT - cocos_y)
+	return Vector2(cocos_x + 80.0, 560.0 - cocos_y)
 
 
 # 源 createEquip:1576-1638：6 槽循环，有装备 ReadequipIcon，无装备 Panel 占位。
@@ -170,7 +169,7 @@ static func _add_att_texture(panel, path: String, cocos_pos: Vector2, sz: Vector
 	var tr := TextureRect.new()
 	tr.texture = load(path)
 	tr.size = sz
-	tr.position = Vector2(cocos_pos.x, PANEL_HEIGHT - cocos_pos.y - sz.y * 0.5)   # 源 anchor 0,0.5
+	tr.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - sz.y * 0.5)   # Cocos→Godot：X+80，Y 翻 560（源 anchor 0,0.5）
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.set_meta("att", true)
@@ -195,7 +194,7 @@ static func show_material_bg(panel, slot: int) -> void:
 	if tex != null:
 		panel._material_bg.texture = tex
 	panel._material_bg.size = size
-	panel._material_bg.position = Vector2(cocos_pos.x, PANEL_HEIGHT - cocos_pos.y - size.y)
+	panel._material_bg.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - size.y)
 	if panel._material_label == null or not is_instance_valid(panel._material_label):
 		panel._material_label = Label.new()
 		panel._material_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -207,7 +206,7 @@ static func show_material_bg(panel, slot: int) -> void:
 	if narrow:
 		panel._material_label.text = TEXT_MAX_LEVEL if is_max_level_current(panel) else TEXT_MATERIAL_HINT
 		panel._material_label.size = Vector2(size.x, 30.0)
-		panel._material_label.position = Vector2(cocos_pos.x, PANEL_HEIGHT - cocos_pos.y - size.y * 0.5 - 15.0)
+		panel._material_label.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - size.y * 0.5 - 15.0)
 
 
 # 经验条（源 createExpBar:1109 精灵图，本项目 ProgressBar 适配）。

@@ -59,6 +59,12 @@ var _loot_icons: Array[Control] = []
 var _loot_targets: Array[Vector2] = []
 
 
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
+# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（AGAIN/CLOSE_BTN y=500 超 Cocos 480 边界为 Godot-native 不转）。
+func _g(pos: Vector2) -> Vector2:
+	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
 func setup_loot(loots: Array, p_cm: Variant, p_box_type: String = "") -> void:
 	box_type = p_box_type
 	_cm = p_cm
@@ -78,7 +84,7 @@ func _aggregate(loots: Array, p_cm: Variant) -> void:
 	for lid in agg:
 		var icon: Control = ReadequipIcon.create_icon(int(lid), int(agg[lid]), p_cm)
 		icon.scale = Vector2.ZERO
-		icon.position = BOX_BPOS
+		icon.position = _g(BOX_BPOS)
 		container.add_child(icon)
 		_loot_icons.append(icon)
 		_loot_targets.append(_loot_pos(idx, is_single))
@@ -87,10 +93,10 @@ func _aggregate(loots: Array, p_cm: Variant) -> void:
 
 func _loot_pos(index: int, is_single: bool) -> Vector2:
 	if is_single:
-		return SINGLE_POS
+		return _g(SINGLE_POS)
 	var col: int = index % GRID_COLS
 	var row: int = index / GRID_COLS
-	return Vector2(GRID_ORIGIN.x + GRID_CELL.x * col, GRID_ORIGIN.y + GRID_CELL.y * row)
+	return _g(Vector2(GRID_ORIGIN.x + GRID_CELL.x * col, GRID_ORIGIN.y + GRID_CELL.y * row))
 
 
 func _create_buttons() -> void:
@@ -177,7 +183,7 @@ func _play_box_anim() -> void:
 	if not BOX_FCA_MAP.has(box_type):
 		return
 	var fca := FcaAnimation.new()
-	fca.position = BOX_ANIM_POS
+	fca.position = _g(BOX_ANIM_POS)
 	container.add_child(fca)
 	var resource: String = BOX_FCA_MAP[box_type]
 	var ani_path: String = ANIM_BASE + resource + ".ani"
