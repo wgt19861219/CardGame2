@@ -283,7 +283,7 @@ func _build_status_bar() -> void:
 ## 常驻 UI：5 按钮（heroPackage/package/fragment/task/todoList）竖排 + 切换按钮 + 展开收起动画。
 func _build_shortcut() -> void:
 	var shortcut := ShortcutPanel.new()
-	shortcut.setup_panel()
+	shortcut.setup_panel(true)   # 照源 isShortcutOpen = identity=="main"（主界面默认展开）
 	shortcut.open_requested.connect(_on_shortcut_open)
 	add_child(shortcut)
 

@@ -20,7 +20,8 @@ const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0)   # 源 (900,440
 const BUTTON_CENTER_Y: Array[float] = [278.0, 353.0, 423.0, 498.0, 577.0]
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
 const ANIM_DUR: float = 0.12                    # 源 shortcut_board_pop_time
-const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)   # 源 ccc4(0,0,0,150)
+const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）
+const TOUCH_WIDTH: float = 100.0                # 源 shortcut_board_touch_width（out_board 检测宽）
 
 # ── 按钮 key + 资源（源 button_info :11-49）──
 const BUTTON_KEYS: Array[String] = ["heroPackage", "package", "fragment", "task", "todoList"]
@@ -55,20 +56,25 @@ var _tween: Tween = null
 
 # 源 createBoard（framework.lua scCreateBoard:256-332）+ createButtons（shortcut.lua:180-254）。
 # 初始收起（源 isShortcutOpen = identity=="main"；本项目独立面板默认收起）。
-func setup_panel() -> void:
+func setup_panel(open_initial: bool = false) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE   # 自身不吞，子节点（shade/board/button）各自 STOP 吞
 	_create_shade()
 	_create_board()
 	_create_toggle()
 	_create_buttons()
-	_apply_closed_instant()
+	if open_initial:
+		_apply_open_instant()   # 照源 isShortcutOpen = identity=="main"（主界面默认展开）
+	else:
+		_apply_closed_instant()
 
 
 func _create_shade() -> void:
 	_shade = ColorRect.new()
-	_shade.color = SHADE_COLOR
-	_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_shade.color = SHADE_COLOR   # 透明（源 out_board 无视觉，仅点击检测）
+	# 源 shortcut_board_rect = CCRectMake(board_pos.x - touch_w/2, 0, touch_w, 480)：右侧 board 区局部检测（非全屏 shade）
+	_shade.position = Vector2(BOARD_CENTER_X - TOUCH_WIDTH / 2.0, 0.0)
+	_shade.size = Vector2(TOUCH_WIDTH, SCREEN_H)
 	_shade.mouse_filter = Control.MOUSE_FILTER_STOP   # 展开时点 shade（=board 外）→ 收起
 	_shade.gui_input.connect(_on_shade_gui_input)
 	_shade.visible = false
@@ -163,6 +169,21 @@ func _on_close_finished() -> void:
 	_shade.visible = false
 	for key in _buttons:
 		(_buttons[key] as TextureButton).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+# 初始展开态（无动画，照源 isShortcutOpen=main）：板高 max，按钮竖排 opacity=1，up 可见 down 隐藏，shade 透明检测。
+func _apply_open_instant() -> void:
+	_is_open = true
+	_shade.visible = true
+	_toggle_down.visible = false
+	_toggle_up.visible = true
+	_board.size = Vector2(BOARD_WIDTH, BOARD_H_MAX)
+	for i in range(BUTTON_KEYS.size()):
+		var key: String = BUTTON_KEYS[i]
+		var btn: TextureButton = _buttons[key]
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.position = _center_to_topleft(Vector2(BOARD_CENTER_X, BUTTON_CENTER_Y[i]), btn)
+		btn.modulate.a = 1.0
 
 
 # 初始收起态（无动画）：按钮叠 origin opacity=0 + IGNORE，板高 min，down 可见 up 隐藏。
