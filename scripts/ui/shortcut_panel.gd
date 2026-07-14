@@ -11,13 +11,16 @@ extends Control
 
 const SCREEN_H: float = 640.0
 const BOARD_CENTER_X: float = 900.0             # 源 shortcut_pos_x
-const BOARD_TOP_Y: float = SCREEN_H - 460.0     # 源 shortcut_board_pos.y=460 → Godot 板顶 y=180（锚点 0.5,0）
+# 用户视觉偏好(2026-07-14):快捷栏"更上一点贴近顶部"。整个抽屉上移 100px(板顶 180→80 / toggle 200→100,底部留 100px 空白)。
+# 源 uires.lua shortcut_board_pos.y=460 / shortcut_pos_y=440(Cocos 960×640,源贴屏底)→ 偏离源,同 backbtn (113,88)→(20,15) 用户偏好先例。
+const BOARD_UP_OFFSET: float = -100.0           # 整个抽屉上移量(负=上,用户偏好;BUTTON_CENTER_Y 已含同 offset)
+const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶 180 + 上移 100 → 80
 const BOARD_WIDTH: float = 82.0                 # 源 shortcut_board_width
 const BOARD_H_MIN: float = 40.0                 # 源 shortcut_board_height_min（收起）
 const BOARD_H_MAX: float = 460.0                # 源 shortcut_board_height_max（展开）
-const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0)   # 源 (900,440) → Godot (900,200)
-# 源 shortcutBoardButtonPosY（已 +s_b_offset_y=-20）[362,287,217,142,63] → Godot y=640-y 翻转
-const BUTTON_CENTER_Y: Array[float] = [278.0, 353.0, 423.0, 498.0, 577.0]
+const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # 源 (900,200) + 上移 100 → (900,100)
+# 源 shortcutBoardButtonPosY（已 +s_b_offset_y=-20）[362,287,217,142,63] → Godot [278,353,423,498,577] + BOARD_UP_OFFSET(上移100) → [178,253,323,398,477]
+const BUTTON_CENTER_Y: Array[float] = [178.0, 253.0, 323.0, 398.0, 477.0]
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
 const ANIM_DUR: float = 0.12                    # 源 shortcut_board_pop_time
 const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）

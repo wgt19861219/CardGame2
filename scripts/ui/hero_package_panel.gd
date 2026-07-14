@@ -58,6 +58,7 @@ func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData =
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_create_close_button()
 	_create_bg()
 	_create_tabs()
 	_create_list_container()
@@ -190,8 +191,17 @@ func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 		_on_entry_clicked(entry)
 
 
-# hero_package 不自建 close：照源 heropackage 是 hero_scene 全屏场景内的面板，返回由 hero_scene 的 backbtn
-# （_build_back_button → _back_to_main change_scene 回主界面）处理；本面板无 shade 透明，hero_scene backbtn 透过显示。
+# backbtn 返回按钮（照源 framework statusbar 注入 backbtn）：hero_scene 是独立场景（change_scene 切入），
+# backbtn 直接 change_scene 回主界面 = 1 次返回。加 container 上（与其他大面板统一，避 hero_scene 兄弟层级遮挡）。
+func _create_close_button() -> void:
+	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
+	btn.pressed.connect(_on_close_pressed)
+	container.add_child(btn)
+
+
+func _on_close_pressed() -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	SceneManager.change_scene("res://scenes/main_menu/main_scene.tscn")
 
 
 # 碎片合成入口源 heropackage.lua 无（grep 确认只有 herosplit 分解 + classbtn tab，无 fragment），

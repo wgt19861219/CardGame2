@@ -65,6 +65,7 @@ const ROW_SEP: int = 8
 const CLOSE_POS: Vector2 = Vector2(880.0, 20.0)
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
+const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framework.lua:749 全屏背景
 const TITLE_MAIN_POS: Vector2 = Vector2(141.0, 20.0)
 const SCROLL_MAIN_POS: Vector2 = Vector2(141.0, 50.0)
 const SCROLL_MAIN_SIZE: Vector2 = Vector2(638.0, 140.0)
@@ -82,7 +83,24 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -
 	_cm = p_cm
 	_tm = p_tm
 	setup()
+	# 源 task 是 addChild 弹窗（framework.lua:644）透 main 场景地图，无全屏 bg.jpg；
+	# 此处加 bg.jpg 是用户统一视觉偏好（2026-07-14 反馈，与英雄包裹/背包一致），偏离源。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_create_fullscreen_bg()
 	_build_ui()
+
+
+# 全屏 bg.jpg 背景（源 framework.lua:749）。
+func _create_fullscreen_bg() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(FRAMEWORK_BG)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
 
 
 func _build_ui() -> void:

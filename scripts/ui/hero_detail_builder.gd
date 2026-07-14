@@ -165,13 +165,10 @@ static func create_action_button(parent: Control, label_text: String, godot_pos:
 	var btn: Button = UiScale9Button.make(DETAIL_N_RES, DETAIL_N_PRESS_RES, godot_pos - ACTION_BTN_SIZE * 0.5, ACTION_BTN_SIZE, DETAIL_N_CAP)
 	parent.add_child(btn)
 	if not label_text.is_empty():
-		var lbl := Label.new()
-		lbl.text = label_text
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
-		lbl.add_theme_color_override("font_color", Color.BLACK)
-		lbl.add_theme_color_override("font_outline_color", Color.WHITE)
-		lbl.add_theme_constant_override("outline_size", 2)
-		btn.add_child(lbl)
+		btn.text = label_text   # Button.text 自描述（可测）+ theme override 等价子 Label 视觉（BLACK 字 WHITE 描边）
+		btn.add_theme_color_override("font_color", Color.BLACK)
+		btn.add_theme_color_override("font_outline_color", Color.WHITE)
+		btn.add_theme_constant_override("outline_size", 2)
 	return btn
 
 

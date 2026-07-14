@@ -5,8 +5,6 @@ extends "res://scenes/base_ui.gd"
 ## 照源 heropackage（英雄背包面板，listButton 分类 + createHeroList）；本项目单机化场景容器 + PopWindow 弹窗。
 ## View 纯 UI：场景容器，业务在 HeroPackagePanel/HeroDetailPanel（PopWindow）+ HeroManager（Logic）。
 
-const BACK_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角（与其他 backbtn 面板统一）
-const BACK_BTN_SIZE: Vector2 = Vector2(90.0, 32.0)
 const BG_TEXTURE: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framework.lua:749 全屏背景
 # P1-2026-07-10：补全未 preload 的 class_name 类（消除跨脚本强引用）
 const HeroPackagePanel = preload("res://scripts/ui/hero_package_panel.gd")
@@ -14,7 +12,6 @@ const HeroPackagePanel = preload("res://scripts/ui/hero_package_panel.gd")
 
 func _ready() -> void:
 	_create_bg()   # 全屏 bg.jpg（照 framework.lua:749-751，非 main 场景底层背景）
-	_build_back_button()
 	_open_hero_package()
 	setup(Events.bus)
 
@@ -29,19 +26,6 @@ func _create_bg() -> void:
 	bg.size = get_viewport_rect().size
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-
-
-## 顶部返回按钮（回主界面）。
-func _build_back_button() -> void:
-	# backbtn 图（照源 statusbar backbtn，与其他大面板统一），替原文字"← 返回"降级
-	var btn: TextureButton = UiButton.make_at("res://assets/ui/alpha/HVGA/backbtn.png", "res://assets/ui/alpha/HVGA/backbtn-disabled.png", BACK_BTN_POS)
-	btn.z_index = 10   # 透过 hero_package（无 shade）显示在上层
-	btn.pressed.connect(_back_to_main)
-	add_child(btn)
-
-
-func _back_to_main() -> void:
-	SceneManager.change_scene("res://scenes/main_menu/main_scene.tscn")
 
 
 ## 弹英雄背包面板（照源 heropackage.create）：列表选英雄 → HeroDetailPanel（装备/强化/技能升级）。

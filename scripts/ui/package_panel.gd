@@ -35,6 +35,7 @@ const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png
 
 # ── 资源 ──
 const BG_PATH: String = "res://assets/ui/alpha/HVGA/package_equip_bg.png"
+const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framework.lua:749 全屏背景（pushScene 场景）
 
 signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
 
@@ -63,6 +64,12 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	_tabs = TABS_PACKAGE if _identity == IDENTITY_PACKAGE else TABS_FRAGMENT
 	_both = EquipmentClassifier.classify(pd, cm)
 	setup()
+	# package/fragment 源是 pushScene 独立场景（framework.lua:615/628），有 framework bg.jpg 全屏背景；
+	# 本项目单机化用 PopWindow 弹窗替代 pushScene，故 shade 透明 + 补全屏 bg.jpg 还原源视觉。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_create_fullscreen_bg()
 	_create_bg()
 	_create_close_button()
 	_create_tab_buttons()
@@ -70,6 +77,17 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	_select_tab("all")
 	cell_clicked.connect(_on_cell_clicked)
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+
+
+# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（package/fragment 源是独立场景）。
+func _create_fullscreen_bg() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(FRAMEWORK_BG)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
 
 
 func _create_bg() -> void:
