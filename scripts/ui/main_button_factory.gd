@@ -18,6 +18,9 @@ const TITLE_OFFSET_Y: float = 25.0    # 源 createMainFca:443 pos.y - 25（title
 const DEFAULT_RADIUS: float = 56.0    # 无 radius 字段的默认触摸半径
 const GapLoopAnimator = preload("res://scripts/ui/gap_loop_animator.gd")
 const RoundButton = preload("res://scripts/ui/round_button.gd")
+const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
+const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
+const FCA_ANI_DIR: String = "res://assets/anim_frames/effect/"   # eff_UI_*.ani FCA 序列帧目录
 
 
 ## 建入口按钮（照源 createMainButton + createMainFca）。e = ENTRIES 条目，on_pressed = 点击回调，is_locked = 未解锁灰显。
@@ -37,7 +40,7 @@ static func make_entry(e: Dictionary, on_pressed: Callable, is_locked: bool) -> 
 		btn.modulate.a = LOCKED_ALPHA
 	btn.pressed.connect(on_pressed)
 	_add_press(btn, e)   # 光效最底层（源 press z=0，先 addChild 在 Spine/title 之下）
-	var sk: SpineSkeleton = _add_spine(btn, e)
+	var sk: Node2D = _add_spine(btn, e)
 	_add_title(btn, String(e["title"]))
 	_add_gap_loop(btn, sk, e)
 	return btn
@@ -71,26 +74,44 @@ static func _add_press(btn: Button, e: Dictionary) -> void:
 
 # Spine 动画图标（照源 ui/main.lua:413 createFcaNode aniType=1 + setAction Loop）。
 # load_skeleton 失败（starshop Shop_Star spine/ 无资源，源走 FCA）静默降级（返 null）。
-static func _add_spine(btn: Button, e: Dictionary) -> SpineSkeleton:
+static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
 	if not e.has("res"):
 		return null
-	var sk := SpineSkeleton.new()
 	var sk_scale: float = float(e.get("scale", 1.0))
+	var sk := SpineSkeleton.new()
 	sk.scale = Vector2(sk_scale, sk_scale)   # load_skeleton:37 自动翻 y（Spine y 上 → Godot y 下）
 	btn.add_child(sk)
-	if not sk.load_skeleton(SPINE_DIR + "/" + String(e["res"]), String(e["res"])):
-		sk.queue_free()
+	if sk.load_skeleton(SPINE_DIR + "/" + String(e["res"]), String(e["res"])):
+		sk.position = Vector2(btn.size.x * 0.5, btn.size.y * 0.5)   # Button 中心 = 源按钮 pos（CCSprite 中心点）
+		sk.play(LOOP_ACTION, true)
+		return sk
+	sk.queue_free()
+	# Spine 资源缺 → FCA fallback（源 aniType 未传走 FCA .ani，如 Shop_Star 星际商店）
+	return _add_fca(btn, String(e["res"]), sk_scale)
+
+
+# FCA 序列帧 fallback（Spine 资源缺的入口，照源 createFcaNode aniType 未传路径）。
+static func _add_fca(btn: Button, res: String, sk_scale: float) -> Node2D:
+	var atlas := AtlasSprite.new()
+	if not atlas.load_atlas_from_ani(FCA_ANI_DIR + res + ".ani"):
+		atlas.queue_free()
 		return null
-	sk.position = Vector2(btn.size.x * 0.5, btn.size.y * 0.5)   # Button 中心 = 源按钮 pos（CCSprite 中心点）
-	sk.play(LOOP_ACTION, true)
-	return sk
+	var fca := FcaAnimation.new()
+	if not fca.load_from_ani("effect/" + res, atlas):
+		fca.queue_free()
+		return null
+	fca.scale = Vector2(sk_scale, sk_scale)
+	btn.add_child(fca)
+	fca.position = Vector2(btn.size.x * 0.5, btn.size.y * 0.5)
+	fca.play(LOOP_ACTION, true)
+	return fca
 
 
 # gap/loop 间隙动画（照源 createMainFca:446-471）。e["gap"] = [gap_min, gap_max, loop_gap, loop_times_min, loop_times_max]。
 # starshop spine/ 无资源 sk=null → 不挂 animator（数据照源，运行时降级）。
-static func _add_gap_loop(btn: Button, sk: SpineSkeleton, e: Dictionary) -> void:
-	if sk == null or not e.has("gap"):
-		return
+static func _add_gap_loop(btn: Button, sk: Node2D, e: Dictionary) -> void:
+	if sk == null or not (sk is SpineSkeleton) or not e.has("gap"):
+		return   # FCA(FcaAnimation)自带 Loop 动画，不挂 gap_loop
 	var g: Array = e["gap"]
 	var anim := GapLoopAnimator.new()
 	btn.add_child(anim)
