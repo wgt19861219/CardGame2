@@ -96,8 +96,11 @@ func get_region_texture(region_name: String) -> Texture2D:
 	var rotate: bool = r["rotate"]
 	if sz.x <= 0 or sz.y <= 0:
 		return null
-	var godot_y: int = _sheet_size.y - xy.y - sz.y
-	var rect: Rect2i = Rect2i(xy.x, godot_y, sz.x, sz.y)
+	# rotate region 在图集里按旋转后宽高存储（宽高 swap），取 region 用存储朝向，rotate_90 转回原朝向 sz
+	var stored_w: int = int(sz.y) if rotate else int(sz.x)
+	var stored_h: int = int(sz.x) if rotate else int(sz.y)
+	var godot_y: int = _sheet_size.y - xy.y - stored_h
+	var rect: Rect2i = Rect2i(xy.x, godot_y, stored_w, stored_h)
 	var img: Image = _sheet_image.get_region(rect)
 	if rotate:
 		img.rotate_90(1)
