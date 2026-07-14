@@ -82,7 +82,7 @@ func _build_nodes() -> void:
 			_bone_nodes[bone_name].add_child(sprite)
 		var col: Color = SpineSkeletonData.parse_color_hex(String(slot["color"]))
 		sprite.modulate = col
-		_slot_sprites.append({"sprite": sprite, "slot_name": slot_name, "setup_color": col})
+		_slot_sprites.append({"sprite": sprite, "slot_name": slot_name, "setup_color": col, "default_att": String(slot["attachment"])})
 
 
 func play(action: String, loop: bool = true) -> void:
@@ -161,12 +161,36 @@ func _apply(t: float) -> void:
 	var slots_anim: Dictionary = anim.get("slots", {})
 	for sn in slots_anim:
 		var sa: Dictionary = slots_anim[sn]
-		if not sa.has("color"):
+		var has_att: bool = sa.has("attachment")
+		var has_col: bool = sa.has("color")
+		if not has_att and not has_col:
 			continue
-		var col: Color = _interp_color(sa["color"], t)
+		var target_att: String = ""
+		var att_set: bool = false
+		if has_att:
+			var default_att: String = ""
+			for e in _slot_sprites:
+				if String(e["slot_name"]) == String(sn):
+					default_att = String(e.get("default_att", ""))
+					break
+			target_att = _slot_attachment_at(sa["attachment"], t, default_att)
+			att_set = true
+		var col: Color = Color.WHITE
+		if has_col:
+			col = _interp_color(sa["color"], t)
 		for e in _slot_sprites:
 			if String(e["slot_name"]) == String(sn):
-				(e["sprite"] as Sprite2D).modulate = col
+				var sp: Sprite2D = e["sprite"]
+				if att_set:
+					if target_att.is_empty():
+						sp.visible = false
+					else:
+						var tex: Texture2D = _atlas.get_region_texture(target_att)
+						if tex != null:
+							sp.texture = tex
+						sp.visible = true
+				if has_col:
+					sp.modulate = col
 
 
 func _get_action_duration(action: String) -> float:
@@ -272,3 +296,22 @@ func _interp_color(timeline: Array, t: float) -> Color:
 	var c0: Color = SpineSkeletonData.parse_color_hex(String(timeline[k["i0"]].get("color", "ffffffff")))
 	var c1: Color = SpineSkeletonData.parse_color_hex(String(timeline[k["i1"]].get("color", "ffffffff")))
 	return c0.lerp(c1, float(k["alpha"]))
+
+
+# Spine slot attachment timeline（序列帧切换）：找 t 时刻该 slot 显示的 attachment 名。
+# timeline = [{time, name}]，name=null/空=隐藏，name=附件名=显示。t < 首帧 time 时用 slot 默认 attachment。
+func _slot_attachment_at(timeline: Array, t: float, default_att: String) -> String:
+	if timeline.is_empty():
+		return default_att
+	var first_time: float = float(timeline[0].get("time", 0.0))
+	if t < first_time:
+		return default_att   # t 在首帧之前，用 slot 默认 attachment
+	var last_name: String = ""
+	for i in timeline.size():
+		var frame: Dictionary = timeline[i]
+		if float(frame.get("time", 0.0)) <= t:
+			var n: Variant = frame.get("name", null)
+			last_name = "" if n == null else String(n)
+		else:
+			break
+	return last_name

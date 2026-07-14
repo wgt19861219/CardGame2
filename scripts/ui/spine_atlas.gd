@@ -6,6 +6,7 @@ extends RefCounted
 ## 照源 createFcaNode（resource_manager.lua:573）Spine 分支的图集加载，纯 Godot 适配。
 
 var _regions: Dictionary = {}    # region_name -> {xy: Vector2i, size: Vector2i, rotate: bool, orig, offset}
+var _region_cache: Dictionary = {}   # region_name -> ImageTexture（get_region_texture 缓存，避免每帧重建）
 var _sheet_image: Image = null
 var _sheet_size: Vector2i = Vector2i.ZERO
 var _loaded: bool = false
@@ -88,6 +89,8 @@ func _parse_vec2i(s: String) -> Vector2i:
 
 ## 取 region 纹理（atlas xy 左下 → Godot 左上：godot_y = sheet_h - xy_y - size_h）。
 func get_region_texture(region_name: String) -> Texture2D:
+	if _region_cache.has(region_name):
+		return _region_cache[region_name]
 	if not _regions.has(region_name) or _sheet_image == null:
 		return null
 	var r: Dictionary = _regions[region_name]
@@ -104,7 +107,9 @@ func get_region_texture(region_name: String) -> Texture2D:
 	var img: Image = _sheet_image.get_region(rect)
 	if rotate:
 		img.rotate_90(1)
-	return ImageTexture.create_from_image(img)
+	var tex: Texture2D = ImageTexture.create_from_image(img)
+	_region_cache[region_name] = tex
+	return tex
 
 
 func get_region_size(region_name: String) -> Vector2:
