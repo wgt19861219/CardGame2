@@ -45,6 +45,11 @@ const GS_LABEL_COLOR: Color = Color(146.0 / 255.0, 0.0, 4.0 / 255.0)   # 源 ccc
 const GS_LABEL_FONT_SIZE: int = 18                          # 源 size 18
 const GS_POP_SCALE: float = 1.2                             # 源 ScaleTo(0.2,1.2)
 const GS_POP_DURATION: float = 0.2                          # 源 0.2s
+# 源 createBottomButtons（window.lua:1395-1663）三 tab：detail(属性)/card(图鉴)/skill(技能)。
+const TAB_DETAIL: String = "detail"   # 源 doClickDetail → setOpenMode("att") 属性层
+const TAB_CARD: String = "card"       # 源 doClickCard → setOpenMode("card") 图鉴层
+const TAB_SKILL: String = "skill"     # 源 doClickSkill → setOpenMode("skill") 技能层
+const DEFAULT_TAB: String = TAB_SKILL   # 默认 skill（保持现有测试：技能槽默认渲染进 container）
 
 var hero: HeroInstance = null
 var cm: Variant = null
@@ -53,6 +58,8 @@ var pd: PlayerData = null
 var _desc_label: Label = null   # 当前技能描述 Label（null 无，源 destroyDescBoard）
 var _gs_label: Label = null     # GS 战斗力 Label（源 ui.gs createInfoBoard:1254-1268）
 var _pre_gs: int = -1           # 源 pregs（上次显示 gs，refreshgsAfterWear:172/175 比对）
+var _current_tab: String = ""   # 当前激活 tab（源 self.openMode：nil/att/card/skill）
+var _tab_buttons: Dictionary = {}   # tab_key → Button（源 ui.detail/card/skill）
 
 
 func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null, p_pd: PlayerData = null) -> void:
@@ -64,23 +71,25 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	_build_content()
 
 
-# 建 UI 内容（close + 属性/GS/装备/技能 + 升星/分解/强化）。setup_panel 与 refresh_content 共用。
-func _build_content() -> void:
+# 建 UI 内容。base（背景/立绘/星级/名字/close/GS/装备/动作按钮/底栏 tab）常驻 +
+# 当前 tab 内容（detail=属性 / card=图鉴 / skill=技能）。setup_panel 与 refresh_content 共用。
+# 源 createWindow（window.lua:2384-2396）base 常显 + setOpenMode 开 tab overlay。
+func _build_content(tab: String = DEFAULT_TAB) -> void:
 	HeroDetailBuilder.create_background(container)
 	HeroDetailBuilder.create_portrait(container, hero, cm)
 	HeroDetailBuilder.create_name_board(container, hero, cm)
 	HeroDetailBuilder.create_stars(container, hero.stars)
 	_create_close_button()
-	_show_attributes()
 	_show_gs()
 	_show_equips()
-	_show_skills()
 	_create_action_button("升星", EVOLVE_BTN_POS, evolve_requested, "common_click_feedback", true)   # 源 heroDetail.clickUpgrade（soundres.lua:217）
 	_create_action_button("进阶", UPGRADE_RANK_BTN_POS, upgrade_rank_requested, "common_click_feedback", false)   # 源 hero_upgrade（:867-901 rank+1）
 	# 分解按钮单独建（照源 herosplit:88 firstConfirm 二次确认，_create_action_button 第3参 Signal 不兼容 Callable）。
 	var split_btn: Button = HeroDetailBuilder.create_action_button(container, "分解", SPLIT_BTN_POS, false)
 	split_btn.pressed.connect(_on_split_pressed)
 	_create_strengthen_button()   # 强化 → 弹 EquipStrengthenPanel（源独立面板，本项目从 HeroDetailPanel 进）
+	_create_tab_bar()             # 源 createBottomButtons（:2384）底栏 detail/card/skill 三 tab
+	_show_tab_content(tab)
 
 
 ## 升星/技能升级后刷新内容（数据变 → 重建 UI）。call_deferred 避信号处理中 free 按钮自身崩。
@@ -89,9 +98,11 @@ func refresh_content() -> void:
 
 
 func _rebuild_content() -> void:
+	var saved_tab: String = _current_tab if _current_tab != "" else DEFAULT_TAB
 	for c in container.get_children():
 		c.free()
-	_build_content()
+	_desc_label = null   # 旧 desc label 已 free，清引用
+	_build_content(saved_tab)
 
 
 func _create_close_button() -> void:
@@ -101,7 +112,7 @@ func _create_close_button() -> void:
 		remove_window())
 
 
-# 源 getHeroAtt：base/add/all → "key: all (+add)"
+# 源 getHeroAtt：base/add/all → "key: all (+add)"。detail tab 内容（源 att 属性层）。
 func _show_attributes() -> void:
 	if hero == null:
 		return
@@ -113,7 +124,7 @@ func _show_attributes() -> void:
 			var lbl := Label.new()
 			lbl.text = key + ": " + str(int(row["all"])) + " (+" + str(int(row["add"])) + ")"
 			lbl.position = Vector2(LIST_LEFT, y)
-			container.add_child(lbl)
+			_add_tab_child(lbl)
 			y -= LINE_HEIGHT
 
 
@@ -251,19 +262,19 @@ func _show_skills() -> void:
 		var name_lbl := Label.new()
 		name_lbl.text = display_name
 		name_lbl.position = Vector2(SKILL_LEFT, y)
-		container.add_child(name_lbl)
+		_add_tab_child(name_lbl)
 		if locked:   # 源 createSkillUnlockLabel :442 未解锁
 			var unlock_lbl := Label.new()
 			unlock_lbl.text = "rank " + str(unlock_rank) + " 解锁"
 			unlock_lbl.position = Vector2(SKILL_LEFT + SKILL_LVL_OFFSET, y)
-			container.add_child(unlock_lbl)
+			_add_tab_child(unlock_lbl)
 		else:   # 已解锁 → 等级 + 升级按钮
 			var cur_level: int = int(hero.skill_levels[i]) if i < hero.skill_levels.size() else 1
 			var show_level: int = cur_level - init_level + 1
 			var lvl_lbl := Label.new()
 			lvl_lbl.text = "lv." + str(show_level)
 			lvl_lbl.position = Vector2(SKILL_LEFT + SKILL_LVL_OFFSET, y)
-			container.add_child(lvl_lbl)
+			_add_tab_child(lvl_lbl)
 			_create_skill_upgrade_button(i, Vector2(SKILL_LEFT + SKILL_UPGRADE_BTN_OFFSET, y))
 
 
@@ -280,7 +291,7 @@ func _create_skill_icon(icon_res: String, y: float, locked: bool, slot: int) -> 
 		frame.position = Vector2(SKILL_ICON_LEFT, y)
 		if locked:
 			frame.modulate = SKILL_GRAY_MODULATE
-		container.add_child(frame)
+		_add_tab_child(frame)
 	var btn := TextureButton.new()
 	btn.texture_normal = tex
 	btn.texture_hover = tex
@@ -291,7 +302,7 @@ func _create_skill_icon(icon_res: String, y: float, locked: bool, slot: int) -> 
 		btn.modulate = SKILL_GRAY_MODULATE
 	btn.pressed.connect(func() -> void: _toggle_skill_desc(slot))
 	btn.set_meta(&"skill_icon", true)   # 标记技能图标（测试区分 vs close/action 按钮图）
-	container.add_child(btn)
+	_add_tab_child(btn)
 
 
 func _create_skill_upgrade_button(idx: int, pos: Vector2) -> void:
@@ -302,7 +313,7 @@ func _create_skill_upgrade_button(idx: int, pos: Vector2) -> void:
 	btn.pressed.connect(func() -> void:
 		Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
 		upgrade_skill_requested.emit(idx))
-	container.add_child(btn)
+	_add_tab_child(btn)
 
 
 # 源 UI 路径 "UI/ITEM/s10.jpg" → res://assets/ui/ITEM/s10.jpg（仿 readhero_icon.gd:81 Portrait 映射）。
@@ -337,7 +348,7 @@ func _toggle_skill_desc(slot: int) -> void:
 	lbl.add_theme_font_size_override("font_size", 13)
 	if not growth.is_empty():
 		lbl.modulate = SKILL_GROWTH_COLOR
-	container.add_child(lbl)
+	_add_tab_child(lbl)
 	lbl.set_meta("slot", slot)
 	_desc_label = lbl
 
@@ -346,6 +357,58 @@ func _hide_skill_desc() -> void:
 	if _desc_label != null:
 		_desc_label.queue_free()
 		_desc_label = null
+
+
+# ---- 底栏 tab 切换（源 createBottomButtons + setOpenMode/doClickDetail/Card/Skill）----
+
+# 标记 tab 内容子节点（切 tab 时 free 这些，base/装备/动作按钮/tab 栏保留）。
+func _add_tab_child(node: Node) -> void:
+	node.set_meta(&"tab_content", true)
+	container.add_child(node)
+
+
+# 源 createBottomButtons（window.lua:1395-1663）：建 detail/card/skill 三 Scale9 tab 按钮 + 连 pressed。
+# 标签照源 :1468/:1545/:1622 LSTR（HERODETAIL.DETAILED_PROPERTIES / ILLUSTRATIONS / TODOLIST.SKILLS_UPGRADING）。
+func _create_tab_bar() -> void:
+	var labels: Dictionary = {
+		TAB_DETAIL: cm.get_lstr("HERODETAIL.DETAILED_PROPERTIES") if cm != null else "详细属性",
+		TAB_CARD: cm.get_lstr("HERODETAIL.ILLUSTRATIONS") if cm != null else "图鉴",
+		TAB_SKILL: cm.get_lstr("TODOLIST.SKILLS_UPGRADING") if cm != null else "技能升级",
+	}
+	_tab_buttons = HeroDetailBuilder.create_tab_bar(container, labels, DEFAULT_TAB)
+	for key in _tab_buttons:
+		var btn: Button = _tab_buttons[key]
+		btn.pressed.connect(_on_tab_pressed.bind(key))
+
+
+# 源 doClickDetail/Card/Skill（window.lua:454/519/391）：点 tab → setOpenMode（切 view + 选中态）。
+func _on_tab_pressed(key: String) -> void:
+	AudioPlayer.play_sfx("common_click_feedback")   # 源 tab 点击反馈
+	if _current_tab == key:
+		return   # 源 setOpenMode :325-327 同 mode return（不重复切）
+	_show_tab_content(key)
+
+
+# 源 setOpenMode（window.lua:318-367）：清旧 layer → 开新 layer + 切选中态。
+func _show_tab_content(key: String) -> void:
+	_clear_tab_content()
+	_current_tab = key
+	HeroDetailBuilder.set_tab_selected(_tab_buttons, key)
+	match key:
+		TAB_DETAIL:
+			_show_attributes()
+		TAB_CARD:
+			HeroDetailBuilder.create_card_view(container, hero, cm)
+		TAB_SKILL:
+			_show_skills()
+
+
+# 清当前 tab 内容（源 destroyAttLayer/SkillLayer/CardLayer）。base + tab 栏 + 装备槽保留。
+func _clear_tab_content() -> void:
+	_desc_label = null   # desc label 可能被 free，先清引用
+	for c in container.get_children():
+		if c.has_meta("tab_content"):
+			c.free()
 
 
 # ---- 信号→Logic 便捷封装（调用方接信号后调，或直调）----
