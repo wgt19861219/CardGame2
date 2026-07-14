@@ -66,7 +66,7 @@ func _build_ui() -> void:
 	bg.texture = load("res://assets/ui/alpha/HVGA/bg.jpg")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT); add_child(bg)
 	# 返回按钮
-	var back: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, Vector2(113.0, 88.0))  # 源 statusbar.lua:168 backbtn 中心 ccp(70,435) → 左上(113,88)
+	var back: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, Vector2(20.0, 15.0))  # 左上角留小边（用户偏好更靠左上角）
 	back.pressed.connect(_on_back_pressed); add_child(back)
 	# 分类 tab
 	var tab_box := HBoxContainer.new(); tab_box.position = Vector2(10, 50); tab_box.size = Vector2(400, 30)

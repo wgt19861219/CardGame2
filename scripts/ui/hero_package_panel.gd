@@ -26,7 +26,7 @@ const LABEL_CENTER_OFFSET: Vector2 = Vector2(20.0, 10.0)   # label 居中估算�
 const LIST_TOPLEFT: Vector2 = Vector2(135.0 + OFFSET_X + 80.0, 560.0 - 45.0 - 348.0)
 const LIST_SIZE: Vector2 = Vector2(500.0, 348.0)
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 refreshHeroList getpos 260 间距 / 100 行高
-const CLOSE_BTN_POS: Vector2 = Vector2(113.0, 88.0)  # 源 statusbar.lua:168 backbtn 中心 ccp(70,435) → 左上(113,88)
+const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 const FRAG_BTN_POS: Vector2 = Vector2(700.0, 50.0)
@@ -62,7 +62,6 @@ func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData =
 	_create_tabs()
 	_create_list_container()
 	_create_close_button()
-	_create_fragment_button()
 	_classify_heroes()
 	_refresh_list()
 
@@ -199,20 +198,8 @@ func _create_close_button() -> void:
 	container.add_child(btn)
 
 
-func _create_fragment_button() -> void:
-	var btn := Button.new()
-	btn.text = "碎片合成"
-	btn.position = FRAG_BTN_POS
-	btn.size = Vector2(90, 40)
-	btn.pressed.connect(_open_fragment_list)
-	container.add_child(btn)
-
-
-func _open_fragment_list() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	var panel := FragmentListPanel.new("fragmentlist", {})
-	panel.setup_panel(cm, pd)
-	panel.show_window(get_parent())
+# 碎片合成入口源 heropackage.lua 无（grep 确认只有 herosplit 分解 + classbtn tab，无 fragment），
+# 照源去掉占位按钮（2026-07-14 用户验收反馈）。碎片列表从装备板 equipboard ofpackage 进。
 
 
 # 源 doClickInHeroLayer（:144-247）：clickHero 已拥有→detail；clickMissHero 未拥有→召唤/碎片详情。

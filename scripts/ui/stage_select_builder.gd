@@ -59,7 +59,7 @@ static func create_background(container: Control) -> void:
 
 
 static func create_close_button(container: Control, on_close: Callable) -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS, Vector2(113.0, 88.0))  # 源 statusbar.lua:168 backbtn 中心 ccp(70,435) → 左上(113,88)
+	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS, Vector2(20.0, 15.0))  # 左上角留小边（用户偏好更靠左上角）
 	btn.pressed.connect(on_close)
 	container.add_child(btn)
 

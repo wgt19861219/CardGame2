@@ -17,7 +17,7 @@ signal jump_to_stage(stage_id: int)   # P1-10：获取途径跳转（源 doClick
 # ── 坐标常量（源 cocos 值）──────────────────────────────────────────
 const CRAFT_WINDOW_POS: Vector2 = Vector2(548.0, 240.0)   # 源 createCraftWindow :1258 进场后
 const EQUIP_LAYER_POS: Vector2 = Vector2(252.0, 240.0)    # 源 equipLayer.ui.frame :1256 进场后
-const CLOSE_BTN_POS: Vector2 = Vector2(113.0, 88.0)  # 源 statusbar.lua:168 backbtn 中心 ccp(70,435) → 左上(113,88)
+const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
 const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"

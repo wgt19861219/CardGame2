@@ -9,7 +9,7 @@ extends PopWindow
 ## 单机化：从 HeroDetailPanel 进（hero 已定），跳过源选英雄流程（doChangeHero:1720）。
 
 # 主类布局/cost 按钮 const（Att/Material/Anim 各持自己的 const）
-const CLOSE_BTN_POS: Vector2 = Vector2(113.0, 88.0)  # 源 statusbar.lua:168 backbtn 中心 ccp(70,435) → 左上(113,88)
+const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
 const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
