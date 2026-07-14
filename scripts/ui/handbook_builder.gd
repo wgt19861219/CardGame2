@@ -101,7 +101,8 @@ static func create_back_button(parent: Control) -> TextureButton:
 	btn.texture_normal = load(BACK_RES) as Texture2D
 	btn.texture_pressed = load("res://assets/ui/alpha/HVGA/backbtn-disabled.png") as Texture2D
 	btn.ignore_texture_size = true
-	btn.position = to_godot(BACK_COCOS.x, BACK_COCOS.y) - _tex_size(BACK_RES) * 0.5
+	btn.size = _tex_size(BACK_RES)
+	btn.position = to_godot(BACK_COCOS.x, BACK_COCOS.y) - btn.size * 0.5
 	parent.add_child(btn)
 	return btn
 

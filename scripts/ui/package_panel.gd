@@ -28,10 +28,10 @@ const TAB_SIZE: Vector2 = Vector2(90.0, 50.0)
 const SCROLL_POS: Vector2 = Vector2(355.0, 35.0)          # 源 :353 cliprect (355,35,295,355)
 const SCROLL_SIZE: Vector2 = Vector2(295.0, 355.0)
 const GRID_COLUMNS: int = 4                               # 源 4 列（refreshList :258）
-const CLOSE_BTN_POS: Vector2 = Vector2(850.0, 590.0)
+const CLOSE_BTN_POS: Vector2 = Vector2(800.0, 50.0)
 const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
+const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
+const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 
 # ── 资源 ──
 const BG_PATH: String = "res://assets/ui/alpha/HVGA/package_equip_bg.png"

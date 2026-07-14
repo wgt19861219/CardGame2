@@ -27,6 +27,8 @@ const LIST_TOPLEFT: Vector2 = Vector2(135.0 + OFFSET_X + 80.0, 560.0 - 45.0 - 34
 const LIST_SIZE: Vector2 = Vector2(500.0, 348.0)
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 refreshHeroList getpos 260 间距 / 100 行高
 const CLOSE_BTN_POS: Vector2 = Vector2(800.0, 50.0)
+const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
+const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 const FRAG_BTN_POS: Vector2 = Vector2(700.0, 50.0)
 const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"   # 源 prepareLoad :403
 const LIST_LINE_LABEL: String = "尚未召唤的英雄"   # 源 :407 LSTR("HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED")
@@ -190,12 +192,9 @@ func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 		_on_entry_clicked(entry)
 
 
-# 残留：close/碎片按钮文字降级（common_tips_button_close.png 资源缺，后续统一纹理化）。
+# 大面板返回箭头 backbtn（照源 hero_package 从 hero_scene 进，返回语义，同 crusade/equip_craft/tavern 等大面板；backbtn.png 74×75 纹理原尺寸）。
 func _create_close_button() -> void:
-	var btn := Button.new()
-	btn.text = "关闭"
-	btn.position = CLOSE_BTN_POS
-	btn.size = Vector2(80, 40)
+	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
 	btn.pressed.connect(remove_window)
 	container.add_child(btn)
 
