@@ -61,7 +61,6 @@ func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData =
 	_create_bg()
 	_create_tabs()
 	_create_list_container()
-	_create_close_button()
 	_classify_heroes()
 	_refresh_list()
 
@@ -191,11 +190,8 @@ func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 		_on_entry_clicked(entry)
 
 
-# 大面板返回箭头 backbtn（照源 hero_package 从 hero_scene 进，返回语义，同 crusade/equip_craft/tavern 等大面板；backbtn.png 74×75 纹理原尺寸）。
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(remove_window)
-	container.add_child(btn)
+# hero_package 不自建 close：照源 heropackage 是 hero_scene 全屏场景内的面板，返回由 hero_scene 的 backbtn
+# （_build_back_button → _back_to_main change_scene 回主界面）处理；本面板无 shade 透明，hero_scene backbtn 透过显示。
 
 
 # 碎片合成入口源 heropackage.lua 无（grep 确认只有 herosplit 分解 + classbtn tab，无 fragment），
