@@ -1,12 +1,13 @@
 class_name HeroPackagePanel
 extends PopWindow
 
-## 英雄背包（View 层）— 照源 heropackage.lua 完整重建（替 Phase 5 文字简化版）。
+## 英雄背包（View 层）— 照源 heropackage.lua 完整重建（P0-1 整行卡片）。
 ## list_bg 背景 + 4 class tab（all/front/middle/back 竖排切换，classbtn/classbtnselected）+
-## ScrollContainer 英雄网格（ReadheroIcon 头像替文字行，2 列 260×100）+ close/碎片按钮。
-## tab 分类按 Unit.Position Type（cm.get_raw_table，照 crusade_data 模式）。
+## ScrollContainer 英雄网格（HeroPackageItem 整行卡片：头像+名字+mark+装备槽/灵魂石条，2 列 260×100）+
+## 未召唤英雄分隔线（listLine：equip_detail_title_bg + "尚未召唤" 文字）+ close/碎片按钮。
+## tab 分类委托 ReadheroHandbook.classify_handbook（Logic 层，含未召唤英雄 + 按位置分）。
 ## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+OFFSET_X+80, 560-cy)，OFFSET_X=-20。
-## 残留：close/碎片按钮文字降级（common_tips_button_close 资源缺）；未召唤英雄分隔线待补。
+## 残留：close/碎片按钮文字降级（common_tips_button_close 资源缺）。
 
 # ReadheroIcon 用全局 class_name（readhero_icon.gd），不 const :Script preload（避免注解 Script 致 := 推断失败，memory: gdscript-const-script-preload-class-name）。
 
@@ -27,9 +28,8 @@ const LIST_SIZE: Vector2 = Vector2(500.0, 348.0)
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 refreshHeroList getpos 260 间距 / 100 行高
 const CLOSE_BTN_POS: Vector2 = Vector2(800.0, 50.0)
 const FRAG_BTN_POS: Vector2 = Vector2(700.0, 50.0)
-const POS_FRONT: String = "Front"
-const POS_MIDDLE: String = "Middle"
-const POS_REAR: String = "Rear"
+const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"   # 源 prepareLoad :403
+const LIST_LINE_LABEL: String = "尚未召唤的英雄"   # 源 :407 LSTR("HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED")
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -39,7 +39,7 @@ var _tabs: Dictionary = {}      # key -> TextureButton
 var _tab_labels: Dictionary = {}   # key -> Label
 var _scroll: ScrollContainer = null
 var _grid: GridContainer = null
-var _hero_by_class: Dictionary = {}   # clid -> Array[HeroInstance]
+var _hero_by_class: Dictionary = {}   # clid -> Array[Variant]（HeroInstance 或 {tid,miss} dict）
 
 
 static func _to_godot(cocos: Vector2) -> Vector2:
@@ -118,6 +118,7 @@ func _on_tab_pressed(key: String) -> void:
 
 
 # 源 draglist（:758-772）cliprect 800×348 rect 500×348 → Godot ScrollContainer + GridContainer 2 列。
+# item 自身 custom_minimum_size=CELL_SIZE，separation=0（cell 紧贴 = 源 260×100 间距）。
 func _create_list_container() -> void:
 	_scroll = ScrollContainer.new()
 	_scroll.position = LIST_TOPLEFT
@@ -126,55 +127,67 @@ func _create_list_container() -> void:
 	container.add_child(_scroll)
 	_grid = GridContainer.new()
 	_grid.columns = 2
-	_grid.add_theme_constant_override("h_separation", int(CELL_SIZE.x - ReadheroIcon.CONTAINER_SIZE.x))
-	_grid.add_theme_constant_override("v_separation", int(CELL_SIZE.y - ReadheroIcon.CONTAINER_SIZE.y))
+	_grid.add_theme_constant_override("h_separation", 0)
+	_grid.add_theme_constant_override("v_separation", 0)
 	_scroll.add_child(_grid)
 
 
-# 源 getAllList classify("handbook","position")：Unit.Position Type 分前/中/后（照 crusade_data 模式）。
+# 源 getAllList :446 classify("handbook","position")：委托 ReadheroHandbook（含未召唤英雄 + 按位置分）。
 func _classify_heroes() -> void:
-	var all: Array = []
-	var front: Array = []
-	var middle: Array = []
-	var back: Array = []
-	var raw: Dictionary = {}
-	if cm != null and cm.has_method("get_raw_table"):
-		raw = cm.get_raw_table(&"Unit")
-	for inst_id in _hero_mgr.heroes:
-		var hero: HeroInstance = _hero_mgr.heroes[inst_id]
-		all.append(hero)
-		var pos_type: String = ""
-		if raw.has(str(hero.tid)):
-			pos_type = String(raw[str(hero.tid)].get(&"Position Type", ""))
-		if pos_type.find(POS_FRONT) >= 0:
-			front.append(hero)
-		elif pos_type.find(POS_MIDDLE) >= 0:
-			middle.append(hero)
-		elif pos_type.find(POS_REAR) >= 0:
-			back.append(hero)
-	_hero_by_class = {"all": all, "front": front, "middle": middle, "back": back}
+	_hero_by_class = ReadheroHandbook.classify_handbook(cm, _hero_mgr)
 
 
-# 源 refreshHeroList + loadHero：每个英雄 packageItem.create(tid) → heroIcon 头像。
-# 本项目 ReadheroIcon.create_icon_by_hero 替纯文字行；2 列网格（源 getpos 260 间距/100 行高）。
+# 源 refreshHeroList + loadHero：每条目 packageItem.create(tid) → HeroPackageItem 整行卡片。
+# 已拥有→未拥有分界处插 listLine 分隔线（源 prepareLoad listLine + refreshHeroList setVisible 分界）。
 func _refresh_list() -> void:
 	for c in _grid.get_children():
 		c.free()
 	var list: Array = _hero_by_class.get(_clid, [])
-	for hero in list:
-		var cell := Control.new()
-		cell.custom_minimum_size = CELL_SIZE
-		cell.mouse_filter = Control.MOUSE_FILTER_STOP
-		var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
-		icon.position = (CELL_SIZE - ReadheroIcon.CONTAINER_SIZE) * 0.5
-		cell.add_child(icon)
-		cell.gui_input.connect(_on_hero_gui_input.bind(hero))
-		_grid.add_child(cell)
+	for i in range(list.size()):
+		var entry: Variant = list[i]
+		if _is_handbook_boundary(list, i):
+			_add_list_line()
+		var item := HeroPackageItem.create_from_entry(entry, cm, _hero_mgr)
+		item.gui_input.connect(_on_item_gui_input.bind(entry))
+		_grid.add_child(item)
 
 
-func _on_hero_gui_input(event: InputEvent, hero: HeroInstance) -> void:
+# 分界：当前是最后一个 HeroInstance 且下一条是 miss dict（已拥有→未拥有过渡，源 refreshHeroList :344 preLineAmount）。
+func _is_handbook_boundary(list: Array, i: int) -> bool:
+	if i >= list.size() - 1:
+		return false
+	return list[i] is HeroInstance and not (list[i + 1] is HeroInstance)
+
+
+# 源 prepareLoad :398-411 listLine：equip_detail_title_bg 300×16 + "尚未召唤" 文字。
+# GridContainer 不支持跨列，分隔线 + 空 cell 占位凑一行（2 列补齐）。
+func _add_list_line() -> void:
+	var line := Control.new()
+	line.custom_minimum_size = CELL_SIZE
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg := TextureRect.new()
+	bg.texture = load(LIST_LINE_BG_RES)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.size = Vector2(300.0, 16.0)
+	bg.position = Vector2(0.0, CELL_SIZE.y * 0.5 - 8.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(bg)
+	var lbl := Label.new()
+	lbl.text = LIST_LINE_LABEL
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.position = Vector2(60.0, CELL_SIZE.y * 0.5 - 10.0)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_child(lbl)
+	_grid.add_child(line)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = CELL_SIZE
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_grid.add_child(spacer)
+
+
+func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		_on_hero_clicked(hero)
+		_on_entry_clicked(entry)
 
 
 # 残留：close/碎片按钮文字降级（common_tips_button_close.png 资源缺，后续统一纹理化）。
@@ -203,7 +216,15 @@ func _open_fragment_list() -> void:
 	panel.show_window(get_parent())
 
 
-# 源 doClickInHeroLayer clickHero（:191-233）：点英雄 → HeroDetailPanel（card 模式）。
+# 源 doClickInHeroLayer（:144-247）：clickHero 已拥有→detail；clickMissHero 未拥有→召唤/碎片详情。
+func _on_entry_clicked(entry: Variant) -> void:
+	if entry is HeroInstance:
+		_on_hero_clicked(entry as HeroInstance)
+	else:
+		_on_miss_clicked(entry)
+
+
+# 源 clickHero（:191-233）：已拥有 → HeroDetailPanel（card 模式）。
 func _on_hero_clicked(hero: HeroInstance) -> void:
 	AudioPlayer.play_sfx("common_popup_window")   # 源 heroPackage.clickHero（soundres.lua:185）
 	Events.bus.emit_tutorial_step(&"SUclickHero")   # 源 heropackage.lua:201 ed.endTeach "SUclickHero"
@@ -224,6 +245,16 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 			Events.bus.emit_tutorial_step(&"SUcomplete")
 			detail.refresh_content())
 	detail.show_window(get_parent())
+
+
+# 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足源弹 stonedetail（本项目未实现，降级）。
+func _on_miss_clicked(entry: Variant) -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	var miss_tid: int = ReadheroHandbook.entry_tid(entry)
+	if ReadheroHandbook.check_stone_enough(miss_tid, cm, _hero_mgr):
+		var result: Dictionary = _hero_mgr.hero_evolve(miss_tid)
+		if bool(result.get("ok", false)):
+			_refresh_after_change()
 
 
 func _refresh_after_change() -> void:
