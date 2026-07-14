@@ -22,6 +22,10 @@ const HEAD_FRAME_RES: Array = [
 ]
 const HEAD_POS: Vector2 = Vector2(1.0, 55.0)
 const HEAD_SIZE: Vector2 = Vector2(80.0, 80.0)
+const HEAD_ICON_SIZE: Vector2 = Vector2(70.0, 70.0)   # 源 getHeadIcon length=70（resource_manager.lua:1009）
+const HEAD_ICON_POS: Vector2 = Vector2(6.0, 60.0)     # head_bg(1,55)80×80 内居中 70×70 → (1+5,55+5)
+const HEAD_MASK_RES: String = "res://assets/ui/alpha/HVGA/main_head_mask.png"   # 源 createClippingNode stencil（configure.lua:80）
+const PortraitMaskShader: Shader = preload("res://shaders/portrait_mask.gdshader")
 const NAME_BG_RES: String = "res://assets/ui/alpha/HVGA/tip_detail_bg.png"
 const NAME_BG_POS: Vector2 = Vector2(113.0, 30.0)
 const NAME_BG_SIZE: Vector2 = Vector2(225.0, 30.0)
@@ -150,6 +154,32 @@ func _add_head(frame: Control) -> void:
 	head_frame.position = HEAD_POS + Vector2(15.0, 0.0)
 	head_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(head_frame)
+	_add_head_icon(frame)
+
+
+# 源 createHeadIcon（configure.lua:79-86）+ getHeadIcon（resource_manager.lua:996-1015）：
+# avatar id（0→默认 1，player.lua:378）→ Avatar[id].Picture → load 头像图 + portrait_mask shader 裁剪
+# （源 createClippingNode(res, main_head_mask.png) 圆形 mask）→ addChild z=3。ranklist 路径转换范式复用。
+func _add_head_icon(frame: Control) -> void:
+	var avatar_id: int = _pd.avatar if _pd.avatar > 0 else 1
+	var pic: String = String(_cm.get_raw_table(&"Avatar").get(str(avatar_id), {}).get("Picture", ""))
+	if pic.is_empty():
+		return
+	var head_path: String = "res://assets/ui/" + pic.substr(3)   # UI/HERO/X.jpg → assets/ui/HERO/X.jpg
+	if not ResourceLoader.exists(head_path):
+		return
+	var icon := TextureRect.new()
+	icon.texture = load(head_path)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.size = HEAD_ICON_SIZE
+	icon.position = HEAD_ICON_POS
+	icon.z_index = 3   # 源 createHeadIcon addChild z=3（configure.lua:83）
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()   # 源 createClippingNode mask 裁剪（resource_manager.lua:650）
+	mat.shader = PortraitMaskShader
+	mat.set_shader_parameter("mask_tex", load(HEAD_MASK_RES))
+	icon.material = mat
+	frame.add_child(icon)
 
 
 func _add_player_info(frame: Control) -> void:
