@@ -7,7 +7,7 @@ extends PopWindow
 ## 本项目点开战→弹 BattlePreparePanel 布阵面板→进 battle_scene。
 
 const TEAM_MAX: int = 5
-const CLOSE_BTN_POS: Vector2 = Vector2(700.0, 20.0)
+const CLOSE_BTN_POS: Vector2 = Vector2(113.0, 88.0)  # 源 statusbar.lua:168 backbtn 中心 ccp(70,435) → 左上(113,88)
 const CLOSE_BTN_SIZE: Vector2 = Vector2(50.0, 30.0)
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"

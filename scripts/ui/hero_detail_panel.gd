@@ -306,14 +306,13 @@ func _create_skill_icon(icon_res: String, y: float, locked: bool, slot: int) -> 
 
 
 func _create_skill_upgrade_button(idx: int, pos: Vector2) -> void:
-	var btn := Button.new()
-	btn.text = "升级"
-	btn.position = pos
-	btn.size = SKILL_BTN_SIZE
+	# detail-n Scale9 纹理化（照源 herodetail 动作按钮 window.lua:2095 范式），替原文字占位 Button.new。
+	# pos 原左上(SKILL_BTN_SIZE 80×28)→传中心 pos+size/2 给 create_action_button(ACTION_BTN_SIZE 中心定位)。
+	var btn: Button = HeroDetailBuilder.create_action_button(container, "升级", pos + SKILL_BTN_SIZE * 0.5, false)
+	btn.set_meta(&"tab_content", true)   # 标记 tab 内容（切 tab free，等价 _add_tab_child）
 	btn.pressed.connect(func() -> void:
 		Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
 		upgrade_skill_requested.emit(idx))
-	_add_tab_child(btn)
 
 
 # 源 UI 路径 "UI/ITEM/s10.jpg" → res://assets/ui/ITEM/s10.jpg（仿 readhero_icon.gd:81 Portrait 映射）。
