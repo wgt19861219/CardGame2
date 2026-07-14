@@ -282,3 +282,125 @@ func test_refresh_gs_after_wear_no_change() -> void:
 	assert_eq(panel._gs_label.text, text_before, "gs 未变 → label 不动")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ---- 底栏 tab 切换（源 createBottomButtons detail/card/skill + setOpenMode）----
+
+# 源 createBottomButtons（window.lua:1395-1663）：detail/card/skill 三 tab 按钮常驻 base。
+func test_tab_bar_three_buttons() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var tab_count: int = 0
+	for c in panel.container.get_children():
+		if c.has_meta(&"tab_button"):
+			tab_count += 1
+	assert_eq(tab_count, 3, "底栏 3 tab 按钮（detail/card/skill）")
+	assert_eq(panel._tab_buttons.size(), 3, "_tab_buttons 字典 3 键")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 默认 tab = skill（照源 setOpenMode 默认行为，技能内容渲染进 container）。
+func test_default_tab_skill() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7   # 全技能解锁
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	assert_eq(panel._current_tab, "skill", "默认 tab = skill")
+	var upgrade_btn_count: int = 0
+	for c in panel.container.get_children():
+		if c is Button and (c as Button).text == "升级":
+			upgrade_btn_count += 1
+	assert_eq(upgrade_btn_count, 4, "默认 skill tab → 4 升级按钮可见")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 切 detail tab → 属性 label 显示 + 技能升级按钮消失（源 doClickDetail → setOpenMode("att")）。
+func test_switch_to_detail() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	panel._on_tab_pressed("detail")
+	assert_eq(panel._current_tab, "detail", "切到 detail tab")
+	var upgrade_btn_count: int = 0
+	var attrib_lbl_count: int = 0
+	for c in panel.container.get_children():
+		if c is Button and (c as Button).text == "升级":
+			upgrade_btn_count += 1
+		elif c is Label and (":" in (c as Label).text):
+			attrib_lbl_count += 1
+	assert_eq(upgrade_btn_count, 0, "detail tab 无技能升级按钮")
+	assert_gt(attrib_lbl_count, 0, "detail tab 显示属性 label")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 切 card tab → 英雄卡牌立绘显示（源 doClickCard → setOpenMode("card")）。
+func test_switch_to_card() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	panel._on_tab_pressed("card")
+	assert_eq(panel._current_tab, "card", "切到 card tab")
+	# card frame（TextureRect tab_content）+ name label 应在 container
+	var card_tab_count: int = 0
+	for c in panel.container.get_children():
+		if c.has_meta(&"tab_content"):
+			card_tab_count += 1
+	assert_gt(card_tab_count, 0, "card tab 渲染了卡牌内容（frame/art/name）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 切回 skill tab → 技能内容恢复（源 toggle：同 tab 不重复切，异 tab 切换重建）。
+func test_switch_back_to_skill() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	panel._on_tab_pressed("detail")   # 先切走
+	panel._on_tab_pressed("skill")    # 再切回
+	assert_eq(panel._current_tab, "skill", "切回 skill tab")
+	var upgrade_btn_count: int = 0
+	for c in panel.container.get_children():
+		if c is Button and (c as Button).text == "升级":
+			upgrade_btn_count += 1
+	assert_eq(upgrade_btn_count, 4, "切回 skill → 4 升级按钮恢复")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 装备槽在 tab 切换后仍常驻（base 常显，源 createEquipIcons 在 base window）。
+func test_equips_persist_across_tabs() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	panel._on_tab_pressed("card")
+	var equip_count: int = 0
+	for c in panel.container.get_children():
+		if c.has_meta("equip_slot"):
+			equip_count += 1
+	assert_eq(equip_count, 6, "card tab 下装备槽仍 6 个（base 常显）")
+	panel.remove_window()
+	root.queue_free()

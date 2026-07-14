@@ -35,6 +35,20 @@ const DETAIL_N_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-n.png
 const DETAIL_N_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png"
 const DETAIL_N_CAP: Rect2 = Rect2(15.0, 15.0, 138.0, 19.0)  # 源 capInsets CCRectMake(15,15,138,19)
 const ACTION_BTN_SIZE: Vector2 = Vector2(100.0, 42.0)  # 源 scaleSize CCSizeMake(100,42)
+# 源 createBottomButtons（window.lua:1395-1663）：detail/card/skill 三 tab Scale9Sprite。
+# 源 detail-n（normal）+ detail-a（select active）双态切 visible（:1429/:1444）。
+# 本项目单 Button swap normal stylebox 近似（n=未选 / a=选中）。
+const TAB_N_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-n.png"
+const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-a.png"
+const TAB_CAP: Rect2 = Rect2(15.0, 15.0, 138.0, 19.0)   # 源 capInsets 同动作按钮
+const TAB_SIZE: Vector2 = Vector2(120.0, 49.0)          # 源 scaleSize CCSizeMake(120,49)
+const TAB_DETAIL_COCOS: Vector2 = Vector2(75.0, 42.0)   # 源 :1409 detail ccp(75,42)
+const TAB_CARD_COCOS: Vector2 = Vector2(200.0, 42.0)    # 源 :1486 card ccp(200,42)
+const TAB_SKILL_COCOS: Vector2 = Vector2(326.0, 42.0)   # 源 :1563 skill ccp(326,42)
+# 源 card.lua getInformation + readhero.getHeroCard：rank 色边框（card_frame）+ Art 立绘 + 名字。
+const CARD_CENTER_COCOS: Vector2 = Vector2(400.0, 240.0)   # 源 card.lua:135 ccp(400,240)
+const CARD_ART_MAX_SIZE: Vector2 = Vector2(240.0, 240.0)   # Art 缩放上限（frame 内贴图区）
+const CARD_NAME_COCOS: Vector2 = Vector2(400.0, 90.0)      # 名字（frame 底部 name 区估算）
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
@@ -166,3 +180,129 @@ static func _tex_size(res_path: String) -> Vector2:
 	if tex != null:
 		return tex.get_size()
 	return Vector2(100.0, 40.0)
+
+
+# ---- 底栏三 tab（源 createBottomButtons window.lua:1395-1663）----
+
+# 建 detail/card/skill 三 Scale9 tab 按钮（normal=detail-n，选中 swap detail-a）。
+# labels: {key: 显示文本}。返回 {key: Button}。selected_key 对应的按钮初始选中态。
+static func create_tab_bar(parent: Control, labels: Dictionary, selected_key: String) -> Dictionary:
+	var buttons: Dictionary = {}
+	var positions: Dictionary = {
+		"detail": TAB_DETAIL_COCOS,
+		"card": TAB_CARD_COCOS,
+		"skill": TAB_SKILL_COCOS,
+	}
+	for key in positions:
+		var cocos_p: Vector2 = positions[key]
+		var center: Vector2 = to_godot(cocos_p.x, cocos_p.y)
+		var btn: Button = UiScale9Button.make(TAB_N_RES, TAB_N_RES, center - TAB_SIZE * 0.5, TAB_SIZE, TAB_CAP, String(labels.get(key, key)))
+		btn.set_meta(&"tab_button", key)
+		parent.add_child(btn)
+		buttons[key] = btn
+	set_tab_selected(buttons, selected_key)
+	return buttons
+
+
+# 切 tab 选中态：选中 → detail-a stylebox，未选 → detail-n stylebox（源 :321-323 切 _select visible）。
+static func set_tab_selected(buttons: Dictionary, selected_key: String) -> void:
+	for key in buttons:
+		var btn: Button = buttons[key]
+		var res_path: String = TAB_A_RES if key == selected_key else TAB_N_RES
+		var sb: StyleBoxTexture = _make_tab_stylebox(res_path)
+		btn.add_theme_stylebox_override("normal", sb)
+		btn.add_theme_stylebox_override("hover", sb)
+
+
+static func _make_tab_stylebox(res_path: String) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res_path) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = TAB_CAP.position.x
+	sb.texture_margin_top = TAB_CAP.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - TAB_CAP.position.x - TAB_CAP.size.x
+		sb.texture_margin_bottom = tex.get_height() - TAB_CAP.position.y - TAB_CAP.size.y
+	return sb
+
+
+# ---- card 图鉴视图（源 card.lua getInformation + readhero.getHeroCard）----
+
+# 源 card.lua:127-140 createCard：rank 色边框（card_frame）+ Art 立绘 + 名字。
+# 缺图降级：card_att_*（职业图标）缺失省略；Art 缺 → frame 占位。所有子节点 mouse_filter=IGNORE。
+# 每个子节点打 tab_content 标记（HeroDetailPanel 切 tab 时 free）。
+static func create_card_view(parent: Control, hero: HeroInstance, cm: Variant) -> void:
+	if cm == null:
+		return
+	# 源 card_frame（herodetailres.lua:27-51）：rank → 颜色边框。
+	var frame_res: String = _card_frame_res(hero.rank)
+	var frame: TextureRect = _make_centered_rect(frame_res, CARD_CENTER_COCOS, 0)
+	_tag_tab(frame, parent)
+	# 源 :111 cardres = row.Art（立绘大图）。
+	var art_res: String = String(cm.lookup("Unit", "Art", int(hero.tid)))
+	var art: TextureRect = _make_card_art(art_res)
+	if art != null:
+		_tag_tab(art, parent)
+	# 源 :112 name = Display Name。
+	var name_key: String = String(cm.lookup("Unit", "Display Name", int(hero.tid)))
+	var name_str: String = String(cm.get_lstr(name_key))
+	var lbl := Label.new()
+	lbl.text = name_str
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.position = to_godot(CARD_NAME_COCOS.x, CARD_NAME_COCOS.y) - lbl.get_minimum_size() * 0.5
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tag_tab(lbl, parent)
+
+
+static func _tag_tab(node: Control, parent: Control) -> void:
+	node.set_meta(&"tab_content", true)
+	parent.add_child(node)
+
+
+# rank → card_bg_{color}.png（源 card_frame 索引）。red 缺图 → orange 降级。
+static func _card_frame_res(rank: int) -> String:
+	var color: String = "white"
+	if rank >= 12:
+		color = "orange"
+	elif rank >= 7:
+		color = "purple"
+	elif rank >= 4:
+		color = "blue"
+	elif rank >= 2:
+		color = "green"
+	return "res://assets/ui/alpha/HVGA/card/card_bg_%s.png" % color
+
+
+# 居中 TextureRect（不 add 到 parent，由调用方打标 + add）。
+static func _make_centered_rect(res_path: String, cocos_center: Vector2, z: int) -> TextureRect:
+	var tex: Texture2D = load(res_path) as Texture2D
+	var s := TextureRect.new()
+	if tex == null:
+		return s
+	s.texture = tex
+	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	s.size = tex.get_size()
+	s.position = to_godot(cocos_center.x, cocos_center.y) - tex.get_size() * 0.5
+	s.z_index = z
+	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return s
+
+
+# Art 立绘（源 :134 ed.readhero.getHeroCard）：UI/art/card_bg_big_X.jpg 居中缩放进 frame。
+static func _make_card_art(art_res: String) -> TextureRect:
+	if art_res.is_empty():
+		return null
+	var path: String = art_res.replace(PORTRAIT_PREFIX, PORTRAIT_REPLACE)
+	if not ResourceLoader.exists(path):
+		return null
+	var tex: Texture2D = load(path) as Texture2D
+	if tex == null:
+		return null
+	var sp := TextureRect.new()
+	sp.texture = tex
+	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	var sc: float = min(CARD_ART_MAX_SIZE.x / tex.get_size().x, CARD_ART_MAX_SIZE.y / tex.get_size().y)
+	sp.size = tex.get_size() * sc
+	sp.position = to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0) - sp.size * 0.5   # 略上偏让出底部 name 区
+	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return sp
