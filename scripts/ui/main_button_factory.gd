@@ -79,6 +79,8 @@ static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
 		return null
 	var sk_scale: float = float(e.get("scale", 1.0))
 	var sk := SpineSkeleton.new()
+	# 源 createMainFca:418 setScale(v.scale)。createAnimation 是 C++ SpineRuntime，不受 LegendSetAniScaleFactor 影响
+	# （0.39 仅 LegendAminationEffect/.abc 自家系统用；createFcaNode:581 Type_Spine 走 createAnimation，:589 FCA 走 LegendAminationEffect）。
 	sk.scale = Vector2(sk_scale, sk_scale)   # load_skeleton:37 自动翻 y（Spine y 上 → Godot y 下）
 	btn.add_child(sk)
 	if sk.load_skeleton(SPINE_DIR + "/" + String(e["res"]), String(e["res"])):
@@ -100,7 +102,10 @@ static func _add_fca(btn: Button, res: String, sk_scale: float) -> Node2D:
 	if not fca.load_from_ani("effect/" + res, atlas):
 		fca.queue_free()
 		return null
-	fca.scale = Vector2(sk_scale, sk_scale)
+	# 源 setScale(v.scale) 叠加在 cha_ui_scale 上（LegendAminationEffect 内部 base=cha_ui_scale × extra=v.scale，
+	# 非 CC 标准覆盖）。_create_sprites 已设 fca.scale=_coord_scale(0.39)，此处 ×v.scale 叠加。
+	# net a/b/c/d = (0.39×v.scale)/0.39 × 原始 = v.scale×原始（正常缩放，避反向 ×1/0.39 放大 2.05× 致 starshop 超大）。
+	fca.scale = fca.scale * sk_scale
 	btn.add_child(fca)
 	fca.position = Vector2(btn.size.x * 0.5, btn.size.y * 0.5)
 	fca.play(LOOP_ACTION, true)

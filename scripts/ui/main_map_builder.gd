@@ -16,6 +16,7 @@ const CAMPAIGN_X: float = 530.0       # 源 mainres.CampaignX（veryTop bg3 偏�
 const CAMPAIGN_Y: float = -30.0       # 源 mainres.CampaignY（源 y 上）
 const FOG_X: float = 600.0            # 源 mainres.mainFogX
 const BOTTOM_BLUE: Color = Color(40.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)   # 源 createBottomMap:685 ccc4(40,100,180)
+const MOUNTAIN_TOP_GAP: float = 52.0   # mountain Spine position=MAP_H 时顶部空隙：root bone 不在包围盒左下角（源 Cocos anchor(0,0) 自动补偿，Godot position=root 需 MAP_H-此值 让包围盒顶部对齐 y=0 填满容器）
 
 # 源 mainres.cloud_res:357（pos + move_duration + move_distance；distance ccp(0,y) 源 y 上 → Godot 翻 Y）
 const CLOUD4_POS: Vector2 = Vector2(305.0, 370.0)
@@ -42,9 +43,9 @@ func build(parent: Control) -> Dictionary:
 	verytop.add_child(sub)
 	parent.add_child(verytop)       # z 最顶
 	_build_bottom(bottom)
-	_build_top(top)
+	var map_width: float = _build_top(top)
 	_build_verytop_sub(sub)
-	return {"top": top, "middle": middle, "bottom": bottom, "verytop": verytop, "sub": sub}
+	return {"top": top, "middle": middle, "bottom": bottom, "verytop": verytop, "sub": sub, "map_width": map_width}
 
 
 func _new_container(node_name: String = "") -> Control:
@@ -62,7 +63,7 @@ func _build_bottom(container: Control) -> void:
 	container.add_child(sk)
 	if sk.load_skeleton(SPINE_DIR + "/main_bg_mountain", "main_bg_mountain"):
 		sk.play("BG", true)
-		sk.position = Vector2(0.0, MAP_H)   # 源 anchor(0,0)+ccp(0,0) → Godot 左下角贴底
+		sk.position = Vector2(0.0, MAP_H - MOUNTAIN_TOP_GAP)   # 源 anchor(0,0)=包围盒左下角对齐 position（Cocos）；Godot position=root bone，root 不在包围盒左下角。MAP_H 时顶部空 MOUNTAIN_TOP_GAP 露清色灰，减之让包围盒顶部对齐 y=0 填满容器（照源 mainLayer 满 design）
 		return
 	sk.queue_free()
 	# 降级（照源 :682-702）：蓝底填充 + 静态 mountain.jpg（scaleY 480）
@@ -79,11 +80,18 @@ func _build_bottom(container: Control) -> void:
 
 # 源 createTopMap:788-902：grass_left/right + cloud4/5/6 + left_side/right_side + Fog spine + 黑云漂移。
 # 瀑布粒子（ccbi/Particle_Waterfall）无 Godot 等价，stub（源 :883 loadccbi 亦有 nil 降级）。
-func _build_top(container: Control) -> void:
+# 返回 grass_left+right 显示总宽（源 create:1065 mapWidth，供 MainParallax 算 map_min_x）。
+# 源 readnode.lua:201-203 fix_height = setScale(fix_h/tex_h) 等比缩放（宽高同缩），显示宽 = tex_w × fix_h/tex_h。
+# 源 :1065 getContentSize 返回原图宽（setScale 不改 contentSize）→ map_min_x 偏大露 sea；此处用显示宽修正（grass_right 贴视口右不露）。
+func _build_top(container: Control) -> float:
 	var grass_l_tex: Texture2D = load(BG_DIR + "main_bg_grass_left.png")
-	_add_sprite(container, BG_DIR + "main_bg_grass_left.png", Vector2(-212.0, 0.0), Vector2(grass_l_tex.get_size().x, FIX_HEIGHT))
+	var grass_l_w: float = grass_l_tex.get_size().x * FIX_HEIGHT / grass_l_tex.get_size().y if grass_l_tex != null else 0.0
+	var map_width: float = grass_l_w
+	_add_sprite(container, BG_DIR + "main_bg_grass_left.png", Vector2(-212.0, 0.0), Vector2(grass_l_w, FIX_HEIGHT))
 	var grass_r_tex: Texture2D = load(BG_DIR + "main_bg_grass_right.png")
-	_add_sprite(container, BG_DIR + "main_bg_grass_right.png", Vector2(716.0, 0.0), Vector2(grass_r_tex.get_size().x, FIX_HEIGHT))
+	var grass_r_w: float = grass_r_tex.get_size().x * FIX_HEIGHT / grass_r_tex.get_size().y if grass_r_tex != null else 0.0
+	map_width += grass_r_w
+	_add_sprite(container, BG_DIR + "main_bg_grass_right.png", Vector2(716.0, 0.0), Vector2(grass_r_w, FIX_HEIGHT))
 	var c4 := _add_sprite(container, BG_DIR + "main_cloud_4.png", CLOUD4_POS, _tex_size("main_cloud_4.png"))
 	var c5 := _add_sprite(container, BG_DIR + "main_cloud_5.png", CLOUD5_POS, _tex_size("main_cloud_5.png"))
 	var c6 := _add_sprite(container, BG_DIR + "main_cloud_6.png", CLOUD6_POS, _tex_size("main_cloud_6.png"))
@@ -96,6 +104,7 @@ func _build_top(container: Control) -> void:
 	if c6 != null:
 		_play_black_cloud(c6, CLOUD6_DUR, CLOUD6_DIST)
 	_add_fog(container)
+	return map_width
 
 
 # 源 createVeryTopMap:759-785：veryTop 内 subContainer 放 bg3（main_bg_Up.png @ CampaignX,Y）。

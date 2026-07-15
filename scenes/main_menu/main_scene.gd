@@ -6,6 +6,7 @@ extends "res://scenes/base_ui.gd"
 
 const MAP_H: float = 536.0
 const BAR_H: float = 52.0
+const BG_INIT_OFFSET: float = -300.0   # 源 main.lua:21 bgOffset（create:1067 setbgOffset 初始视角）
 # 源 exercise.lua:1506/1509 em→英雄副本 50005-7 / equip→装备副本 50001-4
 const EM_GROUPS: Array[int] = [50005, 50006, 50007]
 const EQUIP_GROUPS: Array[int] = [50001, 50002, 50003, 50004]
@@ -180,15 +181,16 @@ func tutorial_try_complete(step: StringName) -> void:
 func _build_map() -> void:
 	var map := Control.new()
 	map.set_anchors_preset(Control.PRESET_FULL_RECT)
-	map.offset_top = BAR_H
+	map.offset_top = 0.0   # map 延伸到顶（statusbar 透明叠加，露 mountain 天；源 mainLayer 满 design statusbar 叠加，非独立占区）
 	map.offset_bottom = -BAR_H
 	map.clip_contents = true
 	map.mouse_filter = Control.MOUSE_FILTER_STOP   # 接收空地拖拽（按钮 STOP 吞自己区域）
+	map.gui_input.connect(_on_map_gui_input)   # 拖拽连 map（_gui_input 虚函数挂根 Control，map STOP 吞输入致根永不触发）
 	add_child(map)
 	_containers = MainMapBuilder.new().build(map)
 	_parallax = MainParallax.new()
-	_parallax.setup(_containers.top, _containers.middle, _containers.bottom, _containers.verytop)
-	_parallax.scroll_to(0.0, 0.0)   # 源 setbgOffset(bgOffset=-300) → refreshMapPos clamp 到 0（初始左边界）
+	_parallax.setup(_containers.top, _containers.middle, _containers.bottom, _containers.verytop, float(_containers.get("map_width", 0.0)))
+	_parallax.scroll_to(BG_INIT_OFFSET, 0.0)   # 源 create:1067 setbgOffset(bgOffset=-300) → refreshMapPos clamp 到 [_map_min_x, 212]
 	for e in ENTRIES:
 		_entry_host(int(e.get("parent", 1))).add_child(_make_entry(e))
 	_add_lightning(_containers.top)   # 照源 createMainFca lightning 加 topContainer
@@ -208,7 +210,7 @@ func _entry_host(parent_index: int) -> Control:
 
 
 # 拖拽输入（照源 doDragMapTouch:116-178）。press→begin+记速基准 / move→top.x+=delta+速度 / release→惯性 end。
-func _gui_input(event: InputEvent) -> void:
+func _on_map_gui_input(event: InputEvent) -> void:
 	if _parallax == null:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -275,6 +277,9 @@ func _build_status_bar() -> void:
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	bar.custom_minimum_size = Vector2(0, BAR_H)
 	bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	# 源 statusbar 透明叠加 mainLayer（无整体背景图，只 number_bg 局部），露 grass/mountain。
+	# Panel 默认 StyleBox 灰底 → 改透明（map 已延伸到顶，露 mountain 天）。
+	bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(bar)
 	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self))
 
