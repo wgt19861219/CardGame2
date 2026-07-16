@@ -11,6 +11,26 @@ const HERO_TYPE_ID_MAX: int = 100             # 源 player.lua:1472 unitType id<
 const POS_FRONT: String = "Front"             # 源 classifyByPos find T(LSTR("UNIT.FRONT_ROW"))
 const POS_MIDDLE: String = "Middle"
 const POS_REAR: String = "Rear"
+# 源 player.lua:2155-2178 hero_star / hero_max_star 表（rank 1-22 → 当前 star / 上限）。
+# 索引 0 占位，索引 = rank（Lua 1-based → GDScript 0-based 加占位对齐；表本身 22 元素 + 1 占位 = 23）。
+const HERO_STAR: Array[int] = [
+	0, 0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5
+]
+const HERO_MAX_STAR: Array[int] = [
+	0, 0, 1, 1, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5
+]
+# 源 player.lua:2211-2235 name_color 6 段色（ccc3 0-255 → Godot Color 0-1）+ rank 分段边界。
+const NAME_COLOR_WHITE: Color = Color(254.0 / 255.0, 251.0 / 255.0, 241.0 / 255.0)       # rank 1
+const NAME_COLOR_YELLOW: Color = Color(248.0 / 255.0, 255.0 / 255.0, 62.0 / 255.0)       # rank 2-3
+const NAME_COLOR_BLUE: Color = Color(96.0 / 255.0, 172.0 / 255.0, 243.0 / 255.0)         # rank 4-6
+const NAME_COLOR_PURPLE: Color = Color(1.0, 128.0 / 255.0, 1.0)                          # rank 7-11
+const NAME_COLOR_ORANGE: Color = Color(1.0, 152.0 / 255.0, 72.0 / 255.0)                 # rank 12-16
+const NAME_COLOR_RED: Color = Color(1.0, 60.0 / 255.0, 60.0 / 255.0)                     # rank >= 17
+const NAME_COLOR_DEFAULT: Color = Color(1.0, 1.0, 1.0)                                   # rank<1 兜底
+const RANK_YELLOW_MAX: int = 3
+const RANK_BLUE_MAX: int = 6
+const RANK_PURPLE_MAX: int = 11
+const RANK_ORANGE_MAX: int = 16
 
 
 # 源 getStoneid :642-648 — Fragment[tid]["Fragment Id"]，缺失 fallback 335。
@@ -203,3 +223,36 @@ static func entry_rank(v: Variant) -> int:
 	if v is HeroInstance:
 		return (v as HeroInstance).rank
 	return 1
+
+
+# 源 player.lua:2203-2206 getHeroStarByRank — hero_star[rank]（名字后缀 "+N" 用 N，rank 1-22 → 0-5）。
+# 越界（rank<1 或 >22）返 0，等价源 Lua table[index] 的 nil 被 `or 0` 兜底（readhero.lua:961）。
+static func get_hero_star_by_rank(rank: int) -> int:
+	if rank < 1 or rank >= HERO_STAR.size():
+		return 0
+	return HERO_STAR[rank]
+
+
+# 源 player.lua:2207-2210 getHeroStar 第二返回值 hero_max_star[rank]（保留接口，背包名字后缀不直接用）。
+static func get_hero_max_star_by_rank(rank: int) -> int:
+	if rank < 1 or rank >= HERO_MAX_STAR.size():
+		return 0
+	return HERO_MAX_STAR[rank]
+
+
+# 源 player.lua:2219-2235 getHeroNameColorByRank — 按 rank 段返名字色（用于背包名字后缀着色）。
+# 分段递进判定（rank<1 兜底白；rank==1 白；其余按上限递进），避免函数体裸数字 2/4/7/12（Logic 层 LINT001）。
+static func get_hero_name_color_by_rank(rank: int) -> Color:
+	if rank < 1:
+		return NAME_COLOR_DEFAULT
+	if rank == 1:
+		return NAME_COLOR_WHITE
+	if rank <= RANK_YELLOW_MAX:
+		return NAME_COLOR_YELLOW
+	if rank <= RANK_BLUE_MAX:
+		return NAME_COLOR_BLUE
+	if rank <= RANK_PURPLE_MAX:
+		return NAME_COLOR_PURPLE
+	if rank <= RANK_ORANGE_MAX:
+		return NAME_COLOR_ORANGE
+	return NAME_COLOR_RED

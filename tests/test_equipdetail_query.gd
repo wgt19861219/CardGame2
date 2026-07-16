@@ -124,3 +124,106 @@ func test_get_way_has_res_icon() -> void:
 	var res_path: String = String(first["res"])
 	assert_true(res_path.begins_with("res://assets/ui/alpha/HVGA/key_stages/stage-"), "res 是 key_stages/stage-N 路径")
 	assert_true(ResourceLoader.exists(res_path), "res 资源存在（key_stages 关卡图标）")
+
+
+# === plusSign/canDealTag 查询（源 heroitem.lua:218-248 + tools.lua:573-595/805-809）===
+# 服务 HeroPackageItem._create_equips 空槽 + 号显示判定。
+
+# 找一个 Hero_equip 表中某英雄 rank=1 行的 Equip1 ID（plusSign 查询典型样本）。
+func _find_hero_equip_slot1() -> Dictionary:
+	var hero_equip: Dictionary = cm.get_raw_table(&"Hero_equip")
+	for tid_str in hero_equip:
+		var rank1: Dictionary = hero_equip[tid_str].get("1", {})
+		var eid: int = int(rank1.get("Equip1 ID", 0))
+		if eid > 0:
+			return {"tid": int(tid_str), "eid": eid}
+	return {"tid": 0, "eid": 0}
+
+
+# 源 heroitem.lua:219-223 — hero_equip[tid][rank]["Equip{slot} ID"]。
+func test_get_slot_expected_equip_returns_id() -> void:
+	var sample: Dictionary = _find_hero_equip_slot1()
+	if int(sample["tid"]) == 0:
+		pending("Hero_equip 表无 rank1 Equip1 样本，跳过")
+		return
+	var hero := HeroInstance.new(int(sample["tid"]))
+	hero.rank = 1
+	var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, 1, cm)
+	assert_eq(eid, int(sample["eid"]), "slot 1 eid 与 Hero_equip 表 rank1 Equip1 ID 一致")
+
+
+func test_get_slot_expected_equip_invalid_slot_zero() -> void:
+	var hero := HeroInstance.new(1)
+	hero.rank = 1
+	assert_eq(EquipdetailQuery.get_slot_expected_equip(hero, 0, cm), 0, "slot 0 越界 → 0")
+	assert_eq(EquipdetailQuery.get_slot_expected_equip(hero, 7, cm), 0, "slot 7 越界 → 0（EQUIP_SLOTS=6）")
+
+
+# 源 tools.lua:573-595 isEquipCraftable — eid<=0 直接 false。
+func test_is_equip_craftable_zero_eid_false() -> void:
+	var pd := PlayerData.new(cm)
+	assert_false(EquipdetailQuery.is_equip_craftable(0, cm, pd), "eid=0 → false")
+	assert_false(EquipdetailQuery.is_equip_craftable(-1, cm, pd), "eid<0 → false")
+
+
+# 持有装备（pd.items[eid]>0）→ craftable=true（源 :576 has 优先）。
+func test_is_equip_craftable_with_inventory_true() -> void:
+	var sample: Dictionary = _find_hero_equip_slot1()
+	if int(sample["eid"]) == 0:
+		pending("无可用 eid 样本，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	pd.items[int(sample["eid"])] = 1
+	assert_true(EquipdetailQuery.is_equip_craftable(int(sample["eid"]), cm, pd), "持有该装备 → craftable=true")
+
+
+# pd=null + 配方 Components>0 → true（简化版，与 equip_craft_panel._is_craftable 对齐）。
+func test_is_equip_craftable_null_pd_uses_recipe() -> void:
+	var craft: Dictionary = cm.get_raw_table(&"Equipcraft")
+	var eid_with_components: int = 0
+	for tid_str in craft:
+		if int(craft[tid_str].get("Components", 0)) > 0:
+			eid_with_components = int(tid_str)
+			break
+	if eid_with_components == 0:
+		pending("Equipcraft 表无 Components>0 样本，跳过")
+		return
+	assert_true(EquipdetailQuery.is_equip_craftable(eid_with_components, cm, null), "pd=null + Components>0 → true")
+
+
+# 源 tools.lua:805-809 canWearEquip — hero.level >= Equip[eid]["Level Requirement"]。
+func test_can_wear_equip_level_meets() -> void:
+	var sample: Dictionary = _find_hero_equip_slot1()
+	if int(sample["eid"]) == 0:
+		pending("无可用 eid 样本，跳过")
+		return
+	var hero := HeroInstance.new(int(sample["tid"]))
+	hero.level = 99   # 远超任何 Level Requirement
+	var result: Dictionary = EquipdetailQuery.can_wear_equip(hero, int(sample["eid"]), cm)
+	assert_true(bool(result["can"]), "level=99 应满足 Level Requirement")
+
+
+func test_can_wear_equip_level_not_meet() -> void:
+	var raw: Dictionary = cm.get_raw_table(&"Equip")
+	var eid_high_level: int = 0
+	var high_req: int = 50
+	for tid_str in raw:
+		var req: int = int(raw[tid_str].get("Level Requirement", 0))
+		if req >= high_req:
+			eid_high_level = int(tid_str)
+			high_req = req
+			break
+	if eid_high_level == 0:
+		pending("无 Level Requirement>=50 装备样本，跳过")
+		return
+	var hero := HeroInstance.new(1)
+	hero.level = 1
+	var result: Dictionary = EquipdetailQuery.can_wear_equip(hero, eid_high_level, cm)
+	assert_false(bool(result["can"]), "level=1 < Level Requirement → can=false")
+
+
+# eid<=0 兜底（can_wear_equip null hero/eid<=0 → can=false）。
+func test_can_wear_equip_zero_eid_false() -> void:
+	var hero := HeroInstance.new(1)
+	var result: Dictionary = EquipdetailQuery.can_wear_equip(hero, 0, cm)
+	assert_false(bool(result["can"]), "eid=0 → can=false")

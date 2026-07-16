@@ -18,7 +18,11 @@ const LIST_BG_SIZE: Vector2 = Vector2(720.0, 410.0)   # 视觉加大（装 2 卡
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const TAB_KEYS: Array[String] = ["all", "front", "middle", "back"]
-const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # 源 BATTLEPREPARE.WHOLE / UNIT.FRONT/MIDDLE/REAR_ROW
+# TAB 文字照源走 LSTR（cm=null 时 fallback）；const 不能调运行时 cm.get_lstr → _create_tabs 运行时填。
+const TAB_LSTR_KEYS: Array[String] = [
+	"BATTLEPREPARE.WHOLE", "UNIT.FRONT_ROW", "UNIT.MIDDLE_ROW", "UNIT.REAR_ROW"
+]
+const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # cm=null fallback（与源 LSTR 值同步）
 const TAB_COCOS_Y: Array[float] = [365.0, 305.0, 245.0, 185.0]      # 源 :517/560/603/646
 const TAB_COCOS_X: float = 707.0
 const LABEL_CENTER_OFFSET: Vector2 = Vector2(20.0, 10.0)   # label 居中估算偏移（size 未 layout）
@@ -32,9 +36,9 @@ const CELL_SIZE: Vector2 = Vector2(320.0, 100.0)   # 源 getpos 260 间距 / 100
 const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const FRAG_BTN_POS: Vector2 = Vector2(700.0, 50.0)
 const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"   # 源 prepareLoad :403
-const LIST_LINE_LABEL: String = "尚未召唤的英雄"   # 源 :407 LSTR("HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED")
+const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"   # 源 :407
+const LIST_LINE_FALLBACK: String = "以下英雄尚未召唤"   # cm=null fallback（= 源 LSTR_zh-CN 值）
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -94,7 +98,7 @@ func _create_tabs() -> void:
 		container.add_child(btn)
 		_tabs[key] = btn
 		var lbl := Label.new()
-		lbl.text = TAB_LABELS[i]
+		lbl.text = cm.get_lstr(TAB_LSTR_KEYS[i]) if cm != null else TAB_LABELS[i]
 		lbl.add_theme_font_size_override("font_size", 18)
 		lbl.position = g - LABEL_CENTER_OFFSET
 		container.add_child(lbl)
@@ -151,7 +155,7 @@ func _refresh_list() -> void:
 		var entry: Variant = list[i]
 		if _is_handbook_boundary(list, i):
 			_add_list_line()
-		var item := HeroPackageItem.create_from_entry(entry, cm, _hero_mgr)
+		var item := HeroPackageItem.create_from_entry(entry, cm, _hero_mgr, pd)
 		item.gui_input.connect(_on_item_gui_input.bind(entry))
 		_grid.add_child(item)
 
@@ -177,7 +181,7 @@ func _add_list_line() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	line.add_child(bg)
 	var lbl := Label.new()
-	lbl.text = LIST_LINE_LABEL
+	lbl.text = cm.get_lstr(LIST_LINE_LSTR_KEY) if cm != null else LIST_LINE_FALLBACK
 	lbl.add_theme_font_size_override("font_size", 16)
 	lbl.position = Vector2(60.0, CELL_SIZE.y * 0.5 - 10.0)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
