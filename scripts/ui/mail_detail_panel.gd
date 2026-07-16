@@ -5,6 +5,9 @@ extends PopWindow
 ## frame（mailbox_letter_bg）+ ok 按钮（领取/关闭）+ title/body/from + splitLine + attach（common 货币）。
 ## ok 点击：未读+有附件 → claim_attach；未读无附件 → mark_read；已读 → 关闭。单机化裁源 read_mail 联机。
 
+# 全局 contentScaleFactor（源 hello.lua:311 setContentScaleFactor(1.28125)）：
+# Cocos Sprite 无 fix_size 时显示 = 纹理/CS；Godot TextureRect 用 tex.get_size() 偏大 1.28。
+const CONTENT_SCALE: float = 1.28125
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_bg.png"
 const SPLIT_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_delimeter.png"
 const OK_TEX: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
@@ -71,7 +74,7 @@ func _build_ui() -> void:
 	var frame := TextureRect.new()
 	frame.texture = frame_tex
 	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = frame_tex.get_size()
+	frame.size = frame_tex.get_size() / CONTENT_SCALE   # 源 content.lua:413 config={} 无 fix
 	frame.position = Vector2(960.0 * 0.5 - frame.size.x * 0.5, 640.0 * 0.5 - frame.size.y * 0.5)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(frame)
@@ -123,7 +126,7 @@ func _add_content(frame: TextureRect) -> void:
 		var split := TextureRect.new()
 		split.texture = load(SPLIT_TEX)
 		split.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		split.size = split.texture.get_size()
+		split.size = split.texture.get_size() / CONTENT_SCALE   # 源 content.lua:119 config={} 无 fix
 		split.position = Vector2(frame.size.x * 0.5 - split.size.x * 0.5, y)
 		split.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		frame.add_child(split)
