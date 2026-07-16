@@ -18,6 +18,9 @@ const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 const REFRESH_BTN_POS: Vector2 = Vector2(590.0, 20.0)
 const REFRESH_BTN_SIZE: Vector2 = Vector2(140.0, 32.0)
+# 源 shop.lua:884/895 refresh 按钮 shop_refresh_button.png + shop_refresh_button_down.png。
+const REFRESH_BTN_RES: String = "res://assets/ui/alpha/HVGA/shop_refresh_button.png"
+const REFRESH_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/shop_refresh_button_down.png"
 const MONEY_LABEL_POS: Vector2 = Vector2(40.0, 25.0)
 const LIST_ORIGIN: Vector2 = Vector2(260.0, 110.0)
 const LIST_CELL: Vector2 = Vector2(170.0, 165.0)
@@ -43,7 +46,8 @@ var _config: Dictionary = {}
 var _panel: Control
 var _item_layer: Control
 var _money_label: Label
-var _refresh_btn: Button
+var _refresh_btn: TextureButton
+var _refresh_cost_label: Label       # 源按钮附近 cost 显示（shop_refresh_cost_bg + 价格）
 var _talk_label: Label             # NPC 对话气泡（照源 shop.lua:19 showTalk）
 var _next_refresh_label: Label     # 下次自动刷新时刻（照源 getShopNextAutoRefreshPointDesc）
 var _talk_tween: Tween = null      # 对话淡出动画（doSpeak 范式）
@@ -120,18 +124,36 @@ func _add_close_button() -> void:
 	_panel.add_child(btn)
 
 
+# 源 shop.lua:878-916 refresh 按钮：shop_refresh_button.png 贴图 + 中心 "刷新" Label（:905 硬编码字面量，
+# 源未 LSTR 化）。cost 在按钮上方独立 Label（源 shop_refresh_cost_bg + 价格，:884 附近）。
 func _add_refresh_button() -> void:
-	_refresh_btn = Button.new()
+	_refresh_btn = TextureButton.new()
+	_refresh_btn.texture_normal = load(REFRESH_BTN_RES) as Texture2D
+	_refresh_btn.texture_pressed = load(REFRESH_BTN_PRESS_RES) as Texture2D
+	_refresh_btn.ignore_texture_size = true
 	_refresh_btn.position = REFRESH_BTN_POS
 	_refresh_btn.size = REFRESH_BTN_SIZE
 	_refresh_btn.pressed.connect(_on_refresh)
 	_panel.add_child(_refresh_btn)
+	var lbl := Label.new()
+	lbl.text = "刷新"   # 源 :905 硬编码 "刷新"（非 LSTR）
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_refresh_btn.add_child(lbl)
+	_refresh_cost_label = Label.new()
+	_refresh_cost_label.position = Vector2(REFRESH_BTN_POS.x, REFRESH_BTN_POS.y - 18.0)
+	_refresh_cost_label.add_theme_font_size_override("font_size", 14)
+	_refresh_cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(_refresh_cost_label)
 	_update_refresh_label()
 
 
 func _update_refresh_label() -> void:
 	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
-	_refresh_btn.text = "刷新(%d钻)" % cost
+	# cost 显示在按钮上方 Label（源按钮本身只显"刷新"，cost 在 confirm dialog SPEND_XXX_TO_REFRESH 内）。
+	_refresh_cost_label.text = "%d钻" % cost
 
 
 # 源 createCommon：两行三列商品列表（getItemPos :371-382 两行布局）。
@@ -171,7 +193,7 @@ func _create_item(g: Dictionary, slot: int, pos: Vector2) -> Control:
 	item.add_child(price_lbl)
 	if int(g.get("amount", 0)) <= 0:
 		var sold := Label.new()
-		sold.text = "售罄"
+		sold.text = "售罄"   # 源 :110/491 noneTag 贴图（noneTagRes），无 LSTR → Label 降级
 		sold.position = ITEM_SOLDOUT_POS
 		sold.modulate = Color.RED
 		sold.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -191,7 +213,7 @@ func _on_buy(slot: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var ok: bool = shop_mgr.buy(shop_id, slot, pd, cm)
 	if ok:
-		Toast.show_message("购买成功")
+		Toast.show_message("购买成功")   # 源 shop.lua:122 硬编码字面量（非 LSTR）
 		_show_talk("Purchase")   # 源 shop.lua:130 购买后对话
 	else:
 		# 照源 buy 失败区分：slot 越界 / amount<=0 → 售罄；否则货币不足。
@@ -202,20 +224,25 @@ func _on_buy(slot: int) -> void:
 			sold_out = int(g.get("amount", 0)) <= 0
 		if sold_out:
 			_show_talk("Soldout")   # 源 shop.lua:246 点售罄商品
+		# 源 shop.lua:173/175 "金币不足"/"钻石不足" 硬编码字面量；interfax/gladiator 才走 LSTR（本项目统一降级字面量）。
 		Toast.show_message("已售罄" if sold_out else "货币不足")
 	call_deferred("_rebuild")
 
 
-# 源 doClickRefresh + shop_refresh。P1-8：照源 :302-313 加消耗提示（showConfirmDialog 单机化降级为 Toast 预览）
+# 源 doClickRefresh + shop_refresh（:302-313）。P1-8 照源 showConfirmDialog → 独立 ShopRefreshConfirm。
 func _on_refresh() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
 	if pd.diamond < cost:
 		Toast.show_message("钻石不足（需 %d）" % cost)
 		return
-	# 源 :302-313 doClickRefresh showConfirmDialog（消耗预览）→ 独立 ShopRefreshConfirm（替 Toast 降级）
+	# 源 :307-308 SHOP.SPEND_XXX_TO_REFRESH（3 参：cost/coinname/refreshshoptimes）。
+	# coinname 源 config.getRefreshCoinName 返 i18n 货币名，本项目降级"钻石"字面量（无对应货币名 LSTR key）。
+	# refreshshoptimes 源 getRefreshShopTimes 返剩余次数，本项目 get_refresh_times 返已用次数（无刷新上限，语义差异）。
+	var coinname: String = "钻石"
+	var times: int = shop_mgr.get_refresh_times(shop_id)
 	var popup := ShopRefreshConfirm.new()
-	popup.set_message("花费 %d 钻石刷新？" % cost)
+	popup.set_message(cm.get_lstr("SHOP.SPEND_XXX_TO_REFRESH") % [cost, coinname, times], cm)
 	popup.confirmed.connect(_on_refresh_confirmed)
 	container.add_child(popup)
 
@@ -293,16 +320,20 @@ func _add_next_refresh_label() -> void:
 	_update_next_refresh_label()
 
 
-# 更新时刻文字（setup + _rebuild + _process 每秒共用）。expire 态显停留倒计时 HH:MM:SS（源 :661-663），
-# 否则显下次刷新时刻（源 getShopNextAutoRefreshPointDesc）。两者皆空则 Label 清空。
+# 更新时刻文字（setup + _rebuild + _process 每秒共用）。expire 态显停留倒计时（源 :757 SHOP.MERCHANT_LEAVES_AFTER），
+# 否则显下次刷新时刻（源 :751 SHOP.NEXT_AUTOMATICALLY_REFRESH_TIME）。两者皆空则 Label 清空。
 func _update_next_refresh_label() -> void:
 	var tt: String = shop_mgr.get_time_type(shop_id, pd, _now())
 	if tt == "expire":
+		# 源 :757-758 SHOP.MERCHANT_LEAVES_AFTER(商人将于) + time + SHOP.TIMES(后离开)。
 		var exp: String = shop_mgr.get_expire_desc(shop_id, pd, _now())
-		_next_refresh_label.text = "停留 " + exp if exp != "" else ""
+		if exp == "":
+			_next_refresh_label.text = ""
+		else:
+			_next_refresh_label.text = cm.get_lstr("SHOP.MERCHANT_LEAVES_AFTER") + " " + exp + " " + cm.get_lstr("SHOP.TIMES")
 		return
 	var desc: String = shop_mgr.get_next_refresh_desc(shop_id, pd, _now())
-	_next_refresh_label.text = "下次刷新 " + desc if desc != "" else ""
+	_next_refresh_label.text = cm.get_lstr("SHOP.NEXT_AUTOMATICALLY_REFRESH_TIME") + desc if desc != "" else ""
 
 
 # 运行中轮询（源 shop.lua timeRefresh:648-698 每秒）：① 到期检查（地精/黑市停留 3600s）② 自动刷新（Refresh Times 点）③ 时刻 Label 刷新。
