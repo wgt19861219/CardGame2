@@ -21,18 +21,26 @@ const LIST_H: float = 320.0
 const COLOR_WIN: Color = Color(0.2, 0.8, 0.2)
 const COLOR_LOSE: Color = Color(0.9, 0.2, 0.2)
 const COLOR_BODY: Color = Color(65.0 / 255.0, 57.0 / 255.0, 54.0 / 255.0)
+# 源 excavatehistory.lua:65-69 tag_win/tag_lose（图，无 LSTR 文本）；单机用文字 "胜/败" 兜底
 const WIN_TEXT: String = "胜"
 const LOSE_TEXT: String = "败"
-const CHECK_TEXT: String = "战报"
-const MINE_LABEL_FMT: String = "矿点：%s"
-const EMPTY_TEXT: String = "暂无战斗记录"
+const CHECK_TEXT: String = "战报"   # 源 check_button 图标（无 LSTR）
+# 源 excavatehistory.lua:100 EXCAVATEHISTORY.ATTACK_YOUR__S（"偷袭了你的%s"）
+const LSTR_ATTACK_KEY: String = "EXCAVATEHISTORY.ATTACK_YOUR__S"
+const ATTACK_FALLBACK_FMT: String = "偷袭了你的%s"
+const EMPTY_TEXT: String = "暂无战斗记录"   # 源空状态无文本（自创中文兜底）
 const SECONDS_PER_DAY: int = 86400
 const SECONDS_PER_HOUR: int = 3600
 const SECONDS_PER_MINUTE: int = 60
-const DAY_AGO_FMT: String = "%d 天前"
-const HOUR_AGO_FMT: String = "%d 小时前"
-const MINUTE_AGO_FMT: String = "%d 分钟前"
-const SECOND_AGO_FMT: String = "%d 秒前"
+# 源 :78-84 时间相对格式（4 个 LSTR key，dd/dh/dm/dt 分档）
+const LSTR_DAY_KEY: String = "EXCAVATEHISTORY._D_DAYS_AGO"
+const DAY_FALLBACK_FMT: String = "%d天前"
+const LSTR_HOUR_KEY: String = "PVP._D_HOURS_AGO"
+const HOUR_FALLBACK_FMT: String = "%d小时前"
+const LSTR_MIN_KEY: String = "PVP._D_MINUTES_AGO"
+const MIN_FALLBACK_FMT: String = "%d分钟前"
+const LSTR_SEC_KEY: String = "PVP._D_SECONDS_AGO"
+const SEC_FALLBACK_FMT: String = "%d秒前"
 const ExcavateBattleReportPanel = preload("res://scripts/ui/excavate_battle_report_panel.gd")
 
 var pd: PlayerData
@@ -126,8 +134,10 @@ func _build_item(record: Dictionary) -> Control:
 	name_lbl.add_theme_color_override("font_color", COLOR_BODY)
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info.add_child(name_lbl)
+	# 源 excavatehistory.lua:100 ATTACK_YOUR__S = "偷袭了你的%s"（disName = ExcavateTreasure Display Name）
 	var mine_lbl := Label.new()
-	mine_lbl.text = MINE_LABEL_FMT % ExcavateData.display_name(pd.cm, type_id)
+	var dis_name: String = ExcavateData.display_name(pd.cm, type_id)
+	mine_lbl.text = _lstr(LSTR_ATTACK_KEY, ATTACK_FALLBACK_FMT) % dis_name
 	mine_lbl.add_theme_font_size_override("font", FONT_BODY)
 	mine_lbl.add_theme_color_override("font_color", COLOR_BODY)
 	mine_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -147,19 +157,27 @@ func _build_item(record: Dictionary) -> Control:
 	return row
 
 
-## 相对时间显示（照源 :73-85 dd/dh/dm/dt 分档）。
+# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = pd.cm
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
+
+
+## 相对时间显示（照源 :73-85 dd/dh/dm/dt 分档，4 个 LSTR key）。
 func _relative_time(time_point: int) -> String:
 	var now: int = int(Time.get_unix_time_from_system())
 	var dt: int = now - time_point
 	if dt < 0:
 		dt = 0
 	if dt >= SECONDS_PER_DAY:
-		return DAY_AGO_FMT % (dt / SECONDS_PER_DAY)
+		return _lstr(LSTR_DAY_KEY, DAY_FALLBACK_FMT) % (dt / SECONDS_PER_DAY)
 	if dt >= SECONDS_PER_HOUR:
-		return HOUR_AGO_FMT % (dt / SECONDS_PER_HOUR)
+		return _lstr(LSTR_HOUR_KEY, HOUR_FALLBACK_FMT) % (dt / SECONDS_PER_HOUR)
 	if dt >= SECONDS_PER_MINUTE:
-		return MINUTE_AGO_FMT % (dt / SECONDS_PER_MINUTE)
-	return SECOND_AGO_FMT % dt
+		return _lstr(LSTR_MIN_KEY, MIN_FALLBACK_FMT) % (dt / SECONDS_PER_MINUTE)
+	return _lstr(LSTR_SEC_KEY, SEC_FALLBACK_FMT) % dt
 
 
 func _on_check(record_id: int) -> void:

@@ -21,13 +21,18 @@ const SIDE_Y: float = 110.0
 const COLOR_WIN: Color = Color(0.2, 0.8, 0.2)
 const COLOR_LOSE: Color = Color(0.9, 0.2, 0.2)
 const COLOR_BODY: Color = Color(65.0 / 255.0, 57.0 / 255.0, 54.0 / 255.0)
-const WIN_TEXT: String = "胜"
-const LOSE_TEXT: String = "败"
+const WIN_TEXT: String = "胜"   # 源 tag_win.png 图标（无 LSTR）
+const LOSE_TEXT: String = "败"   # 源 tag_lose.png 图标（无 LSTR）
+# 源 excavateteam.lua 无 fixed self/enemy 标签；playerData._name 直接显示，单机用 "我方/敌方" 兜底
 const SELF_LABEL: String = "我方"
 const ENEMY_LABEL: String = "敌方"
-const TITLE_FMT: String = "第 %d 战"
-const HERO_FMT: String = "英雄 tid %d  Lv%d  R%d  ★%d"
-const EMPTY_HERO_TEXT: String = "（无英雄数据）"
+# 源 excavatebattlereport.lua:84 "第" + index + "战"（THE+BATTLE 两 LSTR key 拼接）
+const LSTR_THE_KEY: String = "EXCAVATEBATTLEREPORT.THE"
+const THE_FALLBACK: String = "第"
+const LSTR_BATTLE_KEY: String = "EXCAVATEBATTLEREPORT.BATTLE"
+const BATTLE_FALLBACK: String = "战"
+const HERO_FMT: String = "英雄 tid %d  Lv%d  R%d  ★%d"   # 源 readhero.createIcon 头像（无 LSTR 文本）
+const EMPTY_HERO_TEXT: String = "（无英雄数据）"   # 单机兜底
 const MAX_HEROES: int = 5   # 照源 :127 for j=1,5
 
 var pd: PlayerData
@@ -68,13 +73,22 @@ func _add_close(frame: TextureRect) -> void:
 
 func _add_title(frame: TextureRect, index: int) -> void:
 	var title := Label.new()
-	title.text = TITLE_FMT % index
+	# 源 :84 setLabelString(THE) .. index .. setLabelString(BATTLE) = "第" + 1 + "战"
+	title.text = _lstr(LSTR_THE_KEY, THE_FALLBACK) + str(index) + _lstr(LSTR_BATTLE_KEY, BATTLE_FALLBACK)
 	title.position = Vector2(0, 60)
 	title.size = Vector2(frame.size.x, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font", FONT_TITLE)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title)
+
+
+# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = pd.cm
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
 
 
 ## 单侧阵容（照源 keys[i] left=oppo/right=self + tag_win/lose + hicon_container 渲染英雄）。
