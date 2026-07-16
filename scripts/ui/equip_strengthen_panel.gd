@@ -23,18 +23,18 @@ const SCALE9_CAP: Rect2 = Rect2(20.0, 20.0, 53.0, 29.0)  # 源 stren/faststren c
 const BTN_LABEL_COLOR: Color = Color(0.918, 0.882, 0.804)  # 源 ccc3(234,225,205) 浅金
 const DIAMOND_COST_POS: Vector2 = Vector2(620.0, 510.0)  # 源 rmb label :715,100
 const SELECT_FADE_DUR: float = 0.2                      # 源 selectEquip:1672-1674 CCFadeTo 0.2s
-# 提示文案（do_click/select/_show_hint 用；Att/Material 持各自域的）
-const TEXT_LOW_QUALITY: String = "品质不足，仅绿色及以上可附魔"  # 源 selectEquip:1647
-const TEXT_ADD_MATERIAL: String = "请添加材料"      # 源 doTalk:1664
-const TEXT_MAX_LEVEL: String = "已满级"             # 源 doTalk:1662
-const TEXT_PLEASE_ADD: String = "请添加材料，所有装备都可附魔"  # 源 selectEquip:1664
-const TEXT_EXP_MAXED: String = "经验已满"           # 源 addMaterial:278
-const TEXT_SUCCESS: String = "恭喜附魔成功"         # 源 doStrenReply:73
-const TEXT_FAIL: String = "附魔失败"                # 源 doStrenReply:75
-const TEXT_MAXED_OUT: String = "已满级，无需强化"   # 源 upFastStren:703
-const TEXT_DIAMOND_SHORT: String = "钻石不足"       # 源 upFastStren:706 toRecharge 单机化
-const TEXT_ENCHANT: String = "附魔"                 # 源 EQUIPSTRENGTHEN.ENCHANTING
-const TEXT_ONECLICK: String = "一键附魔"            # 源 EQUIPSTRENGTHEN.ONECLICK_ENCHANTING
+# 提示文案 LSTR key（源 equipstrengthen.lua 各处 T(LSTR(...))，运行时 cm.get_lstr 解析为当前语言）。
+# 单机化降级项：TEXT_DIAMOND_SHORT（源 upFastStren:706 showHandyDialog toRecharge 充值弹窗省略，无对应 LSTR → fallback 中文）。
+const TEXT_LOW_QUALITY_KEY: String = "EQUIPSTRENGTHEN.ONLY_GREEN_AND_OVER_THE_QUALITY_OF_THE_EQUIPMENT_CAN_BE_ENCHANTED"  # 源 selectEquip:1647
+const TEXT_ADD_MATERIAL_KEY: String = "EQUIPSTRENGTHEN.NO_MATERIAL_ADDED"            # 源 doTalk:1664/doClickStren:578
+const TEXT_MAX_LEVEL_KEY: String = "EQUIPSTRENGTHEN.YOUR_ENCHANTING_LEVEL_HAS_BEEN_MAXED_OUT"  # 源 doTalk:1662/upFastStren:703
+const TEXT_PLEASE_ADD_KEY: String = "EQUIPSTRENGTHEN.PLEASE_ADD_MATERIAL_IT_CAN_BE_ADDED_TO_ALL_EQUIPMENTS"  # 源 selectEquip:1664
+const TEXT_EXP_MAXED_KEY: String = "EQUIPSTRENGTHEN.EXPERIENCE_MAXED_OUT"            # 源 addMaterial:278
+const TEXT_SUCCESS_KEY: String = "EQUIPSTRENGTHEN.CONGRATULATIONS_ENCHANTED_SUCCESSFULLY"  # 源 doStrenReply:73
+const TEXT_FAIL_KEY: String = "EQUIPSTRENGTHEN.UNFORTUNATELY_ENCHANTED_FAILED"       # 源 doStrenReply:75
+const TEXT_ENCHANT_KEY: String = "EQUIPSTRENGTHEN.ENCHANTING"                        # 源 :902
+const TEXT_ONECLICK_KEY: String = "EQUIPSTRENGTHEN.ONECLICK_ENCHANTING"              # 源 :1013
+const TEXT_DIAMOND_SHORT: String = "钻石不足"   # 单机化 fallback（源 toRecharge 弹窗省略）
 # --- P1-11 主背景层（源 :1995-2027 mainLayer ui_info：bg+frame+heroIcon）---
 const PANEL_HEIGHT: float = 560.0   # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（=源高 480 + 80 居中边距，照 battle_view_coords.gd BASE_Y）
 const BG_RES: String = "res://assets/ui/alpha/HVGA/bg.jpg"
@@ -80,7 +80,7 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -
 	_create_close_button()
 	EquipStrengthenAtt.show_material_bg(self, -1)   # 源 doShowmbPrompt nil → 宽背景（先建 z 底）
 	EquipStrengthenAtt.show_equips(self)
-	_show_hint(TEXT_ADD_MATERIAL)
+	_show_hint(_T(TEXT_ADD_MATERIAL_KEY))
 	_create_stren_buttons()
 	if pd != null:
 		_materials = EquipStrengthenMaterial.build_material_list(self)
@@ -151,7 +151,7 @@ func select_slot(slot: int) -> void:
 		return   # 空槽不可选（源 :1641 容错）
 	var ml: int = int(ReadequipData.get_equip_level_exp(item_id, cm)["ml"])
 	if ml == 0:
-		_show_hint(TEXT_LOW_QUALITY)   # 源 :1646-1648 quality 1 不可附魔
+		_show_hint(_T(TEXT_LOW_QUALITY_KEY))   # 源 :1646-1648 quality 1 不可附魔
 		return
 	_selected_slot = slot
 	Events.bus.emit_tutorial_step(&"EEclickEquip")    # 源 doClickEquip:1779（点装备槽）
@@ -176,9 +176,9 @@ func select_slot(slot: int) -> void:
 	EquipStrengthenAtt.show_material_bg(self, slot)   # 源 doShowmbPrompt(slot) → 窄背景 + label
 	# 源 selectEquip:1661-1665：满级/未满级 doTalk 常驻提示
 	if EquipStrengthenAtt.is_max_level_current(self):
-		_show_hint_sticky(TEXT_MAX_LEVEL)
+		_show_hint_sticky(_T(TEXT_MAX_LEVEL_KEY))
 	else:
-		_show_hint_sticky(TEXT_PLEASE_ADD)
+		_show_hint_sticky(_T(TEXT_PLEASE_ADD_KEY))
 
 
 # 源 createExpBar:1122 oriExp=getItemExp(slot), targetExp=oriExp。
@@ -196,6 +196,13 @@ func _add_exp(exp_delta: int) -> void:
 	_target_exp = max(0.0, _target_exp + float(exp_delta))
 	EquipStrengthenAtt.refresh_exp_bar_preview(self)
 	EquipStrengthenAtt.refresh_stren_cost(self)
+
+
+# LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失时返空串避免 null 解引用，照 ConfigManager.get_lstr fallback 行为）。
+func _T(key: String) -> String:
+	if cm == null:
+		return ""
+	return String(cm.get_lstr(key))
 
 
 # _show_hint → NPC doSpeak（源多数提示走 doSpeak 淡出）。
@@ -247,11 +254,11 @@ func perform_enhance_fast() -> bool:
 
 # 源 createStrenButton:804-1028 — 普通强化按钮 + 钻石一键满级按钮 + 钻石 cost label。
 func _create_stren_buttons() -> void:
-	_stren_btn = UiScale9Button.make(STREN_BTN_RES, STREN_BTN_PRESS_RES, STREN_BTN_POS, STREN_BTN_SIZE, SCALE9_CAP, TEXT_ENCHANT, BTN_LABEL_COLOR)
+	_stren_btn = UiScale9Button.make(STREN_BTN_RES, STREN_BTN_PRESS_RES, STREN_BTN_POS, STREN_BTN_SIZE, SCALE9_CAP, _T(TEXT_ENCHANT_KEY), BTN_LABEL_COLOR)
 	_stren_btn.set_meta("stren", true)
 	_stren_btn.pressed.connect(do_click_stren)
 	container.add_child(_stren_btn)
-	_faststren_btn = UiScale9Button.make(STREN_BTN_RES, STREN_BTN_PRESS_RES, FASTSTREN_BTN_POS, FASTSTREN_BTN_SIZE, SCALE9_CAP, TEXT_ONECLICK, BTN_LABEL_COLOR)
+	_faststren_btn = UiScale9Button.make(STREN_BTN_RES, STREN_BTN_PRESS_RES, FASTSTREN_BTN_POS, FASTSTREN_BTN_SIZE, SCALE9_CAP, _T(TEXT_ONECLICK_KEY), BTN_LABEL_COLOR)
 	_faststren_btn.set_meta("stren", true)
 	_faststren_btn.pressed.connect(do_click_fast_stren)
 	container.add_child(_faststren_btn)
@@ -267,11 +274,11 @@ func do_click_stren() -> void:
 	if pd == null or hero == null or _selected_slot < 0:
 		return
 	if EquipStrengthenAtt.is_max_level_target(self):
-		_show_hint(TEXT_EXP_MAXED)
+		_show_hint(_T(TEXT_EXP_MAXED_KEY))
 		return
 	var mats: Dictionary = get_addmt_info()
 	if mats.is_empty():
-		_show_hint(TEXT_ADD_MATERIAL)   # 源 no_cost 未添加材料
+		_show_hint(_T(TEXT_ADD_MATERIAL_KEY))   # 源 no_cost 未添加材料
 		return
 	_pre_enhance_level = EquipStrengthenAtt.get_slot_level(self, _selected_slot)   # 缓存强化前等级
 	var ok: bool = perform_enhance(mats)
@@ -284,13 +291,13 @@ func do_click_fast_stren() -> void:
 	if pd == null or hero == null or _selected_slot < 0:
 		return
 	if EquipStrengthenAtt.is_max_level_current(self):
-		_show_hint(TEXT_MAXED_OUT)   # 源 :703
+		_show_hint(_T(TEXT_MAX_LEVEL_KEY))   # 源 upFastStren:703（合并 doClickFastStren+upFastStren，省 confirm 弹窗）
 		return
 	var cost: int = EquipStrengthenAtt.get_current_fast_cost(self)
 	if cost <= 0:
 		return
 	if pd.diamond < cost:
-		_show_hint(TEXT_DIAMOND_SHORT)   # 源 :706 showHandyDialog toRecharge
+		_show_hint(TEXT_DIAMOND_SHORT)   # 源 :706 showHandyDialog toRecharge（单机化省略，fallback 中文）
 		return
 	_pre_enhance_level = EquipStrengthenAtt.get_slot_level(self, _selected_slot)
 	var ok: bool = perform_enhance_fast()
@@ -299,7 +306,7 @@ func do_click_fast_stren() -> void:
 
 # 源 doStrenReply:68-84：doSpeak 成功/失败 + initmtList（重建网格）+ initStrenButton + initBar + initEquipAtt。
 func _on_enhance_done(success: bool) -> void:
-	_show_hint(TEXT_SUCCESS if success else TEXT_FAIL)
+	_show_hint(_T(TEXT_SUCCESS_KEY) if success else _T(TEXT_FAIL_KEY))
 	if not success:
 		return
 	# Phase 8 EE→SU 连续（单机化）：强化成功 + EE done → switch SU（源独立 SkillUpgrade 解锁触发，无 playerlimit 故连续）

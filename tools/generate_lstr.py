@@ -22,10 +22,12 @@ OUT_DIR = r"D:\workspace\projects\CardGame2\resources\data"
 LANGUAGES = ["zh-CN", "en-US", "de-DE", "ko-KR", "pt-BR", "ru-RU", "tr-TR"]
 
 # zh-CN.lua 行：	["KEY"] = "value"（value 可含转义 \"）
-# key 字符集含 `;` 和 `-`：`;` 少数 key 含分号（Equip.lua:4957 / Stage.lua:10786，如 EQUIP....SHIELD;_A_PLAYER...）；
-# `-` 语言代码 key 含连字符（CONFIGURE.LANGUAGE.EN-US/DE-DE/KO-KR/PT-BR/RU-RU/TR-TR 等 16 个语言名）。
-# 曾漏 `;`（P2-三轮-4 修）后漏 `-`（2026-07-13 i18n 启动修，致语言名 key 不入 LSTR.json → 切换 UI 显示英文 key）。
-LANG_LINE_RE = re.compile(r'\["([A-Za-z0-9_.;-]+)"\]\s*=\s*"((?:[^"\\]|\\.)*)"')
+# key 字符集含 `;` `-` `\`：`;` 少数 key 含分号（Equip.lua:4957 / Stage.lua:10786，如 EQUIP....SHIELD;_A_PLAYER...）；
+# `-` 语言代码 key 含连字符（CONFIGURE.LANGUAGE.EN-US/DE-DE/KO-KR/PT-BR/RU-RU/TR-TR 等 16 个语言名）；
+# `\` 少数 key 含 Lua 字面 `\N` 换行占位（Equipstrengthen CLICK_HERE...\N / DIALOG._D_TIMES_\N 等 22 个 zh-CN key，
+# 2026-07-16 修，致含反斜杠 key 不入 LSTR.json → get_lstr 返英文 key）。
+# 曾漏 `;`（P2-三轮-4 修）后漏 `-`（2026-07-13 i18n 启动修）后漏 `\`（2026-07-16 修）。
+LANG_LINE_RE = re.compile(r'\["([A-Za-z0-9_.;\\-]+)"\]\s*=\s*"((?:[^"\\]|\\.)*)"')
 
 
 def parse_lang(lang_path):
@@ -33,8 +35,18 @@ def parse_lang(lang_path):
         src = f.read()
     out = {}
     for m in LANG_LINE_RE.finditer(src):
-        val = m.group(2).replace('\\"', '"').replace("\\\\", "\\")
-        out[m.group(1)] = val
+        # Lua 字符串转义（照 Lua 5.1 manual）：key 内 `\\N` 解析为字面 `\N`（照源 LSTR 查表用解码后 key）；
+        # value 内 `\\`→`\`、`\"`→`"`、`\n`→LF、`\t`→TAB、`\r`→CR（消费侧 GDScript Label text 需真实换行符渲染断行）。
+        # 用 \x00 占位避免 `\\` 与 `\n` 顺序依赖冲突（`\\n` 应解析为字面 `\n` 而非 LF）。
+        key = m.group(1).replace("\\\\", "\\")
+        val = (m.group(2)
+               .replace("\\\\", "\x00")
+               .replace('\\"', '"')
+               .replace("\\n", "\n")
+               .replace("\\t", "\t")
+               .replace("\\r", "\r")
+               .replace("\x00", "\\"))
+        out[key] = val
     return out
 
 

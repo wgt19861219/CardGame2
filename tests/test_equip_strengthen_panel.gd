@@ -108,7 +108,8 @@ func test_select_low_quality_slot_hint() -> void:
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
 	assert_eq(panel._selected_slot, -1, "quality 1 ml=0 不可选")
-	assert_eq(panel.get_talk_text(), "品质不足，仅绿色及以上可附魔", "低品质提示")
+	# 源 ONLY_GREEN_AND_OVER... LSTR value
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.ONLY_GREEN_AND_OVER_THE_QUALITY_OF_THE_EQUIPMENT_CAN_BE_ENCHANTED")), "低品质提示照源 LSTR")
 	panel.remove_window()
 	root.queue_free()
 
@@ -219,7 +220,8 @@ func test_refresh_stren_cost_shows_gold() -> void:
 	var idx: int = _find_mt_idx(panel, parts_id)
 	EquipStrengthenMaterial.add_material(panel,idx)
 	assert_true(panel._cost_label.text.find("金币") >= 0, "金币预览显示")
-	assert_false(panel._cost_label.text == "请添加材料", "有材料 → 非提示")
+	# 源 NO_MATERIAL_ADDED LSTR value（无材料时显示，有材料 → 非此文本）
+	assert_false(panel._cost_label.text == String(cm.get_lstr("EQUIPSTRENGTHEN.NO_MATERIAL_ADDED")), "有材料 → 非提示")
 	panel.remove_window()
 	root.queue_free()
 
@@ -243,7 +245,8 @@ func test_add_material_max_level_blocked() -> void:
 	panel.show_window(root)
 	var idx: int = _find_mt_idx(panel, parts_id)
 	EquipStrengthenMaterial.add_material(panel,idx)
-	assert_eq(panel.get_talk_text(), "经验已满", "满级 add 被拒提示")
+	# 源 EXPERIENCE_MAXED_OUT LSTR value
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.EXPERIENCE_MAXED_OUT")), "满级 add 被拒提示照源 LSTR")
 	assert_false(panel._addmt_info.has(parts_id) and int(panel._addmt_info[parts_id]) > 0, "满级 add 不入 addmtInfo")
 	panel.remove_window()
 	root.queue_free()
@@ -426,7 +429,8 @@ func test_select_slot_please_add_hint() -> void:
 	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	assert_eq(panel.get_talk_text(), "请添加材料，所有装备都可附魔", "选可附魔槽 → PLEASE_ADD 常驻提示")
+	# 源 PLEASE_ADD_MATERIAL_IT_CAN_BE_ADDED_TO_ALL_EQUIPMENTS LSTR value
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.PLEASE_ADD_MATERIAL_IT_CAN_BE_ADDED_TO_ALL_EQUIPMENTS")), "选可附魔槽 → PLEASE_ADD 常驻提示照源 LSTR")
 	panel.remove_window()
 	root.queue_free()
 
@@ -456,5 +460,96 @@ func test_add_material_spawns_exp_label() -> void:
 			found = true
 			break
 	assert_true(found, "_add_material 生成 +ehc 飘字 label（playAddExpAnim）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ===== LSTR 化验收（第三十六轮 照源 T(LSTR(...)) → cm.get_lstr）=====
+
+# 源 createStrenButton:902/1013 按钮标签走 LSTR（ENCHANTING/ONECLICK_ENCHANTING）
+func test_stren_button_labels_use_lstr() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var enchant_text := panel._stren_btn.text
+	var oneclick_text := panel._faststren_btn.text
+	assert_eq(enchant_text, String(cm.get_lstr("EQUIPSTRENGTHEN.ENCHANTING")), "普通强化按钮标签照源 LSTR")
+	assert_eq(oneclick_text, String(cm.get_lstr("EQUIPSTRENGTHEN.ONECLICK_ENCHANTING")), "一键强化按钮标签照源 LSTR")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 doStrenReply:73/75 成功/失败 hint 走 LSTR（成功路径用 _on_enhance_done(true)）
+func test_on_enhance_done_success_uses_lstr() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	panel._on_enhance_done(true)
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.CONGRATULATIONS_ENCHANTED_SUCCESSFULLY")), "成功提示照源 LSTR")
+	panel._on_enhance_done(false)
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.UNFORTUNATELY_ENCHANTED_FAILED")), "失败提示照源 LSTR")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 baseres.lua:115-121 enhance_level_res（附魔等级文字查表）
+func test_baseres_enhance_level_text() -> void:
+	# 源 enhance_level_res[1]=普通附魔 / [2]=高级附魔 / [3]=专家级附魔 / [4]=宗师级附魔 / [5]=传说级附魔
+	assert_eq(BaseresData.get_enhance_level_text(1, cm), String(cm.get_lstr("BASERES.COMMON_ENCHANT")), "level 1 → 普通附魔")
+	assert_eq(BaseresData.get_enhance_level_text(2, cm), String(cm.get_lstr("BASERES.SENIOR_ENCHANTING")), "level 2 → 高级附魔")
+	assert_eq(BaseresData.get_enhance_level_text(3, cm), String(cm.get_lstr("BASERES.EXPERT_ENCHANTING")), "level 3 → 专家级附魔")
+	assert_eq(BaseresData.get_enhance_level_text(4, cm), String(cm.get_lstr("BASERES.GRAND_MASTER_ENCHANTING")), "level 4 → 宗师级附魔")
+	assert_eq(BaseresData.get_enhance_level_text(5, cm), String(cm.get_lstr("BASERES.LEGENDARY_ENCHANTING")), "level 5 → 传说级附魔")
+	assert_eq(BaseresData.get_enhance_level_text(0, cm), "", "level 0 → 空串（调用方走 UNENCHANTED 分支）")
+	assert_eq(BaseresData.get_enhance_level_text(99, cm), "", "越界 → 空串（源 or '' 容错）")
+
+
+# 源 doShowmbPrompt:1971 CLICK_HERE_TO_OPEN（含 \N 换行占位，LSTR 生成器 2026-07-16 修 regex 后入表）
+func test_material_hint_label_uses_lstr_with_newline() -> void:
+	var eid: int = _find_enchantable_equip()
+	if eid == 0:
+		pass_test("数据表无可附魔装备，跳过")
+		return
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.equip_slots[0] = eid
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	# material_label 文本 = CLICK_HERE LSTR value（含 \n 换行，Label text 自动渲染）
+	var expected: String = String(cm.get_lstr("EQUIPSTRENGTHEN.CLICK_HERE_TO_OPEN_THE_PACK\\N_YOU_CAN_USE_ANY_EQUIPMENT_TO_ENCHANT"))
+	assert_eq(panel._material_label.text, expected, "材料提示照源 LSTR（含 \\N 解码后 \\n 换行）")
+	assert_true(expected.find("\n") >= 0, "LSTR value 含换行符（源 \\n 换行占位保留）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 refreshStrenCost:527 YOUR_MONEY_IS_NOT_ENOUGH 不足提示（金币不足路径）
+func test_money_short_uses_lstr() -> void:
+	var parts_id: int = _find_category_equip("EQUIP.PARTS")
+	var eid: int = _find_enchantable_equip()
+	if parts_id == 0 or eid == 0:
+		pass_test("数据表缺 PARTS 或可附魔装备，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	pd.add_item(parts_id, 10)
+	# 不给金币 → 任何 cost 都判不足
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.equip_slots[0] = eid
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm, pd)
+	panel.show_window(root)
+	var idx: int = _find_mt_idx(panel, parts_id)
+	EquipStrengthenMaterial.add_material(panel,idx)
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.YOUR_MONEY_IS_NOT_ENOUGH")), "金币不足提示照源 LSTR")
 	panel.remove_window()
 	root.queue_free()

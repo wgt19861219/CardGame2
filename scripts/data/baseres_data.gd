@@ -30,6 +30,16 @@ const ATT_SUFFIX: Dictionary = {
 	"SKL": " ", "SILR": ""
 }
 
+# 源 baseres.lua:115-121 enhance_level_res（附魔等级 → LSTR key，1-based index：1=普通/2=高级/3=专家级/4=宗师级/5=传说）。
+# 源 initBar:1051 / createExpBar:1143 / getLevelText:1330 用 res.enhance_level_res[level] 取等级文字。
+const ENHANCE_LEVEL_LSTR: Array[String] = [
+	"BASERES.COMMON_ENCHANT",
+	"BASERES.SENIOR_ENCHANTING",
+	"BASERES.EXPERT_ENCHANTING",
+	"BASERES.GRAND_MASTER_ENCHANTING",
+	"BASERES.LEGENDARY_ENCHANTING",
+]
+
 
 # 源 baseres att_pre：key → 中文前缀（get_lstr 解析 LSTR key）。
 static func get_att_pre(key: String, cm: Variant) -> String:
@@ -42,3 +52,12 @@ static func get_att_pre(key: String, cm: Variant) -> String:
 # 源 baseres att_suffix：key → 后缀字面。
 static func get_att_suffix(key: String) -> String:
 	return String(ATT_SUFFIX.get(key, ""))
+
+
+# 源 baseres enhance_level_res[level]：附魔等级文字（普通/高级/专家级/宗师级/传说）。
+# 源 getLevelText:1330 `res.enhance_level_res[level] or ""`；initBar/createExpBar 同查表。
+# level 0→空串（由调用方走 EQUIPINFO.UNENCHANTED 分支）；越界返空串（源 `or ""` 容错）。
+static func get_enhance_level_text(level: int, cm: Variant) -> String:
+	if level <= 0 or level > ENHANCE_LEVEL_LSTR.size():
+		return ""
+	return String(cm.get_lstr(ENHANCE_LEVEL_LSTR[level - 1]))
