@@ -66,7 +66,7 @@ const FAST_BTN_SIZE: Vector2 = Vector2(60.0, 45.0)  # 源 :757 createFastButton 
 const ROW_SEP: int = 8
 
 # ---- 源 task.lua basetask.create @837-904 chrome:frame+title_bg+title+close ----
-const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311，Sprite 无 fix_size → 显示=纹理/CS
+# CONTENT_SCALE 见上方 line 9（wt3 加 chrome 勿重复定义，重复 const 致 Parse error 连锁 main_scene 编译失败）
 const FRAME_RES: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
 const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/crusade_title_short_bg.png"
 const FRAME_CENTER_COCOS: Vector2 = Vector2(400.0, 218.0)   # 源 :845
