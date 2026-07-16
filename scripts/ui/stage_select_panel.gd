@@ -52,17 +52,18 @@ func _refresh_view() -> void:
 	_stage_buttons.clear()
 	var cm: Variant = player.cm if player != null else null
 	var star_of: Callable = Callable(self, "_get_stage_stars")
-	StageSelectBuilder.create_background(container)
-	StageSelectBuilder.create_close_button(container, remove_window)
+	# 源 create(:1617-1622) 顺序：map → frame/title → mode → arrows → dots。
+	# close 最后 add（等价源 framework 顶层独立 close，避免被 map/frame 遮挡）。
 	var map_layer: Dictionary = StageSelectBuilder.create_map_layer(container, _current_chapter, _mode, cm, star_of)
 	_stage_buttons = map_layer["stage_buttons"]
 	for sid in _stage_buttons:
 		(_stage_buttons[sid] as TextureButton).pressed.connect(_on_stage_clicked.bind(sid))
 	StageSelectBuilder.create_frame_and_title(container, _current_chapter, _mode, cm)
-	StageSelectBuilder.create_mode_buttons(container, _mode, _on_mode_pressed)
+	StageSelectBuilder.create_mode_buttons(container, _mode, cm, _on_mode_pressed)
 	var max_ch: int = mgr.get_max_chapter(_mode) if mgr != null else _current_chapter
 	StageSelectBuilder.create_chapter_arrows(container, _current_chapter > 1, _current_chapter < max_ch, _on_prev_chapter, _on_next_chapter)
 	StageSelectBuilder.create_chapter_dots(container, max_ch, _current_chapter, _mode)
+	StageSelectBuilder.create_close_button(container, remove_window)
 
 
 func _get_stage_stars(sid: int) -> int:

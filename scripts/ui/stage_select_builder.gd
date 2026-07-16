@@ -8,7 +8,6 @@ extends RefCounted
 const StageSelectMapClass = preload("res://scripts/systems/stage_select_map.gd")
 const UiButton = preload("res://scripts/ui/ui_button.gd")
 
-const BG_FULL: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 const FRAME_NORMAL: String = "res://assets/ui/alpha/HVGA/stage-map-frame.png"
 const FRAME_ELITE: String = "res://assets/ui/alpha/HVGA/stage-map-elite-frame.png"
 const FRAME_GUILD: String = "res://assets/ui/alpha/HVGA/stage_map_guild_frame.png"
@@ -27,12 +26,12 @@ const STAR_BG: String = "res://assets/ui/alpha/HVGA/stageselect_star_bg.png"
 const STAR: String = "res://assets/ui/alpha/HVGA/stageselect_star.png"
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-# 源 createModeButton ui_info 位置（refreshModeButtonPosition 调整后）+ crusade_Button_bg 底
-const MODE_BG_POS: Vector2 = Vector2(480.0, 205.0)     # ccp(400,355) → godot
-const MODE_NORMAL_POS: Vector2 = Vector2(425.0, 175.0) # ccp(345,385)
-const MODE_ELITE_POS: Vector2 = Vector2(535.0, 175.0)  # ccp(455,385)
-const MODE_GUILD_POS: Vector2 = Vector2(569.0, 205.0)  # ccp(489,350)
-const TITLE_POS: Vector2 = Vector2(557.0, 167.0)       # ccp(397,393) → 标题图 + 文字中心
+# 源 createModeButton(:725) ui_info + refreshModeButtonPosition(:233) 调整后（guild 实际不可见走 else 分支）。
+const MODE_BG_POS: Vector2 = Vector2(480.0, 205.0)      # 源 buttonBg ccp(400,355) → godot
+const MODE_NORMAL_POS: Vector2 = Vector2(425.0, 210.0)  # 源 refresh else ccp(345,350) → godot
+const MODE_ELITE_POS: Vector2 = Vector2(535.0, 210.0)   # 源 refresh else ccp(455,350) → godot
+const MODE_GUILD_POS: Vector2 = Vector2(569.0, 210.0)   # 源 guild ccp(489,350)（refresh 不调整 guild）
+const TITLE_POS: Vector2 = Vector2(477.0, 167.0)        # 源 titleBg ccp(397,393) → godot（标题图 + 文字同位）
 const DOT_CENTER_X: float = 480.0                      # 源 getDotPos x=400+dx*(cur-center)，dx=20
 const DOT_GAP_X: float = 20.0
 const DOT_NORMAL_Y: float = 520.0                      # 源 normal_chapter_dot_y=40 → 560-40
@@ -47,15 +46,6 @@ const STAR_POS_3: Array = [Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.
 
 static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + 80.0, 560.0 - cy)
-
-
-static func create_background(container: Control) -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(BG_FULL) as Texture2D
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
 
 
 static func create_close_button(container: Control, on_close: Callable) -> void:
@@ -95,7 +85,7 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 			_add_stars(btn, info, mode, star_of)
 		layer.add_child(btn)
 		if dec_type == "current":
-			_add_pointer(layer, float(pos[0]), float(pos[1]))
+			_add_pointer(layer, info)
 		if dec_type != "locked":
 			var sid: int = _current_sid(info, mode)
 			if sid > 0:
@@ -147,15 +137,21 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 
 
 # 源 currentTag stagepointer（:1299-1312 上下浮动，简化静态）。
-static func _add_pointer(layer: Control, cx: float, cy: float) -> void:
+# 源 :1301-1305 — key 关（info.eid）ccp(pos.x, pos.y+60)；非 key 关 ccp(pos.x-1, pos.y+30)。
+static func _add_pointer(layer: Control, info: Dictionary) -> void:
 	if not ResourceLoader.exists(POINTER):
 		return
+	var pos: Array = info.get("pos", [0, 0])
+	var cx: float = float(pos[0])
+	var cy: float = float(pos[1])
+	var is_key: bool = info.has("eid")
+	var dx: float = -1.0 if not is_key else 0.0
+	var dy: float = 30.0 if not is_key else 60.0
 	var p := TextureRect.new()
 	p.texture = load(POINTER) as Texture2D
 	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	p.size = _tex_size(POINTER)
-	# 源 currentTag pos = ccp(pos.x-1, pos.y+30)（非 key 关上方 30）
-	p.position = to_godot(cx - 1.0, cy + 30.0) - p.size * 0.5
+	p.position = to_godot(cx + dx, cy + dy) - p.size * 0.5
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(p)
 
@@ -178,13 +174,17 @@ static func _tex_size(res: String) -> Vector2:
 # 源 createFrame（:944+）title_bg + frame 边框；createTitle（:885）章节名 Label。
 static func create_frame_and_title(container: Control, chapter: int, mode: String, cm: Variant) -> void:
 	_make_centered_at(container, _title_bg_res(mode), TITLE_POS)
-	_make_centered_at(container, _frame_res(mode), Vector2(480.0, 304.0))   # 地图区中心 ccp(400,256)≈
+	# 源 createFrame :967-970 — mode != normal ccp(400,207)→godot(480,353)；normal ccp(400,205)→godot(480,355)
+	var frame_y: float = 355.0 if mode == "normal" else 353.0
+	_make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
 	var chapter_table: Dictionary = cm.get_raw_table(&"Chapter")
 	var ch_row: Dictionary = chapter_table.get(str(chapter), {})
 	var pre: String = String(ch_row.get("Pre Chapter Name", ""))
 	var name: String = String(ch_row.get("Chapter Name", ""))
 	var lbl := Label.new()
-	lbl.text = pre + "  " + name if not name.is_empty() else ("第 " + str(chapter) + " 章")
+	# 源 :862-863 直接索引 chapterTable[chapter]（无 fallback，假定存在）。防御性 fallback 保留 + 注释。
+	# 源 :863 拼接 "Pre Chapter Name" .. "   " .. "Chapter Name"（3 空格）。
+	lbl.text = pre + "   " + name if not name.is_empty() else ("第 " + str(chapter) + " 章")
 	lbl.add_theme_color_override("font_color", Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0))
 	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	lbl.add_theme_constant_override("outline_size", 2)
@@ -219,7 +219,9 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 
 
 # 源 createModeButton（:725）normal/elite/guild 三 toggle。返回 {mode->TextureButton}。
-static func create_mode_buttons(container: Control, current_mode: String, on_mode: Callable) -> Dictionary:
+# 源 label：normal=LSTR("STAGESELECT.NORMAL")="普通"、elite=LSTR("EQUIPCRAFT.ELITE")="精英"、
+# guild=LSTR("STAGESELECT.RAID")="团队"。fontinfo "ui_normal_button" size=18（:773,:809,:845）。
+static func create_mode_buttons(container: Control, current_mode: String, cm: Variant, on_mode: Callable) -> Dictionary:
 	var bg := TextureRect.new()
 	bg.texture = load(MODE_BTN_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -228,9 +230,9 @@ static func create_mode_buttons(container: Control, current_mode: String, on_mod
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(bg)
 	var layout: Dictionary = {
-		"normal": {"pos": MODE_NORMAL_POS, "label": "普通"},
-		"elite": {"pos": MODE_ELITE_POS, "label": "精英"},
-		"guild": {"pos": MODE_GUILD_POS, "label": "团本"},
+		"normal": {"pos": MODE_NORMAL_POS, "lstr": "STAGESELECT.NORMAL"},
+		"elite": {"pos": MODE_ELITE_POS, "lstr": "EQUIPCRAFT.ELITE"},
+		"guild": {"pos": MODE_GUILD_POS, "lstr": "STAGESELECT.RAID"},
 	}
 	var buttons: Dictionary = {}
 	for mode in layout:
@@ -243,8 +245,10 @@ static func create_mode_buttons(container: Control, current_mode: String, on_mod
 		btn.position = Vector2(cfg["pos"]) - sz * 0.5
 		btn.pressed.connect(on_mode.bind(mode))
 		var lbl := Label.new()
-		lbl.text = String(cfg["label"])
+		var lstr_key: String = String(cfg["lstr"])
+		lbl.text = cm.get_lstr(lstr_key) if cm != null else lstr_key
 		lbl.set_anchors_preset(Control.PRESET_CENTER)
+		lbl.add_theme_font_size_override("font_size", 18)   # 源 :773 size=18
 		lbl.add_theme_color_override("font_color", Color.WHITE)
 		lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 		lbl.add_theme_constant_override("outline_size", 2)

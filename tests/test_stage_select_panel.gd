@@ -169,3 +169,103 @@ func test_setup_by_stage_sets_chapter() -> void:
 	assert_eq(panel._current_chapter, expect_ch, "setup_by_stage 定位到 stage 所在章")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ===== 照源精修验收（2026-07-16）=====
+
+# 源 createModeButton label：normal=LSTR("STAGESELECT.NORMAL")、elite=LSTR("EQUIPCRAFT.ELITE")、
+# guild=LSTR("STAGESELECT.RAID")="团队"。旧实现硬编码 "团本" 是错值。
+func test_mode_label_uses_lstr() -> void:
+	var c := Control.new()
+	add_child(c)
+	var noop := Callable(func(_m: String) -> void: pass)
+	var buttons: Dictionary = StageSelectBuilder.create_mode_buttons(c, "normal", cm, noop)
+	for mode in ["normal", "elite", "guild"]:
+		assert_true(buttons.has(mode), mode + " toggle 存在")
+	var guild_btn: TextureButton = buttons["guild"]
+	var guild_lbl: Label = null
+	for child in guild_btn.get_children():
+		if child is Label:
+			guild_lbl = child
+			break
+	assert_not_null(guild_lbl, "guild toggle 有 label")
+	assert_eq(guild_lbl.text, "团队", "guild label = LSTR STAGESELECT.RAID = '团队'（非旧错值'团本'）")
+	var normal_btn: TextureButton = buttons["normal"]
+	var normal_lbl: Label = null
+	for child in normal_btn.get_children():
+		if child is Label:
+			normal_lbl = child
+			break
+	assert_eq(normal_lbl.text, "普通", "normal label = LSTR STAGESELECT.NORMAL = '普通'")
+	var elite_btn: TextureButton = buttons["elite"]
+	var elite_lbl: Label = null
+	for child in elite_btn.get_children():
+		if child is Label:
+			elite_lbl = child
+			break
+	assert_eq(elite_lbl.text, "精英", "elite label = LSTR EQUIPCRAFT.ELITE = '精英'")
+	c.queue_free()
+
+
+# 源 stageselect 是 PopWindow 弹窗，无全屏 bg.jpg（仅 framework shade）。旧实现误加 bg.jpg 已删。
+func test_no_fullscreen_bg() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	var pd := PlayerData.new(cm)
+	var rng := BattleRng.new(5)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_panel(mgr, pd, rng)
+	panel.show_window(root)
+	for child in panel.container.get_children():
+		if child is TextureRect:
+			var tr: TextureRect = child
+			var t: Texture2D = tr.texture
+			if t != null and String(t.resource_path).find("bg.jpg") != -1:
+				assert_false(true, "container 不应有 bg.jpg（PopWindow shade 即背景，源 stageselect 无全屏 bg）")
+				break
+	panel.remove_window()
+	root.queue_free()
+	pass_test("container 无全屏 bg.jpg")
+
+
+# 源 createFrame :967-970 — normal ccp(400,205)→godot 中心 y=355；其他 mode ccp(400,207)→y=353。
+func test_frame_position_matches_source() -> void:
+	var c := Control.new()
+	add_child(c)
+	StageSelectBuilder.create_frame_and_title(c, 1, "normal", cm)
+	var frame_center_y: float = -1.0
+	for child in c.get_children():
+		if child is TextureRect:
+			var tr: TextureRect = child
+			var t: Texture2D = tr.texture
+			if t != null and String(t.resource_path).find("stage-map-frame") != -1:
+				frame_center_y = tr.position.y + tr.size.y * 0.5
+				break
+	assert_almost_eq(frame_center_y, 355.0, 1.5, "normal frame 中心 y≈355（源 ccp(400,205)→godot）")
+	c.queue_free()
+
+
+# 源 :1301-1305 — key 关（info.eid）ccp(pos.x, pos.y+60)；非 key 关 ccp(pos.x-1, pos.y+30)。
+func test_stage_pointer_key_stage_offset() -> void:
+	var c := Control.new()
+	add_child(c)
+	var key_info: Dictionary = {"id": 1, "eid": 10001, "pos": [172, 284]}
+	StageSelectBuilder._add_pointer(c, key_info)
+	if c.get_child_count() == 0:
+		pass_test("stagepointer.png 资源缺失，跳过")
+		c.queue_free()
+		return
+	var key_ptr: TextureRect = c.get_child(0) as TextureRect
+	var key_expect_y: float = 560.0 - (284.0 + 60.0)   # key: cy+60
+	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, key_expect_y, 1.5, "key 关指针 y=cy+60")
+	c.queue_free()
+	var c2 := Control.new()
+	add_child(c2)
+	var nonkey_info: Dictionary = {"id": 2, "pos": [217, 200]}
+	StageSelectBuilder._add_pointer(c2, nonkey_info)
+	if c2.get_child_count() > 0:
+		var nk_ptr: TextureRect = c2.get_child(0) as TextureRect
+		var nk_expect_y: float = 560.0 - (200.0 + 30.0)   # 非 key: cy+30
+		assert_almost_eq(nk_ptr.position.y + nk_ptr.size.y * 0.5, nk_expect_y, 1.5, "非 key 关指针 y=cy+30")
+	c2.queue_free()
