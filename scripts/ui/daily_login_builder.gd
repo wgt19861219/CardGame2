@@ -80,7 +80,8 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 
 
 # 源 create :734-887 主框架。返 {title, close, explain, subhead_num}（供 panel 接线/刷新）。
-static func create_chrome(parent: Control, title_text: String, checkin_num: int) -> Dictionary:
+# cm 用于 LSTR 化（奖励说明/累计签到/次，源 create :862 + createSubhead :662/:697）。
+static func create_chrome(parent: Control, title_text: String, checkin_num: int, cm: Variant) -> Dictionary:
 	_add_nine_patch(parent, FRAME_RES, FRAME_CAP, to_godot(FRAME_CENTER.x, FRAME_CENTER.y) - FRAME_SIZE * 0.5, FRAME_SIZE)
 	_add_centered(parent, TITLE_BG_RES, TITLE_BG_CRUSADE_CENTER)
 	var act_tex: Texture2D = load(ACT_BG_RES) as Texture2D
@@ -103,17 +104,20 @@ static func create_chrome(parent: Control, title_text: String, checkin_num: int)
 	title.position = to_godot(TITLE_CENTER.x, TITLE_CENTER.y) - title.get_minimum_size() * 0.5
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(title)
-	var explain: Button = UiScale9Button.make_centered(EXPLAIN_RES, EXPLAIN_PRESS_RES, to_godot(EXPLAIN_CENTER.x, EXPLAIN_CENTER.y), EXPLAIN_SIZE, EXPLAIN_CAP, "奖励说明", EXPLAIN_LABEL_COLOR)
+	var explain_text: String = cm.get_lstr("DAILYLOGIN.AWARDS_DESCRIPTION") if cm != null else "奖励说明"
+	var explain: Button = UiScale9Button.make_centered(EXPLAIN_RES, EXPLAIN_PRESS_RES, to_godot(EXPLAIN_CENTER.x, EXPLAIN_CENTER.y), EXPLAIN_SIZE, EXPLAIN_CAP, explain_text, EXPLAIN_LABEL_COLOR)
 	parent.add_child(explain)
-	var subhead_num: Label = _create_subhead(parent, checkin_num)
+	var subhead_num: Label = _create_subhead(parent, checkin_num, cm)
 	return {"title": title, "close": close, "explain": explain, "subhead_num": subhead_num}
 
 
 # 源 createSubhead :653-720。返 subhead 数字 Label（供 refreshSubhead 更新）。
-static func _create_subhead(parent: Control, checkin_num: int) -> Label:
+# cm 用于 LSTR 化（源 :662 THIS_MONTH_HAS_A_TOTAL_ATTENDANCE + :697 TIMES）。
+static func _create_subhead(parent: Control, checkin_num: int, cm: Variant) -> Label:
 	var anchor: Vector2 = to_godot(SUBHEAD_CENTER.x, SUBHEAD_CENTER.y)
+	var pre_text: String = cm.get_lstr("DAILYLOGIN.THIS_MONTH_HAS_A_TOTAL_ATTENDANCE") if cm != null else "本月已累计签到"
 	var pre := Label.new()
-	pre.text = "本月累计签到"
+	pre.text = pre_text
 	pre.add_theme_font_size_override("font_size", FONT_SUBHEAD)
 	pre.add_theme_color_override("font_color", SUBHEAD_PRE_COLOR)
 	pre.position = anchor
@@ -127,7 +131,7 @@ static func _create_subhead(parent: Control, checkin_num: int) -> Label:
 	num.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(num)
 	var suf := Label.new()
-	suf.text = "次"
+	suf.text = cm.get_lstr("DAILYLOGIN.TIMES") if cm != null else "次"
 	suf.add_theme_font_size_override("font_size", FONT_SUBHEAD)
 	suf.add_theme_color_override("font_color", SUBHEAD_SUF_COLOR)
 	suf.position = num.position + Vector2(num.get_minimum_size().x + 5.0, 0.0)

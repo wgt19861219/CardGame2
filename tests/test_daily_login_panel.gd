@@ -87,3 +87,29 @@ func test_cell_status_future_beyond_freq() -> void:
 	assert_eq(panel._cell_status(999, 1, "common"), "future", "远未来 future")
 	panel.remove_window()
 	panel.get_parent().queue_free()
+
+
+# ── LSTR 化（照源 dailylogin.lua :7/:448/:662/:697/:862 + syncDate :893）──
+
+func test_daily_login_lstr_keys_exist() -> void:
+	# 验证 daily login 使用的 LSTR key 全部存在（get_lstr 返非 key 本身 = 存在）
+	var keys: Array[String] = [
+		"DAILYLOGIN.AWARDS_DESCRIPTION",
+		"DAILYLOGIN.THIS_MONTH_HAS_A_TOTAL_ATTENDANCE",
+		"DAILYLOGIN.TIMES",
+		"DAILYLOGIN._D_MONTHLY_ATTENDANCE_AWARDS",
+		"DAILYLOGIN.FAILED_TO_RECEIVE",
+		"DAILYLOGIN.RECEIVE_THIS_AWARD_AT__D_ATTENDANCE_THIS_MONTH",
+	]
+	for key in keys:
+		var val: String = cm.get_lstr(key)
+		assert_ne(val, key, "LSTR key 存在: " + key)
+		assert_false(val.is_empty(), "LSTR value 非空: " + key)
+
+
+func test_panel_title_uses_lstr_month() -> void:
+	# 验证标题 LSTR 含 %d 占位符（源 syncDate :893 DAILYLOGIN._D_MONTHLY_ATTENDANCE_AWARDS）
+	var fmt: String = cm.get_lstr("DAILYLOGIN._D_MONTHLY_ATTENDANCE_AWARDS")
+	assert_true(fmt.find("%d") >= 0, "标题 LSTR 含 %d 月占位符")
+	var month: int = int(Time.get_datetime_dict_from_system().get("month", 1))
+	assert_eq(fmt % month, "%d月签到奖励" % month, "标题 LSTR 格式化正确")
