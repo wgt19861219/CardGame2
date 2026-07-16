@@ -12,6 +12,7 @@ signal box_shown
 # P2-GUT-2：所有 loot 飞出 + 品质光效加完（产出动画完成）
 signal loot_anim_done
 
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 const GRID_ORIGIN: Vector2 = Vector2(190.0, 150.0)   # 源 getLootPos :417-422 十连布局起点
 const GRID_CELL: Vector2 = Vector2(100.0, 105.0)     # 源 dx,dy
 const GRID_COLS: int = 5                              # 源 :424 i%5
@@ -175,7 +176,7 @@ func _create_cost_row() -> void:
 	var icon := TextureRect.new()
 	icon.texture = icon_tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.size = icon_tex.get_size() if icon_tex != null else Vector2(20.0, 20.0)
+	icon.size = (icon_tex.get_size() / CONTENT_SCALE) if icon_tex != null else Vector2(20.0, 20.0)   # 源 poptavernloot:752-761 cost_icon t="Sprite" 无 fix
 	if pay != "Gold":
 		icon.scale = Vector2(1.2, 1.2)   # 源 :756 钻石 icon scale 1.2
 	icon.position = Vector2(godot_right.x - cost_w - icon.size.x, godot_right.y - icon.size.y * 0.5)

@@ -6,6 +6,7 @@ extends PopWindow
 ## detail/reward_title 4 Label + reward icons 横排 + completeTag(完成领奖)/fastButton(日常去往)。
 ## 主线(ed.ui.task,Task 表 tm.task)+ 日常(ed.ui.dailyTask,Todolist)两段列表。
 
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 # ---- 资源(源 task.lua icon_res / reward_icon_res + createTask bgRes)----
 const BOARD_RES := "res://assets/ui/alpha/HVGA/task_board.png"
 const BOARD_FINISHED_RES := "res://assets/ui/alpha/HVGA/task_board_finished.png"
@@ -246,7 +247,7 @@ func _add_icon(bg: TextureRect, task: Dictionary) -> void:
 	var icon_bg := TextureRect.new()
 	icon_bg.texture = _load_tex(ICON_BG_RES)
 	icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var ibg_size: Vector2 = icon_bg.texture.get_size() if icon_bg.texture else Vector2(94.0, 101.0)
+	var ibg_size: Vector2 = (icon_bg.texture.get_size() / CONTENT_SCALE) if icon_bg.texture else Vector2(94.0, 101.0) / CONTENT_SCALE   # 源 task.lua:526/537/541 iconBg createSprite 无 fix
 	icon_bg.custom_minimum_size = ibg_size
 	icon_bg.position = _bg_pos(C_ICON_BG) - ibg_size * 0.5
 	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE

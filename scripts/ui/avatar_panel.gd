@@ -6,6 +6,7 @@ extends PopWindow
 ## ofavatar：3 类（free/hero/worldcup）分组 + 标题 + 5 列图标网格（hero_icon_frame_1 + Picture）+
 ## 解锁判断（Requirement Type nil/HeroRank/PlayerLevel）+ 点选 set_avatar → destroy。
 
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 const FRAME_RES: String = "res://assets/ui/alpha/HVGA/main_vit_tips.png"
 const FRAME_CAP: Rect2 = Rect2(10.0, 10.0, 58.0, 26.0)        # 源 base.lua:60 CCRectMake(10,10,58,26)
 const FRAME_SIZE: Vector2 = Vector2(530.0, 375.0)             # 源 scaleSize 530×375
@@ -169,8 +170,10 @@ func _make_cell(aid: int, picture_res: String) -> Control:
 	btn.texture_normal = frame_tex
 	btn.ignore_texture_size = true
 	if frame_tex != null:
-		btn.size = frame_tex.get_size()
-		btn.custom_minimum_size = frame_tex.get_size()
+		# 源 ofavatar:173 frame ed.createSprite 无 fix → 显示=纹理/CS（:179 icon fixNodeSize 连带，btn.size 改 icon 自动对）
+		var frame_size: Vector2 = frame_tex.get_size() / CONTENT_SCALE
+		btn.size = frame_size
+		btn.custom_minimum_size = frame_size
 	btn.pressed.connect(_on_avatar_selected.bind(aid))
 	if ResourceLoader.exists(picture_res):
 		var icon := TextureRect.new()

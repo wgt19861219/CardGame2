@@ -9,6 +9,7 @@ extends Control
 ## 非常驻弹窗，Control 直接挂场景树（z 等价源 frameworkLayer:100）。坐标源 cocos→Godot y 翻转（边缘 UI 非中心对称）。
 ## tag 红点角标（源 refreshTags/getCheckSCTagHandler）依赖各类 Logic 判定，第 26+ 段接；本段建节点先全隐藏。
 
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 const SCREEN_H: float = 640.0
 const BOARD_CENTER_X: float = 900.0             # 源 shortcut_pos_x
 # 用户视觉偏好(2026-07-14):快捷栏"更上一点贴近顶部"。整个抽屉上移 100px(板顶 180→80 / toggle 200→100,底部留 100px 空白)。
@@ -237,8 +238,10 @@ func _center_to_topleft(center: Vector2, btn: TextureButton) -> Vector2:
 
 
 func _button_size(btn: TextureButton) -> Vector2:
+	# 源 shortcut.lua:196-231 5 按钮 t="Sprite" config={isCascadeOpacity} 无 fix；
+	# :284-309 down/up toggle t="Sprite" config={} 无 fix → 显示=纹理/CS
 	if btn.texture_normal != null:
-		return btn.texture_normal.get_size()
+		return btn.texture_normal.get_size() / CONTENT_SCALE
 	return Vector2(76.0, 76.0)   # 估算（无纹理降级，Phase 4 校准）
 
 

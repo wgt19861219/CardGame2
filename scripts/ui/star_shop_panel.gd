@@ -6,6 +6,7 @@ extends PopWindow
 ## 单机化：源 tavern_draw stone net → ShopManager.buy_star（roll_tavern_loot stone 分支已支持）。
 ## FCA 开箱 eff_UI_shop_star_box_*.abc Phase 3 骨骼阻塞，PopTavernLoot 自动降级（box 不在 BOX_FCA_MAP 跳过动画）。
 
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 const PANEL_POS: Vector2 = Vector2(80.0, 80.0)
 const PANEL_SIZE: Vector2 = Vector2(800.0, 480.0)
 const TITLE_POS: Vector2 = Vector2(330.0, 30.0)
@@ -198,7 +199,10 @@ func _add_none_tag(parent: Control) -> void:
 	if not ResourceLoader.exists(UI_DIR + "shop_star_none_tag.png"):
 		return
 	var none_tag := TextureRect.new()
-	none_tag.texture = load(UI_DIR + "shop_star_none_tag.png")
+	var tag_tex: Texture2D = load(UI_DIR + "shop_star_none_tag.png")
+	none_tag.texture = tag_tex
+	none_tag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	none_tag.size = tag_tex.get_size() / CONTENT_SCALE   # 源 shop.lua:577-588 noneTag t="Sprite" 无 fix
 	none_tag.position = NONE_TAG_POS
 	none_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(none_tag)
