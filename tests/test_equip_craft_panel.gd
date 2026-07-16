@@ -117,7 +117,7 @@ func test_getway_branch_when_no_recipe() -> void:
 	assert_gt(panel._get_way_ids.size(), 0, "Drop1-3 收集到获取途径")
 	assert_eq(panel._get_way_buttons.size(), panel._get_way_ids.size(), "board 数 = 途径数")
 	# 源 :1204-1208 components<1 按钮文字为"返回"
-	assert_eq(panel._craft_btn.text, "返回", "无配方按钮 = 返回")
+	assert_eq(panel._craft_btn_label.text, "返回", "无配方按钮 = 返回")
 	panel.remove_window()
 
 
@@ -128,7 +128,7 @@ func test_craft_button_text_synthesis() -> void:
 		pass_test("数据表无合成配方，跳过")
 		return
 	var panel := _make_panel(int(rec["id"]))
-	assert_eq(panel._craft_btn.text, "合成", "有配方按钮 = 合成")
+	assert_eq(panel._craft_btn_label.text, "合成", "有配方按钮 = 合成")
 	panel.remove_window()
 
 
@@ -283,7 +283,7 @@ func test_info_button_created() -> void:
 	var panel := _make_panel(int(rec["id"]))
 	assert_not_null(panel._info_button, "infoButton 已建")
 	assert_not_null(panel._info_remark, "infoButtonRemark 已建")
-	assert_eq(panel._info_button.text, "合成公式", "heroDetail amount==0 且有配方 → 合成公式")
+	assert_eq(panel._info_button_label.text, "合成公式", "heroDetail amount==0 且有配方 → 合成公式")
 	panel.remove_window()
 
 
@@ -520,3 +520,98 @@ func test_make_get_way_handler_connected() -> void:
 			break
 	assert_true(connected, "board gui_input 连接点击处理（源 doGetWayTouch）")
 	panel.remove_window()
+
+
+# ===== 照源精修：LSTR 化 + 按钮纹理化 + helper 拆分（2026-07-16）=====
+
+# 源 :1004-1013 craftButton Sprite package_button → UiButton.make 纹理化（TextureButton + Label 子）
+func test_craft_btn_is_texture_button() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	assert_true(panel._craft_btn is TextureButton, "craftButton 纹理化 → TextureButton")
+	assert_not_null(panel._craft_btn_label, "craftLabel 独立 Label 引用")
+	# LSTR_SYNTHESIS 值"合成"（cm.get_lstr 取实际值，照源 :1207）
+	assert_eq(panel._craft_btn_label.text, cm.get_lstr("EQUIPCRAFT.SYNTHESIS"), "合成按钮文字 = LSTR 实际值")
+	panel.remove_window()
+
+
+# 源 :686/:695 infoButton Sprite package_button → UiButton.make 纹理化
+func test_info_button_is_texture_button() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	assert_true(panel._info_button is TextureButton, "infoButton 纹理化 → TextureButton")
+	assert_not_null(panel._info_button_label, "infoButtonLabel 独立 Label 引用")
+	panel.remove_window()
+
+
+# 源 :1133-1202 components<1 获取途径分支：title "第 X 章" → cm.get_lstr("EQUIPCRAFT._CHAPTER__D") % chapter_id
+func test_getway_title_uses_lstr_chapter_d() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var panel := _make_panel(eid)
+	# 至少一个 board 含 title Label，文字匹配 LSTR._CHAPTER__D 模板（"第%d章"）
+	var has_lstr_title: bool = false
+	for board in panel._get_way_buttons:
+		for c in (board as Control).get_children():
+			if c is Label:
+				var lbl: Label = c as Label
+				# 模板"第%d章"格式化后匹配（chapter_id 任意 > 0）
+				if lbl.text.match("第*章"):
+					has_lstr_title = true
+					break
+		if has_lstr_title:
+			break
+	assert_true(has_lstr_title, "获取途径 board title 用 LSTR._CHAPTER__D 模板")
+	panel.remove_window()
+
+
+# 源 getJudgeLevel :519-525 helper 拆出 EquipCraftInfoBtn（直接测 helper static）
+func test_helper_get_judge_level() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(target_id, cm, pd, hero, "heroDetail", 0)
+	var root := Node.new()
+	add_child(root)
+	panel.show_window(root)
+	var judge: Array = EquipCraftInfoBtn.get_judge_level(panel)
+	var expect_elv: int = int(cm.get_raw_table("Equip").get(str(target_id), {}).get("Level Requirement", 0))
+	assert_eq(int(judge[0]), hero.level, "helper hlv = hero.level")
+	assert_eq(int(judge[1]), expect_elv, "helper elv = Equip Level Requirement")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 self.isEquiped helper（EquipCraftInfoBtn._is_equipped）：slot 已装目标 → true
+func test_helper_is_equipped() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	hero.equip_slots[0] = target_id   # 该槽已装合成目标
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(target_id, cm, pd, hero, "heroDetail", 0)
+	var root := Node.new()
+	add_child(root)
+	panel.show_window(root)
+	assert_true(EquipCraftInfoBtn._is_equipped(panel), "slot 已装目标 → helper _is_equipped=true")
+	panel.remove_window()
+	root.queue_free()
