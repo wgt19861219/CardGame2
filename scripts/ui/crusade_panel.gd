@@ -22,7 +22,6 @@ const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 const RESULT_POS: Vector2 = Vector2(30.0, 490.0)
-const REWARD_BTN_POS: Vector2 = Vector2(30.0, 530.0)
 const TEAM_MAX: int = 5  # 上场英雄上限（源 5v5）
 # 源 crusade.lua:224 setEnemy 敌方阵容预览（5 英雄 createIcon + hp 满血血条，选关后展示）
 const ENEMY_PREVIEW_POS: Vector2 = Vector2(30.0, 405.0)
@@ -46,7 +45,9 @@ const HINT_MARK: String = "▼"           # currentStageHint 纹理缺（UIRes�
 var player: PlayerData = null
 var rng: BattleRng = null
 var stage_buttons: Array[TextureButton] = []
-var box_rects: Array[TextureRect] = []
+# 源 :311 boxButton{currentStage-1} —— 源中宝箱是 Button 可点（hintBox/hintBoxDown）。
+# P1（2026-07-16）：TextureRect 降级 → TextureButton 可点（照源 :311/:407-424 点 box 领奖/预览）。
+var box_rects: Array[TextureButton] = []
 var fog_rects: Array[TextureRect] = []
 var result_label: Label = null
 var current_select: int = 0   # 当前选中关（源 currentSelectStage，选关后预览敌方 + 点开战 run）
@@ -69,7 +70,7 @@ func setup_panel(p_player: PlayerData, p_rng: BattleRng) -> void:
 	_create_enemy_preview()
 	_create_start_button()
 	_create_result_label()
-	_create_reward_button()
+	# P1（2026-07-16）：删 reward_button —— 源 :311 boxButton{i} 可点领奖，box 改 TextureButton 替代。
 	_create_shake_timer()
 	_create_stage_hint()
 	_refresh_stage_states()
@@ -94,11 +95,13 @@ func _create_reset_button() -> void:
 
 ## 源 resetBattle :660-680：leftTime<=0 toast + showConfirmDialog（确认框）。
 ## P1-2（2026-07-11）：照源补确认框（原降级直接执行 → 独立 CrusadeResetConfirm 组件）。
+## P1（2026-07-16）：toast 文案 cm.get_lstr 化（源 :662 LSTR CRUSADE.NO_RESET_TIMES_LEFT_TODAY）。
 func _on_reset() -> void:
 	if player == null or player.crusade_manager == null:
 		return
 	if player.crusade_manager.get_reset_left() <= 0:
-		result_label.text = "今日重置次数已用完"
+		# 源 :662 ed.showToast(T(LSTR("CRUSADE.NO_RESET_TIMES_LEFT_TODAY")))
+		result_label.text = _lstr("CRUSADE.NO_RESET_TIMES_LEFT_TODAY", "今日已没有重置次数")
 		return
 	# 源 :665-679 showConfirmDialog → 弹确认框，确认才执行 reset
 	var popup := CrusadeResetConfirm.new()
@@ -106,46 +109,74 @@ func _on_reset() -> void:
 	container.add_child(popup)
 
 
+# 源 reset 后走 ed.replaceScene 刷新整面板（:702），无 toast。
+# 这里降级显式反馈：用源 refreshLeftTime :494-496 同款 LSTR（CRUSADE.THE_REMAINING_TIMES_OF_TODAY___D）
+# 表达剩余次数（避免自造无源文案）。
 func _on_reset_confirmed() -> void:
 	if player == null or player.crusade_manager == null:
 		return
 	player.crusade_manager.reset()
 	_refresh_stage_states()
-	result_label.text = "远征已重置（剩余 %d 次）" % player.crusade_manager.get_reset_left()
+	result_label.text = _lstr("CRUSADE.THE_REMAINING_TIMES_OF_TODAY___D", "今日剩余次数:%d") % player.crusade_manager.get_reset_left()
 
 
-## 源领奖入口（getReward:705 + draw_reward）：领上一通关关奖励。
-func _create_reward_button() -> void:
-	var btn := Button.new()
-	btn.text = "领取奖励"
-	btn.position = REWARD_BTN_POS
-	btn.size = CLOSE_BTN_SIZE
-	btn.pressed.connect(_on_draw_reward)
-	container.add_child(btn)
+# 源 LSTR 走 player.cm（PlayerData 必携 ConfigManager）；cm 缺失 fallback 中文兜底（不阻塞 View）。
+func _lstr(key: String, fallback: String) -> String:
+	if player != null and player.cm != null:
+		return player.cm.get_lstr(key)
+	return fallback
 
 
-func _on_draw_reward() -> void:
+## 源领奖入口（hintBox:395-406 + hintBoxDown:407-424 + getReward:705）。
+## P1（2026-07-16）：照源把 box 改 TextureButton 可点，删独立 reward_button 降级。
+## 源 :311 boxButton{i} press → hintBox(i)/hintBoxDown(i)：rewarded→return / passed→领奖 / unpassed→预览。
+func _on_box_pressed(i: int) -> void:
 	if player == null or player.crusade_manager == null:
 		return
-	var stage: int = player.crusade_manager.cur_stage - 1  # 上一通关关
-	if stage < 1:
-		result_label.text = "无奖励可领"
+	var cm_mgr = player.crusade_manager
+	# 源 hintBox :396-398 rewarded → return（已领不重复）
+	if cm_mgr.is_stage_rewarded(i):
+		result_label.text = "第 %d 关 已领取" % i
 		return
+	# 源 hintBox :399-405 passed → msg._draw_reward → getReward 领该关奖
+	if cm_mgr.is_stage_cleared(i):
+		_apply_box_reward(i)
+		return
+	# 源 hintBoxDown :407-424 unpassed（且不超进度分段）→ initRewardUI 预览奖励
+	if not _is_stage_locked(i):
+		_show_reward_preview(i)
+
+
+# 源 getReward:705-745 —— 领指定关奖励（apply_rewards + box 弹跳 + 结算 pop）。
+func _apply_box_reward(stage: int) -> void:
 	var slots: Array = player.crusade_manager.draw_reward_slots(stage)
 	if slots.is_empty():
 		result_label.text = "第 " + str(stage) + " 关 不可领"
-	else:
-		player.crusade_manager.apply_rewards(slots, player, rng)  # 领奖→发奖到 player
-		_bounce_box_at(stage - 1, REWARD_SCALE_PEAK, REWARD_DURATION)   # 源 :715-718 领奖 box 弹跳
-		var reward_text: String = ""
-		for s in slots:
-			reward_text += String(s["type"]) + "×" + str(s["amount"]) + " "
-		result_label.text = "第 " + str(stage) + " 关 奖励：" + reward_text
-		# pop 结算奖励弹窗（照源 crusade.lua showRewardResult :344 rewardLayer）
-		var reward_popup := BattleRewardPopup.new("crusadeReward", {})
-		reward_popup.setup_rewards(slots, player.cm)
-		reward_popup.show_window(get_parent())
+		return
+	player.crusade_manager.apply_rewards(slots, player, rng)   # 领奖→发奖到 player
+	_bounce_box_at(stage - 1, REWARD_SCALE_PEAK, REWARD_DURATION)   # 源 :715-718 领奖 box 弹跳
+	var reward_text: String = ""
+	for s in slots:
+		reward_text += String(s["type"]) + "×" + str(s["amount"]) + " "
+	result_label.text = "第 " + str(stage) + " 关 奖励：" + reward_text
+	# pop 结算奖励弹窗（照源 crusade.lua showRewardResult :344 rewardLayer）
+	var reward_popup := BattleRewardPopup.new("crusadeReward", {})
+	reward_popup.setup_rewards(slots, player.cm)
+	reward_popup.show_window(get_parent())
 	_refresh_stage_states()
+
+
+# 源 initRewardUI:247-297 —— unpassed 关卡奖励预览（mainLayer.rewardInfo 弹出 + scale 0→1）。
+# UIRes rewardInfo 节点缺 → 降级在 result_label 显示该关奖励描述（不阻塞交互）。
+func _show_reward_preview(i: int) -> void:
+	var slots: Array = player.crusade_manager.draw_reward_slots(i)
+	if slots.is_empty():
+		result_label.text = "第 " + str(i) + " 关 暂无奖励预览"
+		return
+	var preview_text: String = "第 " + str(i) + " 关 预览："
+	for s in slots:
+		preview_text += String(s["type"]) + "×" + str(s["amount"]) + " "
+	result_label.text = preview_text
 
 
 ## 源 refreshFog(:42-67)：fog1-4 分段遮罩（currentStage>3/6/9/12 逐个隐，解锁区域）。
@@ -198,11 +229,14 @@ func _create_stage_list() -> void:
 		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 		btn.pressed.connect(Callable(self, "_on_stage_n").bind(i))
 		vbox.add_child(btn)
-		var box := TextureRect.new()
-		box.texture = _load_tex(_box_texture(i))
+	# 源 :311 boxButton{i}：宝箱是 Button 可点（hintBox/hintBoxDown 领奖/预览）。
+	# P1（2026-07-16）：TextureRect 降级 → TextureButton（照源可点）。
+		var box := TextureButton.new()
+		box.texture_normal = _load_tex(_box_texture(i))
 		box.custom_minimum_size = BOX_SIZE
 		box.ignore_texture_size = true
-		box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		box.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		box.pressed.connect(Callable(self, "_on_box_pressed").bind(i))
 		vbox.add_child(box)
 		hbox.add_child(vbox)
 		stage_buttons.append(btn)
@@ -377,7 +411,7 @@ func _shake_box() -> void:
 func _bounce_box_at(idx: int, peak_scale: Vector2, duration: float) -> void:
 	if idx < 0 or idx >= box_rects.size():
 		return
-	var box: TextureRect = box_rects[idx]
+	var box: TextureButton = box_rects[idx]
 	var tw := create_tween()
 	tw.tween_property(box, "scale", peak_scale, duration)
 	tw.tween_property(box, "scale", Vector2.ONE, duration)
@@ -443,7 +477,7 @@ func _refresh_stage_states() -> void:
 		stage_buttons[i - 1].texture_normal = _load_tex(_stage_texture(i))
 		stage_buttons[i - 1].disabled = _is_stage_locked(i)   # 源 :329 enable(false) 超进度灰显
 		if i - 1 < box_rects.size():
-			box_rects[i - 1].texture = _load_tex(_box_texture(i))
+			box_rects[i - 1].texture_normal = _load_tex(_box_texture(i))
 		i += 1
 	_refresh_fog()
 	_refresh_hint_pos()
