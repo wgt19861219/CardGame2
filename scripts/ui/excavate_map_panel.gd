@@ -28,6 +28,9 @@ const CYCLE_TEX_GOLD: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cyc
 const CYCLE_TEX_POTION: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_potion.png"
 const FONT_TITLE: int = 20
 const FONT_BODY: int = 16
+# 源 excavatemap.lua:148 title fix_wh（强制显示尺寸，1:1 不受 CS 影响）
+const TITLE_W: float = 339.84375   # 源 :148 fix_wh.w
+const TITLE_H: float = 37.5        # 源 :148 fix_wh.h
 const FRAME_W: float = 600.0
 const FRAME_H: float = 440.0
 const NODE_W: float = 200.0
@@ -124,9 +127,8 @@ func _add_title(frame: TextureRect) -> void:
 	var title := TextureRect.new()
 	title.texture = load(TITLE_TEX)
 	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var ts: Vector2 = load(TITLE_TEX).get_size()
-	title.size = ts
-	title.position = Vector2(frame.size.x * 0.5 - ts.x * 0.5, 12)
+	title.size = Vector2(TITLE_W, TITLE_H)   # 源 :148 fix_wh（1:1，不除 CS）
+	title.position = Vector2(frame.size.x * 0.5 - TITLE_W * 0.5, 12)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title)
 

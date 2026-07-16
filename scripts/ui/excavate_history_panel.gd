@@ -7,11 +7,15 @@ extends PopWindow
 ## vit_button 裁（源防御体力联机，单机无防御战）；enemy_svr_name 裁（单机无服务器）。
 
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png"
-const TITLE_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png"
+# 源 excavatehistory.lua:50-58 title_bg 实际用 task_window_title_bg.png（非 excavate_main_title.png，资源纠正）
+const TITLE_TEX: String = "res://assets/ui/alpha/HVGA/task_window_title_bg.png"
 const CLOSE_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
 const CLOSE_P_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
 const FONT_TITLE: int = 20
 const FONT_BODY: int = 14
+# 源 excavatehistory.lua:50 title_bg fix_wh（强制显示尺寸，1:1 不受 CS 影响）
+const TITLE_W: float = 521.09375   # 源 :50 fix_wh.w
+const TITLE_H: float = 39.0625     # 源 :50 fix_wh.h
 const FRAME_W: float = 600.0
 const FRAME_H: float = 440.0
 const LIST_X: float = 40.0
@@ -80,9 +84,8 @@ func _add_title(frame: TextureRect) -> void:
 	var title := TextureRect.new()
 	title.texture = load(TITLE_TEX)
 	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var ts: Vector2 = load(TITLE_TEX).get_size()
-	title.size = ts
-	title.position = Vector2(frame.size.x * 0.5 - ts.x * 0.5, 12)
+	title.size = Vector2(TITLE_W, TITLE_H)   # 源 :50 fix_wh（1:1，不除 CS）
+	title.position = Vector2(frame.size.x * 0.5 - TITLE_W * 0.5, 12)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title)
 
