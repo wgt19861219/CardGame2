@@ -71,3 +71,44 @@ func test_hero_click_connects_action_signals() -> void:
 		detail.queue_free()
 	panel.remove_window()
 	root.queue_free()
+
+
+# item scale=1/CS（补偿源 contentScaleFactor 1.28）+ 同行 bg 不重叠验证（2026-07-16 bg 313 偏大重叠修复）。
+func test_grid_item_scaled_no_overlap() -> void:
+	var root := Control.new()
+	root.size = Vector2(960, 640)
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	mgr.add_hero(2)
+	mgr.add_hero(3)
+	mgr.add_hero(4)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	await wait_physics_frames(3)   # 等 Control layout
+	var items: Array = []
+	for c in panel._grid.get_children():
+		if c is HeroPackageItem:
+			items.append(c)
+	assert_gt(items.size(), 1, "≥2 item 验证同行重叠")
+	var first: HeroPackageItem = items[0]
+	assert_almost_eq(first.scale.x, 1.0 / HeroPackageItem.CONTENT_SCALE, 0.01, "item scale=1/CS（0.78）补偿 contentScaleFactor")
+	# 同行前两 item 的 bg 全局 rect 不重叠
+	var bg1: TextureRect = _first_texture(items[0])
+	var bg2: TextureRect = _first_texture(items[1])
+	if bg1 != null and bg2 != null:
+		var r1: Rect2 = bg1.get_global_rect()
+		var r2: Rect2 = bg2.get_global_rect()
+		var gap: float = r2.position.x - r1.end.x
+		print("bg1=" + str(r1) + " bg2=" + str(r2) + " gap=" + str(gap))
+		assert_true(gap > 0.0, "同行 bg 不重叠（gap=" + str(gap) + "）")
+	panel.remove_window()
+	root.queue_free()
+
+
+static func _first_texture(node: Node) -> TextureRect:
+	for c in node.get_children():
+		if c is TextureRect:
+			return c
+	return null

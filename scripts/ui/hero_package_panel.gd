@@ -14,7 +14,7 @@ extends PopWindow
 const OFFSET_X: float = -20.0
 const LIST_BG_RES: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
 const LIST_BG_COCOS: Vector2 = Vector2(385.0, 215.0)   # 源 :501
-const LIST_BG_SIZE: Vector2 = Vector2(720.0, 410.0)   # 视觉加大（装 2 卡片 bg 313 并列 + 边距），源 :504 fix_size 570×375
+const LIST_BG_SIZE: Vector2 = Vector2(570.0, 375.0)   # 源 :504 fix_size CCSizeMake(570, 375)（照源，去译者"视觉加大 720×410"）
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const TAB_KEYS: Array[String] = ["all", "front", "middle", "back"]
@@ -26,13 +26,16 @@ const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # c
 const TAB_COCOS_Y: Array[float] = [365.0, 305.0, 245.0, 185.0]      # 源 :517/560/603/646
 const TAB_COCOS_X: float = 707.0
 const LABEL_CENTER_OFFSET: Vector2 = Vector2(20.0, 10.0)   # label 居中估算偏移（size 未 layout）
-# 通用左右边距：内容（ScrollContainer）距 bg 边框左右内边距（通用常量，后续面板复用统一样式）。
-const LIST_PADDING_X: float = 35.0
-# draglist 内容区：bg position.x = _to_godot(385,215).x - LIST_BG_SIZE.x*0.5 = 445 - 360 = 85（445 = 385-20(OFFSET_X)+80）；
-# LIST_TOPLEFT = bg + 左右 LIST_PADDING_X + 垂直居中 (LIST_BG_SIZE.y-348)/2。随 LIST_BG_SIZE 自动。
-const LIST_TOPLEFT: Vector2 = Vector2(445.0 - LIST_BG_SIZE.x * 0.5 + LIST_PADDING_X, 140.0 + (LIST_BG_SIZE.y - 348.0) * 0.5)
-const LIST_SIZE: Vector2 = Vector2(LIST_BG_SIZE.x - 2.0 * LIST_PADDING_X, 348.0)
-const CELL_SIZE: Vector2 = Vector2(320.0, 100.0)   # 源 getpos 260 间距 / 100 行高（加宽同步 hero_package_item，bg 313 不重叠）
+# 源 draglist 卡片网格 getpos :315-323：第一张中心 cocos(255+offsetx=235, 335)，列间距 260（:321）/ 行高 100（:322）。
+# cocos→Godot（x+80, 560-y）：第一张中心 (315, 225)，两列关于 list_bg 中心(445)对称。
+const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 行高 100（去译者"加宽 320"，照源 bg313 重叠 53px）
+# ScrollContainer = 裁剪 viewport（源 cliprect :759 (0,45,800,348)）。ScrollContainer reset 子节点 _grid 的 position
+#（同 GridContainer reset scale 坑），故 GRID_OFFSET 无效。直接让 ScrollContainer.position = 第一格 cell 左上
+# = bg 中心(315,225) - cell/2 = (185,175)（源 getpos 第一张中心 cocos(235,335)→Godot(315,225)）。
+# → bg 左沿 = 185+7.93≈193，距 list_bg 左框 160 = 33px 左边距（照源 bg左 cocos113 - list_bg左80=33），
+#   ScrollContainer[185,705] 居中 list_bg[160,730]（中心均 445），bg 左右各 33px 对称。
+const SCROLL_POS: Vector2 = Vector2(185.0, 175.0)
+const SCROLL_SIZE: Vector2 = Vector2(520.0, 348.0)
 const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
@@ -47,7 +50,7 @@ var _clid: String = "all"
 var _tabs: Dictionary = {}      # key -> TextureButton
 var _tab_labels: Dictionary = {}   # key -> Label
 var _scroll: ScrollContainer = null
-var _grid: GridContainer = null
+var _grid: Control = null
 var _hero_by_class: Dictionary = {}   # clid -> Array[Variant]（HeroInstance 或 {tid,miss} dict）
 
 
@@ -129,14 +132,14 @@ func _on_tab_pressed(key: String) -> void:
 # item 自身 custom_minimum_size=CELL_SIZE，separation=0（cell 紧贴 = 源 260×100 间距）。
 func _create_list_container() -> void:
 	_scroll = ScrollContainer.new()
-	_scroll.position = LIST_TOPLEFT
-	_scroll.size = LIST_SIZE
+	_scroll.position = SCROLL_POS
+	_scroll.size = SCROLL_SIZE
 	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	container.add_child(_scroll)
-	_grid = GridContainer.new()
-	_grid.columns = 2
-	_grid.add_theme_constant_override("h_separation", 0)
-	_grid.add_theme_constant_override("v_separation", 0)
+	# Control（非 GridContainer）：GridContainer 会 reset 直接子节点 scale，致 item scale=1/CS 失效（2026-07-16 GUT 实测 scale 被还原为 1）。
+	# 改手动 position 排列 cell，item 不在 Container 内，scale 保留。_refresh_list 按 col/row 设 item.position。
+	_grid = Control.new()
+	_grid.mouse_filter = Control.MOUSE_FILTER_PASS
 	_scroll.add_child(_grid)
 
 
@@ -151,13 +154,33 @@ func _refresh_list() -> void:
 	for c in _grid.get_children():
 		c.free()
 	var list: Array = _hero_by_class.get(_clid, [])
+	var col := 0
+	var row := 0
 	for i in range(list.size()):
 		var entry: Variant = list[i]
 		if _is_handbook_boundary(list, i):
-			_add_list_line()
+			if col == 1:
+				var fill := Control.new()
+				fill.custom_minimum_size = CELL_SIZE
+				fill.position = Vector2(CELL_SIZE.x, row * CELL_SIZE.y)
+				fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				_grid.add_child(fill)
+				col = 0
+				row += 1
+			_add_list_line_at(0, row)
+			row += 1
 		var item := HeroPackageItem.create_from_entry(entry, cm, _hero_mgr, pd)
+		item.position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y)
 		item.gui_input.connect(_on_item_gui_input.bind(entry))
 		_grid.add_child(item)
+		col += 1
+		if col >= 2:
+			col = 0
+			row += 1
+	var total_rows := row + (1 if col > 0 else 0)
+	if total_rows < 1:
+		total_rows = 1
+	_grid.custom_minimum_size = Vector2(CELL_SIZE.x * 2.0, CELL_SIZE.y * float(total_rows))
 
 
 # 分界：当前是最后一个 HeroInstance 且下一条是 miss dict（已拥有→未拥有过渡，源 refreshHeroList :344 preLineAmount）。
@@ -169,9 +192,10 @@ func _is_handbook_boundary(list: Array, i: int) -> bool:
 
 # 源 prepareLoad :398-411 listLine：equip_detail_title_bg 300×16 + "尚未召唤" 文字。
 # GridContainer 不支持跨列，分隔线 + 空 cell 占位凑一行（2 列补齐）。
-func _add_list_line() -> void:
+func _add_list_line_at(col: int, row: int) -> void:
 	var line := Control.new()
 	line.custom_minimum_size = CELL_SIZE
+	line.position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bg := TextureRect.new()
 	bg.texture = load(LIST_LINE_BG_RES)
@@ -189,6 +213,7 @@ func _add_list_line() -> void:
 	_grid.add_child(line)
 	var spacer := Control.new()
 	spacer.custom_minimum_size = CELL_SIZE
+	spacer.position = Vector2((col + 1) * CELL_SIZE.x, row * CELL_SIZE.y)
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_grid.add_child(spacer)
 

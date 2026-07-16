@@ -10,8 +10,11 @@ extends Control
 
 const BG_RES: String = "res://assets/ui/alpha/HVGA/package_hero_bg.png"
 const BG_SIZE: Vector2 = Vector2(313.0, 123.0)
-const CELL_SIZE: Vector2 = Vector2(320.0, 100.0)   # 加宽（用户偏好并列清晰），源 getpos 260 间距 + bg 313 透明重叠
-const BG_OFFSET: Vector2 = Vector2(3.5, -11.5)        # bg 中心对齐 cell 中心（cell 320 > bg 313，bg 水平不溢出）
+# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 资源档）：cocos sprite contentSize=纹理/CS，position 不变。
+# → bg 313 纹理显示 313/CS≈244，getpos 列距 260/行距 100 不重叠（间隙 16/4）。Godot 在 _build 整体 scale=1/CS 等价。
+const CONTENT_SCALE: float = 1.28125
+const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 行高 100（卡片中心间距）
+const BG_OFFSET: Vector2 = Vector2(-26.5, -11.5)   # bg 中心对齐 cell 中心=(cell-bg纹理)/2；scale 1/CS 后 bg 244 居中 cell
 const BG_H: float = 123.0
 const GOCHA_RES: String = "res://assets/ui/alpha/HVGA/gocha.png"
 const PROGRESS_BG_RES: String = "res://assets/ui/alpha/HVGA/heropackage_soulstone_progress_bg.png"
@@ -84,6 +87,10 @@ func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: Player
 	tid = ReadheroHandbook.entry_tid(entry)
 	custom_minimum_size = CELL_SIZE
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# 源 contentScaleFactor 1.28（见 CONTENT_SCALE）：item 整体 scale=1/CS 补偿（bg/头像/装备槽纹理都偏大 1.28），
+	# pivot=cell 中心使缩放后内容（bg 244×96）居中 cell 260×100，与源 bg 显示尺寸一致、不重叠。
+	pivot_offset = CELL_SIZE * 0.5
+	scale = Vector2.ONE / CONTENT_SCALE
 	_create_bg()
 	_create_head()
 	_create_name()
