@@ -13,10 +13,10 @@ func test_setup_loot_single() -> void:
 	var root := Node.new()
 	add_child(root)
 	var popup := PopTavernLoot.new("poptavernloot", {})
-	popup.setup_loot([{"id": 101, "amount": 1}], cm)
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "one", {"pay": "Diamond", "number": 288})
 	popup.show_window(root)
-	# 1 图标 + 再抽 + 关闭 = 3 子
-	assert_eq(popup.container.get_child_count(), 3, "单抽：1 图标 + 2 按钮")
+	# 1 图标 + 再抽 + 关闭 + cost_label + cost_icon + reward_label = 6 子
+	assert_eq(popup.container.get_child_count(), 6, "单抽：1 图标 + 2 按钮 + cost 行 2 + reward_label")
 	popup.remove_window()
 	root.queue_free()
 
@@ -26,10 +26,53 @@ func test_setup_loot_aggregates() -> void:
 	add_child(root)
 	var popup := PopTavernLoot.new("poptavernloot", {})
 	# 同 id 101 两笔 → 聚合为 1 图标
-	popup.setup_loot([{"id": 101, "amount": 1}, {"id": 101, "amount": 2}, {"id": 102, "amount": 1}], cm)
+	popup.setup_loot([{"id": 101, "amount": 1}, {"id": 101, "amount": 2}, {"id": 102, "amount": 1}], cm, "bronze", "ten")
 	popup.show_window(root)
-	# 聚合后 2 种（101/102）+ 2 按钮 = 4
-	assert_eq(popup.container.get_child_count(), 4, "聚合同 id：2 图标 + 2 按钮")
+	# 聚合后 2 种（101/102）+ 2 按钮 + cost 行 2 + reward_label = 7（十连 cost_info 空时无 cost 行）
+	# setup_loot 默认空 cost_info → cost 行跳过 → 2 图标 + 2 按钮 + reward_label = 5
+	assert_eq(popup.container.get_child_count(), 5, "聚合：2 图标 + 2 按钮 + reward_label（无 cost 行）")
+	popup.remove_window()
+	root.queue_free()
+
+
+# 源 poptavernloot.lua :661-668 tvText 分支：one→DRAW_ONCE_AGAIN / ten→DRAW_10_AGAIN。
+func test_tv_text_branch() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup_once := PopTavernLoot.new("poptavernloot", {})
+	popup_once.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "one")
+	popup_once.show_window(root)
+	# cm.get_lstr(DRAW_ONCE_AGAIN) = "再抽一次"
+	var once_text: String = popup_once._tv_text()
+	popup_once.remove_window()
+	var popup_ten := PopTavernLoot.new("poptavernloot", {})
+	popup_ten.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "ten")
+	popup_ten.show_window(root)
+	var ten_text: String = popup_ten._tv_text()
+	popup_ten.remove_window()
+	root.queue_free()
+	assert_eq(once_text, "再抽一次", "单抽 → DRAW_ONCE_AGAIN")
+	assert_eq(ten_text, "再抽十次", "十连 → DRAW_10_AGAIN")
+
+
+# 源 playButtonAnim :781 tavern ccp(310,50) / :820 ok ccp(508,50) — to_godot 转换后按钮位置。
+func test_button_position_to_godot() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze")
+	popup.show_window(root)
+	# _g((310,50)) = (390, 510)；按钮 position = center - size/2（UiButton.make 中心对齐）
+	var children: Array[Node] = popup.container.get_children()
+	var again_btn: TextureButton = null
+	for c in children:
+		if c is TextureButton and c.pressed.is_connected(popup._on_again):
+			again_btn = c
+			break
+	assert_not_null(again_btn, "再抽按钮存在")
+	# center_x 390 → position.x = 390 - size.x/2
+	var again_center_x: float = again_btn.position.x + again_btn.size.x * 0.5
+	assert_almost_eq(again_center_x, 390.0, 1.0, "再抽按钮中心 x≈390（源 310+80 to_godot）")
 	popup.remove_window()
 	root.queue_free()
 
