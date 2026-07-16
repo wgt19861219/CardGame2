@@ -179,6 +179,25 @@ static func _tex_size(res_path: String) -> Vector2:
 	return Vector2(100.0, 40.0)
 
 
+# 源 skillstren.lua:345-364 技能升级按钮 = Sprite herodetail_skill_upgrade_button_1.png（无文字，纯图标）+
+# button_press herodetail_skill_upgrade_button_2.png。
+# 本项目 TextureButton（normal/pressed 双态）居中于 pos。
+const SKILL_UP_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png"
+const SKILL_UP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_2.png"
+const SKILL_UP_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)   # 源按钮触控区近似（纹理 ~32×32）
+
+
+static func create_skill_upgrade_button(parent: Control, godot_center_pos: Vector2) -> TextureButton:
+	var btn := TextureButton.new()
+	btn.texture_normal = load(SKILL_UP_BTN_RES) as Texture2D
+	btn.texture_pressed = load(SKILL_UP_BTN_PRESS_RES) as Texture2D
+	btn.ignore_texture_size = true
+	btn.size = SKILL_UP_BTN_SIZE
+	btn.position = godot_center_pos - SKILL_UP_BTN_SIZE * 0.5
+	parent.add_child(btn)
+	return btn
+
+
 # ---- 底栏三 tab（源 createBottomButtons window.lua:1395-1663）----
 
 # 建 detail/card/skill 三 Scale9 tab 按钮（normal=detail-n，选中 swap detail-a）。

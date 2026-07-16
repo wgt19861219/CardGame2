@@ -118,10 +118,10 @@ func test_panel_shows_skills() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	# rank 7 全解锁 → 4 个"升级"按钮
+	# rank 7 全解锁 → 4 个技能升级按钮（源 skillstren.lua:345 升级按钮图标，meta skill_upgrade）
 	var upgrade_btn_count: int = 0
 	for child in panel.container.get_children():
-		if child is Button and (child as Button).text == "升级":
+		if child.has_meta(&"skill_upgrade"):
 			upgrade_btn_count += 1
 	assert_eq(upgrade_btn_count, 4, "rank 7 全解锁 → 4 升级按钮")
 	panel.remove_window()
@@ -139,10 +139,12 @@ func test_panel_skill_rank_gate() -> void:
 	panel.show_window(root)
 	var upgrade_btn_count: int = 0
 	var unlock_lbl_count: int = 0
+	# 源 createSkillUnlockLabel :443 文案 = LSTR(HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK) % 颜色
+	var unlock_prefix: String = String(cm.get_lstr("HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK")).split("%s")[0]
 	for child in panel.container.get_children():
-		if child is Button and (child as Button).text == "升级":
+		if child.has_meta(&"skill_upgrade"):
 			upgrade_btn_count += 1
-		elif child is Label and (child as Label).text.begins_with("rank "):
+		elif child is Label and (child as Label).text.begins_with(unlock_prefix):
 			unlock_lbl_count += 1
 	assert_eq(upgrade_btn_count, 1, "rank 1 仅 slot 1 解锁 → 1 升级按钮")
 	assert_eq(unlock_lbl_count, 3, "slot 2/3/4 未解锁 → 3 个 rank 解锁 label")
@@ -261,7 +263,9 @@ func test_refresh_gs_after_wear_updates() -> void:
 	var current_gs: int = mgr.calc_gs(hero)
 	panel._pre_gs = current_gs - 1   # 模拟穿戴后 gs 已变（_pre_gs 旧 ≠ calc_gs 新）
 	panel.refresh_gs_after_wear()
-	assert_eq(panel._gs_label.text, "GS " + str(current_gs), "gs ≠ _pre_gs → label 更新为 calc_gs 重算值")
+	# 源 gs_title LSTR("HERODETAIL.POWER_")="战力：" + gs 数字
+	var expected_gs_text: String = String(cm.get_lstr("HERODETAIL.POWER_")) + str(current_gs)
+	assert_eq(panel._gs_label.text, expected_gs_text, "gs ≠ _pre_gs → label 更新为 LSTR POWER + calc_gs 值")
 	assert_eq(panel._pre_gs, current_gs, "_pre_gs 同步到 calc_gs")
 	panel.remove_window()
 	root.queue_free()
@@ -316,7 +320,7 @@ func test_default_tab_skill() -> void:
 	assert_eq(panel._current_tab, "skill", "默认 tab = skill")
 	var upgrade_btn_count: int = 0
 	for c in panel.container.get_children():
-		if c is Button and (c as Button).text == "升级":
+		if c.has_meta(&"skill_upgrade"):
 			upgrade_btn_count += 1
 	assert_eq(upgrade_btn_count, 4, "默认 skill tab → 4 升级按钮可见")
 	panel.remove_window()
@@ -337,7 +341,7 @@ func test_switch_to_detail() -> void:
 	var upgrade_btn_count: int = 0
 	var attrib_lbl_count: int = 0
 	for c in panel.container.get_children():
-		if c is Button and (c as Button).text == "升级":
+		if c.has_meta(&"skill_upgrade"):
 			upgrade_btn_count += 1
 		elif c is Label and (":" in (c as Label).text):
 			attrib_lbl_count += 1
@@ -381,7 +385,7 @@ func test_switch_back_to_skill() -> void:
 	assert_eq(panel._current_tab, "skill", "切回 skill tab")
 	var upgrade_btn_count: int = 0
 	for c in panel.container.get_children():
-		if c is Button and (c as Button).text == "升级":
+		if c.has_meta(&"skill_upgrade"):
 			upgrade_btn_count += 1
 	assert_eq(upgrade_btn_count, 4, "切回 skill → 4 升级按钮恢复")
 	panel.remove_window()

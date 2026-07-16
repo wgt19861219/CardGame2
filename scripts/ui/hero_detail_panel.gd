@@ -10,7 +10,39 @@ signal split_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
 
-const DISPLAY_ATTRIBS: Array[String] = ["HP", "AD", "AP", "ARM", "MR"]
+# 源 baseres.lua:5 att_name 全集 21 个（照源 attributes.lua 循环 #att_name，禁裁剪）。
+const DISPLAY_ATTRIBS: Array[String] = ["STR", "INT", "AGI", "HP", "AD", "AP", "ARM", "MR", "CRIT", "MCRIT", "HPS", "MPS", "DODG", "ARMP", "MRI", "LFS", "CDR", "HEAL", "HIT", "SKL", "SILR"]
+# 源 baseres.lua:80 att_pre（属性显示前缀 LSTR key）。SILR 源 T("") 空 → 用 key 本身 fallback。
+const ATTR_PRE_LSTR: Dictionary = {
+	"STR": "BASERES.STRENGTH_", "INT": "BASERES.INTELLIGENCE_", "AGI": "BASERES.AGILITY_",
+	"HP": "BASERES.MAXIMUM_HP_", "AD": "BASERES.PHYSICAL_ATTACK_", "AP": "BASERES.MAGIC_STRENGTH_",
+	"ARM": "BASERES.PHYSICAL_ARMOR_", "MR": "BASERES.MAGIC_RESISTANCE_",
+	"CRIT": "BASERES.PHYSICAL_CRIT_", "MCRIT": "BASERES.MAGIC_CRIT_",
+	"HPS": "BASERES.HP_REPLIES_", "MPS": "BASERES.ENERGY_RECOVERY_", "DODG": "BASERES.DODGE_",
+	"ARMP": "BASERES.PHYSICAL_ARMOR_PENETRATION", "MRI": "BASERES.IGNORE_MAGIC_RESISTANCE",
+	"LFS": "BASERES.VAMPIRE_LEVEL_", "CDR": "BASERES.REDUCE_ENERGY_CONSUMPTION",
+	"HEAL": "BASERES.IMPROVE_THERAPEUTIC_SKILL_EFFECT",
+	"HIT": "baseres.1.10.1.004", "SKL": "baseres.1.10.1.005",
+}
+# 源 baseres.lua:105 att_suffix（属性后缀，大多空）。
+const ATTR_SUFFIX: Dictionary = {"CDR": "%", "HEAL": "%", "SKL": " "}
+# 源 param.lua:54 skill_unlock_color_text（rank→颜色 LSTR key）。
+const RANK_COLOR_LSTR: Dictionary = {
+	1: "HERODETAILRES.WHITE", 2: "HERODETAILRES.GREEN", 3: "HERODETAILRES.GREEN",
+	4: "HERODETAILRES.BLUE", 5: "HERODETAILRES.BLUE", 6: "HERODETAILRES.BLUE",
+	7: "HERODETAILRES.PURPLE", 8: "HERODETAILRES.PURPLE", 9: "HERODETAILRES.PURPLE",
+	10: "HERODETAILRES.PURPLE", 11: "HERODETAILRES.PURPLE",
+	12: "HERODETAILRES.ORANGE", 13: "HERODETAILRES.ORANGE", 14: "HERODETAILRES.ORANGE",
+	15: "HERODETAILRES.ORANGE", 16: "HERODETAILRES.ORANGE", 17: "HERODETAILRES.ORANGE",
+	18: "HERODETAILRES.RED", 19: "HERODETAILRES.RED", 20: "HERODETAILRES.RED",
+	21: "HERODETAILRES.RED", 22: "HERODETAILRES.RED", 23: "HERODETAILRES.RED",
+}
+# 源 window.lua LSTR key（按钮/标题文案）。
+const LSTR_EVOLUTION: StringName = &"HERODETAIL.EVOLUTION_"        # 升星按钮
+const LSTR_ADVANCE: StringName = &"HERODETAIL.ADVANCE_"            # 进阶按钮
+const LSTR_POWER: StringName = &"HERODETAIL.POWER_"                # GS 标题（源 gs_title）
+const LSTR_SKILL_UNLOCK: StringName = &"HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK"  # 技能解锁
+const LSTR_SPLIT_CONFIRM: StringName = &"window.1.10.1.003"        # 分解二次确认
 const LIST_TOP: float = 415.0
 const LIST_LEFT: float = 24.0
 const LINE_HEIGHT: float = 30.0
@@ -82,9 +114,10 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	_create_close_button()
 	_show_gs()
 	_show_equips()
-	_create_action_button("升星", EVOLVE_BTN_POS, evolve_requested, "common_click_feedback", true)   # 源 heroDetail.clickUpgrade（soundres.lua:217）
-	_create_action_button("进阶", UPGRADE_RANK_BTN_POS, upgrade_rank_requested, "common_click_feedback", false)   # 源 hero_upgrade（:867-901 rank+1）
-	# 分解按钮单独建（照源 herosplit:88 firstConfirm 二次确认，_create_action_button 第3参 Signal 不兼容 Callable）。
+	# 源 evolve_label=T(LSTR("HERODETAIL.EVOLUTION_"))/upgrade_label=T(LSTR("HERODETAIL.ADVANCE_"))（window.lua:2158/2322）。
+	_create_action_button(get_lstr_fallback(LSTR_EVOLUTION, "升星"), EVOLVE_BTN_POS, evolve_requested, "common_click_feedback", true)   # 源 heroDetail.clickUpgrade（soundres.lua:217）
+	_create_action_button(get_lstr_fallback(LSTR_ADVANCE, "进阶"), UPGRADE_RANK_BTN_POS, upgrade_rank_requested, "common_click_feedback", false)   # 源 hero_upgrade（:867-901 rank+1）
+	# 分解按钮：源 herosplit 独立面板用 Sprite 图（split_button 资源缺失），本项目降级 Button+text"分解"。
 	var split_btn: Button = HeroDetailBuilder.create_action_button(container, "分解", SPLIT_BTN_POS, false)
 	split_btn.pressed.connect(_on_split_pressed)
 	_create_strengthen_button()   # 强化 → 弹 EquipStrengthenPanel（源独立面板，本项目从 HeroDetailPanel 进）
@@ -112,29 +145,42 @@ func _create_close_button() -> void:
 		remove_window())
 
 
-# 源 getHeroAtt：base/add/all → "key: all (+add)"。detail tab 内容（源 att 属性层）。
+# 源 attributes.lua:133 createAttDetail 循环 res.att_name（全 21）+ res.att_pre[k]..":" + base + addIcon + add + suffix。
+# 本项目合并成单 label "LSTR_pre: all (+add) suffix"（视觉等价简化）。显示等价：源 base+add ≈ 本项目 all=(base+add)。
 func _show_attributes() -> void:
 	if hero == null:
 		return
 	var att: Dictionary = ReadheroAttribs.get_hero_att_by_hero(hero, cm)
 	var y: float = LIST_TOP
 	for key in DISPLAY_ATTRIBS:
-		if att.has(key):
-			var row: Dictionary = att[key]
-			var lbl := Label.new()
-			lbl.text = key + ": " + str(int(row["all"])) + " (+" + str(int(row["add"])) + ")"
-			lbl.position = Vector2(LIST_LEFT, y)
-			_add_tab_child(lbl)
-			y -= LINE_HEIGHT
+		if not att.has(key):
+			continue   # 源 ReadheroAttribs v==0 跳过（仅显示非零属性）
+		var row: Dictionary = att[key]
+		var pre: String = get_lstr_fallback(ATTR_PRE_LSTR.get(key, ""), key)
+		var suffix: String = String(ATTR_SUFFIX.get(key, ""))
+		var lbl := Label.new()
+		lbl.text = pre + ": " + str(int(row["all"])) + " (+" + str(int(row["add"])) + ")" + suffix
+		lbl.position = Vector2(LIST_LEFT, y)
+		_add_tab_child(lbl)
+		y -= LINE_HEIGHT
+
+
+# cm 可能为 null（测试降级）的 LSTR fallback：key 空或 cm null → 返 fallback（源英文 key）。
+func get_lstr_fallback(lstr_key: String, fallback: String) -> String:
+	if lstr_key.is_empty() or cm == null:
+		return fallback
+	return String(cm.get_lstr(lstr_key))
 
 
 # 源 window.lua:1210 createInfoBoard 的 gs Label（:1254-1268 position 195,168 anchor 0,0.5 size 18
-# color 深红）+ :1293 pregs=hero._gs 初始化。本项目无 info_board，GS Label 放属性区上方。
+# color 深红，text=self.hero._gs 纯数字）+ :1293 pregs=hero._gs 初始化。
+# 源 :2040 gs_title label "战力："（LSTR HERODETAIL.POWER_）独立显示。
+# 本项目无 info_board，GS Label 放属性区上方，"战力：N" 合并显示。
 func _show_gs() -> void:
 	if hero == null or hero_manager == null:
 		return
 	var lbl := Label.new()
-	lbl.text = "GS " + str(hero.gs)
+	lbl.text = get_lstr_fallback(LSTR_POWER, "GS") + str(hero.gs)
 	lbl.position = GS_LABEL_POS
 	lbl.add_theme_font_size_override("font_size", GS_LABEL_FONT_SIZE)
 	lbl.modulate = GS_LABEL_COLOR
@@ -152,7 +198,7 @@ func refresh_gs_after_wear() -> void:
 	var gs: int = hero_manager.calc_gs(hero)
 	if gs == _pre_gs:
 		return
-	_gs_label.text = "GS " + str(gs)
+	_gs_label.text = get_lstr_fallback(LSTR_POWER, "GS") + str(gs)
 	_gs_label.pivot_offset = _gs_label.size * 0.5   # 源 setNodeAnchor(0.5,0.5) 居中缩放
 	_pre_gs = gs
 	var tw := create_tween()
@@ -263,9 +309,10 @@ func _show_skills() -> void:
 		name_lbl.text = display_name
 		name_lbl.position = Vector2(SKILL_LEFT, y)
 		_add_tab_child(name_lbl)
-		if locked:   # 源 createSkillUnlockLabel :442 未解锁
+		if locked:   # 源 createSkillUnlockLabel :442-450 T(LSTR("HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK"), color)
+			var color_text: String = get_lstr_fallback(RANK_COLOR_LSTR.get(unlock_rank, ""), str(unlock_rank))
 			var unlock_lbl := Label.new()
-			unlock_lbl.text = "rank " + str(unlock_rank) + " 解锁"
+			unlock_lbl.text = get_lstr_fallback(LSTR_SKILL_UNLOCK, "rank %s 解锁") % color_text
 			unlock_lbl.position = Vector2(SKILL_LEFT + SKILL_LVL_OFFSET, y)
 			_add_tab_child(unlock_lbl)
 		else:   # 已解锁 → 等级 + 升级按钮
@@ -306,10 +353,10 @@ func _create_skill_icon(icon_res: String, y: float, locked: bool, slot: int) -> 
 
 
 func _create_skill_upgrade_button(idx: int, pos: Vector2) -> void:
-	# detail-n Scale9 纹理化（照源 herodetail 动作按钮 window.lua:2095 范式），替原文字占位 Button.new。
-	# pos 原左上(SKILL_BTN_SIZE 80×28)→传中心 pos+size/2 给 create_action_button(ACTION_BTN_SIZE 中心定位)。
-	var btn: Button = HeroDetailBuilder.create_action_button(container, "升级", pos + SKILL_BTN_SIZE * 0.5, false)
+	# 源 skillstren.lua:345 createSkillLevelBoard 按钮：Sprite herodetail_skill_upgrade_button_1.png 无文字。
+	var btn: TextureButton = HeroDetailBuilder.create_skill_upgrade_button(container, pos + SKILL_BTN_SIZE * 0.5)
 	btn.set_meta(&"tab_content", true)   # 标记 tab 内容（切 tab free，等价 _add_tab_child）
+	btn.set_meta(&"skill_upgrade", true)   # 标记技能升级按钮（测试识别）
 	btn.pressed.connect(func() -> void:
 		Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
 		upgrade_skill_requested.emit(idx))
@@ -436,12 +483,13 @@ func perform_upgrade_rank() -> bool:
 	return ok
 
 
-# 分解按钮：照源 herosplit/window.lua:88 firstConfirm popConfirmDialog 二次确认 → emit split_requested。
+# 分解按钮：照源 herosplit/window.lua:88-104 firstConfirm popConfirmDialog 二次确认 → emit split_requested。
 func _on_split_pressed() -> void:
-	# 源 herosplit:97-99 firstConfirm msg 含 Unit Display Name（selectStone 碎片选择目标内联分解简化无）。
-	var display_name: String = cm.get_lstr(String(cm.get_raw_table(&"Unit").get(str(hero.tid), {}).get("Display Name", "")))
+	# 源 herosplit:97-99 T(LSTR("window.1.10.1.003"), name) = "是否确认分解英雄%s？"
+	var display_name: String = cm.get_lstr(String(cm.get_raw_table(&"Unit").get(str(hero.tid), {}).get("Display Name", ""))) if cm != null else ""
+	var msg_pattern: String = get_lstr_fallback(LSTR_SPLIT_CONFIRM, "确认分解 %s？")
 	var confirm := HeroSplitConfirm.new()
-	confirm.set_message("确认分解 %s？" % display_name)
+	confirm.set_message(msg_pattern % display_name)
 	confirm.confirmed.connect(func() -> void: emit_signal("split_requested"))
 	get_parent().add_child(confirm)
 
