@@ -36,6 +36,9 @@ const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png
 # ── 资源 ──
 const BG_PATH: String = "res://assets/ui/alpha/HVGA/package_equip_bg.png"
 const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framework.lua:749 全屏背景（pushScene 场景）
+# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
+# TextureRect 默认 size=纹理原始（偏大 1.28），照源无 fix_size 的纯 Sprite 统一 /CS。
+const CONTENT_SCALE: float = 1.28125
 
 signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
 
@@ -125,9 +128,14 @@ func _create_fullscreen_bg() -> void:
 func _create_bg() -> void:
 	if not ResourceLoader.exists(BG_PATH):
 		return   # headless/缺图降级（不阻塞 Logic）
+	var bg_tex: Texture2D = load(BG_PATH) as Texture2D
 	var bg := TextureRect.new()
-	bg.texture = load(BG_PATH)
-	bg.position = _g(BG_POS) - bg.get_minimum_size() / 2.0   # 源 setPosition 中心锚定→Godot
+	bg.texture = bg_tex
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# 源 package.lua:613-625 equipbg t="Sprite" config={}，显示=纹理/CS（见 CONTENT_SCALE 注释）
+	var bg_size: Vector2 = bg_tex.get_size() / CONTENT_SCALE
+	bg.size = bg_size
+	bg.position = _g(BG_POS) - bg_size / 2.0   # 源 setPosition 中心锚定→Godot
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(bg)
 
