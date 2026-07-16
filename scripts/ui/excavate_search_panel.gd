@@ -33,6 +33,9 @@ const COLOR_COST_LOW: Color = Color(1.0, 0.0, 0.0)                       # 源 s
 const FRAME_W: float = 520.0
 const FRAME_H: float = 400.0
 const TITLE_Y: float = 18.0
+# 源 excavatesearch.lua:150 title fix_wh（强制显示尺寸，1:1 不受 CS 影响）
+const TITLE_W: float = 246.09375   # 源 :150 fix_wh.w
+const TITLE_H: float = 35.9375     # 源 :150 fix_wh.h
 const ICON_SIZE: float = 48.0
 const BTN_SIZE: Vector2 = Vector2(160.0, 50.0)
 const SMALL_FONT: int = 18
@@ -138,9 +141,8 @@ func _add_title(frame: TextureRect) -> void:
 	var title := TextureRect.new()
 	title.texture = load(TITLE_TEX)
 	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var ts: Vector2 = load(TITLE_TEX).get_size()
-	title.size = ts
-	title.position = Vector2(frame.size.x * 0.5 - ts.x * 0.5, TITLE_Y)
+	title.size = Vector2(TITLE_W, TITLE_H)   # 源 :150 fix_wh（1:1，不除 CS）
+	title.position = Vector2(frame.size.x * 0.5 - TITLE_W * 0.5, TITLE_Y)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title)
 
