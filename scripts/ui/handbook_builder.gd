@@ -165,7 +165,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		lock.position = Vector2(33, 33) - _tex_size_centered(ICON_LOCK_RES)
 		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon_bg.add_child(lock)
-		name_text = "Lv%d 解锁" % lr   # 源 :441 T(LSTR("HANDBOOK.LV_D_ACTIVATED"), lr)
+		name_text = _lstr(cm, "HANDBOOK.LV_D_ACTIVATED") % lr   # 源 :441 T(LSTR("HANDBOOK.LV_D_ACTIVATED"), lr)
 	_add_name_label(cell, name_text)
 	cell.set_meta(&"is_open", is_open)
 	cell.set_meta(&"id", int(info["id"]))

@@ -65,6 +65,7 @@ func _add_header() -> void:
 	close.pressed.connect(remove_window)
 	container.add_child(close)
 	var title := Label.new()
+	# 源 pvp.lua 是 scene push（无文字标题，panel 自带背景图），本项目适配为 PopWindow 弹窗加标题（降级字面量）。
 	title.text = "天梯竞技场"
 	title.position = TITLE_POS
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -73,10 +74,12 @@ func _add_header() -> void:
 
 # 源 pvp.lua:7 三 panel layer 可见性切换 → 本项目 tab 按钮切换 _current_tab。
 # 源 tab = tavern_button_normal_1 Scale9 + cap(14,20,60,23) + Label（reqRankData/reqRecordBoard 等）。
+# 源 tab 名：L1654 PVP.ARMORY(英雄榜/挑战主面板) / L2018 PVP.RANKING_(排行榜) /
+# L1727 PVP.COMBAT_RECORD(战斗记录) / L2969 PVP.ADJUSTMENT(防守阵容调整)。
 func _add_tabs() -> void:
-	var tab_names: Array = ["挑战", "排行榜", "战斗记录", "防守阵容"]
-	for i in tab_names.size():
-		var tab: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, TAB_POS + Vector2(i * TAB_W, 0), TAB_BTN_SIZE, CAP_NORMAL, tab_names[i], LABEL_COLOR_NORMAL)
+	var tab_lstr: Array[String] = ["PVP.ARMORY", "PVP.RANKING_", "PVP.COMBAT_RECORD", "PVP.ADJUSTMENT"]
+	for i in tab_lstr.size():
+		var tab: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, TAB_POS + Vector2(i * TAB_W, 0), TAB_BTN_SIZE, CAP_NORMAL, _cm.get_lstr(tab_lstr[i]), LABEL_COLOR_NORMAL)
 		tab.disabled = i == _current_tab
 		tab.pressed.connect(_switch_tab.bind(i))
 		container.add_child(tab)
@@ -93,17 +96,20 @@ func _render_challenge_tab() -> void:
 	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, now)
 	var info: Dictionary = reply["_open_panel"]
 	var info_lbl := Label.new()
-	info_lbl.text = "排名 %d  战力 %d  挑战次数 %d  竞技场币 %d" % [int(info["rank"]), int(info["gs"]), int(info["left_count"]), _player.arena_point]
+	# 源 mainPanelLayer：L880 PVP.RANK_(排名:)/L912 PVP.TOTAL_POWER_(总战力:) 独立 Label。
+	# 挑战次数/竞技场币源为图+数字字段（无单 LSTR），此处保留降级字面量。
+	info_lbl.text = "%s%d  %s%d  挑战次数 %d  竞技场币 %d" % [_cm.get_lstr("PVP.RANK_"), int(info["rank"]), _cm.get_lstr("PVP.TOTAL_POWER_"), int(info["gs"]), int(info["left_count"]), _player.arena_point]
 	info_lbl.position = CONTENT_POS
 	info_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(info_lbl)
 	for i in (info["oppos"] as Array).size():
 		container.add_child(_make_opponent_row((info["oppos"] as Array)[i], i))
-	# 源 pvp.lua:2215 changeEnemy 换一批（tavern_button_1 + 换一批 Label ccc3(251,206,16)）。
-	var buy: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, CONTENT_POS + Vector2(0, 250), ACTION_BTN_SIZE, CAP_NORMAL, "购买次数", LABEL_COLOR_NORMAL)
+	# 源 pvp.lua:1920 购买次数按钮 tavern_button_normal_1 + PVP.THE_NUMBER_OF_PURCHASES。
+	var buy: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, CONTENT_POS + Vector2(0, 250), ACTION_BTN_SIZE, CAP_NORMAL, _cm.get_lstr("PVP.THE_NUMBER_OF_PURCHASES"), LABEL_COLOR_NORMAL)
 	buy.pressed.connect(_on_buy)
 	container.add_child(buy)
-	var refresh: Button = UiScale9Button.make(BTN_CHANGE_RES, BTN_CHANGE_PRESS, CONTENT_POS + Vector2(0, 250) + BUY_OFFSET, ACTION_BTN_SIZE, CAP_CHANGE, "刷新对手", LABEL_COLOR_CHANGE)
+	# 源 pvp.lua:2242 changeEnemy 换一批（tavern_button_1 + PVP.CHANGE_ANOTHER_LIST Label ccc3(251,206,16)）。
+	var refresh: Button = UiScale9Button.make(BTN_CHANGE_RES, BTN_CHANGE_PRESS, CONTENT_POS + Vector2(0, 250) + BUY_OFFSET, ACTION_BTN_SIZE, CAP_CHANGE, _cm.get_lstr("PVP.CHANGE_ANOTHER_LIST"), LABEL_COLOR_CHANGE)
 	refresh.pressed.connect(_on_refresh)
 	container.add_child(refresh)
 
@@ -113,12 +119,13 @@ func _make_opponent_row(oppo: Dictionary, idx: int) -> Control:
 	row.position = CONTENT_POS + Vector2(0, 40 + idx * 60)
 	row.custom_minimum_size = Vector2(700, 50)
 	var lbl := Label.new()
-	lbl.text = "%s  Lv%d  排名%d  战力%d" % [String(oppo["name"]), int(oppo["level"]), int(oppo["rank"]), int(oppo["gs"])]
+	# 源对手卡：图+数字字段（无文字 label），此处降级聚合文字。排名/战力照源 PVP.RANK_/PVP.TOTAL_POWER_。
+	lbl.text = "%s  Lv%d  %s%d  %s%d" % [String(oppo["name"]), int(oppo["level"]), _cm.get_lstr("PVP.RANK_"), int(oppo["rank"]), _cm.get_lstr("PVP.TOTAL_POWER_"), int(oppo["gs"])]
 	lbl.position = Vector2(0, 15)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(lbl)
-	# 源 pvp.lua:2503 challengeEnemy1/2/3 tavern_button_normal_1 + cap(14,20,60,23) + "挑战" Label。
-	var btn: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, Vector2(550, 10), CHALLENGE_BTN_SIZE, CAP_NORMAL, "挑战", LABEL_COLOR_NORMAL)
+	# 源 pvp.lua:2541 challengeEnemy1/2/3 tavern_button_normal_1 + cap(14,20,60,23) + PVP.CHALLENGE Label。
+	var btn: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, Vector2(550, 10), CHALLENGE_BTN_SIZE, CAP_NORMAL, _cm.get_lstr("PVP.CHALLENGE"), LABEL_COLOR_NORMAL)
 	btn.pressed.connect(_on_challenge.bind(int(oppo["user_id"])))
 	row.add_child(btn)
 	return row
@@ -136,10 +143,10 @@ func _render_rankboard_tab() -> void:
 		lbl.position = CONTENT_POS + Vector2(0, i * ROW_H)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(lbl)
-	# 自己的排名
+	# 自己的排名（源 L1957 PVP.MY_RANK_(我的排名:)）
 	var self_lbl := Label.new()
 	var sr: Dictionary = data["self_rank"]
-	self_lbl.text = "我的排名 %d  %s  Lv%d" % [int(data["pos"]), String(sr["name"]), int(sr["level"])]
+	self_lbl.text = "%s%d  %s  Lv%d" % [_cm.get_lstr("PVP.MY_RANK_"), int(data["pos"]), String(sr["name"]), int(sr["level"])]
 	self_lbl.position = CONTENT_POS + Vector2(0, 22 * ROW_H)
 	self_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(self_lbl)
@@ -171,7 +178,8 @@ func _render_lineup_tab() -> void:
 	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, now)
 	var lineup: Array = reply["_open_panel"]["lineup"]
 	var title := Label.new()
-	title.text = "防守阵容（%d 英雄）" % lineup.size()
+	# 源 L2984 PVP.DEFENSIVE_TEAM_(防守阵容:)。括号补充英雄数为降级（源为图标阵容非文字）。
+	title.text = "%s（%d 英雄）" % [_cm.get_lstr("PVP.DEFENSIVE_TEAM_"), lineup.size()]
 	title.position = CONTENT_POS
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(title)
@@ -182,8 +190,8 @@ func _render_lineup_tab() -> void:
 		lbl.position = CONTENT_POS + Vector2(0, 40 + i * ROW_H)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(lbl)
-	# 设置当前出战阵容为防守阵容（源 _set_lineup :3417-3424）
-	var set_btn: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, CONTENT_POS + Vector2(0, 280), ACTION_BTN_SIZE, CAP_NORMAL, "设为当前阵容", LABEL_COLOR_NORMAL)
+	# 源 L2940 adjustHero 按钮 tavern_button_normal_1 cap(50,20,66,23) + PVP.ADJUSTMENT(调整)。
+	var set_btn: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, CONTENT_POS + Vector2(0, 280), ACTION_BTN_SIZE, CAP_NORMAL, _cm.get_lstr("PVP.ADJUSTMENT"), LABEL_COLOR_NORMAL)
 	set_btn.pressed.connect(_on_set_lineup)
 	container.add_child(set_btn)
 
