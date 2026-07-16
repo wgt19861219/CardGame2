@@ -6,6 +6,8 @@ extends RefCounted
 ## 主类 _create_craft_tree 转发本类（被 _create_craft_window/_play_craft_effect/_set_history 调用）。
 ## 源 ui/equipcraft.lua createCraftTree:927-1233 + 配方分支 :1037-1132 + 获取途径 :1133-1202。
 
+# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
+const CONTENT_SCALE: float = 1.28125
 # ── 合成树坐标常量（源 cocos 值）──────────────────────────────────────
 const NAME_LABEL_POS: Vector2 = Vector2(142.0, 292.0)     # 源 :998
 const ROOT_ICON_POS: Vector2 = Vector2(141.0, 230.0)      # 源 :1032
@@ -120,7 +122,11 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 static func _build_recipe_branch(panel, tree: Control, row: Dictionary, components: int) -> void:
 	var trunk := TextureRect.new()
 	trunk.texture = load(LINE_RES[components - 1])
-	trunk.position = _gl(TRUNK_POS) - trunk.get_minimum_size() / 2.0
+	trunk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# trunk 源 Sprite 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）
+	var trunk_size: Vector2 = trunk.texture.get_size() / CONTENT_SCALE
+	trunk.size = trunk_size
+	trunk.position = _gl(TRUNK_POS) - trunk_size / 2.0
 	trunk.rotation_degrees = LINE_ROT[components - 1]
 	tree.add_child(trunk)
 	panel._craft_window_data["nodeid"] = []
@@ -222,7 +228,11 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 	(panel._tree_data["rootBg"] as Control).scale = Vector2(ROOT_ICON_NO_RECIPE_SCALE, ROOT_ICON_NO_RECIPE_SCALE)
 	var bg := TextureRect.new()   # 源 :1136-1138 getway_bg 装饰背景
 	bg.texture = load(GETWAY_BG_PATH)
-	bg.position = _gl(GETWAY_BG_POS) - bg.get_minimum_size() / 2.0   # 源 setPosition(142,177) 中心锚定
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# getway_bg 源 createSprite 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）
+	var bg_size: Vector2 = bg.texture.get_size() / CONTENT_SCALE
+	bg.size = bg_size
+	bg.position = _gl(GETWAY_BG_POS) - bg_size / 2.0   # 源 setPosition(142,177) 中心锚定
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tree.add_child(bg)
 	var label := Label.new()
@@ -257,7 +267,11 @@ static func _build_one_getway(panel, tree: Control, stage_table: Dictionary, raw
 	var stage_row: Dictionary = stage_table.get(str(sid), {})
 	var board := TextureRect.new()   # 源 :1160 board 贴图（替降级 Panel）+ 可点击
 	board.texture = load(GETWAY_BOARD_PATH)
-	board.position = _gl(Vector2(142.0, GETWAY_BOARD_Y_BASE - GETWAY_BOARD_DY * idx)) - board.get_minimum_size() / 2.0
+	board.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# board 源 createSprite 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）；子节点 position 不动
+	var board_size: Vector2 = board.texture.get_size() / CONTENT_SCALE
+	board.size = board_size
+	board.position = _gl(Vector2(142.0, GETWAY_BOARD_Y_BASE - GETWAY_BOARD_DY * idx)) - board_size / 2.0
 	board.mouse_filter = Control.MOUSE_FILTER_STOP
 	board.gui_input.connect(panel._make_get_way_handler(idx))   # 源 doGetWayTouch :91-123
 	tree.add_child(board)

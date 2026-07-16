@@ -8,6 +8,9 @@ extends RefCounted
 const StageSelectMapClass = preload("res://scripts/systems/stage_select_map.gd")
 const UiButton = preload("res://scripts/ui/ui_button.gd")
 
+# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
+const CONTENT_SCALE: float = 1.28125
+
 const FRAME_NORMAL: String = "res://assets/ui/alpha/HVGA/stage-map-frame.png"
 const FRAME_ELITE: String = "res://assets/ui/alpha/HVGA/stage-map-elite-frame.png"
 const FRAME_GUILD: String = "res://assets/ui/alpha/HVGA/stage_map_guild_frame.png"
@@ -209,11 +212,13 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 	var tex: Texture2D = load(res) as Texture2D
 	if tex == null:
 		return
+	# title_bg/frame 源 createSprite 无 fix_size → 显示尺寸=纹理/CS（[[content-scale-factor]]）
+	var display_size := tex.get_size() / CONTENT_SCALE
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.size = tex.get_size()
-	node.position = godot_center - tex.get_size() * 0.5
+	node.size = display_size
+	node.position = godot_center - display_size * 0.5
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
 
