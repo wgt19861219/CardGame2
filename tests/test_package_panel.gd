@@ -140,3 +140,33 @@ func test_empty_player_grid() -> void:
 	assert_eq(panel._grid.get_child_count(), 0, "空玩家 grid 空")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── 顶部货币条（源 framework.lua:755 sbCreateTitle common，所有非 main 场景建 3 货币条）──
+
+func test_status_bar_built_with_three_bars() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	# _status_refs 由 _create_status_bar 装配，含 gold/diamond/vitality 三个 Label ref。
+	assert_true(panel._status_refs.has("gold"), "货币条 gold label 装好")
+	assert_true(panel._status_refs.has("diamond"), "货币条 diamond label 装好")
+	assert_true(panel._status_refs.has("vitality"), "货币条 vitality label 装好")
+	# gold label 应显示玩家当前金币（int(PlayerData.hero_manager.gold)，新玩家默认 0）
+	var gold_lbl: Label = panel._status_refs["gold"]
+	assert_eq(gold_lbl.text, str(pd.hero_manager.gold), "gold label 显示玩家金币")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_status_bar_built_on_fragment_identity_too() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("fragment", pd)
+	panel.show_window(root)
+	assert_true(panel._status_refs.has("vitality"), "fragment identity 也建货币条（源 framework common）")
+	panel.remove_window()
+	root.queue_free()
