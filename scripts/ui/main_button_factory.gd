@@ -10,6 +10,8 @@ extends RefCounted
 const SPINE_DIR: String = "res://assets/spine"
 const LOOP_ACTION: String = "Loop"   # 源 SpineContainer default Start→Loop，主界面按钮 Loop 循环
 const TITLE_BG: String = "res://assets/ui/alpha/HVGA/main_title_a.png"   # 源 mainres.titleres
+# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
+const CONTENT_SCALE: float = 1.28125
 const PRESS_TEX: String = "res://assets/ui/alpha/HVGA/main_button_press.png"   # 源 createMainButton:560 pressres
 const LOCKED_ALPHA: float = 0.5       # 源 main.lua 未解锁按钮灰显 alpha
 const TITLE_FONT_SIZE: int = 17       # 源 createMainButton:622 ui_main_button_normal 17
@@ -129,10 +131,13 @@ static func _add_title(btn: Button, title_text: String) -> void:
 	var tex: Texture2D = load(TITLE_BG)
 	if tex == null:
 		return
+	# title 源 createSprite(br.titleres) 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）
+	var display_size := tex.get_size() / CONTENT_SCALE
 	var title := TextureRect.new()
 	title.texture = tex
-	title.size = tex.get_size()
-	title.position = Vector2(btn.size.x * 0.5 - title.size.x * 0.5, btn.size.y * 0.5 + TITLE_OFFSET_Y - title.size.y * 0.5)
+	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title.size = display_size
+	title.position = Vector2(btn.size.x * 0.5 - display_size.x * 0.5, btn.size.y * 0.5 + TITLE_OFFSET_Y - display_size.y * 0.5)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(title)
 	var label := Label.new()

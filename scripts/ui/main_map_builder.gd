@@ -9,6 +9,8 @@ extends RefCounted
 const MAP_W: float = 2400.0
 const MAP_H: float = 640.0   # grass/mountain/cloud/side 整体下移（_from_bottom 640 基准，grass 放屏底 160~640）
 const BG_DIR: String = "res://assets/ui/alpha/HVGA/"
+# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
+const CONTENT_SCALE: float = 1.28125
 const SPINE_DIR: String = "res://assets/spine"
 const LOOP_ACTION: String = "Loop"
 const FIX_HEIGHT: float = 480.0       # 源 grass config.fix_height（缩放高度到 480）
@@ -170,4 +172,5 @@ func _from_center(cocos_pos: Vector2, tex_size: Vector2) -> Vector2:
 
 func _tex_size(name: String) -> Vector2:
 	var tex: Texture2D = load(BG_DIR + name)
-	return tex.get_size() if tex != null else Vector2.ZERO
+	# cloud4/5/6 + left/right_side + bg3 源 config={} 无 fix → 显示=纹理/CS（grass fix_height 另走 :87 不经此函数）
+	return (tex.get_size() / CONTENT_SCALE) if tex != null else Vector2.ZERO
