@@ -14,15 +14,21 @@ const FRAME_W: float = 560.0
 const FRAME_H: float = 360.0
 const FONT_TITLE: int = 22
 const FONT_BODY: int = 16
+# 源 excavateteam.lua 无 fixed title LSTR；按 owner 显示玩家名/敌人名（单机用 "驻防/敌方" 兜底）
 const TITLE_MINE: String = "驻防队伍"
 const TITLE_MONSTER: String = "敌方守卫"
-const CHANGE_TEAM_TEXT: String = "换队（用当前阵容）"
+# 源 :113 change_team_button → enterExcavateChange（mode=excavateChange）
+const LSTR_CHANGE_TEAM_KEY: String = "EXCAVATETEAM.ADJUST_FORMATION"
+const CHANGE_TEAM_FALLBACK: String = "调整阵容"
+const CHANGE_TEAM_TEXT: String = "换队（用当前阵容）"   # 单机用当前阵容直换（无 battleprepare）
+# 源 :124-128 give_up_button（pop excavategiveup）；"放弃矿点" 单机兜底（无 LSTR）
 const GIVEUP_TEXT: String = "放弃矿点"
+# 源 :178-250 go_battle_button（图标，无 LSTR 文本）；"出战" 单机兜底
 const BATTLE_TEXT: String = "出战"
-const NO_DEFEND_TEXT: String = "尚未驻防，点击「换队」派英雄驻守"
-const NO_ENEMY_TEXT: String = "无敌人数据"
+const NO_DEFEND_TEXT: String = "尚未驻防，点击「换队」派英雄驻守"   # 单机兜底
+const NO_ENEMY_TEXT: String = "无敌人数据"   # 单机兜底
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
-const TEAM_SET_TEXT: String = "已用当前阵容驻防"
+const TEAM_SET_TEXT: String = "已用当前阵容驻防"   # 单机 Toast（无 LSTR）
 const OWNER_MINE: String = "mine"
 const ICON_SCALE: float = 0.77   # 源 length=80 / CONTAINER_SIZE 104 ≈ 0.77（excavateteam:165 createIcon length=80）
 
@@ -138,7 +144,8 @@ func _add_action_buttons(frame: TextureRect) -> void:
 	var owner: String = String(pd.excavate.get_data(_excavate_id).get("_owner", ""))
 	if owner == OWNER_MINE:
 		var change := Button.new()
-		change.text = CHANGE_TEAM_TEXT
+		# 源 :113 LSTR EXCAVATETEAM.ADJUST_FORMATION = "调整阵容"（单机用当前阵容直换）
+		change.text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
 		change.size = Vector2(180, 40)
 		change.position = Vector2(60, frame.size.y - 55)
 		change.pressed.connect(_on_change_team)
@@ -156,6 +163,14 @@ func _add_action_buttons(frame: TextureRect) -> void:
 		battle.position = Vector2(frame.size.x * 0.5 - 100, frame.size.y - 60)
 		battle.pressed.connect(_on_battle)
 		frame.add_child(battle)
+
+
+# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = pd.cm
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
 
 
 func _on_change_team() -> void:

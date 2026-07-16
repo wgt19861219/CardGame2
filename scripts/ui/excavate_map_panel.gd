@@ -5,12 +5,24 @@ extends PopWindow
 ## 当前矿点展示（picture + owner + 产量/存储）+ 翻页 + 点矿点→ExcavateTeamPanel + 搜索/说明入口。
 ## 单机简化：源 FCA 旗帜动画/复仇遮罩/多人防御点/翻页标签 → 静态单卡片 + 翻页（单机同时矿点少）。
 ## back → remove_window 回主城。search 按钮 → 重新搜索（回 SearchPanel）。
+## P1（2026-07-16）：bg.jpg 源核实保留（uieditor excavatemap:12 第 1 元素）+ LSTR EXCAVATEMAP.RULES /
+## EXCAVATEHISTORY.DEFENSIVE_RECORD + 资源名 + 按钮纹理（backbtn 返回 / prevchap 翻页 / Scale9 按钮）。
 
-const MAIN_BG_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png"
+const BG_TEX: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 uieditor excavatemap:12 第 1 元素 bg.jpg
+const MAIN_BG_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png"   # 源 :116 frame_bg
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png"
 const TITLE_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png"
-const CLOSE_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_P_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
+# 源 map.lua:175 back_button 用 backbtn.png（非 close X，地图是场景级返回主城）
+const BACK_TEX: String = "res://assets/ui/alpha/HVGA/backbtn.png"
+const BACK_P_TEX: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
+# 源 :69/94 left/right_button 用 prevchap.png（right 翻转 x）
+const PREV_TEX: String = "res://assets/ui/alpha/HVGA/prevchap.png"
+const PREV_P_TEX: String = "res://assets/ui/alpha/HVGA/prevchap-mask.png"
+# 源 :256/283 explain/histroy_button Scale9 sell_number_button capInsets 15.63,15.63,18.75,18.75
+const SCALE9_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
+const SCALE9_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
+const SCALE9_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 18.75, 18.75)
+const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
 const CYCLE_TEX_DIAMOND: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_diamond.png"
 const CYCLE_TEX_GOLD: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_gold.png"
 const CYCLE_TEX_POTION: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_potion.png"
@@ -20,22 +32,28 @@ const FRAME_W: float = 600.0
 const FRAME_H: float = 440.0
 const NODE_W: float = 200.0
 const NODE_H: float = 200.0
-const OWNER_MINE_LABEL: String = "我方占领"
-const OWNER_MONSTER_LABEL: String = "野外怪守（可攻击占领）"
+const OWNER_MINE_LABEL: String = "我方占领"   # 单机兜底（源 sprite 显示无 LSTR）
+const OWNER_MONSTER_LABEL: String = "野外怪守（可攻击占领）"   # 单机兜底
+# 源 map.lua:336-340 storageTitle "我的累计资源：" + x%s（单机保留中文兜底，无对应 LSTR 文案组合）
 const PRODUCE_LABEL_FMT: String = "产出：%s/%d"
 const STORAGE_LABEL_FMT: String = "存储剩余：%d"
-const NO_NODE_TEXT: String = "暂无矿点，点击「搜索」发现矿点"
-const SEARCH_TEXT: String = "搜索"
-const EXPLAIN_TEXT: String = "说明"
-const HISTORY_TEXT: String = "战报"
-const PREV_TEXT: String = "◀"
-const NEXT_TEXT: String = "▶"
-const NODE_BTN_MINE: String = "驻防/换队"
+const NO_NODE_TEXT: String = "暂无矿点，点击「搜索」发现矿点"   # 单机空状态（源无空态文本）
+const NODE_BTN_MINE: String = "驻防/换队"   # 单机矿点按钮文本（源 sprite 显示）
 const NODE_BTN_MONSTER: String = "查看/出战"
 const PAGE_FMT: String = "%d / %d"
-const PRODUCE_NAME_DIAMOND: String = "钻石"
-const PRODUCE_NAME_GOLD: String = "金币"
-const PRODUCE_NAME_ITEM: String = "经验药水"
+# 源 map.lua:951-960 资源名 LSTR 映射（Gold/Diamond/Item）
+const LSTR_DIAMOND_KEY: String = "RECHARGE.DIAMOND"
+const NAME_DIAMOND_FALLBACK: String = "钻石"
+const LSTR_GOLD_KEY: String = "TASK.GOLD"
+const NAME_GOLD_FALLBACK: String = "金币"
+const LSTR_ITEM_KEY: String = "EQUIP.EXPERIENCE_CREAMS"
+const NAME_ITEM_FALLBACK: String = "经验药膏"
+# 源 :464 EXCAVATEHISTORY.DEFENSIVE_RECORD = "防守记录"（histroy_button_label）
+const LSTR_HISTORY_KEY: String = "EXCAVATEHISTORY.DEFENSIVE_RECORD"
+const HISTORY_FALLBACK: String = "防守记录"
+# 源 :488 EXCAVATEMAP.RULES = "规则"（explain_button_label）
+const LSTR_EXPLAIN_KEY: String = "EXCAVATEMAP.RULES"
+const EXPLAIN_FALLBACK: String = "规则"
 const ExcavateTeamPanel = preload("res://scripts/ui/excavate_team_panel.gd")
 const ExcavateSearchPanel = preload("res://scripts/ui/excavate_search_panel.gd")
 const ExcavateExplainPanel = preload("res://scripts/ui/excavate_explain_panel.gd")
@@ -58,9 +76,18 @@ func setup_panel(p_pd: PlayerData, p_rng: BattleRng) -> void:
 	_refresh_node()
 
 
+# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = pd.cm
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
+
+
 func _build_ui() -> void:
+	# 源 uieditor excavatemap:12 第 1 元素 bg.jpg（800×481.25 满屏背景，照源核实保留）
 	var bg := TextureRect.new()
-	bg.texture = load(MAIN_BG_TEX)
+	bg.texture = load(BG_TEX)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.size = Vector2(960, 640)
 	bg.position = Vector2.ZERO
@@ -73,7 +100,7 @@ func _build_ui() -> void:
 	frame.position = Vector2(960.0 * 0.5 - FRAME_W * 0.5, 640.0 * 0.5 - FRAME_H * 0.5)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(frame)
-	_add_close(frame)
+	_add_back(frame)
 	_add_title(frame)
 	_add_node(frame)
 	_add_info(frame)
@@ -81,15 +108,16 @@ func _build_ui() -> void:
 	_add_bottom_buttons(frame)
 
 
-func _add_close(frame: TextureRect) -> void:
-	var close := TextureButton.new()
-	close.texture_normal = load(CLOSE_TEX)
-	close.texture_pressed = load(CLOSE_P_TEX)
-	close.ignore_texture_size = true
-	close.size = Vector2(40, 40)
-	close.position = Vector2(frame.size.x - 50, 12)
-	close.pressed.connect(remove_window)
-	frame.add_child(close)
+# 源 map.lua:112-119 back_button（backbtn.png，场景级返回 ed.popScene）
+func _add_back(frame: TextureRect) -> void:
+	var back := TextureButton.new()
+	back.texture_normal = load(BACK_TEX)
+	back.texture_pressed = load(BACK_P_TEX)
+	back.ignore_texture_size = true
+	back.size = Vector2(50, 50)
+	back.position = Vector2(12, 12)
+	back.pressed.connect(remove_window)
+	frame.add_child(back)
 
 
 func _add_title(frame: TextureRect) -> void:
@@ -123,17 +151,23 @@ func _add_info(frame: TextureRect) -> void:
 	frame.add_child(_info_label)
 
 
+# 源 :206-227 left_button/right_button（prevchap.png + flip x）翻页
 func _add_nav(frame: TextureRect) -> void:
-	var prev := Button.new()
-	prev.text = PREV_TEXT
-	prev.size = Vector2(40, 40)
+	var prev := TextureButton.new()
+	prev.texture_normal = load(PREV_TEX)
+	prev.texture_pressed = load(PREV_P_TEX)
+	prev.ignore_texture_size = true
+	prev.size = Vector2(43, 59)
 	prev.position = Vector2(20, 160)
 	prev.pressed.connect(_on_prev)
 	frame.add_child(prev)
-	var next := Button.new()
-	next.text = NEXT_TEXT
-	next.size = Vector2(40, 40)
-	next.position = Vector2(frame.size.x - 60, 160)
+	var next := TextureButton.new()
+	next.texture_normal = load(PREV_TEX)
+	next.texture_pressed = load(PREV_P_TEX)
+	next.ignore_texture_size = true
+	next.flip_h = true   # 源 :84 flip="x"（右翻页水平翻转 prevchap）
+	next.size = Vector2(43, 59)
+	next.position = Vector2(frame.size.x - 63, 160)
 	next.pressed.connect(_on_next)
 	frame.add_child(next)
 	_page_label = Label.new()
@@ -145,23 +179,14 @@ func _add_nav(frame: TextureRect) -> void:
 	frame.add_child(_page_label)
 
 
+# 源 :255-296 bottom buttons（Scale9 sell_number_button + LSTR 标签）
 func _add_bottom_buttons(frame: TextureRect) -> void:
-	var search := Button.new()
-	search.text = SEARCH_TEXT
-	search.size = Vector2(100, 36)
-	search.position = Vector2(40, frame.size.y - 45)
-	search.pressed.connect(_on_search)
-	frame.add_child(search)
-	var explain := Button.new()
-	explain.text = EXPLAIN_TEXT
-	explain.size = Vector2(100, 36)
-	explain.position = Vector2(frame.size.x - 140, frame.size.y - 45)
+	# explain_button（:255 capInsets 15.63,15.63,18.75,18.75 size 66.41×53.13）
+	var explain: Button = UiScale9Button.make(SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, Vector2(40, frame.size.y - 45), Vector2(110, 40), SCALE9_BTN_CAP, _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK), BTN_LABEL_COLOR)
 	explain.pressed.connect(_on_explain)
 	frame.add_child(explain)
-	var history := Button.new()
-	history.text = HISTORY_TEXT
-	history.size = Vector2(100, 36)
-	history.position = Vector2(frame.size.x * 0.5 - 50, frame.size.y - 45)
+	# histroy_button（:271 capInsets 15.63,15.63,18.75,18.75 size 117.19×53.13）
+	var history: Button = UiScale9Button.make(SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, Vector2(frame.size.x * 0.5 - 60, frame.size.y - 45), Vector2(120, 40), SCALE9_BTN_CAP, _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK), BTN_LABEL_COLOR)
 	history.pressed.connect(_on_history)
 	frame.add_child(history)
 
@@ -217,6 +242,7 @@ func _on_team_closed() -> void:
 
 
 func _on_search() -> void:
+	# 单机入口保留（当前未直接挂按钮；源 search 走 research_button 在 map.lua:137-204）
 	remove_window()
 	var panel := ExcavateSearchPanel.new("excavate", {})
 	panel.setup_panel(pd, rng)
@@ -236,19 +262,19 @@ func _on_history() -> void:
 	panel.show_window(get_parent())
 
 
+# 源 map.lua:951-960 epn 映射（资源名 LSTR）
 func _produce_name(type_id: int) -> String:
 	match ExcavateData.produce_type(pd.cm, type_id):
 		ExcavateData.PRODUCE_DIAMOND:
-			return PRODUCE_NAME_DIAMOND
+			return _lstr(LSTR_DIAMOND_KEY, NAME_DIAMOND_FALLBACK)
 		ExcavateData.PRODUCE_GOLD:
-			return PRODUCE_NAME_GOLD
+			return _lstr(LSTR_GOLD_KEY, NAME_GOLD_FALLBACK)
 		ExcavateData.PRODUCE_ITEM:
-			return PRODUCE_NAME_ITEM
-	return PRODUCE_NAME_GOLD
+			return _lstr(LSTR_ITEM_KEY, NAME_ITEM_FALLBACK)
+	return _lstr(LSTR_GOLD_KEY, NAME_GOLD_FALLBACK)
 
 
-# 矿点旗帜 texture 按产出类型选 cycle 图（源 excavate_cycle_{diamond/gold/potion}.png；
-# 旧 NODE_TEX excavate_flag_available.png 源本无 → 笔误引用 ResourceLoader 找不到 warning）。
+# 矿点旗帜 texture 按产出类型选 cycle 图（源 excavate_cycle_{diamond/gold/potion}.png）。
 func _apply_cycle_texture(type_id: int) -> void:
 	var tex_path: String = _cycle_texture(type_id)
 	if not ResourceLoader.exists(tex_path):
