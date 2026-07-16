@@ -1,9 +1,11 @@
 class_name MidasPanel
 extends PopWindow
 
-## 点石成金面板（View 层）— 照源 ui/midas.lua（1057 行）完整翻译。
-## P1-5（2026-07-11）：去"最小可玩"，照源 create:758-1023 18 节点 + refreshCostBoard 横排 :237-301
-## + playGetAcquireAnim 暴击飘字 :37-161 + createMultiWindow 连兑确认弹窗 popConfirmDialog :556-665。
+## 点石成金面板（View 层）— 照源 ui/midas.lua（1057 行）。
+## P1-5（2026-07-11）：照源 create:758-1023 18 节点 + refreshCostBoard :237-301
+## + playGetAcquireAnim 暴击飘字 :37-161 + createMultiWindow popConfirmDialog :556-665。
+## 2026-07-16 精修：UI 文案全 LSTR 化；删除自创 desc 合并分支；补源 prompt 独立节点 + VIEW_VIP 分支
+## + _show_confirm 照源三段（连续使用/要花费/可获得）；bg.jpg 经核实源 popup 无全屏 bg → 不加（照源）。
 ## 坐标：源 cocos(800×480,y向上) → Godot container(960×640 FULL_RECT,cocos 居中 offset 80,80)。
 ## 资源降级：midas_crip* / midas_get_money 缺 → 文字/Label 降级（common_tips_button_close 已挂载 common/ 子目录）。
 
@@ -23,6 +25,7 @@ const ICON_COCOS: Vector2 = Vector2(100.0, 206.0)     # 源 :819
 const ICON_SIZE: Vector2 = Vector2(100.0, 100.0)
 const NAME_COCOS: Vector2 = Vector2(155.0, 225.0)     # 源 :832 anchor(0,0.5)
 const DESC_COCOS: Vector2 = Vector2(155.0, 185.0)     # 源 :845 anchor(0,0.5)
+const PROMPT_COCOS: Vector2 = Vector2(70.0, 120.0)    # 源 :873 prompt anchor(0,0.5)
 const DESC_COLOR: Color = Color(231.0 / 255.0, 185.0 / 255.0, 108.0 / 255.0)  # 源 :848 ccc3
 const COST_BOARD_RES := "res://assets/ui/alpha/HVGA/tip_detail_bg.png"
 const COST_BOARD_COCOS: Vector2 = Vector2(213.0, 120.0)  # 源 :858
@@ -61,12 +64,16 @@ const ANIM_SCALE: float = 3.0                          # 源 :108/124 scale 3
 const ANIM_SCALE_DUR: float = 0.2                      # 源 :58 CCScaleTo(0.2)
 const ANIM_MOVE_DUR: float = 1.0                       # 源 :71 CCMoveTo(1)
 const ANIM_FADE_DUR: float = 1.0                       # 源 :72 CCFadeOut(1)
-const GET_MONEY_TEXT: String = "获得金币"               # 源 midas_get_money.png 缺降级
+const GET_MONEY_TEXT: String = "获得金币"               # 源 midas_get_money.png 缺 → Label 降级（无 LSTR）
 # 连兑确认弹窗（源 createMultiWindow :556-665 popConfirmDialog）
 const CONFIRM_FRAME_COCOS: Vector2 = Vector2(400.0, 240.0)
 const CONFIRM_FRAME_SIZE: Vector2 = Vector2(360.0, 170.0)
 const CONFIRM_TEXT_COLOR: Color = Color(231.0 / 255.0, 185.0 / 255.0, 108.0 / 255.0)  # 源 :634
 const CONFIRM_GOLD_COLOR: Color = Color(1.0, 170.0 / 255.0, 50.0 / 255.0)  # 源 :653
+# LSTR key（源 midas.lua 各处 T(LSTR(...))；多处复用的保 const，单处用的内联字面量，控代码行数）
+const LSTR_PROMPT := "MIDAS.YOUVE_USED_UP_DAILY_GOLDEN_HAND_TIMES_\\N_UPGRADING_YOUR_VIP_LEVEL_OFFERS_YOU_MORE_TIMES"
+const LSTR_USE := "MIDAS.USE"                              # 源 refreshButton times<maxTimes / use 按钮 / 历史行
+const LSTR_MULTI := "midas.1.10.1.002"                     # 源 multi_use_label + createMultiWindow 段1 "连续使用"
 # 历史记录区（源 createHistory :710-756 scrollView，frame 外下方扩展）
 const HISTORY_POS: Vector2 = Vector2(140.0, 408.0)
 const HISTORY_SIZE: Vector2 = Vector2(640.0, 90.0)
@@ -85,9 +92,18 @@ var _use_label: Label = null
 var _multi_label: Label = null
 var _use_shade: ColorRect = null    # 源 use_disabled 禁用蒙版
 var _multi_shade: ColorRect = null
+var _prompt: Label = null           # 源 :864-879 prompt（maxTimes 时显 YOUVE_USED_UP）
+var _cost_board_root: Control = null  # cost_board 根（含 bg + bar），refreshCost 切 visible
 var _forbid_use: bool = false       # 源 forbidUse（anim 期间禁用）
 var _multi_unlocked: bool = true    # 源 playerlimit "Multiple Midas"（单机化默认解锁）
 var _confirm_layer: Control = null  # 连兑确认弹窗层
+
+
+# LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失返空串避免 null 解引用）。
+func _T(key: String) -> String:
+	if _cm == null:
+		return ""
+	return String(_cm.get_lstr(key))
 
 
 func setup_panel(p_player: PlayerData) -> void:
@@ -123,12 +139,17 @@ func _refresh_view() -> void:
 	_multi_label = null
 	_use_shade = null
 	_multi_shade = null
+	_prompt = null
+	_cost_board_root = null
 	_create_frame()
 	_create_icon()
 	_create_text()
+	_create_prompt()
 	_create_cost_board()
 	_create_buttons()
 	_create_history()
+	_apply_source_visibility()
+	_refresh_button()
 	_apply_use_enabled()
 
 
@@ -143,24 +164,21 @@ func _create_frame() -> void:
 
 # 源 :803-821 icon_frame(equip_frame_white) + icon(midas_icon)
 func _create_icon() -> void:
-	_add_sprite(container, ICON_FRAME_RES, _center(ICON_FRAME_COCOS, ICON_FRAME_SIZE), ICON_FRAME_SIZE)
-	_add_sprite(container, ICON_RES, _center(ICON_COCOS, ICON_SIZE), ICON_SIZE)
+	_make_texture(container, ICON_FRAME_RES, _center(ICON_FRAME_COCOS, ICON_FRAME_SIZE), ICON_FRAME_SIZE)
+	_make_texture(container, ICON_RES, _center(ICON_COCOS, ICON_SIZE), ICON_SIZE)
 
 
-# 源 :824-849 name(GOLDEN_HAND) + desc(USE_A_SMALL...) + :799 prompt(次数用完)
+# 源 :824-849 name(GOLDEN_HAND) + desc(USE_A_SMALL...)；refreshTimesBoard "今日可用 X/Y)" 简化入第二行
 func _create_text() -> void:
 	var name_lbl := Label.new()
-	name_lbl.text = "金色手掌"   # 源 MIDAS.GOLDEN_HAND
+	name_lbl.text = _T("MIDAS.GOLDEN_HAND")
 	name_lbl.position = _left_mid(NAME_COCOS, 24.0)
 	name_lbl.add_theme_font_size_override("font_size", 20)
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(name_lbl)
-	var next_cost: int = _get_next_cost()
+	var left: int = maxi(_get_max_times() - _midas.midas_times, 0)
 	var desc := Label.new()
-	var desc_text: String = "用少量钻石换大量金币"   # 源 :840
-	if next_cost == 0:
-		desc_text = "今日次数已用完"   # 源 :799 YOUVE_USED_UP
-	desc.text = desc_text + "\n已兑换 %d 次  持有 %d 钻石" % [_midas.midas_times, _player.diamond]
+	desc.text = "%s\n%s%d/%d)" % [_T("MIDAS.USE_A_SMALL_AMOUNT_OF_DIAMONDS_IN_EXCHANGE_FOR_LARGE_SUMS_OF_MONEY"), _T("MIDAS.AVAILABLE_TODAY"), left, _get_max_times()]
 	desc.position = _left_mid(DESC_COCOS, 36.0)
 	desc.add_theme_font_size_override("font_size", 18)
 	desc.modulate = DESC_COLOR
@@ -168,22 +186,52 @@ func _create_text() -> void:
 	container.add_child(desc)
 
 
+# 源 :864-879 prompt（YOUVE_USED_UP，maxTimes 时显），_apply_source_visibility 切 visible
+func _create_prompt() -> void:
+	_prompt = Label.new()
+	_prompt.text = _T(LSTR_PROMPT)
+	_prompt.position = _left_mid(PROMPT_COCOS, 48.0)
+	_prompt.add_theme_font_size_override("font_size", 18)
+	_prompt.modulate = DESC_COLOR
+	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(_prompt)
+
+
+# 源 refreshCost :398-410：times<max → cost_board 显；否则 prompt 显（timesBoard 简化入 desc，避免独立节点）
+func _apply_source_visibility() -> void:
+	var has_times: bool = _midas.midas_times < _get_max_times()
+	if _prompt != null and is_instance_valid(_prompt):
+		_prompt.visible = not has_times
+	if _cost_board_root != null and is_instance_valid(_cost_board_root):
+		_cost_board_root.visible = has_times
+
+
+# 源 refreshButton :412-423：use 按钮文本 times<maxTimes → MIDAS.USE，否则 MIDAS.VIEW_VIP
+func _refresh_button() -> void:
+	if _use_label == null or not is_instance_valid(_use_label):
+		return
+	var has_times: bool = _midas.midas_times < _get_max_times()
+	_use_label.text = _T(LSTR_USE) if has_times else _T("MIDAS.VIEW_VIP")
+
+
 # 源 refreshCostBoard :237-301：tip_detail_bg 背景 + HorizontalNode 横排(rmb_icon+cost+arrow+gold_icon+acquire)
+# 包成 _cost_board_root Control 以便 refreshCost 切 visible（源 :403 ui.costBoard:setVisible(true)）
 func _create_cost_board() -> void:
-	if _get_next_cost() == 0:
-		return   # 次数用完不显示
-	_add_sprite(container, COST_BOARD_RES, _center(COST_BOARD_COCOS, COST_BOARD_SIZE), COST_BOARD_SIZE)
+	_cost_board_root = Control.new()
+	_cost_board_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(_cost_board_root)
+	_make_texture(_cost_board_root, COST_BOARD_RES, _center(COST_BOARD_COCOS, COST_BOARD_SIZE), COST_BOARD_SIZE)
 	var bar := HBoxContainer.new()
 	bar.position = _left_mid(COST_BOARD_COCOS, 30.0) + Vector2(120.0, -15.0)
 	bar.size = Vector2(280.0, 30.0)
 	bar.add_theme_constant_override("separation", 6)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bar)
-	_add_bar_icon(bar, RMB_ICON_RES)
-	_add_bar_label(bar, str(_get_next_cost()), COST_RMB_COLOR)
-	_add_bar_icon(bar, ARROW_RES)
-	_add_bar_icon(bar, GOLD_ICON_RES)
-	_add_bar_label(bar, str(_get_next_acquire()), COST_MONEY_COLOR)
+	_cost_board_root.add_child(bar)
+	_make_bar_icon(bar, RMB_ICON_RES)
+	_make_bar_label(bar, str(_get_next_cost()), COST_RMB_COLOR)
+	_make_bar_icon(bar, ARROW_RES)
+	_make_bar_icon(bar, GOLD_ICON_RES)
+	_make_bar_label(bar, str(_get_next_acquire()), COST_MONEY_COLOR)
 
 
 # 源 use/multi_use Scale9Sprite + disabled shade + label；refreshMultiUseButton :1025-1034 显隐
@@ -192,14 +240,14 @@ func _create_buttons() -> void:
 	if next_cost == 0:
 		return
 	var use_cocos: Vector2 = USE_COCOS if _multi_unlocked else USE_COCOS_SOLO
-	_use_btn = _make_button("兑换", use_cocos, USE_RES, USE_LABEL_COLOR)
+	_use_btn = _make_button(_T(LSTR_USE), use_cocos, USE_RES, USE_LABEL_COLOR)
 	_use_shade = _use_btn.get_child(0) as ColorRect
 	_use_label = _use_btn.get_node("Label") as Label
 	_use_btn.pressed.connect(_on_use.bind(1))
 	if _multi_unlocked:
 		var multi: int = _get_multi_count(next_cost)
 		if multi > 1:
-			_multi_btn = _make_button("连兑 ×%d" % multi, MULTI_USE_COCOS, MULTI_USE_RES, MULTI_LABEL_COLOR)
+			_multi_btn = _make_button("%s ×%d" % [_T(LSTR_MULTI), multi], MULTI_USE_COCOS, MULTI_USE_RES, MULTI_LABEL_COLOR)
 			_multi_shade = _multi_btn.get_child(0) as ColorRect
 			_multi_label = _multi_btn.get_node("Label") as Label
 			_multi_btn.pressed.connect(_on_use.bind(multi))
@@ -209,24 +257,16 @@ func _create_buttons() -> void:
 func _make_button(text: String, cocos: Vector2, res: String, label_color: Color) -> TextureButton:
 	var btn := TextureButton.new()
 	btn.texture_normal = load(res)
-	btn.position = _center(cocos, BTN_SIZE)
-	btn.size = BTN_SIZE
-	btn.ignore_texture_size = true
-	btn.stretch_mode = TextureButton.STRETCH_SCALE
-	btn.custom_minimum_size = BTN_SIZE
+	btn.position = _center(cocos, BTN_SIZE); btn.size = BTN_SIZE; btn.ignore_texture_size = true
+	btn.stretch_mode = TextureButton.STRETCH_SCALE; btn.custom_minimum_size = BTN_SIZE
 	container.add_child(btn)
 	var shade := ColorRect.new()
-	shade.color = Color(0.3, 0.3, 0.3, 0.5)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shade.visible = false
+	shade.color = Color(0.3, 0.3, 0.3, 0.5); shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE; shade.visible = false
 	btn.add_child(shade)
 	var lbl := Label.new()
-	lbl.name = "Label"
-	lbl.text = text
-	lbl.set_anchors_preset(Control.PRESET_CENTER)
-	lbl.modulate = label_color
-	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.name = "Label"; lbl.text = text; lbl.set_anchors_preset(Control.PRESET_CENTER)
+	lbl.modulate = label_color; lbl.add_theme_font_size_override("font_size", 18)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(lbl)
 	return btn
@@ -267,7 +307,8 @@ func _do_exchange(times: int) -> void:
 	_set_use_enabled(false)
 	var r: Dictionary = _midas.exchange(_player, times)
 	if not bool(r.get("ok", false)):
-		Toast.show_message("钻石不足（需 %d）" % int(r.get("cost", 0)))
+		# 源 doUse:195 showHandyDialog("toRecharge") 弹充值对话框；单机化无充值 → 降级 toast
+		Toast.show_message(_T("DIALOG.OUT_OF_DIAMONDS_WANT_TO_GET_SOME"))
 		_set_use_enabled(true)
 		return
 	var total_gold: int = 0
@@ -290,28 +331,24 @@ func _do_exchange(times: int) -> void:
 # 资源缺 midas_crip*.png/midas_get_money.png → Label 降级（合并 title+money）
 func _play_acquire_anim(ratio: int, money: int, play_delay: float, is_last: bool) -> void:
 	if ratio >= 2 and CRIP_TEXT.has(ratio):
-		var crip := Label.new()
-		crip.text = str(CRIP_TEXT.get(ratio, ""))
-		crip.modulate = CRIP_COLOR.get(ratio, Color.WHITE)
-		crip.add_theme_font_size_override("font_size", 48)
-		crip.position = _center(CRIP_COCOS, Vector2(80.0, 48.0))
-		crip.pivot_offset = Vector2(40.0, 24.0)
-		crip.scale = Vector2(ANIM_SCALE, ANIM_SCALE)
-		crip.visible = false
-		crip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		container.add_child(crip)
-		_run_anim(crip, play_delay, _to_godot(ANIM_END_COCOS), false)
+		_create_anim_label(str(CRIP_TEXT.get(ratio, "")), CRIP_COLOR.get(ratio, Color.WHITE), 48, CRIP_COCOS, Vector2(80.0, 48.0), play_delay, false)
+	_create_anim_label("%s %d" % [GET_MONEY_TEXT, money], Color(1.0, 0.7, 0.2), 26, ANIM_ORI_COCOS, Vector2(160.0, 40.0), play_delay + 0.2, is_last)
+
+
+# 暴击飘字 Label 工厂（_play_acquire_anim 提取，避免 crip/node 两段重复 12 行属性赋值）
+func _create_anim_label(text: String, color: Color, font_sz: int, cocos: Vector2, sz: Vector2, delay: float, is_last: bool) -> Label:
 	var node := Label.new()
-	node.text = "%s %d" % [GET_MONEY_TEXT, money]
-	node.modulate = Color(1.0, 0.7, 0.2)
-	node.add_theme_font_size_override("font_size", 26)
-	node.position = _center(ANIM_ORI_COCOS, Vector2(160.0, 40.0))
-	node.pivot_offset = Vector2(80.0, 20.0)
+	node.text = text
+	node.modulate = color
+	node.add_theme_font_size_override("font_size", font_sz)
+	node.position = _center(cocos, sz)
+	node.pivot_offset = sz * 0.5
 	node.scale = Vector2(ANIM_SCALE, ANIM_SCALE)
 	node.visible = false
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(node)
-	_run_anim(node, play_delay + 0.2, _to_godot(ANIM_END_COCOS), is_last)
+	_run_anim(node, delay, _to_godot(ANIM_END_COCOS), is_last)
+	return node
 
 
 # 源 getAction :78-91：Delay(playDelay)→visible→ScaleTo(0.2,EaseBackOut)→Delay 0.5→MoveTo(1)+FadeOut(1)→remove
@@ -331,9 +368,12 @@ func _run_anim(node: Control, delay: float, end_pos: Vector2, is_last: bool) -> 
 	tw.tween_callback(func() -> void: node.queue_free())
 
 
-# 源 createMultiWindow :556-665 popConfirmDialog：frame + 文案 + goldicon + acquire + 确认/取消
+# 源 createMultiWindow :556-665 popConfirmDialog：三段 ChaosNode（连续使用 N 次的得失 / 要花费： / 可获得：）
+# + popConfirmDialog 默认 frame + 确认/取消（confirmdialog.lua 默认按钮 CHATCONFIG.CONFIRM/CANCEL）
 func _show_confirm(times: int) -> void:
 	var next_cost: int = _get_next_cost()
+	var total_cost: int = next_cost * times
+	var total_acquire: int = _get_next_acquire() * times
 	_confirm_layer = Control.new()
 	_confirm_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_confirm_layer.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -344,29 +384,26 @@ func _show_confirm(times: int) -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	_confirm_layer.add_child(shade)
 	_add_nine_patch(_confirm_layer, FRAME_RES, _center(CONFIRM_FRAME_COCOS, CONFIRM_FRAME_SIZE), CONFIRM_FRAME_SIZE, FRAME_CAP)
-	var msg := Label.new()
-	msg.text = "消耗 %d 钻石" % (next_cost * times)   # 源 :625 midas.1.10.1.005
-	msg.position = _left_mid(Vector2(400.0, 275.0), 24.0)
-	msg.modulate = CONFIRM_TEXT_COLOR
-	msg.add_theme_font_size_override("font_size", 18)
-	msg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_confirm_layer.add_child(msg)
-	_add_sprite(_confirm_layer, GOLD_ICON_RES, _center(Vector2(360.0, 230.0), COST_ICON_SIZE), COST_ICON_SIZE)
-	var amt := Label.new()
-	amt.text = "x%d" % (_get_next_acquire() * times)
-	amt.position = _left_mid(Vector2(390.0, 230.0), 24.0)
-	amt.modulate = CONFIRM_GOLD_COLOR
-	amt.add_theme_font_size_override("font_size", 18)
-	amt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_confirm_layer.add_child(amt)
-	var ok: Button = UiScale9Button.make(SELL_BTN_RES, SELL_BTN_PRESS_RES, _center(Vector2(340.0, 170.0), CONFIRM_BTN_SIZE), CONFIRM_BTN_SIZE, SELL_BTN_CAP, "确认", CONFIRM_BTN_LABEL_COLOR)
+	# 源 :559-592 段1：midas.1.10.1.002(连续使用) + count + midas.1.10.1.003(次的得失)
+	_make_label(_confirm_layer, "%s %d %s" % [_T(LSTR_MULTI), times, _T("midas.1.10.1.003")], CONFIRM_TEXT_COLOR, _left_mid(Vector2(400.0, 285.0), 24.0))
+	# 源 :594-623 段2：midas.1.10.1.004(要花费：) + shop_token + "x"+count*cost
+	_make_texture(_confirm_layer, RMB_ICON_RES, _center(Vector2(345.0, 255.0), COST_ICON_SIZE), COST_ICON_SIZE)
+	_make_label(_confirm_layer, "%s ×%d" % [_T("midas.1.10.1.004"), total_cost], Color(50.0 / 255.0, 190.0 / 255.0, 223.0 / 255.0), _left_mid(Vector2(400.0, 255.0), 24.0))
+	# 源 :625-655 段3：midas.1.10.1.005(可获得：) + goldicon + "x"+acquire
+	_make_texture(_confirm_layer, GOLD_ICON_RES, _center(Vector2(345.0, 225.0), COST_ICON_SIZE), COST_ICON_SIZE)
+	_make_label(_confirm_layer, "%s ×%d" % [_T("midas.1.10.1.005"), total_acquire], CONFIRM_GOLD_COLOR, _left_mid(Vector2(400.0, 225.0), 24.0))
+	# 源 confirmdialog editorui 默认 sell_number_button + CHATCONFIG.CONFIRM/CANCEL
+	var ok: Button = UiScale9Button.make(SELL_BTN_RES, SELL_BTN_PRESS_RES, _center(Vector2(340.0, 170.0), CONFIRM_BTN_SIZE), CONFIRM_BTN_SIZE, SELL_BTN_CAP, _T("CHATCONFIG.CONFIRM"), CONFIRM_BTN_LABEL_COLOR)
 	ok.pressed.connect(func() -> void:
 		_close_confirm()
 		_do_exchange(times))
 	_confirm_layer.add_child(ok)
-	var cancel: Button = UiScale9Button.make(SELL_BTN_RES, SELL_BTN_PRESS_RES, _center(Vector2(460.0, 170.0), CONFIRM_BTN_SIZE), CONFIRM_BTN_SIZE, SELL_BTN_CAP, "取消", CONFIRM_BTN_LABEL_COLOR)
+	var cancel: Button = UiScale9Button.make(SELL_BTN_RES, SELL_BTN_PRESS_RES, _center(Vector2(460.0, 170.0), CONFIRM_BTN_SIZE), CONFIRM_BTN_SIZE, SELL_BTN_CAP, _T("CHATCONFIG.CANCEL"), CONFIRM_BTN_LABEL_COLOR)
 	cancel.pressed.connect(_close_confirm)
 	_confirm_layer.add_child(cancel)
+
+
+# 确认层 Label 辅助已内联到 _show_confirm（_make_label 统一辅助）
 
 
 func _close_confirm() -> void:
@@ -375,7 +412,7 @@ func _close_confirm() -> void:
 	_confirm_layer = null
 
 
-# 源 createHistory :710-757 scrollView push（降级 Panel + Label 列表）
+# 源 createHistory :710-757 scrollView push（Panel 容器 + 行 Label；源 initHistoryItemHandler 多图标简化为单行文本）
 func _create_history() -> void:
 	if _history.is_empty():
 		return
@@ -384,17 +421,14 @@ func _create_history() -> void:
 	frame.size = HISTORY_SIZE
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(frame)
-	var title := Label.new()
-	title.text = "历史记录"
-	title.position = Vector2(10.0, 4.0)
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(title)
-	var y: float = 26.0
+	var y: float = 6.0
 	for h in _history:
+		var ratio: int = int(h.get("ratio", 1))
 		var row := Label.new()
-		row.text = "耗 %d 钻 → 得 %d 金%s" % [int(h.get("cost", 0)), int(h.get("acquire", 0)), str(RATIO_TEXT.get(int(h.get("ratio", 1)), ""))]
-		row.position = Vector2(10.0, y)
-		row.modulate = RATIO_COLOR.get(int(h.get("ratio", 1)), Color.WHITE)
+		# 源结构：USE + cost + shop_token + GET + goldicon + acquire + ratio_res → 简化 "USE cost GET acquire ratio"
+		row.text = "%s %d %s %d%s" % [_T(LSTR_USE), int(h.get("cost", 0)), _T("ADDEQUIP.GET"), int(h.get("acquire", 0)), str(RATIO_TEXT.get(ratio, ""))]
+		row.position = Vector2(8.0, y)
+		row.modulate = RATIO_COLOR.get(ratio, Color.WHITE)
 		row.add_theme_font_size_override("font_size", 14)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		frame.add_child(row)
@@ -427,17 +461,35 @@ func _get_multi_count(cost: int) -> int:
 	return maxi(count, 1)
 
 
-# 辅助：TextureRect 装饰节点（mouse IGNORE）
-func _add_sprite(parent: Control, res_path: String, pos: Vector2, sz: Vector2) -> void:
+# 源 player.getMidasMaxTimes 基于 VIP level；单机化无 VIP → GradientPrice 表行数（兑换档数=最大次数）
+func _get_max_times() -> int:
+	return _cm.get_raw_table("GradientPrice").size()
+
+
+# 辅助：装饰 TextureRect（parent 容器 + 资源 + 左上 pos + size；mouse IGNORE，EXPAND_IGNORE_SIZE）
+func _make_texture(parent: Control, res_path: String, pos: Vector2, sz: Vector2) -> TextureRect:
 	if not ResourceLoader.exists(res_path):
-		return
+		return null
 	var tr := TextureRect.new()
 	tr.texture = load(res_path)
 	tr.position = pos
 	tr.size = sz
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(tr)
+	return tr
+
+
+# 辅助：装饰 Label（parent 容器 + 文本 + 颜色 + 左上 pos + 字号）
+func _make_label(parent: Control, text: String, col: Color, pos: Vector2 = Vector2.ZERO, sz: int = 18) -> Label:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.position = pos
+	lbl.modulate = col
+	lbl.add_theme_font_size_override("font_size", sz)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(lbl)
+	return lbl
 
 
 # 辅助：NinePatchRect（Scale9）
@@ -456,10 +508,10 @@ func _add_nine_patch(parent: Control, res_path: String, pos: Vector2, sz: Vector
 	return npr
 
 
-# 辅助：HBox 内图标
-func _add_bar_icon(bar: HBoxContainer, res_path: String) -> void:
+# 辅助：HBox 内图标（custom_minimum_size，HBox 自动布局）
+func _make_bar_icon(bar: HBoxContainer, res_path: String) -> TextureRect:
 	if not ResourceLoader.exists(res_path):
-		return
+		return null
 	var tr := TextureRect.new()
 	tr.texture = load(res_path)
 	tr.custom_minimum_size = COST_ICON_SIZE
@@ -467,13 +519,9 @@ func _add_bar_icon(bar: HBoxContainer, res_path: String) -> void:
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.add_child(tr)
+	return tr
 
 
-# 辅助：HBox 内 Label
-func _add_bar_label(bar: HBoxContainer, text: String, col: Color) -> void:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.modulate = col
-	lbl.add_theme_font_size_override("font_size", 18)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.add_child(lbl)
+# 辅助：HBox 内 Label（HBox 自动布局，无 pos）
+func _make_bar_label(bar: HBoxContainer, text: String, col: Color) -> Label:
+	return _make_label(bar, text, col)

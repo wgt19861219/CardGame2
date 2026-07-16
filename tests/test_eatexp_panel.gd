@@ -145,3 +145,38 @@ func test_equipboard_consume_opens_eatexp() -> void:
 	assert_true(has_eatexp, "EquipboardPanel consume 右按钮弹 EatexpPanel")
 	board.remove_window()
 	root.queue_free()
+
+
+# 2026-07-16 LSTR 化：title 经 _T 解析为当前语言（源 create title LSTR(EATEXPLIST.CHOOSE_A_HERO)）
+func test_title_lstr_resolved() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 1)
+	pd.hero_manager.add_hero(1)
+	var panel := EatexpPanel.new("eatexp", {})
+	panel.setup_panel(pill_id, cm, pd)
+	panel.show_window(root)
+	var title: String = panel._T(EatexpPanel.LSTR_TITLE)
+	assert_ne(title, "", "EATEXPLIST.CHOOSE_A_HERO LSTR 解析非空")
+	assert_ne(title, EatexpPanel.LSTR_TITLE, "LSTR 解析为译文非 key 回显")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 useProp :8 equip[id].Name LSTR 解析（经验药物品名，单机化 _equip_name 包装）
+func test_equip_name_resolved() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 1)
+	pd.hero_manager.add_hero(1)
+	var panel := EatexpPanel.new("eatexp", {})
+	panel.setup_panel(pill_id, cm, pd)
+	panel.show_window(root)
+	var name_text: String = panel._equip_name()
+	assert_ne(name_text, "", "_equip_name 经验药名字非空（Equip.Name LSTR 解析）")
+	panel.remove_window()
+	root.queue_free()

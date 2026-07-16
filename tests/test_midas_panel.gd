@@ -76,3 +76,34 @@ func test_set_use_enabled() -> void:
 	assert_false(panel._use_shade.visible, "enable 后 shade 隐")
 	assert_eq(panel._use_label.modulate, MidasPanel.USE_LABEL_COLOR, "use label 恢复原色")
 	panel.free()
+
+
+# 2026-07-16 LSTR 化（源 midas.lua T(LSTR(...)) → cm.get_lstr）：_T 解析非空 + key 不回显
+func test_lstr_resolved() -> void:
+	var panel := _make_panel()
+	var name_text: String = panel._T("MIDAS.GOLDEN_HAND")
+	assert_ne(name_text, "", "MIDAS.GOLDEN_HAND LSTR 解析非空")
+	assert_ne(name_text, "MIDAS.GOLDEN_HAND", "LSTR 解析为译文非 key 回显")
+	var use_text: String = panel._T(MidasPanel.LSTR_USE)
+	assert_ne(use_text, "", "MIDAS.USE LSTR 解析非空")
+	panel.free()
+
+
+# 源 :864-879 prompt（YOUVE_USED_UP，maxTimes 时显）；_apply_source_visibility 切 visible
+func test_prompt_node_created() -> void:
+	var panel := _make_panel()
+	assert_ne(panel._prompt, null, "prompt 节点已建（源 :864-879）")
+	# midas_times=0 < max_times → prompt 隐
+	assert_false(panel._prompt.visible, "有次数时 prompt 隐（源 refreshCost :407）")
+	panel.free()
+
+
+# 源 refreshButton :418-421：times>=maxTimes → use 按钮文本切 MIDAS.VIEW_VIP（"查看VIP"）
+func test_view_vip_when_maxed() -> void:
+	var panel := _make_panel()
+	panel._midas.midas_times = panel._get_max_times()   # 用尽次数
+	panel._refresh_button()
+	assert_eq(panel._use_label.text, panel._T("MIDAS.VIEW_VIP"), "用尽次数时按钮切 VIEW_VIP（源 :420）")
+	panel._apply_source_visibility()
+	assert_true(panel._prompt.visible, "用尽次数时 prompt 显（源 refreshCost :407）")
+	panel.free()

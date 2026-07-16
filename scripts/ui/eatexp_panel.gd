@@ -43,10 +43,11 @@ const EXP_BAR_BG_PATH: String = "res://assets/ui/alpha/HVGA/package_exp_bar_bg.p
 const EXP_BAR_PATH: String = "res://assets/ui/alpha/HVGA/package_exp_bar.png"
 const EXP_FULL_PATH: String = "res://assets/ui/alpha/HVGA/heroxp-progress-full.png"
 
-# ── 文本（源 LSTR）──
-const TEXT_TITLE: String = "选择一个英雄"      # EATEXPLIST.CHOOSE_A_HERO
-const TEXT_EXP_FULL: String = "英雄经验已满"   # EATEXPLIST.HERO_EXPERIENCE_FULL
-const TEXT_ALL_USED: String = "已全部消耗"     # EATEXPLIST.ALL_COMSUMED
+# ── 文本（源 LSTR key，运行时 cm.get_lstr 解析；2026-07-16 精修 LSTR 化）──
+const LSTR_TITLE := "EATEXPLIST.CHOOSE_A_HERO"             # 源 create title
+const LSTR_EXP_FULL := "EATEXPLIST.EXPERIENCE_FULL"        # 源 setExpMax shade label "经验已满"
+const LSTR_HERO_EXP_FULL := "EATEXPLIST.HERO_EXPERIENCE_FULL"  # 源 doEat 满级 toast "英雄经验已满"
+const LSTR_ALL_USED := "EATEXPLIST.ALL_COMSUMED"           # 源 useProp 全消耗 toast 后缀
 
 const TITLE_COLOR: Color = Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0)   # 源 ccc3(250,205,16)
 const EAT_LBL_COLOR: Color = Color(1.0, 200.0 / 255.0, 0.0)                    # 源 light_orange
@@ -63,6 +64,19 @@ var _keepeat_inst: int = -1    # 长按目标 inst_id（-1=空闲）
 # Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（frame 内子元素已手工算 Godot 局部，只转 frame 全局位置）。
 func _g(pos: Vector2) -> Vector2:
 	return BattleViewCoords.to_godot(pos.x, pos.y)
+
+
+# LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失返空串避免 null 解引用）。
+func _T(key: String) -> String:
+	if cm == null:
+		return ""
+	return String(cm.get_lstr(key))
+
+
+# 经验药物品名（源 useProp :8 equip[id].Name，LSTR key → 当前语言）
+func _equip_name() -> String:
+	var name_key: String = String(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get("Name", ""))
+	return _T(name_key)
 
 
 # 源 create(id, amount, param) :25-126。item_id=经验药物品 id；amount 从 pd.items 实时读。
@@ -111,7 +125,7 @@ func _add_title(parent: Control) -> void:
 		title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(title_bg)
 	var lbl := Label.new()
-	lbl.text = TEXT_TITLE
+	lbl.text = _T(LSTR_TITLE)
 	lbl.position = TITLE_POS
 	lbl.modulate = TITLE_COLOR
 	lbl.size = Vector2(180.0, 30.0)
@@ -218,10 +232,10 @@ func do_eat_hero(inst_id: int) -> void:
 	if hero == null:
 		return
 	if _is_hero_max_level(hero):
-		_show_toast("%s %s" % [TEXT_EXP_FULL, cm.get_lstr(String(cm.get_raw_table(&"Unit").get(str(hero.tid), {}).get("Display Name", "")))])
+		_show_toast(_T(LSTR_HERO_EXP_FULL))   # 源 doEat :666 单条 toast（不含英雄名）
 		return
 	if int(pd.items.get(_item_id, 0)) <= 0:
-		_show_toast(TEXT_ALL_USED)
+		_show_toast("%s %s" % [_equip_name(), _T(LSTR_ALL_USED)])   # 源 useProp :8 物品名 + ALL_COMSUMED
 		return
 	var olevel: int = hero.level
 	var oexp: int = hero.exp
