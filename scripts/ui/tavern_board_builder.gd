@@ -315,7 +315,10 @@ static func _button(normal: String, pressed: String, cx: float, cy: float) -> Te
 static func _center_label(text: String, btn: TextureButton) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.set_anchors_preset(Control.PRESET_CENTER)
+	lbl.size = btn.size
+	lbl.position = Vector2.ZERO
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.add_theme_color_override("font_color", Color.WHITE)
 	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	lbl.add_theme_constant_override("outline_size", 2)
