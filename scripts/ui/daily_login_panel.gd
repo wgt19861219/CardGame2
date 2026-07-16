@@ -36,7 +36,8 @@ func _refresh_view() -> void:
 	var freq: int = _mgr.get_login_frequency(now)
 	var status: String = _mgr.get_reward_status(now)
 	var checkin_num: int = freq if status != "common" else freq - 1   # 源 getCheckinNumber :137-146
-	var chrome: Dictionary = DailyLoginBuilder.create_chrome(container, "%d月签到奖励" % _current_month(), checkin_num)
+	var title_text: String = _cm.get_lstr("DAILYLOGIN._D_MONTHLY_ATTENDANCE_AWARDS") % _current_month() if _cm != null else "%d月签到奖励" % _current_month()
+	var chrome: Dictionary = DailyLoginBuilder.create_chrome(container, title_text, checkin_num, _cm)
 	(chrome["close"] as TextureButton).pressed.connect(remove_window)
 	(chrome["explain"] as Button).pressed.connect(_on_explain)
 	_subhead_num = chrome["subhead_num"]
@@ -75,18 +76,21 @@ func _claim(day: int) -> void:
 		Toast.show_message("领取成功：%s ×%d" % [String(r.get("type", "")), int(r.get("amount", 0))])
 		_refresh_view()
 	else:
-		Toast.show_message("今日已领取或无奖励数据")
+		var fail_text: String = _cm.get_lstr("DAILYLOGIN.FAILED_TO_RECEIVE") if _cm != null else "领取失败"
+		Toast.show_message(fail_text)
 
 
 # 源 createRewardDetail :422-460（弹详情卡）→ 降级 Toast（单机化，readequip.getDetailCard 依赖重）。
+# 源 :448 LSTR DAILYLOGIN.RECEIVE_THIS_AWARD_AT__D_ATTENDANCE_THIS_MONTH = "本月第%d次签到可领取此奖励"。
 func _show_detail(day: int) -> void:
 	if day < 1 or day > _data_list.size():
 		return
-	var d: Dictionary = _data_list[day - 1]
-	Toast.show_message("第%d天奖励：%s ID%d ×%d" % [day, String(d.get("type", "")), int(d.get("id", 0)), int(d.get("amount", 0))])
+	var detail_text: String = _cm.get_lstr("DAILYLOGIN.RECEIVE_THIS_AWARD_AT__D_ATTENDANCE_THIS_MONTH") % day if _cm != null else "第%d天奖励详情" % day
+	Toast.show_message(detail_text)
 
 
 # 源 createExplain :967-1028（continuechargedialog 弹窗）→ 降级 Toast。
+# 源 explain_text LSTR key（:7 顶部）不在 LSTR_zh-CN.json → 保留硬编码中文（照源语义 5:00 重置/VIP 双倍）。
 func _on_explain() -> void:
 	Toast.show_message("每日5:00重置，过期不可补领。达VIP等级当日可领双倍。")
 

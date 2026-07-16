@@ -54,6 +54,10 @@ const LIGHTNING_POS: Array = [205, 310]       # 源 ccp(205,330) → Godot(205, 
 const LIGHTNING_GAP: Array = [1.71, 1.71, 1.71, 3, 10]  # 源 mainres:60-64 gap/loop
 const EXCAVATE_WIN_TEXT: String = "占领成功！矿点开始产出资源"     # excavate 战斗胜利 Toast（_maybe_resume_excavate）
 const EXCAVATE_LOSE_TEXT: String = "战斗失败，再接再厉"          # excavate 战斗失败 Toast
+# 每日签到入口按钮（照源 statusbar.lua:373-411 createTitleButton；源 uires.lua:53 dailylogin_pos=ori_pos=ccp(220,392)，head ccp(70,434)→项目 HEAD_POS(70,52)，delta(150,42)→项目(220,94)）。
+const DAILY_BTN_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_1.png"
+const DAILY_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_2.png"
+const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 94.0)
 
 # 15 入口按钮（照源 mainres.lua res_pos + button_key）。pos = 源 ccp(左下原点) → Godot(左上原点)：godot_y = MAP_H - cocos_y。
 # pos 存源按钮中心点（CCSprite anchorPoint 0.5），_make_entry 转 Button 左上角（pos - BTN_SIZE/2）。
@@ -288,6 +292,10 @@ func _build_status_bar() -> void:
 	bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(bar)
 	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self))
+	# 每日签到入口按钮（照源 statusbar.lua:403-410 dailylogin 按钮 clickHandler→showDailyLogin）。
+	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
+	dl_btn.pressed.connect(_open_daily_login)
+	add_child(dl_btn)
 
 
 ## 右侧 shortcut 快捷栏抽屉（照源 ui/shortcut.lua + framework.lua scCreateBoard/scCreateButtons）。
