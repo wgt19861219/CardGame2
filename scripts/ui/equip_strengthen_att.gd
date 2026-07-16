@@ -22,10 +22,12 @@ const EXP_BAR_SIZE: Vector2 = Vector2(280.0, 22.0)
 const COST_LABEL_POS: Vector2 = Vector2(340.0, 350.0)
 const EXP_BAR_SPEED: float = 60.0           # 源 refreshExpBar:1070 speed=max(60,Δ)
 const EXP_BAR_MIN_DUR: float = 0.1
-const TEXT_UNENCHANTED: String = "未附魔"           # 源 getLevelText:1328
-const TEXT_MAX_LEVEL: String = "已满级"             # 源 doTalk:1662
-const TEXT_ADD_MATERIAL: String = "请添加材料"      # 源 doTalk:1664
-const TEXT_MONEY_SHORT: String = "金币不足"          # 源 refreshStrenCost:527
+# 提示文案 LSTR key（源 T(LSTR(...))，panel.cm.get_lstr 解析）。
+const TEXT_UNENCHANTED_KEY: String = "EQUIPINFO.UNENCHANTED"   # 源 getLevelText:1328
+const TEXT_MAX_LEVEL_KEY: String = "EQUIPSTRENGTHEN.YOUR_ENCHANTING_LEVEL_HAS_BEEN_MAXED_OUT"  # 源 doShowMaxLevel:1931
+const TEXT_ADD_MATERIAL_KEY: String = "EQUIPSTRENGTHEN.NO_MATERIAL_ADDED"   # 源 refreshStrenCost:517
+const TEXT_MONEY_SHORT_KEY: String = "EQUIPSTRENGTHEN.YOUR_MONEY_IS_NOT_ENOUGH"  # 源 refreshStrenCost:527
+const TEXT_MATERIAL_HINT_KEY: String = "EQUIPSTRENGTHEN.CLICK_HERE_TO_OPEN_THE_PACK\\N_YOU_CAN_USE_ANY_EQUIPMENT_TO_ENCHANT"  # 源 :1971
 const ATT_FADE_DUR: float = 0.2                     # 源 createEquipAtt:1500 CCFadeIn 0.2s
 # 材料区背景宽窄切换（源 doShowmbPrompt:1959-1982）
 const MATERIAL_BG_WIDE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_bottom_bg.png"
@@ -35,7 +37,6 @@ const MATERIAL_BG_NARROW_SIZE: Vector2 = Vector2(520.0, 154.0)
 const MATERIAL_BG_WIDE_COCOS: Vector2 = Vector2(400.0, 120.0)   # 源 :1978 ccp(400,120)
 const MATERIAL_BG_NARROW_COCOS: Vector2 = Vector2(335.0, 120.0) # 源 :1965 ccp(335,120)
 const MATERIAL_BG_CAP: int = 10                      # 源 createScale9Sprite cap 10,10,...
-const TEXT_MATERIAL_HINT: String = "点击此处开启背包，任意装备都可附魔"  # 源 :1971 CLICK_HERE_TO_OPEN
 # 源 createAttList 四列定位（refreshAttListPos :1334-1364）
 const ATT_LIST_LEFT: float = 427.0     # 源 refreshAttListPos :1335 ox=347 → Godot to_godot X+80=427
 const ATT_LIST_TOP: float = 205.0      # 源 oy=355 → Godot to_godot 560-355=205
@@ -98,10 +99,11 @@ static func show_equip_att(panel, slot: int) -> void:
 	_add_att_texture(panel, NAME_BG_RES, NAME_BG_COCOS, NAME_BG_SIZE)   # 源 :1447 name_bg
 	add_att_label(panel, panel.cm.get_lstr(String(equip_row.get("Name", "equip"))), ATT_TOP)   # 源 getEquipName
 	if is_max:
-		# 源 doShowMaxLevel:1928-1931：满级隐藏 b_lv/n_lv 等级标签，ehc 设"已满级"（不显示 +N exp/total）
-		add_att_label(panel, TEXT_MAX_LEVEL, ATT_TOP - ATT_LINE)
+		# 源 doShowMaxLevel:1928-1931：满级隐藏 b_lv/n_lv 等级标签，ehc 设 YOUR_ENCHANTING_LEVEL_HAS_BEEN_MAXED_OUT
+		add_att_label(panel, _L(panel, TEXT_MAX_LEVEL_KEY), ATT_TOP - ATT_LINE)
 	else:
-		var lvl_text: String = TEXT_UNENCHANTED if level == 0 else ("+" + str(level))   # 源 getLevelText
+		# 源 getLevelText:1325-1332：level==0 → UNENCHANTED；level>0 → res.enhance_level_res[level]（BaseresData 取等级文字）
+		var lvl_text: String = _L(panel, TEXT_UNENCHANTED_KEY) if level == 0 else BaseresData.get_enhance_level_text(level, panel.cm)
 		add_att_label(panel, lvl_text + "  " + str(int(lvl_info["exp_in_level"])) + "/" + str(int(lvl_info["level_total"])), ATT_TOP - ATT_LINE)
 	create_att_list(panel, slot)   # 源 :1413 createAttList（属性四列）
 	_fade_in_att(panel)
@@ -204,9 +206,17 @@ static func show_material_bg(panel, slot: int) -> void:
 		panel.container.add_child(panel._material_label)
 	panel._material_label.visible = narrow
 	if narrow:
-		panel._material_label.text = TEXT_MAX_LEVEL if is_max_level_current(panel) else TEXT_MATERIAL_HINT
+		# 源 doShowmbPrompt:1968-1972：满级 → MAX_LEVEL，否则 CLICK_HERE_TO_OPEN（含 \n 换行，Label autowrap_mode 自动渲染）
+		panel._material_label.text = _L(panel, TEXT_MAX_LEVEL_KEY) if is_max_level_current(panel) else _L(panel, TEXT_MATERIAL_HINT_KEY)
 		panel._material_label.size = Vector2(size.x, 30.0)
 		panel._material_label.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - size.y * 0.5 - 15.0)
+
+
+# LSTR 解析包装（源 T(LSTR(key))；panel.cm 缺失时返空串）。
+static func _L(panel, key: String) -> String:
+	if panel.cm == null:
+		return ""
+	return String(panel.cm.get_lstr(key))
 
 
 # 经验条（源 createExpBar:1109 精灵图，本项目 ProgressBar 适配）。
@@ -266,16 +276,16 @@ static func refresh_stren_cost(panel) -> void:
 			has_mt = true
 			break
 	if not has_mt:
-		panel._cost_label.text = TEXT_ADD_MATERIAL   # 源 :517 no_cost
+		panel._cost_label.text = _L(panel, TEXT_ADD_MATERIAL_KEY)   # 源 :517 no_cost
 		panel._cost_label.modulate = Color.WHITE
 		return
 	var total_exp: float = get_total_exp(panel, panel._selected_slot)
 	var target: float = max(min(panel._target_exp, total_exp), 0.0)   # 源 :512 夹紧满级
 	var cost: int = int(get_unit_money(panel, panel._selected_slot) * (target - panel._ori_exp))
 	panel._cost_label.text = "金币 " + str(cost)
-	if panel.pd != null and cost > panel.pd.hero_manager.gold:   # 源 :525/:527 不足红色 + doSpeak
+	if panel.pd != null and cost > panel.pd.hero_manager.gold:   # 源 :525/:527 不足红色 + doSpeak YOUR_MONEY_IS_NOT_ENOUGH
 		panel._cost_label.modulate = Color.RED
-		EquipStrengthenAnim.do_speak(panel, TEXT_MONEY_SHORT)
+		EquipStrengthenAnim.do_speak(panel, _L(panel, TEXT_MONEY_SHORT_KEY))
 	else:
 		panel._cost_label.modulate = Color.WHITE
 

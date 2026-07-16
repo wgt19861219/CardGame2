@@ -21,8 +21,9 @@ const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"
 const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"
 const CT_ENCHANTING: String = "EQUIP.ENCHANTING"
 const NAME_UNIVERSAL_DEBRIS: String = "EQUIP.UNIVERSAL_DEBRIS"
-const TEXT_EXP_MAXED: String = "经验已满"           # 源 addMaterial:278
-const TEXT_MATERIAL_USED_UP: String = "该材料已用完" # 源 addMaterial:285
+# 提示文案 LSTR key（源 T(LSTR(...))，panel.cm.get_lstr 解析）。
+const TEXT_EXP_MAXED_KEY: String = "EQUIPSTRENGTHEN.EXPERIENCE_MAXED_OUT"        # 源 addMaterial:278
+const TEXT_MATERIAL_USED_UP_KEY: String = "EQUIPSTRENGTHEN.THIS_MATERIAL_HAS_BEEN_USED_UP"  # 源 addMaterial:285
 const PANEL_HEIGHT: float = 560.0   # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（480+80）
 # 材料层滑入（源 createmtListLayer:407 runLayerAction 0.2s fade+move EaseSineOut）
 const MT_LAYER_SLIDE_OFFSET: float = 20.0
@@ -139,14 +140,14 @@ static func add_material(panel, idx: int) -> void:
 	if idx < 0 or idx >= panel._mt_nodes.size():
 		return
 	if EquipStrengthenAtt.is_max_level_target(panel):
-		EquipStrengthenAnim.do_speak(panel, TEXT_EXP_MAXED)   # 源 :278
+		EquipStrengthenAnim.do_speak(panel, _L(panel, TEXT_EXP_MAXED_KEY))   # 源 :278
 		return
 	var node: Dictionary = panel._mt_nodes[idx]
 	var info: Dictionary = node["info"]
 	var add: int = int(node["add"])
 	var amount: int = int(info["amount"])
 	if add >= amount:
-		EquipStrengthenAnim.do_speak(panel, TEXT_MATERIAL_USED_UP)   # 源 :285
+		EquipStrengthenAnim.do_speak(panel, _L(panel, TEXT_MATERIAL_USED_UP_KEY))   # 源 :285
 		return
 	Events.bus.emit_tutorial_step(&"EEclickMaterial")   # 源 doClickInList:356（点材料添加）
 	add += 1
@@ -261,3 +262,10 @@ static func play_add_exp_anim(panel, idx: int) -> void:
 	tw.tween_property(label, "position:y", label.position.y - ADDEXP_RISE, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(label, "modulate:a", 0.0, 0.5)   # 源 FadeOut 0.5 与上浮并行
 	tw.tween_callback(label.queue_free)
+
+
+# LSTR 解析包装（源 T(LSTR(key))；panel.cm 缺失时返空串）。
+static func _L(panel, key: String) -> String:
+	if panel.cm == null:
+		return ""
+	return String(panel.cm.get_lstr(key))
