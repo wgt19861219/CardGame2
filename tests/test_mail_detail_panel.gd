@@ -40,3 +40,30 @@ func _has_tex(node: Node, path: String) -> bool:
 		if _has_tex(c, path):
 			return true
 	return false
+
+
+# P1（2026-07-16）：UI 文案 LSTR 化验证（ok label CLAIM + attach title 走 GameData.config）。
+# mail 1 welcome：unread + attached → ok label = CLAIM（源 content.lua:463）。
+func test_panel_ok_label_uses_lstr() -> void:
+	var panel := MailDetailPanel.new("mail_detail", {})
+	panel.setup_panel(GameData.player, 1, Callable())
+	var cfg: ConfigManager = GameData.config
+	var ok_btns: Array = panel.find_children("*", "TextureButton", true, false)
+	assert_eq(ok_btns.size(), 1, "1 个 ok 按钮")
+	var lbl_text: String = ""
+	for c in ok_btns[0].get_children():
+		if c is Label:
+			lbl_text = String(c.text)
+	assert_eq(lbl_text, cfg.get_lstr("MAILBOX.CLAIM"), "ok label = LSTR MAILBOX.CLAIM（mail 1 unread+attached）")
+	assert_true(_has_label_text(panel, cfg.get_lstr("MAILBOX.ATTACHMENTS_")), "attach title 走 LSTR MAILBOX.ATTACHMENTS_")
+	panel.free()
+
+
+# 递归查 Label by text。
+func _has_label_text(node: Node, text: String) -> bool:
+	if node is Label and String(node.text) == text:
+		return true
+	for c in node.get_children():
+		if _has_label_text(c, text):
+			return true
+	return false
