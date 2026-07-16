@@ -7,6 +7,9 @@ extends RefCounted
 
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
+# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
+# TextureRect 默认 size=纹理原始（偏大 1.28），照源无 fix_size 的纯 Sprite 统一 /CS。
+const CONTENT_SCALE: float = 1.28125
 # 源 :1961-1970 bg herodetail-bg @ (400,240)
 const BG_RES: String = "res://assets/ui/alpha/HVGA/herodetail-bg.png"
 const BG_COCOS: Vector2 = Vector2(400.0, 240.0)
@@ -141,8 +144,10 @@ static func _add_centered(parent: Control, res_path: String, cocos_center: Vecto
 	var s := TextureRect.new()
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	s.size = tex.get_size()
-	s.position = to_godot(cocos_center.x, cocos_center.y) - tex.get_size() * 0.5
+	# 源 config={} 纯 Sprite（bg/name_bg/type_icon），显示=纹理/CS（见 CONTENT_SCALE 注释）
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	s.size = sz
+	s.position = to_godot(cocos_center.x, cocos_center.y) - sz * 0.5
 	s.z_index = z
 	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(s)
@@ -297,8 +302,10 @@ static func _make_centered_rect(res_path: String, cocos_center: Vector2, z: int)
 		return s
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	s.size = tex.get_size()
-	s.position = to_godot(cocos_center.x, cocos_center.y) - tex.get_size() * 0.5
+	# 源 readhero.lua:1055-1068 card frame（card_bg_*.png）t="Sprite" config={}，显示=纹理/CS
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	s.size = sz
+	s.position = to_godot(cocos_center.x, cocos_center.y) - sz * 0.5
 	s.z_index = z
 	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return s

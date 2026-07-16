@@ -9,6 +9,9 @@ extends RefCounted
 
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
+# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
+# TextureRect 默认 size=纹理原始（偏大 1.28），照源无 fix_size 的纯 Sprite 统一 /CS。
+const CONTENT_SCALE: float = 1.28125
 # 源 :13-22 常量
 const BOOK_CENTER_COCOS: Vector2 = Vector2(400.0, 240.0)   # 源 bg/book_bg/page 中心
 const BACK_COCOS: Vector2 = Vector2(70.0, 428.0)            # 源 back btn :668
@@ -88,8 +91,10 @@ static func _add_centered_sprite(parent: Control, res_path: String, cocos_center
 	var s := TextureRect.new()
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	s.size = tex.get_size()
-	s.position = to_godot(cocos_center.x, cocos_center.y) - tex.get_size() * 0.5
+	# 源 create :629/:640/:652 bg 三层 t="Sprite" config={}（见 CONTENT_SCALE 注释）
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	s.size = sz
+	s.position = to_godot(cocos_center.x, cocos_center.y) - sz * 0.5
 	s.z_index = z
 	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(s)
@@ -138,11 +143,14 @@ static func create_tag_buttons(parent: Control, cm: Variant) -> Dictionary:
 static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) -> Control:
 	var cell := Control.new()
 	var bg_tex: Texture2D = load(EQUIP_BG_RES) as Texture2D
-	cell.custom_minimum_size = bg_tex.get_size() if bg_tex != null else Vector2(114, 114)
-	cell.size = cell.custom_minimum_size
+	# 源 handbook.lua:424 createSprite 无 fix_size，显示=纹理/CS（见 CONTENT_SCALE 注释）
+	var bg_size: Vector2 = bg_tex.get_size() / CONTENT_SCALE if bg_tex != null else Vector2(114, 114) / CONTENT_SCALE
+	cell.custom_minimum_size = bg_size
+	cell.size = bg_size
 	var bg := TextureRect.new()
 	bg.texture = bg_tex
-	bg.size = cell.custom_minimum_size
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.size = bg_size
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(bg)
 	var lr: int = int(info.get("lr", 1))
