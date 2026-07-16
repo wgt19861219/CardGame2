@@ -21,6 +21,9 @@ const SLIDE_DURATION: float = 0.2       # 源 CCMoveTo 0.2 秒
 const RES_DIR: String = "res://assets/ui/alpha/HVGA/"
 const LIGHT_ROTATE_SEC: float = 5.0          # 源 playLightAnim CCRotateBy(5,360) :584
 const FULL_CIRCLE_DEG: float = 360.0         # 源 :584 旋转一圈度数
+# 源 hello.lua:311 setContentScaleFactor=1.28125：cocos sprite 显示=纹理/CS。
+# board 的 _tex/_button 工厂（纯 Sprite 无 fix_size）照源 /CS；_scale9 用源 scaleSize（1:1）不动。
+const CONTENT_SCALE: float = 1.28125
 
 # res 映射（照源 parameter/tavernres.lua）
 const BOARD_BG: Dictionary = {"bronze": "tavern_bg_1.png", "gold": "tavern_bg_3.png", "magic": "tavern_bg_2.png"}
@@ -250,7 +253,7 @@ static func _cost_row(scroll: Control, cx: float, cy: float, pay: String, cost_v
 	var icon := _tex(icon_res)
 	if pay != "Gold":
 		icon.scale = Vector2(1.2, 1.2)   # 源 :782/:857 钻石 icon scale 1.2
-	icon.position = _scroll_pos(64.0, cy, icon.texture.get_size() if icon.texture != null else icon.size)
+	icon.position = _scroll_pos(64.0, cy, icon.size)
 	scroll.add_child(icon)
 	# cost Label（源 anchor ccp(1,0.5) ccp(144,cy)，右对齐到 x=144）
 	var lbl := Label.new()
@@ -276,7 +279,7 @@ static func _tex(res_path: String) -> TextureRect:
 	t.texture = load(res_path) as Texture2D
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	if t.texture != null:
-		t.size = t.texture.get_size()
+		t.size = t.texture.get_size() / CONTENT_SCALE
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return t
 
@@ -302,7 +305,7 @@ static func _button(normal: String, pressed: String, cx: float, cy: float) -> Te
 	btn.texture_normal = load(RES_DIR + normal) as Texture2D
 	btn.texture_pressed = load(RES_DIR + pressed) as Texture2D
 	btn.ignore_texture_size = true
-	var sz: Vector2 = btn.texture_normal.get_size() if btn.texture_normal != null else Vector2(80.0, 32.0)
+	var sz: Vector2 = (btn.texture_normal.get_size() / CONTENT_SCALE) if btn.texture_normal != null else Vector2(80.0, 32.0)
 	btn.size = sz
 	btn.position = _scroll_pos(cx, cy, sz)
 	return btn

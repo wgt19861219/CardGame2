@@ -8,6 +8,9 @@ extends RefCounted
 ## center_pos 为按钮中心（源 anchor 0.5,0.5），自动按纹理尺寸左上对齐。
 
 const OUTLINE_COLOR: Color = Color.BLACK
+# 源 hello.lua:311 setContentScaleFactor=1.28125（iPhone 档）：cocos sprite 显示=纹理/CS。
+# UiButton 制造的按钮（close/抽卡/tab/动作）源都是纯 Sprite 无 fix_size → 照源 /CS。
+const CONTENT_SCALE: float = 1.28125
 
 
 # 创建图按钮（normal + pressed 纹理 + 可选 label）。center_pos = 按钮中心点。
@@ -17,7 +20,7 @@ static func make(res_normal: String, res_pressed: String, center_pos: Vector2, l
 	btn.texture_normal = normal_tex
 	btn.texture_pressed = _load(res_pressed) if ResourceLoader.exists(res_pressed) else normal_tex
 	btn.ignore_texture_size = true
-	var sz: Vector2 = normal_tex.get_size() if normal_tex != null else Vector2(100.0, 40.0)
+	var sz: Vector2 = (normal_tex.get_size() / CONTENT_SCALE) if normal_tex != null else Vector2(100.0, 40.0)
 	btn.position = center_pos - sz * 0.5
 	btn.size = sz
 	if not label_text.is_empty():
@@ -40,7 +43,7 @@ static func make_at(res_normal: String, res_pressed: String, top_left: Vector2, 
 	btn.ignore_texture_size = true
 	btn.position = top_left
 	if normal_tex != null:
-		btn.size = normal_tex.get_size()
+		btn.size = normal_tex.get_size() / CONTENT_SCALE
 	if not label_text.is_empty():
 		var lbl := Label.new()
 		lbl.text = label_text
