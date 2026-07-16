@@ -42,13 +42,18 @@ const COLOR_TITLE_RED: Color = Color(184.0 / 255.0, 6.0 / 255.0, 6.0 / 255.0)
 const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
 const COLOR_DARK_RED: Color = Color(155.0 / 255.0, 34.0 / 255.0, 14.0 / 255.0)
 const COLOR_ORANGE: Color = Color(182.0 / 255.0, 65.0 / 255.0, 21.0 / 255.0)
-# ── 文字（源 LSTR）──
-const TEXT_COST_TITLE: String = "合成费用 "           # 源 FRAGMENTCOMPOSE.SYNTHESIS_COST
-const TEXT_OK: String = "确认合成"                    # 源 FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS
-const TEXT_SUCCESS: String = "成功合成碎片"           # 源 :101
-const TEXT_INSUFFICIENT: String = "碎片不足，合成失败" # 源 :128
-const TEXT_OWNED: String = "您已经拥有此英雄"         # 源 :138
-const TEXT_NO_GOLD: String = "金币不足"               # 单机化降级（源 :132 useMidas）
+# ── 文字（源 LSTR key，setup_panel 时 cm.get_lstr 解析；源 fragmentcompose.lua）──
+# 源 :369 EQUIPCRAFT.SYNTHESIS_COST_（带尾下划线，属 EQUIPCRAFT 非 FRAGMENTCOMPOSE，JSON 值"合成花费："）
+# 源 :459 FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS / :101 SUCCESSFULLY_SYNTHESIZED_FRAGMENT
+# 源 :129 INSUFFICIENT_FRAGMENT_SYNTHESIS_FAILED / :139 YOU_HAVE_ALREADY_GOT_THIS_HERO
+# 源 :132 useMidas → 单机化降级 toast，源无 LSTR key，TEXT_NO_GOLD 保留硬编码。
+const LSTR_COST_TITLE: String = "EQUIPCRAFT.SYNTHESIS_COST_"
+const LSTR_OK: String = "FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS"
+const LSTR_SUCCESS: String = "FRAGMENTCOMPOSE.SUCCESSFULLY_SYNTHESIZED_FRAGMENT"
+const LSTR_INSUFFICIENT: String = "FRAGMENTCOMPOSE.INSUFFICIENT_FRAGMENT_SYNTHESIS_FAILED"
+const LSTR_OWNED: String = "FRAGMENTCOMPOSE.YOU_HAVE_ALREADY_GOT_THIS_HERO"
+const TEXT_NO_GOLD: String = "金币不足"   # 单机化降级（源 :132 useMidas 弹点金手，单机版不接）
+const LSTR_SYNTHESIS_PREFIX: String = "EQUIPCRAFT.SYNTHESIS"   # 源 :273 name 前缀"合成"
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -96,9 +101,9 @@ func _build_ui() -> void:
 		bg.position = _g(BG_POS) - bg.get_minimum_size() / 2.0   # 中心锚定（源 setPosition(400,240)→Godot）
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(bg)
-	# name 标题（源 :277 "合成 " + makeName）
+	# name 标题（源 :273-274 T(LSTR("EQUIPCRAFT.SYNTHESIS")) .. " " .. makeName）
 	var name_lbl := Label.new()
-	name_lbl.text = "合成 " + _make_name()
+	name_lbl.text = cm.get_lstr(LSTR_SYNTHESIS_PREFIX) + " " + _make_name()
 	name_lbl.position = _g(NAME_POS)
 	name_lbl.modulate = COLOR_TITLE_RED
 	container.add_child(name_lbl)
@@ -124,8 +129,8 @@ func _build_ui() -> void:
 	var close: TextureButton = UiButton.make(CLOSE_RES, CLOSE_PRESS_RES, _g(CLOSE_POS))
 	close.pressed.connect(_on_close_pressed)
 	container.add_child(close)
-	# 合成按钮（源 :434）
-	var ok: Button = UiScale9Button.make_centered(OK_RES, OK_PRESS_RES, _g(OK_POS), OK_SIZE, OK_CAP, TEXT_OK)
+	# 合成按钮（源 :434 + :459 LSTR ok_label）
+	var ok: Button = UiScale9Button.make_centered(OK_RES, OK_PRESS_RES, _g(OK_POS), OK_SIZE, OK_CAP, cm.get_lstr(LSTR_OK))
 	ok.pressed.connect(_on_compose_pressed)
 	container.add_child(ok)
 
@@ -173,7 +178,7 @@ func _build_cost() -> void:
 		cost_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(cost_bg)
 	var title := Label.new()
-	title.text = TEXT_COST_TITLE
+	title.text = cm.get_lstr(LSTR_COST_TITLE)
 	title.position = _g(COST_TITLE_POS)
 	title.modulate = COLOR_BROWN
 	container.add_child(title)
@@ -197,18 +202,18 @@ func _on_compose_pressed() -> void:
 	var frag_have := int(_info["fragmentAmount"])
 	var frag_need := int(_info["needAmount"])
 	var uni_avail: int = min(int(_info["universalAmount"]), int(_info["universalNeedAmount"]))
-	if frag_have + uni_avail < frag_need:   # 源 :128 碎片不足
-		_show_toast(TEXT_INSUFFICIENT)
+	if frag_have + uni_avail < frag_need:   # 源 :128-129 碎片不足
+		_show_toast(cm.get_lstr(LSTR_INSUFFICIENT))
 		return
 	if _player_money() < int(_info["cost"]):   # 源 :132 金币不足（单机化降级）
 		_show_toast(TEXT_NO_GOLD)
 		return
-	if _hero_owned(int(_info["makeId"])):   # 源 :138 已有英雄
-		_show_toast(TEXT_OWNED)
+	if _hero_owned(int(_info["makeId"])):   # 源 :138-139 已有英雄
+		_show_toast(cm.get_lstr(LSTR_OWNED))
 		return
 	var ok := pd.hero_manager.compose(_target_tid)
 	if ok:
-		_show_toast(TEXT_SUCCESS)
+		_show_toast(cm.get_lstr(LSTR_SUCCESS))
 		composed.emit()
 		remove_window()
 

@@ -47,6 +47,7 @@ var _both: Dictionary = {}        # classify 输出 {prop, fragment}
 var _cur_tab: String = "all"
 var _tab_buttons: Dictionary = {}  # tab_key(String) -> Button
 var _grid: GridContainer = null
+var _status_refs: Dictionary = {}   # MainStatusBar 货币条 label 引用（_refresh_status 更新）
 
 
 # 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 daily_login/battle_view_coords 标准）。
@@ -74,9 +75,40 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	_create_close_button()
 	_create_tab_buttons()
 	_create_grid()
+	_create_status_bar()   # 源 framework.create :755 sbCreateTitle common 3 货币条（所有非 main 场景建）
 	_select_tab("all")
 	cell_clicked.connect(_on_cell_clicked)
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+
+
+# 源 framework.lua:755 sbCreateTitle（所有非 main 场景建 3 货币条 money/rmb/vit，common 模式）。
+# package/fragment 源是 pushScene 独立场景，framework 在新场景顶层建货币条；
+# 本项目单机化改 PopWindow 弹窗（避 pushScene），但 bg.jpg 全屏遮 main_scene 货币条，
+# 故在 container 自建（照 hero_scene.gd:41 范式，挂 bg.jpg 之上，统一 MainStatusBar 常量）。
+func _create_status_bar() -> void:
+	_status_refs = MainStatusBar.build_bars_only(container, MainStatusBar.BAR_POS_X, MainStatusBar.BAR_Y, Callable(self, "_on_vitality_plus"))
+	_refresh_status()
+
+
+# 刷新货币条数值（委托 MainStatusBar.refresh，照 hero_scene.gd:45）。
+func _refresh_status() -> void:
+	if pd == null or _status_refs.is_empty():
+		return
+	MainStatusBar.refresh(_status_refs, pd.team_level, pd.hero_manager.gold, pd.diamond, pd.vitality, pd.vitality_max, pd.player_name, pd.vip_level, pd.avatar)
+
+
+# 体力加号（照源 statusbar vitality_add_icon→buyVitality；单机化直接买 + Toast，同 main_scene/hero_scene）。
+func _on_vitality_plus() -> void:
+	if pd == null:
+		return
+	if not pd.can_buy_vitality():
+		Toast.show_message("今日购买体力次数已达上限")
+		return
+	if pd.buy_vitality():
+		Toast.show_message("购买体力 +120")
+		_refresh_status()
+	else:
+		Toast.show_message("钻石不足")
 
 
 # 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（package/fragment 源是独立场景）。
@@ -161,10 +193,11 @@ func _on_cell_clicked(cell_data: Dictionary) -> void:
 	board.show_window(get_parent())
 
 
-# 卖出后重 classify + 重填当前 tab（持有量变化，cell 可能消失）。
+# 卖出后重 classify + 重填当前 tab（持有量变化，cell 可能消失）+ 刷新货币条（金币变化）。
 func _on_sold(_item_id: int) -> void:
 	_both = EquipmentClassifier.classify(pd, cm)
 	_fill_grid()
+	_refresh_status()
 
 
 # 源 loadEquip :278-318：package createIconWithAmount(id) / fragment createIconWithTag(makeId)。
