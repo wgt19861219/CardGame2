@@ -1,6 +1,13 @@
 extends GutTest
 
-## StageDetailBuilder 单测 — 照源 stagedetail.lua 坐标转换 + resInfo + 节点装配 + stars 亮暗。
+## StageDetailBuilder 单测 — 照源 stagedetail.lua 坐标转换 + resInfo + 节点装配 + stars 亮暗 + LSTR 化。
+
+var cm: ConfigManager
+
+
+func before_all() -> void:
+	cm = ConfigManager.new()
+	cm.load_all()
 
 
 func test_to_godot_conversion() -> void:
@@ -41,7 +48,7 @@ func test_build_creates_nodes() -> void:
 	var parent := Node.new()
 	add_child(parent)
 	var info: Dictionary = {"title": "测试", "detail": "", "power": 10, "count_limit": 3, "count": 1, "star": 2, "stage_type": "normal"}
-	var ui: Dictionary = StageDetailBuilder.build(parent, info, StageDetailBuilder.get_res_info("normal"))
+	var ui: Dictionary = StageDetailBuilder.build(parent, info, StageDetailBuilder.get_res_info("normal"), cm)
 	assert_true(ui.has("frame2"), "应有 frame2")
 	assert_true(ui.has("frame3"), "应有 frame3")
 	assert_true(ui.has("title"), "应有 title")
@@ -56,7 +63,7 @@ func test_build_creates_nodes() -> void:
 func test_build_buttons_are_texturebutton() -> void:
 	var parent := Node.new()
 	add_child(parent)
-	var ui: Dictionary = StageDetailBuilder.build(parent, {"stage_type": "normal"}, StageDetailBuilder.get_res_info("normal"))
+	var ui: Dictionary = StageDetailBuilder.build(parent, {"stage_type": "normal"}, StageDetailBuilder.get_res_info("normal"), cm)
 	assert_true(ui["go_button"] is TextureButton, "go_button 应为 TextureButton")
 	assert_true(ui["reset"] is TextureButton, "reset 应为 TextureButton")
 	parent.queue_free()
@@ -65,9 +72,31 @@ func test_build_buttons_are_texturebutton() -> void:
 func test_build_go_button_shade_hidden_by_default() -> void:
 	var parent := Node.new()
 	add_child(parent)
-	var ui: Dictionary = StageDetailBuilder.build(parent, {"stage_type": "normal"}, StageDetailBuilder.get_res_info("normal"))
+	var ui: Dictionary = StageDetailBuilder.build(parent, {"stage_type": "normal"}, StageDetailBuilder.get_res_info("normal"), cm)
 	var gs: Sprite2D = ui["go_button_shade"]
 	assert_false(gs.visible, "go_button_shade 默认隐藏（源 :1881 visible=false）")
+	parent.queue_free()
+
+
+# 照源 LSTR 化（源 :1686 PHYSICAL_EXERTION / :1834 ENEMY_LINEUP / :1848 MAY_BE_OBTAINED / :1807 PURCHASE）。
+func test_build_uses_lstr_for_section_labels() -> void:
+	var parent := Node.new()
+	add_child(parent)
+	var ui: Dictionary = StageDetailBuilder.build(parent, {"stage_type": "normal"}, StageDetailBuilder.get_res_info("normal"), cm)
+	assert_eq((ui["power_title"] as Label).text, "体力消耗", "power_title LSTR STAGEDETAIL.PHYSICAL_EXERTION")
+	assert_eq((ui["enemy_title"] as Label).text, "敌方阵容", "enemy_title LSTR STAGEDETAIL.ENEMY_LINEUP")
+	assert_eq((ui["award_title"] as Label).text, "可能获得", "award_title LSTR STAGEDETAIL.MAY_BE_OBTAINED")
+	assert_eq((ui["reset_label"] as Label).text, "购买", "reset_label LSTR EQUIPINFO.PURCHASE")
+	parent.queue_free()
+
+
+# 源 :1730 T(LSTR("EXERCISE.REMAINING_TIMES_FOR_TODAY_"), count) — key="今日剩余次数:" + 数字拼接。
+func test_build_count_title_lstr_concat_left() -> void:
+	var parent := Node.new()
+	add_child(parent)
+	var info: Dictionary = {"stage_type": "normal", "count_limit": 5, "count": 2}
+	var ui: Dictionary = StageDetailBuilder.build(parent, info, StageDetailBuilder.get_res_info("normal"), cm)
+	assert_eq((ui["count_title"] as Label).text, "今日剩余次数:3", "count_title = LSTR + left(5-2=3)")
 	parent.queue_free()
 
 

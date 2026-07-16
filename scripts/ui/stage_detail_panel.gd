@@ -43,7 +43,7 @@ func _build() -> void:
 	for c in container.get_children():
 		c.queue_free()
 	var info: Dictionary = _get_stage_info()
-	_ui = StageDetailBuilder.build(container, info, _res_info)
+	_ui = StageDetailBuilder.build(container, info, _res_info, player.cm)
 	StageDetailBuilder.create_enemy(container, _enemies, player.cm)
 	if _stage_data != null:
 		StageDetailBuilder.create_reward(container, _stage_data.drops, player.cm)
@@ -60,7 +60,8 @@ func _build() -> void:
 	_check_enabled()
 
 
-# 源 getStageInformation（Stage 表字段映射）。
+# 源 getStageInformation（Stage 表字段映射）。源 :613 info.title = row["Stage Name"]（无 fallback）；
+# 项目 StageData 首次访问可能缺 row，"关卡 %d" fallback 是项目适配（源 row 必存在）。
 func _get_stage_info() -> Dictionary:
 	var row: Dictionary = player.cm.get_raw_table("Stage").get(str(stage_id), {})
 	return {
@@ -111,12 +112,12 @@ func _daily_limit() -> int:
 	return int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Daily Limit", 0))
 
 
-# 源 createRepeatBattle :266-469（3 星 + normal/elite 显示扫荡）。
+# 源 createRepeatBattle :266-469（3 星 + normal/elite 显示扫荡）。once_label 文案源 :454 PRIVILEGE.FARM。
 func _create_sweep_button(star: int) -> void:
 	if mgr == null or star < 3:
 		return
 	var btn := Button.new()
-	btn.text = "扫荡"
+	btn.text = String(player.cm.get_lstr("PRIVILEGE.FARM"))  # 源 :454 T(LSTR("PRIVILEGE.FARM"))="扫荡"
 	btn.position = SWEEP_BTN_POS
 	btn.size = SWEEP_BTN_SIZE
 	btn.pressed.connect(_on_sweep_pressed)
@@ -145,27 +146,29 @@ func _on_go_pressed() -> void:
 
 
 # 源 doClickSweep → doSendSweep：扣体力+扫荡券发奖励（sweep_stage 已在 stage_manager 实现）。
+# 注：源用 repeatRewardWindow 显示战利品（stagedetail.lua:1946），项目单机化用 Toast 简化反馈。
 func _on_sweep_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if mgr == null or player == null:
 		return
 	var r: Dictionary = mgr.sweep(stage_id, 1, rng, player, "free")
 	if bool(r.get("ok", false)):
-		Toast.show_message("扫荡成功")
+		Toast.show_message("扫荡成功")  # 源无此 toast（用 repeatRewardWindow），项目单机化简化
 		_check_enabled()
 	else:
-		Toast.show_message(String(r.get("msg", "扫荡失败")))
+		Toast.show_message(String(r.get("msg", "扫荡失败")))  # 项目适配 toast
 
 
-# 源 createRepeatBattle :266-469 购买次数（钻石）。单机最小实现：扣钻石 + stage_limit-1。
+# 源 createRepeatBattle :266-469 购买次数（钻石）。源 :519-522 needHighervip dialog / :541 toRecharge dialog；
+# 项目单机化用 Toast 简化（无 dialog 系统），文案是项目自定（源用 dialog 体系无对应 LSTR key）。
 func _on_reset_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var cost: int = int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Reset Cost", 0))
 	if cost <= 0:
-		Toast.show_message("该关卡无法购买次数")
+		Toast.show_message("该关卡无法购买次数")  # 项目适配 toast（源 needHighervip dialog）
 		return
 	if player.diamond < cost:
-		Toast.show_message("钻石不足")
+		Toast.show_message("钻石不足")  # 项目适配 toast（源 :541 toRecharge dialog）
 		return
 	player.diamond -= cost
 	player.stage_limit[stage_id] = int(player.stage_limit.get(stage_id, 0)) - 1

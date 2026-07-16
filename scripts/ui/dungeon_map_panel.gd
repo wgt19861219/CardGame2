@@ -107,6 +107,8 @@ func _collect_bosses() -> void:
 
 
 func _create_title() -> void:
+	# 源 dungeon_map.lua 无 title label（scene 标题由入口 panel 继承，dungeonmapconfig 也无文本）。
+	# 项目 PopWindow 弹窗化后需自带标题区分 em/equip 模式；无源 LSTR key，文案是项目单机化适配。
 	title_label = Label.new()
 	title_label.position = TITLE_POS
 	title_label.text = "英雄试炼" if mode == "em" else "装备副本"
@@ -209,6 +211,7 @@ static func _cocos_center_to_topleft(cocos_pos: Vector2, node_size: Vector2) -> 
 
 
 func _create_result_label() -> void:
+	# 源无此节点（dungeon_map.lua 状态在 bottom 栏）。项目 PopWindow 弹窗化补的提示，文案项目自定。
 	result_label = Label.new()
 	result_label.position = RESULT_POS
 	result_label.text = "共 %d 个 boss（点击挑战）" % bosses.size()
@@ -264,6 +267,8 @@ func _fade_out_fog(fog: TextureRect) -> void:
 
 
 ## 源 dungeon_map.lua:582-595 selectBoss → 弹难度选择（DegreePopup）。
+## 源 :185-189 点未解锁 boss 无 toast（dungeon_map.lua isBossUnlocked false 直接 return）；
+## 本 toast 是项目适配反馈，文案项目自定（DUNGEON.HEROIC_PREREQ 语义不符，不入 LSTR）。
 func _on_boss_pressed(idx: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")  # 源 exerciselsr.clickExercise（sound_res 无 exercise 段，common_* 适配）
 	if not ExerciseManager.is_boss_unlocked(bosses, stage_manager.progress, idx):
@@ -301,10 +306,14 @@ func _on_degree_selected(idx: int, diff: Dictionary) -> void:
 	var lookup_id: int = base_id + (diff_num - 1) * DUNGEON_DIFF_OFFSET
 	var tids: Array[int] = _team_tids()
 	if tids.is_empty():
+		# 源 :547-570 stagedetail.createForExercise 直接 pushScene，不校验 team（heroLimit=nil）；
+		# 项目校验空队防 battle_scene 崩溃，toast 文案项目自定。
 		Toast.show_message("无上场英雄")
 		return
 	var asm_r: Dictionary = stage_manager.assemble_stage_battle(lookup_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
+		# 源 :552 体力不足 showHandyDialog("buyVitality")；装配失败源无（装配在 battleprepare）。
+		# 项目 assemble_stage_battle 统一返 ok，toast 文案项目自定（无源 LSTR key）。
 		Toast.show_message("体力不足或装配失败")
 		return
 	GameData.battle_context = {
@@ -343,6 +352,8 @@ func _on_box_gui_input(event: InputEvent, idx: int) -> void:
 
 
 ## 源 dungeon_map.lua:222-259 openChest：切 open 纹理 + 弹跳动画 + 读 StageDungeon 奖励入背包 + toast。
+## 源 :246-250 分流 addEquip/addItem，项目 player.add_item 内部统一（含图鉴 record_equip），等价。
+## 源 :251-256 toast 中文物名（Item 表 Display Name，无则 fallback "Item:" + id），非数字 ID。
 func _open_chest(idx: int) -> void:
 	if idx < 1 or idx > bosses.size():
 		return
@@ -351,6 +362,7 @@ func _open_chest(idx: int) -> void:
 	if bool(opened_chests.get(base_id, false)):
 		return  # 源 :223 已开 → return
 	if not ExerciseManager.is_boss_cleared(stage_manager.progress, base_id):
+		# 源 :194-213 仅 cleared+未开宝箱才入点击检测；本 toast 是项目适配（源点未通宝箱不响应）。
 		Toast.show_message("通关后可开启宝箱")
 		return
 	opened_chests[base_id] = true
@@ -363,13 +375,22 @@ func _open_chest(idx: int) -> void:
 			tw.tween_property(box, "scale", Vector2(1.1, 1.1), 0.1)
 			tw.tween_property(box, "scale", Vector2(0.9, 0.9), 0.1)
 			tw.tween_property(box, "scale", Vector2(1.0, 1.0), 0.1)
-	# 源 :239-258 StageDungeon[base_id] UI reward1-7 → add_item + toast
+	# 源 :239-258 StageDungeon[base_id] UI reward1-7 → add_item + toast 中文名
 	var stage_data: Dictionary = stage_manager.config.get_raw_table(&"StageDungeon").get(str(base_id), {})
 	for i in range(1, 8):
 		var reward_id: int = int(stage_data.get(&"UI reward" + str(i), 0))
 		if reward_id != 0:
 			player.add_item(reward_id)
-			Toast.show_message("获得物品 %d" % reward_id)
+			Toast.show_message(_reward_display_name(reward_id))  # 源 :254-256 Display Name
+
+
+## 源 dungeon_map.lua:251-256 查 Item 表 Display Name，无则 fallback "Item:" + id（照源）。
+func _reward_display_name(item_id: int) -> String:
+	var row: Dictionary = stage_manager.config.get_raw_table(&"Item").get(str(item_id), {})
+	var n: String = String(row.get("Display Name", ""))
+	if n.length() > 0:
+		return n
+	return "Item:%d" % item_id  # 源 :255 fallback
 
 
 ## 资源安全加载（exists 预检，避 headless 未 import 时 push_error）。

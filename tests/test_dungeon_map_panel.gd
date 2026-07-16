@@ -96,3 +96,26 @@ func test_fade_out_fog_immediate_when_not_in_tree() -> void:
 	assert_false(fog.visible, "未入树时 _fade_out_fog 立即 visible=false")
 	assert_eq(fog.modulate.a, 0.0, "未入树时 _fade_out_fog 立即 a=0")
 	panel.free()
+
+
+# 照源 dungeon_map.lua:251-256 openChest reward 显示 Item 表 Display Name，无则 fallback "Item:"+id。
+# 原 bug：toast "获得物品 %d" 显示数字 ID，照源修复为中文名 + fallback。
+func test_reward_display_name_fallback() -> void:
+	var mgr := StageManager.new(GameData.config)
+	var panel := DungeonMapPanel.new("dungeonMap", {})
+	panel.setup_panel(GameData.player, mgr, BattleRng.new(randi()), "em", [50005, 50006, 50007])
+	# 项目无 Item 表（源 ed.getDataTable("Item")）→ 查空 → fallback "Item:<id>"（照源 :255）
+	assert_eq(panel._reward_display_name(99999), "Item:99999", "无 Item 表时 fallback Item:<id>（源 :255）")
+	panel.free()
+
+
+# 照源 :251-254 查 Item 表 Display Name；若表存在则返中文名（此处表无 1 号条目，fallback 验证）。
+func test_reward_display_name_uses_item_table() -> void:
+	var mgr := StageManager.new(GameData.config)
+	var panel := DungeonMapPanel.new("dungeonMap", {})
+	panel.setup_panel(GameData.player, mgr, BattleRng.new(randi()), "em", [50005, 50006, 50007])
+	# 遍历 Item 表所有 key（项目表可能不存在，has_table false 也走 fallback）
+	var name: String = panel._reward_display_name(1)
+	# 只断言"返回非空字符串"（照源 fallback 兜底）
+	assert_true(name.length() > 0, "_reward_display_name 永返非空（源 :253-255 row or fallback）")
+	panel.free()

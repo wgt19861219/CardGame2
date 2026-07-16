@@ -61,9 +61,16 @@ static func to_godot(cocos_pos: Vector2) -> Vector2:
 
 
 # 源 create:1585-1883 ui_info ~20 节点。返 ui 引用 dict（panel 后处理显隐/色用）。
-static func build(parent: Node, info: Dictionary, res_info: Dictionary) -> Dictionary:
+# cm: ConfigManager，用于 LSTR 化硬编码中文（源 stagedetail.lua :1686/:1730/:1807/:1834/:1848）。
+static func build(parent: Node, info: Dictionary, res_info: Dictionary, cm: Variant) -> Dictionary:
 	var ui: Dictionary = {}
 	var left: int = int(info.get("count_limit", 0)) - int(info.get("count", 0))
+	# 源 LSTR key（STAGEDETAIL.* / EXERCISE.* / EQUIPINFO.*）。
+	var lstr_power: String = String(cm.get_lstr("STAGEDETAIL.PHYSICAL_EXERTION"))  # 源 :1686
+	var lstr_left: String = String(cm.get_lstr("EXERCISE.REMAINING_TIMES_FOR_TODAY_"))  # 源 :1730
+	var lstr_buy: String = String(cm.get_lstr("EQUIPINFO.PURCHASE"))  # 源 :1807
+	var lstr_enemy: String = String(cm.get_lstr("STAGEDETAIL.ENEMY_LINEUP"))  # 源 :1834
+	var lstr_award: String = String(cm.get_lstr("STAGEDETAIL.MAY_BE_OBTAINED"))  # 源 :1848
 	ui["frame2"] = _sprite_center(parent, FRAME2_RES, Vector2(400.0, 205.0))
 	ui["frame3"] = _sprite_center(parent, String(res_info.get("frame", "")), Vector2(res_info.get("frame_pos", Vector2(400.0, 205.0))))
 	ui["title_bg"] = _scale9(parent, TITLE_BG_RES, 100, 0, Vector2(400.0, 355.0), Vector2(res_info.get("title_bg_size", Vector2(504.0, 12.0))))
@@ -72,19 +79,20 @@ static func build(parent: Node, info: Dictionary, res_info: Dictionary) -> Dicti
 	var detail_lbl: Label = _label(parent, String(info.get("detail", "")), Vector2(70.0, 290.0), C_WHITE, 21, Vector2(0.0, 0.5))
 	detail_lbl.visible = bool(info.get("is_key_stage", false)) or String(info.get("detail", "")) != ""
 	ui["detail"] = detail_lbl
-	ui["power_title"] = _label(parent, "体力", Vector2(70.0, 230.0), C_SECTION, 22, Vector2(0.0, 0.0))
+	ui["power_title"] = _label(parent, lstr_power, Vector2(70.0, 230.0), C_SECTION, 22, Vector2(0.0, 0.0))
 	ui["power_number"] = _label(parent, str(info.get("power", 0)), Vector2(170.0, 230.0), C_NUM, 22, Vector2(0.0, 0.0))
 	ui["power_icon"] = _sprite_local(parent, POWER_ICON_RES, to_godot(Vector2(200.0, 228.0)), POWER_ICON_SIZE)
-	ui["count_title"] = _label(parent, "今日剩余次数：%d" % left, Vector2(250.0, 230.0), C_SECTION, 22, Vector2(0.0, 0.0))
+	# 源 :1730 T(LSTR("EXERCISE.REMAINING_TIMES_FOR_TODAY_"), count) — key="今日剩余次数:"，%d 拼接（项目 LSTR 值冒号结尾）。
+	ui["count_title"] = _label(parent, lstr_left + str(left), Vector2(250.0, 230.0), C_SECTION, 22, Vector2(0.0, 0.0))
 	var cn: Label = _label(parent, str(left), Vector2(390.0, 230.0), C_NUM, 22, Vector2(0.0, 0.0))
 	cn.visible = false
 	ui["count_number"] = cn
 	ui["total_number"] = _label(parent, "/ " + str(info.get("count_limit", "??")), Vector2(410.0, 230.0), C_NUM, 22, Vector2(0.0, 0.0))
 	ui["reset"] = _texture_button(parent, RESET_RES, RESET_PRESS_RES, Vector2(500.0, 242.0), RESET_SIZE)
-	ui["reset_label"] = _label_local(ui["reset"] as TextureButton, "购买", Vector2(50.0, 25.0), C_RESET, 0)
+	ui["reset_label"] = _label_local(ui["reset"] as TextureButton, lstr_buy, Vector2(50.0, 25.0), C_RESET, 0)
 	ui["enemy_bg"] = _sprite_local(parent, ENEMY_BG_RES, to_godot(Vector2(90.0, 130.0)), Vector2.ZERO)
-	ui["enemy_title"] = _label(parent, "敌方阵容", Vector2(70.0, 157.0), C_SECTION, 22, Vector2(0.0, 0.0))
-	ui["award_title"] = _label(parent, "可能获得", Vector2(70.0, 77.0), C_SECTION, 22, Vector2(0.0, 0.0))
+	ui["enemy_title"] = _label(parent, lstr_enemy, Vector2(70.0, 157.0), C_SECTION, 22, Vector2(0.0, 0.0))
+	ui["award_title"] = _label(parent, lstr_award, Vector2(70.0, 77.0), C_SECTION, 22, Vector2(0.0, 0.0))
 	ui["go_button"] = _texture_button(parent, GO_BTN_RES, "", Vector2(res_info.get("go_btn_pos", Vector2(698.0, 80.0))), Vector2.ZERO)
 	var gs: Sprite2D = _sprite_local(ui["go_button"] as Node, GO_BTN_DISABLE_RES, Vector2.ZERO, Vector2.ZERO)
 	gs.visible = false
