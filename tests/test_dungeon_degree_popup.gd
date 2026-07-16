@@ -29,3 +29,37 @@ func test_setup_popup_does_not_crash() -> void:
 	popup.setup_popup(1, "test_boss", diffs, 80)
 	assert_gt(popup.container.get_child_count(), 0, "setup_popup 装配子节点（frame/close/按钮/vit）")
 	popup.free()
+
+
+# 照源 dungeon_map.lua:388-477 难度按钮只有 icon（无难度名 Label），难度区分由图标承担。
+# 原项目自造 DIFF_LABELS/DIFF_COLORS + name_lbl 是无源发明，本轮照源移除。
+func test_degree_button_has_no_name_label() -> void:
+	var popup := DungeonDegreePopup.new("dungeonDegree", {})
+	var vbox := popup._make_degree_button({"diff": 1, "unlock_level": 1, "vit": 10}, 1, true)
+	# vbox 第 0 子是 TextureButton(btn)，btn 内只 icon(TextureRect)，不应有 Label
+	var btn: TextureButton = vbox.get_child(0) as TextureButton
+	assert_ne(btn, null, "vbox 首子为 TextureButton")
+	var has_label_in_btn := false
+	for i in range(btn.get_child_count()):
+		if btn.get_child(i) is Label:
+			has_label_in_btn = true
+	assert_false(has_label_in_btn, "源 :388-477 难度按钮无难度名 Label（仅 icon + vit）")
+	# btn 内有 icon TextureRect
+	var has_icon := false
+	for i in range(btn.get_child_count()):
+		if btn.get_child(i) is TextureRect:
+			has_icon = true
+	assert_true(has_icon, "难度按钮含 icon TextureRect（源 :420-425）")
+	popup.free()
+
+
+# 照源 :376-382 text = boss.name or ""（无 fallback）；空名不显示"选择难度"自造文案。
+func test_title_no_fallback_when_empty() -> void:
+	var popup := DungeonDegreePopup.new("dungeonDegree", {})
+	var diffs := [{"diff": 1, "unlock_level": 1, "vit": 10}]
+	popup.setup_popup(1, "", diffs, 80)
+	# container 首子是 frame Panel，frame 首子是 title Label
+	var frame: Panel = popup.container.get_child(0) as Panel
+	var title: Label = frame.get_child(0) as Label
+	assert_eq(title.text, "", "源 :376-382 空名无 fallback（不自造选择难度）")
+	popup.free()

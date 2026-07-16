@@ -14,11 +14,7 @@ const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-cl
 const ICON_SIZE := Vector2(55.0, 55.0)
 const SEPARATION: int = 50
 const TITLE_COLOR := Color(0.91, 0.81, 0.07)               # 源 :382 ccc3(231,206,19)
-const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
-const LOCKED_COLOR := Color(0.5, 0.5, 0.5)
-# 源 dungeon_map.lua:596-602 diffLabels + diffColors
-const DIFF_LABELS := ["普通", "精英", "英雄", "噩梦"]
-const DIFF_COLORS := [Color(0.39, 0.78, 0.39), Color(0.39, 0.59, 1.0), Color(0.78, 0.39, 1.0), Color(1.0, 0.31, 0.31)]
+const GRAY_MODULATE := Color(0.4, 0.4, 0.4)                # 源 :467-469 setSpriteGray 近似
 
 const BTN_BG := "res://assets/ui/alpha/HVGA/act/act_select_bg.png"
 const BTN_BG_CHOSEN := "res://assets/ui/alpha/HVGA/act/act_select_bg_chosen.png"
@@ -50,8 +46,9 @@ func _create_frame(boss_name: String) -> void:
 	frame.position = FRAME_POS
 	frame.size = FRAME_SIZE
 	container.add_child(frame)
+	# 源 :376-382 text = boss.name or ""（无 fallback；boss_name 由 StageDungeon["Stage Name"] 提供）。
 	var title := Label.new()
-	title.text = boss_name if boss_name.length() > 0 else "选择难度"
+	title.text = boss_name
 	title.position = Vector2(0, 15)
 	title.size = Vector2(FRAME_SIZE.x, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -80,7 +77,8 @@ func _create_degree_buttons(difficulties: Array, player_level: int) -> void:
 		hbox.add_child(_make_degree_button(diff, diff_num, unlocked))
 
 
-## 源 :388-477 难度按钮（act_select_bg + icon + 难度名）+ vit 行（vit_number+vit_bg+vit_icon）。
+## 源 :388-477 难度按钮（act_select_bg + icon）+ vit 行（vit_number+vit_bg+vit_icon）。
+## 源按钮无难度名 Label（仅 icon + vit），难度区分由 icon 图标承担；setSpriteGray 锁定。
 func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBoxContainer:
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -92,7 +90,7 @@ func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBo
 	btn.custom_minimum_size = BTN_SIZE
 	btn.ignore_texture_size = true
 	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	btn.modulate = GRAY_MODULATE if not unlocked else Color(1, 1, 1)
+	btn.modulate = GRAY_MODULATE if not unlocked else Color(1, 1, 1)  # 源 :467-469 setSpriteGray
 	btn.disabled = not unlocked
 	btn.pressed.connect(Callable(self, "_on_degree_pressed").bind(diff))
 	var icon := TextureRect.new()
@@ -103,28 +101,21 @@ func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBo
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(icon)
-	var name_lbl := Label.new()
-	name_lbl.text = DIFF_LABELS[diff_num - 1]
-	name_lbl.position = Vector2(0, 70)
-	name_lbl.size = Vector2(BTN_SIZE.x, 30)
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_color_override("font_color", DIFF_COLORS[diff_num - 1] if unlocked else LOCKED_COLOR)
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(name_lbl)
 	vbox.add_child(btn)
-	# 源 :427-460 vit 行（拆出原 lbl 的体力部分，补 vit_bg/vit_icon）
+	# 源 :427-460 vit 行（vit_number + vit_bg + vit_icon）
 	vbox.add_child(_make_vit_row(diff, unlocked))
 	return vbox
 
 
 ## 源 dungeon_map.lua:427-460 vit_number(体力数) + vit_bg(act_comment_bg) + vit_icon(vitalityicon)。
-func _make_vit_row(diff: Dictionary, unlocked: bool) -> HBoxContainer:
+## 锁定态颜色由父 btn.modulate=GRAY_MODULATE 统一处理（源 :467-469 setSpriteGray 整 button）。
+func _make_vit_row(diff: Dictionary, _unlocked: bool) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 2)
 	var vit_num := Label.new()
 	vit_num.text = str(int(diff["vit"]))
-	vit_num.add_theme_color_override("font_color", VIT_NUM_COLOR if unlocked else LOCKED_COLOR)
+	vit_num.add_theme_color_override("font_color", VIT_NUM_COLOR)  # 源 :447 ccc3(233,214,181)
 	vit_num.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(vit_num)
 	var vit_bg := TextureRect.new()
