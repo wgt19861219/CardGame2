@@ -26,7 +26,10 @@ static func make(res_normal: String, res_pressed: String, center_pos: Vector2, l
 	if not label_text.is_empty():
 		var lbl := Label.new()
 		lbl.text = label_text
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
+		lbl.size = btn.size
+		lbl.position = Vector2.ZERO
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.add_theme_color_override("font_color", label_color)
 		lbl.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
 		lbl.add_theme_constant_override("outline_size", 2)
@@ -47,7 +50,10 @@ static func make_at(res_normal: String, res_pressed: String, top_left: Vector2, 
 	if not label_text.is_empty():
 		var lbl := Label.new()
 		lbl.text = label_text
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
+		lbl.size = btn.size
+		lbl.position = Vector2.ZERO
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.add_theme_color_override("font_color", label_color)
 		lbl.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
 		lbl.add_theme_constant_override("outline_size", 2)

@@ -265,9 +265,9 @@ func _make_button(text: String, cocos: Vector2, res: String, label_color: Color)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE; shade.visible = false
 	btn.add_child(shade)
 	var lbl := Label.new()
-	lbl.name = "Label"; lbl.text = text; lbl.set_anchors_preset(Control.PRESET_CENTER)
-	lbl.modulate = label_color; lbl.add_theme_font_size_override("font_size", 18)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.name = "Label"; lbl.text = text; lbl.size = btn.size; lbl.position = Vector2.ZERO
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; lbl.modulate = label_color
+	lbl.add_theme_font_size_override("font_size", 18); lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(lbl)
 	return btn
 
