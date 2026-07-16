@@ -36,12 +36,13 @@ const CELL_DX: float = 103.0   # 源 :233 dx
 const CELL_DY: float = 101.0   # 源 :233 dy
 const GRID_PAD_X: float = 12.0   # 源 :393 w=103*5+12
 const GRID_PAD_Y: float = 14.0   # 源 :394 h=101*ha+14
-# 源 createRewardItem board 内偏移（cocos (51,52) 等 → godot board 内左上原点，y 翻转）
-const ICON_CENTER_LOCAL: Vector2 = Vector2(51.0, 78.0)    # 源 icon ccp(51,52)
-const AMOUNT_LOCAL: Vector2 = Vector2(92.0, 108.0)        # 源 amount ccp(92,22) anchor(1,0.5)
-const VIP_BG_TOPLEFT_LOCAL: Vector2 = Vector2(0.0, 28.0)  # 源 vip_bg ccp(0,102) anchor(0,1)
-const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 50.0)        # 源 vipTag ccp(24,80) rot -45
-const LIGHT_CENTER_LOCAL: Vector2 = Vector2(51.0, 80.0)   # 源 light ccp(51,50)
+# 源 createRewardItem board 内偏移（cocos (51,52) 等 → godot board 内左上原点，y 翻转）。
+# board 显示高 101.5 = raw 130 / CONTENT_SCALE 1.28125；y 翻转用 101.5 - cocos_y（非 raw 130）。
+const ICON_CENTER_LOCAL: Vector2 = Vector2(51.0, 49.5)    # 源 icon ccp(51,52), y=101.5-52
+const AMOUNT_LOCAL: Vector2 = Vector2(92.0, 79.5)         # 源 amount ccp(92,22), y=101.5-22
+const VIP_BG_TOPLEFT_LOCAL: Vector2 = Vector2(0.0, -0.5)  # 源 vip_bg ccp(0,102), y=101.5-102
+const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 21.5)        # 源 vipTag ccp(24,80), y=101.5-80
+const LIGHT_CENTER_LOCAL: Vector2 = Vector2(51.0, 51.5)   # 源 light ccp(51,50), y=101.5-50
 # 颜色（源 ccc3）
 const TITLE_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
 const SUBHEAD_PRE_COLOR: Color = Color(238.0 / 255.0, 204.0 / 255.0, 119.0 / 255.0)

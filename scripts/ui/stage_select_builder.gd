@@ -105,9 +105,11 @@ static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant) 
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.size = tex.get_size()
+	# 章节 bg/route 源 createSprite 无 fix_size → 显示尺寸=纹理/CS（笔误漏 /CS，同 _make_centered_at）。
+	var display_size: Vector2 = tex.get_size() / CONTENT_SCALE
+	node.size = display_size
 	var p: Array = cocos_pos if cocos_pos is Array else [400, 212]
-	node.position = to_godot(float(p[0]), float(p[1])) - tex.get_size() * 0.5
+	node.position = to_godot(float(p[0]), float(p[1])) - display_size * 0.5
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
 
@@ -256,7 +258,11 @@ static func create_mode_buttons(container: Control, current_mode: String, cm: Va
 		var lbl := Label.new()
 		var lstr_key: String = String(cfg["lstr"])
 		lbl.text = cm.get_lstr(lstr_key) if cm != null else lstr_key
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
+		# 方案 A：label 铺满 btn + 居中对齐（替代 PRESET_CENTER，避免字体错位）。
+		lbl.size = btn.size
+		lbl.position = Vector2.ZERO
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.add_theme_font_size_override("font_size", 18)   # 源 :773 size=18
 		lbl.add_theme_color_override("font_color", Color.WHITE)
 		lbl.add_theme_color_override("font_outline_color", Color.BLACK)
