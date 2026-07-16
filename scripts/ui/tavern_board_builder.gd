@@ -19,17 +19,14 @@ const SCROLL_CX: float = 109.0          # 源 scroll_board 子节点 x=109（com
 const SLIDE_OFFSET: float = 320.0       # 源 CCMoveTo(0,320)
 const SLIDE_DURATION: float = 0.2       # 源 CCMoveTo 0.2 秒
 const RES_DIR: String = "res://assets/ui/alpha/HVGA/"
+const LIGHT_ROTATE_SEC: float = 5.0          # 源 playLightAnim CCRotateBy(5,360) :584
+const FULL_CIRCLE_DEG: float = 360.0         # 源 :584 旋转一圈度数
 
 # res 映射（照源 parameter/tavernres.lua）
 const BOARD_BG: Dictionary = {"bronze": "tavern_bg_1.png", "gold": "tavern_bg_3.png", "magic": "tavern_bg_2.png"}
 const BOX_RES: Dictionary = {"bronze": "tavern_bg_chest_1.png", "gold": "tavern_bg_chest_3.png", "magic": "tavern_bg_chest_4.png"}
 const LIGHT_RES: Dictionary = {"gold": "tavern_light_rotate_3.png", "magic": "tavern_light_rotate_2.png"}
 const IS_LIGHT_VISIBLE: Dictionary = {"bronze": false, "gold": true, "magic": true}
-const TEN_PROMPT: Dictionary = {   # 源 tavernres.ten_prompt LSTR 译文
-	"bronze": "十连必得一件蓝色物品",
-	"gold": "十连必得英雄",
-	"magic": "可获得多个灵魂石",
-}
 const MAGIC_BOX_BG_RES: String = "tavern_magicsoul_mark1.png"   # 源 magic box_bg :979
 const COST_BG_RES: String = "tavern_cost_bg.png"                # 源 cost_bg :702
 const COST_FRAME_RES: String = "tavern_cost_frame.png"          # 源 one_bg/ten_bg Scale9
@@ -58,8 +55,9 @@ const DROP_BG_MONTH_SIZE: Vector2 = Vector2(150.0, 75.0)  # 源 drop_bg_month
 # 建 board（container 中心 = godot_center）。
 # cost_info: {once_cost, ten_cost, once_pay, ten_pay}（TavernData 读）。
 # handlers: {on_check: Callable, on_arrow: Callable, on_once: Callable, on_ten: Callable}（均已 bind key）。
-# 返回 {container, scroll_board, check_btn, arrow_btn, once_btn, ten_btn, once_cost_lbl, ten_cost_lbl, box}。
-static func create_board(key: String, godot_center: Vector2, cost_info: Dictionary, handlers: Dictionary) -> Dictionary:
+# texts: {check_label, once_label, ten_label, day_title, month_title, ten_prompt_text}（panel LSTR 化后注入）。
+# 返回 {container, scroll_board, check_btn, arrow_btn, once_btn, ten_btn, once_cost_lbl, ten_cost_lbl, box, light}。
+static func create_board(key: String, godot_center: Vector2, cost_info: Dictionary, handlers: Dictionary, texts: Dictionary) -> Dictionary:
 	var is_magic: bool = key == "magic"
 	var container := Control.new()
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -90,7 +88,7 @@ static func create_board(key: String, godot_center: Vector2, cost_info: Dictiona
 	var scroll := Control.new()
 	scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	clip.add_child(scroll)
-	var nodes := _build_scroll_nodes(key, scroll, cost_info, handlers, is_magic)
+	var nodes := _build_scroll_nodes(key, scroll, cost_info, handlers, is_magic, texts)
 	return {
 		"container": container,
 		"scroll_board": scroll,
@@ -119,10 +117,22 @@ static func collapse(scroll: Control) -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
+# 源 playLightAnim :577-590 — gold/magic light CCRotateBy(5,360) RepeatForever（bronze 无 light）。
+# TextureRect rotation 绕 pivot_offset，照源 Sprite anchor(0.5,0.5) 中心 → 设 pivot_offset=size/2。
+static func play_light_anim(board: Dictionary) -> void:
+	var light: TextureRect = board.get("light", null)
+	if light == null:
+		return
+	light.pivot_offset = light.size * 0.5
+	var tw: Tween = light.create_tween().set_loops()
+	tw.tween_property(light, "rotation", deg_to_rad(FULL_CIRCLE_DEG), LIGHT_ROTATE_SEC)
+
+
 # ---- 内部 ----
 
 # 源 createCommonLayer:653 / createMagicLayer:949 ui_info 13 节点。
-static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Dictionary, handlers: Dictionary, is_magic: bool) -> Dictionary:
+# texts 由 panel 用 cm.get_lstr 准备后注入（builder 不查 LSTR，保持纯结构）。
+static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Dictionary, handlers: Dictionary, is_magic: bool, texts: Dictionary) -> Dictionary:
 	var nodes: Dictionary = {}
 	var cx: float = 110.0 if is_magic else SCROLL_CX
 	# light（源 :664 ccp(109,270) / magic :965 ccp(110,250)，visible=is_light_visible）
@@ -148,7 +158,7 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 	scroll.add_child(cost_bg)
 	# check + check_label "查看"（源 :712 ccp(109,60) + :737 RECHARGE.VIEW）
 	var check := _button(CHECK_RES, CHECK_PRESS_RES, cx, 60.0)
-	_center_label("查看", check)
+	_center_label(String(texts.get("check_label", "查看")), check)
 	check.pressed.connect(handlers["on_check"])
 	scroll.add_child(check)
 	nodes["check"] = check
@@ -159,14 +169,14 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 	nodes["arrow"] = arrow
 	# magic drop_bg 4 组（源 createMagicLayer:1068-1147，heroIcons 由 panel _fill_magic_heroicons 运行时填）
 	if is_magic:
-		_build_magic_dropbg(scroll)
+		_build_magic_dropbg(scroll, texts)
 	# one_bg + one_Icon + one_cost + one_buy（源 :759-832，magic 无单抽跳过）
 	if not is_magic:
 		var once_pay: String = String(cost_info.get("once_pay", "Diamond"))
 		var once_cost_lbl := _cost_row(scroll, SCROLL_CX, -87.0, once_pay, int(cost_info.get("once_cost", 0)))
 		nodes["once_cost"] = once_cost_lbl
 		var one_buy := _button(ONE_BUY_RES, ONE_BUY_PRESS_RES, SCROLL_CX, -130.0)
-		_center_label("抽1次", one_buy)
+		_center_label(String(texts.get("once_label", "购买1个")), one_buy)
 		one_buy.pressed.connect(handlers["on_once"])
 		scroll.add_child(one_buy)
 		nodes["once_buy"] = one_buy
@@ -176,7 +186,7 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 	nodes["ten_cost"] = ten_cost_lbl
 	# ten_prompt（源 :873 ccp(108,-180) / magic combo_prompt :1188 ccp(110,-183)）
 	var prompt := Label.new()
-	prompt.text = String(TEN_PROMPT[key])
+	prompt.text = String(texts.get("ten_prompt_text", ""))
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.size = Vector2(CLIP_W, 20.0)
 	prompt.position = _scroll_pos(108.0, -180.0, prompt.size)
@@ -186,7 +196,7 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(prompt)
 	var ten_buy := _button(TEN_BUY_RES, TEN_BUY_PRESS_RES, cx, -260.0)
-	_center_label("抽10次", ten_buy)
+	_center_label(String(texts.get("ten_label", "购买10个")), ten_buy)
 	ten_buy.pressed.connect(handlers["on_ten"])
 	scroll.add_child(ten_buy)
 	nodes["ten_buy"] = ten_buy
@@ -194,7 +204,7 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 
 
 # 源 createMagicLayer:1068-1147 magic drop_bg 4 组背景框 + 2 title（heroIcons 由 panel 填）。
-static func _build_magic_dropbg(scroll: Control) -> void:
+static func _build_magic_dropbg(scroll: Control, texts: Dictionary) -> void:
 	var left_bg := _scale9(RES_DIR + MAGIC_HERO_BG_RES, DROP_BG_LEFT_SIZE, DROP_BG_CAP)
 	left_bg.name = "drop_bg_left"
 	left_bg.position = _scroll_pos(82.0, 175.0, left_bg.size)
@@ -207,12 +217,12 @@ static func _build_magic_dropbg(scroll: Control) -> void:
 	day_bg.name = "drop_bg_day"
 	day_bg.position = _scroll_pos(107.0, -130.0, day_bg.size)
 	scroll.add_child(day_bg)
-	_drop_title(scroll, "今日主打", 107.0, -106.0)
+	_drop_title(scroll, String(texts.get("day_title", "今日热点")), 107.0, -106.0)
 	var month_bg := _scale9(RES_DIR + MAGIC_HERO_BG_RES, DROP_BG_MONTH_SIZE, DROP_BG_CAP)
 	month_bg.name = "drop_bg_month"
 	month_bg.position = _scroll_pos(107.0, -52.0, month_bg.size)
 	scroll.add_child(month_bg)
-	_drop_title(scroll, "本周热门", 107.0, -30.0)
+	_drop_title(scroll, String(texts.get("month_title", "本周热点")), 107.0, -30.0)
 
 
 # 源 drop_day_title/drop_month_title Label（:1113 "今日主打" / :1139 "本周热门"）。

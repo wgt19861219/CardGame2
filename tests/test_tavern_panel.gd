@@ -176,3 +176,35 @@ func test_gold_draw_produces() -> void:
 	assert_eq(pd.diamond, 712, "额度用完扣 288 钻")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 源 LSTR 文案注入 builder（照源 tavern.lua + tavernres.lua）：
+# check_label=RECHARGE.VIEW "查看" / ten_label=TAVERN.BUY__D%10 "购买10个" /
+# ten_prompt_text=TAVERNRES.HERO_IS "十连抽必得英雄"（gold）。
+func test_board_texts_lstr_injection() -> void:
+	var panel := _make_panel(Node.new())
+	var texts: Dictionary = panel._build_board_texts("gold")
+	assert_eq(String(texts["check_label"]), "查看", "check_label = RECHARGE.VIEW 译文")
+	assert_eq(String(texts["once_label"]), "购买1个", "once_label = TAVERN.BUY__D % 1")
+	assert_eq(String(texts["ten_label"]), "购买10个", "ten_label = TAVERN.BUY__D % 10")
+	assert_eq(String(texts["day_title"]), "今日热点", "day_title = TAVERN.TODAYS_HIGHLIGHT")
+	assert_eq(String(texts["month_title"]), "本周热点", "month_title = TAVERN.HOT_IN_THIS_WEEK")
+	assert_eq(String(texts["ten_prompt_text"]), "十连抽必得英雄", "ten_prompt_text = TAVERNRES.HERO_IS_...")
+	panel.queue_free()
+
+
+# 源 playLightAnim :577-590 — gold/magic light CCRotateBy(5,360) RepeatForever。
+func test_light_rotate_anim_running() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root)
+	var gold: Dictionary = panel._boards["Gold"]
+	var light: TextureRect = gold.get("light", null)
+	assert_not_null(light, "Gold board 有 light 节点（源 is_light_visible=true）")
+	await get_tree().create_timer(0.2).timeout   # 让 light rotation tween 跑几帧
+	assert_true(light.rotation > 0.0, "Gold light 旋转动画启动（rotation > 0）")
+	var bronze: Dictionary = panel._boards["Bronze"]
+	var bronze_light: TextureRect = bronze.get("light", null)
+	assert_null(bronze_light, "Bronze board 无 light 节点（源 is_light_visible=false）")
+	panel.remove_window()
+	root.queue_free()

@@ -31,6 +31,28 @@ const RESULT_POS: Vector2 = Vector2(380.0, 420.0)
 const STATUS_POS: Vector2 = Vector2(380.0, 240.0)
 const PREVIEW_POS: Vector2 = Vector2(380.0, 460.0)
 const REFRESH_INTERVAL_SEC: float = 1.0
+# 源 LSTR key（照源 tavern.lua + tavernres.lua）。cm 缺失时 fallback 中文（_lstr 内返 key，
+# 由 panel 判 key==lstr 走 fallback）。
+const LSTR_CHECK: StringName = &"RECHARGE.VIEW"                # 源 :737 check_label
+const LSTR_BUY_D: StringName = &"TAVERN.BUY__D"                # 源 :824/:910 once/ten_buy_label
+const LSTR_DAY_TITLE: StringName = &"TAVERN.TODAYS_HIGHLIGHT"  # 源 :1113 drop_day_title
+const LSTR_MONTH_TITLE: StringName = &"TAVERN.HOT_IN_THIS_WEEK" # 源 :1139 drop_month_title
+# 源 tavernres.ten_prompt（:49-54）TAVERNRES.* per box key
+const LSTR_TEN_PROMPT: Dictionary = {
+	"bronze": &"TAVERNRES.ONE_BLUE_ITEM_IS_DOOMED_TO_BE_GOT_IF_YOU_DRAW_10TIMES_AT_ONE_TIME",
+	"gold": &"TAVERNRES.HERO_IS_DOOMED_TO_BE_GOT_IF_YOU_DRAW_10TIMES_AT_ONE_TIME",
+	"magic": &"TAVERNRES.CAN_GET_MULTIPLE_SOUL_STONES",
+}
+# LSTR key 缺失时的中文 fallback（cm.get_lstr 缺失返 key 本身，panel 判 key==val 走 fallback）
+const FALLBACK_CHECK: String = "查看"
+const FALLBACK_BUY_FMT: String = "购买%d个"
+const FALLBACK_DAY_TITLE: String = "今日热点"
+const FALLBACK_MONTH_TITLE: String = "本周热点"
+const FALLBACK_TEN_PROMPT: Dictionary = {
+	"bronze": "十连抽必得蓝色物品",
+	"gold": "十连抽必得英雄",
+	"magic": "可获大量灵魂石",
+}
 
 var _cm: Variant = null
 var _player: PlayerData = null
@@ -94,9 +116,11 @@ func _create_close_button() -> void:
 
 # 源 createItemLayer:1371 — 3 卡池 board（bronze/gold/magic），每 board = createBaseBoard +
 # createCommonLayer/createMagicLayer（scroll_board 13 节点 + 滑动 + magic drop_bg）。per-board check/arrow/one_buy/ten_buy。
+# 末尾 playLightAnim（源 :1397）gold/magic light 旋转。
 func _create_boards() -> void:
 	for i in POOL_KEYS.size():
 		var key: String = POOL_KEYS[i]
+		var src_key: String = _src_key(key)
 		var center: Vector2 = Vector2(BOARD_CENTER_X + BOARD_DX * i, BOARD_CENTER_Y)
 		var cost_info: Dictionary = _read_cost_info(key)
 		var handlers: Dictionary = {
@@ -105,9 +129,39 @@ func _create_boards() -> void:
 			"on_once": _on_once_pressed.bind(key),
 			"on_ten": _on_ten_pressed.bind(key),
 		}
-		var board: Dictionary = TavernBoardBuilder.create_board(_src_key(key), center, cost_info, handlers)
+		var texts: Dictionary = _build_board_texts(src_key)
+		var board: Dictionary = TavernBoardBuilder.create_board(src_key, center, cost_info, handlers, texts)
 		container.add_child(board["container"])
 		_boards[key] = board
+		TavernBoardBuilder.play_light_anim(board)   # 源 :1397 createItemLayer 末尾调 playLightAnim
+
+
+# 源 LSTR 文案准备（cm.get_lstr 缺失走 fallback 中文）。texts 注入 builder（builder 不查 LSTR）。
+func _build_board_texts(src_key: String) -> Dictionary:
+	return {
+		"check_label": _lstr_or(LSTR_CHECK, FALLBACK_CHECK),
+		"once_label": _lstr_or(LSTR_BUY_D, FALLBACK_BUY_FMT) % 1,
+		"ten_label": _lstr_or(LSTR_BUY_D, FALLBACK_BUY_FMT) % 10,
+		"day_title": _lstr_or(LSTR_DAY_TITLE, FALLBACK_DAY_TITLE),
+		"month_title": _lstr_or(LSTR_MONTH_TITLE, FALLBACK_MONTH_TITLE),
+		"ten_prompt_text": _ten_prompt_text(src_key),
+	}
+
+
+# 源 tavernres.ten_prompt（:49-54）TAVERNRES.* per box key。
+func _ten_prompt_text(src_key: String) -> String:
+	var lstr_key: StringName = LSTR_TEN_PROMPT.get(src_key, &"")
+	if lstr_key == &"":
+		return String(FALLBACK_TEN_PROMPT.get(src_key, ""))
+	return _lstr_or(lstr_key, String(FALLBACK_TEN_PROMPT.get(src_key, "")))
+
+
+# cm.get_lstr 缺失（返 key 本身）→ fallback。key 用 StringName 避免 String 比较开销。
+func _lstr_or(key: StringName, fallback: String) -> String:
+	if _cm == null or not _cm.has_method("get_lstr"):
+		return fallback
+	var v: String = _cm.get_lstr(String(key))
+	return v if v != String(key) else fallback
 
 
 func _src_key(pool_key: String) -> String:
@@ -261,7 +315,12 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 	TavernData.refresh_first_tavern(p_player, tavern_type, is_ten)
 	_result_label.text = "产出已展示"
 	var loot_popup := PopTavernLoot.new("poptavernloot", {})
-	loot_popup.setup_loot(r["loots"], p_player.cm, tavern_type.to_lower())
+	# 源 doTavernReply :198 create({type, times, loots, addition={cost}})：cost 来自当前抽卡消耗。
+	var popup_cost: Dictionary = {"pay": "Diamond", "number": 0}
+	if not is_free:
+		var row: Dictionary = TavernData.get_tavern_info(tavern_type, is_ten, false, 0, _cm)
+		popup_cost = {"pay": String(row.get("Cost Type", "Diamond")), "number": int(row.get("Cost", 0))}
+	loot_popup.setup_loot(r["loots"], p_player.cm, tavern_type.to_lower(), "ten" if is_ten else "one", popup_cost)
 	loot_popup.show_window(get_parent())
 	drawn.emit()
 	_refresh_countdown_label()

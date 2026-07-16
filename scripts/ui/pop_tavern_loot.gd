@@ -16,9 +16,28 @@ const GRID_ORIGIN: Vector2 = Vector2(190.0, 150.0)   # 源 getLootPos :417-422 �
 const GRID_CELL: Vector2 = Vector2(100.0, 105.0)     # 源 dx,dy
 const GRID_COLS: int = 5                              # 源 :424 i%5
 const SINGLE_POS: Vector2 = Vector2(400.0, 280.0)    # 源 单抽居中
-const AGAIN_BTN_POS: Vector2 = Vector2(310.0, 500.0)
-const CLOSE_BTN_POS: Vector2 = Vector2(508.0, 500.0)
-const BTN_SIZE: Vector2 = Vector2(180.0, 49.0)
+# 源 playButtonAnim :781 tavern ccp(310,50) / :820 ok ccp(508,50) — Cocos 800×480 中心坐标，_g() 转 godot。
+const AGAIN_BTN_CENTER: Vector2 = Vector2(310.0, 50.0)
+const CLOSE_BTN_CENTER: Vector2 = Vector2(508.0, 50.0)
+# 源 :741-772 status==0 cost 行（消费展示）：cost_icon + cost 右对齐到 x=240（godot 320）。
+const COST_ROW_RIGHT_X: float = 240.0   # 源 cost anchor(1,0.5) ccp(240,50)
+const COST_ROW_Y: float = 50.0          # 源 cost/ccp(50)/cost_icon ccp(48)
+const COST_ICON_RES_GOLD: String = "res://assets/ui/alpha/HVGA/task_gold_icon_2.png"
+const COST_ICON_RES_RMB: String = "res://assets/ui/alpha/HVGA/task_rmb_icon_2.png"
+const COST_BG_RES: String = "res://assets/ui/alpha/HVGA/tip_detail_bg.png"   # 源 :743 tip_detail_bg.png scalexy y=2
+# 源 :850-863 reward_label（dpText，金黄色 ccc3(231,206,19)）ccp(374,375)。
+const REWARD_LABEL_CENTER: Vector2 = Vector2(374.0, 375.0)
+const REWARD_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
+# LSTR key（照源 poptavernloot.lua :662-674）。CHATCONFIG.SHOW_REWAD_BY_CHEST 源 zh-CN.lua 数据缺，
+# 走中文 fallback（源 en-US "Successfully opened the treasure chest. "）。
+const LSTR_DRAW_ONCE: StringName = &"POPTAVERNLOOT.DRAW_ONCE_AGAIN"   # 源 :662
+const LSTR_DRAW_TEN: StringName = &"POPTAVERNLOOT.DRAW_10_AGAIN"      # 源 :664
+const LSTR_CONFIRM: StringName = &"CHATCONFIG.CONFIRM"               # 源 :673 okTxt
+const LSTR_OPEN_CHEST: StringName = &"CHATCONFIG.SHOW_REWAD_BY_CHEST" # 源 :674 dpText（源拼写 REWAD）
+const FALLBACK_DRAW_ONCE: String = "再抽一次"
+const FALLBACK_DRAW_TEN: String = "再抽十次"
+const FALLBACK_CONFIRM: String = "确定"
+const FALLBACK_OPEN_CHEST: String = "成功打开宝箱"   # 源 zh-CN.lua 缺 SHOW_REWAD 译文，走中文 fallback
 const AGAIN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_1.png"   # 源 playButtonAnim :778 tavern 按钮（再抽一次）
 const AGAIN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_2.png"   # 源 :789（press）
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"   # 源 :817 ok 按钮（关闭/确认）
@@ -54,23 +73,29 @@ const HERO_BURST_QUALITY: int = 6                  # 源 :573 hero → playBurst
 const FULL_CIRCLE_DEG: float = 360.0               # 源 :486 旋转一圈度数
 
 var box_type: String = ""
+var times: String = "one"   # 源 create :213 self.times = times（"one"/"ten"）
+var cost_info: Dictionary = {}   # 源 :214 self.cost = addition.cost（{pay, number}），status==0 cost 行用
 var _cm: Variant = null
 var _loot_icons: Array[Control] = []
 var _loot_targets: Array[Vector2] = []
 
 
 # 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
-# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（AGAIN/CLOSE_BTN y=500 超 Cocos 480 边界为 Godot-native 不转）。
 func _g(pos: Vector2) -> Vector2:
 	return BattleViewCoords.to_godot(pos.x, pos.y)
 
 
-func setup_loot(loots: Array, p_cm: Variant, p_box_type: String = "") -> void:
+# 源 create（:202-237）：loots + addition.cost + times。单机化 status 固定 0（非 EveryDayHappy 活动）。
+func setup_loot(loots: Array, p_cm: Variant, p_box_type: String = "", p_times: String = "one", p_cost_info: Dictionary = {}) -> void:
 	box_type = p_box_type
+	times = p_times
+	cost_info = p_cost_info
 	_cm = p_cm
 	setup()
 	_aggregate(loots, p_cm)
 	_create_buttons()
+	_create_cost_row()
+	_create_reward_label()
 
 
 # 聚合同 id（源 throwLoots :167-200 合并）→ icon 初始 scale0+bpos（源 createLootAnim :535-536 初始态）。
@@ -99,22 +124,87 @@ func _loot_pos(index: int, is_single: bool) -> Vector2:
 	return _g(Vector2(GRID_ORIGIN.x + GRID_CELL.x * col, GRID_ORIGIN.y + GRID_CELL.y * row))
 
 
+# 源 playButtonAnim（:656-1044）status==0 分支：cost 行 + tavern/tavern_press（tvText 金黄）+ ok/ok_press（okTxt）+ reward_label（dpText 金黄）。
+# tvText 单/十连分支（源 :661-668）：one→DRAW_ONCE_AGAIN / ten→DRAW_10_AGAIN / magic 强制 once。
 func _create_buttons() -> void:
-	# 源 playButtonAnim :774-812 tavern 按钮（tavern_button 底图 + tvText 金黄 ccc3(231,206,19)）/ :813-849 ok 按钮（tavern_button_normal + okTxt=CONFIRM）
-	var again_text: String = _cm.get_lstr("POPTAVERNLOOT.DRAW_ONCE_AGAIN") if _cm else "再抽一次"
-	var again_tex: Texture2D = load(AGAIN_RES) as Texture2D
-	var again: TextureButton = UiButton.make_at(AGAIN_RES, AGAIN_PRESS_RES, AGAIN_BTN_POS, again_text, AGAIN_COLOR)
-	again.size = again_tex.get_size()   # 照源 Sprite 纹理原始尺寸（点击区 + 文字居中 ccp(64,25)）
+	var tv_text: String = _tv_text()
+	var again: TextureButton = UiButton.make(AGAIN_RES, AGAIN_PRESS_RES, _g(AGAIN_BTN_CENTER), tv_text, AGAIN_COLOR)
 	again.pressed.connect(_on_again)
 	container.add_child(again)
-	var close_text: String = _cm.get_lstr("CHATCONFIG.CONFIRM") if _cm else "确认"   # 源 okTxt status=0
-	var close_tex: Texture2D = load(CLOSE_RES) as Texture2D
-	var close: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS, close_text)
-	close.size = close_tex.get_size()
+	var close_text: String = _lstr_or(LSTR_CONFIRM, FALLBACK_CONFIRM)
+	var close: TextureButton = UiButton.make(CLOSE_RES, CLOSE_PRESS_RES, _g(CLOSE_BTN_CENTER), close_text)
 	close.pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_click_feedback")   # 源 tavern.clickCloseLoots（soundres.lua:292）
 		remove_window())
 	container.add_child(close)
+
+
+# 源 :661-668 tvText：times=="one"→DRAW_ONCE_AGAIN / "ten"→DRAW_10_AGAIN / magic 强制 once。
+func _tv_text() -> String:
+	if times == "ten" and box_type != "magic":
+		return _lstr_or(LSTR_DRAW_TEN, FALLBACK_DRAW_TEN)
+	return _lstr_or(LSTR_DRAW_ONCE, FALLBACK_DRAW_ONCE)
+
+
+# 源 playButtonAnim :741-772 status==0 cost 行：cost_bg + cost_icon + cost Label。
+# 源 :1015-1019 后处理：cost_icon+cost 右对齐 x=240，cost_bg 居中包裹。简化：cost_icon+cost 紧贴右对齐。
+func _create_cost_row() -> void:
+	if cost_info.is_empty():
+		return   # 单机化未传 cost（panel setup_loot 默认空）→ 不显消费行
+	var pay: String = String(cost_info.get("pay", "Diamond"))
+	var cost_val: int = int(cost_info.get("number", 0))
+	var godot_right: Vector2 = _g(Vector2(COST_ROW_RIGHT_X, COST_ROW_Y))
+	# cost Label 右对齐到 godot_right.x，size 估算（数字位数*12 + 8）
+	var cost_str: String = str(cost_val)
+	var cost_w: float = float(cost_str.length()) * 12.0 + 8.0
+	var cost_lbl := Label.new()
+	cost_lbl.text = cost_str
+	cost_lbl.size = Vector2(cost_w, 20.0)
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cost_lbl.position = Vector2(godot_right.x - cost_w, godot_right.y - 10.0)
+	cost_lbl.add_theme_color_override("font_color", Color.WHITE)
+	cost_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	cost_lbl.add_theme_constant_override("outline_size", 1)
+	cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(cost_lbl)
+	# cost_icon 紧贴 cost 左侧（源 anchor 1,0.5）
+	var icon_res: String = COST_ICON_RES_RMB if pay == "Diamond" else COST_ICON_RES_GOLD
+	if not ResourceLoader.exists(icon_res):
+		return
+	var icon_tex: Texture2D = load(icon_res) as Texture2D
+	var icon := TextureRect.new()
+	icon.texture = icon_tex
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.size = icon_tex.get_size() if icon_tex != null else Vector2(20.0, 20.0)
+	if pay != "Gold":
+		icon.scale = Vector2(1.2, 1.2)   # 源 :756 钻石 icon scale 1.2
+	icon.position = Vector2(godot_right.x - cost_w - icon.size.x, godot_right.y - icon.size.y * 0.5)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(icon)
+
+
+# 源 playButtonAnim :850-863 reward_label（dpText 金黄 ccc3(231,206,19) ccp(374,375)）。
+# status==0 dpText=CHATCONFIG.SHOW_REWAD_BY_CHEST（源拼写 REWAD）。zh-CN.lua 源数据缺译文 → 走中文 fallback。
+func _create_reward_label() -> void:
+	var text: String = _lstr_or(LSTR_OPEN_CHEST, FALLBACK_OPEN_CHEST)
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.size = Vector2(200.0, 20.0)
+	lbl.position = _g(REWARD_LABEL_CENTER) - lbl.size * 0.5
+	lbl.add_theme_color_override("font_color", REWARD_COLOR)
+	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	lbl.add_theme_constant_override("outline_size", 1)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(lbl)
+
+
+# cm.get_lstr 缺失（返 key 本身）→ fallback。
+func _lstr_or(key: StringName, fallback: String) -> String:
+	if _cm == null or not _cm.has_method("get_lstr"):
+		return fallback
+	var v: String = _cm.get_lstr(String(key))
+	return v if v != String(key) else fallback
 
 
 func _on_again() -> void:
