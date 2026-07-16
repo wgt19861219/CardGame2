@@ -15,6 +15,18 @@ const TAB_BACK: String = "back"
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 
+# ── 文本 LSTR key（源 battleprepare.lua:1870 BATTLEPREPARE.WHOLE / :1915 UNIT.FRONT_ROW /
+# :1960 UNIT.MIDDLE_ROW / :2005 UNIT.REAR_ROW / :2256 BATTLEPREPARE.COMBAT 战斗力标题 /
+# :2241 CHATCONFIG.CONFIRM 确认开战按钮）──
+const LSTR_TAB_ALL: String = "BATTLEPREPARE.WHOLE"
+const LSTR_TAB_FRONT: String = "UNIT.FRONT_ROW"
+const LSTR_TAB_MIDDLE: String = "UNIT.MIDDLE_ROW"
+const LSTR_TAB_BACK: String = "UNIT.REAR_ROW"
+const LSTR_COMBAT: String = "BATTLEPREPARE.COMBAT"     # 源 gs_title「战斗力」标题
+const LSTR_CONFIRM: String = "CHATCONFIG.CONFIRM"       # 源 conform 开始战斗按钮
+const LSTR_NOTENOUGH: String = "BATTLEPREPARE.PLEASE_SELECT_BATTLE_HERO"  # 源 :279 toast
+const LSTR_SAME_NAME: String = "BATTLEPREPARE.HEROES_OF_THE_SAME_NAME_CAN_NOT_BE_USED_IN_ONE_FIGHT"  # 源 :743
+
 var stage_id: int = 0
 var player: Variant = null
 var mgr: Variant = null
@@ -68,10 +80,10 @@ func _build_ui() -> void:
 	# 返回按钮
 	var back: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, Vector2(20.0, 15.0))  # 左上角留小边（用户偏好更靠左上角）
 	back.pressed.connect(_on_back_pressed); add_child(back)
-	# 分类 tab
+	# 分类 tab（源 :1870-2005 竖排 classbtn，本项目横排简化；标签照源 LSTR）
 	var tab_box := HBoxContainer.new(); tab_box.position = Vector2(10, 50); tab_box.size = Vector2(400, 30)
 	for tab in [TAB_ALL, TAB_FRONT, TAB_MIDDLE, TAB_BACK]:
-		var btn := Button.new(); btn.text = tab; btn.set_meta("tab", tab)
+		var btn := Button.new(); btn.text = _tab_label(tab); btn.set_meta("tab", tab)
 		btn.pressed.connect(_on_tab_pressed.bind(tab))
 		tab_box.add_child(btn)
 	add_child(tab_box)
@@ -89,10 +101,10 @@ func _build_ui() -> void:
 		slot.position = Vector2(160 + i * 75, 410); slot.size = Vector2(70, 70)
 		slot.set_meta("slot_index", i)
 		_team_slots.append(slot); add_child(slot)
-	# gs Label
-	_gs_label = Label.new(); _gs_label.text = "GS: 0"; _gs_label.position = Vector2(10, 480); add_child(_gs_label)
-	# 开始战斗按钮
-	_go_button = Button.new(); _go_button.text = "开战"; _go_button.position = Vector2(600, 410); _go_button.size = Vector2(100, 50)
+	# gs Label（源 :2256-2270 gs_title=战斗力 + gs 数字，本项目合并单标签）
+	_gs_label = Label.new(); _gs_label.text = "%s: 0" % cm.get_lstr(LSTR_COMBAT); _gs_label.position = Vector2(10, 480); add_child(_gs_label)
+	# 开始战斗按钮（源 :2241 conform=确定）
+	_go_button = Button.new(); _go_button.text = cm.get_lstr(LSTR_CONFIRM); _go_button.position = Vector2(600, 410); _go_button.size = Vector2(100, 50)
 	_go_button.pressed.connect(_on_go_pressed); add_child(_go_button)
 	_refresh_list()
 	_refresh_team_display()
@@ -128,6 +140,7 @@ func _add_team_member(inst_id: int) -> void:
 		return
 	var h: Dictionary = _heroes_all.filter(func(x): return x.inst_id == inst_id)[0]
 	if _team.any(func(t): return t.tid == h.tid):
+		_show_toast(cm.get_lstr(LSTR_SAME_NAME))   # 源 :743 同名禁用 toast
 		return  # 同名英雄禁用
 	_order_team(h)  # 按 maxRange 插入正确位置
 	_refresh_list(); _refresh_team_display(); _refresh_gs()
@@ -172,7 +185,16 @@ func _refresh_gs() -> void:
 	for t in _team:
 		var hero = player.hero_manager.heroes[t.inst_id]
 		total += int(player.hero_manager.calc_gs(hero))
-	_gs_label.text = "GS: " + str(total)
+	_gs_label.text = "%s: %d" % [cm.get_lstr(LSTR_COMBAT), total]
+
+
+# 源 tab 标签照源 LSTR（:1870 全部 / :1915 前排 / :1960 中排 / :2005 后排）。
+func _tab_label(tab: String) -> String:
+	match tab:
+		TAB_FRONT: return cm.get_lstr(LSTR_TAB_FRONT)
+		TAB_MIDDLE: return cm.get_lstr(LSTR_TAB_MIDDLE)
+		TAB_BACK: return cm.get_lstr(LSTR_TAB_BACK)
+		_: return cm.get_lstr(LSTR_TAB_ALL)
 
 
 func _on_tab_pressed(tab: String) -> void:
@@ -215,6 +237,7 @@ func _on_go_pressed() -> void:
 	for t in _team:
 		tids.append(int(t.tid))
 	if tids.is_empty():
+		_show_toast(cm.get_lstr(LSTR_NOTENOUGH))   # 源 :279 请选择出战英雄
 		return
 	var asm_r: Dictionary = mgr.assemble_stage_battle(stage_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
@@ -225,3 +248,11 @@ func _on_go_pressed() -> void:
 	}
 	queue_free()
 	SceneManager.change_scene("res://scenes/battle/battle_scene.tscn")
+
+
+func _show_toast(text: String) -> void:
+	if Engine.is_editor_hint():
+		return
+	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
+	if toast_node != null and toast_node.has_method("show_text"):
+		toast_node.show_text(text)

@@ -35,12 +35,16 @@ const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-cl
 # ── 资源 ──
 const FRAME_PATH: String = "res://assets/ui/alpha/HVGA/package_detail_bg.png"
 
-# ── 文本（源 LSTR）──
-const TEXT_SELL: String = "卖出"          # PACKAGE.SELL
-const TEXT_DETAIL: String = "详情"        # PACKAGE.DETAIL
-const TEXT_USE: String = "使用"           # MIDAS.USE
-const TEXT_COMPOSE: String = "合成"       # EQUIPCRAFT.SYNTHESIS
-const TEXT_SOLD: String = "已卖出"        # 卖出成功 toast
+# ── 文本 LSTR key（源 ofpackage.lua:140 PACKAGE.SELL / :225 PACKAGE.DETAIL / :227 MIDAS.USE /
+# :229 EQUIPCRAFT.SYNTHESIS；卖出 toast 用 ofsell.lua:427 EQUIPINFO.MONEY_GAINED）──
+const LSTR_SELL: String = "PACKAGE.SELL"
+const LSTR_DETAIL: String = "PACKAGE.DETAIL"
+const LSTR_USE: String = "MIDAS.USE"
+const LSTR_COMPOSE: String = "EQUIPCRAFT.SYNTHESIS"
+const LSTR_MONEY_GAINED: String = "EQUIPINFO.MONEY_GAINED"
+const LSTR_HAVE: String = "EQUIPINFO.HAVE"        # board.lua:60 持有量标题
+const LSTR_ITEM: String = "EQUIPINFO.ITEM"        # board.lua:87 持有量后缀
+const LSTR_SALE_COST: String = "EQUIPINFO.UNIT_SALE_COST"  # ofpackage.lua:66 售价标题
 
 signal sold(item_id: int)           # 卖出后通知调用方刷新（PackagePanel 重 classify）
 
@@ -113,21 +117,22 @@ func _build_ui() -> void:
 	name_lbl.text = _equip_name()
 	name_lbl.position = _gl(NAME_POS)
 	frame.add_child(name_lbl)
-	# 持有量（源 initAmount :65 "持有 X 个"）
+	# 持有量（源 board.lua:60 text = T(LSTR("EQUIPINFO.HAVE")).." "..amount.." "..T(LSTR("EQUIPINFO.ITEM"))）
 	var amount_lbl := Label.new()
-	amount_lbl.text = "持有: %d" % int(_cell_data.get("amount", 0))
+	var amt: int = int(_cell_data.get("amount", 0))
+	amount_lbl.text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
 	amount_lbl.position = _gl(AMOUNT_TITLE_POS)
 	frame.add_child(amount_lbl)
 	# 卖出价（源 refreshPrice + money_board，price<=0 隐藏）
 	var sell_price: int = _sell_price()
 	if sell_price > 0:
 		var price_lbl := Label.new()
-		price_lbl.text = "售价: %d" % sell_price
+		price_lbl.text = cm.get_lstr(LSTR_SALE_COST) + str(sell_price)
 		price_lbl.position = _gl(MONEY_BOARD_POS)
 		frame.add_child(price_lbl)
 	# 左卖出按钮（源 left_button :109，始终）
 	var sell_btn := Button.new()
-	sell_btn.text = TEXT_SELL
+	sell_btn.text = cm.get_lstr(LSTR_SELL)
 	sell_btn.position = _gl(LEFT_BTN_POS)
 	sell_btn.size = BTN_SIZE
 	sell_btn.pressed.connect(_on_sell_pressed)
@@ -149,11 +154,11 @@ func _build_ui() -> void:
 func _right_button_label() -> String:
 	match _prop_type:
 		PROPTYPE_CONSUME:
-			return TEXT_USE
+			return cm.get_lstr(LSTR_USE)
 		PROPTYPE_FRAGMENT:
-			return TEXT_COMPOSE
+			return cm.get_lstr(LSTR_COMPOSE)
 		_:
-			return TEXT_DETAIL
+			return cm.get_lstr(LSTR_DETAIL)
 
 
 # 源 refreshPrice :207-217：Equip[id]["Sell Price"]。
@@ -172,7 +177,7 @@ func _on_sell_pressed() -> void:
 	var income: int = pd.sell_equip(_item_id, 1)
 	if income < 0:
 		return   # 持有量不足（防御，cell 数据应同步）
-	_show_toast("%s %d 金币" % [TEXT_SOLD, income])
+	_show_toast("%s%d" % [cm.get_lstr(LSTR_MONEY_GAINED), income])
 	sold.emit(_item_id)
 	remove_window()
 

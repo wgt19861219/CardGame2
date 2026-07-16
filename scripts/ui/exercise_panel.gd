@@ -1,19 +1,24 @@
 class_name ExercisePanel
 extends Control
 
-## 试炼入口选择面板 — 照源 exercise.lua createExerciseButton(:1418) 翻译。
-## 源在主场景背景上画 7 个入口按钮 + cavern（时光之穴/英雄试炼），本项目用独立弹窗。
-## 7 入口：em(英雄副本 50005-7) / equip(装备副本 50001-4) / str/agi/int/exp/money(资源副本 20001-5)。
-## 单机化裁剪：源开放日限制 checkExerciseEnabled 恒 true。
+## 试炼入口选择面板（View 层）— 照源 exercise.lua createExerciseButton(:1418) 翻译。
+##
+## 源结构（exerciseres.lua）：em 场景 = exp+money+cavern（英雄副本）入口；equip 场景 =
+## int+agi+str+dg1-4+cavern（时光之穴）入口。入口靠 FCA 动画 + descres 图（act_popup_title_X_1.png）
+## 展示，无文字 Label（cavern 标签 :1459/1487 硬编码「英雄副本」/「时光之穴」，dungeon 名用
+## ActStageGroupDungeon Group Name）。本项目为 main_scene 两个触发点（em/equip）聚合为单弹窗
+## 选具体入口，文字标签为本聚合层可用性简化（源无对应 LSTR，照 :1459 硬编码先例保留中文）。
+## 单机化裁剪：源公会等级/开放日 checkExerciseEnabled 恒 true。
 
+# 入口 group ids 照源 exerciseres.lua entry_stage（:7-20）。name 照源 :1459 硬编码先例 + FCA 主题。
 const ENTRY_KEYS: Array = [
-	{key = "em", name = "英雄副本", groups = [50005, 50006, 50007]},
-	{key = "equip", name = "装备副本", groups = [50001, 50002, 50003, 50004]},
-	{key = "exp", name = "经验试炼", groups = [20001]},
-	{key = "money", name = "金币试炼", groups = [20002]},
-	{key = "int", name = "智力试炼", groups = [20003]},
-	{key = "agi", name = "敏捷试炼", groups = [20004]},
-	{key = "str", name = "力量试炼", groups = [20005]},
+	{key = "em", name = "英雄副本", groups = [50005, 50006, 50007]},       # 源 :1459 cavern 硬编码
+	{key = "equip", name = "装备副本", groups = [50001, 50002, 50003, 50004]},  # 源 equip 场景 4 dungeon
+	{key = "exp", name = "经验试炼", groups = [20001]},                     # 源 exp 入口 FCA NagaPriest
+	{key = "money", name = "金币试炼", groups = [20002]},                   # 源 money 入口 FCA Tank
+	{key = "int", name = "智力试炼", groups = [20003]},                     # 源 int 入口 FCA Golem
+	{key = "agi", name = "敏捷试炼", groups = [20004]},                     # 源 agi 入口 FCA DragonBaby
+	{key = "str", name = "力量试炼", groups = [20005]},                     # 源 str 入口 FCA DR/Ench/WR
 ]
 
 var _on_entry_selected: Callable  # 回调：func(key: String, groups: Array[int])
@@ -32,7 +37,7 @@ func _build_ui() -> void:
 	# 背景
 	var bg := ColorRect.new(); bg.color = Color(0.1, 0.1, 0.15, 0.95)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT); add_child(bg)
-	# 标题
+	# 标题（源 exercise 场景无文字标题 LSTR，靠 descres 图 act_popup_title 展示，本弹窗加文字标识）
 	var title := Label.new(); title.text = "试炼"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.position = Vector2(0, 20); title.size = Vector2(800, 30)

@@ -31,9 +31,10 @@ const PANEL_PATCH_TOP: int = 30     # 源 上边距
 const GET_WAY_ICON_SIZE: float = 60.0   # 源 createDetail :259 setScale(60/width)
 const HOW_COLOR: Color = Color(238.0 / 255.0, 204.0 / 255.0, 119.0 / 255.0)   # 源 :280 ccc3(238,204,119)
 
-const TEXT_EQUIP_TITLE: String = "可合成的装备"   # EQUIPDETAIL.EQUIPMENT_CAN_BE_SYNTHESIZED
-const TEXT_HERO_TITLE: String = "可装备的英雄"    # EQUIPDETAIL.HEROES_CAN_BE_EQUIPPED
-const TEXT_GET_TITLE: String = "获取途径"         # EQUIPCRAFT.WAY_TO_GET
+# 源 LSTR key（equipdetail.lua:146/182/223）— 运行时 cm.get_lstr 解析。
+const LSTR_EQUIP_TITLE: String = "EQUIPDETAIL.EQUIPMENT_CAN_BE_SYNTHESIZED"
+const LSTR_HERO_TITLE: String = "EQUIPDETAIL.HEROES_CAN_BE_EQUIPPED"
+const LSTR_GET_TITLE: String = "EQUIPCRAFT.WAY_TO_GET"
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -52,7 +53,8 @@ func setup_panel(equip_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 
 func _build_ui() -> void:
 	var frame := Control.new()
-	frame.position = FRAME_POS - FRAME_SIZE / 2.0
+	# 源 bg ccp(400,240) 是 800×480 屏幕中心（cocos），须 to_godot 转 960×640 屏幕中心。
+	frame.position = BattleViewCoords.to_godot(FRAME_POS.x, FRAME_POS.y) - FRAME_SIZE / 2.0
 	frame.size = FRAME_SIZE
 	container.add_child(frame)
 	_add_bg(frame)
@@ -109,9 +111,9 @@ func _add_sections(parent: Control) -> void:
 	scroll.add_child(vbox)
 	var data: Dictionary = EquipdetailQuery.query(_equip_id, cm, pd)
 	if (data["equip_list"] as Array).size() > 0:
-		_add_item_section(vbox, TEXT_EQUIP_TITLE, data["equip_list"], false)
+		_add_item_section(vbox, cm.get_lstr(LSTR_EQUIP_TITLE), data["equip_list"], false)
 	if (data["hero_list"] as Array).size() > 0:
-		_add_item_section(vbox, TEXT_HERO_TITLE, data["hero_list"], true)
+		_add_item_section(vbox, cm.get_lstr(LSTR_HERO_TITLE), data["hero_list"], true)
 	_add_get_way_section(vbox, data)
 
 
@@ -131,7 +133,7 @@ func _add_item_section(parent: VBoxContainer, title: String, items: Array, is_he
 # 源 createDetail 获取途径段 :220-294：title + getDetailBg panel_bg + Drop 1-3 关卡图标 + How To Get。
 # P1-12：照源 :228 getDetailBg panel_bg 包裹 + :256 createSprite(way.res) 关卡图标（替纯 Label）
 func _add_get_way_section(parent: VBoxContainer, data: Dictionary) -> void:
-	parent.add_child(_make_title(TEXT_GET_TITLE))
+	parent.add_child(_make_title(cm.get_lstr(LSTR_GET_TITLE)))
 	var panel: NinePatchRect = _make_panel_bg()   # 源 :228 getDetailBg
 	parent.add_child(panel)
 	var get_way: Array = data["get_way"]
@@ -140,7 +142,7 @@ func _add_get_way_section(parent: VBoxContainer, data: Dictionary) -> void:
 	panel.add_child(grid)
 	for way in get_way:
 		grid.add_child(_make_get_way_cell(way as Dictionary))
-	var how: String = String(data["how_to_get"])
+	var how: String = cm.get_lstr(String(data["how_to_get"]))   # 源 :270 row["How To Get"]（LSTR key）
 	if how != "":
 		var how_lbl := Label.new()
 		how_lbl.text = how
@@ -176,7 +178,11 @@ func _make_get_way_cell(way: Dictionary) -> Control:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon)
 	var name_lbl := Label.new()
-	name_lbl.text = String(way["name"])
+	# 源 :240/243 Stage Name（LSTR key 或直接文本，get_lstr 统一解析）+ 精英前缀 T(LSTR("EQUIPCRAFT.ELITE")).." "
+	var disp_name: String = cm.get_lstr(String(way["name"]))
+	if bool(way.get("elite", false)):
+		disp_name = cm.get_lstr("EQUIPCRAFT.ELITE") + " " + disp_name
+	name_lbl.text = disp_name
 	name_lbl.modulate = TEXT_COLOR
 	name_lbl.custom_minimum_size = Vector2(CELL_MIN_SIZE.x - GET_WAY_ICON_SIZE, 0.0)
 	cell.add_child(name_lbl)

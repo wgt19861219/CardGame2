@@ -105,7 +105,8 @@ func test_order_by_max_range() -> void:
 func test_gs_displayed() -> void:
 	var panel := _make_panel()
 	var gs_text: String = panel._gs_label.text
-	assert_true(gs_text.begins_with("GS:"), "gs Label 应有 GS: 前缀")
+	# 照源 battleprepare.lua:2256 gs_title=BATTLEPREPARE.COMBAT（战斗力）
+	assert_true(gs_text.begins_with(cm.get_lstr("BATTLEPREPARE.COMBAT")), "gs Label 应有战斗力前缀")
 	panel.queue_free()
 
 
@@ -116,4 +117,16 @@ func test_class_tab_filter() -> void:
 	panel._refresh_list()
 	for h in panel._heroes_filtered:
 		assert_eq(h.pos_type, "front", "front tab 应只显示前排英雄")
+	panel.queue_free()
+
+
+# 照源 battleprepare.lua:1870/1915/1960/2005 tab 标签用 LSTR（全部/前排/中排/后排）。
+func test_tab_label_uses_lstr() -> void:
+	var panel := _make_panel()
+	assert_eq(panel._tab_label("all"), cm.get_lstr("BATTLEPREPARE.WHOLE"), "全部 tab=LSTR.WHOLE")
+	assert_eq(panel._tab_label("front"), cm.get_lstr("UNIT.FRONT_ROW"), "前排 tab=LSTR.FRONT_ROW")
+	assert_eq(panel._tab_label("middle"), cm.get_lstr("UNIT.MIDDLE_ROW"), "中排 tab=LSTR.MIDDLE_ROW")
+	assert_eq(panel._tab_label("back"), cm.get_lstr("UNIT.REAR_ROW"), "后排 tab=LSTR.REAR_ROW")
+	# 开始战斗按钮照源 :2241 CHATCONFIG.CONFIRM（确定）
+	assert_eq(panel._go_button.text, cm.get_lstr("CHATCONFIG.CONFIRM"), "开始按钮=LSTR.CONFIRM")
 	panel.queue_free()
