@@ -124,7 +124,8 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	var bg := TextureRect.new()
 	bg.texture = load(STAR_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = _tex_size(STAR_BG)
+	# 源 :1262 starBg = ed.createSprite 无 fix → 显示=纹理/CS。
+	bg.size = _tex_size(STAR_BG) / CONTENT_SCALE
 	bg.position = Vector2(82.0, 38.0) - bg.size * 0.5   # 源 star_bg ccp(82,38) 局部（icon 左上原点）
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(bg)
@@ -133,7 +134,8 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 		var star := TextureRect.new()
 		star.texture = load(STAR) as Texture2D
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		star.size = _tex_size(STAR)
+		# 源 :1268 star = ed.createSprite 无 fix → 显示=纹理/CS。
+		star.size = _tex_size(STAR) / CONTENT_SCALE
 		star.position = spos[i] - star.size * 0.5
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.add_child(star)
@@ -153,7 +155,8 @@ static func _add_pointer(layer: Control, info: Dictionary) -> void:
 	var p := TextureRect.new()
 	p.texture = load(POINTER) as Texture2D
 	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	p.size = _tex_size(POINTER)
+	# 源 :1299 currentTag = ed.createSprite 无 fix → 显示=纹理/CS。
+	p.size = _tex_size(POINTER) / CONTENT_SCALE
 	p.position = to_godot(cx + dx, cy + dy) - p.size * 0.5
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(p)
@@ -230,7 +233,8 @@ static func create_mode_buttons(container: Control, current_mode: String, cm: Va
 	var bg := TextureRect.new()
 	bg.texture = load(MODE_BTN_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = _tex_size(MODE_BTN_BG)
+	# 源 :731 buttonBg config={} → 显示=纹理/CS。
+	bg.size = _tex_size(MODE_BTN_BG) / CONTENT_SCALE
 	bg.position = MODE_BG_POS - bg.size * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(bg)
@@ -286,7 +290,8 @@ static func create_chapter_dots(container: Control, max_chapter: int, current: i
 		var dot := TextureRect.new()
 		dot.texture = load(res) as Texture2D
 		dot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		dot.size = _tex_size(res)
+		# 源 :688-693 createSprite(res.dotRes.current/normal) 无 fix → 显示=纹理/CS。
+		dot.size = _tex_size(res) / CONTENT_SCALE
 		dot.position = Vector2(DOT_CENTER_X + DOT_GAP_X * (float(i) - center), y) - dot.size * 0.5
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(dot)

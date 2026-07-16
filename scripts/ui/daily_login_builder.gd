@@ -8,6 +8,8 @@ extends RefCounted
 ## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：to_godot(cx+80, 560-cy)（同 handbook_builder）。
 ## 单机化：源 status common/vip（VIP 双倍选项）→ 仅 common（领后 received）；VIP 角标保留装饰。
 
+# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
+const CONTENT_SCALE: float = 1.28125
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
 const FALLBACK_YEAR: int = 2018
@@ -172,7 +174,9 @@ static func create_reward_cell(content: Control, day: int, data: Dictionary, sta
 	var center: Vector2 = Vector2(CELL_OX + CELL_DX * float(x), CELL_OY + CELL_DY * float(y))
 	var board_res: String = MATRIX_YELLOW_RES if status == "common" else MATRIX_RES
 	var board_tex: Texture2D = load(board_res) as Texture2D
-	var bsz: Vector2 = board_tex.get_size() if board_tex != null else Vector2(133.0, 130.0)
+	# 源 dailylogin :254-262 board config={}（纯 Sprite）→ 显示=纹理/CS。
+	var raw_bsz: Vector2 = board_tex.get_size() if board_tex != null else Vector2(133.0, 130.0)
+	var bsz: Vector2 = raw_bsz / CONTENT_SCALE
 	var board := TextureButton.new()
 	board.texture_normal = board_tex
 	board.ignore_texture_size = true
@@ -264,7 +268,8 @@ static func _make_reward_icon(data: Dictionary, cm: Variant) -> Control:
 	var rect := TextureRect.new()
 	rect.texture = tex
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.size = tex.get_size()
+	# 源 createRewardItem :327 ed.createSprite(ires)（task_rmb/gold_icon 无 fix）→ 显示=纹理/CS。
+	rect.size = tex.get_size() / CONTENT_SCALE
 	return rect
 
 
@@ -291,7 +296,8 @@ static func _add_light(board: TextureButton) -> void:
 	var light := TextureRect.new()
 	light.texture = tex
 	light.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	light.size = tex.get_size()
+	# 源 :297-311 light config={}（纯 Sprite）→ 显示=纹理/CS。
+	light.size = tex.get_size() / CONTENT_SCALE
 	light.pivot_offset = light.size * 0.5
 	light.position = LIGHT_CENTER_LOCAL - light.pivot_offset
 	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -325,8 +331,10 @@ static func _add_centered(parent: Control, res_path: String, cocos_center: Vecto
 	var s := TextureRect.new()
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	s.size = tex.get_size()
-	s.position = to_godot(cocos_center.x, cocos_center.y) - tex.get_size() * 0.5
+	# 源 Sprite config={}（如 crusade_title_short_bg :768）→ 显示=纹理/CS。
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	s.size = sz
+	s.position = to_godot(cocos_center.x, cocos_center.y) - sz * 0.5
 	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(s)
 
@@ -339,8 +347,10 @@ static func _add_image_to_board(board: TextureButton, res_path: String, local_po
 	var s := TextureRect.new()
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	s.size = tex.get_size()
-	s.position = local_pos if is_topleft else (local_pos - tex.get_size() * 0.5)
+	# 源 checked/vip_bg config={}（:284/:342 纯 Sprite）→ 显示=纹理/CS。
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	s.size = sz
+	s.position = local_pos if is_topleft else (local_pos - sz * 0.5)
 	s.z_index = z
 	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(s)
