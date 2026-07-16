@@ -11,8 +11,11 @@ const CLOSE_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.pn
 const CLOSE_P_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
 const READ_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_read_bg.png"
 const UNREAD_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_unread_bg.png"
-const TITLE_TEXT: String = "信箱"        # 源 LSTR MAILBOX.MAILBOX
-const FROM_LABEL: String = "发件人："    # 源 LSTR MAILBOX.FROM_
+# P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
+const LSTR_TITLE_KEY: String = "MAILBOX.MAILBOX"   # 源 mailbox.lua:662
+const TITLE_FALLBACK: String = "信箱"
+const LSTR_FROM_KEY: String = "MAILBOX.FROM_"      # 源 mailbox.lua:509 T(LSTR).." "（照源加空格）
+const FROM_FALLBACK: String = "发件人："
 const ROW_SIZE: Vector2 = Vector2(340.0, 90.0)
 const ICON_SIZE: Vector2 = Vector2(40.0, 40.0)
 const NAME_FONT: int = 20                # 源 createMail:495 size 20
@@ -21,6 +24,14 @@ const MailDetailPanel = preload("res://scripts/ui/mail_detail_panel.gd")
 
 var pd: PlayerData
 var _list_vbox: VBoxContainer
+
+
+# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = GameData.config
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
 
 
 func setup_panel(p_pd: PlayerData) -> void:
@@ -65,7 +76,7 @@ func _add_title(frame: TextureRect) -> void:
 	title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title_bg)
 	var label := Label.new()
-	label.text = TITLE_TEXT
+	label.text = _lstr(LSTR_TITLE_KEY, TITLE_FALLBACK)
 	label.size = title_bg.size
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -125,7 +136,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(name_l)
 	var from_l := Label.new()
-	from_l.text = FROM_LABEL + String(mail["from"])
+	from_l.text = _lstr(LSTR_FROM_KEY, FROM_FALLBACK) + " " + String(mail["from"])
 	from_l.position = Vector2(70, 38)
 	from_l.size = Vector2(250, 20)
 	from_l.add_theme_font_size_override("font", SMALL_FONT)

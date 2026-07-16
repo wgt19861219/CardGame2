@@ -23,9 +23,13 @@ const CURRENCY_ICONS: Dictionary = {
 }
 const ITEM_ICON_COLS: int = 4   # 源 createItemAttach :140 4 列网格
 const ITEM_ICON_SIZE: float = 65.0  # 源 :137 icon_len=65
-const ATTACH_TITLE: String = "附件"     # 源 LSTR MAILBOX.ATTACHMENTS_
-const CLAIM_TEXT: String = "领取"       # 源 LSTR MAILBOX.CLAIM
-const CLOSE_TEXT: String = "关闭"       # 源 LSTR MAILBOX.CLOSE
+# P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
+const LSTR_ATTACH_KEY: String = "MAILBOX.ATTACHMENTS_"   # 源 content.lua:239
+const ATTACH_FALLBACK: String = "附件"
+const LSTR_CLAIM_KEY: String = "MAILBOX.CLAIM"           # 源 content.lua:463
+const CLAIM_FALLBACK: String = "领取"
+const LSTR_CLOSE_KEY: String = "MAILBOX.CLOSE"           # 源 content.lua:463
+const CLOSE_FALLBACK: String = "关闭"
 const TITLE_FONT: int = 18              # 源 createTitle:26
 const BODY_FONT: int = 16               # 源 createBody:56
 # P1-4：照源 content.lua 装饰背景 + 文字颜色（ccc3→from_rgba8 忠实 0-255 色值）
@@ -43,6 +47,14 @@ var pd: PlayerData
 var _mail_id: int = 0
 var _mail: Dictionary
 var _on_closed: Callable
+
+
+# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = GameData.config
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
 
 
 func setup_panel(p_pd: PlayerData, mail_id: int, on_closed: Callable) -> void:
@@ -98,7 +110,8 @@ func _add_content(frame: TextureRect) -> void:
 	frame.add_child(body)
 	y += 88.0
 	var from := Label.new()
-	from.text = "发件人：" + String(_mail.get("from", ""))
+	# 源 content.lua createFrom:98 text=self.from（无「发件人：」前缀，前缀只在 mailbox.lua 列表 from_title）。
+	from.text = String(_mail.get("from", ""))
 	from.position = Vector2(30, y)
 	from.size = Vector2(frame.size.x - 60, 20)
 	from.add_theme_font_size_override("font", BODY_FONT)
@@ -132,7 +145,7 @@ func _add_attach(frame: TextureRect, y: float) -> void:
 	var top_y: float = y
 	# attach_title（源 :235-249 "附件" @30,y-15 color ATTACH_TITLE_COLOR）
 	var head := Label.new()
-	head.text = ATTACH_TITLE
+	head.text = _lstr(LSTR_ATTACH_KEY, ATTACH_FALLBACK)
 	head.position = Vector2(30, y + 2.0)
 	head.size = Vector2(100, 20)
 	head.add_theme_font_size_override("font", BODY_FONT)
@@ -204,7 +217,7 @@ func _add_ok_button(frame: TextureRect) -> void:
 	var lbl := Label.new()
 	var has_attach: bool = bool(_mail.get("attached", false))
 	var is_unread: bool = String(_mail.get("status", "")) == "unread"
-	lbl.text = CLAIM_TEXT if (is_unread and has_attach) else CLOSE_TEXT
+	lbl.text = _lstr(LSTR_CLAIM_KEY, CLAIM_FALLBACK) if (is_unread and has_attach) else _lstr(LSTR_CLOSE_KEY, CLOSE_FALLBACK)
 	lbl.size = ok.size
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

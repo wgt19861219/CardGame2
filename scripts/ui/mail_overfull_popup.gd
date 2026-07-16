@@ -16,17 +16,32 @@ const TITLE_COLOR: Color = Color(253.0 / 255.0, 215.0 / 255.0, 17.0 / 255.0)   #
 const DESC_COLOR: Color = Color(243.0 / 255.0, 194.0 / 255.0, 113.0 / 255.0)   # 源 overfull.lua:47 说明色
 const GRID_COLS: int = 4                # 源 overfull.lua:68-70 4 列
 const ICON_SCALE: float = 0.85          # 源 createIconWithAmount(id, 60) ≈ 60/72
-const TITLE_TEXT: String = "超额提醒"   # 源 LSTR mailoverfull.1.10.1.003
-const DESC1_TEXT: String = "部分道具将超出可携带上限(999个)。如果强行领取，将损失超出的道具。"  # overfull.1.10.1.001
-const DESC2_TEXT: String = "超出："      # 源 LSTR overfull.1.10.1.002
-const DESC3_TEXT: String = "是否继续领取？"  # 源 LSTR overfull.1.10.1.003
-const LEFT_TEXT: String = "强行领取"    # 源 LSTR mailoverfull.1.10.1.001
-const RIGHT_TEXT: String = "稍后领取"   # 源 LSTR mailoverfull.1.10.1.002
+# P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
+const LSTR_TITLE_KEY: String = "mailoverfull.1.10.1.003"   # 源 uieditor/mailoverfull.lua:106
+const TITLE_FALLBACK: String = "超额提醒"
+const LSTR_DESC1_KEY: String = "overfull.1.10.1.001"       # 源 overfull.lua:43
+const DESC1_FALLBACK: String = "部分道具将超出可携带上限(999个)。如果强行领取，将损失超出的道具。"
+const LSTR_DESC2_KEY: String = "overfull.1.10.1.002"       # 源 overfull.lua:58
+const DESC2_FALLBACK: String = "超出："
+const LSTR_DESC3_KEY: String = "overfull.1.10.1.003"       # 源 overfull.lua:91
+const DESC3_FALLBACK: String = "是否继续领取？"
+const LSTR_LEFT_KEY: String = "mailoverfull.1.10.1.001"    # 源 uieditor:20
+const LEFT_FALLBACK: String = "强行领取"
+const LSTR_RIGHT_KEY: String = "mailoverfull.1.10.1.002"   # 源 uieditor:46
+const RIGHT_FALLBACK: String = "稍后领取"
 
 signal confirmed
 
 var _items: Array = []
 var _cm: Variant
+
+
+# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
+func _lstr(key: String, fallback: String) -> String:
+	var cfg: ConfigManager = GameData.config
+	if cfg != null:
+		return cfg.get_lstr(key)
+	return fallback
 
 
 # items = 溢出列表 [{id, amount}]（源 overfull.lua:67 self.param.items）。
@@ -69,7 +84,7 @@ func _add_title(frame: TextureRect) -> void:
 	title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title_bg)
 	var title := Label.new()
-	title.text = TITLE_TEXT
+	title.text = _lstr(LSTR_TITLE_KEY, TITLE_FALLBACK)
 	title.position = Vector2(0.0, 20.0)
 	title.size = Vector2(frame.size.x, 30.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -88,8 +103,8 @@ func _add_content(frame: TextureRect) -> void:
 	vbox.add_theme_constant_override("separation", 8)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(vbox)
-	vbox.add_child(_make_desc(DESC1_TEXT, 16, true))
-	vbox.add_child(_make_desc(DESC2_TEXT, 18, false))
+	vbox.add_child(_make_desc(_lstr(LSTR_DESC1_KEY, DESC1_FALLBACK), 16, true))
+	vbox.add_child(_make_desc(_lstr(LSTR_DESC2_KEY, DESC2_FALLBACK), 18, false))
 	var grid := GridContainer.new()
 	grid.columns = GRID_COLS
 	grid.add_theme_constant_override("h_separation", 8)
@@ -104,7 +119,7 @@ func _add_content(frame: TextureRect) -> void:
 		icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
 		grid.add_child(icon)
 	vbox.add_child(grid)
-	var desc3 := _make_desc(DESC3_TEXT, 18, false)
+	var desc3 := _make_desc(_lstr(LSTR_DESC3_KEY, DESC3_FALLBACK), 18, false)
 	desc3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(desc3)
 
@@ -131,7 +146,7 @@ func _add_buttons(frame: TextureRect) -> void:
 	left.custom_minimum_size = Vector2(btn_w, btn_h)
 	left.size = Vector2(btn_w, btn_h)
 	left.position = Vector2(frame.size.x * 0.5 - btn_w - gap * 0.5, frame.size.y - 70.0)
-	left.add_child(_make_btn_label(LEFT_TEXT, Vector2(btn_w, btn_h)))
+	left.add_child(_make_btn_label(_lstr(LSTR_LEFT_KEY, LEFT_FALLBACK), Vector2(btn_w, btn_h)))
 	left.pressed.connect(_on_left)
 	frame.add_child(left)
 	var right := TextureButton.new()
@@ -141,7 +156,7 @@ func _add_buttons(frame: TextureRect) -> void:
 	right.custom_minimum_size = Vector2(btn_w, btn_h)
 	right.size = Vector2(btn_w, btn_h)
 	right.position = Vector2(frame.size.x * 0.5 + gap * 0.5, frame.size.y - 70.0)
-	right.add_child(_make_btn_label(RIGHT_TEXT, Vector2(btn_w, btn_h)))
+	right.add_child(_make_btn_label(_lstr(LSTR_RIGHT_KEY, RIGHT_FALLBACK), Vector2(btn_w, btn_h)))
 	right.pressed.connect(_close)
 	frame.add_child(right)
 
