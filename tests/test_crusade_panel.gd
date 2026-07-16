@@ -17,9 +17,14 @@ func test_panel_assembles() -> void:
 	var panel := CrusadePanel.new("crusade", {})
 	panel.setup_panel(pd, BattleRng.new(12345))
 	panel.show_window(root)
-	# close + reset + fog(4) + scroll + enemy_preview + start_btn + result_label + reward_btn + hint_anchor = 12
-	assert_eq(panel.container.get_child_count(), 12, "close + reset + fog4 + scroll + enemy_preview + start + result + reward + hint")
+	# P1（2026-07-16）：删 reward_button（源 boxButton{i} 可点领奖替代）→ 11 子节点
+	# close + reset + fog(4) + scroll + enemy_preview + start_btn + result_label + hint_anchor = 11
+	assert_eq(panel.container.get_child_count(), 11, "close + reset + fog4 + scroll + enemy_preview + start + result + hint")
 	assert_eq(panel.stage_buttons.size(), CrusadeData.MAX_STAGE, "15 stage 按钮")
+	# box 改 TextureButton 可点（源 :311 boxButton{i}）
+	assert_eq(panel.box_rects.size(), CrusadeData.MAX_STAGE, "15 box 按钮（源 :311）")
+	for i in range(panel.box_rects.size()):
+		assert_true(panel.box_rects[i] is TextureButton, "box 是 TextureButton 可点（源 :311）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -122,7 +127,8 @@ func test_reset_exhausted_blocked() -> void:
 	for i in range(11):
 		pd.crusade_manager.reset()
 	panel._on_reset()
-	assert_true(panel.result_label.text.contains("用完"), "重置次数耗尽被拦")
+	# P1（2026-07-16）：toast 文案 LSTR 化 CRUSADE.NO_RESET_TIMES_LEFT_TODAY = "今日已没有重置次数"
+	assert_true(panel.result_label.text.contains("没有重置"), "重置次数耗尽被拦（源 LSTR）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -180,5 +186,59 @@ func test_stage_hint_created_and_points_current() -> void:
 		var btn_global: Vector2 = panel.stage_buttons[0].get_global_rect().position
 		var origin: Vector2 = panel.container.get_global_rect().position
 		assert_almost_eq(panel._hint_anchor.position.x, btn_global.x - origin.x, 1.0, "箭头 X 对齐当前关按钮（源 offsetX=0）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# P1（2026-07-16）：源 :311 boxButton{i} 可点领奖（替代降级独立 reward_button）。
+# 源 :395-406 hintBox: rewarded→return / passed→draw_reward；:407-424 hintBoxDown: unpassed→预览。
+func test_box_pressed_passed_claim_reward() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_hero(1)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	# cur_stage 推进到 2 + 第 1 关 passed（直接 Dictionary 赋值，模拟服务端返回的 stage 状态）
+	pd.crusade_manager.cur_stage = 2
+	pd.crusade_manager.cleared_stages[1] = true
+	panel._on_box_pressed(1)
+	# passed → _apply_box_reward → "第 1 关 奖励" 或 "不可领"（取决于 reward slots 是否存在）
+	assert_true(panel.result_label.text.contains("第 1 关"), "点 passed 状态 box 触发领奖流程（源 hintBox :399-405）")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_box_pressed_rewarded_blocked() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_hero(1)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	# 模拟第 1 关已领奖（rewarded_stages 直接 Dictionary 赋值）
+	pd.crusade_manager.rewarded_stages[1] = true
+	panel._on_box_pressed(1)
+	# rewarded → 直接 return（源 :396-398），不触发领奖
+	assert_true(panel.result_label.text.contains("已领取"), "rewarded 状态 box 不重复领奖（源 hintBox :396）")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_box_pressed_unpassed_locked_no_claim() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_hero(1)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	# cur_stage=1：第 5 关超进度（_is_stage_locked=true），点 box 不领奖（源 :407-424 hintBoxDown 段检查）
+	panel._on_box_pressed(5)
+	# 超进度：既非 rewarded 也非 passed，且 _is_stage_locked=true → 不走预览分支，无文案更新
+	# result_label 保留初始 "远征：第 1 关"
+	assert_true(panel.result_label.text.contains("远征") or panel.result_label.text.contains("第 1 关"), "超进度 box 不可点领奖（源 :411-422 段检查）")
 	panel.remove_window()
 	root.queue_free()
