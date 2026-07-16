@@ -18,7 +18,6 @@ config/features=PackedStringArray("4.7")
 [autoload]
 
 autoload/MCPBridge="*res://mcp_bridge.gd"
-MCPBridge="*res://mcp_bridge.gd"
 Events="*res://scripts/autoload/events.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 Toast="*res://scripts/autoload/toast.gd"
@@ -39,3 +38,4 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/godot_mcp
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.157, 0.392, 0.706, 1)

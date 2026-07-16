@@ -4,7 +4,7 @@ extends "res://scenes/base_ui.gd"
 ## View 纯 UI：建 UI + 按钮→SceneManager + 状态栏订阅 data_changed 刷新（GameData 只读）。
 ## 业务逻辑在 Logic/Data 层。布局坐标复用旧版 mainres.lua（800x480→960x640）。
 
-const MAP_H: float = 536.0
+const MAP_H: float = 640.0   # grass + 按钮 + mountain/cloud/side/lightning 整体下移 104（grass 放屏底 56~536→160~640，图标 godot_y=MAP_H-cocos_y 跟着下移）
 const BAR_H: float = 52.0
 const BG_INIT_OFFSET: float = -300.0   # 源 main.lua:21 bgOffset（create:1067 setbgOffset 初始视角）
 # 源 exercise.lua:1506/1509 em→英雄副本 50005-7 / equip→装备副本 50001-4
@@ -50,7 +50,7 @@ const TutorialManager = preload("res://scripts/systems/tutorial_manager.gd")
 # lightning 背景装饰 FCA（照源 mainres.lightning:56-65，button_key 无 → 非按钮纯装饰；createMainFca 加 topContainer）
 const FCA_LIGHTNING_RES: String = "effect/eff_UI_Main_Lightning"
 const FCA_LIGHTNING_ANI: String = "res://assets/anim_frames/effect/eff_UI_Main_Lightning.ani"
-const LIGHTNING_POS: Array = [205, 206]       # 源 ccp(205,330) → Godot(205, MAP_H-330=206)
+const LIGHTNING_POS: Array = [205, 310]       # 源 ccp(205,330) → Godot(205, MAP_H-330=310)
 const LIGHTNING_GAP: Array = [1.71, 1.71, 1.71, 3, 10]  # 源 mainres:60-64 gap/loop
 const EXCAVATE_WIN_TEXT: String = "占领成功！矿点开始产出资源"     # excavate 战斗胜利 Toast（_maybe_resume_excavate）
 const EXCAVATE_LOSE_TEXT: String = "战斗失败，再接再厉"          # excavate 战斗失败 Toast
@@ -93,6 +93,11 @@ var _drag_last_time: int = 0
 var _drag_velocity: float = 0.0
 
 func _ready() -> void:
+	var bg := ColorRect.new()
+	bg.color = Color(40.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
 	_build_map()
 	_build_status_bar()
 	_build_shortcut()
@@ -182,7 +187,7 @@ func _build_map() -> void:
 	var map := Control.new()
 	map.set_anchors_preset(Control.PRESET_FULL_RECT)
 	map.offset_top = 0.0   # map 延伸到顶（statusbar 透明叠加，露 mountain 天；源 mainLayer 满 design statusbar 叠加，非独立占区）
-	map.offset_bottom = -BAR_H
+	map.offset_bottom = 0.0   # map 满高 640（statusbar 透明叠加，grass 放屏底不被裁）
 	map.clip_contents = true
 	map.mouse_filter = Control.MOUSE_FILTER_STOP   # 接收空地拖拽（按钮 STOP 吞自己区域）
 	map.gui_input.connect(_on_map_gui_input)   # 拖拽连 map（_gui_input 虚函数挂根 Control，map STOP 吞输入致根永不触发）
@@ -254,6 +259,7 @@ func _make_entry(e: Dictionary) -> Button:
 	var e_resolved: Dictionary = e.duplicate()
 	if GameData.config != null:
 		e_resolved["title"] = GameData.config.get_lstr(String(e["title"]))
+	e_resolved["pos"] = [float(e["pos"][0]), float(e["pos"][1]) + 104.0]   # 按钮 godot_y 下移 104 跟随 grass（grass 放屏底 MAP_H=640，ENTRIES pos 旧 536 基准补差 640-536）
 	return MainButtonFactory.make_entry(e_resolved, _on_entry_pressed.bind(String(e["id"])), is_locked)
 
 

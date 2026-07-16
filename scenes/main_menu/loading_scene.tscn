@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://d3ala0boevma"]
 
-[ext_resource type="Script" path="res://scenes/main_menu/loading_scene.gd" id="1"]
+[ext_resource type="Script" uid="uid://c7snkyw8tt3xk" path="res://scenes/main_menu/loading_scene.gd" id="1"]
 
-[node name="LoadingScene" type="Control"]
+[node name="LoadingScene" type="Control" unique_id=186395836]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1")

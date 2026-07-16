@@ -7,7 +7,7 @@ extends RefCounted
 ## z 顺序：bottom < middle < top < veryTop（源 addChild 顺序）。返回容器引用供 MainParallax + 按钮挂载。
 
 const MAP_W: float = 2400.0
-const MAP_H: float = 536.0
+const MAP_H: float = 640.0   # grass/mountain/cloud/side 整体下移（_from_bottom 640 基准，grass 放屏底 160~640）
 const BG_DIR: String = "res://assets/ui/alpha/HVGA/"
 const SPINE_DIR: String = "res://assets/spine"
 const LOOP_ACTION: String = "Loop"
@@ -57,25 +57,24 @@ func _new_container(node_name: String = "") -> Control:
 	return c
 
 
-# 源 createBottomMap:640-705：Spine main_bg_mountain 'BG'（pos animationX=0,Y=0），失败降级蓝底+静态 mountain.jpg。
+# 源 createBottomMap:640-705：main_bg_mountain 静态山水图满铺 screen（MAP_H 640）。
+# 去 Spine 云海（Godot 渲染顶部黑覆盖 jpg 蓝天，致 statusbar 透明区露黑边）；jpg 满铺避拼接/黑边。
 func _build_bottom(container: Control) -> void:
-	var sk := SpineSkeleton.new()
-	container.add_child(sk)
-	if sk.load_skeleton(SPINE_DIR + "/main_bg_mountain", "main_bg_mountain"):
-		sk.play("BG", true)
-		sk.position = Vector2(0.0, MAP_H - MOUNTAIN_TOP_GAP)   # 源 anchor(0,0)=包围盒左下角对齐 position（Cocos）；Godot position=root bone，root 不在包围盒左下角。MAP_H 时顶部空 MOUNTAIN_TOP_GAP 露清色灰，减之让包围盒顶部对齐 y=0 填满容器（照源 mainLayer 满 design）
-		return
-	sk.queue_free()
-	# 降级（照源 :682-702）：蓝底填充 + 静态 mountain.jpg（scaleY 480）
 	var blue := ColorRect.new()
 	blue.color = BOTTOM_BLUE
-	blue.size = Vector2(2400, FIX_HEIGHT)
-	blue.position = _from_bottom(Vector2(-400.0, 0.0), FIX_HEIGHT)
+	blue.size = Vector2(MAP_W, MAP_H)
+	blue.position = Vector2(-200.0, 0.0)
 	blue.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(blue)
 	var tex: Texture2D = load(BG_DIR + "main_bg_mountain.jpg")
 	if tex != null:
-		_add_sprite(container, BG_DIR + "main_bg_mountain.jpg", Vector2(-200.0, 0.0), Vector2(tex.get_size().x, FIX_HEIGHT))
+		var tr := TextureRect.new()
+		tr.texture = tex
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.size = Vector2(MAP_W, MAP_H)
+		tr.position = Vector2(-400.0, 0.0)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(tr)
 
 
 # 源 createTopMap:788-902：grass_left/right + cloud4/5/6 + left_side/right_side + Fog spine + 黑云漂移。

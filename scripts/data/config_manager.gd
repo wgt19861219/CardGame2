@@ -29,6 +29,9 @@ func load_all(data_dir: String = _DEFAULT_DATA_DIR) -> void:
 		while file_name != "":
 			if file_name.ends_with(".json"):
 				var table_name := file_name.get_basename()
+				if table_name == "AffixCount":
+					file_name = dir.get_next()
+					continue
 				_tables[StringName(table_name)] = _load_table(data_dir + file_name)
 			file_name = dir.get_next()
 		dir.list_dir_end()

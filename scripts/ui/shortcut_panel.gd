@@ -20,7 +20,7 @@ const BOARD_H_MIN: float = 40.0                 # 源 shortcut_board_height_min�
 const BOARD_H_MAX: float = 460.0                # 源 shortcut_board_height_max（展开）
 const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # 源 (900,200) + 上移 100 → (900,100)
 # 源 shortcutBoardButtonPosY（已 +s_b_offset_y=-20）[362,287,217,142,63] → Godot [278,353,423,498,577] + BOARD_UP_OFFSET(上移100) → [178,253,323,398,477]
-const BUTTON_CENTER_Y: Array[float] = [178.0, 253.0, 323.0, 398.0, 477.0]
+const BUTTON_CENTER_Y: Array[float] = [178.0, 268.0, 358.0, 448.0, 538.0]   # 间距 90（源 70~79 太挤，用户要加大；顶部 178 不变）
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
 const ANIM_DUR: float = 0.12                    # 源 shortcut_board_pop_time
 const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）
