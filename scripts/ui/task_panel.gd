@@ -65,7 +65,16 @@ const REWARD_ICON_H: int = 20  # 源 :564 reward icon mh
 const FAST_BTN_SIZE: Vector2 = Vector2(60.0, 45.0)  # 源 :757 createFastButton setContentSize
 const ROW_SEP: int = 8
 
-const CLOSE_POS: Vector2 = Vector2(880.0, 20.0)
+# ---- 源 task.lua basetask.create @837-904 chrome:frame+title_bg+title+close ----
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311，Sprite 无 fix_size → 显示=纹理/CS
+const FRAME_RES: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
+const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/crusade_title_short_bg.png"
+const FRAME_CENTER_COCOS: Vector2 = Vector2(400.0, 218.0)   # 源 :845
+const TITLE_BG_CENTER_COCOS: Vector2 = Vector2(400.0, 399.0)   # 源 :859
+const CLOSE_CENTER_COCOS: Vector2 = Vector2(675.0, 382.0)   # 源 :887
+const TITLE_COLOR: Color = Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0)   # 源 :876 ccc3(250,205,16)
+const TITLE_FONT_SIZE: int = 24   # 源 :870
+const CHROME_Z: int = 30   # 源 :854/:882 title_bg/close z=30
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
 const TITLE_MAIN_POS: Vector2 = Vector2(141.0, 20.0)
@@ -94,13 +103,55 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -
 
 
 func _build_ui() -> void:
-	var close: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_POS)
-	close.pressed.connect(remove_window)
-	container.add_child(close)
+	_build_chrome()
 	# 主线任务链(源 ed.ui.task:initTaskList@1038 读 tm.task → Task 表)
 	_build_list_section(true)
 	# 日常任务(源 ed.ui.dailyTask:initTaskList@1542 读 Todolist + player._dailyjob)
 	_build_list_section(false)
+
+
+# 源 task.lua basetask.create @837-904 chrome:frame(package_herolist_bg,中心 400,218)/
+# title_bg(crusade_title_short_bg,中心 400,399,z=30)/ title(parent title_bg,size 24,金黄)/
+# close(中心 675,382,z=30)。Sprite 无 fix_size → 显示=纹理/CS（同 daily_login_builder._add_centered）。
+func _build_chrome() -> void:
+	# 源 :839-849 frame
+	var frame := TextureRect.new()
+	frame.texture = _load_tex(FRAME_RES)
+	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	frame.size = (frame.texture.get_size() / CONTENT_SCALE) if frame.texture != null else Vector2.ZERO
+	frame.position = _to_godot(FRAME_CENTER_COCOS.x, FRAME_CENTER_COCOS.y) - frame.size * 0.5
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(frame)
+	# 源 :852-861 title_bg（z=30）
+	var title_bg := TextureRect.new()
+	title_bg.texture = _load_tex(TITLE_BG_RES)
+	title_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_bg.size = (title_bg.texture.get_size() / CONTENT_SCALE) if title_bg.texture != null else Vector2.ZERO
+	title_bg.position = _to_godot(TITLE_BG_CENTER_COCOS.x, TITLE_BG_CENTER_COCOS.y) - title_bg.size * 0.5
+	title_bg.z_index = CHROME_Z
+	title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(title_bg)
+	# 源 :864-878 title Label（parent title_bg，fontinfo ui_normal_button size 24，金黄 ccc3(250,205,16)；
+	# 源 position ccp(175,35) ≈ title_bg 显示尺寸中心 → Godot 用 size=title_bg.size + 居中对齐等价）
+	var title := Label.new()
+	title.text = _cm.get_lstr("TASK.TASK")
+	title.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
+	title.add_theme_color_override("font_color", TITLE_COLOR)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.size = title_bg.size
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_bg.add_child(title)
+	# 源 :880-903 close（Sprite anchor 0.5,0.5 中心，z=30）
+	var close: TextureButton = UiButton.make(CLOSE_RES, CLOSE_PRESS_RES, _to_godot(CLOSE_CENTER_COCOS.x, CLOSE_CENTER_COCOS.y))
+	close.z_index = CHROME_Z
+	close.pressed.connect(remove_window)
+	container.add_child(close)
+
+
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 daily_login_builder/handbook_builder）。
+static func _to_godot(cx: float, cy: float) -> Vector2:
+	return Vector2(cx + 80.0, 560.0 - cy)
 
 
 func _build_list_section(is_main: bool) -> void:
