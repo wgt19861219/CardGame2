@@ -46,9 +46,21 @@ const MARK_COLORS: Dictionary = {
 	"AGI": Color(0.30, 0.75, 0.30),
 	"INT": Color(0.30, 0.45, 0.95),
 }
+# 源 readhero.lua:947 ed.createttf(name, 20) — 名字字号 20（baseheroitem :32 传 shadow {color, offset}）。
+const NAME_FONT_SIZE: int = 20
+const NAME_SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0)      # 源 baseheroitem :32 shadow.color ccc3(0,0,0)
+const NAME_SHADOW_OFFSET_Y: int = 2                         # 源 :32 shadow.offset ccp(0,2)
+# 源 heroitem.lua:225/227 plusSign sr + :244 canDealTag tag 资源。
+const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"          # 源 :225 可穿戴蓝+
+const PLUS_CRAFT_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png" # 源 :227 仅可合成黄+
+const DEAL_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"                 # 源 :244 canDealTag
+const PLUS_SIGN_TARGET: float = 24.0   # 源 :233 plusSign setScale(24/w)
+const DEAL_TAG_TARGET: float = 24.0    # 源 :244 tag setScale(24/w)
+const DEAL_TAG_COCOS: Vector2 = Vector2(240.0, 90.0)   # 源 :245 tag setPosition(240, 90)
 
 var cm: Variant = null
 var hero_mgr: HeroManager = null
+var pd: PlayerData = null
 var tid: int = 0
 var is_miss: bool = false
 var _entry: Variant = null
@@ -56,15 +68,17 @@ var head: ReadheroIcon = null
 
 
 # 入口：entry 是 HeroInstance（已拥有）或 {tid:int, miss:bool}（未拥有，源 getAllListWithMiss 产物）。
-static func create_from_entry(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager) -> HeroPackageItem:
+# p_pd 可选 — plusSign 持有判定用（pd=null 时仅查配方 Components>0，与 equip_craft_panel 简化版对齐）。
+static func create_from_entry(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: PlayerData = null) -> HeroPackageItem:
 	var item := HeroPackageItem.new()
-	item._build(entry, p_cm, p_hero_mgr)
+	item._build(entry, p_cm, p_hero_mgr, p_pd)
 	return item
 
 
-func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager) -> void:
+func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: PlayerData = null) -> void:
 	cm = p_cm
 	hero_mgr = p_hero_mgr
+	pd = p_pd
 	_entry = entry
 	is_miss = not (entry is HeroInstance)
 	tid = ReadheroHandbook.entry_tid(entry)
@@ -101,24 +115,55 @@ func _create_head() -> void:
 	add_child(head)
 
 
-# 源 baseheroitem :29-37 createHeroNameByInfo — name + rank 后缀（后缀简化省略，待 getHeroStarByRank 精确翻译）。
+# 源 baseheroitem :29-37 + readhero.lua:939-985 createHeroNameByInfo — name + "+N" 后缀（hero_star[rank]>0 时）。
+# name 与 suffix 两 Label 横向拼接（源 sprite 容器 + 两 createttf 子节点）；suffix 按 rank 段着色。
+# 名字本身默认色（源 baseheroitem :32 未传 nameColor），阴影 ccc3(0,0,2)（源 shadow）。
 func _create_name() -> void:
-	# 源 Unit.lua ["Display Name"] = LSTR("Unit.hero.alias.001")，Lua load 时 LSTR 宏翻译成中文；
-	# lua_to_json 转 Unit.json 只存 key 字符串，View 层须 cm.get_lstr 解析成当前语言（源 readhero.createttf 等价）。
 	var disp_name: String = cm.get_lstr(_unit_str(&"Display Name", NAME_FALLBACK))
+	var rank: int = _rank()
+	var star: int = ReadheroHandbook.get_hero_star_by_rank(rank)
+	var name_lbl := _make_name_label(disp_name, ReadheroHandbook.NAME_COLOR_DEFAULT)
+	add_child(name_lbl)
+	var name_size: Vector2 = name_lbl.get_minimum_size()
+	var total_w: float = name_size.x
+	var suffix_w: float = 0.0
+	var suffix_lbl: Label = null
+	if star > 0:
+		suffix_lbl = _make_name_label("+" + str(star), ReadheroHandbook.get_hero_name_color_by_rank(rank))
+		add_child(suffix_lbl)
+		suffix_w = suffix_lbl.get_minimum_size().x
+		total_w += suffix_w
+	# 源 :33-35 ow<w 时 setScale(ow/w)；:36 setPosition(177 - min(w,ow)/2, 72) anchor(0,0.5)
+	var scale_val: float = min(1.0, NAME_MAX_W / total_w) if total_w > 0.0 else 1.0
+	var pos_x: float = NAME_CENTER_X - min(total_w, NAME_MAX_W) * 0.5
+	var base_pos: Vector2 = _place(Vector2(pos_x, NAME_POS_Y), Vector2(0.0, 0.5), Vector2(total_w, name_size.y))
+	name_lbl.scale = Vector2(scale_val, scale_val)
+	name_lbl.position = base_pos
+	if suffix_lbl != null:
+		suffix_lbl.scale = Vector2(scale_val, scale_val)
+		suffix_lbl.position = base_pos + Vector2(name_size.x * scale_val, 0.0)
+
+
+func _make_name_label(text: String, font_color: Color) -> Label:
 	var lbl := Label.new()
-	lbl.add_theme_font_size_override("font_size", 18)
-	lbl.text = disp_name
+	lbl.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
+	lbl.text = text
+	lbl.add_theme_color_override("font_color", font_color)
+	lbl.add_theme_color_override("font_shadow_color", NAME_SHADOW_COLOR)
+	lbl.add_theme_constant_override("shadow_offset_y", NAME_SHADOW_OFFSET_Y)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(lbl)
-	var ls: Vector2 = lbl.get_minimum_size()
-	var pos_x: float = NAME_CENTER_X - min(ls.x, NAME_MAX_W) * 0.5
-	lbl.position = _place(Vector2(pos_x, NAME_POS_Y), Vector2(0.0, 0.5), ls)
-	if ls.x > NAME_MAX_W:
-		lbl.scale.x = NAME_MAX_W / ls.x
+	return lbl
 
 
-# 源 baseheroitem :38-42 markIcon = hero_mark_res[Main Attrib]；icon_str/agi/int 源缺图 → ColorRect 降级。
+# 源 baseheroitem :31 rank = miss and 1 or player.heroes[tid]._rank（miss 默认 1 = 无后缀）。
+func _rank() -> int:
+	if is_miss:
+		return 1
+	return (_entry as HeroInstance).rank
+
+
+# 源 baseheroitem :38-42 markIcon = hero_mark_res[Main Attrib] = icon_str/agi/int.png。
+# 资源核实：git ls-files 确认 assets/ui/alpha/HVGA/icon_str/agi/int.png 均缺 → ColorRect 属性色块降级。
 func _create_mark() -> void:
 	var attrib: String = _unit_str(&"Main Attrib", "")
 	if attrib.is_empty():
@@ -131,11 +176,14 @@ func _create_mark() -> void:
 	add_child(mark)
 
 
-# 源 packageheroitem createHeroEquips :202-249 — 6 槽 gocha.png 背景 + 装备图标（有）/ 半透明（空）。
-# plusSign（可合成 + 号）+ canDealTag 降级省略（待 isEquipCraftable/canWearEquip 翻译）。
+# 源 packageheroitem createHeroEquips :202-249 — 6 槽 gocha.png 背景 + 装备图标（有）/ 半透明（空 + plusSign）。
+# plusSign：空槽查 hero_equip[tid][rank]["Equip{slot} ID"]，可合成则加 + 号（黄+仅可合成 / 蓝+可穿戴）。
+# canDealTag：任一槽可穿戴时在 (240,90) 加 main_deal_tag（源 :243-248 isShowTag）。
 func _create_equips() -> void:
 	var hero: HeroInstance = _entry as HeroInstance
+	var show_tag: bool = false
 	for i in range(EQUIP_SLOT_COUNT):
+		var slot: int = i + 1   # 源 Lua i=1..6（GDScript 0-based +1）
 		var cocos_x: float = EQUIP_X_BASE + EQUIP_X_STEP * float(i)
 		var slot_size := Vector2(EQUIP_BG_SIZE, EQUIP_BG_SIZE)
 		var slot_pos: Vector2 = _place(Vector2(cocos_x, EQUIP_Y), Vector2(0.5, 0.5), slot_size)
@@ -151,6 +199,48 @@ func _create_equips() -> void:
 			_create_equip_icon(item_id, slot_pos)
 		else:
 			slot_bg.modulate = Color(1.0, 1.0, 1.0, EQUIP_EMPTY_ALPHA)
+			var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot, cm)
+			if eid > 0 and EquipdetailQuery.is_equip_craftable(eid, cm, pd):
+				var can_wear: bool = bool(EquipdetailQuery.can_wear_equip(hero, eid, cm)["can"])
+				_create_plus_sign(PLUS_WEAR_RES if can_wear else PLUS_CRAFT_RES, slot_pos, slot_size)
+				if can_wear:
+					show_tag = true
+	if show_tag:
+		_create_deal_tag()
+
+
+# 源 heroitem.lua:231-234 plusSign — setScale(24/w) at (105+22*(i-1), 18) anchor(0.5,0.5) 同 equipBg。
+func _create_plus_sign(res_path: String, slot_pos: Vector2, slot_size: Vector2) -> void:
+	var tex: Texture2D = _load_tex(res_path)
+	if tex == null:
+		return
+	var orig_w: float = float(tex.get_width())
+	var scale_val: float = PLUS_SIGN_TARGET / orig_w if orig_w > 0.0 else 1.0
+	var icon_size := tex.get_size() * scale_val
+	var icon := TextureRect.new()
+	icon.texture = tex
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.size = icon_size
+	icon.position = slot_pos + (slot_size - icon_size) * 0.5
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(icon)
+
+
+# 源 heroitem.lua:243-248 canDealTag — main_deal_tag.png setScale(24/w) at (240, 90)。
+func _create_deal_tag() -> void:
+	var tex: Texture2D = _load_tex(DEAL_TAG_RES)
+	if tex == null:
+		return
+	var orig_w: float = float(tex.get_width())
+	var scale_val: float = DEAL_TAG_TARGET / orig_w if orig_w > 0.0 else 1.0
+	var tag_size := tex.get_size() * scale_val
+	var tag := TextureRect.new()
+	tag.texture = tex
+	tag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tag.size = tag_size
+	tag.position = _place(DEAL_TAG_COCOS, Vector2.ZERO, tag_size)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(tag)
 
 
 func _create_equip_icon(item_id: int, slot_pos: Vector2) -> void:
