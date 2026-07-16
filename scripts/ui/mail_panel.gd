@@ -5,6 +5,9 @@ extends PopWindow
 ## frame + close + title_bg + 「信箱」+ 邮件列表（ScrollContainer+VBox，单封 bg+icon+name+from+date）。
 ## 点击单封 → MailDetailPanel。单机化：源 draglist 自定义滚动 → ScrollContainer；联机 get_maillist → MailData 本地。
 
+# 全局 contentScaleFactor（源 hello.lua:311 setContentScaleFactor(1.28125)）：
+# Cocos Sprite 无 fix_size 时显示 = 纹理/CS；Godot TextureRect 用 tex.get_size() 偏大 1.28。
+const CONTENT_SCALE: float = 1.28125
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_frame.png"
 const TITLE_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_title_bg.png"
 const CLOSE_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
@@ -45,7 +48,7 @@ func _build_ui() -> void:
 	var frame := TextureRect.new()
 	frame.texture = frame_tex
 	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = frame_tex.get_size()
+	frame.size = frame_tex.get_size() / CONTENT_SCALE   # 源 mailbox.lua:608 config={} 无 fix
 	frame.position = Vector2(960.0 * 0.5 - frame.size.x * 0.5, 640.0 * 0.5 - frame.size.y * 0.5)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(frame)
@@ -71,7 +74,7 @@ func _add_title(frame: TextureRect) -> void:
 	var title_bg := TextureRect.new()
 	title_bg.texture = tb_tex
 	title_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title_bg.size = tb_tex.get_size()
+	title_bg.size = tb_tex.get_size() / CONTENT_SCALE   # 源 mailbox.lua:647 config={} 无 fix
 	title_bg.position = Vector2(frame.size.x * 0.5 - title_bg.size.x * 0.5, 10)
 	title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.add_child(title_bg)

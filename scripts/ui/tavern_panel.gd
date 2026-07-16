@@ -17,6 +17,9 @@ signal drawn
 const TavernBoardBuilder = preload("res://scripts/ui/tavern_board_builder.gd")
 const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
 const POOL_KEYS: Array[String] = ["Bronze", "Gold", "MagicSoul"]
+# 全局 contentScaleFactor（源 hello.lua:311 setContentScaleFactor(1.28125)）：
+# Cocos Sprite 无 fix_size 时显示 = 纹理/CS；Godot TextureRect 用 tex.get_size() 偏大 1.28。
+const CONTENT_SCALE: float = 1.28125
 # board 横排中心照源 draglist(80,80)+board_bg ccp(160,205) → Godot (240,355)/(480,355)/(720,355)
 const BOARD_CENTER_X: float = 240.0
 const BOARD_DX: float = 240.0
@@ -102,7 +105,7 @@ func _create_background() -> void:
 	title.texture = load(TITLE_BG_RES) as Texture2D
 	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	if title.texture != null:
-		title.size = title.texture.get_size()
+		title.size = title.texture.get_size() / CONTENT_SCALE   # 源 tavern.lua:617 config={} 无 fix
 		title.position = TITLE_BG_POS
 		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(title)
