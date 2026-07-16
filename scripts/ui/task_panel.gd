@@ -12,6 +12,8 @@ const BOARD_FINISHED_RES := "res://assets/ui/alpha/HVGA/task_board_finished.png"
 const ICON_BG_RES := "res://assets/ui/alpha/HVGA/task_icon_bg.png"
 const BUTTON_RES := "res://assets/ui/alpha/HVGA/task_button.png"
 const BUTTON_PRESS_RES := "res://assets/ui/alpha/HVGA/task_button_press.png"
+# 源 :583 completeTag 用 task_get_reward_button.png（assets 缺 → 降级 task_button.png+"完成"文字）
+const COMPLETE_TAG_RES := "res://assets/ui/alpha/HVGA/task_get_reward_button.png"
 # 源 reward_icon_res:task_gold_icon_2 等(task_exp_icon_2 缺 → excavate_exp_icon 降级)
 const REWARD_ICON_RES := {
 	"Coin": "res://assets/ui/alpha/HVGA/task_gold_icon_2.png",
@@ -65,7 +67,6 @@ const ROW_SEP: int = 8
 const CLOSE_POS: Vector2 = Vector2(880.0, 20.0)
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
-const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framework.lua:749 全屏背景
 const TITLE_MAIN_POS: Vector2 = Vector2(141.0, 20.0)
 const SCROLL_MAIN_POS: Vector2 = Vector2(141.0, 50.0)
 const SCROLL_MAIN_SIZE: Vector2 = Vector2(638.0, 140.0)
@@ -83,24 +84,12 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -
 	_cm = p_cm
 	_tm = p_tm
 	setup()
-	# 源 task 是 addChild 弹窗（framework.lua:644）透 main 场景地图，无全屏 bg.jpg；
-	# 此处加 bg.jpg 是用户统一视觉偏好（2026-07-14 反馈，与英雄包裹/背包一致），偏离源。
+	# 源 basetask.create @826 mainLayer=CCLayerColor:create(ccc4(0,0,0,200)) 半透明黑遮罩；
+	# framework.lua:644 addChild 到当前场景（popup，非 pushScene），透 main 地图，无全屏 bg.jpg。
+	# PopWindow 默认 shade alpha=150/255（popwindow.lua），此处覆盖为源的 200/255。
 	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_fullscreen_bg()
+		shade_layer.color.a = 200.0 / 255.0
 	_build_ui()
-
-
-# 全屏 bg.jpg 背景（源 framework.lua:749）。
-func _create_fullscreen_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(FRAMEWORK_BG)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
 
 
 func _build_ui() -> void:
@@ -115,7 +104,8 @@ func _build_ui() -> void:
 
 func _build_list_section(is_main: bool) -> void:
 	var title := Label.new()
-	title.text = "主线任务" if is_main else "日常任务"
+	# 源 @832-835 titleText：task→TASK.TASK="任务"；dailyTask→TASK.DAILY_ACTIVITIES="每日活动"
+	title.text = _cm.get_lstr("TASK.TASK") if is_main else _cm.get_lstr("TASK.DAILY_ACTIVITIES")
 	title.position = TITLE_MAIN_POS if is_main else TITLE_DAILY_POS
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(title)
@@ -166,8 +156,9 @@ func _build_main_task(chain: int, tid: int, row: Dictionary, is_finished: bool) 
 	}
 
 
-# 源 getProgress@1064 + getCount:查 Task Progress Type/ID + player record。
-# 单机化行为点未全接(无 server 推送 progress),降级 0;完成态靠 status=="finished"(领奖后)。Logic 待接 record。
+# 源 getProgress@1064 + getCount:查 Task[chain][id] Task Progress Type/ID + player record（FarmPVEStage 等）。
+# TaskManager 当前只有 dailyjob_count（日常），主任务 progress 记录系统未接（需各行为点 hook record_by_type）。
+# 降级返 0；完成态靠 entry.status=="finished"（领奖后）判定，不依赖 progress。Logic 待接主任务 record。
 func _get_main_progress(row: Dictionary) -> int:
 	return 0
 
@@ -239,13 +230,14 @@ func _make_task_row(task: Dictionary, on_claim: Callable) -> Control:
 	var progress_text: String = "" if is_completed else "%d/%d" % [progress, target]
 	_add_label(bg, progress_text, C_PROGRESS, FONT_PROGRESS, COLOR_PROGRESS_DONE if is_completed else COLOR_PROGRESS_TODO)  # 源 :466
 	_add_label(bg, str(task.get("detail", "")), C_DETAIL, FONT_DETAIL, COLOR_DETAIL)  # 源 :479
-	_add_label(bg, "奖励", C_REWARD_TITLE, FONT_REWARD_TITLE, COLOR_REWARD_TITLE)  # 源 :494 EXERCISE.AWARDS_
+	_add_label(bg, _cm.get_lstr("EXERCISE.AWARDS_"), C_REWARD_TITLE, FONT_REWARD_TITLE, COLOR_REWARD_TITLE)  # 源 :494 奖励：
 	_add_reward_icons(bg, task.get("reward", []))  # 源 :556-581
 	# 源 :582-591:isCompleted → completeTag;elif dailyjob → createFastButton
 	if show_complete:
-		_add_action_button(bg, "完成", on_claim)  # completeTag(领奖)
+		# 源 :583 completeTag 是 task_get_reward_button.png 图（assets 缺 → 降级 task_button.png+"完成"文字）
+		_add_action_button(bg, "完成", on_claim, true)  # completeTag(领奖)
 	elif kind == "dailyjob":
-		_add_action_button(bg, "前往", _on_fast.bind())  # createFastButton(去往)
+		_add_action_button(bg, _cm.get_lstr("TASK.HEAD_TO"), _on_fast.bind(), false)  # 源 :763 前往
 	return bg
 
 
@@ -337,10 +329,15 @@ func _add_reward_amt(bg: TextureRect, amount: int, rx: float, y_base: float) -> 
 	return rx + 30.0
 
 
-# 源 :583 completeTag(task_get_reward_button 缺→ task_button "完成"降级)/ :755 createFastButton "前往"
-func _add_action_button(bg: TextureRect, label_text: String, on_press: Callable) -> void:
+# 源 :583 completeTag 用 task_get_reward_button.png（assets 缺 → 降级 task_button.png+"完成"文字）；
+# 源 :755-757 createFastButton 用 task_button.png+task_button_press.png Scale9 60×45（assets 有，正确）。
+func _add_action_button(bg: TextureRect, label_text: String, on_press: Callable, is_complete: bool) -> void:
 	var btn := TextureButton.new()
-	btn.texture_normal = _load_tex(BUTTON_RES)
+	# completeTag 优先 task_get_reward_button.png（缺图返 null → fallback BUTTON_RES）
+	var normal_tex: Texture2D = _load_tex(COMPLETE_TAG_RES if is_complete else BUTTON_RES)
+	if normal_tex == null:
+		normal_tex = _load_tex(BUTTON_RES)
+	btn.texture_normal = normal_tex
 	btn.texture_pressed = _load_tex(BUTTON_PRESS_RES)
 	btn.ignore_texture_size = true
 	btn.stretch_mode = TextureButton.STRETCH_SCALE
@@ -360,10 +357,10 @@ func _add_action_button(bg: TextureRect, label_text: String, on_press: Callable)
 	bg.add_child(btn)
 
 
-# 源 createEmptyPrompt@784:"暂无可领取任务"(task)/ "今日任务已完成"(dailyjob)
+# 源 createEmptyPrompt@784-810：task→TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED；dailyjob→TASK.YOU_HAVE_DONE_TODAYS_TASKS
 func _make_empty_prompt(kind: String) -> Label:
 	var lbl := Label.new()
-	lbl.text = "暂无可领取任务" if kind == "task" else "今日任务已完成"
+	lbl.text = _cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED") if kind == "task" else _cm.get_lstr("TASK.YOU_HAVE_DONE_TODAYS_TASKS")
 	lbl.add_theme_font_size_override("font_size", FONT_NAME)
 	lbl.add_theme_color_override("font_color", COLOR_EMPTY)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -384,20 +381,27 @@ func _load_tex(res_path: String) -> Texture2D:
 # ---- 领奖 / 去往回调 ----
 func _on_claim_main(chain: int, tid: int) -> void:
 	var r: Dictionary = _tm.claim_task_reward(_player, chain, tid, _cm)
-	Toast.show_message("领取成功" if bool(r["ok"]) else "领取失败")
+	# 源 doClickTask :1024-1035 领奖成功走 announce 弹窗（title=TASK.COMPLETION_+name），单机降级 Toast；
+	# 失败源 :1037 TASK.TASK_SUBMISSION_FAILED。
 	if bool(r["ok"]):
+		Toast.show_message("领取成功")  # 降级文案（源 announce 走 TASK.COMPLETION_+name，无单句 LSTR）
 		_refresh_ui()
+	else:
+		Toast.show_message(_cm.get_lstr("TASK.TASK_SUBMISSION_FAILED"))
 
 
 func _on_claim_daily(job_id: int) -> void:
 	var r: Dictionary = _tm.claim_job_reward(_player, job_id, _cm)
-	Toast.show_message("领取成功" if bool(r["ok"]) else "未达成")
+	# 源 doClickInTaskHandler :939 未完成→TASK.THE_TASK_HAS_NOT_BEEN_COMPLETED；成功走 announce（同 main）。
 	if bool(r["ok"]):
+		Toast.show_message("领取成功")  # 降级文案（源 announce，无单句 LSTR）
 		_refresh_ui()
+	else:
+		Toast.show_message(_cm.get_lstr("TASK.THE_TASK_HAS_NOT_BEEN_COMPLETED"))
 
 
 # 源 createFastButton fast_handler:按 Task Progress Type 跳场景(stageselect/ladder/heropackage/midas/tavern)。
-# 单机化场景跳转未全接,降级 Toast(Logic 待接场景路由)。
+# 单机化场景跳转未接，降级 Toast（Logic 待接场景路由；源无对应 LSTR，文案为降级产物）。
 func _on_fast() -> void:
 	Toast.show_message("前往任务目标")
 

@@ -134,3 +134,54 @@ func test_make_row_icon_assembly() -> void:
 	assert_true(has_icon_bg, "iconBg 装配（源 task_icon_bg.png）")
 	row.free()
 	panel.free()
+
+
+# 源 basetask.create @826 mainLayer=CCLayerColor:create(ccc4(0,0,0,200)) 半透明黑遮罩（popup 非场景）。
+# 验证 setup_panel 后 shade alpha = 200/255（PopWindow 默认 150/255 被覆盖）。
+func test_setup_uses_source_shade_alpha_200() -> void:
+	var panel := _make_panel()
+	assert_almost_eq(float(panel.shade_layer.color.a), 200.0 / 255.0, 0.001, "shade alpha=200/255（源 basetask@826）")
+	panel.free()
+
+
+# 源 @832-835 段标题：task→TASK.TASK="任务"；dailyTask→TASK.DAILY_ACTIVITIES="每日活动"。
+func test_section_titles_use_source_lstr() -> void:
+	var panel := _make_panel()
+	var titles: Array = []
+	for c in panel.container.get_children():
+		if c is Label and not (c as Label).text.is_empty():
+			titles.append(String((c as Label).text))
+	assert_true(titles.has("任务"), "主线段标题 = TASK.TASK")
+	assert_true(titles.has("每日活动"), "日常段标题 = TASK.DAILY_ACTIVITIES")
+	panel.free()
+
+
+# 源 createEmptyPrompt @788-790：task→TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED；dailyjob→TASK.YOU_HAVE_DONE_TODAYS_TASKS。
+func test_empty_prompt_uses_source_lstr() -> void:
+	var panel := _make_panel()
+	var task_prompt: Label = panel._make_empty_prompt("task")
+	assert_eq(String(task_prompt.text), "当前没有可接的任务", "task empty = TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED")
+	var daily_prompt: Label = panel._make_empty_prompt("dailyjob")
+	assert_eq(String(daily_prompt.text), "今日任务已全部完成", "dailyjob empty = TASK.YOU_HAVE_DONE_TODAYS_TASKS")
+	task_prompt.free()
+	daily_prompt.free()
+	panel.free()
+
+
+# 源 :583 completeTag 用 task_get_reward_button.png（assets 缺 → 降级 task_button.png）。
+# 验证完成态按钮纹理非空（降级 fallback 生效）。
+func test_complete_button_falls_back_when_asset_missing() -> void:
+	var panel := _make_panel()
+	var task := {
+		"kind": "task", "name": "T", "detail": "D", "target": 1, "progress": 1,
+		"isFinished": false, "icon": "", "reward": [],
+	}
+	var row: Control = panel._make_task_row(task, Callable())
+	var btn_tex_nonempty: bool = false
+	for c in row.get_children():
+		if c is TextureButton:
+			if (c as TextureButton).texture_normal != null:
+				btn_tex_nonempty = true
+	assert_true(btn_tex_nonempty, "completeTag 降级后 texture_normal 非空（task_get_reward_button.png 缺 → task_button.png）")
+	row.free()
+	panel.free()
