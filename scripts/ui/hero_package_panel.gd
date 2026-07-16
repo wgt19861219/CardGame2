@@ -14,7 +14,7 @@ extends PopWindow
 const OFFSET_X: float = -20.0
 const LIST_BG_RES: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
 const LIST_BG_COCOS: Vector2 = Vector2(385.0, 215.0)   # 源 :501
-const LIST_BG_SIZE: Vector2 = Vector2(570.0, 375.0)    # 源 :504 fix_size
+const LIST_BG_SIZE: Vector2 = Vector2(720.0, 410.0)   # 视觉加大（装 2 卡片 bg 313 并列 + 边距），源 :504 fix_size 570×375
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const TAB_KEYS: Array[String] = ["all", "front", "middle", "back"]
@@ -22,10 +22,13 @@ const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # �
 const TAB_COCOS_Y: Array[float] = [365.0, 305.0, 245.0, 185.0]      # 源 :517/560/603/646
 const TAB_COCOS_X: float = 707.0
 const LABEL_CENTER_OFFSET: Vector2 = Vector2(20.0, 10.0)   # label 居中估算偏移（size 未 layout）
-# draglist rect 源 (135+offsetx, 45, 500, 348) → Godot 左上
-const LIST_TOPLEFT: Vector2 = Vector2(135.0 + OFFSET_X + 80.0, 560.0 - 45.0 - 348.0)
-const LIST_SIZE: Vector2 = Vector2(500.0, 348.0)
-const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 refreshHeroList getpos 260 间距 / 100 行高
+# 通用左右边距：内容（ScrollContainer）距 bg 边框左右内边距（通用常量，后续面板复用统一样式）。
+const LIST_PADDING_X: float = 35.0
+# draglist 内容区：bg position.x = _to_godot(385,215).x - LIST_BG_SIZE.x*0.5 = 445 - 360 = 85（445 = 385-20(OFFSET_X)+80）；
+# LIST_TOPLEFT = bg + 左右 LIST_PADDING_X + 垂直居中 (LIST_BG_SIZE.y-348)/2。随 LIST_BG_SIZE 自动。
+const LIST_TOPLEFT: Vector2 = Vector2(445.0 - LIST_BG_SIZE.x * 0.5 + LIST_PADDING_X, 140.0 + (LIST_BG_SIZE.y - 348.0) * 0.5)
+const LIST_SIZE: Vector2 = Vector2(LIST_BG_SIZE.x - 2.0 * LIST_PADDING_X, 348.0)
+const CELL_SIZE: Vector2 = Vector2(320.0, 100.0)   # 源 getpos 260 间距 / 100 行高（加宽同步 hero_package_item，bg 313 不重叠）
 const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
 const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"

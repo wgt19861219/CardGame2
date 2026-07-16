@@ -10,8 +10,8 @@ extends Control
 
 const BG_RES: String = "res://assets/ui/alpha/HVGA/package_hero_bg.png"
 const BG_SIZE: Vector2 = Vector2(313.0, 123.0)
-const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
-const BG_OFFSET: Vector2 = Vector2(-26.5, -11.5)        # bg 中心对齐 cell 中心
+const CELL_SIZE: Vector2 = Vector2(320.0, 100.0)   # 加宽（用户偏好并列清晰），源 getpos 260 间距 + bg 313 透明重叠
+const BG_OFFSET: Vector2 = Vector2(3.5, -11.5)        # bg 中心对齐 cell 中心（cell 320 > bg 313，bg 水平不溢出）
 const BG_H: float = 123.0
 const GOCHA_RES: String = "res://assets/ui/alpha/HVGA/gocha.png"
 const PROGRESS_BG_RES: String = "res://assets/ui/alpha/HVGA/heropackage_soulstone_progress_bg.png"
@@ -103,7 +103,9 @@ func _create_head() -> void:
 
 # 源 baseheroitem :29-37 createHeroNameByInfo — name + rank 后缀（后缀简化省略，待 getHeroStarByRank 精确翻译）。
 func _create_name() -> void:
-	var disp_name: String = _unit_str(&"Display Name", NAME_FALLBACK)
+	# 源 Unit.lua ["Display Name"] = LSTR("Unit.hero.alias.001")，Lua load 时 LSTR 宏翻译成中文；
+	# lua_to_json 转 Unit.json 只存 key 字符串，View 层须 cm.get_lstr 解析成当前语言（源 readhero.createttf 等价）。
+	var disp_name: String = cm.get_lstr(_unit_str(&"Display Name", NAME_FALLBACK))
 	var lbl := Label.new()
 	lbl.add_theme_font_size_override("font_size", 18)
 	lbl.text = disp_name

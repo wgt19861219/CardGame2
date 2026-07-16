@@ -29,7 +29,7 @@ const GOLD_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_goldicon_small.png
 const DIAMOND_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_rmbicon.png"
 const VITALITY_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_vitalityicon.png"
 const PLUS_ICON_RES: String = "res://assets/ui/alpha/HVGA/main_status_plus_icon_1.png"
-const BAR_POS_X: Array = [280.0, 463.0, 630.0]   # P1-15：照源 statusbar.lua 251/434/601 间距 183/167（等距 180→183/167）
+const BAR_POS_X: Array = [208.0, 391.0, 574.0]   # 等距 183（框 178 + gap 5 避重叠；源 rmb-vitality 间距 167<178 重叠，改等距 183；整体宽 544=178×3+5×2 居中 (960-544)/2=208）
 const BAR_Y: float = 30.0
 
 
@@ -83,24 +83,34 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	return refs
 
 
+# 仅货币条（无头像）— 非 main 场景用（源 framework.createTitle 所有场景建货币条，createHead 只 main）。
+# bar_pos_x/bar_y 由调用方传源 common 位置（heroScene：cocos(251,434,601) y450 → godot [311,494,661] y110）。
+static func build_bars_only(parent: Control, bar_pos_x: Array, bar_y: float, vitality_plus_handler: Callable = Callable()) -> Dictionary:
+	var refs: Dictionary = {}
+	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, Callable(), bar_y)
+	refs["diamond"] = _build_bar(parent, float(bar_pos_x[1]), DIAMOND_ICON_RES, Callable(), bar_y)
+	refs["vitality"] = _build_bar(parent, float(bar_pos_x[2]), VITALITY_ICON_RES, vitality_plus_handler, bar_y)
+	return refs
+
+
 # 装配单条货币条：背景条 + 图标 + 数字 label + 加号。返回 label ref。
 # plus_handler 非空（vitality）→ 加号是 Button 可点（照源 statusbar:59-68 radius=30 圆形点击 → buyVitality）；
 # plus_handler 空（gold/diamond）→ 加号 IGNORE（gold 走 midas_btn，diamond 充值单机化裁剪；避 STOP 吞点击）。
-static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler: Callable = Callable()) -> Label:
+static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler: Callable = Callable(), bar_y: float = BAR_Y) -> Label:
 	var bar := Control.new()
-	bar.position = Vector2(x, BAR_Y)
-	bar.size = Vector2(160.0, 40.0)
+	bar.position = Vector2(x, bar_y)
+	bar.size = Vector2(178.0, 48.0)
 	parent.add_child(bar)
-	_add_texture_rect(bar, BAR_BG_RES, Vector2.ZERO, Vector2(140.0, 32.0), "bg")
-	_add_texture_rect(bar, icon_res, Vector2(5.0, 0.0), Vector2(32.0, 32.0), "icon")
+	_add_texture_rect(bar, BAR_BG_RES, Vector2.ZERO, Vector2(178.0, 48.0), "bg")
+	_add_texture_rect(bar, icon_res, Vector2(142.0, 8.0), Vector2(32.0, 32.0), "icon")
 	var lbl := Label.new()
-	lbl.position = Vector2(40.0, 8.0)
+	lbl.position = Vector2(50.0, 16.0)
 	lbl.add_theme_font_size_override("font_size", 14)
 	bar.add_child(lbl)
 	if plus_handler.is_valid():
 		# 加号 Button（flat + StyleBoxEmpty 去默认样式，icon=PLUS_ICON_RES；照源圆形点击区 radius=30）
 		var plus_btn := Button.new()
-		plus_btn.position = Vector2(120.0, 0.0)
+		plus_btn.position = Vector2(4.0, 8.0)
 		plus_btn.size = Vector2(32.0, 32.0)
 		plus_btn.icon = load(PLUS_ICON_RES)
 		plus_btn.flat = true
@@ -113,7 +123,7 @@ static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler
 		bar.add_child(plus_btn)
 	else:
 		# 无处理器（gold/diamond）：IGNORE 避 STOP 吞点击无响应（P1-复审2-3 核心危害）
-		var plus := _add_texture_rect(bar, PLUS_ICON_RES, Vector2(120.0, 0.0), Vector2(32.0, 32.0), "plus")
+		var plus := _add_texture_rect(bar, PLUS_ICON_RES, Vector2(4.0, 8.0), Vector2(32.0, 32.0), "plus")
 		plus.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return lbl
 
@@ -160,7 +170,11 @@ static func _add_texture_rect(parent: Control, res_path: String, pos: Vector2, s
 	var tr := TextureRect.new()
 	tr.name = node_name
 	tr.texture = load(res_path)
+	# EXPAND_IGNORE_SIZE + 显式 size：纹理原始尺寸不撑大（照源 Scale9 scaleSize/fix_size 等价）。
+	# 默认 KEEP_SIZE 致 main_status_number_bg 纹理原始尺寸撑大 → 货币条 3 框重叠（memory: texture-rect-expand-ignore-size）。
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.position = pos
+	tr.size = size
 	tr.custom_minimum_size = size
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(tr)
