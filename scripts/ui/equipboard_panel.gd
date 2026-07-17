@@ -5,8 +5,14 @@ extends PopWindow
 ## 接 PackagePanel.cell_clicked 弹出。左卖出（始终）+ 右动态（prop 查看/consume 使用/fragment 合成）。
 ## propType 判定照源 refreshPropType :233-253（Category=FRAGMENT 有产物→fragment / CONSUMABLES+EXPERIENCE_PILL→consume / 其他→prop）。
 ## sell 接 PlayerData.sell_equip + compose 接 FragmentComposePanel（第 21 段）+ check 接 EquipdetailPanel（第 26 段）+ use 接 EatexpPanel（第 27 段）。
-## 坐标：frame(package_detail_bg 369×493)内子元素走 _gl（源相对 frame sprite 左下角 y-up → Godot Control 左上角 y-down）；
+## CS：源 hello.lua:311 setContentScaleFactor=1.28125，CCSprite 显示=纹理/CS（无 fix_size 时）。
+## package_detail_bg.png 原始纹理 369×493 → 源 display size = 369/CS×493/CS = 288×385（FRAME_SIZE 用 display size）。
+## 坐标：frame sprite display 288×385 内子元素走 _gl（源相对 frame sprite 左下 y-up → Godot Control 左上 y-down）；
 ## frame 自身走 _g(FRAME_POS)（全屏），frame.position = _g(FRAME_POS) - FRAME_SIZE/2（左上角 = 中心 godot - 半尺寸）。
+## bg TextureRect 需 EXPAND_IGNORE_SIZE + size=FRAME_SIZE（288×385），否则按原 369×493 显示偏大 1.28。
+
+# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 档）。
+const CONTENT_SCALE: float = 1.28125
 
 # ── propType（源 refreshPropType）──
 const PROPTYPE_PROP: String = "prop"
@@ -19,8 +25,10 @@ const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"
 const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 
 # ── 坐标常量（源 cocos 值，frame package_detail_bg.png 内相对）──
-const FRAME_POS: Vector2 = Vector2(400.0, 240.0)      # board.lua:426
-const FRAME_SIZE: Vector2 = Vector2(369.0, 493.0)    # package_detail_bg 实际尺寸 369×493（Phase 4 校准）
+const FRAME_POS: Vector2 = Vector2(400.0, 240.0)      # board.lua:426 frame setPosition
+# FRAME_SIZE = package_detail_bg.png display size = 369/CS × 493/CS = 288×385（原 369×493 是纹理原始像素，CS 校正后显示此值）。
+# 上一轮误用 369×493 致 frame 偏大 1.28、子元素 _gl Y 基准也偏 → 装备跑框下。修正为 display size。
+const FRAME_SIZE: Vector2 = Vector2(288.0, 385.0)
 const ICON_POS: Vector2 = Vector2(50.0, 328.0)        # board.lua:320
 const NAME_POS: Vector2 = Vector2(92.0, 345.0)        # board.lua:328
 const AMOUNT_TITLE_POS: Vector2 = Vector2(90.0, 310.0)  # board.lua:65
@@ -105,6 +113,7 @@ func _build_ui() -> void:
 	if ResourceLoader.exists(FRAME_PATH):
 		var bg := TextureRect.new()
 		bg.texture = load(FRAME_PATH)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # CS 校正：默认 KEEP_SIZE 按原纹理 369×493 显示，需 IGNORE+手动 size
 		bg.size = FRAME_SIZE
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		frame.add_child(bg)
