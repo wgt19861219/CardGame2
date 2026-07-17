@@ -14,6 +14,11 @@ extends PopWindow
 signal equipped_changed   # 穿戴后通知调用方刷新（HeroDetailPanel 接 → refresh_content 装备槽）
 signal jump_to_stage(stage_id: int)   # P1-10：获取途径跳转（源 doClickGetWay → stageselect.createByStage）
 
+# panel 层静态化进 equip_craft_content.tscn（CloseBtn + EquipLayer + CraftWindow.Bg + TreeHost
+# + InfoButton/InfoButtonLabel + InfoRemark）。位置/size 可视化，运行时 fill 动态数据/连接信号。
+# 合成树（EquipCraftTree）+ 历史栏 procedural 挂 %TreeHost（_craft_window 子层，坐标系不变）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equip_craft_content.tscn")
+
 
 # ── 坐标常量（源 cocos 值）──────────────────────────────────────────
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125：cocos sprite contentSize=纹理/CS，position 不变。
@@ -48,9 +53,11 @@ var _target_id: int = 0                 # 源 self.id（合成目标装备 id）
 var _context: String = ""               # 源 self.context（heroDetail/handbook）
 var _hid: int = 0                       # 源 self.hid
 var _sid: int = 0                       # 源 self.sid
-var _equip_layer: Control = null        # 源 equipLayer.ui.frame（ofcraft 装备展示）
-var _craft_window: Control = null       # 源 craftWindow.mainLayer
-var _tree: Control = null               # 源 tree.layer（合成树层）
+var _content: Control = null            # .tscn 根（EquipCraftContent），info_btn/remark 取节点用
+var _equip_layer: Control = null        # .tscn %EquipLayer（源 equipLayer.ui.frame）
+var _craft_window: Control = null       # .tscn %CraftWindow（源 craftWindow.mainLayer = bg 中心）
+var _tree_host: Control = null          # .tscn %TreeHost（_craft_window 子，挂动态 tree/history）
+var _tree: Control = null               # 源 tree.layer（合成树层，挂 _tree_host）
 var _tree_data: Dictionary = {}         # 源 self.tree（节点引用：name/rootBg/children/amountLabel/costBg/cost/craftLabel）
 var _craft_window_data: Dictionary = {} # 源 self.craftWindow（nodeid/nodeNeed/nodeAmount/nodeRepeat/expense）
 var _components: int = 0                # 源 self.components
@@ -89,33 +96,33 @@ func setup_panel(p_target_id: int, p_cm: Variant, p_pd: PlayerData, p_hero: Hero
 	if hero != null:
 		_hid = hero.inst_id
 	setup()
-	_create_close_button()
-	_create_equip_layer()
-	_create_craft_window(_target_id)
+	_build_content()
+	_refresh_amount()
+	_create_craft_tree(_target_id, false)
 	_init_history()
 	_create_info_button()   # 源 :1283 enter 回调
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))   # 源 equipcraftlsr openWindow :15
 
 
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(_on_close_pressed)
-	container.add_child(btn)
+# 建 UI 内容：base 层从 equip_craft_content.tscn instantiate（位置/size 可视化）+ 连接信号。
+# 合成树（EquipCraftTree）保留 procedural 挂 %TreeHost（坐标系不变）。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	_content = content
+	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)
+	_equip_layer = _content.get_node("%EquipLayer") as Control
+	_craft_window = _content.get_node("%CraftWindow") as Control
+	_tree_host = _content.get_node("%TreeHost") as Control
+	_info_button = _content.get_node("%InfoButton") as BaseButton
+	_info_button_label = _content.get_node("%InfoButtonLabel") as Label
+	_info_remark = _content.get_node("%InfoRemark") as Label
+	(_info_button as BaseButton).pressed.connect(func() -> void: EquipCraftInfoBtn._on_info_pressed(self))
 
 
 func _on_close_pressed() -> void:
 	AudioPlayer.play_sfx("common_close_popup_window")   # 源 equipcraftlsr closeWindow :19
 	remove_window()
-
-
-# 源 equipboard.init("ofcraft", {id, level}) 的 ofcraft 语义本地化翻译。
-# 源 equipLayer 提供 ui.frame（装备图标 + 详情）+ refreshAmount（刷新拥有数量）。
-# 本项目从 HeroDetailPanel 进（hero 已定），equipLayer 只展示合成目标装备图标 + 拥有数量。
-func _create_equip_layer() -> void:
-	_equip_layer = Control.new()
-	_equip_layer.position = _g(EQUIP_LAYER_POS)
-	container.add_child(_equip_layer)
-	_refresh_amount()
 
 
 # 源 equipLayer:refreshAmount（equipboard 刷新装备拥有数量）。
@@ -131,19 +138,8 @@ func _refresh_amount() -> void:
 
 
 # 源 createCraftWindow :1246：合成窗口背景 equip_craft_bg + createCraftTree 初次 + 进场动画。
+# bg 已在 .tscn（%CraftWindow.%Bg，位置/size 静态化），本函数保留 stub 兼容旧调用（仅委托 _create_craft_tree）。
 func _create_craft_window(id: int) -> void:
-	_craft_window = Control.new()
-	_craft_window.position = _g(CRAFT_WINDOW_POS)
-	container.add_child(_craft_window)
-	var bg := TextureRect.new()
-	bg.texture = load(CRAFT_BG_PATH)
-	# 源 equipcraft.lua:1247-1249 CCSprite:createWithSpriteFrame(sf) 无 fix_size（cocos 显示=纹理/CS）。
-	# Godot TextureRect 默认 KEEP_SIZE 按纹理原尺寸撑大；EXPAND_IGNORE_SIZE + size=tex/CS 等价源 sprite 显示。
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = (bg.texture as Texture2D).get_size() / CONTENT_SCALE
-	bg.position = -bg.size / 2.0   # 源 setPosition(400,240) anchor(0.5,0.5) 中心锚定
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_craft_window.add_child(bg)
 	_create_craft_tree(id, false)
 
 
@@ -331,7 +327,7 @@ func _create_history_layer() -> Control:
 	_history_layer = HBoxContainer.new()
 	_history_layer.position = EquipCraftTree._gl(HISTORY_ORIGIN)
 	_history_layer.add_theme_constant_override("separation", 8)
-	_craft_window.add_child(_history_layer)
+	_tree_host.add_child(_history_layer)
 	return _history_layer
 
 

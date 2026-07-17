@@ -94,7 +94,7 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 	panel._components = components
 	var tree := Control.new()
 	panel._tree = tree
-	panel._craft_window.add_child(tree)
+	panel._tree_host.add_child(tree)
 	var name_lbl := Label.new()
 	name_lbl.text = panel._equip_name(id)
 	name_lbl.position = _gl(NAME_LABEL_POS)

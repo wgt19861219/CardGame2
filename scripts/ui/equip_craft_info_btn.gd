@@ -52,6 +52,9 @@ static func _is_equipped(panel) -> bool:
 
 
 # 源 createInfoButton :610-725：信息按钮（context 决定文字）+ remarkText 等级需求 + 点击 doClickInfoButton。
+# 重构（2026-07-17）：infoButton + infoButtonLabel + infoButtonRemark 已静态化进 equip_craft_content.tscn
+# （%InfoButton + %InfoButtonLabel + %InfoRemark，位置/size 可视化）。本函数改为 fill 文字/颜色（不再建节点）。
+# pressed 信号在 panel._build_content 连接（EquipCraftInfoBtn._on_info_pressed.bind(panel)）。
 static func create_info_button(panel) -> void:
 	var text: String = panel.cm.get_lstr(LSTR_EQUIPMENT)
 	var remark_text: String = panel.cm.get_lstr(LSTR_BINDS_WHEN_EQUIPPED)
@@ -75,17 +78,11 @@ static func create_info_button(panel) -> void:
 		text = panel.cm.get_lstr(LSTR_CONFIRM)
 		var elv: int = int(panel.cm.get_raw_table("Equip").get(str(panel._target_id), {}).get("Level Requirement", 0))
 		remark_text = panel.cm.get_lstr(LSTR_REQUIRED_HERO_LEVEL) % elv  # 源 :657-658
-	# 源 :669-714 ui_info：infoButtonRemark Label + infoButton Sprite + infoButtonPress + infoButtonLabel
-	panel._info_remark = Label.new()
+	# fill .tscn 已建节点（源 :669-714 ui_info 等价）
 	panel._info_remark.text = remark_text
-	panel._info_remark.position = panel._g(INFO_REMARK_POS)
 	panel._info_remark.modulate = remark_color
-	panel.container.add_child(panel._info_remark)
-	# 源 Sprite package_button + Label → UiButton.make 纹理化（center_pos=_g(INFO_BTN_POS)）
-	panel._info_button = UiButton.make(INFO_BTN_RES, INFO_BTN_PRESS_RES, panel._g(INFO_BTN_POS), text, COLOR_WHITE)
-	panel._info_button_label = panel._info_button.get_child(0) as Label   # UiButton.make 加 Label 为第一子
-	panel._info_button.pressed.connect(callable_for_panel(_on_info_pressed, panel))
-	panel.container.add_child(panel._info_button)
+	panel._info_button_label.text = text
+	panel._info_button_label.modulate = COLOR_WHITE
 
 
 # 包内工具：static func + panel 绑定（GDScript 4 static func .bind 行为稳）。
