@@ -2,43 +2,30 @@ class_name HeroPackagePanel
 extends PopWindow
 
 ## 英雄背包（View 层）— 照源 heropackage.lua 完整重建（P0-1 整行卡片）。
-## list_bg 背景 + 4 class tab（all/front/middle/back 竖排切换，classbtn/classbtnselected）+
+## list_bg 背景 + 4 class tab（all/front/middle/back 切换，classbtn/classbtnselected）+
 ## ScrollContainer 英雄网格（HeroPackageItem 整行卡片：头像+名字+mark+装备槽/灵魂石条，2 列 260×100）+
-## 未召唤英雄分隔线（listLine：equip_detail_title_bg + "尚未召唤" 文字）+ close/碎片按钮。
+## 未召唤英雄分隔线（listLine：equip_detail_title_bg + "尚未召唤" 文字）+ close 按钮。
 ## tab 分类委托 ReadheroHandbook.classify_handbook（Logic 层，含未召唤英雄 + 按位置分）。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+OFFSET_X+80, 560-cy)，OFFSET_X=-20。
-## 残留：close/碎片按钮文字降级（common_tips_button_close 资源缺）。
+## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+OFFSET_X+80, 560-cy)，OFFSET_X=-20（源 :486 self.offsetx）。
+## 残留：close 按钮使用 framework statusbar backbtn（源 heroPackage 无 close，framework 注入返回）。
+##
+## Phase A 重构（2026-07-17）：base 层（list_bg + 4 class tab + close + ScrollContainer）静态化进
+## hero_package_content.tscn（instantiate + fill），位置/size 编辑器可视化调，照 hero_detail 范式。
 
-# ReadheroIcon 用全局 class_name（readhero_icon.gd），不 const :Script preload（避免注解 Script 致 := 推断失败，memory: gdscript-const-script-preload-class-name）。
-
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_package_content.tscn")
 const OFFSET_X: float = -20.0
-const LIST_BG_RES: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
-const LIST_BG_COCOS: Vector2 = Vector2(385.0, 215.0)   # 源 :501
-const LIST_BG_SIZE: Vector2 = Vector2(570.0, 375.0)   # 源 :504 fix_size CCSizeMake(570, 375)（照源，去译者"视觉加大 720×410"）
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const TAB_KEYS: Array[String] = ["all", "front", "middle", "back"]
-# TAB 文字照源走 LSTR（cm=null 时 fallback）；const 不能调运行时 cm.get_lstr → _create_tabs 运行时填。
+# 源 4 tab buttonPress（classbtnselected）+ buttonLabel LSTR。const 不能调运行时 cm.get_lstr → _build_content 运行时填。
 const TAB_LSTR_KEYS: Array[String] = [
 	"BATTLEPREPARE.WHOLE", "UNIT.FRONT_ROW", "UNIT.MIDDLE_ROW", "UNIT.REAR_ROW"
 ]
 const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # cm=null fallback（与源 LSTR 值同步）
-const TAB_COCOS_Y: Array[float] = [365.0, 305.0, 245.0, 185.0]      # 源 :517/560/603/646
-const TAB_COCOS_X: float = 707.0
-const LABEL_CENTER_OFFSET: Vector2 = Vector2(20.0, 10.0)   # label 居中估算偏移（size 未 layout）
+const TAB_BTN_NAMES: Array[String] = ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn"]
+const TAB_LBL_NAMES: Array[String] = ["TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]
 # 源 draglist 卡片网格 getpos :315-323：第一张中心 cocos(255+offsetx=235, 335)，列间距 260（:321）/ 行高 100（:322）。
-# cocos→Godot（x+80, 560-y）：第一张中心 (315, 225)，两列关于 list_bg 中心(445)对称。
-const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 行高 100（去译者"加宽 320"，照源 bg313 重叠 53px）
-# ScrollContainer = 裁剪 viewport（源 cliprect :759 (0,45,800,348)）。ScrollContainer reset 子节点 _grid 的 position
-#（同 GridContainer reset scale 坑），故 GRID_OFFSET 无效。直接让 ScrollContainer.position = 第一格 cell 左上
-# = bg 中心(315,225) - cell/2 = (185,175)（源 getpos 第一张中心 cocos(235,335)→Godot(315,225)）。
-# → bg 左沿 = 185+7.93≈193，距 list_bg 左框 160 = 33px 左边距（照源 bg左 cocos113 - list_bg左80=33），
-#   ScrollContainer[185,705] 居中 list_bg[160,730]（中心均 445），bg 左右各 33px 对称。
-const SCROLL_POS: Vector2 = Vector2(185.0, 175.0)
-const SCROLL_SIZE: Vector2 = Vector2(520.0, 348.0)
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
+const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 行高 100（卡片中心间距）
 const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"   # 源 prepareLoad :403
 const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"   # 源 :407
 const LIST_LINE_FALLBACK: String = "以下英雄尚未召唤"   # cm=null fallback（= 源 LSTR_zh-CN 值）
@@ -68,52 +55,30 @@ func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData =
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_close_button()
-	_create_bg()
-	_create_tabs()
-	_create_list_container()
+	_build_content()
 	_classify_heroes()
 	_refresh_list()
 
 
-# 源 ui_info list_bg（:492-506）：package_herolist_bg.png anchor(0.5,0.5) (385+offsetx,215) fix 570×375。
-func _create_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(LIST_BG_RES)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = _to_godot(LIST_BG_COCOS) - LIST_BG_SIZE * 0.5
-	bg.size = LIST_BG_SIZE
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-# 源 4 tab（all/front/middle/back）：listButton classbtn + buttonPress classbtnselected + Label。
-# 简化为单 TextureButton 切 texture_normal（选中=selected 纹理）+ Label 居中。
-func _create_tabs() -> void:
+# Phase A 重构：base 层从 hero_package_content.tscn instantiate（位置/size 可视化）。
+# .tscn 已固化：list_bg + 4 tab + 4 label + close + ScrollContainer + GridHost。
+# 本函数取节点引用 + fill 动态 LSTR 文本 + 绑定 pressed 信号。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
 	for i in range(TAB_KEYS.size()):
 		var key: String = TAB_KEYS[i]
-		var g: Vector2 = _to_godot(Vector2(TAB_COCOS_X, TAB_COCOS_Y[i]))
-		var btn := TextureButton.new()
-		btn.texture_normal = load(CLASSBTN_RES)
-		btn.texture_pressed = load(CLASSBTN_SEL_RES)
-		btn.position = g - _tex_size(CLASSBTN_RES) * 0.5
+		var btn: TextureButton = content.get_node("%" + TAB_BTN_NAMES[i]) as TextureButton
 		btn.pressed.connect(_on_tab_pressed.bind(key))
-		container.add_child(btn)
 		_tabs[key] = btn
-		var lbl := Label.new()
+		var lbl: Label = content.get_node("%" + TAB_LBL_NAMES[i]) as Label
 		lbl.text = cm.get_lstr(TAB_LSTR_KEYS[i]) if cm != null else TAB_LABELS[i]
-		lbl.add_theme_font_size_override("font_size", 18)
-		lbl.position = g - LABEL_CENTER_OFFSET
-		container.add_child(lbl)
 		_tab_labels[key] = lbl
+	# close = backbtn 返回主界面（源 framework statusbar 注入 backbtn）。
+	(content.get_node("%CloseBtn") as TextureButton).pressed.connect(_on_close_pressed)
+	_scroll = content.get_node("%HeroScroll") as ScrollContainer
+	_grid = content.get_node("%GridHost") as Control
 	_update_tab_visual()
-
-
-func _tex_size(res_path: String) -> Vector2:
-	var tex = load(res_path)
-	if tex is Texture2D:
-		return tex.get_size()
-	return Vector2(80.0, 50.0)
 
 
 func _update_tab_visual() -> void:
@@ -128,21 +93,6 @@ func _on_tab_pressed(key: String) -> void:
 	_refresh_list()
 
 
-# 源 draglist（:758-772）cliprect 800×348 rect 500×348 → Godot ScrollContainer + GridContainer 2 列。
-# item 自身 custom_minimum_size=CELL_SIZE，separation=0（cell 紧贴 = 源 260×100 间距）。
-func _create_list_container() -> void:
-	_scroll = ScrollContainer.new()
-	_scroll.position = SCROLL_POS
-	_scroll.size = SCROLL_SIZE
-	_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-	container.add_child(_scroll)
-	# Control（非 GridContainer）：GridContainer 会 reset 直接子节点 scale，致 item scale=1/CS 失效（2026-07-16 GUT 实测 scale 被还原为 1）。
-	# 改手动 position 排列 cell，item 不在 Container 内，scale 保留。_refresh_list 按 col/row 设 item.position。
-	_grid = Control.new()
-	_grid.mouse_filter = Control.MOUSE_FILTER_PASS
-	_scroll.add_child(_grid)
-
-
 # 源 getAllList :446 classify("handbook","position")：委托 ReadheroHandbook（含未召唤英雄 + 按位置分）。
 func _classify_heroes() -> void:
 	_hero_by_class = ReadheroHandbook.classify_handbook(cm, _hero_mgr)
@@ -150,6 +100,7 @@ func _classify_heroes() -> void:
 
 # 源 refreshHeroList + loadHero：每条目 packageItem.create(tid) → HeroPackageItem 整行卡片。
 # 已拥有→未拥有分界处插 listLine 分隔线（源 prepareLoad listLine + refreshHeroList setVisible 分界）。
+# _grid 为 .tscn %GridHost（Control，非 GridContainer 避免子节点 scale reset，2026-07-16 实测）。
 func _refresh_list() -> void:
 	for c in _grid.get_children():
 		c.free()
@@ -223,14 +174,7 @@ func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 		_on_entry_clicked(entry)
 
 
-# backbtn 返回按钮（照源 framework statusbar 注入 backbtn）：hero_scene 是独立场景（change_scene 切入），
-# backbtn 直接 change_scene 回主界面 = 1 次返回。加 container 上（与其他大面板统一，避 hero_scene 兄弟层级遮挡）。
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(_on_close_pressed)
-	container.add_child(btn)
-
-
+# 源 framework.lua statusbar backbtn：hero_scene 独立场景（change_scene 切入），backbtn change_scene 回主界面 = 1 次返回。
 func _on_close_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	SceneManager.change_scene("res://scenes/main_menu/main_scene.tscn")
