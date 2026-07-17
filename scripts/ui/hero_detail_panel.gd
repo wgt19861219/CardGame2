@@ -2,6 +2,8 @@ class_name HeroDetailPanel
 extends PopWindow
 
 ## 英雄详情面板（View 层）— 属性 + 装备槽 + 升星/分解/强化按钮（信号）。
+## Phase A+B 重构（2026-07-17）：base 层 + tab view 全静态化进 hero_detail_content.tscn（instantiate + fill），
+## 位置/size 编辑器可视化调。tab（detail=属性 / card=图鉴 / skill=技能）visible 切换（不再 free+重建）。
 ## 信号由调用方接 hero_manager.evolve/split + pd.enhance_equip（单机化省源 net 层）。
 ## 照源 heropackage.lua / equipstrengthen.lua 交互简化。
 
@@ -10,6 +12,8 @@ signal split_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
 
+# base + tab view 子场景（Phase A+B 静态化：位置+size 在 .tscn 可视化）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_detail_content.tscn")
 # 源 baseres.lua:5 att_name 全集 21 个（照源 attributes.lua 循环 #att_name，禁裁剪）。
 const DISPLAY_ATTRIBS: Array[String] = ["STR", "INT", "AGI", "HP", "AD", "AP", "ARM", "MR", "CRIT", "MCRIT", "HPS", "MPS", "DODG", "ARMP", "MRI", "LFS", "CDR", "HEAL", "HIT", "SKL", "SILR"]
 # 源 baseres.lua:80 att_pre（属性显示前缀 LSTR key）。SILR 源 T("") 空 → 用 key 本身 fallback。
@@ -37,34 +41,32 @@ const RANK_COLOR_LSTR: Dictionary = {
 	18: "HERODETAILRES.RED", 19: "HERODETAILRES.RED", 20: "HERODETAILRES.RED",
 	21: "HERODETAILRES.RED", 22: "HERODETAILRES.RED", 23: "HERODETAILRES.RED",
 }
-# 源 window.lua LSTR key（按钮/标题文案）。
-const LSTR_EVOLUTION: StringName = &"HERODETAIL.EVOLUTION_"        # 升星按钮
-const LSTR_ADVANCE: StringName = &"HERODETAIL.ADVANCE_"            # 进阶按钮
-const LSTR_POWER: StringName = &"HERODETAIL.POWER_"                # GS 标题（源 gs_title）
-const LSTR_SKILL_UNLOCK: StringName = &"HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK"  # 技能解锁
-const LSTR_SPLIT_CONFIRM: StringName = &"window.1.10.1.003"        # 分解二次确认
+# 源 window.lua LSTR key（技能解锁 / 分解二次确认文案）。
+const LSTR_SKILL_UNLOCK: StringName = &"HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK"
+const LSTR_SPLIT_CONFIRM: StringName = &"window.1.10.1.003"
 const LIST_TOP: float = 415.0
 const LIST_LEFT: float = 24.0
 const LINE_HEIGHT: float = 30.0
-const CLOSE_BTN_POS: Vector2 = Vector2(800.0, 50.0)
-const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
-const EQUIP_ORIGIN: Vector2 = Vector2(24.0, 200.0)
-const EQUIP_CELL: float = 80.0
-const EQUIP_SLOT_COUNT: int = 6   # 源 createEquipIcons 6 槽（herodetail/window.lua:1080）
+# 源 getEquipIconPos（herodetail/window.lua:1100-1108）：6 槽 2 列 × 3 行，环绕角色立绘。
+const EQUIP_POS_X: float = 255.0      # 源 :1101 equip_icon_pos_x
+const EQUIP_POS_Y: float = 385.0      # 源 :1102 equip_icon_pos_y
+const EQUIP_X_GAP: float = 289.0      # 源 :1103 左/右列间距
+const EQUIP_Y_GAP: float = 70.0       # 源 :1104 行间距
+const EQUIP_SLOT_COUNT: int = 6       # 源 createEquipIcons :1080 6 槽
 const EQUIP_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)   # 源 setSpriteGray 未穿戴配方灰显
-const EVOLVE_BTN_POS: Vector2 = Vector2(600.0, 415.0)
-const SPLIT_BTN_POS: Vector2 = Vector2(600.0, 365.0)
-const UPGRADE_RANK_BTN_POS: Vector2 = Vector2(600.0, 465.0)   # 进阶（rank+1，源 heroDetail 进阶按钮）
-const ENHANCE_BTN_POS: Vector2 = Vector2(600.0, 315.0)
-const ACTION_BTN_SIZE: Vector2 = Vector2(100.0, 40.0)
 const SKILL_COUNT: int = 4                 # 源 4 技能槽（skillstren.lua createSkill）
-const SKILL_LIST_TOP: float = 130.0
-const SKILL_LEFT: float = 24.0
-const SKILL_LINE_HEIGHT: float = 35.0
-const SKILL_LVL_OFFSET: float = 180.0
-const SKILL_UPGRADE_BTN_OFFSET: float = 220.0
+# 源 skillstren.lua 技能行坐标（skillLayer 挂 animLayer 原点，ccp 为 cocos 世界坐标）。
+# ori_height=350（:750）/ bd_height=90（:751 行高）。第 i 行（i 从 0）：icon ccp(320, 350-90*i)。
+const SKILL_ORI_HEIGHT: float = 350.0       # 源 :750 ori_height
+const SKILL_BD_HEIGHT: float = 90.0         # 源 :751 bd_height（行高）
+const SKILL_ICON_COCOS_X: float = 320.0     # 源 :424 icon ccp(320, ori-bd*i)
+const SKILL_NAME_COCOS_X: float = 365.0     # 源 :427 nameLabel ccp(365, ori+20-bd*i)
+const SKILL_LVL_COCOS_X: float = 365.0      # 源 :322 lvl ccp(365, ori-5-bd*i)
+const SKILL_BTN_COCOS_X: float = 495.0      # 源 :351 升级按钮 ccp(495, ori-15-bd*i)
+const SKILL_NAME_DY: float = 20.0           # 源 name y 偏移 +20
+const SKILL_LVL_DY: float = -5.0            # 源 lvl y 偏移 -5
+const SKILL_BTN_DY: float = -15.0           # 源 btn y 偏移 -13-2
 const SKILL_BTN_SIZE: Vector2 = Vector2(80.0, 28.0)
-const SKILL_ICON_LEFT: float = 300.0       # 技能图标 x（源 skillstren.lua:424 ccp(320,...)）
 const EQUIP_FRAME_WHITE_PATH: String = "res://assets/ui/alpha/HVGA/equip_frame_white.png"
 const UI_PATH_PREFIX: String = "UI/"       # 源路径前缀 → res://assets/ui/
 const UI_PATH_REPLACE: String = "res://assets/ui/"
@@ -72,26 +74,34 @@ const SKILL_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)   # 源 setSpriteGr
 const SKILL_ICON_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)   # 技能图标可点击区
 const SKILL_DESC_POS: Vector2 = Vector2(400.0, 100.0)      # 描述弹板位置
 const SKILL_GROWTH_COLOR: Color = Color(1.0, 0.81, 0.07)   # 源 ccc3(231,206,19) 成长值黄
-const GS_LABEL_POS: Vector2 = Vector2(24.0, 445.0)         # 属性区上方（源 info_board 内 gs label 195,168）
-const GS_LABEL_COLOR: Color = Color(146.0 / 255.0, 0.0, 4.0 / 255.0)   # 源 ccc3(146,0,4) 深红
-const GS_LABEL_FONT_SIZE: int = 18                          # 源 size 18
 const GS_POP_SCALE: float = 1.2                             # 源 ScaleTo(0.2,1.2)
 const GS_POP_DURATION: float = 0.2                          # 源 0.2s
 # 源 createBottomButtons（window.lua:1395-1663）三 tab：detail(属性)/card(图鉴)/skill(技能)。
 const TAB_DETAIL: String = "detail"   # 源 doClickDetail → setOpenMode("att") 属性层
 const TAB_CARD: String = "card"       # 源 doClickCard → setOpenMode("card") 图鉴层
 const TAB_SKILL: String = "skill"     # 源 doClickSkill → setOpenMode("skill") 技能层
-const DEFAULT_TAB: String = TAB_SKILL   # 默认 skill（保持现有测试：技能槽默认渲染进 container）
+const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 card 图鉴。源 setOpenMode(nil)=doMoveBack 无 tab，用户要进显图鉴
+const BASE_SLIDE_OFFSET: float = 140.0   # 源 doMove（window.lua:300）base container 右移量，让位 tab 内容
+# 源 doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
+# tab 内容层挂 animLayer 原点（cocos 世界坐标），内容 ccp 需叠加此 pop 偏移。
+const TAB_POP_OFFSET_X: float = -200.0
+# 源 att 内容走 draglist→att.bg(ccp(400,240), attributes.lua:603)→container 链，att ccp 额外 +400（bg 基准）。
+# skill/card 内容直接挂 container（无 bg 中间层），只叠 TAB_POP_OFFSET_X。
+const ATT_BG_COCOS_X: float = 400.0
 
 var hero: HeroInstance = null
 var cm: Variant = null
 var hero_manager: HeroManager = null
 var pd: PlayerData = null
 var _desc_label: Label = null   # 当前技能描述 Label（null 无，源 destroyDescBoard）
-var _gs_label: Label = null     # GS 战斗力 Label（源 ui.gs createInfoBoard:1254-1268）
+var _gs_label: Label = null     # GS 战斗力 Label（.tscn %GsNum，源 ui.gs createInfoBoard:1254-1268）
 var _pre_gs: int = -1           # 源 pregs（上次显示 gs，refreshgsAfterWear:172/175 比对）
 var _current_tab: String = ""   # 当前激活 tab（源 self.openMode：nil/att/card/skill）
-var _tab_buttons: Dictionary = {}   # tab_key → Button（源 ui.detail/card/skill）
+var _tab_buttons: Dictionary = {}   # tab_key → Button（.tscn %TabBtn，源 ui.detail/card/skill）
+var _base_layer: Control = null   # .tscn %BaseLayer（base 元素层），开 tab 时整体右移让位（照源 doMove window.lua:300 ccp(140,0)）
+var _tab_views: Dictionary = {}    # Phase B：tab_key → Control（.tscn %TabCardView/Detail/Skill，visible 切换）
+var _skill_host: Control = null    # .tscn %SkillListHost（技能行动态挂）
+var _desc_host: Control = null     # .tscn %DescHost（技能描述动态挂）
 
 
 func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null, p_pd: PlayerData = null) -> void:
@@ -103,25 +113,29 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	_build_content()
 
 
-# 建 UI 内容。base（背景/立绘/星级/名字/close/GS/装备/动作按钮/底栏 tab）常驻 +
-# 当前 tab 内容（detail=属性 / card=图鉴 / skill=技能）。setup_panel 与 refresh_content 共用。
+# 建 UI 内容。Phase A+B：base + tab view 从 .tscn instantiate（位置/size 可视化）+ fill 动态数据/样式；
+# tab 内容 fill 一次到各 host（visible 切换，不再 free+重建）。
 # 源 createWindow（window.lua:2384-2396）base 常显 + setOpenMode 开 tab overlay。
 func _build_content(tab: String = DEFAULT_TAB) -> void:
-	HeroDetailBuilder.create_background(container)
-	HeroDetailBuilder.create_portrait(container, hero, cm)
-	HeroDetailBuilder.create_name_board(container, hero, cm)
-	HeroDetailBuilder.create_stars(container, hero.stars)
-	_create_close_button()
-	_show_gs()
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
+	_base_layer = content.get_node("%BaseLayer") as Control
+	var result: Dictionary = HeroDetailBuilder.setup_base(_base_layer, hero, cm)
+	_gs_label = result["gs_label"] as Label
+	_tab_buttons = result["tab_buttons"] as Dictionary
+	_pre_gs = hero.gs if hero != null else -1
+	_bind_signals()
 	_show_equips()
-	# 源 evolve_label=T(LSTR("HERODETAIL.EVOLUTION_"))/upgrade_label=T(LSTR("HERODETAIL.ADVANCE_"))（window.lua:2158/2322）。
-	_create_action_button(get_lstr_fallback(LSTR_EVOLUTION, "升星"), EVOLVE_BTN_POS, evolve_requested, "common_click_feedback", true)   # 源 heroDetail.clickUpgrade（soundres.lua:217）
-	_create_action_button(get_lstr_fallback(LSTR_ADVANCE, "进阶"), UPGRADE_RANK_BTN_POS, upgrade_rank_requested, "common_click_feedback", false)   # 源 hero_upgrade（:867-901 rank+1）
-	# 分解按钮：源 herosplit 独立面板用 Sprite 图（split_button 资源缺失），本项目降级 Button+text"分解"。
-	var split_btn: Button = HeroDetailBuilder.create_action_button(container, "分解", SPLIT_BTN_POS, false)
-	split_btn.pressed.connect(_on_split_pressed)
-	_create_strengthen_button()   # 强化 → 弹 EquipStrengthenPanel（源独立面板，本项目从 HeroDetailPanel 进）
-	_create_tab_bar()             # 源 createBottomButtons（:2384）底栏 detail/card/skill 三 tab
+	_tab_views = {
+		"card": content.get_node("%TabCardView") as Control,
+		"detail": content.get_node("%TabDetailView") as Control,
+		"skill": content.get_node("%TabSkillView") as Control,
+	}
+	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
+	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
+	_fill_card_view()
+	_fill_attributes()
+	_fill_skills()
 	_show_tab_content(tab)
 
 
@@ -138,20 +152,62 @@ func _rebuild_content() -> void:
 	_build_content(saved_tab)
 
 
-func _create_close_button() -> void:
-	var btn: TextureButton = HeroDetailBuilder.create_close_button(container)   # 照源 :1976 detail-close 图
-	btn.pressed.connect(func() -> void:
+# 绑定 .tscn 静态按钮信号：%CloseBtn + 4 action（升星/进阶/分解/强化）+ 3 tab。
+func _bind_signals() -> void:
+	(_base_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")   # 源 heroDetail.closeWindow（soundres.lua:204）
 		remove_window())
+	_wire_action_button("%EvolveBtn", evolve_requested, "common_click_feedback")   # 源 heroDetail.clickUpgrade（soundres.lua:217）
+	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")   # 源 hero_upgrade（:867-901 rank+1）
+	(_base_layer.get_node("%SplitBtn") as BaseButton).pressed.connect(_on_split_pressed)
+	(_base_layer.get_node("%EnhanceBtn") as BaseButton).pressed.connect(_on_strengthen_pressed)
+	for key in _tab_buttons:
+		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
+
+
+func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> void:
+	(_base_layer.get_node(node_path) as BaseButton).pressed.connect(func() -> void:
+		if not sound_key.is_empty():
+			AudioPlayer.play_sfx(sound_key)
+		sig.emit())
+
+
+# 源 equipstrengthen 独立面板（2176 行），本项目从 HeroDetailPanel "强化"按钮进。
+func _on_strengthen_pressed() -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm, pd)
+	panel.show_window(get_parent())
+
+
+# ---- Phase B：tab 内容 fill（挂各 host，visible 切换）----
+
+# 标记动态 tab 内容子节点（测试识别 "tab 内容已渲染"；Phase B 不用于 free）。
+func _add_tab_content(host: Control, node: Node) -> void:
+	node.set_meta(&"tab_content", true)
+	host.add_child(node)
+
+
+# fill card view（%CardFrame texture + %CardArtHost Art + %CardNameLabel 名字，源 card.lua:127-140）。
+func _fill_card_view() -> void:
+	if cm == null:
+		return
+	var view: Control = _tab_views["card"] as Control
+	HeroDetailBuilder.setup_card_view(view, hero, cm)
+	var art_host: Control = view.get_node("%CardArtHost") as Control
+	for c in art_host.get_children():
+		c.set_meta(&"tab_content", true)   # Art 标记（测试识别 card 内容渲染）
 
 
 # 源 attributes.lua:133 createAttDetail 循环 res.att_name（全 21）+ res.att_pre[k]..":" + base + addIcon + add + suffix。
 # 本项目合并成单 label "LSTR_pre: all (+add) suffix"（视觉等价简化）。显示等价：源 base+add ≈ 本项目 all=(base+add)。
-func _show_attributes() -> void:
+func _fill_attributes() -> void:
 	if hero == null:
 		return
+	var host: Control = (_tab_views["detail"] as Control).get_node("%AttribListHost") as Control
 	var att: Dictionary = ReadheroAttribs.get_hero_att_by_hero(hero, cm)
-	var y: float = LIST_TOP
+	# 源 attributes.lua attLayer 挂 animLayer 原点，ccp 为 cocos 世界坐标：list_left=24 / list_top=415（:30-32）。
+	var cocos_y: float = LIST_TOP
 	for key in DISPLAY_ATTRIBS:
 		if not att.has(key):
 			continue   # 源 ReadheroAttribs v==0 跳过（仅显示非零属性）
@@ -160,9 +216,9 @@ func _show_attributes() -> void:
 		var suffix: String = String(ATTR_SUFFIX.get(key, ""))
 		var lbl := Label.new()
 		lbl.text = pre + ": " + str(int(row["all"])) + " (+" + str(int(row["add"])) + ")" + suffix
-		lbl.position = Vector2(LIST_LEFT, y)
-		_add_tab_child(lbl)
-		y -= LINE_HEIGHT
+		lbl.position = HeroDetailBuilder.to_godot(LIST_LEFT + TAB_POP_OFFSET_X + ATT_BG_COCOS_X, cocos_y)
+		_add_tab_content(host, lbl)
+		cocos_y -= LINE_HEIGHT   # 源下一行 cocos y 减（往下）
 
 
 # cm 可能为 null（测试降级）的 LSTR fallback：key 空或 cm null → 返 fallback（源英文 key）。
@@ -170,23 +226,6 @@ func get_lstr_fallback(lstr_key: String, fallback: String) -> String:
 	if lstr_key.is_empty() or cm == null:
 		return fallback
 	return String(cm.get_lstr(lstr_key))
-
-
-# 源 window.lua:1210 createInfoBoard 的 gs Label（:1254-1268 position 195,168 anchor 0,0.5 size 18
-# color 深红，text=self.hero._gs 纯数字）+ :1293 pregs=hero._gs 初始化。
-# 源 :2040 gs_title label "战力："（LSTR HERODETAIL.POWER_）独立显示。
-# 本项目无 info_board，GS Label 放属性区上方，"战力：N" 合并显示。
-func _show_gs() -> void:
-	if hero == null or hero_manager == null:
-		return
-	var lbl := Label.new()
-	lbl.text = get_lstr_fallback(LSTR_POWER, "GS") + str(hero.gs)
-	lbl.position = GS_LABEL_POS
-	lbl.add_theme_font_size_override("font_size", GS_LABEL_FONT_SIZE)
-	lbl.modulate = GS_LABEL_COLOR
-	container.add_child(lbl)
-	_gs_label = lbl
-	_pre_gs = hero.gs
 
 
 # 源 window.lua:170-191 refreshgsAfterWear：gs 变了 → 更新文本 + 锚点居中 + scale 1.2→1
@@ -198,7 +237,7 @@ func refresh_gs_after_wear() -> void:
 	var gs: int = hero_manager.calc_gs(hero)
 	if gs == _pre_gs:
 		return
-	_gs_label.text = get_lstr_fallback(LSTR_POWER, "GS") + str(gs)
+	_gs_label.text = str(gs)
 	_gs_label.pivot_offset = _gs_label.size * 0.5   # 源 setNodeAnchor(0.5,0.5) 居中缩放
 	_pre_gs = gs
 	var tw := create_tween()
@@ -215,15 +254,20 @@ func refresh_gs_after_wear() -> void:
 func _show_equips() -> void:
 	if hero == null:
 		return
+	var host: Control = _base_layer.get_node("%EquipSlotHost") as Control
 	var rank_equip: Dictionary = cm.get_raw_table(&"Hero_equip").get(str(hero.tid), {}).get(str(hero.rank), {})
 	for i in EQUIP_SLOT_COUNT:
 		var ceid: int = int(hero.equip_slots[i]) if i < hero.equip_slots.size() else 0   # 已穿戴
 		var eid: int = int(rank_equip.get("Equip" + str(i + 1) + " ID", 0))              # Hero_equip 配方
 		var icon: Control = _create_equip_slot_icon(ceid, eid)
-		icon.position = Vector2(EQUIP_ORIGIN.x + EQUIP_CELL * i, EQUIP_ORIGIN.y)
+		# 源 getEquipIconPos（window.lua:1105-1106）：cocos x = 255+289*((i)%2), y = 385-70*floor(i/2)（i 从 0）。
+		# 源 anchor(0.5,0.5) 中心 → Godot Control position = godot_center - icon.size/2（create_icon 显式 set size 可读）。
+		var cocos_x: float = EQUIP_POS_X + EQUIP_X_GAP * float(i % 2)
+		var cocos_y: float = EQUIP_POS_Y - EQUIP_Y_GAP * float(i / 2)
+		icon.position = HeroDetailBuilder.to_godot(cocos_x, cocos_y) - icon.size * 0.5
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		icon.gui_input.connect(_make_equip_click_handler(i))   # 源 doClickEquip → equipcraft（空槽也可点）
-		container.add_child(icon)
+		host.add_child(icon)   # 装备挂 %EquipSlotHost（base 层组织，随 base 右移让位）
 
 
 # 源 createEquipIcon 三态：icon_id = ceid or eid；未穿戴配方（ceid<=0 and eid>0）灰显 setSpriteGray。
@@ -269,30 +313,12 @@ func _on_equip_craft_jump(stage_id: int) -> void:
 		ms.open_stage_select_by_stage(stage_id)
 
 
-# 源 equipstrengthen 独立面板（2176 行），本项目从 HeroDetailPanel "强化"按钮进。
-func _create_strengthen_button() -> void:
-	var btn: Button = HeroDetailBuilder.create_action_button(container, "强化", ENHANCE_BTN_POS, true)
-	btn.pressed.connect(func() -> void:
-		AudioPlayer.play_sfx("common_click_feedback")
-		var panel := EquipStrengthenPanel.new("equipstrengthen", {})
-		panel.setup_panel(hero, cm, pd)
-		panel.show_window(get_parent()))
-
-
-func _create_action_button(text: String, pos: Vector2, sig: Signal, sound_key: String = "", use_upgrade_res: bool = false) -> void:
-	var btn: Button = HeroDetailBuilder.create_action_button(container, text, pos, use_upgrade_res)
-	btn.pressed.connect(func() -> void:
-		if not sound_key.is_empty():
-			AudioPlayer.play_sfx(sound_key)
-		sig.emit())
-
-
 # 源 skillstren.lua createSkill + createSkillIcon + createSkillUnlockLabel。
 # 每槽：技能图标（SkillGroup.Icon + equip_frame_white 边框）+ Display Name。
 # rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（源 :442-451，不显示等级+按钮）。
 # 否则：lv.X 显示等级 + 升级按钮（源 :452 createSkillLevelBoard）。
 # 显示等级 = skill_levels[slot] - InitLevel + 1（源 controller.getCacheSkillLevelDisplay）。
-func _show_skills() -> void:
+func _fill_skills() -> void:
 	if hero == null:
 		return
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
@@ -302,60 +328,63 @@ func _show_skills() -> void:
 		var init_level: int = int(slot_info.get("Init Level", 1))
 		var unlock_rank: int = int(slot_info.get("Unlock", 1))
 		var icon_res: String = String(slot_info.get("Icon", ""))
-		var y: float = SKILL_LIST_TOP - i * SKILL_LINE_HEIGHT
+		# 源 skillLayer 挂 animLayer 原点，ccp 为 cocos 世界坐标：icon ccp(320, ori_height-bd_height*i)（skillstren.lua:424）。
+		var cocos_y: float = SKILL_ORI_HEIGHT - SKILL_BD_HEIGHT * float(i)   # 第 i 行 icon y 基准（i=0→350）
 		var locked: bool = hero.rank < unlock_rank
-		_create_skill_icon(icon_res, y, locked, i)   # 源 createSkillIcon + :433 灰显
+		_create_skill_icon(icon_res, cocos_y, locked, i)   # 源 createSkillIcon + :433 灰显
 		var name_lbl := Label.new()
 		name_lbl.text = display_name
-		name_lbl.position = Vector2(SKILL_LEFT, y)
-		_add_tab_child(name_lbl)
-		if locked:   # 源 createSkillUnlockLabel :442-450 T(LSTR("HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK"), color)
+		name_lbl.position = HeroDetailBuilder.to_godot(SKILL_NAME_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_NAME_DY)
+		_add_tab_content(_skill_host, name_lbl)
+		if locked:   # 源 createSkillUnlockLabel :445 ccp(365, ori-5-bd*i)
 			var color_text: String = get_lstr_fallback(RANK_COLOR_LSTR.get(unlock_rank, ""), str(unlock_rank))
 			var unlock_lbl := Label.new()
 			unlock_lbl.text = get_lstr_fallback(LSTR_SKILL_UNLOCK, "rank %s 解锁") % color_text
-			unlock_lbl.position = Vector2(SKILL_LEFT + SKILL_LVL_OFFSET, y)
-			_add_tab_child(unlock_lbl)
-		else:   # 已解锁 → 等级 + 升级按钮
+			unlock_lbl.position = HeroDetailBuilder.to_godot(SKILL_LVL_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_LVL_DY)
+			_add_tab_content(_skill_host, unlock_lbl)
+		else:   # 已解锁 → 等级 + 升级按钮（源 lvl ccp(365,ori-5) :322 / btn ccp(495,ori-15) :351）
 			var cur_level: int = int(hero.skill_levels[i]) if i < hero.skill_levels.size() else 1
 			var show_level: int = cur_level - init_level + 1
 			var lvl_lbl := Label.new()
 			lvl_lbl.text = "lv." + str(show_level)
-			lvl_lbl.position = Vector2(SKILL_LEFT + SKILL_LVL_OFFSET, y)
-			_add_tab_child(lvl_lbl)
-			_create_skill_upgrade_button(i, Vector2(SKILL_LEFT + SKILL_UPGRADE_BTN_OFFSET, y))
+			lvl_lbl.position = HeroDetailBuilder.to_godot(SKILL_LVL_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_LVL_DY)
+			_add_tab_content(_skill_host, lvl_lbl)
+			_create_skill_upgrade_button(i, HeroDetailBuilder.to_godot(SKILL_BTN_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_BTN_DY))
 
 
 # 源 readhero.lua:1011 createSkillIcon + skillstren.lua:758 board_i pressHandler。
 # 边框 Sprite2D（equip_frame_white centered 居中）+ 图标 TextureButton（可点击 → 描述弹板）。
 # locked=true 灰显（源 skillstren.lua:434 setSpriteGray，modulate 降亮近似）。
-func _create_skill_icon(icon_res: String, y: float, locked: bool, slot: int) -> void:
+func _create_skill_icon(icon_res: String, cocos_y: float, locked: bool, slot: int) -> void:
 	var tex: Texture2D = _load_ui_texture(icon_res)
 	if tex == null:
 		return
+	# 源 icon ccp(320, cocos_y) anchor(0.5,0.5) 中心 → Godot 中心点（Sprite2D position=中心）。
+	var icon_pos: Vector2 = HeroDetailBuilder.to_godot(SKILL_ICON_COCOS_X + TAB_POP_OFFSET_X, cocos_y)
 	var frame := Sprite2D.new()
 	frame.texture = _load_texture(EQUIP_FRAME_WHITE_PATH)
 	if frame.texture != null:
-		frame.position = Vector2(SKILL_ICON_LEFT, y)
+		frame.position = icon_pos
 		if locked:
 			frame.modulate = SKILL_GRAY_MODULATE
-		_add_tab_child(frame)
+		_add_tab_content(_skill_host, frame)
 	var btn := TextureButton.new()
 	btn.texture_normal = tex
 	btn.texture_hover = tex
 	btn.ignore_texture_size = true
 	btn.size = SKILL_ICON_BTN_SIZE
-	btn.position = Vector2(SKILL_ICON_LEFT - SKILL_ICON_BTN_SIZE.x * 0.5, y - SKILL_ICON_BTN_SIZE.y * 0.5)
+	btn.position = icon_pos - SKILL_ICON_BTN_SIZE * 0.5   # TextureButton 左上 = 中心 - size/2
 	if locked:
 		btn.modulate = SKILL_GRAY_MODULATE
 	btn.pressed.connect(func() -> void: _toggle_skill_desc(slot))
 	btn.set_meta(&"skill_icon", true)   # 标记技能图标（测试区分 vs close/action 按钮图）
-	_add_tab_child(btn)
+	_add_tab_content(_skill_host, btn)
 
 
 func _create_skill_upgrade_button(idx: int, pos: Vector2) -> void:
 	# 源 skillstren.lua:345 createSkillLevelBoard 按钮：Sprite herodetail_skill_upgrade_button_1.png 无文字。
-	var btn: TextureButton = HeroDetailBuilder.create_skill_upgrade_button(container, pos + SKILL_BTN_SIZE * 0.5)
-	btn.set_meta(&"tab_content", true)   # 标记 tab 内容（切 tab free，等价 _add_tab_child）
+	var btn: TextureButton = HeroDetailBuilder.create_skill_upgrade_button(_skill_host, pos + SKILL_BTN_SIZE * 0.5)
+	btn.set_meta(&"tab_content", true)   # 标记 tab 内容（测试识别）
 	btn.set_meta(&"skill_upgrade", true)   # 标记技能升级按钮（测试识别）
 	btn.pressed.connect(func() -> void:
 		Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
@@ -394,7 +423,7 @@ func _toggle_skill_desc(slot: int) -> void:
 	lbl.add_theme_font_size_override("font_size", 13)
 	if not growth.is_empty():
 		lbl.modulate = SKILL_GROWTH_COLOR
-	_add_tab_child(lbl)
+	_add_tab_content(_desc_host, lbl)
 	lbl.set_meta("slot", slot)
 	_desc_label = lbl
 
@@ -407,54 +436,35 @@ func _hide_skill_desc() -> void:
 
 # ---- 底栏 tab 切换（源 createBottomButtons + setOpenMode/doClickDetail/Card/Skill）----
 
-# 标记 tab 内容子节点（切 tab 时 free 这些，base/装备/动作按钮/tab 栏保留）。
-func _add_tab_child(node: Node) -> void:
-	node.set_meta(&"tab_content", true)
-	container.add_child(node)
-
-
-# 源 createBottomButtons（window.lua:1395-1663）：建 detail/card/skill 三 Scale9 tab 按钮 + 连 pressed。
-# 标签照源 :1468/:1545/:1622 LSTR（HERODETAIL.DETAILED_PROPERTIES / ILLUSTRATIONS / TODOLIST.SKILLS_UPGRADING）。
-func _create_tab_bar() -> void:
-	var labels: Dictionary = {
-		TAB_DETAIL: cm.get_lstr("HERODETAIL.DETAILED_PROPERTIES") if cm != null else "详细属性",
-		TAB_CARD: cm.get_lstr("HERODETAIL.ILLUSTRATIONS") if cm != null else "图鉴",
-		TAB_SKILL: cm.get_lstr("TODOLIST.SKILLS_UPGRADING") if cm != null else "技能升级",
-	}
-	_tab_buttons = HeroDetailBuilder.create_tab_bar(container, labels, DEFAULT_TAB)
-	for key in _tab_buttons:
-		var btn: Button = _tab_buttons[key]
-		btn.pressed.connect(_on_tab_pressed.bind(key))
-
-
-# 源 doClickDetail/Card/Skill（window.lua:454/519/391）：点 tab → setOpenMode（切 view + 选中态）。
+# 源 doClickDetail/Card/Skill（window.lua:454/519/391）：点 tab → setOpenMode。同 tab 再点 → setOpenMode(nil) 关（base 回位）。
 func _on_tab_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")   # 源 tab 点击反馈
 	if _current_tab == key:
-		return   # 源 setOpenMode :325-327 同 mode return（不重复切）
+		_close_tab()   # 源 doClickX: if layer setOpenMode(nil)（同 tab toggle 关，base 回位）
+		return
 	_show_tab_content(key)
 
 
-# 源 setOpenMode（window.lua:318-367）：清旧 layer → 开新 layer + 切选中态。
+# 源 setOpenMode（window.lua:318-367）：切 tab layer visible + base 右移让位 + 切选中态。
+# Phase B：tab view 常驻（.tscn），visible 切换（不再 free+重建）。
 func _show_tab_content(key: String) -> void:
-	_clear_tab_content()
 	_current_tab = key
 	HeroDetailBuilder.set_tab_selected(_tab_buttons, key)
-	match key:
-		TAB_DETAIL:
-			_show_attributes()
-		TAB_CARD:
-			HeroDetailBuilder.create_card_view(container, hero, cm)
-		TAB_SKILL:
-			_show_skills()
+	if _base_layer != null:
+		_base_layer.position.x = BASE_SLIDE_OFFSET   # 源 doMove :300 base 右移让位 tab 内容
+	for k in _tab_views:
+		(_tab_views[k] as CanvasItem).visible = (k == key)
 
 
-# 清当前 tab 内容（源 destroyAttLayer/SkillLayer/CardLayer）。base + tab 栏 + 装备槽保留。
-func _clear_tab_content() -> void:
-	_desc_label = null   # desc label 可能被 free，先清引用
-	for c in container.get_children():
-		if c.has_meta("tab_content"):
-			c.free()
+# 源 setOpenMode(nil) → doMoveBack（window.lua:289-296 base 回 (0,0)）+ destroyXLayer。
+func _close_tab() -> void:
+	_current_tab = ""
+	HeroDetailBuilder.set_tab_selected(_tab_buttons, "")
+	if _base_layer != null:
+		_base_layer.position.x = 0.0   # 源 doMoveBack :291 base 回位
+	for k in _tab_views:
+		(_tab_views[k] as CanvasItem).visible = false
+	_hide_skill_desc()
 
 
 # ---- 信号→Logic 便捷封装（调用方接信号后调，或直调）----
@@ -486,7 +496,7 @@ func perform_upgrade_rank() -> bool:
 # 分解按钮：照源 herosplit/window.lua:88-104 firstConfirm popConfirmDialog 二次确认 → emit split_requested。
 func _on_split_pressed() -> void:
 	# 源 herosplit:97-99 T(LSTR("window.1.10.1.003"), name) = "是否确认分解英雄%s？"
-	var display_name: String = cm.get_lstr(String(cm.get_raw_table(&"Unit").get(str(hero.tid), {}).get("Display Name", ""))) if cm != null else ""
+	var display_name: String = HeroDetailBuilder.get_display_name(hero, cm) if hero != null else ""
 	var msg_pattern: String = get_lstr_fallback(LSTR_SPLIT_CONFIRM, "确认分解 %s？")
 	var confirm := HeroSplitConfirm.new()
 	confirm.set_message(msg_pattern % display_name)

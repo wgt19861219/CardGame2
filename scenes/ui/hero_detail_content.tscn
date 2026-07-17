@@ -1,0 +1,437 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_name_bg.png" id="2_namebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_star_grey.png" id="3_stargrey"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_star_yellow.png" id="4_staryel"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="5_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="6_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="7_popup"]
+
+[node name="HeroDetailContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="BaseLayer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 278.25
+offset_top = 97.55
+offset_right = 681.75
+offset_bottom = 542.45
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="PortraitHost" type="Control" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="NameBg" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 232.3
+offset_top = 338.1
+offset_right = 383.7
+offset_bottom = 377.9
+texture = ExtResource("2_namebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TypeIcon" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 182.0
+offset_top = 336.0
+offset_right = 222.0
+offset_bottom = 376.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 240.0
+offset_top = 346.0
+offset_right = 380.0
+offset_bottom = 370.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+
+[node name="StarGrey1" type="TextureRect" parent="BaseLayer"]
+layout_mode = 3
+offset_left = 431.9
+offset_top = 289.1
+offset_right = 456.1
+offset_bottom = 314.9
+texture = ExtResource("3_stargrey")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarGrey2" type="TextureRect" parent="BaseLayer"]
+layout_mode = 3
+offset_left = 451.9
+offset_top = 289.1
+offset_right = 476.1
+offset_bottom = 314.9
+texture = ExtResource("3_stargrey")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarGrey3" type="TextureRect" parent="BaseLayer"]
+layout_mode = 3
+offset_left = 471.9
+offset_top = 289.1
+offset_right = 496.1
+offset_bottom = 314.9
+texture = ExtResource("3_stargrey")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarGrey4" type="TextureRect" parent="BaseLayer"]
+layout_mode = 3
+offset_left = 491.9
+offset_top = 289.1
+offset_right = 516.1
+offset_bottom = 314.9
+texture = ExtResource("3_stargrey")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarGrey5" type="TextureRect" parent="BaseLayer"]
+layout_mode = 3
+offset_left = 511.9
+offset_top = 289.1
+offset_right = 536.1
+offset_bottom = 314.9
+texture = ExtResource("3_stargrey")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarYellow1" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 431.9
+offset_top = 289.1
+offset_right = 456.1
+offset_bottom = 314.9
+texture = ExtResource("4_staryel")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarYellow2" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 451.9
+offset_top = 289.1
+offset_right = 476.1
+offset_bottom = 314.9
+texture = ExtResource("4_staryel")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarYellow3" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 471.9
+offset_top = 289.1
+offset_right = 496.1
+offset_bottom = 314.9
+texture = ExtResource("4_staryel")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarYellow4" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 491.9
+offset_top = 289.1
+offset_right = 516.1
+offset_bottom = 314.9
+texture = ExtResource("4_staryel")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="StarYellow5" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 511.9
+offset_top = 289.1
+offset_right = 536.1
+offset_bottom = 314.9
+texture = ExtResource("4_staryel")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 599.65
+offset_top = 104.25
+offset_right = 650.35
+offset_bottom = 155.75
+texture_normal = ExtResource("5_close")
+texture_pressed = ExtResource("6_closep")
+ignore_texture_size = true
+
+[node name="LevelTitle" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 300.25
+offset_top = 365.0
+offset_right = 350.25
+offset_bottom = 384.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+text = "等级:"
+
+[node name="GsTitle" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 403.25
+offset_top = 365.0
+offset_right = 453.25
+offset_bottom = 384.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+text = "战力:"
+
+[node name="ExpTitle" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 300.25
+offset_top = 393.0
+offset_right = 350.25
+offset_bottom = 412.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+text = "经验:"
+
+[node name="LevelNum" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 350.25
+offset_top = 365.0
+offset_right = 400.25
+offset_bottom = 384.0
+theme_override_colors/font_color = Color(0.572549, 0, 0.0156863, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="GsNum" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 473.25
+offset_top = 365.0
+offset_right = 560.0
+offset_bottom = 384.0
+theme_override_colors/font_color = Color(0.572549, 0, 0.0156863, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="ExpNum" type="Label" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 353.25
+offset_top = 393.0
+offset_right = 480.0
+offset_bottom = 412.0
+theme_override_colors/font_color = Color(0.572549, 0, 0.0156863, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="EquipSlotHost" type="Control" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="EvolveBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 630.0
+offset_top = 124.0
+offset_right = 730.0
+offset_bottom = 166.0
+mouse_filter = 0
+text = "升星"
+
+[node name="UpgradeRankBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 630.0
+offset_top = 74.0
+offset_right = 730.0
+offset_bottom = 116.0
+mouse_filter = 0
+text = "进阶"
+
+[node name="SplitBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 630.0
+offset_top = 174.0
+offset_right = 730.0
+offset_bottom = 216.0
+mouse_filter = 0
+text = "分解"
+
+[node name="EnhanceBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 630.0
+offset_top = 224.0
+offset_right = 730.0
+offset_bottom = 266.0
+mouse_filter = 0
+text = "强化"
+
+[node name="TabDetailBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 353.25
+offset_top = 500.45
+offset_right = 473.25
+offset_bottom = 549.45
+mouse_filter = 0
+text = "详细属性"
+
+[node name="TabCardBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 478.25
+offset_top = 500.45
+offset_right = 598.25
+offset_bottom = 549.45
+mouse_filter = 0
+text = "图鉴"
+
+[node name="TabSkillBtn" type="Button" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 604.25
+offset_top = 500.45
+offset_right = 724.25
+offset_bottom = 549.45
+mouse_filter = 0
+text = "技能升级"
+
+[node name="TabCardView" type="Control" parent="."]
+unique_name_in_owner = true
+visible = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="CardFrame" type="TextureRect" parent="TabCardView"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 140.32
+offset_top = 104.20
+offset_right = 419.68
+offset_bottom = 535.80
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CardArtHost" type="Control" parent="TabCardView"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="CardNameLabel" type="Label" parent="TabCardView"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 200.0
+offset_top = 458.0
+offset_right = 360.0
+offset_bottom = 482.0
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+
+[node name="TabDetailView" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="PopupBg" type="TextureRect" parent="TabDetailView"]
+layout_mode = 3
+offset_left = 136.0
+offset_top = 97.525
+offset_right = 424.0
+offset_bottom = 542.475
+texture = ExtResource("7_popup")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="AttribListHost" type="Control" parent="TabDetailView"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="TabSkillView" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="PopupBg" type="TextureRect" parent="TabSkillView"]
+layout_mode = 3
+offset_left = 136.0
+offset_top = 97.525
+offset_right = 424.0
+offset_bottom = 542.475
+texture = ExtResource("7_popup")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="SkillListHost" type="Control" parent="TabSkillView"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="DescHost" type="Control" parent="TabSkillView"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2

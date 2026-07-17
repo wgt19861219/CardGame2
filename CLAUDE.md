@@ -67,6 +67,17 @@ Axmol/Lua 卡牌手游 `D:\workspace\projects\CardGameAxmol` 的 Godot **完全�
 - UID 从 `.import` 文件读，不猜
 - `.tscn` 只用编辑器或 godot-mcp 改
 
+### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
+
+procedural UI（动态建节点 + 硬编码坐标）反复试错（坐标试 4 轮、size 试 3 轮）时，把位置/size 静态化进 `.tscn` 子场景，Godot 编辑器 2D 视图可视化调：
+
+- **instantiate + fill**：panel `preload(.tscn).instantiate()` + `container.add_child` + `get_node("%...")` 取节点；builder `fill_*` 往节点填动态数据（texture/text/visible），**位置/size 留 .tscn 固化**（用户编辑器拖 offset 调，Ctrl+S 持久化）。
+- **Scale9 按钮**：.tscn 普通 `Button`（位置可视化），builder 运行时套 `StyleBoxTexture`（`_apply_detail_style`/`set_tab_selected`）补九宫格图保视觉等价（勿建无图普通 Button 致降级）。
+- **unique_name_in_owner**：被 `get_node("%Name")` 引用的节点必须开；**同名节点不能都开**（scene 内 unique name 须唯一，冲突致 engine warning → GUT 报失败）。静态背景节点（不被代码引用）不开。
+- **visible 切换**（多 tab 内容）：tab view 常驻 .tscn，`_tab_views[k].visible = (k==key)` 切换，不再 free+重建；动态内容 fill 一次到各 host（`%XxxHost`），切 tab 只切 visible。
+- **strict 类型**：`instantiate()`/`get_node()` 返回 Node，赋 Control/Label/Dictionary 字段必须 `as`（strict 编译报）。
+- **测试扫描深度**：.tscn instantiate 多一层 content（container→content→%BaseLayer→节点），扫 base/tab 子树改递归（`_count_meta_recursive`/`_count_if_recursive`）；扫特定 view 用 `_tab_views[k]` 锚定避开其他层（如 portrait FCA 的 Sprite2D）。
+
 ## 开发协议
 
 遵循 `D:\workspace\Obsidian\CLAUDE.md` 的 READ → CODE → WRITE 三阶段：**READ = 读源 Lua 搞清实现（不是想需求/做设计），CODE = 照源翻译为 GDScript**。本项目功能复刻**跳过 brainstorming / writing-plans / blueprint 等设计类 skill**（见「复刻铁律」）。日志写 `D:\workspace\Obsidian\CardGameGodot2\开发日志\`，任务变动同步 `CardGameGodot2/任务看板.md`。

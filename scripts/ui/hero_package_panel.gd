@@ -268,7 +268,12 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 		if detail.perform_upgrade_skill(idx):
 			Events.bus.emit_tutorial_step(&"SUcomplete")
 			detail.refresh_content())
+	# 源 heropackage.lua:228 clickHero → draglist.listLayer:setVisible(false) 隐藏列表，
+	# 避卡片星透过 hero_detail 弹窗半透 shade（0.588）。
+	_scroll.visible = false
 	detail.show_window(get_parent())
+	# 源 :156 destroyHandler → listLayer:setVisible(true) 关详情后恢复列表。
+	detail.tree_exiting.connect(func() -> void: _scroll.visible = true)
 
 
 # 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足源弹 stonedetail（本项目未实现，降级）。

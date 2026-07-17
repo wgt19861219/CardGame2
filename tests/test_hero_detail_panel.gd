@@ -1,5 +1,5 @@
 extends GutTest
-# Phase 5 UI HeroDetailPanel 测试（2026-07-02）。
+# Phase 5 UI HeroDetailPanel 测试（2026-07-02，Phase A+B .tscn 重构 2026-07-17）。
 
 var cm: ConfigManager
 
@@ -19,9 +19,9 @@ func test_panel_assembles() -> void:
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
 	assert_not_null(panel.container, "container 创建（PopWindow）")
-	# container 子节点：close + 属性 Labels + 升星按钮
+	# container 子节点：content（.tscn root，含 BaseLayer + 3 tab view）
 	var child_count: int = panel.container.get_child_count()
-	assert_gt(child_count, 0, "container 有子节点（close + 属性 + 升星）")
+	assert_gt(child_count, 0, "container 有子节点（content）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -49,10 +49,22 @@ func test_panel_shows_equip() -> void:
 
 
 func _count_equip_slots(panel: HeroDetailPanel) -> int:
-	var n: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta("equip_slot"):
-			n += 1
+	# base 层从 .tscn instantiate（container → content → %BaseLayer → %EquipSlotHost → icon），递归扫全子树。
+	return _count_meta_recursive(panel.container, "equip_slot")
+
+
+func _count_meta_recursive(node: Node, meta_key: String) -> int:
+	var n: int = 1 if node.has_meta(meta_key) else 0
+	for c in node.get_children():
+		n += _count_meta_recursive(c, meta_key)
+	return n
+
+
+# 通用递归计数（按谓词，含类型判断）。Phase B tab 内容常驻（visible 切换），扫描需递归 + 可按类型/meta。
+func _count_if_recursive(node: Node, fn: Callable) -> int:
+	var n: int = 1 if fn.call(node) else 0
+	for c in node.get_children():
+		n += _count_if_recursive(c, fn)
 	return n
 
 
@@ -118,11 +130,10 @@ func test_panel_shows_skills() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
+	panel._show_tab_content("skill")   # Phase B 只切 visible，skill 内容已在 _build_content fill
 	# rank 7 全解锁 → 4 个技能升级按钮（源 skillstren.lua:345 升级按钮图标，meta skill_upgrade）
-	var upgrade_btn_count: int = 0
-	for child in panel.container.get_children():
-		if child.has_meta(&"skill_upgrade"):
-			upgrade_btn_count += 1
+	# Phase B：skill 内容常驻 %SkillListHost，递归扫全子树。
+	var upgrade_btn_count: int = _count_meta_recursive(panel.container, "skill_upgrade")
 	assert_eq(upgrade_btn_count, 4, "rank 7 全解锁 → 4 升级按钮")
 	panel.remove_window()
 	root.queue_free()
@@ -137,15 +148,12 @@ func test_panel_skill_rank_gate() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	var upgrade_btn_count: int = 0
-	var unlock_lbl_count: int = 0
+	panel._show_tab_content("skill")
+	var upgrade_btn_count: int = _count_meta_recursive(panel.container, "skill_upgrade")
 	# 源 createSkillUnlockLabel :443 文案 = LSTR(HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK) % 颜色
 	var unlock_prefix: String = String(cm.get_lstr("HERODETAILSKILL.ADVANCED_TO__S_TO_UNLOCK")).split("%s")[0]
-	for child in panel.container.get_children():
-		if child.has_meta(&"skill_upgrade"):
-			upgrade_btn_count += 1
-		elif child is Label and (child as Label).text.begins_with(unlock_prefix):
-			unlock_lbl_count += 1
+	var unlock_lbl_count: int = _count_if_recursive(panel.container, func(n: Node) -> bool:
+		return n is Label and (n as Label).text.begins_with(unlock_prefix))
 	assert_eq(upgrade_btn_count, 1, "rank 1 仅 slot 1 解锁 → 1 升级按钮")
 	assert_eq(unlock_lbl_count, 3, "slot 2/3/4 未解锁 → 3 个 rank 解锁 label")
 	panel.remove_window()
@@ -161,14 +169,12 @@ func test_panel_skill_icon() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	# 4 边框 Sprite2D + 4 图标 TextureButton（可点击触发描述弹板）
-	var frame_count: int = 0
-	var icon_btn_count: int = 0
-	for child in panel.container.get_children():
-		if child is Sprite2D:
-			frame_count += 1
-		elif child is TextureButton and child.has_meta(&"skill_icon"):
-			icon_btn_count += 1
+	panel._show_tab_content("skill")
+	# 4 边框 Sprite2D + 4 图标 TextureButton（可点击触发描述弹板）。
+	# 扫 skill view 子树（避开 portrait FCA 的 Sprite2D，其在 %BaseLayer %PortraitHost）。
+	var frame_count: int = _count_if_recursive(panel._tab_views["skill"] as Node, func(n: Node) -> bool:
+		return n is Sprite2D)
+	var icon_btn_count: int = _count_meta_recursive(panel._tab_views["skill"] as Node, "skill_icon")
 	assert_eq(frame_count, 4, "4 equip_frame_white 边框")
 	assert_eq(icon_btn_count, 4, "4 技能图标 TextureButton")
 	panel.remove_window()
@@ -263,9 +269,9 @@ func test_refresh_gs_after_wear_updates() -> void:
 	var current_gs: int = mgr.calc_gs(hero)
 	panel._pre_gs = current_gs - 1   # 模拟穿戴后 gs 已变（_pre_gs 旧 ≠ calc_gs 新）
 	panel.refresh_gs_after_wear()
-	# 源 gs_title LSTR("HERODETAIL.POWER_")="战力：" + gs 数字
-	var expected_gs_text: String = String(cm.get_lstr("HERODETAIL.POWER_")) + str(current_gs)
-	assert_eq(panel._gs_label.text, expected_gs_text, "gs ≠ _pre_gs → label 更新为 LSTR POWER + calc_gs 值")
+	# 源 gs 数字独立 label（gs_title"战力:"独立 label，refreshgsLabel:1175 text=hero._gs 纯数字）
+	var expected_gs_text: String = str(current_gs)
+	assert_eq(panel._gs_label.text, expected_gs_text, "gs ≠ _pre_gs → label 更新为 calc_gs 数字（title 独立）")
 	assert_eq(panel._pre_gs, current_gs, "_pre_gs 同步到 calc_gs")
 	panel.remove_window()
 	root.queue_free()
@@ -298,36 +304,33 @@ func test_tab_bar_three_buttons() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	var tab_count: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta(&"tab_button"):
-			tab_count += 1
+	# Phase A：tab 按钮静态化进 .tscn %TabBtn（container → content → %BaseLayer → %TabBtn），递归扫。
+	var tab_count: int = _count_meta_recursive(panel.container, "tab_button")
 	assert_eq(tab_count, 3, "底栏 3 tab 按钮（detail/card/skill）")
 	assert_eq(panel._tab_buttons.size(), 3, "_tab_buttons 字典 3 键")
 	panel.remove_window()
 	root.queue_free()
 
 
-# 默认 tab = skill（照源 setOpenMode 默认行为，技能内容渲染进 container）。
-func test_default_tab_skill() -> void:
+# 默认 tab = card 图鉴（用户指示 2026-07-17；源默认 setOpenMode(nil)=doMoveBack 无 tab，用户要进显图鉴）。
+# Phase B：tab view visible 切换，查 _tab_views["card"].visible + CardFrame texture fill。
+func test_default_tab_card() -> void:
 	var root := Node.new()
 	add_child(root)
 	var hero := HeroInstance.new(1, 1, 1)
-	hero.rank = 7   # 全技能解锁
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	assert_eq(panel._current_tab, "skill", "默认 tab = skill")
-	var upgrade_btn_count: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta(&"skill_upgrade"):
-			upgrade_btn_count += 1
-	assert_eq(upgrade_btn_count, 4, "默认 skill tab → 4 升级按钮可见")
+	assert_eq(panel._current_tab, "card", "默认 tab = card")
+	assert_true((panel._tab_views["card"] as CanvasItem).visible, "card view visible")
+	var card_frame: TextureRect = (panel._tab_views["card"] as Control).get_node("%CardFrame") as TextureRect
+	assert_not_null(card_frame.texture, "默认 card tab → CardFrame texture fill（card 内容渲染）")
 	panel.remove_window()
 	root.queue_free()
 
 
-# 切 detail tab → 属性 label 显示 + 技能升级按钮消失（源 doClickDetail → setOpenMode("att")）。
+# 切 detail tab → detail view visible + skill view hidden + 属性 label 显示（源 doClickDetail → setOpenMode("att")）。
+# Phase B：tab 内容常驻（不 free），切 tab 只切 visible，故查 visible + 各 view 子树内容。
 func test_switch_to_detail() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -338,20 +341,16 @@ func test_switch_to_detail() -> void:
 	panel.show_window(root)
 	panel._on_tab_pressed("detail")
 	assert_eq(panel._current_tab, "detail", "切到 detail tab")
-	var upgrade_btn_count: int = 0
-	var attrib_lbl_count: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta(&"skill_upgrade"):
-			upgrade_btn_count += 1
-		elif c is Label and (":" in (c as Label).text):
-			attrib_lbl_count += 1
-	assert_eq(upgrade_btn_count, 0, "detail tab 无技能升级按钮")
-	assert_gt(attrib_lbl_count, 0, "detail tab 显示属性 label")
+	assert_true((panel._tab_views["detail"] as CanvasItem).visible, "detail view visible")
+	assert_false((panel._tab_views["skill"] as CanvasItem).visible, "skill view hidden（切走）")
+	var attrib_lbl_count: int = _count_if_recursive(panel._tab_views["detail"] as Node, func(n: Node) -> bool:
+		return n is Label and ":" in (n as Label).text)
+	assert_gt(attrib_lbl_count, 0, "detail view 显示属性 label")
 	panel.remove_window()
 	root.queue_free()
 
 
-# 切 card tab → 英雄卡牌立绘显示（源 doClickCard → setOpenMode("card")）。
+# 切 card tab → card view visible + CardFrame texture（源 doClickCard → setOpenMode("card")）。
 func test_switch_to_card() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -359,19 +358,17 @@ func test_switch_to_card() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	panel._on_tab_pressed("card")
+	panel._on_tab_pressed("detail")   # 默认 card，先切走
+	panel._on_tab_pressed("card")   # 再切回 card（异 tab 切换）
 	assert_eq(panel._current_tab, "card", "切到 card tab")
-	# card frame（TextureRect tab_content）+ name label 应在 container
-	var card_tab_count: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta(&"tab_content"):
-			card_tab_count += 1
-	assert_gt(card_tab_count, 0, "card tab 渲染了卡牌内容（frame/art/name）")
+	assert_true((panel._tab_views["card"] as CanvasItem).visible, "card view visible")
+	var card_frame: TextureRect = (panel._tab_views["card"] as Control).get_node("%CardFrame") as TextureRect
+	assert_not_null(card_frame.texture, "card tab → CardFrame texture（card 内容渲染）")
 	panel.remove_window()
 	root.queue_free()
 
 
-# 切回 skill tab → 技能内容恢复（源 toggle：同 tab 不重复切，异 tab 切换重建）。
+# 切回 skill tab → skill view visible + 4 升级按钮（Phase B 内容常驻，visible 切换不丢）。
 func test_switch_back_to_skill() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -383,11 +380,9 @@ func test_switch_back_to_skill() -> void:
 	panel._on_tab_pressed("detail")   # 先切走
 	panel._on_tab_pressed("skill")    # 再切回
 	assert_eq(panel._current_tab, "skill", "切回 skill tab")
-	var upgrade_btn_count: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta(&"skill_upgrade"):
-			upgrade_btn_count += 1
-	assert_eq(upgrade_btn_count, 4, "切回 skill → 4 升级按钮恢复")
+	assert_true((panel._tab_views["skill"] as CanvasItem).visible, "skill view visible")
+	var upgrade_btn_count: int = _count_meta_recursive(panel._tab_views["skill"] as Node, "skill_upgrade")
+	assert_eq(upgrade_btn_count, 4, "切回 skill → 4 升级按钮（内容常驻不丢）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -401,10 +396,8 @@ func test_equips_persist_across_tabs() -> void:
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
 	panel._on_tab_pressed("card")
-	var equip_count: int = 0
-	for c in panel.container.get_children():
-		if c.has_meta("equip_slot"):
-			equip_count += 1
-	assert_eq(equip_count, 6, "card tab 下装备槽仍 6 个（base 常显）")
+	# Phase A：装备挂 %EquipSlotHost（base 子树），递归扫全子树。
+	var equip_count: int = _count_meta_recursive(panel.container, "equip_slot")
+	assert_eq(equip_count, 6, "card tab 下装备槽仍 6 个（base 常显，挂 %EquipSlotHost）")
 	panel.remove_window()
 	root.queue_free()
