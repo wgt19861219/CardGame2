@@ -5,18 +5,14 @@ extends PopWindow
 ## 5 件灵魂石商品单行布局 + box icon + 灵魂石消耗显示 + 点击弹 StarShopBuyWindow 确认。
 ## 单机化：源 tavern_draw stone net → ShopManager.buy_star（roll_tavern_loot stone 分支已支持）。
 ## FCA 开箱 eff_UI_shop_star_box_*.abc Phase 3 骨骼阻塞，PopTavernLoot 自动降级（box 不在 BOX_FCA_MAP 跳过动画）。
+##
+## 重构（2026-07-18，hero_detail 范式）：chrome（framework bg.jpg + frame + title + close + stone_label
+## + scroll）静态化进 scenes/ui/star_shop_content.tscn（位置/size 编辑器可视化调）。商品项 8 节点模板
+## 保留 procedural 挂 %ItemLayer（5 件动态装配）。源 cocos(800×480 左下) → Godot(960×640 左上)
+## via (cx+80, 560-cy)；CS=1.28125，纹理显示=纹理/CS。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/star_shop_content.tscn")
 const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
-const PANEL_POS: Vector2 = Vector2(80.0, 80.0)
-const PANEL_SIZE: Vector2 = Vector2(800.0, 480.0)
-const TITLE_POS: Vector2 = Vector2(330.0, 30.0)
-const TITLE_FONT_SIZE: int = 24
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_BTN_SIZE: Vector2 = Vector2(40.0, 32.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const STONE_LABEL_POS: Vector2 = Vector2(40.0, 25.0)
-const LIST_AREA_POS: Vector2 = Vector2(30.0, 110.0)
 const LIST_AREA_SIZE: Vector2 = Vector2(740.0, 350.0)
 # 源 createStarList :514-518 ox=90 oy=35 dx=212；item_bg fix_wh 207×286（itemstarshop）
 const ITEM_W: float = 207.0
@@ -25,9 +21,6 @@ const ITEM_DX: float = 212.0
 const ITEM_OX: float = 40.0
 const ITEM_OY: float = 30.0
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
-# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（shop.lua create("starshop") 是 pushScene 独立场景）。
-const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
-const TITLE_TEXT: String = "神秘星辰商人"
 const STAR_BOX_RES: Array[String] = ["shop_star_box_1.png", "shop_star_box_2.png", "shop_star_box_3.png"]
 # 源 getStarGoodsName → parameter.lua:36-38 LSTR key（type 0/1/2 → stone_green/blue/purple）
 const GOODS_NAME_LSTR: Array[String] = ["PARAMETER.SMALL_PLANET_DEBRIS_BOX", "PARAMETER.MEDIUM_STELLAR_SUITCASE", "PARAMETER.LARGE_INTERSTELLAR_GALLERY"]
@@ -53,7 +46,7 @@ var shop_mgr: ShopManager
 var cm: Variant = null
 var pd: PlayerData = null
 var rng: BattleRng
-var _panel: Control
+var _panel_layer: Control
 var _item_layer: Control
 var _stone_label: Label
 var _item_presses: Array = []   # item_press 高亮节点（源 :204 点击 setVisible(true)）
@@ -67,58 +60,26 @@ func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void
 	setup()
 	shop_mgr.open_star_shop()
 	# 源 shop.lua create("starshop") pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
-	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉（同 PackagePanel 范式）。
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_fullscreen_bg()
-	_build_ui()
+	_build_content()
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
-# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（shop starshop 源是独立场景）。
-func _create_fullscreen_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(FRAMEWORK_BG)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-func _build_ui() -> void:
-	_panel = Control.new()
-	_panel.position = PANEL_POS
-	_panel.size = PANEL_SIZE
-	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	container.add_child(_panel)
-	_add_texture(_panel, UI_DIR + "shop_star_frame.png", Vector2.ZERO, PANEL_SIZE)
-	var title := Label.new()
-	title.text = TITLE_TEXT   # shop_star_title.png 在但 Label 降级统一（项目范式）
-	title.position = TITLE_POS
-	title.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
-	_panel.add_child(title)
-	var close: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	close.pressed.connect(func() -> void:
+# 建 UI 内容：chrome 从 .tscn instantiate（位置/size 可视化）；5 件商品项保留 procedural 挂 %ItemLayer。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	_panel_layer = content.get_node("%PanelLayer") as Control
+	(_panel_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")
 		remove_window())
-	_panel.add_child(close)
-	_stone_label = Label.new()
-	_stone_label.position = STONE_LABEL_POS
-	_panel.add_child(_stone_label)
-	# 源 draglist 横滚（createStarList :519-531 getListWidth dx*len+40）→ ScrollContainer
-	var scroll := ScrollContainer.new()
-	scroll.position = LIST_AREA_POS
-	scroll.size = LIST_AREA_SIZE
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-	_panel.add_child(scroll)
-	_item_layer = Control.new()
-	_item_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stone_label = _panel_layer.get_node("%StoneLabel") as Label
+	_item_layer = _panel_layer.get_node("%ItemLayer") as Control
+	# 源 draglist 横滚（createStarList :519-531 getListWidth dx*len+40）
 	_item_layer.custom_minimum_size = Vector2(ITEM_OX * 2.0 + ITEM_DX * 5.0, LIST_AREA_SIZE.y)
-	scroll.add_child(_item_layer)
 	_refresh_stone()
 	_build_goods()
 

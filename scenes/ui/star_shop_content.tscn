@@ -1,0 +1,85 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_frame.png" id="2_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_backp"]
+
+[node name="StarShopContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="FrameworkBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 960.0
+offset_bottom = 640.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="PanelLayer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 80.0
+offset_top = 80.0
+offset_right = 880.0
+offset_bottom = 560.0
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_right = 800.0
+offset_bottom = 480.0
+texture = ExtResource("2_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 330.0
+offset_top = 30.0
+offset_right = 530.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 24
+mouse_filter = 2
+text = "神秘星辰商人"
+
+[node name="CloseBtn" type="TextureButton" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 60.0
+offset_bottom = 47.0
+texture_normal = ExtResource("3_back")
+texture_pressed = ExtResource("4_backp")
+ignore_texture_size = true
+
+[node name="StoneLabel" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 40.0
+offset_top = 25.0
+offset_right = 400.0
+offset_bottom = 45.0
+mouse_filter = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 30.0
+offset_top = 110.0
+offset_right = 770.0
+offset_bottom = 460.0
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 0
+
+[node name="ItemLayer" type="Control" parent="PanelLayer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
