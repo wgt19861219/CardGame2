@@ -9,6 +9,9 @@ extends PopWindow
 
 const DegreePopup := preload("res://scripts/ui/dungeon_degree_popup.gd")
 
+# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125：cocos sprite contentSize=纹理/CS，position 不变。
+# 纯 Sprite（CCSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS（含 setScale 累乘）等价。
+const CONTENT_SCALE: float = 1.28125
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
 const BOX_CLOSED_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_closed.png"
 const BOX_OPEN_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_open.png"
@@ -187,6 +190,9 @@ func _add_section_fog(sub: Control, section: int) -> void:
 	var fog := TextureRect.new()
 	var fog_idx: int = ((section - 1) % FOG_IMG_COUNT) + 1  # 源 :693
 	fog.texture = _load_tex(FOG_TEX_DIR + str(fog_idx) + ".png")
+	# 源 dungeon_map.lua:694 CCSprite:create 无 fix_size（纯 Sprite），setScale(4.0) → 显示=纹理/CS*4。
+	# 原 FOG_SIZE=(230,90) 即纹理原尺寸 ×4（约 57.5×22.5×4），保留常量作 4× 显示尺寸等价；补 EXPAND_IGNORE_SIZE 让 size 真正生效。
+	fog.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	fog.position = Vector2(0.0, SECTION_HEIGHT - 210.0 - FOG_SIZE.y * 0.5)  # 源 :697 anchor 0,0.5 y=210
 	fog.size = FOG_SIZE
 	fog.mouse_filter = Control.MOUSE_FILTER_IGNORE

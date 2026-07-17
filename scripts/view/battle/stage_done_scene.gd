@@ -93,12 +93,14 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 	_animator.play_enter()
 
 
-# 源 :1330-1340 bg。
+# 源 stagedone.lua:1330-1340 bg。源 t="Sprite" config={} 无 fix_size（纯 CCSprite，显示=纹理/CS）。
+# 保留 PRESET_FULL_RECT 让 anchors 撑满 viewport(960×640)；补 EXPAND_IGNORE_SIZE 让纹理 stretch 满屏（默认 KEEP_SIZE 不拉伸）。
 func _create_bg() -> void:
 	var bg := TextureRect.new()
 	bg.name = "Bg"
 	bg.texture = _load_bg()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE   # 装饰节点吞点击（反模式预防）
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 

@@ -100,6 +100,12 @@ func _get_or_load_atlas(plist_path: String) -> AtlasSprite:
 	return null
 
 
+# FCA/puppet 加载失败降级显示。
+# 源 unit.lua:1582-1600 usePuppet pcall 失败 → CCLabelTTF:create(resourceName,"Arial",20)（不是 Sprite！），
+# camp>0 绿色 ccc3(0,220,0) / camp<=0 红色 ccc3(220,50,50)，setScale(getUnitScale()*0.8)。
+# 旧版 CardGameGodot 改用 Portrait 图片降级（不照源），本项目沿用旧版产物；本任务属 CS 审计范围
+# 仅触及 TextureRect contentScaleFactor 偏差，源 LabelTTF 不适用 CS 规则 → 本节点保留 + 注释说明，
+# Portrait 图片降级 vs LabelTTF 重构待后续按源对齐 task（不在本批 CS 审计内）。
 func _fallback_to_portrait() -> void:
 	var portrait: String = String(_unit.info.get("Portrait", ""))
 	_fallback_portrait = TextureRect.new()
