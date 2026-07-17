@@ -11,27 +11,37 @@ func before_all() -> void:
 
 
 # 1. battleprepare 贴图——TextureRect.texture 非 null
+# 重构（2026-07-17）：panel → content(BattlePrepareContent) → Bg 多一层（.tscn instantiate 范式），
+# 直接子节点扫描改递归（找首个 TextureRect 含 texture 即视为 bg 装饰贴图已加载）。
 func test_battleprepare_textures_loaded() -> void:
 	var pd := PlayerData.new(cm)
 	var rng := BattleRng.new(12345)
 	var panel := BattlePreparePanel.new()
 	panel.setup(1, pd, null, rng, cm)
-	# 背景和队伍底框应是 TextureRect 且 texture 非 null
-	var found_bg: bool = false
+	# 背景和队伍底框应是 TextureRect 且 texture 非 null（递归扫 content 层下 TextureRect）
+	var bg_tex: TextureRect = _find_first_textured(panel)
+	assert_not_null(bg_tex, "应找到背景 TextureRect")
+	if bg_tex != null:
+		assert_not_null(bg_tex.texture, "bg TextureRect.texture 应非 null")
 	var found_slot: bool = false
-	for c in panel.get_children():
-		if c is TextureRect:
-			found_bg = true
-			assert_not_null((c as TextureRect).texture, "bg TextureRect.texture 应非 null")
-			break
 	for slot in panel._team_slots:
 		if slot is TextureRect:
 			found_slot = true
 			assert_not_null(slot.texture, "herobucket TextureRect.texture 应非 null")
 			break
-	assert_true(found_bg, "应找到背景 TextureRect")
 	assert_true(found_slot, "应找到槽位 TextureRect")
 	panel.queue_free()
+
+
+# 递归找首个 texture 非 null 的 TextureRect（适配 .tscn instantiate 后 panel→content→节点多层）。
+func _find_first_textured(node: Node) -> TextureRect:
+	if node is TextureRect and (node as TextureRect).texture != null:
+		return node as TextureRect
+	for c in node.get_children():
+		var r: TextureRect = _find_first_textured(c)
+		if r != null:
+			return r
+	return null
 
 
 # 2. exercise 面板——7 Button 存在
