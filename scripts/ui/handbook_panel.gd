@@ -29,7 +29,8 @@ func setup_panel(p_player: PlayerData) -> void:
 	_player = p_player
 	_cm = p_player.cm
 	setup()
-	# handbook 照源是全屏场景（bg.jpg 在 framework/父场景底层），shade 透明不遮背景（同 HeroPackagePanel）。
+	# handbook 照源是全屏场景（源 handbook.lua:618 base=basescene 手动加 bg.jpg，见 HandbookBuilder.create_background），
+	# shade 透明不遮背景（同 HeroPackagePanel）。
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE

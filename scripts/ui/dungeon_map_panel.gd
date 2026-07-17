@@ -12,6 +12,8 @@ const DegreePopup := preload("res://scripts/ui/dungeon_degree_popup.gd")
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125：cocos sprite contentSize=纹理/CS，position 不变。
 # 纯 Sprite（CCSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS（含 setScale 累乘）等价。
 const CONTENT_SCALE: float = 1.28125
+# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（dungeon_map.lua:605 是 pushScene 独立场景，见 :6 注释）。
+const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
 const BOX_CLOSED_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_closed.png"
 const BOX_OPEN_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_open.png"
@@ -78,6 +80,12 @@ func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: Bat
 	group_ids = p_group_ids
 	_collect_bosses()
 	setup()
+	# 源 dungeon_map.lua:605 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg，见 :6 注释），
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_create_fullscreen_bg()
 	_create_title()
 	_create_close_button()
 	_create_boss_list()
@@ -107,6 +115,17 @@ func _collect_bosses() -> void:
 	for i in range(1, bosses.size() + 1):
 		var section: int = int(ceil(float(i) / float(BOSSES_PER_SECTION)))
 		bosses[i - 1]["section_idx"] = min(section, MAX_SECTIONS)
+
+
+# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（dungeon_map 源是独立场景）。
+func _create_fullscreen_bg() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(FRAMEWORK_BG)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
 
 
 func _create_title() -> void:

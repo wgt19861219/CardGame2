@@ -13,6 +13,8 @@ const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
 const SWEEP_BTN_POS: Vector2 = Vector2(380.0, 380.0)
 const SWEEP_BTN_SIZE: Vector2 = Vector2(100.0, 40.0)
+# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（stagedetail.lua:1550 是 pushScene 独立场景）。
+const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 
 var stage_id: int = 0
 var mgr: StageManager = null
@@ -36,12 +38,30 @@ func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: B
 	_enemies = bd.get_monsters()
 	_res_info = StageDetailBuilder.get_res_info(StageAccount.stage_type(p_sid))
 	setup()
+	# 源 stagedetail.lua:1550 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build()
+
+
+# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（stagedetail 源是独立场景）。
+# _build 每次开新 stage 会 queue_free 全部子节点，故 bg 需随每次重建补回（保持最底层）。
+func _create_fullscreen_bg() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(FRAMEWORK_BG)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
 
 
 func _build() -> void:
 	for c in container.get_children():
 		c.queue_free()
+	_create_fullscreen_bg()
 	var info: Dictionary = _get_stage_info()
 	_ui = StageDetailBuilder.build(container, info, _res_info, player.cm)
 	StageDetailBuilder.create_enemy(container, _enemies, player.cm)

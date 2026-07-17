@@ -30,6 +30,8 @@ const ACTION_BTN_SIZE: Vector2 = Vector2(120.0, 48.0)
 # 源 ccc3(234,225,205) tab/挑战 label / ccc3(251,206,16) 换一批 label。
 const LABEL_COLOR_NORMAL: Color = Color(0.918, 0.882, 0.804)
 const LABEL_COLOR_CHANGE: Color = Color(0.984, 0.808, 0.063)
+# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（pvp.lua:3214/3250 是 pushScene 独立场景）。
+const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 
 var _ladder: LadderManager
 var _player: PlayerData
@@ -44,12 +46,30 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_rng: BattleRng) ->
 	_rng = p_rng
 	_ladder = _player.ladder
 	setup()
+	# 源 pvp.lua:3214/3250 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_refresh_view()
+
+
+# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（pvp 源是独立场景）。
+# _refresh_view 每次切 tab 会 queue_free 全部子节点，故 bg 需随每次重建补回（保持最底层）。
+func _create_fullscreen_bg() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(FRAMEWORK_BG)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
 
 
 func _refresh_view() -> void:
 	for c in container.get_children():
 		c.queue_free()
+	_create_fullscreen_bg()
 	_add_header()
 	_add_tabs()
 	# tab 内容区
