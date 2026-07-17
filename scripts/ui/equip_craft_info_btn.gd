@@ -8,11 +8,13 @@ extends RefCounted
 ## + playCraftEffect:409-482 + createNeedCraftPrompt:321-366（forbidInfoButton / forbidCraftButton 颜色控制 P2）。
 
 # ── 坐标（源 cocos 值）──
+# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125：cocos sprite contentSize=纹理/CS，position 不变。
+# 纯 Sprite（CCSprite / ed.createSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS 等价。
+const CONTENT_SCALE: float = 1.28125
 const INFO_BTN_POS: Vector2 = Vector2(147.0, 40.0)        # 源 :689 infoButton
 const INFO_REMARK_POS: Vector2 = Vector2(147.0, 80.0)     # 源 :678 infoButtonRemark
 const CRAFT_EFFECT_END_POS: Vector2 = Vector2(142.0, 226.0)   # 源 playCraftEffect :411
 const PROMPT_OFFSET_Y: float = -20.0                     # 源 :334 y+20（y-up → GD y-down 翻）
-const PROMPT_SIZE: Vector2 = Vector2(180.0, 40.0)
 const PROMPT_LBL_POS: Vector2 = Vector2(10.0, 12.0)
 const PROMPT_BG_PATH: String = "res://assets/ui/alpha/HVGA/craft_promt_bg.png"   # 源 :331
 # ── 按钮纹理（源 :686/:695 package_button 双层 Sprite）──
@@ -188,8 +190,12 @@ static func create_need_craft_prompt(panel) -> void:
 static func _create_prompt_box(panel, icon_node: Control) -> void:
 	var prompt_bg := TextureRect.new()
 	prompt_bg.texture = load(PROMPT_BG_PATH)
+	# 源 equipcraft.lua:331 ed.createSprite("craft_promt_bg.png") 无 fix_size（纯 Sprite 显示=纹理/CS）。
+	# 原 PROMPT_SIZE=(180,40) 硬编码与源纹理原尺寸关系未知；改 tex/CS 等价源 sprite 显示，EXPAND_IGNORE_SIZE 让 size 生效。
+	prompt_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	prompt_bg.size = (prompt_bg.texture as Texture2D).get_size() / CONTENT_SCALE
 	prompt_bg.position = (icon_node as Control).position + Vector2(0.0, PROMPT_OFFSET_Y)
-	prompt_bg.size = PROMPT_SIZE
+	prompt_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel._tree.add_child(prompt_bg)
 	var lbl := Label.new()
 	lbl.text = panel.cm.get_lstr(LSTR_NEED_CRAFT_FIRST)   # 源 :338

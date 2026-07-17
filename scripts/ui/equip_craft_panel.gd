@@ -16,6 +16,9 @@ signal jump_to_stage(stage_id: int)   # P1-10：获取途径跳转（源 doClick
 
 
 # ── 坐标常量（源 cocos 值）──────────────────────────────────────────
+# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125：cocos sprite contentSize=纹理/CS，position 不变。
+# 纯 Sprite（CCSprite / ed.createSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS 等价。
+const CONTENT_SCALE: float = 1.28125
 const CRAFT_WINDOW_POS: Vector2 = Vector2(548.0, 240.0)   # 源 createCraftWindow :1258 进场后
 const EQUIP_LAYER_POS: Vector2 = Vector2(252.0, 240.0)    # 源 equipLayer.ui.frame :1256 进场后
 const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
@@ -134,7 +137,12 @@ func _create_craft_window(id: int) -> void:
 	container.add_child(_craft_window)
 	var bg := TextureRect.new()
 	bg.texture = load(CRAFT_BG_PATH)
-	bg.position = -bg.get_minimum_size() / 2.0   # 源 setPosition(400,240) 中心锚定
+	# 源 equipcraft.lua:1247-1249 CCSprite:createWithSpriteFrame(sf) 无 fix_size（cocos 显示=纹理/CS）。
+	# Godot TextureRect 默认 KEEP_SIZE 按纹理原尺寸撑大；EXPAND_IGNORE_SIZE + size=tex/CS 等价源 sprite 显示。
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.size = (bg.texture as Texture2D).get_size() / CONTENT_SCALE
+	bg.position = -bg.size / 2.0   # 源 setPosition(400,240) anchor(0.5,0.5) 中心锚定
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_craft_window.add_child(bg)
 	_create_craft_tree(id, false)
 
@@ -336,9 +344,13 @@ func _set_history(index: int, id: int) -> void:
 		var icon_bg: Control = ReadequipIcon.create_icon(id, 0, cm)
 		icon_bg.scale = Vector2(HISTORY_ICON_SCALE, HISTORY_ICON_SCALE)
 		if len_ > 0:
+			# 源 equipcraft.lua:855 ed.createSprite("view_history_arrow.png") 无 fix_size（纯 Sprite 显示=纹理/CS）。
+			# HBoxContainer 管子节点 layout，须用 custom_minimum_size（非 size）分配空间 + EXPAND_IGNORE_SIZE 让纹理 stretch 入框。
 			var arrow := TextureRect.new()
 			arrow.texture = load(HISTORY_ARROW_PATH)
-			arrow.custom_minimum_size = Vector2(20.0, 20.0)
+			arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			arrow.custom_minimum_size = (arrow.texture as Texture2D).get_size() / CONTENT_SCALE
+			arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			container_layer.add_child(arrow)
 		container_layer.add_child(icon_bg)
 		icon_bg.gui_input.connect(_make_history_handler(len_ + 1))

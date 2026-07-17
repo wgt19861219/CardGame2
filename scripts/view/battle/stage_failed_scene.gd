@@ -69,11 +69,14 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 
 
 # 源 :163-172 bg Sprite（getBattleBgRes）。Cocos Sprite→Godot TextureRect 全屏适配（背景铺满）。
+# 源 stagefailed.lua:162-171 t="Sprite" config={} 无 fix_size（纯 CCSprite，显示=纹理/CS，position 400,240 中心）。
+# 保留 PRESET_FULL_RECT 让 anchors 撑满 viewport(960×640)；补 EXPAND_IGNORE_SIZE 让纹理 stretch 满屏（默认 KEEP_SIZE 不拉伸）。
 func _create_bg() -> void:
 	var bg := TextureRect.new()
 	bg.name = "Bg"
 	bg.texture = _load_bg()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
