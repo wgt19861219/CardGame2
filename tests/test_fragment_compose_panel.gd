@@ -29,11 +29,21 @@ func _make_panel(p_tid: int, p_pd: PlayerData) -> FragmentComposePanel:
 
 
 # 收集 panel.container 下所有 Label 的 text（含递归子节点）。
+# 重构后 panel 层从 .tscn instantiate 多一层 content（container→content→%节点），
+# Label/Button 都在 content 子树，扫须递归（参照 hero_detail 测试 _count_meta_recursive 范式）。
 func _collect_label_texts(node: Node, out: Array) -> void:
 	if node is Label:
 		out.append((node as Label).text)
 	for c in node.get_children():
 		_collect_label_texts(c, out)
+
+
+# 收集 panel.container 下所有非空 Button text（递归子节点）。
+func _collect_button_texts(node: Node, out: Array) -> void:
+	if node is Button and (node as Button).text != "":
+		out.append((node as Button).text)
+	for c in node.get_children():
+		_collect_button_texts(c, out)
 
 
 # ── LSTR 化精修验证（源 :273/:369/:459 + JSON 值核对）──
@@ -78,12 +88,10 @@ func test_setup_panel_renders_lstr_ok_button_label() -> void:
 	pd.hero_manager.add_fragment(int(recipe["frag_id"]), 5)
 	var panel := _make_panel(int(recipe["tid"]), pd)
 	panel.show_window(root)
-	# ok 按钮 = UiScale9Button.make_centered(..., cm.get_lstr("FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS"))
-	# （源 :459，旧硬编码 "确认合成"）。容器内查 Button 文字。
+	# ok 按钮 = UiScale9Button.apply_with_label(.tscn %OkBtn, ..., cm.get_lstr("FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS"))
+	# （源 :459，旧硬编码 "确认合成"）。.tscn instantiate 后 ok 在 content 子树，递归扫 Button 文字。
 	var ok_texts: Array = []
-	for c in panel.container.get_children():
-		if c is Button and (c as Button).text != "":
-			ok_texts.append((c as Button).text)
+	_collect_button_texts(panel.container, ok_texts)
 	assert_true(ok_texts.has(cm.get_lstr("FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS")), "ok 按钮文字 = cm.get_lstr(CONFIRM_SYNTHESIS)")
 	panel.remove_window()
 	root.queue_free()
