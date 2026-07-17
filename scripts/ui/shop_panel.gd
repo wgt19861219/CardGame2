@@ -36,6 +36,9 @@ const SOLDOUT_OPACITY: float = 0.5   # 源 :108 setOpacity(120/255≈0.47)
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const UNKNOWN_NAME: String = "???"
 const AUTO_REFRESH_CHECK_INTERVAL: float = 1.0   # _process 自动刷新轮询间隔（秒，源客户端 auto_refresh 轮询）
+# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 档），cocos CCSprite 显示=texture/CS。
+# Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28，工厂统一 /CS 等价源 sprite 显示。
+const CONTENT_SCALE: float = 1.28125
 
 var shop_id: int = 1
 var shop_mgr: ShopManager
@@ -96,13 +99,18 @@ func _build_ui() -> void:
 	_add_next_refresh_label()
 
 
+# sz 参数保留接口兼容但已不用：源 ui_info t="Sprite" frame/head/productBg/coin 全 sprite 无 fix_size
+# （config 仅 isCascadeOpacity/scale=1），显示=texture/CS，工厂内统一 tex/CS。
+@warning_ignore("unused_parameter")
 func _add_texture(parent: Control, path: String, pos: Vector2, sz: Vector2) -> void:
 	if not ResourceLoader.exists(path):
 		return
 	var tr := TextureRect.new()
 	tr.position = pos
-	tr.size = sz
 	tr.texture = load(path)
+	# 源纯 sprite 显示=texture/CS（shop.lua:784/858/404/446 ui_info t="Sprite" config 无 fix_size）。
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.size = tr.texture.get_size() / CONTENT_SCALE
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(tr)
 

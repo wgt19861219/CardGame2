@@ -28,6 +28,10 @@ const HALF: float = 0.5
 const LIGHT_X_RATIO: float = 0.3
 const FONT_SIZE: int = 20
 const LABEL_HEIGHT: int = 40
+# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
+# 源 tutorialmaker.lua:84/96/100 createSprite（unlock_bg/icon_res/lettherebelight）全无 fix_size → sprite 显示=tex/CS。
+# Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28，/CS 等价源显示。
+const CONTENT_SCALE: float = 1.28125
 
 var _panel: Control = null
 var _light: TextureRect = null
@@ -97,7 +101,9 @@ func _make_texture(res_path: String) -> TextureRect:
 	var tex: Texture2D = load(res_path)
 	if tex != null:
 		rect.texture = tex
-		rect.size = tex.get_size()
+		# 源 tutorialmaker.lua:84/96 createSprite 无 fix_size → sprite 显示=texture/CS
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.size = tex.get_size() / CONTENT_SCALE
 	return rect
 
 
@@ -116,7 +122,10 @@ func _make_static_from_atlas(res_name: String) -> TextureRect:
 		return null
 	var rect: TextureRect = TextureRect.new()
 	rect.texture = tex
-	rect.size = tex.get_size()
+	# 源 createFcaNode 不传 aniType → else LegendAminationEffect → createStaticSpriteFromSpineAtlas
+	# 取最大 region 静态显示（无 fix_size），等价 sprite 显示=texture/CS。
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.size = tex.get_size() / CONTENT_SCALE
 	return rect
 
 
