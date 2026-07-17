@@ -1,0 +1,114 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_bg.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_craft_money_bg.png" id="2_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_delimeter.png" id="3_split"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="4_ok"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="5_okp"]
+
+[node name="MailDetailContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 315.7083
+offset_top = 108.978
+offset_right = 644.2917
+offset_bottom = 531.022
+texture = ExtResource("1_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleBg" type="TextureRect" parent="Frame"]
+layout_mode = 3
+offset_left = 14.2917
+offset_top = 26.0
+offset_right = 314.2917
+offset_bottom = 54.0
+texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 30.0
+offset_top = 30.0
+offset_right = 298.5834
+offset_bottom = 56.0
+theme_override_colors/font_color = Color(0.67451, 0.29412, 0.11765, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+text = "标题"
+
+[node name="Body" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 30.0
+offset_top = 62.0
+offset_right = 298.5834
+offset_bottom = 142.0
+theme_override_colors/font_color = Color(0.63529, 0.3451, 0.16078, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+autowrap_mode = 3
+text = "正文"
+
+[node name="From" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 30.0
+offset_top = 150.0
+offset_right = 298.5834
+offset_bottom = 170.0
+theme_override_colors/font_color = Color(0.63529, 0.3451, 0.16078, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+text = "发件人"
+
+[node name="SplitLine" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 27.3161
+offset_top = 180.0
+offset_right = 301.2673
+offset_bottom = 183.9024
+texture = ExtResource("3_split")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="OkBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 82.2917
+offset_top = 362.0439
+offset_right = 247.2917
+offset_bottom = 407.0439
+texture_normal = ExtResource("4_ok")
+texture_pressed = ExtResource("5_okp")
+ignore_texture_size = true
+
+[node name="OkLabel" type="Label" parent="Frame/OkBtn"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "领取"
+
+[node name="AttachHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
