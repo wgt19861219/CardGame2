@@ -1,6 +1,6 @@
 extends GutTest
 # StageDetailPanel 关卡详情面板测试（P1-2026-07-10：照源 stagedetail 翻译）。
-# 验证 setup_panel 构建敌人阵容/奖励/体力/进入战斗按钮。
+# 重构（2026-07-17）：.tscn instantiate + fill 范式（同 hero_detail），测试递归扫 container→content→%...。
 
 var cm: ConfigManager
 
@@ -8,6 +8,15 @@ var cm: ConfigManager
 func before_all() -> void:
 	cm = ConfigManager.new()
 	cm.load_all()
+
+
+func _find_button_recursive(node: Node, text: String) -> bool:
+	if node is Button and (node as Button).text == text:
+		return true
+	for c in node.get_children():
+		if _find_button_recursive(c, text):
+			return true
+	return false
 
 
 func test_panel_assembles_with_enemy_and_award() -> void:
@@ -19,8 +28,16 @@ func test_panel_assembles_with_enemy_and_award() -> void:
 	var panel := StageDetailPanel.new("stagedetail", {})
 	panel.setup_panel(1, mgr, pd, rng)
 	panel.show_window(root)
-	# container 应含 title + power + enemy_title + enemy_box + award_title + go_button + close 等节点
-	assert_gt(panel.container.get_child_count(), 4, "关卡详情含多个 UI 节点")
+	# container 应含 content（.tscn root，含 base 层静态节点 + host）
+	assert_eq(panel.container.get_child_count(), 1, "container 含 content（.tscn instantiate）")
+	var content: Control = panel.container.get_child(0) as Control
+	assert_not_null(content.get_node_or_null("%GoButton"), "GoButton 节点存在")
+	assert_not_null(content.get_node_or_null("%EnemyHost"), "EnemyHost 节点存在")
+	assert_not_null(content.get_node_or_null("%StarHost"), "StarHost 节点存在")
+	assert_not_null(content.get_node_or_null("%CloseBtn"), "CloseBtn 节点存在")
+	# 星挂 %StarHost（3 颗星按源 createStars :1212-1260）
+	var star_host: Node = content.get_node("%StarHost")
+	assert_eq(star_host.get_child_count(), 3, "StarHost 含 3 颗星")
 	panel.remove_window()
 	root.queue_free()
 
@@ -37,12 +54,8 @@ func test_panel_shows_sweep_for_3_star_stage() -> void:
 	var panel := StageDetailPanel.new("stagedetail", {})
 	panel.setup_panel(1, mgr, pd, rng)
 	panel.show_window(root)
-	# 遍历 container 找扫荡按钮
-	var has_sweep := false
-	for c in panel.container.get_children():
-		if c is Button and (c as Button).text == "扫荡":
-			has_sweep = true
-			break
+	# 递归扫 container 子树找扫荡按钮（.tscn %SweepBtn，3 星时 visible=true + text="扫荡"）
+	var has_sweep: bool = _find_button_recursive(panel.container, "扫荡")
 	assert_true(has_sweep, "3 星关卡显示扫荡按钮")
 	panel.remove_window()
 	root.queue_free()
