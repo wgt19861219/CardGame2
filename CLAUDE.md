@@ -76,7 +76,9 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错（坐标试 4 �
 - **unique_name_in_owner**：被 `get_node("%Name")` 引用的节点必须开；**同名节点不能都开**（scene 内 unique name 须唯一，冲突致 engine warning → GUT 报失败）。静态背景节点（不被代码引用）不开。
 - **visible 切换**（多 tab 内容）：tab view 常驻 .tscn，`_tab_views[k].visible = (k==key)` 切换，不再 free+重建；动态内容 fill 一次到各 host（`%XxxHost`），切 tab 只切 visible。
 - **strict 类型**：`instantiate()`/`get_node()` 返回 Node，赋 Control/Label/Dictionary 字段必须 `as`（strict 编译报）。
-- **测试扫描深度**：.tscn instantiate 多一层 content（container→content→%BaseLayer→节点），扫 base/tab 子树改递归（`_count_meta_recursive`/`_count_if_recursive`）；扫特定 view 用 `_tab_views[k]` 锚定避开其他层（如 portrait FCA 的 Sprite2D）。
+- **测试扫描深度**：.tscn instantiate 多一层 content（container→content→%BaseLayer→节点），扫 base/tab 子树改递归（`_count_meta_recursive`/`_count_if_recursive`）；扫特定 view 用 `_tab_views[k]` 锚定避开其他层（如 portrait FCA 的 Sprite2D）。测试用公共字段/Logic 层时不需改（如 ranklist 只测 RanklistManager）。
+- **.tscn 禁 `#` 注释**：tscn 格式不支持 `#`（报 `Parse Error: Expected '['`），注释用 `;`，但样板无注释照删不补。
+- **子组件保留 procedural 挂 host**：panel 层静态化进 .tscn，子组件（att/material/tree/box 等）保留 procedural 挂 `%XxxHost`（pos=0,0 保持子组件局部坐标系不变），后续可单独静态化。
 
 ## 开发协议
 
