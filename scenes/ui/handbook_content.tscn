@@ -1,0 +1,399 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_bg.png" id="2_bookbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_bg_2.png" id="3_shade"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_bg_1.png" id="4_page"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="5_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="6_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_left.png" id="7_l"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_left_select.png" id="8_ls"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_right.png" id="9_r"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_right_select.png" id="10_rs"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_left_arrow.png" id="11_al"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_right_arrow.png" id="12_ar"]
+
+[node name="HandbookContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="FrameworkBg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_right = 960.0
+offset_bottom = 640.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="BookBg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 131.9
+offset_top = 81.56
+offset_right = 828.1
+offset_bottom = 558.44
+texture = ExtResource("2_bookbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="BookPageShade" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 131.9
+offset_top = 87.41
+offset_right = 828.1
+offset_bottom = 552.59
+texture = ExtResource("3_shade")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="BookPage" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 131.9
+offset_top = 87.41
+offset_right = 828.1
+offset_bottom = 552.59
+texture = ExtResource("4_page")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="BackBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 113.0
+offset_top = 94.5
+offset_right = 187.0
+offset_bottom = 169.5
+texture_normal = ExtResource("5_back")
+texture_pressed = ExtResource("6_backp")
+ignore_texture_size = true
+
+[node name="Tag1Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 115.5
+offset_top = 162.0
+offset_right = 230.5
+offset_bottom = 238.0
+texture_normal = ExtResource("7_l")
+texture_pressed = ExtResource("8_ls")
+ignore_texture_size = true
+
+[node name="Tag1Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 123.0
+offset_top = 190.0
+offset_right = 223.0
+offset_bottom = 210.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag2Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 113.5
+offset_top = 222.0
+offset_right = 228.5
+offset_bottom = 298.0
+texture_normal = ExtResource("7_l")
+texture_pressed = ExtResource("8_ls")
+ignore_texture_size = true
+
+[node name="Tag2Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 121.0
+offset_top = 250.0
+offset_right = 221.0
+offset_bottom = 270.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag3Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 111.5
+offset_top = 282.0
+offset_right = 226.5
+offset_bottom = 358.0
+texture_normal = ExtResource("7_l")
+texture_pressed = ExtResource("8_ls")
+ignore_texture_size = true
+
+[node name="Tag3Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 119.0
+offset_top = 310.0
+offset_right = 219.0
+offset_bottom = 330.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag4Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 109.5
+offset_top = 342.0
+offset_right = 224.5
+offset_bottom = 418.0
+texture_normal = ExtResource("7_l")
+texture_pressed = ExtResource("8_ls")
+ignore_texture_size = true
+
+[node name="Tag4Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 117.0
+offset_top = 370.0
+offset_right = 217.0
+offset_bottom = 390.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag5Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 107.5
+offset_top = 402.0
+offset_right = 222.5
+offset_bottom = 478.0
+texture_normal = ExtResource("7_l")
+texture_pressed = ExtResource("8_ls")
+ignore_texture_size = true
+
+[node name="Tag5Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 115.0
+offset_top = 430.0
+offset_right = 215.0
+offset_bottom = 450.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag6Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 105.5
+offset_top = 462.0
+offset_right = 220.5
+offset_bottom = 538.0
+texture_normal = ExtResource("7_l")
+texture_pressed = ExtResource("8_ls")
+ignore_texture_size = true
+
+[node name="Tag6Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 113.0
+offset_top = 490.0
+offset_right = 213.0
+offset_bottom = 510.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag7Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 732.5
+offset_top = 162.0
+offset_right = 847.5
+offset_bottom = 238.0
+texture_normal = ExtResource("9_r")
+texture_pressed = ExtResource("10_rs")
+ignore_texture_size = true
+
+[node name="Tag7Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 740.0
+offset_top = 190.0
+offset_right = 840.0
+offset_bottom = 210.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag8Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 734.5
+offset_top = 222.0
+offset_right = 849.5
+offset_bottom = 298.0
+texture_normal = ExtResource("9_r")
+texture_pressed = ExtResource("10_rs")
+ignore_texture_size = true
+
+[node name="Tag8Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 742.0
+offset_top = 250.0
+offset_right = 842.0
+offset_bottom = 270.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag9Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 736.5
+offset_top = 282.0
+offset_right = 851.5
+offset_bottom = 358.0
+texture_normal = ExtResource("9_r")
+texture_pressed = ExtResource("10_rs")
+ignore_texture_size = true
+
+[node name="Tag9Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 744.0
+offset_top = 310.0
+offset_right = 844.0
+offset_bottom = 330.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag10Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 738.5
+offset_top = 342.0
+offset_right = 853.5
+offset_bottom = 418.0
+texture_normal = ExtResource("9_r")
+texture_pressed = ExtResource("10_rs")
+ignore_texture_size = true
+
+[node name="Tag10Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 746.0
+offset_top = 370.0
+offset_right = 846.0
+offset_bottom = 390.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag11Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 740.5
+offset_top = 402.0
+offset_right = 855.5
+offset_bottom = 478.0
+texture_normal = ExtResource("9_r")
+texture_pressed = ExtResource("10_rs")
+ignore_texture_size = true
+
+[node name="Tag11Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 748.0
+offset_top = 430.0
+offset_right = 848.0
+offset_bottom = 450.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tag12Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 742.5
+offset_top = 462.0
+offset_right = 857.5
+offset_bottom = 538.0
+texture_normal = ExtResource("9_r")
+texture_pressed = ExtResource("10_rs")
+ignore_texture_size = true
+
+[node name="Tag12Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 750.0
+offset_top = 490.0
+offset_right = 850.0
+offset_bottom = 510.0
+theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ArrowLeftBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 349.5
+offset_top = 487.5
+offset_right = 400.5
+offset_bottom = 532.5
+texture_normal = ExtResource("11_al")
+ignore_texture_size = true
+
+[node name="ArrowRightBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 569.5
+offset_top = 487.5
+offset_right = 620.5
+offset_bottom = 532.5
+texture_normal = ExtResource("12_ar")
+ignore_texture_size = true
+
+[node name="PageLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 435.0
+offset_top = 500.0
+offset_right = 535.0
+offset_bottom = 520.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EquipGridHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
