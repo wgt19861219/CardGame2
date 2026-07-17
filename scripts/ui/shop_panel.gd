@@ -2,63 +2,15 @@ class_name ShopPanel
 extends PopWindow
 
 ## 商店主面板（View 层）— 照源 ui/market/shop.lua create(764-917) + createCommon(325-510)。
-## 底框 + NPC 头像 + 标题 + 刷新按钮 + 商品列表（两行三列 getItemPos）+ 购买闭环。
-## 单机化：源 net shop_* → ShopManager Logic；NPC 对话 + 自动刷新时刻照源实现（热门标签暂不实现）。
-## 坐标：源 cocos(800×480 左下)→Godot(960×640 左上) via _g(cx+80, 560-cy)；
-## _panel 作为 frame sprite 的 Godot 等价（左上原点 = _g(framePos) - frame_display_size/2），
-## 内部子元素坐标相对 _panel（源 frame sprite 内相对左下 y-up → Godot y-down 已在常量里转好）。
-## CS：源 hello.lua:311 setContentScaleFactor=1.28125，CCSprite 显示=纹理/CS（无 fix_size 时）。
-## TextureRect 默认 KEEP_SIZE 偏大 1.28 → _add_texture 统一 EXPAND_IGNORE_SIZE + size=纹理/CS。
+## 重构（2026-07-17）：base 层（frame/title/head/refresh/time/talk/close/money + bg.jpg）静态化进
+## shop_content.tscn（位置/size 编辑器可视化调）。ShopBuilder fill 动态数据 + 商品列表 procedural。
+## 底框 + NPC 头像 + 标题 + 刷新按钮 + 商品列表（两行 getItemPos）+ 购买闭环。
+## 单机化：源 net shop_* → ShopManager Logic；NPC 对话 + 自动刷新时刻照源。
+## 坐标：源 cocos(800×480 左下)→Godot(960×640 左上) via (cx+80, 560-cy)；
+## PanelLayer 作 frame sprite Godot 等价（左上原点 = to_godot(framePos) - frame_size/2），子元素坐标相对 PanelLayer。
+## CS：源 hello.lua:311 setContentScaleFactor=1.28125，CCSprite 显示=纹理/CS。
 
-# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 档）。
-const CONTENT_SCALE: float = 1.28125
-# 源 framework.lua:749 pushScene 全屏 bg.jpg（shop 是 pushScene 独立场景，main.lua:1378 pushScene(ed.ui.shop.create)）。
-const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
-
-# ── 源 cocos 坐标（marketconfig.lua framePos/headPos/titlePos + shop.lua:887 refresh ccp）──
-# id=1 普通商人：framePos=ccp(400,225), headPos=ccp(142,400), titlePos=ccp(400,405), refresh=ccp(580,350)。
-# 所有源 sprite 无 anchor 指定 → 默认 0.5,0.5（中心锚）。Godot TextureRect 左上原点 → pos = _g(cocos) - display_size/2。
-const FRAME_COCOS_CENTER: Vector2 = Vector2(400.0, 225.0)
-const HEAD_COCOS_CENTER: Vector2 = Vector2(142.0, 400.0)
-const TITLE_COCOS_CENTER: Vector2 = Vector2(400.0, 405.0)
-const REFRESH_COCOS_CENTER: Vector2 = Vector2(580.0, 350.0)
-
-# ── 相对 _panel（frame sprite）的内部坐标 ──
-# HEAD_POS 相对 _panel：源 head 中心(142,400) display=171/CS×153/CS=133×119
-# → Godot 左上(222,160)-(66.5,59.5)-(129,123)=(26.5,-22.5)；head 向上溢出 frame（NPC 头像在 frame 上沿外，源视觉如此）。
-const HEAD_POS: Vector2 = Vector2(26.5, -22.5)
-const HEAD_SIZE: Vector2 = Vector2(133.0, 119.0)
-const TITLE_POS: Vector2 = Vector2(340.0, 18.0)  # 源 title 中心(400,405) 相对 panel ≈ (351,32)；Label 左上近似偏移
-const TITLE_FONT_SIZE: int = 24
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 源 framework sbCreateBack（本项目统一左上 X，非源精确值）
-const CLOSE_BTN_SIZE: Vector2 = Vector2(40.0, 32.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-# REFRESH 相对 _panel：源(580,350) display=146/CS×75/CS=114×58 → Godot 左上(603,181)-(129,123)=(474,58)。
-const REFRESH_BTN_POS: Vector2 = Vector2(474.0, 58.0)
-const REFRESH_BTN_SIZE: Vector2 = Vector2(114.0, 58.0)
-# 源 shop.lua:884/895 refresh 按钮 shop_refresh_button.png + shop_refresh_button_down.png。
-const REFRESH_BTN_RES: String = "res://assets/ui/alpha/HVGA/shop_refresh_button.png"
-const REFRESH_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/shop_refresh_button_down.png"
-const MONEY_LABEL_POS: Vector2 = Vector2(40.0, 25.0)  # 近似（源 framework statusbar 单独，本面板无独立元素）
-# ── 商品列表（源 getItemPos :371-382 + createCommon 子元素 :401-499）──
-# panel(productBg) anchor 0.5,0.5 → getItemPos 返回中心；index=1 中心(205,256)。
-# display=261/CS×187/CS=204×146 → index=1 Godot 左上(285,304)-(102,73)=(183,231)；相对 _panel=(183-129,231-123)=(54,108)。
-# dx=205 dy=150（源 :372）；lineCount=3，index<=3 行 y_cocos=256 → Godot y=304（视觉上排）；index>3 行 y_cocos=106 → Godot y=454（下排）。
-const LIST_ORIGIN: Vector2 = Vector2(54.0, 108.0)  # index=1（上排第一个）相对 _panel
-const LIST_CELL: Vector2 = Vector2(205.0, 150.0)   # 源 dx, dy
-const LIST_COLS: int = 3
-const ITEM_SIZE: Vector2 = Vector2(204.0, 146.0)   # 源 productBg display size（261×187 / CS）
-# 子元素相对 item 左上（源相对 productBg 左下 y-up → Godot y-down：y = ITEM_SIZE.y - cocos_y）。
-# 源 icon ccp(100,75)→y=146-75=71 / name ccp(100,125)→y=21 / coin ccp(40,25)→y=121 / price ccp(110,25)→y=121。
-const ITEM_ICON_POS: Vector2 = Vector2(100.0, 71.0)
-const ITEM_NAME_POS: Vector2 = Vector2(100.0, 21.0)
-const ITEM_COIN_POS: Vector2 = Vector2(40.0, 121.0)
-const ITEM_PRICE_POS: Vector2 = Vector2(110.0, 121.0)
-const ITEM_SOLDOUT_POS: Vector2 = Vector2(55.0, 60.0)  # 源 noneTag anchor(0,0) 左下，图缺 → Label 近似
-const SOLDOUT_OPACITY: float = 0.5   # 源 :108 setOpacity(120/255≈0.47)
-const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
-const UNKNOWN_NAME: String = "???"
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_content.tscn")
 const AUTO_REFRESH_CHECK_INTERVAL: float = 1.0   # _process 自动刷新轮询间隔（秒，源客户端 auto_refresh 轮询）
 
 var shop_id: int = 1
@@ -67,15 +19,14 @@ var cm: Variant = null
 var pd: PlayerData = null
 var rng: BattleRng
 var _config: Dictionary = {}
-var _panel: Control
+var _panel_layer: Control
 var _item_layer: Control
 var _money_label: Label
-var _refresh_btn: TextureButton
-var _refresh_cost_label: Label       # 源按钮附近 cost 显示（shop_refresh_cost_bg + 价格）
+var _refresh_cost_label: Label       # 源 shop_refresh_cost_bg + 价格（按钮上方）
 var _talk_label: Label             # NPC 对话气泡（照源 shop.lua:19 showTalk）
 var _next_refresh_label: Label     # 下次自动刷新时刻（照源 getShopNextAutoRefreshPointDesc）
-var _talk_tween: Tween = null      # 对话淡出动画（doSpeak 范式）
 var _head_touch: Control           # NPC 头像触摸层（点头像→Touch，源 shop.lua:940 head_button）
+var _talk_tween: Tween = null      # 对话淡出动画（源 showTalk CCFadeOut）
 var _auto_refresh_accum: float = 0.0   # _process 自动刷新轮询累加器
 
 
@@ -88,182 +39,59 @@ func setup_panel(p_shop_id: int, p_mgr: ShopManager, p_pd: PlayerData, p_rng: Ba
 	_config = MarketConfig.get_type_config(shop_id)
 	setup()
 	# shop 是 pushScene 独立场景（main.lua:1378），framework.lua:749 自动铺全屏 bg.jpg。
-	# 单机化用 PopWindow 弹窗替代 pushScene → shade 透明 + container 底层补 bg.jpg（同 package_panel 范式）。
+	# 单机化用 PopWindow 弹窗替代 pushScene → shade 透明 + .tscn %FrameworkBg 补 bg.jpg。
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_fullscreen_bg()
 	shop_mgr.open_shop(shop_id, rng, cm)
 	shop_mgr.init_auto_refresh(shop_id, pd, _now())         # 源 local_server:1219 open_shop 设 _last_auto_refresh_time
-	shop_mgr.init_expire(shop_id, pd, _now())               # 源 local_server:1316 open_shop 设 _expire_time（地精/黑市停留计时）
+	shop_mgr.init_expire(shop_id, pd, _now())               # 源 local_server:1316 open_shop 设 _expire_time
 	shop_mgr.check_auto_refresh(shop_id, pd, _now(), rng)   # 源 up.proto:260 到点 auto_refresh 触发
-	_build_ui()
+	_build_content()
 	register_on_enter(func() -> void:
 		AudioPlayer.play_sfx("common_popup_window")
 		_show_talk("Welcome"))   # 源 shop.lua:920 进店 Welcome（进场后触发，已入树）
 
 
-# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（shop 是独立场景）。
-func _create_fullscreen_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(FRAMEWORK_BG)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-# 源 cocos(800×480 左下) → Godot(960×640 左上)：cx+80, 560-cy（同 BattleViewCoords 标准）。
-func _g(pos: Vector2) -> Vector2:
-	return BattleViewCoords.to_godot(pos.x, pos.y)
-
-
-# frame sprite display size = texture/CS（源 createSprite 无 fix_size → 显示=纹理/CS）。
-func _frame_display_size() -> Vector2:
-	var tex: Texture2D = load(UI_DIR + String(_config["frameRes"])) as Texture2D
-	if tex == null:
-		return Vector2(702.0, 424.0)   # shop_bg.png 900×543 / CS 的近似 fallback
-	return tex.get_size() / CONTENT_SCALE
-
-
-func _build_ui() -> void:
-	# _panel 作 frame sprite Godot 等价：左上原点 = _g(FRAME_COCOS_CENTER) - display_size/2（源 frame anchor 0.5,0.5 中心）。
-	var frame_size: Vector2 = _frame_display_size()
-	var frame_pos: Vector2 = _g(FRAME_COCOS_CENTER) - frame_size / 2.0
-	_panel = Control.new()
-	_panel.position = frame_pos
-	_panel.size = frame_size
-	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	container.add_child(_panel)
-	# frame 纹理铺满 _panel（display size）。
-	_add_texture(_panel, UI_DIR + String(_config["frameRes"]), Vector2.ZERO)
-	_add_texture(_panel, UI_DIR + String(_config["headRes"]), HEAD_POS)
-	_add_title()
-	_add_close_button()
-	_add_refresh_button()
-	_money_label = Label.new()
-	_money_label.position = MONEY_LABEL_POS
-	_panel.add_child(_money_label)
-	_item_layer = Control.new()
-	_item_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(_item_layer)
-	_refresh_money()
-	_build_goods()
-	_add_npc_area()
-	_add_next_refresh_label()
-
-
-# 统一 CS 校正：源 CCSprite 无 fix_size → 显示=纹理/CS；Godot TextureRect 默认 KEEP_SIZE 偏大 1.28。
-# EXPAND_IGNORE_SIZE 让 TextureRect 接受手动 size，避免按纹理原尺寸撑大；size = 纹理 / CS 还原源显示尺寸。
-func _add_texture(parent: Control, path: String, pos: Vector2) -> void:
-	if not ResourceLoader.exists(path):
-		return
-	var tex: Texture2D = load(path) as Texture2D
-	if tex == null:
-		return
-	var tr := TextureRect.new()
-	tr.position = pos
-	tr.size = tex.get_size() / CONTENT_SCALE
-	tr.texture = tex
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(tr)
-
-
-func _add_title() -> void:
-	# 源 shop_title_1/2/3.png 缺 → Label 降级（项目资源缺图范式）
-	var lbl := Label.new()
-	lbl.text = String(_config["titleText"])
-	lbl.position = TITLE_POS
-	lbl.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
-	_panel.add_child(lbl)
-
-
-func _add_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(func() -> void:
+# 建 UI 内容。Phase base 层从 .tscn instantiate + fill 动态数据；商品列表 procedural 挂 %ItemLayer。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	_panel_layer = content.get_node("%PanelLayer") as Control
+	ShopBuilder.setup_panel_layer(_panel_layer, _config)
+	# 绑定 .tscn 静态按钮/区域
+	(_panel_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")   # 源 closeWindow
 		remove_window())
-	_panel.add_child(btn)
-
-
-# 源 shop.lua:878-916 refresh 按钮：shop_refresh_button.png 贴图 + 中心 "刷新" Label（:905 硬编码字面量，
-# 源未 LSTR 化）。cost 在按钮上方独立 Label（源 shop_refresh_cost_bg + 价格，:884 附近）。
-func _add_refresh_button() -> void:
-	_refresh_btn = TextureButton.new()
-	_refresh_btn.texture_normal = load(REFRESH_BTN_RES) as Texture2D
-	_refresh_btn.texture_pressed = load(REFRESH_BTN_PRESS_RES) as Texture2D
-	_refresh_btn.ignore_texture_size = true
-	_refresh_btn.position = REFRESH_BTN_POS
-	_refresh_btn.size = REFRESH_BTN_SIZE
-	_refresh_btn.pressed.connect(_on_refresh)
-	_panel.add_child(_refresh_btn)
-	var lbl := Label.new()
-	lbl.text = "刷新"   # 源 :905 硬编码 "刷新"（非 LSTR）
-	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_refresh_btn.add_child(lbl)
-	_refresh_cost_label = Label.new()
-	_refresh_cost_label.position = Vector2(REFRESH_BTN_POS.x, REFRESH_BTN_POS.y - 18.0)
-	_refresh_cost_label.add_theme_font_size_override("font_size", 14)
-	_refresh_cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(_refresh_cost_label)
+	(_panel_layer.get_node("%RefreshBtn") as BaseButton).pressed.connect(_on_refresh)
+	# 源 shop.lua:940 head_button（点头像→Touch）。
+	_head_touch = _panel_layer.get_node("%HeadTouch") as Control
+	_head_touch.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
+			_show_talk("Touch"))
+	# 动态数据节点引用
+	_money_label = _panel_layer.get_node("%MoneyLabel") as Label
+	_refresh_cost_label = _panel_layer.get_node("%RefreshCostLabel") as Label
+	_talk_label = _panel_layer.get_node("%TalkLabel") as Label
+	_talk_label.modulate.a = 0.0   # 初始隐藏（淡入时设 a=1）
+	_next_refresh_label = _panel_layer.get_node("%TimeLabel") as Label
+	_item_layer = _panel_layer.get_node("%ItemLayer") as Control
+	_refresh_money()
+	_build_goods()
 	_update_refresh_label()
+	_update_next_refresh_label()
 
 
-func _update_refresh_label() -> void:
-	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
-	# cost 显示在按钮上方 Label（源按钮本身只显"刷新"，cost 在 confirm dialog SPEND_XXX_TO_REFRESH 内）。
-	_refresh_cost_label.text = "%d钻" % cost
-
-
-# 源 createCommon：两行三列商品列表（getItemPos :371-382 两行布局）。
+# 源 createCommon：两行商品列表（getItemPos :371-382）。先 free 老 item 再建（_rebuild 用）。
 func _build_goods() -> void:
+	for c in _item_layer.get_children():
+		c.free()
 	var goods: Array = shop_mgr.get_goods(shop_id)
-	for i in goods.size():
-		var g: Dictionary = goods[i]
-		var col: int = i % LIST_COLS
-		var row: int = i / LIST_COLS
-		var pos: Vector2 = Vector2(LIST_ORIGIN.x + col * LIST_CELL.x, LIST_ORIGIN.y + row * LIST_CELL.y)
-		_item_layer.add_child(_create_item(g, i, pos))
-
-
-# 源 createCommon item：panel(productBgRes) + icon(createIconWithAmount) + name + coinIcon + costLabel + noneTag。
-func _create_item(g: Dictionary, slot: int, pos: Vector2) -> Control:
-	var item := Control.new()
-	item.position = pos
-	item.size = ITEM_SIZE
-	item.mouse_filter = Control.MOUSE_FILTER_STOP
-	item.gui_input.connect(_make_buy_handler(slot))
-	_add_texture(item, UI_DIR + String(_config["productBgRes"]), Vector2.ZERO)
-	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(g["id"]), {})
-	var icon: Control = ReadequipIcon.create_icon(int(g["id"]), int(g.get("amount", 1)), cm)
-	icon.position = ITEM_ICON_POS
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.add_child(icon)
-	var name_lbl := Label.new()
-	name_lbl.text = cm.get_lstr(String(equip_row.get("Name", UNKNOWN_NAME)))   # 源 T(LSTR(Equip.Name)) 中文化
-	name_lbl.position = ITEM_NAME_POS
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.add_child(name_lbl)
-	_add_texture(item, UI_DIR + MarketConfig.get_coin_res(String(g["type"])), ITEM_COIN_POS)
-	var price_lbl := Label.new()
-	price_lbl.text = str(int(g["price"]))
-	price_lbl.position = ITEM_PRICE_POS
-	price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	item.add_child(price_lbl)
-	if int(g.get("amount", 0)) <= 0:
-		var sold := Label.new()
-		sold.text = "售罄"   # 源 :110/491 noneTag 贴图（noneTagRes），无 LSTR → Label 降级
-		sold.position = ITEM_SOLDOUT_POS
-		sold.modulate = Color.RED
-		sold.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		item.add_child(sold)
-		item.modulate.a = SOLDOUT_OPACITY   # 源 :108 panel:setOpacity(120)
-	return item
+	var items: Array = ShopBuilder.build_goods(_item_layer, goods, _config, cm)
+	# 商品 item gui_input → 购买（按 slot 索引）。源 doClickInProduct。
+	for i in items.size():
+		var item: Control = items[i]
+		item.gui_input.connect(_make_buy_handler(i))
 
 
 func _make_buy_handler(slot: int) -> Callable:
@@ -306,7 +134,7 @@ func _on_refresh() -> void:
 	var coinname: String = "钻石"
 	var times: int = shop_mgr.get_refresh_times(shop_id)
 	var popup := ShopRefreshConfirm.new()
-	popup.set_message(cm.get_lstr("SHOP.SPEND_XXX_TO_REFRESH") % [cost, coinname, times], cm)
+	popup.set_message(String(cm.get_lstr("SHOP.SPEND_XXX_TO_REFRESH")) % [cost, coinname, times], cm)
 	popup.confirmed.connect(_on_refresh_confirmed)
 	container.add_child(popup)
 
@@ -322,8 +150,6 @@ func _on_refresh_confirmed() -> void:
 
 
 func _rebuild() -> void:
-	for c in _item_layer.get_children():
-		c.free()
 	_build_goods()
 	_update_refresh_label()
 	_update_next_refresh_label()
@@ -331,14 +157,24 @@ func _rebuild() -> void:
 
 
 func _refresh_money() -> void:
-	_money_label.text = "金币:%d 钻石:%d" % [pd.hero_manager.gold, pd.diamond]
+	ShopBuilder.fill_money(_money_label, pd)
+
+
+func _update_refresh_label() -> void:
+	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
+	# cost 显示在按钮上方 Label（源按钮本身只显"刷新"，cost 在 confirm dialog SPEND_XXX_TO_REFRESH 内）。
+	ShopBuilder.fill_refresh_cost(_refresh_cost_label, cost)
+
+
+func _update_next_refresh_label() -> void:
+	ShopBuilder.fill_time_label(_next_refresh_label, shop_id, shop_mgr, pd, _now(), cm)
 
 
 func _now() -> int:
 	return int(Time.get_unix_time_from_system())
 
 
-# 源 shop.lua:19-73 showTalk：getTalkContent 选词 + 显示气泡 + 淡出（doSpeak 范式）。无台词静默。
+# 源 shop.lua:19-73 showTalk：getTalkContent 选词 + 显示气泡 + 淡出（CCFadeOut）。无台词静默。
 func _show_talk(key: String) -> void:
 	var ttype: String = shop_mgr.get_time_type(shop_id, pd, _now())
 	var text: String = MerchantTalkData.get_talk_content(shop_id, key, ttype, rng, cm)
@@ -352,52 +188,6 @@ func _show_talk(key: String) -> void:
 		_talk_tween = create_tween()
 		_talk_tween.tween_interval(2.5)
 		_talk_tween.tween_property(_talk_label, "modulate:a", 0.0, 0.8)
-
-
-# 源 shop.lua:940 head_button（点头像→Touch）+ 头顶对话气泡（skill_talk_bg 缺→Label 降级，项目范式）。
-func _add_npc_area() -> void:
-	_head_touch = Control.new()
-	_head_touch.position = HEAD_POS
-	_head_touch.size = HEAD_SIZE
-	_head_touch.mouse_filter = Control.MOUSE_FILTER_STOP
-	_head_touch.gui_input.connect(func(ev: InputEvent) -> void:
-		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
-			_show_talk("Touch"))
-	_panel.add_child(_head_touch)
-	_talk_label = Label.new()
-	_talk_label.position = Vector2(HEAD_POS.x - 20.0, HEAD_POS.y - 50.0)
-	_talk_label.size = Vector2(HEAD_SIZE.x + 220.0, 40.0)
-	_talk_label.add_theme_font_size_override("font_size", 16)
-	_talk_label.modulate.a = 0.0
-	_talk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(_talk_label)
-
-
-# 下次自动刷新时刻（源 getShopNextAutoRefreshPointDesc），刷新按钮下方 Label。无自动刷新则空。
-func _add_next_refresh_label() -> void:
-	_next_refresh_label = Label.new()
-	_next_refresh_label.position = Vector2(REFRESH_BTN_POS.x, REFRESH_BTN_POS.y + REFRESH_BTN_SIZE.y + 4.0)
-	_next_refresh_label.add_theme_font_size_override("font_size", 13)
-	_next_refresh_label.modulate = Color(0.9, 0.85, 0.6)
-	_next_refresh_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(_next_refresh_label)
-	_update_next_refresh_label()
-
-
-# 更新时刻文字（setup + _rebuild + _process 每秒共用）。expire 态显停留倒计时（源 :757 SHOP.MERCHANT_LEAVES_AFTER），
-# 否则显下次刷新时刻（源 :751 SHOP.NEXT_AUTOMATICALLY_REFRESH_TIME）。两者皆空则 Label 清空。
-func _update_next_refresh_label() -> void:
-	var tt: String = shop_mgr.get_time_type(shop_id, pd, _now())
-	if tt == "expire":
-		# 源 :757-758 SHOP.MERCHANT_LEAVES_AFTER(商人将于) + time + SHOP.TIMES(后离开)。
-		var exp: String = shop_mgr.get_expire_desc(shop_id, pd, _now())
-		if exp == "":
-			_next_refresh_label.text = ""
-		else:
-			_next_refresh_label.text = cm.get_lstr("SHOP.MERCHANT_LEAVES_AFTER") + " " + exp + " " + cm.get_lstr("SHOP.TIMES")
-		return
-	var desc: String = shop_mgr.get_next_refresh_desc(shop_id, pd, _now())
-	_next_refresh_label.text = cm.get_lstr("SHOP.NEXT_AUTOMATICALLY_REFRESH_TIME") + desc if desc != "" else ""
 
 
 # 运行中轮询（源 shop.lua timeRefresh:648-698 每秒）：① 到期检查（地精/黑市停留 3600s）② 自动刷新（Refresh Times 点）③ 时刻 Label 刷新。
@@ -420,6 +210,6 @@ func _process(delta: float) -> void:
 # 单机化：Toast 替 alertDialog + remove_window + clear_expire（常驻按钮再点重计，源 NPC 消失等价）。
 func _on_expire() -> void:
 	_show_talk("Expire")
-	Toast.show_message(cm.get_lstr("SHOP.THE_MYSTERIOUS_BUSINESSMAN_HAS_DRIFTED_AWAY_PLEASE_BE_QUICK_NEXT_TIME"))
+	Toast.show_message(String(cm.get_lstr("SHOP.THE_MYSTERIOUS_BUSINESSMAN_HAS_DRIFTED_AWAY_PLEASE_BE_QUICK_NEXT_TIME")))
 	shop_mgr.clear_expire(shop_id, pd)
 	call_deferred("remove_window")
