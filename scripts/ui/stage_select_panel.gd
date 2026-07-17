@@ -9,6 +9,8 @@ extends PopWindow
 
 const StageSelectBuilder = preload("res://scripts/ui/stage_select_builder.gd")
 const StageDetailPanel = preload("res://scripts/ui/stage_detail_panel.gd")
+# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（stageselect.lua + main.lua:1351 是 pushScene 独立场景）。
+const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 
 var mgr: StageManager = null
 var player: PlayerData = null
@@ -46,10 +48,28 @@ func _chapter_of_stage(stage_id: int) -> int:
 	return int(st.get(str(sid), {}).get("Chapter ID", 1))
 
 
+# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（stageselect 源是独立场景）。
+func _create_fullscreen_bg() -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(FRAMEWORK_BG)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(bg)
+
+
 func _refresh_view() -> void:
 	for c in container.get_children():
 		c.queue_free()
 	_stage_buttons.clear()
+	# 源 stageselect.lua + main.lua:1351 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	# _refresh_view 每次切章/mode 会 queue_free 全部子节点，故 bg 需随每次重建补回（保持最底层）。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_create_fullscreen_bg()
 	var cm: Variant = player.cm if player != null else null
 	var star_of: Callable = Callable(self, "_get_stage_stars")
 	# 源 create(:1617-1622) 顺序：map → frame/title → mode → arrows → dots。

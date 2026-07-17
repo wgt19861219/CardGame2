@@ -207,8 +207,10 @@ func test_mode_label_uses_lstr() -> void:
 	c.queue_free()
 
 
-# 源 stageselect 是 PopWindow 弹窗，无全屏 bg.jpg（仅 framework shade）。旧实现误加 bg.jpg 已删。
-func test_no_fullscreen_bg() -> void:
+# 源 ui/main.lua:1351 ed.pushScene(ed.ui.stageselect.create()) —— stageselect 是 pushScene 独立场景，
+# framework.lua:749 自动建全屏 bg.jpg。本项目单机化 pushScene→PopWindow，需补 bg.jpg 还原源视觉。
+# （2026-07-17：旧测试 test_no_fullscreen_bg 基于错误前提「无全屏 bg」反向断言；源核实后改正。）
+func test_has_fullscreen_bg() -> void:
 	var root := Node.new()
 	add_child(root)
 	var mgr := StageManager.new(cm)
@@ -217,16 +219,17 @@ func test_no_fullscreen_bg() -> void:
 	var panel := StageSelectPanel.new("stageselect", {})
 	panel.setup_panel(mgr, pd, rng)
 	panel.show_window(root)
+	var found_bg := false
 	for child in panel.container.get_children():
 		if child is TextureRect:
 			var tr: TextureRect = child
 			var t: Texture2D = tr.texture
 			if t != null and String(t.resource_path).find("bg.jpg") != -1:
-				assert_false(true, "container 不应有 bg.jpg（PopWindow shade 即背景，源 stageselect 无全屏 bg）")
+				found_bg = true
 				break
+	assert_true(found_bg, "container 应有 bg.jpg（源 ui/main.lua:1351 pushScene 场景，framework.lua:749 自动加）")
 	panel.remove_window()
 	root.queue_free()
-	pass_test("container 无全屏 bg.jpg")
 
 
 # 源 createFrame :967-970 — normal ccp(400,205)→godot 中心 y=355；其他 mode ccp(400,207)→y=353。

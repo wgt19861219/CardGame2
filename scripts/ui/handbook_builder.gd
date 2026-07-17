@@ -32,6 +32,8 @@ const NAME_MAX_W: float = 114.0                             # 源 createIcon :44
 const BG_BOOK: String = "res://assets/ui/alpha/HVGA/handbook_bg.png"
 const BG_SHADE: String = "res://assets/ui/alpha/HVGA/handbook_bg_2.png"
 const BG_PAGE: String = "res://assets/ui/alpha/HVGA/handbook_bg_1.png"
+# 源 handbook.lua:618 base=basescene 手动加全屏 bg.jpg（非 framework 自动，handbook 显式构造）。
+const BG_FULL: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 const BACK_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
 const TAG_LEFT: String = "res://assets/ui/alpha/HVGA/handbook_left.png"
 const TAG_LEFT_SEL: String = "res://assets/ui/alpha/HVGA/handbook_left_select.png"
@@ -77,11 +79,23 @@ static func tag_center(index: int) -> Vector2:
 	return to_godot(x2, y2)
 
 
-# 源 create :613-709 背景层（bg.jpg 由 framework/hero_scene 提供，这里只加 book 三层）。
+# 源 create :613-709 背景层 + 源 handbook.lua:618 base=basescene 手动加全屏 bg.jpg（builder 补全屏 bg 在 book 三层之底）。
 static func create_background(parent: Control) -> void:
+	_add_fullscreen_bg(parent)
 	_add_centered_sprite(parent, BG_BOOK, BOOK_CENTER_COCOS, 0)
 	_add_centered_sprite(parent, BG_SHADE, BOOK_CENTER_COCOS, 5)   # 源 z=5
 	_add_centered_sprite(parent, BG_PAGE, BOOK_CENTER_COCOS, 10)   # 源 z=10
+
+
+# 源 handbook.lua:618 base=basescene 手动加全屏 bg.jpg（非 framework 自动，handbook 显式构造）。
+static func _add_fullscreen_bg(parent: Control) -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(BG_FULL) as Texture2D
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.position = Vector2.ZERO
+	bg.size = Vector2(960.0, 640.0)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(bg)
 
 
 static func _add_centered_sprite(parent: Control, res_path: String, cocos_center: Vector2, z: int) -> void:
