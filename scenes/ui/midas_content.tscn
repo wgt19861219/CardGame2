@@ -1,0 +1,248 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_frame_white.png" id="4_iconframe"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/midas_icon.png" id="5_icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="6_costbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="7_use"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="8_multi"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="9_rmb"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/player_levelup_arrow.png" id="10_arrow"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="11_gold"]
+
+[node name="MidasContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 267.5
+offset_top = 132.5
+offset_right = 692.5
+offset_bottom = 377.5
+texture = ExtResource("1_frame")
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 10
+patch_margin_bottom = 10
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 579.0
+offset_top = 230.0
+offset_right = 629.0
+offset_bottom = 280.0
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
+ignore_texture_size = true
+
+[node name="IconFrame" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 125.0
+offset_top = 300.0
+offset_right = 235.0
+offset_bottom = 410.0
+texture = ExtResource("4_iconframe")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 130.0
+offset_top = 304.0
+offset_right = 230.0
+offset_bottom = 404.0
+texture = ExtResource("5_icon")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 235.0
+offset_top = 323.0
+offset_right = 435.0
+offset_bottom = 347.0
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+text = "点石成金"
+
+[node name="DescLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 235.0
+offset_top = 357.0
+offset_right = 660.0
+offset_bottom = 393.0
+theme_override_colors/font_color = Color(0.905882, 0.72549, 0.423529, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="PromptLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 150.0
+offset_top = 416.0
+offset_right = 610.0
+offset_bottom = 464.0
+theme_override_colors/font_color = Color(0.905882, 0.72549, 0.423529, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="CostBoardRoot" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="CostBoardBg" type="TextureRect" parent="CostBoardRoot"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 80.5
+offset_top = 402.0
+offset_right = 505.5
+offset_bottom = 478.0
+texture = ExtResource("6_costbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Bar" type="HBoxContainer" parent="CostBoardRoot"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 413.0
+offset_top = 410.0
+offset_right = 693.0
+offset_bottom = 440.0
+theme_override_constants/separation = 6
+mouse_filter = 2
+
+[node name="RmbIcon" type="TextureRect" parent="CostBoardRoot/Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("9_rmb")
+expand_mode = 1
+mouse_filter = 2
+ignore_texture_size = true
+
+[node name="CostLabel" type="Label" parent="CostBoardRoot/Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 28)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.192157, 0.858824, 1, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+text = "0"
+
+[node name="Arrow" type="TextureRect" parent="CostBoardRoot/Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("10_arrow")
+expand_mode = 1
+mouse_filter = 2
+ignore_texture_size = true
+
+[node name="GoldIcon" type="TextureRect" parent="CostBoardRoot/Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+texture = ExtResource("11_gold")
+expand_mode = 1
+mouse_filter = 2
+ignore_texture_size = true
+
+[node name="AcquireLabel" type="Label" parent="CostBoardRoot/Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 28)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.647059, 0.192157, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+text = "0"
+
+[node name="UseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 135.0
+offset_top = 487.5
+offset_right = 285.0
+offset_bottom = 532.5
+texture_normal = ExtResource("7_use")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="Shade" type="ColorRect" parent="UseBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.3, 0.3, 0.3, 0.5)
+visible = false
+
+[node name="Label" type="Label" parent="UseBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "使用"
+
+[node name="MultiBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 305.0
+offset_top = 487.5
+offset_right = 455.0
+offset_bottom = 532.5
+texture_normal = ExtResource("8_multi")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="Shade" type="ColorRect" parent="MultiBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.3, 0.3, 0.3, 0.5)
+visible = false
+
+[node name="Label" type="Label" parent="MultiBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "连续使用"
+
+[node name="HistoryHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 140.0
+offset_top = 408.0
+offset_right = 780.0
+offset_bottom = 498.0
+mouse_filter = 2
