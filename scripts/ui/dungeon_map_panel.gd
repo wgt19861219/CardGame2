@@ -6,31 +6,24 @@ extends PopWindow
 ## 源 pushScene 场景 → 单机化 PopWindow 弹窗（同 CrusadePanel 范式，UIRes 缺代码重建）。
 ## 3 section × 5 boss 横向滚动 + boss 点击弹难度 + 通关宝箱开箱 + 组通关迷雾消散。
 ## 源 dragContainer 手动拖拽 → ScrollContainer+HBox（CrusadePanel 既有适配），坐标表 crusadeBossPos/BoxPos 降级为顺序布局。
+## 2026-07-17 重构：静态层（FrameworkBg/TitleLabel/ResultLabel/CloseBtn/Scroll/Sub1-3/Fog1-3）
+## 静态化进 dungeon_map_content.tscn（位置/size 可视化调）；boss/box 照源 for 循环 fill
+## 动态建在 Sub 下（数量随 bosses 变，位置照源 crusadeBossPos/BoxPos 表）。
 
 const DegreePopup := preload("res://scripts/ui/dungeon_degree_popup.gd")
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/dungeon_map_content.tscn")
 
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125：cocos sprite contentSize=纹理/CS，position 不变。
 # 纯 Sprite（CCSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS（含 setScale 累乘）等价。
 const CONTENT_SCALE: float = 1.28125
-# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（dungeon_map.lua:605 是 pushScene 独立场景，见 :6 注释）。
-const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
 const BOX_CLOSED_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_closed.png"
 const BOX_OPEN_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_open.png"
 const FOG_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/crusade_fog_"
 const STAGE_SIZE := Vector2(110.0, 110.0)
 const BOX_SIZE := Vector2(60.0, 60.0)
-const SCROLL_POS := Vector2(20.0, 120.0)
-const SCROLL_SIZE := Vector2(920.0, 280.0)
-const CLOSE_BTN_POS := Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_BTN_SIZE := Vector2(80.0, 40.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"  # 主面板 close 照源 statusbar.lua:164 backbtn（framework 全局注入大面板返回）；X(dungeon_map.lua:344)属 DegreePopup 弹窗保留独立组件
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"  # statusbar.lua:176
-const TITLE_POS := Vector2(30.0, 70.0)
-const RESULT_POS := Vector2(30.0, 420.0)
-const FOG_POS := Vector2(20.0, 380.0)
-const FOG_SIZE := Vector2(230.0, 90.0)
-const FOG_STEP: float = 235.0
+const SECTION_HEIGHT: float = 350.0      # 源 cocos y 翻转基准（坐标 y 上限 310+余量），_cocos_center_to_topleft 用
+const FOG_SIZE := Vector2(230.0, 90.0)   # .tscn Fog 已固化（源 y=SECTION_HEIGHT-210-FOG_SIZE.y/2=95）
 const MAX_SECTIONS: int = 3            # 源 dungeon_map.lua:43
 const BOSSES_PER_SECTION: int = 5       # 源 :625 ceil(i/5)
 const MAX_BOSSES: int = 15              # 源 :44
@@ -46,8 +39,6 @@ const CRUSADE_BOX_POS := [
 	[Vector2(-10.0, 170.0), Vector2(215.0, 117.0), Vector2(320.0, 186.0), Vector2(370.0, 305.0), Vector2(468.0, 133.0), Vector2(627.0, 262.0)],
 	[Vector2(-10.0, 175.0), Vector2(157.0, 130.0), Vector2(233.0, 310.0), Vector2(350.0, 195.0), Vector2(435.0, 125.0)],
 ]
-const SECTION_WIDTH: float = 640.0       # 源 sub 容器宽（boss x 最大 584/box 627）
-const SECTION_HEIGHT: float = 350.0      # 源 cocos y 翻转基准（坐标 y 上限 310+余量）
 const TEAM_MAX: int = 5                 # 源 5v5 上场英雄上限
 const DUNGEON_DIFF_OFFSET: int = 1000   # 源 battle_engine.lua:359 lookupId += (diff-1)*1000
 const STAGE_IMG_COUNT: int = 15         # 源 :642 (i-1)%15+1
@@ -70,6 +61,7 @@ var fog_rects: Array[TextureRect] = []
 var title_label: Label = null
 var result_label: Label = null
 var _active_popup: DungeonDegreePopup = null  # 源 dungeon_map.lua:23 degreePopup
+var _content: Control = null             # .tscn 根（%FrameworkBg/Title/Close/Scroll/Sub1-3/Fog1-3 持有者）
 
 
 func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: BattleRng, p_mode: String, p_group_ids: Array[int]) -> void:
@@ -81,16 +73,90 @@ func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: Bat
 	_collect_bosses()
 	setup()
 	# 源 dungeon_map.lua:605 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg，见 :6 注释），
-	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + %FrameworkBg（.tscn 已固化）还原源视觉（同 PackagePanel 范式）。
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_fullscreen_bg()
-	_create_title()
-	_create_close_button()
-	_create_boss_list()
-	_create_result_label()
+	_build_content()
+	_fill_boss_list()
 	_refresh_boss_states()
+
+
+## 建 UI 内容。静态层（FrameworkBg/TitleLabel/ResultLabel/CloseBtn/Scroll/Sub1-3/Fog1-3）
+## 从 dungeon_map_content.tscn instantiate（位置/size 可视化）；fog texture 按 section fill。
+func _build_content() -> void:
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	# 源 dungeon_map.lua 无 title label（scene 标题由入口 panel 继承，dungeonmapconfig 也无文本）。
+	# 项目 PopWindow 弹窗化后需自带标题区分 em/equip 模式；无源 LSTR key，文案是项目单机化适配。
+	title_label = _content.get_node("%TitleLabel") as Label
+	title_label.text = "英雄试炼" if mode == "em" else "装备副本"
+	# 源无 result_label（dungeon_map.lua 状态在 bottom 栏）。项目 PopWindow 弹窗化补的提示，文案项目自定。
+	result_label = _content.get_node("%ResultLabel") as Label
+	result_label.text = "共 %d 个 boss（点击挑战）" % bosses.size()
+	# 主面板 close 照源 statusbar.lua:164 backbtn（framework 全局注入大面板返回）；
+	# X(dungeon_map.lua:344) 属 DegreePopup 弹窗，保留独立组件 dungeon_degree_popup。
+	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	# 3 sub + fog 已 .tscn 固化位置/size（源 subOffsetX 25/752/1477 + fog y=210 anchor 0,0.5）；
+	# texture/visible/modulate 按源 fill。
+	fog_rects.clear()
+	for s in range(1, MAX_SECTIONS + 1):
+		var sub: Control = _content.get_node("%Sub" + str(s)) as Control
+		var fog: TextureRect = sub.get_node("%Fog" + str(s)) as TextureRect
+		var fog_idx: int = ((s - 1) % FOG_IMG_COUNT) + 1  # 源 :693
+		fog.texture = _load_tex(FOG_TEX_DIR + str(fog_idx) + ".png")
+		fog_rects.append(fog)
+
+
+## 源 dungeon_map.lua:636-683 build：3 section × 5 boss + box 按 crusadeBossPos/BoxPos 表 fill 动态建。
+func _fill_boss_list() -> void:
+	boss_buttons.clear()
+	box_rects_by_idx.clear()
+	for s in range(1, MAX_SECTIONS + 1):
+		var sub: Control = _content.get_node("%Sub" + str(s)) as Control
+		_fill_section_bosses(sub, s)
+		_fill_section_boxes(sub, s)
+
+
+## 源 :636-656 section 内 boss 按 crusadeBossPos[s][localIdx] 固定坐标（anchor 0.5）。
+func _fill_section_bosses(sub: Control, section: int) -> void:
+	var section_globals: Array[int] = _section_global_indices(section)
+	var boss_row: Array = CRUSADE_BOSS_POS[section - 1]
+	for local_idx in range(1, section_globals.size() + 1):
+		var global_i: int = section_globals[local_idx - 1]
+		var pos_idx: int = min(local_idx, BOSSES_PER_SECTION)  # 源 :641
+		var bpos: Vector2 = boss_row[pos_idx - 1]
+		var img_idx: int = ((global_i - 1) % STAGE_IMG_COUNT) + 1  # 源 :642
+		var btn := TextureButton.new()
+		btn.texture_normal = _load_tex(STAGE_TEX_DIR + str(img_idx) + ".png")
+		btn.texture_disabled = btn.texture_normal
+		btn.position = _cocos_center_to_topleft(bpos, STAGE_SIZE)
+		btn.size = STAGE_SIZE
+		btn.ignore_texture_size = true
+		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		btn.pressed.connect(Callable(self, "_on_boss_pressed").bind(global_i))
+		sub.add_child(btn)
+		boss_buttons.append(btn)
+
+
+## 源 :658-683 section 内宝箱按 crusadeBoxPos[s][b]，box%d{bossIdx=(s-1)*5+b} 稀疏映射。
+func _fill_section_boxes(sub: Control, section: int) -> void:
+	var section_globals: Array[int] = _section_global_indices(section)
+	var box_row: Array = CRUSADE_BOX_POS[section - 1]
+	var box_count: int = min(section_globals.size(), box_row.size())  # 源 :666
+	for b in range(1, box_count + 1):
+		var boxp: Vector2 = box_row[b - 1]
+		var boss_idx: int = (section - 1) * BOSSES_PER_SECTION + b  # 源 :677
+		var box := TextureRect.new()
+		box.texture = _load_tex(BOX_CLOSED_TEX)
+		box.position = _cocos_center_to_topleft(boxp, BOX_SIZE)
+		box.size = BOX_SIZE
+		box.scale = Vector2(BOX_OPEN_SCALE, BOX_OPEN_SCALE)  # 源 :674
+		box.ignore_texture_size = true
+		box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		box.gui_input.connect(Callable(self, "_on_box_gui_input").bind(boss_idx))
+		sub.add_child(box)
+		box_rects_by_idx[boss_idx] = box
 
 
 ## 源 dungeon_map.lua:608-627 收集 bosses + group_counts/offsets + sectionIdx 分配。
@@ -117,108 +183,6 @@ func _collect_bosses() -> void:
 		bosses[i - 1]["section_idx"] = min(section, MAX_SECTIONS)
 
 
-# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（dungeon_map 源是独立场景）。
-func _create_fullscreen_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(FRAMEWORK_BG)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-func _create_title() -> void:
-	# 源 dungeon_map.lua 无 title label（scene 标题由入口 panel 继承，dungeonmapconfig 也无文本）。
-	# 项目 PopWindow 弹窗化后需自带标题区分 em/equip 模式；无源 LSTR key，文案是项目单机化适配。
-	title_label = Label.new()
-	title_label.position = TITLE_POS
-	title_label.text = "英雄试炼" if mode == "em" else "装备副本"
-	container.add_child(title_label)
-
-
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(remove_window)
-	container.add_child(btn)
-
-
-## 源 dungeon_map.lua:629-704 build：3 section 固定坐标（crusadeBossPos/BoxPos）+ 横向滚动。
-## 坐标表照源（原降级为顺序布局是审查 P1-13 指出的偏离，本轮修正）。
-func _create_boss_list() -> void:
-	var scroll := ScrollContainer.new()
-	scroll.position = SCROLL_POS
-	scroll.size = SCROLL_SIZE
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	for s in range(1, MAX_SECTIONS + 1):
-		var sub := Control.new()
-		sub.name = "sub%d" % s
-		sub.size = Vector2(SECTION_WIDTH, SECTION_HEIGHT)
-		sub.position = Vector2((s - 1) * SECTION_WIDTH, 0.0)
-		scroll.add_child(sub)
-		_add_section_bosses(sub, s)
-		_add_section_boxes(sub, s)
-		_add_section_fog(sub, s)
-	container.add_child(scroll)
-
-
-## 源 :636-656 section 内 boss 按 crusadeBossPos[s][localIdx] 固定坐标（anchor 0.5）。
-func _add_section_bosses(sub: Control, section: int) -> void:
-	var section_globals: Array[int] = _section_global_indices(section)
-	var boss_row: Array = CRUSADE_BOSS_POS[section - 1]
-	for local_idx in range(1, section_globals.size() + 1):
-		var global_i: int = section_globals[local_idx - 1]
-		var pos_idx: int = min(local_idx, BOSSES_PER_SECTION)  # 源 :641
-		var bpos: Vector2 = boss_row[pos_idx - 1]
-		var img_idx: int = ((global_i - 1) % STAGE_IMG_COUNT) + 1  # 源 :642
-		var btn := TextureButton.new()
-		btn.texture_normal = _load_tex(STAGE_TEX_DIR + str(img_idx) + ".png")
-		btn.texture_disabled = btn.texture_normal
-		btn.position = _cocos_center_to_topleft(bpos, STAGE_SIZE)
-		btn.size = STAGE_SIZE
-		btn.ignore_texture_size = true
-		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		btn.pressed.connect(Callable(self, "_on_boss_pressed").bind(global_i))
-		sub.add_child(btn)
-		boss_buttons.append(btn)
-
-
-## 源 :658-683 section 内宝箱按 crusadeBoxPos[s][b]，box%d{bossIdx=(s-1)*5+b} 稀疏映射。
-func _add_section_boxes(sub: Control, section: int) -> void:
-	var section_globals: Array[int] = _section_global_indices(section)
-	var box_row: Array = CRUSADE_BOX_POS[section - 1]
-	var box_count: int = min(section_globals.size(), box_row.size())  # 源 :666
-	for b in range(1, box_count + 1):
-		var boxp: Vector2 = box_row[b - 1]
-		var boss_idx: int = (section - 1) * BOSSES_PER_SECTION + b  # 源 :677
-		var box := TextureRect.new()
-		box.texture = _load_tex(BOX_CLOSED_TEX)
-		box.position = _cocos_center_to_topleft(boxp, BOX_SIZE)
-		box.size = BOX_SIZE
-		box.scale = Vector2(BOX_OPEN_SCALE, BOX_OPEN_SCALE)  # 源 :674
-		box.ignore_texture_size = true
-		box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		box.gui_input.connect(Callable(self, "_on_box_gui_input").bind(boss_idx))
-		sub.add_child(box)
-		box_rects_by_idx[boss_idx] = box
-
-
-## 源 :688-704 section 迷雾（未通关显），FadeOut 动画在 _refresh_fog。
-func _add_section_fog(sub: Control, section: int) -> void:
-	var fog := TextureRect.new()
-	var fog_idx: int = ((section - 1) % FOG_IMG_COUNT) + 1  # 源 :693
-	fog.texture = _load_tex(FOG_TEX_DIR + str(fog_idx) + ".png")
-	# 源 dungeon_map.lua:694 CCSprite:create 无 fix_size（纯 Sprite），setScale(4.0) → 显示=纹理/CS*4。
-	# 原 FOG_SIZE=(230,90) 即纹理原尺寸 ×4（约 57.5×22.5×4），保留常量作 4× 显示尺寸等价；补 EXPAND_IGNORE_SIZE 让 size 真正生效。
-	fog.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	fog.position = Vector2(0.0, SECTION_HEIGHT - 210.0 - FOG_SIZE.y * 0.5)  # 源 :697 anchor 0,0.5 y=210
-	fog.size = FOG_SIZE
-	fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sub.add_child(fog)
-	fog_rects.append(fog)
-
-
 ## 返回 section 内 boss 的全局索引（升序）。
 func _section_global_indices(section: int) -> Array[int]:
 	var result: Array[int] = []
@@ -233,14 +197,6 @@ func _section_global_indices(section: int) -> Array[int]:
 static func _cocos_center_to_topleft(cocos_pos: Vector2, node_size: Vector2) -> Vector2:
 	var godot_y := SECTION_HEIGHT - cocos_pos.y
 	return Vector2(cocos_pos.x - node_size.x * 0.5, godot_y - node_size.y * 0.5)
-
-
-func _create_result_label() -> void:
-	# 源无此节点（dungeon_map.lua 状态在 bottom 栏）。项目 PopWindow 弹窗化补的提示，文案项目自定。
-	result_label = Label.new()
-	result_label.position = RESULT_POS
-	result_label.text = "共 %d 个 boss（点击挑战）" % bosses.size()
-	container.add_child(result_label)
 
 
 ## 源 dungeon_map.lua:264-276 refreshBattleState：未解锁灰显 + cleared+openedChests 才 open（手动开箱）。
