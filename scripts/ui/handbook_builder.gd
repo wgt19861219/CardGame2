@@ -1,55 +1,45 @@
 class_name HandbookBuilder
 extends RefCounted
 
-## handbook 图鉴 View 工厂（照源 handbook.lua create :600-719 + createIcon :423-452 +
-## getTagPosition :298-350 + getIconPosition :412-421 + 常量 :13-22）。
-## 背景层（book_bg/page_shade/page）+ back 按钮 + 12 tag（左右各 6）+ 装备单元（图标/锁定态+名字）+ 翻页箭头。
-## 源 tag 用触摸区机制（getTagPosition 12 区 + 单精灵切换），Godot 适配为 12 TextureButton（引擎适配，铁律允许）。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)（同 hero_package/StageDetailBuilder 范式）。
+## handbook 图鉴 View 工厂(照源 handbook.lua create :600-719 + createIcon :423-452 +
+## getTagPosition :298-350 + getIconPosition :412-421 + 常量 :13-22)。
+## 重构(2026-07-17):静态节点(背景三层/12 tag 按钮+label/箭头/back/pageLabel)进 handbook_content.tscn,
+## 本类只 collect .tscn 已建 tag + fill LSTR text + 动态建装备 cell(翻页/切 tag 重建)。
+## 源 tag 用触摸区机制(getTagPosition 12 区 + 单精灵切换),Godot 适配为 12 TextureButton(引擎适配,铁律允许)。
+## 坐标源 cocos(800×480 左下) → Godot(960×640 左上):(cx+80, 560-cy)(同 hero_package/HeroDetailBuilder 范式)。
 
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
-# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
-# TextureRect 默认 size=纹理原始（偏大 1.28），照源无 fix_size 的纯 Sprite 统一 /CS。
+# 源 hello.lua:311 setContentScaleFactor(1.28125):cocos sprite 显示=纹理/CS(无 fix_size 时)。
+# TextureRect 默认 size=纹理原始(偏大 1.28),照源无 fix_size 的纯 Sprite 统一 /CS。
 const CONTENT_SCALE: float = 1.28125
 # 源 :13-22 常量
-const BOOK_CENTER_COCOS: Vector2 = Vector2(400.0, 240.0)   # 源 bg/book_bg/page 中心
-const BACK_COCOS: Vector2 = Vector2(70.0, 428.0)            # 源 back btn :668
-const LEFT_FIRST: Vector2 = Vector2(196.0, 356.0)           # 源 leftFirstX,Y :13
-const RIGHT_FIRST: Vector2 = Vector2(476.0, 356.0)          # 源 rightFirstX,Y :14
-const GAP: Vector2 = Vector2(130.0, 115.0)                  # 源 gapX,gapY :15
-const EQUIP_ICON_POS: Vector2 = Vector2(57.0, 64.0)         # 源 equipIconPosX,Y :17（handbook_equip_bg 内）
-const EQUIP_NAME_POS: Vector2 = Vector2(57.0, 17.0)         # 源 :20
-const LEFT_ARROW_COCOS: Vector2 = Vector2(295.0, 50.0)      # 源 :21
-const RIGHT_ARROW_COCOS: Vector2 = Vector2(515.0, 50.0)     # 源 :22
-# 源 :23-24 tag 文字色
+const LEFT_FIRST: Vector2 = Vector2(196.0, 356.0)   # 源 leftFirstX,Y :13
+const RIGHT_FIRST: Vector2 = Vector2(476.0, 356.0)  # 源 rightFirstX,Y :14
+const GAP: Vector2 = Vector2(130.0, 115.0)          # 源 gapX,gapY :15
+const EQUIP_ICON_POS: Vector2 = Vector2(57.0, 64.0) # 源 equipIconPosX,Y :17(handbook_equip_bg 内)
+const EQUIP_NAME_POS: Vector2 = Vector2(57.0, 17.0) # 源 :20
+# 源 :23-24 tag 文字色(panel _update_tag_visual 切选中态用)
 const TAG_NORMAL_COLOR: Color = Color(178.0 / 255.0, 150.0 / 255.0, 146.0 / 255.0)
 const TAG_SELECT_COLOR: Color = Color(1.0, 1.0, 1.0)
 const EQUIP_NAME_COLOR: Color = Color(182.0 / 255.0, 65.0 / 255.0, 21.0 / 255.0)   # 源 :19
 const EQUIP_NAME_FONT: int = 18                              # 源 :18
-const NAME_MAX_W: float = 114.0                             # 源 createIcon :445 宽度上限缩放
-# 资源路径
-const BG_BOOK: String = "res://assets/ui/alpha/HVGA/handbook_bg.png"
-const BG_SHADE: String = "res://assets/ui/alpha/HVGA/handbook_bg_2.png"
-const BG_PAGE: String = "res://assets/ui/alpha/HVGA/handbook_bg_1.png"
-# 源 handbook.lua:618 base=basescene 手动加全屏 bg.jpg（非 framework 自动，handbook 显式构造）。
-const BG_FULL: String = "res://assets/ui/alpha/HVGA/bg.jpg"
-const BACK_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
+# tag 资源路径(_update_tag_visual 切选中态 texture 用,.tscn 已设 normal/pressed,选中需切 normal)
 const TAG_LEFT: String = "res://assets/ui/alpha/HVGA/handbook_left.png"
 const TAG_LEFT_SEL: String = "res://assets/ui/alpha/HVGA/handbook_left_select.png"
 const TAG_RIGHT: String = "res://assets/ui/alpha/HVGA/handbook_right.png"
 const TAG_RIGHT_SEL: String = "res://assets/ui/alpha/HVGA/handbook_right_select.png"
+# 装备 cell 资源(动态建)
 const EQUIP_BG_RES: String = "res://assets/ui/alpha/HVGA/handbook_equip_bg.png"
 const ICON_BG_RES: String = "res://assets/ui/alpha/HVGA/handbook_icon_bg.png"
 const ICON_LOCK_RES: String = "res://assets/ui/alpha/HVGA/handbook_icon_lock.png"
-const ARROW_L_RES: String = "res://assets/ui/alpha/HVGA/handbook_left_arrow.png"
-const ARROW_R_RES: String = "res://assets/ui/alpha/HVGA/handbook_right_arrow.png"
-# 12 tag LSTR key（源 tagText :41-52，tagTextIndex :26-39 顺序）。1-6 左 / 7-12 右。
+# 12 tag LSTR key(源 tagText :41-52,tagTextIndex :26-39 顺序)。1-6 左 / 7-12 右。
 const TAG_LSTR: Array[String] = [
 	"BATTLEPREPARE.WHOLE", "HERO_EQUIP.STRENGTH", "HERO_EQUIP.AGILITY", "HERO_EQUIP.INTELLIGENCE",
 	"HANDBOOK.HEALTH", "HANDBOOK.PHYSICAL_ATTACK", "HANDBOOK.MAGIC_ATTACK", "HANDBOOK.ARMOR",
 	"HANDBOOK.CRIT", "HANDBOOK.HEALTH_SUPPLY", "HANDBOOK.MAGIC_SUPPLY", "SKILL.HEAL",
 ]
+const TAG_COUNT: int = 12
 
 
 # 源 cocos(cx,cy) → Godot(cx+80, 560-cy)。
@@ -57,7 +47,7 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + OFFSET_X, BASE_Y - cy)
 
 
-# 源 getIconPosition :412-421。slot 1-12（页内序），左列 1-6 / 右列 7-12。
+# 源 getIconPosition :412-421。slot 1-12(页内序),左列 1-6 / 右列 7-12。
 static func icon_position(slot: int) -> Vector2:
 	if slot < 1 or slot > 12:
 		return Vector2.ZERO
@@ -68,96 +58,30 @@ static func icon_position(slot: int) -> Vector2:
 	return to_godot(RIGHT_FIRST.x + GAP.x * float(r % 2), LEFT_FIRST.y - GAP.y * float(int(r / 2)))
 
 
-# 源 getTagPosition :298-348 type=1（button 中心）。index 1-12。
-static func tag_center(index: int) -> Vector2:
-	if index <= 6:
-		var x: float = 93.0 - 2.0 * float(index - 1)   # 源 :305
-		var y: float = 360.0 - 60.0 * float(index - 1)   # 源 :321
-		return to_godot(x, y)
-	var x2: float = 710.0 + 2.0 * float(index - 7)   # 源 :327
-	var y2: float = 360.0 - 60.0 * float(index - 7)   # 源 :343
-	return to_godot(x2, y2)
-
-
-# 源 create :613-709 背景层 + 源 handbook.lua:618 base=basescene 手动加全屏 bg.jpg（builder 补全屏 bg 在 book 三层之底）。
-static func create_background(parent: Control) -> void:
-	_add_fullscreen_bg(parent)
-	_add_centered_sprite(parent, BG_BOOK, BOOK_CENTER_COCOS, 0)
-	_add_centered_sprite(parent, BG_SHADE, BOOK_CENTER_COCOS, 5)   # 源 z=5
-	_add_centered_sprite(parent, BG_PAGE, BOOK_CENTER_COCOS, 10)   # 源 z=10
-
-
-# 源 handbook.lua:618 base=basescene 手动加全屏 bg.jpg（非 framework 自动，handbook 显式构造）。
-static func _add_fullscreen_bg(parent: Control) -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(BG_FULL) as Texture2D
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(bg)
-
-
-static func _add_centered_sprite(parent: Control, res_path: String, cocos_center: Vector2, z: int) -> void:
-	var tex: Texture2D = load(res_path) as Texture2D
-	if tex == null:
-		return
-	var s := TextureRect.new()
-	s.texture = tex
-	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 create :629/:640/:652 bg 三层 t="Sprite" config={}（见 CONTENT_SCALE 注释）
-	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
-	s.size = sz
-	s.position = to_godot(cocos_center.x, cocos_center.y) - sz * 0.5
-	s.z_index = z
-	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(s)
-
-
-# 源 back :660-684。TextureButton 适配（源 Sprite + backPress 双层切 visible）。
-static func create_back_button(parent: Control) -> TextureButton:
-	var btn := TextureButton.new()
-	btn.texture_normal = load(BACK_RES) as Texture2D
-	btn.texture_pressed = load("res://assets/ui/alpha/HVGA/backbtn-disabled.png") as Texture2D
-	btn.ignore_texture_size = true
-	btn.size = _tex_size(BACK_RES)
-	btn.position = to_godot(BACK_COCOS.x, BACK_COCOS.y) - btn.size * 0.5
-	parent.add_child(btn)
-	return btn
-
-
-# 源 createTagButton :351-411。12 tag（左 handbook_left / 右 handbook_right + select 版 + Label）。
-# 返 {index -> {button: TextureButton, label: Label}}。
-static func create_tag_buttons(parent: Control, cm: Variant) -> Dictionary:
+# collect .tscn 已建 12 tag button + label → {index(1-12): {button, label}}。
+# 源 createTagButton :351-411 建 12 tag(本项目适配 TextureButton + Label,.tscn 已固化位置/size)。
+static func collect_tags(content: Control) -> Dictionary:
 	var tabs: Dictionary = {}
-	for i in range(1, 13):
-		var is_right: bool = i > 6   # 源 :358 i>6 用 right 纹理
-		var normal: String = TAG_RIGHT if is_right else TAG_LEFT
-		var selected: String = TAG_RIGHT_SEL if is_right else TAG_LEFT_SEL
-		var btn := TextureButton.new()
-		btn.texture_normal = load(normal) as Texture2D
-		btn.texture_pressed = load(selected) as Texture2D
-		btn.ignore_texture_size = true
-		btn.position = tag_center(i) - _tex_size(normal) * 0.5
-		btn.z_index = 4   # 源 :360
-		parent.add_child(btn)
-		var lbl := Label.new()
-		lbl.text = _lstr(cm, TAG_LSTR[i - 1])
-		lbl.add_theme_font_size_override("font_size", 16)   # 源 :391 size 16
-		lbl.position = tag_center(i) - lbl.get_minimum_size() * 0.5
-		lbl.z_index = 9 if i == 1 else 4   # 源 :393 i==1 z=9 else 4
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent.add_child(lbl)
+	for i in range(1, TAG_COUNT + 1):
+		var btn: TextureButton = content.get_node("%Tag" + str(i) + "Btn") as TextureButton
+		var lbl: Label = content.get_node("%Tag" + str(i) + "Label") as Label
 		tabs[i] = {"button": btn, "label": lbl}
 	return tabs
 
 
-# 源 createIcon :423-452。装备单元：handbook_equip_bg + 图标（已解锁 readequip.createIcon / 锁定 icon_lock）+ 名字。
-# lr > player_level 锁定（源 :428 ed.player:getLevel() >= info.lr 才开）。
+# fill 12 tag label LSTR text(源 tagText :41-52)。
+static func fill_tag_labels(tags: Dictionary, cm: Variant) -> void:
+	for i in range(1, TAG_COUNT + 1):
+		var lbl: Label = tags[i]["label"]
+		lbl.text = _lstr(cm, TAG_LSTR[i - 1])
+
+
+# 源 createIcon :423-452。装备单元:handbook_equip_bg + 图标(已解锁 readequip.createIcon / 锁定 icon_lock)+ 名字。
+# lr > player_level 锁定(源 :428 ed.player:getLevel() >= info.lr 才开)。
 static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) -> Control:
 	var cell := Control.new()
 	var bg_tex: Texture2D = load(EQUIP_BG_RES) as Texture2D
-	# 源 handbook.lua:424 createSprite 无 fix_size，显示=纹理/CS（见 CONTENT_SCALE 注释）
+	# 源 handbook.lua:424 createSprite 无 fix_size,显示=纹理/CS(见 CONTENT_SCALE 注释)
 	var bg_size: Vector2 = bg_tex.get_size() / CONTENT_SCALE if bg_tex != null else Vector2(114, 114) / CONTENT_SCALE
 	cell.custom_minimum_size = bg_size
 	cell.size = bg_size
@@ -179,7 +103,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		var icon_bg := TextureRect.new()   # 源 :434-440 handbook_icon_bg + lock
 		icon_bg.texture = load(ICON_BG_RES) as Texture2D
 		icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 源 handbook.lua:434 createSprite 无 fix_size，显示=纹理/CS（见 CONTENT_SCALE 注释）
+		# 源 handbook.lua:434 createSprite 无 fix_size,显示=纹理/CS(见 CONTENT_SCALE 注释)
 		icon_bg.size = icon_bg.texture.get_size() / CONTENT_SCALE if icon_bg.texture != null else Vector2(66, 66) / CONTENT_SCALE
 		icon_bg.position = EQUIP_ICON_POS
 		icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -187,7 +111,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		var lock := TextureRect.new()
 		lock.texture = load(ICON_LOCK_RES) as Texture2D
 		lock.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 源 :436 createSprite 无 fix_size，显示=纹理/CS；源 :437 ccp(33,33)=iconBg 中心，lock 居中于 icon_bg
+		# 源 :436 createSprite 无 fix_size,显示=纹理/CS;源 :437 ccp(33,33)=iconBg 中心,lock 居中于 icon_bg
 		var lock_sz: Vector2 = lock.texture.get_size() / CONTENT_SCALE if lock.texture != null else Vector2.ZERO
 		lock.size = lock_sz
 		lock.position = (icon_bg.size - lock_sz) * 0.5
@@ -210,25 +134,6 @@ static func _add_name_label(parent: Control, text: String) -> void:
 	lbl.position = EQUIP_NAME_POS
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(lbl)
-
-
-# 源 left_arrow/right_arrow :685-708。
-static func create_arrow(parent: Control, is_left: bool) -> TextureButton:
-	var btn := TextureButton.new()
-	btn.texture_normal = load(ARROW_L_RES if is_left else ARROW_R_RES) as Texture2D
-	btn.ignore_texture_size = true
-	var cocos: Vector2 = LEFT_ARROW_COCOS if is_left else RIGHT_ARROW_COCOS
-	btn.position = to_godot(cocos.x, cocos.y) - _tex_size(btn.texture_normal.resource_path) * 0.5
-	btn.z_index = 20   # 源 :690
-	parent.add_child(btn)
-	return btn
-
-
-static func _tex_size(res_path: String) -> Vector2:
-	var tex: Texture2D = load(res_path) as Texture2D
-	if tex != null:
-		return tex.get_size()
-	return Vector2(80, 50)
 
 
 static func _lstr(cm: Variant, key: String) -> String:
