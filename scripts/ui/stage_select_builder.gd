@@ -3,10 +3,11 @@ extends RefCounted
 
 ## 关卡选择 View 工厂（照源 stageselect.lua createMap/createStage/createModeButton/
 ## createChapterButton/createDot/createFrame/createTitle 翻译）。
+## 重构（2026-07-17）：base 静态元素（bg/close/mode toggle/箭头）进 stage_select_content.tscn，
+## 本类只 fill mode toggle 纹理/文本 + procedural 建动态层（map_layer、frame/title、dots）。
 ## 坐标系：源 cocos(800×480 左下原点) → Godot(960×640 左上原点) = (cx+80, 560-cy)。
 
 const StageSelectMapClass = preload("res://scripts/systems/stage_select_map.gd")
-const UiButton = preload("res://scripts/ui/ui_button.gd")
 
 # 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
 const CONTENT_SCALE: float = 1.28125
@@ -17,30 +18,18 @@ const FRAME_GUILD: String = "res://assets/ui/alpha/HVGA/stage_map_guild_frame.pn
 const TITLE_BG_NORMAL: String = "res://assets/ui/alpha/HVGA/Normal_title_bg.png"
 const TITLE_BG_ELITE: String = "res://assets/ui/alpha/HVGA/Elite_title_bg.png"
 const TITLE_BG_GUILD: String = "res://assets/ui/alpha/HVGA/guild_title_bg.png"
-const MODE_BTN_BG: String = "res://assets/ui/alpha/HVGA/crusade_Button_bg.png"
 const MODE_TOGGLE_NS: String = "res://assets/ui/alpha/HVGA/elitetoggle-ns.png"
 const MODE_TOGGLE_S: String = "res://assets/ui/alpha/HVGA/elitetoggle-s.png"
-const ARROW_PREV: String = "res://assets/ui/alpha/HVGA/prevchap.png"
-const ARROW_NEXT: String = "res://assets/ui/alpha/HVGA/nextchap.png"
 const DOT_NORMAL: String = "res://assets/ui/alpha/HVGA/stageselect_chapter_dot.png"
 const DOT_CURRENT: String = "res://assets/ui/alpha/HVGA/stageselect_chapter_cursor.png"
 const POINTER: String = "res://assets/ui/alpha/HVGA/stagepointer.png"
 const STAR_BG: String = "res://assets/ui/alpha/HVGA/stageselect_star_bg.png"
 const STAR: String = "res://assets/ui/alpha/HVGA/stageselect_star.png"
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-# 源 createModeButton(:725) ui_info + refreshModeButtonPosition(:233) 调整后（guild 实际不可见走 else 分支）。
-const MODE_BG_POS: Vector2 = Vector2(480.0, 205.0)      # 源 buttonBg ccp(400,355) → godot
-const MODE_NORMAL_POS: Vector2 = Vector2(425.0, 210.0)  # 源 refresh else ccp(345,350) → godot
-const MODE_ELITE_POS: Vector2 = Vector2(535.0, 210.0)   # 源 refresh else ccp(455,350) → godot
-const MODE_GUILD_POS: Vector2 = Vector2(569.0, 210.0)   # 源 guild ccp(489,350)（refresh 不调整 guild）
 const TITLE_POS: Vector2 = Vector2(477.0, 167.0)        # 源 titleBg ccp(397,393) → godot（标题图 + 文字同位）
 const DOT_CENTER_X: float = 480.0                      # 源 getDotPos x=400+dx*(cur-center)，dx=20
 const DOT_GAP_X: float = 20.0
 const DOT_NORMAL_Y: float = 520.0                      # 源 normal_chapter_dot_y=40 → 560-40
 const DOT_ELITE_Y: float = 515.0                       # 源 elite_chapter_dot_y=45
-const ARROW_LEFT_POS: Vector2 = Vector2(158.0, 345.0)  # 源 ccp(78,215) → godot
-const ARROW_RIGHT_POS: Vector2 = Vector2(800.0, 345.0) # 源 ccp(720,215)
 # 星级布局（源 createStage spos :1242-1255，相对 star_bg 局部）
 const STAR_POS_1: Array = [Vector2(37.0, 15.0)]
 const STAR_POS_2: Array = [Vector2(26.0, 18.0), Vector2(48.0, 18.0)]
@@ -51,10 +40,32 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + 80.0, 560.0 - cy)
 
 
-static func create_close_button(container: Control, on_close: Callable) -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS, Vector2(20.0, 15.0))  # 左上角留小边（用户偏好更靠左上角）
-	btn.pressed.connect(on_close)
-	container.add_child(btn)
+# fill .tscn %ModeNormalBtn/EliteBtn/GuildBtn 纹理（selected=elitetoggle-s 否则 ns）+ Label LSTR 文本。
+# 源 createModeButton(:725) 建节点 + refreshModeButtonPosition(:233) 调位置 + updateModeButtonState(:292)
+# 切 _press visible + label color。本项目位置/size .tscn 固化，此处只切纹理 + 填文本（TextureButton
+# normal 双态简化，源 Sprite+press 切 visible 等价）。
+# 源 label：normal=LSTR("STAGESELECT.NORMAL")="普通"、elite=LSTR("EQUIPCRAFT.ELITE")="精英"、
+# guild=LSTR("STAGESELECT.RAID")="团队"。fontinfo "ui_normal_button" size=18（:773,:809,:845）。
+static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Variant) -> void:
+	var lstr_keys: Dictionary = {
+		"normal": "STAGESELECT.NORMAL",
+		"elite": "EQUIPCRAFT.ELITE",
+		"guild": "STAGESELECT.RAID",
+	}
+	for mode in buttons:
+		var btn: TextureButton = buttons[mode]
+		var selected: bool = mode == current_mode
+		var res_path: String = MODE_TOGGLE_S if selected else MODE_TOGGLE_NS
+		if ResourceLoader.exists(res_path):
+			btn.texture_normal = load(res_path) as Texture2D
+		var lbl: Label = null
+		for child in btn.get_children():
+			if child is Label:
+				lbl = child
+				break
+		if lbl != null:
+			var key: String = String(lstr_keys[mode])
+			lbl.text = String(cm.get_lstr(key)) if cm != null else key
 
 
 # 源 createMap + createStage — 地图层（章节 bg + route + stage 圆点 + 星 + 指针）。
@@ -180,6 +191,7 @@ static func _tex_size(res: String) -> Vector2:
 
 
 # 源 createFrame（:944+）title_bg + frame 边框；createTitle（:885）章节名 Label。
+# 三 mode frame/title_bg 纹理 size 不同 → 保留 procedural 建（每次 _refresh_view 清 FrameLayer 重建）。
 static func create_frame_and_title(container: Control, chapter: int, mode: String, cm: Variant) -> void:
 	_make_centered_at(container, _title_bg_res(mode), TITLE_POS)
 	# 源 createFrame :967-970 — mode != normal ccp(400,207)→godot(480,353)；normal ccp(400,205)→godot(480,355)
@@ -228,64 +240,8 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 	parent.add_child(node)
 
 
-# 源 createModeButton（:725）normal/elite/guild 三 toggle。返回 {mode->TextureButton}。
-# 源 label：normal=LSTR("STAGESELECT.NORMAL")="普通"、elite=LSTR("EQUIPCRAFT.ELITE")="精英"、
-# guild=LSTR("STAGESELECT.RAID")="团队"。fontinfo "ui_normal_button" size=18（:773,:809,:845）。
-static func create_mode_buttons(container: Control, current_mode: String, cm: Variant, on_mode: Callable) -> Dictionary:
-	var bg := TextureRect.new()
-	bg.texture = load(MODE_BTN_BG) as Texture2D
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 :731 buttonBg config={} → 显示=纹理/CS。
-	bg.size = _tex_size(MODE_BTN_BG) / CONTENT_SCALE
-	bg.position = MODE_BG_POS - bg.size * 0.5
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-	var layout: Dictionary = {
-		"normal": {"pos": MODE_NORMAL_POS, "lstr": "STAGESELECT.NORMAL"},
-		"elite": {"pos": MODE_ELITE_POS, "lstr": "EQUIPCRAFT.ELITE"},
-		"guild": {"pos": MODE_GUILD_POS, "lstr": "STAGESELECT.RAID"},
-	}
-	var buttons: Dictionary = {}
-	for mode in layout:
-		var cfg: Dictionary = layout[mode]
-		var btn := TextureButton.new()
-		var selected: bool = mode == current_mode
-		btn.texture_normal = load(MODE_TOGGLE_S if selected else MODE_TOGGLE_NS) as Texture2D
-		btn.ignore_texture_size = true
-		var sz: Vector2 = _tex_size(MODE_TOGGLE_NS)
-		btn.position = Vector2(cfg["pos"]) - sz * 0.5
-		btn.pressed.connect(on_mode.bind(mode))
-		var lbl := Label.new()
-		var lstr_key: String = String(cfg["lstr"])
-		lbl.text = cm.get_lstr(lstr_key) if cm != null else lstr_key
-		# 方案 A：label 铺满 btn + 居中对齐（替代 PRESET_CENTER，避免字体错位）。
-		lbl.size = btn.size
-		lbl.position = Vector2.ZERO
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 18)   # 源 :773 size=18
-		lbl.add_theme_color_override("font_color", Color.WHITE)
-		lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-		lbl.add_theme_constant_override("outline_size", 2)
-		btn.add_child(lbl)
-		container.add_child(btn)
-		buttons[mode] = btn
-	return buttons
-
-
-# 源 createChapterButton（:705）左右箭头（简化静态，去浮动动画）。
-static func create_chapter_arrows(container: Control, has_prev: bool, has_next: bool, on_prev: Callable, on_next: Callable) -> void:
-	if has_prev:
-		var lb: TextureButton = UiButton.make_at(ARROW_PREV, ARROW_PREV, ARROW_LEFT_POS - _tex_size(ARROW_PREV) * 0.5)
-		lb.pressed.connect(on_prev)
-		container.add_child(lb)
-	if has_next:
-		var rb: TextureButton = UiButton.make_at(ARROW_NEXT, ARROW_NEXT, ARROW_RIGHT_POS - _tex_size(ARROW_NEXT) * 0.5)
-		rb.pressed.connect(on_next)
-		container.add_child(rb)
-
-
 # 源 createDot（:676）+ getDotPos（:76）— 章节导航点（max 章横排，current 用 cursor）。
+# panel 持有 %DotContainer，每次 _refresh_view 清空再 procedural 建挂入（数量随 max_chapter 动态）。
 static func create_chapter_dots(container: Control, max_chapter: int, current: int, mode: String) -> void:
 	var y: float = DOT_ELITE_Y if mode == "elite" else DOT_NORMAL_Y
 	var center: float = (float(max_chapter) + 1.0) * 0.5

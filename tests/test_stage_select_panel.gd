@@ -18,9 +18,16 @@ func test_panel_assembles() -> void:
 	var panel := StageSelectPanel.new("stageselect", {})
 	panel.setup_panel(mgr, pd, rng)
 	panel.show_window(root)
-	# 新结构（照源 stageselect 地图式）：bg + close + map_layer(章节图+路线+stage圆点)
-	# + frame/title_bg/title_label + mode_bg + 3 mode toggle + 箭头 + dots
-	assert_gt(panel.container.get_child_count(), 8, "完整地图式装配（bg/close/map/frame/mode/箭头/dot）")
+	# 重构后 container 只持 1 个 _content（.tscn instantiate），静态节点都在 _content 内（% unique），
+	# 动态层挂 %MapLayerHost/%FrameLayer/%DotContainer（procedural 重建）。
+	assert_eq(panel.container.get_child_count(), 1, "container 持有 _content（instantiate 后）")
+	assert_not_null(panel._content.get_node_or_null("%FrameworkBg"), "FrameworkBg 装配")
+	assert_not_null(panel._content.get_node_or_null("%CloseBtn"), "CloseBtn 装配")
+	assert_not_null(panel._content.get_node_or_null("%ModeNormalBtn"), "ModeNormalBtn 装配")
+	assert_not_null(panel._content.get_node_or_null("%PrevArrow"), "PrevArrow 装配")
+	assert_gt(panel._map_host.get_child_count(), 0, "MapLayerHost 含 map_layer（章节 bg+route+stage 圆点）")
+	assert_gt(panel._frame_layer.get_child_count(), 0, "FrameLayer 含 frame/title_bg/title_label")
+	assert_gt(panel._dot_container.get_child_count(), 0, "DotContainer 含 chapter dots")
 	# chapter1 normal 新档：stage1（key id=1 star0 → current）可点 → _stage_buttons 含 sid=1
 	assert_true(panel._stage_buttons.has(1), "chapter1 stage1（current）进可点 buttons")
 	panel.remove_window()
@@ -175,11 +182,17 @@ func test_setup_by_stage_sets_chapter() -> void:
 
 # 源 createModeButton label：normal=LSTR("STAGESELECT.NORMAL")、elite=LSTR("EQUIPCRAFT.ELITE")、
 # guild=LSTR("STAGESELECT.RAID")="团队"。旧实现硬编码 "团本" 是错值。
+# 重构后 mode toggle 静态化进 .tscn（%ModeNormalBtn/EliteBtn/GuildBtn + Label 子节点），
+# builder.fill_mode_toggle 切纹理 + 填 LSTR text（不再 builder.create_mode_buttons 建节点）。
 func test_mode_label_uses_lstr() -> void:
-	var c := Control.new()
-	add_child(c)
-	var noop := Callable(func(_m: String) -> void: pass)
-	var buttons: Dictionary = StageSelectBuilder.create_mode_buttons(c, "normal", cm, noop)
+	var content: Control = load("res://scenes/ui/stage_select_content.tscn").instantiate() as Control
+	add_child(content)
+	var buttons: Dictionary = {
+		"normal": content.get_node("%ModeNormalBtn"),
+		"elite": content.get_node("%ModeEliteBtn"),
+		"guild": content.get_node("%ModeGuildBtn"),
+	}
+	StageSelectBuilder.fill_mode_toggle(buttons, "normal", cm)
 	for mode in ["normal", "elite", "guild"]:
 		assert_true(buttons.has(mode), mode + " toggle 存在")
 	var guild_btn: TextureButton = buttons["guild"]
@@ -204,12 +217,11 @@ func test_mode_label_uses_lstr() -> void:
 			elite_lbl = child
 			break
 	assert_eq(elite_lbl.text, "精英", "elite label = LSTR EQUIPCRAFT.ELITE = '精英'")
-	c.queue_free()
+	content.queue_free()
 
 
 # 源 ui/main.lua:1351 ed.pushScene(ed.ui.stageselect.create()) —— stageselect 是 pushScene 独立场景，
-# framework.lua:749 自动建全屏 bg.jpg。本项目单机化 pushScene→PopWindow，需补 bg.jpg 还原源视觉。
-# （2026-07-17：旧测试 test_no_fullscreen_bg 基于错误前提「无全屏 bg」反向断言；源核实后改正。）
+# framework.lua:749 自动建全屏 bg.jpg。本项目单机化 pushScene→PopWindow，.tscn %FrameworkBg 补 bg.jpg。
 func test_has_fullscreen_bg() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -219,15 +231,14 @@ func test_has_fullscreen_bg() -> void:
 	var panel := StageSelectPanel.new("stageselect", {})
 	panel.setup_panel(mgr, pd, rng)
 	panel.show_window(root)
-	var found_bg := false
-	for child in panel.container.get_children():
-		if child is TextureRect:
-			var tr: TextureRect = child
-			var t: Texture2D = tr.texture
-			if t != null and String(t.resource_path).find("bg.jpg") != -1:
-				found_bg = true
-				break
-	assert_true(found_bg, "container 应有 bg.jpg（源 ui/main.lua:1351 pushScene 场景，framework.lua:749 自动加）")
+	# 重构后 bg.jpg 静态化进 .tscn %FrameworkBg（container→_content→FrameworkBg）。
+	var bg: TextureRect = panel._content.get_node_or_null("%FrameworkBg") as TextureRect
+	assert_not_null(bg, "%FrameworkBg 装配")
+	if bg != null:
+		var t: Texture2D = bg.texture
+		assert_not_null(t, "FrameworkBg 有纹理")
+		if t != null:
+			assert_true(String(t.resource_path).find("bg.jpg") != -1, "FrameworkBg = bg.jpg（源 pushScene 场景 framework.lua:749 自动加）")
 	panel.remove_window()
 	root.queue_free()
 
