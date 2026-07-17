@@ -55,6 +55,9 @@ static func execute(
 	if cmd.has("_set_dailylogin_days"):
 		# 源 :2063-2066 daily_login.frequency = days（GM 设连续登录天数）
 		player.daily_login.frequency = int(cmd["_set_dailylogin_days"])
+	# 测试辅助（源 gm_cmd 无直接碎片命令，照 _set_items 范式扩展）：给魂石碎片测 fragment_compose。
+	if cmd.has("_set_fragments"):
+		_set_fragments(player, cmd["_set_fragments"])
 	# 源 :2068-2081 清理非 Hero 英雄（旧存档混入怪物/召唤物）
 	_cleanup_non_hero(player, cm)
 	# 源 GM 返回 _reset（完整 user 数据）
@@ -149,6 +152,18 @@ static func _set_items(player: PlayerData, item_bits_list: Array) -> void:
 		var item_id: int = _bits(packed, BITS_ID_LOW, BITS_ID_COUNT)
 		var amount: int = _bits(packed, BITS_AMOUNT_LOW, BITS_AMOUNT_COUNT)
 		player.items[item_id] = amount
+
+
+# 测试辅助（源 gm_cmd 无直接碎片命令，照 _set_items 范式扩展）：
+# 给魂石碎片（hero_manager.add_fragment），测 fragment_compose /CS 修复（bg 288×385 不溢出）。
+# 用法：cmd["_set_fragments"] = [{"_id": frag_id, "_count": N}, ...]
+static func _set_fragments(player: PlayerData, frag_list: Array) -> void:
+	for f in frag_list:
+		var d: Dictionary = f if f is Dictionary else {}
+		var frag_id: int = int(d.get("_id", 0))
+		var count: int = int(d.get("_count", 1))
+		if frag_id > 0:
+			player.hero_manager.add_fragment(frag_id, count)
 
 
 # 源 tools.lua:66 bits(num, low, count) = (num >> low) & ((1 << count) - 1)。
