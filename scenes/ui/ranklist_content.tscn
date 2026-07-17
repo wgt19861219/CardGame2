@@ -1,0 +1,61 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backp"]
+
+[node name="RanklistContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 119.0
+offset_top = 144.0
+offset_right = 841.0
+offset_bottom = 544.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 114.0
+offset_top = 92.0
+offset_right = 188.0
+offset_bottom = 167.0
+texture_normal = ExtResource("2_back")
+texture_pressed = ExtResource("3_backp")
+ignore_texture_size = true
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 3
+offset_left = 420.0
+offset_top = 100.0
+offset_right = 520.0
+offset_bottom = 124.0
+theme_override_colors/font_color = Color(1, 0.839, 0.067, 1)
+theme_override_font_sizes/font_size = 24
+mouse_filter = 2
+text = "排行榜"
+
+[node name="TabHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 125.0
+offset_top = 155.0
+mouse_filter = 2
+
+[node name="ScrollLayer" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 290.0
+offset_top = 155.0
+offset_right = 710.0
+offset_bottom = 515.0
+mouse_filter = 2
+horizontal_scroll_mode = 0

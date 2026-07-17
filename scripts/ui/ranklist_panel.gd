@@ -2,21 +2,13 @@ class_name RanklistPanel
 extends PopWindow
 
 ## 排行榜面板（View 层）— 照源 ranklist.lua ranklisttree + initXxxItemHandler + uieditor/ranklistwindow.lua。
-## 窗口框架（ranklist_bg 主框 + backbtn close 左上）+ 分组折叠树 tab（ranklist_button 分组标题 + ranklist_subbutton 子项，
-## 单机化裁 pvp_r 实时联机 + guildliveness 公会未接 → 2 分组 4 子项）+ Scale9 列表行 + scrollView。
-## 数据层 RanklistManager.generate_ranklist（4 档假榜已就绪）。
-## 残留：头像是等级图标（getTeamHead/getLevelIcon，NPC avatar 数据缺）+ 1st/2nd/3rd 排名图标（资源缺）+ 5 summary 弹窗 + 折叠展开/收起动画 → 下轮。
-## 坐标源 cocos 800×480 → 目标 _to_godot(cx+80,560-cy)。
+## 重构（2026-07-17）：窗口框架（ranklist_bg 主框 + backbtn close + 标题 + TabHost/ScrollLayer 容器）
+## 静态化进 ranklist_content.tscn（instantiate + get_node("%..") as 类型），位置/size 编辑器可视化调；
+## 动态部分（分组折叠 tab + Scale9 列表行）仍 procedural（折叠/选中态切图运行时算）。
+## 数据层 RanklistManager.generate_ranklist（4 档假榜已就绪）。ranklist_summary 是行点击弹窗独立组件（不动）。
+## 残留：头像是等级图标（getTeamHead/getLevelIcon，NPC avatar 数据缺）+ 1st/2nd/3rd 排名图标（资源缺）+ 折叠展开/收起动画 → 下轮。
 
-const RANKLIST_BG_TEX: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_bg.png"
-const RANKLIST_BG_SIZE: Vector2 = Vector2(722.0, 400.0)  # 源 window :79 scaleSize
-const RANKLIST_BG_POS: Vector2 = Vector2(119.0, 144.0)  # 源 ccp(400,216) → 中心(480,344) → 左上
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const CLOSE_POS: Vector2 = Vector2(114.0, 92.0)  # 源 back_button ccp(63,439) → 中心(143,121) → 左上
-const TITLE_POS: Vector2 = Vector2(420.0, 100.0)  # 主框上方居中
-const TAB_X: float = 125.0
-const TAB_Y: float = 155.0
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ranklist_content.tscn")
 const TAB_W: float = 130.0
 const TAB_H: float = 32.0
 const GROUPBTN_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_button_normal_1.png"
@@ -25,8 +17,6 @@ const SUBBTN_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subb
 const SUBBTN_CURRENT: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_current_1.png"
 const ME_BG_RES: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_me_bg.png"  # 源 :583/:938 自己行 board
 const OTHER_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"  # 源 :583/:938 他人行 board
-const SCROLL_POS: Vector2 = Vector2(290.0, 155.0)
-const SCROLL_SIZE: Vector2 = Vector2(420.0, 360.0)
 const ROW_W: float = 400.0  # 源 board scaleSize 650×95 → 目标行宽（Scale9 视觉近似）
 const ROW_H: float = 56.0
 const SELF_COLOR: Color = Color(1.0, 1.0, 0.0)
@@ -49,36 +39,21 @@ func setup_panel(p_player: PlayerData, p_rm: RanklistManager, rank_type: String)
 	_rm = p_rm
 	_rank_type = rank_type
 	setup()
-	_build_ui()
+	_build_content()
 
 
-func _build_ui() -> void:
+# 建 UI：窗口框架从 .tscn instantiate（位置/size 可视化）+ 绑定 close + 取 TabHost/ScrollLayer 引用，
+# 动态 tab + 列表行仍 procedural（源 createRankBtn + initListLayer 行为）。
+# 源 create :1941 editorui(ranklistwindow) 建窗口框架 + createRankBtn/initListLayer 动态填。
+func _build_content() -> void:
 	# 源 ranklisttree collapsed：[1]ARENA collapsed=false 展开 / [2]FIGHTVALUE collapsed=true 折叠。
 	_collapsed = {"竞技": false, "战力": true}
-	var bg := TextureRect.new()
-	bg.texture = load(RANKLIST_BG_TEX)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE  # [[texture-rect-expand-ignore-size]]
-	bg.size = RANKLIST_BG_SIZE
-	bg.position = RANKLIST_BG_POS
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-	var close: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_POS)
-	close.pressed.connect(remove_window)
-	container.add_child(close)
-	var title := Label.new()
-	title.text = "排行榜"
-	title.position = TITLE_POS
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(title)
-	_tab_layer = Control.new()
-	_tab_layer.position = Vector2(TAB_X, TAB_Y)
-	container.add_child(_tab_layer)
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	_tab_layer = content.get_node("%TabHost") as Control
+	_list_layer = content.get_node("%ScrollLayer") as ScrollContainer
 	_build_tabs()
-	_list_layer = ScrollContainer.new()
-	_list_layer.position = SCROLL_POS
-	_list_layer.size = SCROLL_SIZE
-	_list_layer.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	container.add_child(_list_layer)
 	_refresh_list()
 
 
