@@ -20,12 +20,7 @@ const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 
 # ── 坐标常量（源 cocos 值，frame package_detail_bg.png 内相对）──
 const FRAME_POS: Vector2 = Vector2(400.0, 240.0)      # board.lua:426
-# 源 board.lua:423 ed.createSprite(package_detail_bg.png) 无 fix_size → cocos sprite 显示=texture/CS。
-# texture 实际 369×493 /CS 1.28125 = 288×385（cocos 显示尺寸）。原值 369×493 是 CS 遗漏（Phase 4 校准误用 texture 原始尺寸）。
-# _gl 用 FRAME_SIZE.y 翻 Y，改 385 后子元素 Y 自动重排到源 sprite 内位置（之前 493 偏大 108px）。
-const FRAME_SIZE: Vector2 = Vector2(288.0, 385.0)
-# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
-const CONTENT_SCALE: float = 1.28125
+const FRAME_SIZE: Vector2 = Vector2(369.0, 493.0)    # package_detail_bg 实际尺寸 369×493（Phase 4 校准）
 const ICON_POS: Vector2 = Vector2(50.0, 328.0)        # board.lua:320
 const NAME_POS: Vector2 = Vector2(92.0, 345.0)        # board.lua:328
 const AMOUNT_TITLE_POS: Vector2 = Vector2(90.0, 310.0)  # board.lua:65
@@ -110,8 +105,6 @@ func _build_ui() -> void:
 	if ResourceLoader.exists(FRAME_PATH):
 		var bg := TextureRect.new()
 		bg.texture = load(FRAME_PATH)
-		# 源 board.lua:423 createSprite 无 fix_size → 显示=texture/CS（原无 expand_mode 默认 KEEP_SIZE 偏大 1.28）
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bg.size = FRAME_SIZE
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		frame.add_child(bg)
