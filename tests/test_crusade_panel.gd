@@ -1,5 +1,5 @@
 extends GutTest
-# Phase 6 Crusade UI 核心测试（2026-07-02）。
+# Phase 6 Crusade UI 核心测试（2026-07-02；2026-07-17 .tscn 重构 hero_detail 范式）。
 
 var cm: ConfigManager
 
@@ -17,11 +17,13 @@ func test_panel_assembles() -> void:
 	var panel := CrusadePanel.new("crusade", {})
 	panel.setup_panel(pd, BattleRng.new(12345))
 	panel.show_window(root)
-	# P1（2026-07-16）：删 reward_button（源 boxButton{i} 可点领奖替代）→ 11 子节点
-	# close + reset + fog(4) + scroll + enemy_preview + start_btn + result_label + hint_anchor = 11
-	# 2026-07-17：补 framework bg.jpg（源 pushScene 全屏背景）→ 12 子节点（bg 在 container 最底）。
-	# bg + close + reset + fog(4) + scroll + enemy_preview + start_btn + result_label + hint_anchor = 12
-	assert_eq(panel.container.get_child_count(), 12, "bg + close + reset + fog4 + scroll + enemy_preview + start + result + hint")
+	# 2026-07-17 .tscn 重构（hero_detail 范式）：container → content（.tscn 根，1 子节点）。
+	# content 9 静态直接子：FrameworkBg/CloseBtn/ResetBtn/FogLayer/StageScroll/
+	# EnemyPreviewHost/StartBtn/ResultLabel/HintAnchor（位置/size .tscn 固化）。
+	assert_eq(panel.container.get_child_count(), 1, "container 仅挂 content（.tscn 根）")
+	var content: Node = panel.container.get_child(0)
+	assert_eq(content.get_child_count(), 9, "content 9 静态子节点（bg/close/reset/fogLayer/scroll/preview/start/result/hint）")
+	assert_eq(panel.fog_rects.size(), 4, "4 fog（.tscn 静态，instantiate 后收集）")
 	assert_eq(panel.stage_buttons.size(), CrusadeData.MAX_STAGE, "15 stage 按钮")
 	# box 改 TextureButton 可点（源 :311 boxButton{i}）
 	assert_eq(panel.box_rects.size(), CrusadeData.MAX_STAGE, "15 box 按钮（源 :311）")
