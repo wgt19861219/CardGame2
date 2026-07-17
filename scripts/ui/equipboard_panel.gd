@@ -2,17 +2,15 @@ class_name EquipboardPanel
 extends PopWindow
 
 ## 装备浮层（View 层）— 照源 equipboard ofpackage.lua（299 行，2 按钮动态浮层）。
+## Phase A 重构（2026-07-17）：base 节点（frame+bg+icon+name+amount+price+2 button+close）静态化进
+## equipboard_content.tscn（instantiate + fill），位置/size 编辑器可视化调。照 hero_detail 范式（无 builder，
+## 单 panel 内 fill）。信号/业务逻辑/行为保留不变。
 ## 接 PackagePanel.cell_clicked 弹出。左卖出（始终）+ 右动态（prop 查看/consume 使用/fragment 合成）。
-## propType 判定照源 refreshPropType :233-253（Category=FRAGMENT 有产物→fragment / CONSUMABLES+EXPERIENCE_PILL→consume / 其他→prop）。
-## sell 接 PlayerData.sell_equip + compose 接 FragmentComposePanel（第 21 段）+ check 接 EquipdetailPanel（第 26 段）+ use 接 EatexpPanel（第 27 段）。
-## CS：源 hello.lua:311 setContentScaleFactor=1.28125，CCSprite 显示=纹理/CS（无 fix_size 时）。
-## package_detail_bg.png 原始纹理 369×493 → 源 display size = 369/CS×493/CS = 288×385（FRAME_SIZE 用 display size）。
-## 坐标：frame sprite display 288×385 内子元素走 _gl（源相对 frame sprite 左下 y-up → Godot Control 左上 y-down）；
-## frame 自身走 _g(FRAME_POS)（全屏），frame.position = _g(FRAME_POS) - FRAME_SIZE/2（左上角 = 中心 godot - 半尺寸）。
-## bg TextureRect 需 EXPAND_IGNORE_SIZE + size=FRAME_SIZE（288×385），否则按原 369×493 显示偏大 1.28。
+## propType 判定照源 refreshPropType :233-253（Category=FRAGMENT→fragment / CONSUMABLES+EXPERIENCE_PILL→consume / 其他→prop）。
+## sell 接 PlayerData.sell_equip + compose 接 FragmentComposePanel + check 接 EquipdetailPanel + use 接 EatexpPanel。
 
-# 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 档）。
-const CONTENT_SCALE: float = 1.28125
+# base + frame 子场景（Phase A 静态化：位置+size 在 .tscn 可视化）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipboard_content.tscn")
 
 # ── propType（源 refreshPropType）──
 const PROPTYPE_PROP: String = "prop"
@@ -24,24 +22,17 @@ const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"
 const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"
 const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 
-# ── 坐标常量（源 cocos 值，frame package_detail_bg.png 内相对）──
-const FRAME_POS: Vector2 = Vector2(400.0, 240.0)      # board.lua:426 frame setPosition
-# FRAME_SIZE = package_detail_bg.png display size = 369/CS × 493/CS = 288×385（原 369×493 是纹理原始像素，CS 校正后显示此值）。
-# 上一轮误用 369×493 致 frame 偏大 1.28、子元素 _gl Y 基准也偏 → 装备跑框下。修正为 display size。
-const FRAME_SIZE: Vector2 = Vector2(288.0, 385.0)
-const ICON_POS: Vector2 = Vector2(50.0, 328.0)        # board.lua:320
-const NAME_POS: Vector2 = Vector2(92.0, 345.0)        # board.lua:328
-const AMOUNT_TITLE_POS: Vector2 = Vector2(90.0, 310.0)  # board.lua:65
-const MONEY_BOARD_POS: Vector2 = Vector2(144.0, 100.0)  # ofpackage:58
-const LEFT_BTN_POS: Vector2 = Vector2(82.0, 40.0)     # ofpackage:115 卖出
-const RIGHT_BTN_POS: Vector2 = Vector2(212.0, 40.0)   # ofpackage:162 动态
-const BTN_SIZE: Vector2 = Vector2(125.0, 49.0)
-const CLOSE_POS: Vector2 = Vector2(286.0, 358.0)      # board.lua:441
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"  # board.lua:437
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"  # board.lua:438
+# ── frame 内子节点坐标（源 cocos 值经 _gl 转 Frame Control 内左上 y-down）──
+# ICON_POS = 源 board.lua:320 ccp(50,328) → _gl(50, 385-328=57)。icon 动态建（ReadequipIcon.create_icon
+# 返回 size=72×72 Control），fill 时挂 %IconHost 并设 position=ICON_POS（frame 内左上）。
+const ICON_POS: Vector2 = Vector2(50.0, 57.0)
 
-# ── 资源 ──
-const FRAME_PATH: String = "res://assets/ui/alpha/HVGA/package_detail_bg.png"
+# ── Scale9 按钮（源 ofpackage.lua:108-119 left_button / :154-165 right_button）──
+# 源 Scale9Sprite package_button.png + package_button_down.png，capInsets CCRectMake(10,10,236,29)。
+# .tscn 普通 Button 套 StyleBoxTexture 补九宫格（normal/hover=package_button，pressed=package_button_down）。
+const BTN_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/package_button.png"
+const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_down.png"
+const BTN_CAP: Rect2 = Rect2(10.0, 10.0, 236.0, 29.0)
 
 # ── 文本 LSTR key（源 ofpackage.lua:140 PACKAGE.SELL / :225 PACKAGE.DETAIL / :227 MIDAS.USE /
 # :229 EQUIPCRAFT.SYNTHESIS；卖出 toast 用 ofsell.lua:427 EQUIPINFO.MONEY_GAINED）──
@@ -62,17 +53,7 @@ var _cell_data: Dictionary = {}
 var _item_id: int = 0       # 装备/物品/碎片 id（源 param.id）
 var _make_id: int = 0       # 产物 tid（fragment 合成用，源 makeId）
 var _prop_type: String = PROPTYPE_PROP
-
-
-# 源 cocos(800×480 左下) → Godot(960×640 左上)：cx+80, 560-cy（全屏元素 _g，同 fragment_compose_panel 范式）。
-func _g(pos: Vector2) -> Vector2:
-	return BattleViewCoords.to_godot(pos.x, pos.y)
-
-
-# frame(package_detail_bg)内子元素：源相对 frame CCSprite 左下角 y-up（Cocos CCSprite 子节点原点=左下角），
-# Godot frame 是 Control（子节点相对左上角 y-down），故 _gl 翻 Y（x 不变）。
-func _gl(pos: Vector2) -> Vector2:
-	return Vector2(pos.x, FRAME_SIZE.y - pos.y)
+var _frame: Control = null  # .tscn %Frame（base 容器，fill 动态数据的锚点）
 
 
 # 源 create(param) :264-278。param={id, doSell, doUse, doCheck, doCompose}（package.lua 注入）。
@@ -85,7 +66,7 @@ func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData) -> vo
 	_make_id = int(p_cell_data.get("makeId", _item_id))
 	_prop_type = _judge_prop_type()
 	setup()
-	_build_ui()
+	_build_content()
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
@@ -104,59 +85,64 @@ func _judge_prop_type() -> String:
 	return PROPTYPE_PROP
 
 
-# 源 initFrame + initTitle + initAmount + initWindow。
-func _build_ui() -> void:
-	var frame := Control.new()
-	frame.position = _g(FRAME_POS) - FRAME_SIZE / 2.0
-	frame.size = FRAME_SIZE
-	container.add_child(frame)
-	if ResourceLoader.exists(FRAME_PATH):
-		var bg := TextureRect.new()
-		bg.texture = load(FRAME_PATH)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # CS 校正：默认 KEEP_SIZE 按原纹理 369×493 显示，需 IGNORE+手动 size
-		bg.size = FRAME_SIZE
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		frame.add_child(bg)
-	# icon（源 initTitle :320 createIcon）
-	var icon: Control = ReadequipIcon.create_icon(_item_id, 0, cm)
-	icon.position = _gl(ICON_POS)
-	frame.add_child(icon)
-	# name（源 initTitle :328）
-	var name_lbl := Label.new()
-	name_lbl.text = _equip_name()
-	name_lbl.position = _gl(NAME_POS)
-	frame.add_child(name_lbl)
-	# 持有量（源 board.lua:60 text = T(LSTR("EQUIPINFO.HAVE")).." "..amount.." "..T(LSTR("EQUIPINFO.ITEM"))）
-	var amount_lbl := Label.new()
-	var amt: int = int(_cell_data.get("amount", 0))
-	amount_lbl.text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
-	amount_lbl.position = _gl(AMOUNT_TITLE_POS)
-	frame.add_child(amount_lbl)
-	# 卖出价（源 refreshPrice + money_board，price<=0 隐藏）
-	var sell_price: int = _sell_price()
-	if sell_price > 0:
-		var price_lbl := Label.new()
-		price_lbl.text = cm.get_lstr(LSTR_SALE_COST) + str(sell_price)
-		price_lbl.position = _gl(MONEY_BOARD_POS)
-		frame.add_child(price_lbl)
-	# 左卖出按钮（源 left_button :109，始终）
-	var sell_btn := Button.new()
+# 源 initFrame + initTitle + initAmount + initWindow。Phase A：从 .tscn instantiate + fill 动态数据。
+# 位置/size .tscn 已固化（编辑器可视化调），fill 只填 texture/text/visible/stylebox。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	_frame = content.get_node("%Frame") as Control
+	_fill_icon()
+	(_frame.get_node("%NameLabel") as Label).text = _equip_name()   # 源 initTitle :328
+	var amt: int = int(_cell_data.get("amount", 0))   # 源 board.lua:60 text=HAVE..amount..ITEM
+	(_frame.get_node("%AmountLabel") as Label).text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
+	_fill_sell_price()
+	var sell_btn: Button = _frame.get_node("%SellBtn") as Button   # 源 left_button :109
+	_apply_button_style(sell_btn)
 	sell_btn.text = cm.get_lstr(LSTR_SELL)
-	sell_btn.position = _gl(LEFT_BTN_POS)
-	sell_btn.size = BTN_SIZE
 	sell_btn.pressed.connect(_on_sell_pressed)
-	frame.add_child(sell_btn)
-	# 右动态按钮（源 right_button :154，按 propType 切文本）
-	var right_btn := Button.new()
+	var right_btn: Button = _frame.get_node("%RightBtn") as Button   # 源 right_button :154
+	_apply_button_style(right_btn)
 	right_btn.text = _right_button_label()
-	right_btn.position = _gl(RIGHT_BTN_POS)
-	right_btn.size = BTN_SIZE
 	right_btn.pressed.connect(_on_right_pressed)
-	frame.add_child(right_btn)
-	# 关闭（源 board.lua close :437 herodetail-detail-close）
-	var close_btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, _gl(CLOSE_POS))
-	close_btn.pressed.connect(_on_close_pressed)
-	frame.add_child(close_btn)
+	(_frame.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)   # 源 board.lua:437 close
+
+
+# 源 initTitle :320 createIcon — 挂 %IconHost，position=ICON_POS（frame 内 _gl 后）。
+func _fill_icon() -> void:
+	var host: Control = _frame.get_node("%IconHost") as Control
+	var icon: Control = ReadequipIcon.create_icon(_item_id, 0, cm)
+	icon.position = ICON_POS
+	host.add_child(icon)
+
+
+# 源 refreshPrice :207-217：price<=0 隐藏 money_board（本 项目用 %SellPriceLabel visible 切换）。
+func _fill_sell_price() -> void:
+	var price: int = _sell_price()
+	var lbl: Label = _frame.get_node("%SellPriceLabel") as Label
+	if price > 0:
+		lbl.text = cm.get_lstr(LSTR_SALE_COST) + str(price)
+		lbl.visible = true
+	else:
+		lbl.visible = false
+
+
+# 源 Scale9Sprite package_button/package_button_down → .tscn Button 套 StyleBoxTexture（九宫格）。
+func _apply_button_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _make_button_stylebox(BTN_NORMAL_RES))
+	btn.add_theme_stylebox_override("hover", _make_button_stylebox(BTN_NORMAL_RES))
+	btn.add_theme_stylebox_override("pressed", _make_button_stylebox(BTN_PRESS_RES))
+
+
+static func _make_button_stylebox(res_path: String) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res_path) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = BTN_CAP.position.x
+	sb.texture_margin_top = BTN_CAP.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - BTN_CAP.position.x - BTN_CAP.size.x
+		sb.texture_margin_bottom = tex.get_height() - BTN_CAP.position.y - BTN_CAP.size.y
+	return sb
 
 
 # 源 refreshButton :219-232：prop=详情/consume=使用/fragment=合成。
