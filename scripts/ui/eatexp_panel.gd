@@ -31,9 +31,15 @@ const KEEPEAT_DELAY: float = 0.5
 const KEEPEAT_INTERVAL: float = 0.08
 const EAT_LIFETIME: float = 0.3
 const EAT_FADE: float = 0.2
+# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
+# Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28；经验条普通态源 eatexplist.lua:287 纯 sprite
+# scalexy 进度（无 fix_size）→ 显示=texture/CS；满级态 :403 fix_size=CCSizeMake(145,20) 保留。
+const CONTENT_SCALE: float = 1.28125
 
 const TITLE_BG_H: float = 36.0                  # title_bg 高（源 equip_detail_title_bg 尺寸）
-const EXP_BAR_SIZE: Vector2 = Vector2(140.0, 14.0)   # 经验条尺寸（源 package_exp_bar 估算）
+const EXP_BAR_SIZE: Vector2 = Vector2(140.0, 14.0)   # 经验条尺寸（保留布局参考，实际 bar 用动态 tex/CS）
+# 源 eatexplist.lua:403 heroxp-progress-full.png fix_size=CCSizeMake(145,20)（满级条，源指定尺寸非 tex/CS）。
+const FULL_BAR_FIX_SIZE: Vector2 = Vector2(145.0, 20.0)
 
 # ── 资源 ──
 const FRAME_PATH: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
@@ -204,20 +210,24 @@ func _create_exp_bar(parent: Control, hero: HeroInstance) -> TextureRect:
 	var bg_tex: Texture2D = _load_tex(EXP_BAR_BG_PATH)
 	var bar_tex: Texture2D = _load_tex(EXP_BAR_PATH)
 	var full_tex: Texture2D = _load_tex(EXP_FULL_PATH)
+	var is_max: bool = _is_hero_max_level(hero)
 	var bar := TextureRect.new()
-	bar.texture = full_tex if _is_hero_max_level(hero) else bar_tex
-	bar.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	bar.texture = full_tex if is_max else bar_tex
+	# 源 eatexplist.lua:287 普通 bar 纯 sprite scalexy 进度（无 fix_size）→ 显示=texture/CS；
+	# :403 满 bar fix_size=CCSizeMake(145,20) 保留。原 EXPAND_KEEP_SIZE 是 CS 遗漏（偏大 1.28），改 IGNORE_SIZE。
+	bar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bar.position = EXP_BAR_POS
-	bar.size = EXP_BAR_SIZE
+	bar.size = FULL_BAR_FIX_SIZE if is_max else (bar.texture.get_size() / CONTENT_SCALE)
 	bar.scale.x = _bar_scale(hero)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if bg_tex != null:
 		var bar_bg := TextureRect.new()
 		bar_bg.texture = bg_tex
+		# 源 :264 expBarBg createSprite 无 fix_size → 显示=texture/CS（原 EXP_BAR_SIZE 估算 140×14 近似 178/CS=139）
 		bar_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bar_bg.custom_minimum_size = Vector2.ZERO
 		bar_bg.position = EXP_BAR_POS
-		bar_bg.size = EXP_BAR_SIZE
+		bar_bg.size = bg_tex.get_size() / CONTENT_SCALE
 		bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(bar_bg)
 	parent.add_child(bar)
@@ -258,6 +268,7 @@ func _play_bar_anim(inst_id: int, olevel: int, oexp: int, nlevel: int, nexp: int
 	var end_scale: float = _scale_for(nexp, nlevel) if not _is_hero_max_level_by_level(nlevel) else 1.0
 	if _is_hero_max_level_by_level(nlevel) and bar.texture != _load_tex(EXP_FULL_PATH):
 		bar.texture = _load_tex(EXP_FULL_PATH)
+		bar.size = FULL_BAR_FIX_SIZE   # 切满级 fix_size=CCSizeMake(145,20)（与普通 bar 的 tex/CS 不同）
 	bar.scale.x = start_scale
 	var tw := create_tween()
 	if nlevel > olevel:

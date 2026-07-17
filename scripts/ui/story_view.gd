@@ -23,6 +23,9 @@ const TEXT_COLOR: Color = Color(117.0 / 255.0, 77.0 / 255.0, 0.0)   # 源 ccc3(1
 const SHADOW_CENTER: Vector2 = Vector2(400.0, 60.0)   # 源 storylayer.lua:28/42 shadowBg/storyBg ccp(400,60)（原 330 系注释造假+值错，T2 核实 2026-07-14 修）
 const SHADOW_SIZE: Vector2 = Vector2(960.0, 600.0)     # 源 800×500 按比例→Godot 960×600（源画布×1.2）
 const BG_SIZE: Vector2 = Vector2(600.0, 120.0)         # 源 storyBg 尺寸（保持原值）
+# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
+# Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28，sprite 走 tex/CS 等价源显示。
+const CONTENT_SCALE: float = 1.28125
 
 var _story_name: String = ""
 var _sections: Array = []   # StoryData 分节 [{icon,name,text,position}]
@@ -59,7 +62,7 @@ func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	gui_input.connect(_on_gui_input)
-	_add_texture_rect(SHADOW_RES, _g(SHADOW_CENTER), SHADOW_SIZE)   # shadowBg
+	_add_texture_rect(SHADOW_RES, _g(SHADOW_CENTER), SHADOW_SIZE, true)   # shadowBg 源 fix_size=CCSizeMake(800,500) 保留（Godot 960×600 等比放大）
 	_add_texture_rect(BG_RES, _g(SHADOW_CENTER), BG_SIZE)           # storyBg
 	var arrow := _add_texture_rect(ARROW_RES, _g(ARROW_POS), Vector2(20, 20))
 	arrow.modulate.a = 0.5   # 源 getFadeAction 闪烁（简化为半透明）
@@ -116,11 +119,17 @@ func _close_story() -> void:
 	story_ended.emit(_story_name)
 
 
-func _add_texture_rect(res_path: String, pos: Vector2, size: Vector2) -> TextureRect:
+# size 参数语义随 use_fix_size 切换：
+#   use_fix_size=false（默认）：源 sprite 无 fix_size → 显示=texture/CS（size 参数忽略）
+#   use_fix_size=true：源 fix_size（如 shadowBg CCSizeMake(800,500)）→ 显示=size（Godot 等比放大值）
+@warning_ignore("unused_parameter")
+func _add_texture_rect(res_path: String, pos: Vector2, size: Vector2, use_fix_size: bool = false) -> TextureRect:
 	var tr := TextureRect.new()
 	tr.texture = load(res_path)
-	tr.position = pos - size / 2.0
-	tr.custom_minimum_size = size
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	var target_size: Vector2 = size if use_fix_size else (tr.texture.get_size() / CONTENT_SCALE)
+	tr.position = pos - target_size / 2.0
+	tr.size = target_size
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(tr)
 	return tr
