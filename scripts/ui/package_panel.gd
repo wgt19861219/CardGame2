@@ -40,6 +40,18 @@ const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framewo
 # TextureRect 默认 size=纹理原始（偏大 1.28），照源无 fix_size 的纯 Sprite 统一 /CS。
 const CONTENT_SCALE: float = 1.28125
 
+# ── 图鉴按钮（源 createHandbookButton :463-538，仅 identity=="package" 建）──
+const HANDBOOK_BTN_CENTER: Vector2 = Vector2(716.0, 55.0)        # 源 :475 ccp(716,55) Scale9Sprite 中心(anchor 0.5,0.5)
+const HANDBOOK_BTN_SIZE: Vector2 = Vector2(92.0, 58.0)           # 源 :478 scaleSize
+const HANDBOOK_BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)    # 源 :472 capInsets CCRectMake(15,22,15,25)
+const HANDBOOK_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
+const HANDBOOK_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
+const HANDBOOK_ICON_RES: String = "res://assets/ui/alpha/HVGA/package_handbook_icon.png"
+const HANDBOOK_ICON_OFFSET: Vector2 = Vector2(18.0, 31.0)        # 源 :506 ccp(18,31)（子 Sprite 相对父中心 Y-up）
+const HANDBOOK_LABEL_OFFSET: Vector2 = Vector2(50.0, 29.0)       # 源 :519 ccp(50,29)（子 Label 相对父中心 Y-up）
+const HANDBOOK_LABEL_KEY: String = "HERODETAIL.BOOK"             # 源 :514 T(LSTR("HERODETAIL.BOOK"))
+const HANDBOOK_LABEL_FONT_SIZE: int = 17                         # 源 :515 fontinfo="ui_normal_button" → fontconfigs.lua:24 size=17
+
 signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
 
 var cm: Variant = null
@@ -76,6 +88,7 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	_create_fullscreen_bg()
 	_create_bg()
 	_create_close_button()
+	_create_handbook_button()
 	_create_tab_buttons()
 	_create_grid()
 	_create_status_bar()   # 源 framework.create :755 sbCreateTitle common 3 货币条（所有非 main 场景建）
@@ -144,6 +157,55 @@ func _create_close_button() -> void:
 	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
 	btn.pressed.connect(_on_close_pressed)
 	container.add_child(btn)
+
+
+# 源 createHandbookButton :463-538：仅 identity=="package" 建图鉴按钮。Scale9Sprite sell_number_button(92×58) +
+# press mask sell_number_button_down + Sprite package_handbook_icon ccp(18,31) + Label HERODETAIL.BOOK ccp(50,29)。
+# :526 if identity=="package" then readnode:addNode（视觉仅 package 建）。
+# :534 clickHandler → doClickHandbook :230 → ed.ui.handbook.create + pushScene。本项目单机化用 PopWindow 替代 pushScene。
+func _create_handbook_button() -> void:
+	if _identity != IDENTITY_PACKAGE:
+		return   # 源 :526 仅 package 建（fragment 不建）
+	var btn: Button = UiScale9Button.make(HANDBOOK_BTN_RES, HANDBOOK_BTN_PRESS_RES, Vector2.ZERO, HANDBOOK_BTN_SIZE, HANDBOOK_BTN_CAP)
+	# 源 Scale9Sprite anchor(0.5,0.5)，position ccp(716,55) 是中心 → Godot Control position=中心-size/2。
+	btn.position = _g(HANDBOOK_BTN_CENTER) - HANDBOOK_BTN_SIZE * 0.5
+	btn.pressed.connect(_on_handbook_pressed)
+	container.add_child(btn)
+	# 源 :498-509 Sprite package_handbook_icon（parent="handbook"，anchor 0.5,0.5），显示=纹理/CS（无 fix_size）。
+	if ResourceLoader.exists(HANDBOOK_ICON_RES):
+		var icon_tex: Texture2D = load(HANDBOOK_ICON_RES) as Texture2D
+		if icon_tex != null:
+			var icon := TextureRect.new()
+			icon.texture = icon_tex
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			var icon_size: Vector2 = icon_tex.get_size() / CONTENT_SCALE
+			icon.size = icon_size
+			icon.position = _child_offset_from_parent_center(HANDBOOK_ICON_OFFSET, HANDBOOK_BTN_SIZE, icon_size)
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			btn.add_child(icon)
+	# 源 :510-524 Label T(LSTR("HERODETAIL.BOOK")) fontinfo="ui_normal_button"(17 号白字) + ccc3(255,255,255)。
+	var lbl := Label.new()
+	lbl.text = String(cm.get_lstr(HANDBOOK_LABEL_KEY))
+	lbl.add_theme_font_size_override("font_size", HANDBOOK_LABEL_FONT_SIZE)
+	lbl.add_theme_color_override("font_color", Color.WHITE)
+	lbl.position = _child_offset_from_parent_center(HANDBOOK_LABEL_OFFSET, HANDBOOK_BTN_SIZE, lbl.get_minimum_size())
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(lbl)
+
+
+# 源 cocos 子节点 ccp(dx,dy)（相对父 anchor 点=父中心，Y-up）→ Godot 子 Control position（相对父左上角，Y-down）。
+# dx 不变（X 同向），dy 翻 Y，加 parent_size/2（父中心→父左上角基准），减 child_size/2（子中心点→子左上角 position）。
+# 等价于源子 anchor(0.5,0.5) 在 Godot 用 TextureRect/Label 左上角 position 表达。
+static func _child_offset_from_parent_center(cocos_offset: Vector2, parent_size: Vector2, child_size: Vector2) -> Vector2:
+	return Vector2(cocos_offset.x + parent_size.x * 0.5, -cocos_offset.y + parent_size.y * 0.5) - child_size * 0.5
+
+
+# 源 doClickHandbook :230-238：ed.ui.handbook.create + pushScene。
+func _on_handbook_pressed() -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	var panel := HandbookPanel.new("handbook", {})
+	panel.setup_panel(pd)
+	panel.show_window(get_parent())
 
 
 # 源 createListButton :378-462：右侧竖排 tab 按钮，第 1 个默认选中。
