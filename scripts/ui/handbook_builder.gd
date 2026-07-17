@@ -164,13 +164,19 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 	else:
 		var icon_bg := TextureRect.new()   # 源 :434-440 handbook_icon_bg + lock
 		icon_bg.texture = load(ICON_BG_RES) as Texture2D
-		icon_bg.size = Vector2(66, 66)
+		icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		# 源 handbook.lua:434 createSprite 无 fix_size，显示=纹理/CS（见 CONTENT_SCALE 注释）
+		icon_bg.size = icon_bg.texture.get_size() / CONTENT_SCALE if icon_bg.texture != null else Vector2(66, 66) / CONTENT_SCALE
 		icon_bg.position = EQUIP_ICON_POS
 		icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon_bg)
 		var lock := TextureRect.new()
 		lock.texture = load(ICON_LOCK_RES) as Texture2D
-		lock.position = Vector2(33, 33) - _tex_size_centered(ICON_LOCK_RES)
+		lock.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		# 源 :436 createSprite 无 fix_size，显示=纹理/CS；源 :437 ccp(33,33)=iconBg 中心，lock 居中于 icon_bg
+		var lock_sz: Vector2 = lock.texture.get_size() / CONTENT_SCALE if lock.texture != null else Vector2.ZERO
+		lock.size = lock_sz
+		lock.position = (icon_bg.size - lock_sz) * 0.5
 		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon_bg.add_child(lock)
 		name_text = _lstr(cm, "HANDBOOK.LV_D_ACTIVATED") % lr   # 源 :441 T(LSTR("HANDBOOK.LV_D_ACTIVATED"), lr)
@@ -209,10 +215,6 @@ static func _tex_size(res_path: String) -> Vector2:
 	if tex != null:
 		return tex.get_size()
 	return Vector2(80, 50)
-
-
-static func _tex_size_centered(res_path: String) -> Vector2:
-	return _tex_size(res_path) * 0.5
 
 
 static func _lstr(cm: Variant, key: String) -> String:

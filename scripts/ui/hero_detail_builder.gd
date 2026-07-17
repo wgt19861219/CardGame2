@@ -103,7 +103,11 @@ static func _add_star(parent: Control, res_path: String, i: int) -> void:
 		return
 	var s := TextureRect.new()
 	s.texture = tex
-	s.position = to_godot(STAR_BASE_COCOS.x + STAR_DX * float(i - 1), STAR_BASE_COCOS.y) - tex.get_size() * 0.5
+	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# 源 window.lua:1355-1374 星级 t="Sprite" config={} 无 fix_size，显示=纹理/CS（见 CONTENT_SCALE 注释）
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	s.size = sz
+	s.position = to_godot(STAR_BASE_COCOS.x + STAR_DX * float(i - 1), STAR_BASE_COCOS.y) - sz * 0.5
 	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(s)
 

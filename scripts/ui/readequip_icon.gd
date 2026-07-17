@@ -31,6 +31,9 @@ const STAR_OY_COCOS: float = 18.0    # 源 oy（i=1 星 y，cocos 左下原点�
 const STAR_DY: float = 10.0          # 源 dy 行间距（垂直单列 dx=0）
 const STAR_SCALE: float = 0.9        # 源 :1216/1224 setScale(0.9)
 const HALF: float = 0.5              # 星中心定位偏移
+# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
+# 源 :1215/1223 setScale(0.9) 在 /CS 基础上叠加 → 最终 = (纹理/CS) × 0.9
+const CONTENT_SCALE: float = 1.28125
 
 
 # 创建图标节点（品质边框 + 内 Icon + 数量 Label + 可选星级）。id 为 equip id 或 hero tid。
@@ -81,14 +84,18 @@ static func _add_stars(container: Control, id: int, level: int, show_gray: bool,
 
 
 # 源 createIconWithLevel:1215-1218：星 @ (ox, oy+dy*(i-1)) scale 0.9，cocos 锚点 0.5/0.5 中心。
+# 源 sprite 显示=纹理/CS（引擎级），setScale(0.9) 在此基础上叠加 → size=纹理/CS 再 scale 0.9。
 static func _make_star(res_path: String, i: int) -> TextureRect:
 	var t: TextureRect = TextureRect.new()
 	var tex: Texture2D = load(res_path)
 	if tex != null:
 		t.texture = tex
-	t.scale = Vector2(STAR_SCALE, STAR_SCALE)
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	var tex_size: Vector2 = tex.get_size() if tex != null else Vector2.ZERO
-	var actual_size: Vector2 = tex_size * STAR_SCALE
+	var base_size: Vector2 = tex_size / CONTENT_SCALE
+	t.size = base_size
+	t.scale = Vector2(STAR_SCALE, STAR_SCALE)
+	var actual_size: Vector2 = base_size * STAR_SCALE
 	var cocos_y: float = STAR_OY_COCOS + STAR_DY * (i - 1)
 	# 源 cocos (ox, cocos_y) 中心 → Godot 左上 = (ox, ICON_SIZE - cocos_y) - actual_size/2
 	t.position = Vector2(STAR_OX, ICON_SIZE - cocos_y) - actual_size * HALF
@@ -120,6 +127,9 @@ static func refresh_stars(container: Control, new_level: int) -> void:
 			var tex: Texture2D = load(STAR_BLUE_RES)
 			if tex != null:
 				blue.texture = tex
+			blue.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			# 同 _make_star：源 :1249-1252 setScale(0.9)，size=纹理/CS 与灰星一致（覆盖等位）
+			blue.size = tex.get_size() / CONTENT_SCALE if tex != null else Vector2.ZERO
 			blue.scale = old_star.scale
 			blue.position = pos
 			blue.visible = false
