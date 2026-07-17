@@ -25,8 +25,16 @@ func test_panel_assembles() -> void:
 	var root := Node.new()
 	add_child(root)
 	var panel := _make_panel(root)
-	# container 子：bg + title_bg + close + 3 board container + result + status + preview_container + preview_label = 10
-	assert_eq(panel.container.get_child_count(), 10, "bg+title_bg+close+3board+result+status+preview_container+preview_label")
+	# .tscn 重构：container 直接子 = content（.tscn root），panel 层节点在 content 内，
+	# board 卡片挂 %BoardHost 下（3 个 board container）。递归扫全子树 + 锚定 _boards 字典。
+	assert_eq(panel.container.get_child_count(), 1, "container 直接子 = content（.tscn instantiate）")
+	assert_eq(panel._boards.size(), 3, "3 board 装配（bronze/gold/magic）")
+	assert_not_null(panel._result_label, "ResultLabel 装配")
+	assert_not_null(panel._status_label, "StatusLabel 装配")
+	assert_not_null(panel._preview_container, "PreviewContainer 装配")
+	assert_not_null(panel._preview_label, "PreviewLabel 装配")
+	assert_not_null(panel._board_host, "BoardHost 装配")
+	assert_eq(panel._board_host.get_child_count(), 3, "BoardHost 含 3 board container")
 	panel.remove_window()
 	root.queue_free()
 

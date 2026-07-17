@@ -2,7 +2,10 @@ class_name TavernPanel
 extends PopWindow
 
 ## 抽卡面板（View 层）— 照源 tavern.lua 完整复刻 scroll_board 滑动交互 + magic drop_bg 4 组预览
-## （Phase 5.3，2026-07-13）。
+## （Phase 5.3，2026-07-13；.tscn 重构 2026-07-17）。
+## panel 层静态节点（bg/title_bg/close/result/status/preview_container/preview_label/board_host）
+## 从 tavern_content.tscn instantiate（位置/size 可视化），board 卡片（scroll_board 滑动机制 + drop_bg）
+## 仍 procedural 由 TavernBoardBuilder.create_board 建（保留滑动交互）。
 ## 3 卡池 board（源 createItemLayer:1371 bronze/gold/magic）× per-board scroll_board 滑动展开：
 ## 点 check（源 doClickCheck:1576 上滑 320 露底部按钮区）/ arrow（doClickArrow:1584 滑回）/
 ## one_buy→doTavern("one") / ten_buy→doTavern("ten")。
@@ -16,23 +19,12 @@ signal drawn
 
 const TavernBoardBuilder = preload("res://scripts/ui/tavern_board_builder.gd")
 const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/tavern_content.tscn")
 const POOL_KEYS: Array[String] = ["Bronze", "Gold", "MagicSoul"]
-# 全局 contentScaleFactor（源 hello.lua:311 setContentScaleFactor(1.28125)）：
-# Cocos Sprite 无 fix_size 时显示 = 纹理/CS；Godot TextureRect 用 tex.get_size() 偏大 1.28。
-const CONTENT_SCALE: float = 1.28125
 # board 横排中心照源 draglist(80,80)+board_bg ccp(160,205) → Godot (240,355)/(480,355)/(720,355)
 const BOARD_CENTER_X: float = 240.0
 const BOARD_DX: float = 240.0
 const BOARD_CENTER_Y: float = 355.0
-const BG_FULL: String = "res://assets/ui/alpha/HVGA/bg.jpg"
-const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/tavern_title_bg.png"
-const TITLE_BG_POS: Vector2 = Vector2(160.0, 180.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const RESULT_POS: Vector2 = Vector2(380.0, 420.0)
-const STATUS_POS: Vector2 = Vector2(380.0, 240.0)
-const PREVIEW_POS: Vector2 = Vector2(380.0, 460.0)
 const REFRESH_INTERVAL_SEC: float = 1.0
 # 源 LSTR key（照源 tavern.lua + tavernres.lua）。cm 缺失时 fallback 中文（_lstr 内返 key，
 # 由 panel 判 key==lstr 走 fallback）。
@@ -66,6 +58,7 @@ var _result_label: Label = null
 var _status_label: Label = null
 var _preview_label: Label = null
 var _preview_container: HBoxContainer = null
+var _board_host: Control = null   # .tscn %BoardHost（3 board container 挂载点）
 var _refresh_timer: float = 0.0
 
 
@@ -74,47 +67,23 @@ func setup_panel(p_player: PlayerData, rng: BattleRng) -> void:
 	_rng = rng
 	_cm = p_player.cm
 	setup()
-	_create_background()
-	_create_close_button()
+	_build_content()
+
+
+# panel 层静态节点（bg/title_bg/close/result/status/preview_container/preview_label/board_host）
+# 从 tavern_content.tscn instantiate（位置/size 可视化），board 卡片仍由 builder procedural 建。
+func _build_content() -> void:
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
+	_board_host = content.get_node("%BoardHost") as Control
+	_result_label = content.get_node("%ResultLabel") as Label
+	_status_label = content.get_node("%StatusLabel") as Label
+	_preview_container = content.get_node("%PreviewContainer") as HBoxContainer
+	_preview_label = content.get_node("%PreviewLabel") as Label
+	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	close_btn.pressed.connect(remove_window)
 	_create_boards()
-	_create_result_label()
-	_status_label = Label.new()
-	_status_label.position = STATUS_POS
-	container.add_child(_status_label)
-	_preview_container = HBoxContainer.new()
-	_preview_container.position = Vector2(200.0, 460.0)
-	_preview_container.size = Vector2(400.0, 60.0)
-	_preview_container.visible = false
-	container.add_child(_preview_container)
-	_preview_label = Label.new()
-	_preview_label.position = PREVIEW_POS
-	_preview_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(_preview_label)
 	_refresh_countdown_label()
-
-
-# 面板背景（照源 framework bg.jpg 全屏 + tavern.lua tavern_title_bg :620 标题图）。
-func _create_background() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(BG_FULL) as Texture2D
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-	var title := TextureRect.new()
-	title.texture = load(TITLE_BG_RES) as Texture2D
-	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	if title.texture != null:
-		title.size = title.texture.get_size() / CONTENT_SCALE   # 源 tavern.lua:617 config={} 无 fix
-		title.position = TITLE_BG_POS
-		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		container.add_child(title)
-
-
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(remove_window)
-	container.add_child(btn)
 
 
 # 源 createItemLayer:1371 — 3 卡池 board（bronze/gold/magic），每 board = createBaseBoard +
@@ -134,7 +103,7 @@ func _create_boards() -> void:
 		}
 		var texts: Dictionary = _build_board_texts(src_key)
 		var board: Dictionary = TavernBoardBuilder.create_board(src_key, center, cost_info, handlers, texts)
-		container.add_child(board["container"])
+		_board_host.add_child(board["container"])
 		_boards[key] = board
 		TavernBoardBuilder.play_light_anim(board)   # 源 :1397 createItemLayer 末尾调 playLightAnim
 
@@ -295,13 +264,6 @@ func _make_hero_preview_icon(tid: int) -> Control:
 	lbl.custom_minimum_size = Vector2(60, 40)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return lbl
-
-
-func _create_result_label() -> void:
-	_result_label = Label.new()
-	_result_label.position = RESULT_POS
-	_result_label.text = "点击抽卡"
-	container.add_child(_result_label)
 
 
 func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten: bool) -> void:
