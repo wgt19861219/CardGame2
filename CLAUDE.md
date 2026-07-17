@@ -79,6 +79,7 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错（坐标试 4 �
 - **测试扫描深度**：.tscn instantiate 多一层 content（container→content→%BaseLayer→节点），扫 base/tab 子树改递归（`_count_meta_recursive`/`_count_if_recursive`）；扫特定 view 用 `_tab_views[k]` 锚定避开其他层（如 portrait FCA 的 Sprite2D）。测试用公共字段/Logic 层时不需改（如 ranklist 只测 RanklistManager）。
 - **.tscn 禁 `#` 注释**：tscn 格式不支持 `#`（报 `Parse Error: Expected '['`），注释用 `;`，但样板无注释照删不补。
 - **子组件保留 procedural 挂 host**：panel 层静态化进 .tscn，子组件（att/material/tree/box 等）保留 procedural 挂 `%XxxHost`（pos=0,0 保持子组件局部坐标系不变），后续可单独静态化。
+- **带 size rect 坐标照源翻译**（avatar 第六批坑）：procedural 代码里 `_g(cx,cy)` 对带 size 的 rect 节点（ScrollContainer 等）漏减 size.y 是**翻译 bug**非源逻辑，静态化时照源 `CCRect` 正确翻译——Cocos `CCRect(x,y,w,h)` 的 (x,y) 是**左下角**（左下原点），转 Godot（左上原点）左上角 `offset_top = 560-(cy+h)`、底边 `560-cy`，**勿把 `560-cy`（底边）当 offset_top**。子代理易照搬 procedural 的错误坐标值，须读源 rect 重算（avatar ScrollContainer / package 同类坑，主代理 merge 后补修）。
 
 ## 开发协议
 
