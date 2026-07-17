@@ -92,7 +92,7 @@ static func create_chrome(parent: Control, title_text: String, checkin_num: int,
 		var act := TextureRect.new()
 		act.texture = act_tex
 		act.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		act.size = Vector2(act_tex.get_size().x, ACT_BG_H)
+		act.size = Vector2(act_tex.get_size().x / CONTENT_SCALE, ACT_BG_H)   # 源 fix_size(0,35)：宽=纹理/CS，高=35
 		act.position = to_godot(ACT_BG_CENTER.x, ACT_BG_CENTER.y) - act.size * 0.5
 		act.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(act)

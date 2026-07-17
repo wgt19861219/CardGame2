@@ -10,6 +10,7 @@ extends PopWindow
 signal composed   # 合成成功后通知调用方刷新（HeroPackagePanel 刷新英雄列表）
 
 # ── 坐标常量（源 cocos 值）──
+const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor（cocos sprite 显示=纹理/CS）
 const BG_POS: Vector2 = Vector2(400.0, 240.0)         # 源 :262
 const NAME_POS: Vector2 = Vector2(142.0, 348.0)       # 源 :277
 const FRAG_ICON_POS: Vector2 = Vector2(78.0, 230.0)   # 源 :471
@@ -98,7 +99,9 @@ func _build_ui() -> void:
 	if ResourceLoader.exists(BG_PATH):
 		var bg := TextureRect.new()
 		bg.texture = load(BG_PATH)
-		bg.position = _g(BG_POS) - bg.get_minimum_size() / 2.0   # 中心锚定（源 setPosition(400,240)→Godot）
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # 源 createSprite 显示=纹理/CS（hello.lua:311）
+		bg.size = bg.texture.get_size() / CONTENT_SCALE
+		bg.position = _g(BG_POS) - bg.size / 2.0   # 中心锚定（源 setPosition(400,240)→Godot）
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(bg)
 	# name 标题（源 :273-274 T(LSTR("EQUIPCRAFT.SYNTHESIS")) .. " " .. makeName）
@@ -115,7 +118,9 @@ func _build_ui() -> void:
 	if ResourceLoader.exists(ARROW_PATH):
 		var arrow := TextureRect.new()
 		arrow.texture = load(ARROW_PATH)
-		arrow.position = _g(ARROW_POS) - arrow.get_minimum_size() / 2.0
+		arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # 源 Sprite 显示=纹理/CS
+		arrow.size = arrow.texture.get_size() / CONTENT_SCALE
+		arrow.position = _g(ARROW_POS) - arrow.size / 2.0
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(arrow)
 	# 产物图标（源 :475 createIcon(makeId)）
@@ -173,6 +178,7 @@ func _build_cost() -> void:
 	if ResourceLoader.exists(COST_BG_PATH):
 		var cost_bg := TextureRect.new()
 		cost_bg.texture = load(COST_BG_PATH)
+		cost_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # 源 :362 fix_size(260,32) → size 生效（纹理缩到 COST_BG_SIZE）
 		cost_bg.position = _g(COST_BG_POS) - COST_BG_SIZE / 2.0
 		cost_bg.size = COST_BG_SIZE
 		cost_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -185,8 +191,10 @@ func _build_cost() -> void:
 	if ResourceLoader.exists(GOLD_ICON_PATH):
 		var gi := TextureRect.new()
 		gi.texture = load(GOLD_ICON_PATH)
+		gi.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # 源 :382 Sprite 显示=纹理/CS
+		gi.size = gi.texture.get_size() / CONTENT_SCALE
 		gi.position = _g(COST_ICON_POS)
-		gi.scale = Vector2(0.8, 0.8)
+		gi.scale = Vector2(0.8, 0.8)   # 源 :388 config scale=0.8（在 /CS 基础上）
 		gi.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(gi)
 	var cost_lbl := Label.new()

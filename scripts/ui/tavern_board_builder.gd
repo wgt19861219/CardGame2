@@ -70,12 +70,18 @@ static func create_board(key: String, godot_center: Vector2, cost_info: Dictiona
 	var board_bg := _tex(RES_DIR + String(BOARD_BG[key]))
 	board_bg.position = (Vector2(CLIP_W, CLIP_H) - board_bg.size) * 0.5
 	container.add_child(board_bg)
-	# board_title 缺图降级 Label（源 :630 tavern_title_N.png 全缺）
+	# board_title_bg（源 :619 tavern_title_bg.png，所有卡池共用，board_title 衬底）。
+	# 源 ccp(160,340) 以 board_bg 中心(103,160↔源 ccp 160,205)为锚 → godot 中心 (103, 25)。
+	var title_bg := _tex(RES_DIR + "tavern_title_bg.png")
+	title_bg.position = Vector2(CLIP_W * 0.5, 25.0) - title_bg.size * 0.5
+	container.add_child(title_bg)
+	# board_title 缺图降级 Label（源 :630 tavern_title_N.png 源缺，降级卡池名）。
+	# 源 ccp(160,355) → godot 中心 (103, 10)（title_bg 上方 15px 照源）→ position (0, -2)。
 	var title_lbl := Label.new()
 	title_lbl.text = _display_name(key)
 	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_lbl.size = Vector2(CLIP_W, 24.0)
-	title_lbl.position = Vector2(0.0, -28.0)
+	title_lbl.position = Vector2(0.0, -2.0)
 	title_lbl.add_theme_color_override("font_color", TITLE_COLOR)
 	title_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	title_lbl.add_theme_constant_override("outline_size", 2)
