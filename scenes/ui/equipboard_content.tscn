@@ -1,0 +1,103 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+
+[node name="EquipboardContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 336.0
+offset_top = 127.5
+offset_right = 624.0
+offset_bottom = 512.5
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="Frame"]
+layout_mode = 3
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 288.0
+offset_bottom = 385.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="IconHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 92.0
+offset_top = 40.0
+offset_right = 300.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="AmountLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 90.0
+offset_top = 75.0
+offset_right = 300.0
+offset_bottom = 99.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="SellPriceLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 144.0
+offset_top = 285.0
+offset_right = 400.0
+offset_bottom = 309.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+
+[node name="SellBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 82.0
+offset_top = 345.0
+offset_right = 207.0
+offset_bottom = 394.0
+mouse_filter = 0
+text = "卖出"
+
+[node name="RightBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 212.0
+offset_top = 345.0
+offset_right = 337.0
+offset_bottom = 394.0
+mouse_filter = 0
+text = "详情"
+
+[node name="CloseBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 286.0
+offset_top = 27.0
+offset_right = 337.0
+offset_bottom = 78.0
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
+ignore_texture_size = true
