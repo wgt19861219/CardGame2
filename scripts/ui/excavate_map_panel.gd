@@ -5,19 +5,11 @@ extends PopWindow
 ## 当前矿点展示（picture + owner + 产量/存储）+ 翻页 + 点矿点→ExcavateTeamPanel + 搜索/说明入口。
 ## 单机简化：源 FCA 旗帜动画/复仇遮罩/多人防御点/翻页标签 → 静态单卡片 + 翻页（单机同时矿点少）。
 ## back → remove_window 回主城。search 按钮 → 重新搜索（回 SearchPanel）。
-## P1（2026-07-16）：bg.jpg 源核实保留（uieditor excavatemap:12 第 1 元素）+ LSTR EXCAVATEMAP.RULES /
-## EXCAVATEHISTORY.DEFENSIVE_RECORD + 资源名 + 按钮纹理（backbtn 返回 / prevchap 翻页 / Scale9 按钮）。
+## 重构（2026-07-17，hero_detail 范式）：panel 层静态节点（bg/frame/title/back/nav/info_label/
+## page_label/explain/history）固化进 excavate_map_content.tscn；_node_button 动态挂 %NodeHost
+## （Button + 运行时 cycle texture StyleBox）。Scale9 按钮用 .tscn 普通 Button + apply_with_label。
 
-const BG_TEX: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 uieditor excavatemap:12 第 1 元素 bg.jpg
-const MAIN_BG_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png"   # 源 :116 frame_bg
-const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png"
-const TITLE_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png"
-# 源 map.lua:175 back_button 用 backbtn.png（非 close X，地图是场景级返回主城）
-const BACK_TEX: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const BACK_P_TEX: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-# 源 :69/94 left/right_button 用 prevchap.png（right 翻转 x）
-const PREV_TEX: String = "res://assets/ui/alpha/HVGA/prevchap.png"
-const PREV_P_TEX: String = "res://assets/ui/alpha/HVGA/prevchap-mask.png"
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_map_content.tscn")
 # 源 :256/283 explain/histroy_button Scale9 sell_number_button capInsets 15.63,15.63,18.75,18.75
 const SCALE9_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const SCALE9_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
@@ -26,18 +18,13 @@ const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0
 const CYCLE_TEX_DIAMOND: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_diamond.png"
 const CYCLE_TEX_GOLD: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_gold.png"
 const CYCLE_TEX_POTION: String = "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_potion.png"
-const FONT_TITLE: int = 20
-const FONT_BODY: int = 16
-# 源 excavatemap.lua:148 title fix_wh（强制显示尺寸，1:1 不受 CS 影响）
-const TITLE_W: float = 339.84375   # 源 :148 fix_wh.w
-const TITLE_H: float = 37.5        # 源 :148 fix_wh.h
-const FRAME_W: float = 600.0
-const FRAME_H: float = 440.0
 const NODE_W: float = 200.0
 const NODE_H: float = 200.0
+# _node_button 全局坐标（原 frame 局部 (200,70) + frame offset (180,100)，保持当前行为）
+const NODE_POS_X: float = 380.0
+const NODE_POS_Y: float = 170.0
 const OWNER_MINE_LABEL: String = "我方占领"   # 单机兜底（源 sprite 显示无 LSTR）
 const OWNER_MONSTER_LABEL: String = "野外怪守（可攻击占领）"   # 单机兜底
-# 源 map.lua:336-340 storageTitle "我的累计资源：" + x%s（单机保留中文兜底，无对应 LSTR 文案组合）
 const PRODUCE_LABEL_FMT: String = "产出：%s/%d"
 const STORAGE_LABEL_FMT: String = "存储剩余：%d"
 const NO_NODE_TEXT: String = "暂无矿点，点击「搜索」发现矿点"   # 单机空状态（源无空态文本）
@@ -87,110 +74,32 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
+# 建 UI：preload .tscn instantiate + fill 动态数据/样式 + 绑信号。
+# 位置/size 静态节点（bg/frame/title/back/nav/info_label/page_label）已在 .tscn 固化。
 func _build_ui() -> void:
-	# 源 uieditor excavatemap:12 第 1 元素 bg.jpg（800×481.25 满屏背景，照源核实保留）
-	var bg := TextureRect.new()
-	bg.texture = load(BG_TEX)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = Vector2(960, 640)
-	bg.position = Vector2.ZERO
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-	var frame := TextureRect.new()
-	frame.texture = load(FRAME_TEX)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = Vector2(FRAME_W, FRAME_H)
-	frame.position = Vector2(960.0 * 0.5 - FRAME_W * 0.5, 640.0 * 0.5 - FRAME_H * 0.5)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(frame)
-	_add_back(frame)
-	_add_title(frame)
-	_add_node(frame)
-	_add_info(frame)
-	_add_nav(frame)
-	_add_bottom_buttons(frame)
-
-
-# 源 map.lua:112-119 back_button（backbtn.png，场景级返回 ed.popScene）
-func _add_back(frame: TextureRect) -> void:
-	var back := TextureButton.new()
-	back.texture_normal = load(BACK_TEX)
-	back.texture_pressed = load(BACK_P_TEX)
-	back.ignore_texture_size = true
-	back.size = Vector2(50, 50)
-	back.position = Vector2(12, 12)
-	back.pressed.connect(remove_window)
-	frame.add_child(back)
-
-
-func _add_title(frame: TextureRect) -> void:
-	var title := TextureRect.new()
-	title.texture = load(TITLE_TEX)
-	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title.size = Vector2(TITLE_W, TITLE_H)   # 源 :148 fix_wh（1:1，不除 CS）
-	title.position = Vector2(frame.size.x * 0.5 - TITLE_W * 0.5, 12)
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(title)
-
-
-func _add_node(frame: TextureRect) -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	(content.get_node("%BackBtn") as TextureButton).pressed.connect(remove_window)
+	(content.get_node("%PrevArrow") as TextureButton).pressed.connect(_on_prev)
+	(content.get_node("%NextArrow") as TextureButton).pressed.connect(_on_next)
+	# _node_button 动态建（Button + 运行时 cycle texture）挂 %NodeHost（保留 procedural 子组件）
+	var node_host: Control = content.get_node("%NodeHost") as Control
 	_node_button = Button.new()
 	_node_button.size = Vector2(NODE_W, NODE_H)
-	_node_button.position = Vector2(frame.size.x * 0.5 - NODE_W * 0.5, 70)
+	_node_button.position = Vector2(NODE_POS_X, NODE_POS_Y)
 	_node_button.pressed.connect(_on_node_clicked)
-	frame.add_child(_node_button)
-
-
-func _add_info(frame: TextureRect) -> void:
-	_info_label = Label.new()
-	_info_label.position = Vector2(40, 285)
-	_info_label.size = Vector2(frame.size.x - 80, 80)
-	_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	node_host.add_child(_node_button)
+	# 静态 label 引用（font_size .tscn 已设，autowrap 运行时设）
+	_info_label = content.get_node("%InfoLabel") as Label
 	_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_info_label.add_theme_font_size_override("font", FONT_BODY)
-	_info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(_info_label)
-
-
-# 源 :206-227 left_button/right_button（prevchap.png + flip x）翻页
-func _add_nav(frame: TextureRect) -> void:
-	var prev := TextureButton.new()
-	prev.texture_normal = load(PREV_TEX)
-	prev.texture_pressed = load(PREV_P_TEX)
-	prev.ignore_texture_size = true
-	prev.size = Vector2(43, 59)
-	prev.position = Vector2(20, 160)
-	prev.pressed.connect(_on_prev)
-	frame.add_child(prev)
-	var next := TextureButton.new()
-	next.texture_normal = load(PREV_TEX)
-	next.texture_pressed = load(PREV_P_TEX)
-	next.ignore_texture_size = true
-	next.flip_h = true   # 源 :84 flip="x"（右翻页水平翻转 prevchap）
-	next.size = Vector2(43, 59)
-	next.position = Vector2(frame.size.x - 63, 160)
-	next.pressed.connect(_on_next)
-	frame.add_child(next)
-	_page_label = Label.new()
-	_page_label.position = Vector2(0, 220)
-	_page_label.size = Vector2(frame.size.x, 24)
-	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_page_label.add_theme_font_size_override("font", FONT_BODY)
-	_page_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(_page_label)
-
-
-# 源 :255-296 bottom buttons（Scale9 sell_number_button + LSTR 标签）
-func _add_bottom_buttons(frame: TextureRect) -> void:
-	# explain_button（:255 capInsets 15.63,15.63,18.75,18.75 size 66.41×53.13）
-	var explain: Button = UiScale9Button.make(SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, Vector2(40, frame.size.y - 45), Vector2(110, 40), SCALE9_BTN_CAP, _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK), BTN_LABEL_COLOR)
+	_page_label = content.get_node("%PageLabel") as Label
+	# Scale9 按钮（.tscn 普通 Button 套九宫格 stylebox + LSTR 文字，视觉等价原 UiScale9Button.make）
+	var explain: Button = content.get_node("%ExplainBtn") as Button
+	UiScale9Button.apply_with_label(explain, SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, SCALE9_BTN_CAP, _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK), BTN_LABEL_COLOR)
 	explain.pressed.connect(_on_explain)
-	frame.add_child(explain)
-	# histroy_button（:271 capInsets 15.63,15.63,18.75,18.75 size 117.19×53.13）
-	var history: Button = UiScale9Button.make(SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, Vector2(frame.size.x * 0.5 - 60, frame.size.y - 45), Vector2(120, 40), SCALE9_BTN_CAP, _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK), BTN_LABEL_COLOR)
+	var history: Button = content.get_node("%HistoryBtn") as Button
+	UiScale9Button.apply_with_label(history, SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, SCALE9_BTN_CAP, _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK), BTN_LABEL_COLOR)
 	history.pressed.connect(_on_history)
-	frame.add_child(history)
 
 
 func _refresh_node() -> void:
