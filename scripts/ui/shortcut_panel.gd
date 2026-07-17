@@ -7,7 +7,11 @@ extends Control
 ## 收起（板高 40，按钮叠在切换钮位置 opacity=0）/ 展开（板高 460，按钮竖排 opacity=255）。
 ## Tween 动画 0.12s（源 shortcut_board_pop_time），展开后 shade 点 board 外收起。
 ## 非常驻弹窗，Control 直接挂场景树（z 等价源 frameworkLayer:100）。坐标源 cocos→Godot y 翻转（边缘 UI 非中心对称）。
-## tag 红点角标（源 refreshTags/getCheckSCTagHandler）依赖各类 Logic 判定，第 26+ 段接；本段建节点先全隐藏。
+## 重构（2026-07-17）：UI 静态节点（shade/board/2 toggle/5 button）固化进 shortcut_content.tscn
+## （位置/size/texture/visible/modulate/mouse_filter 编辑器可视化调）。panel instantiate + 绑信号 +
+## 保留抽屉展开/快捷入口跳转业务逻辑（动画/切换/路由）。Control 非 PopWindow，content 挂 panel 自身。
+
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tscn")
 
 const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 const SCREEN_H: float = 640.0
@@ -27,25 +31,15 @@ const ANIM_DUR: float = 0.12                    # 源 shortcut_board_pop_time
 const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）
 const TOUCH_WIDTH: float = 100.0                # 源 shortcut_board_touch_width（out_board 检测宽）
 
-# ── 按钮 key + 资源（源 button_info :11-49）──
+# ── 按钮 key + .tscn 节点名映射（源 button_info :11-49）──
 const BUTTON_KEYS: Array[String] = ["heroPackage", "package", "fragment", "task", "todoList"]
-const RES_NORMAL: Dictionary = {
-	"heroPackage": "res://assets/ui/alpha/HVGA/main_hero_button.png",
-	"package": "res://assets/ui/alpha/HVGA/main_package_button.png",
-	"fragment": "res://assets/ui/alpha/HVGA/main_fragment_button.png",
-	"task": "res://assets/ui/alpha/HVGA/main_task_button.png",
-	"todoList": "res://assets/ui/alpha/HVGA/main_menu_todolist_1.png",
+const BUTTON_NODE_NAMES: Dictionary = {
+	"heroPackage": "BtnHeroPackage",
+	"package": "BtnPackage",
+	"fragment": "BtnFragment",
+	"task": "BtnTask",
+	"todoList": "BtnTodoList",
 }
-const RES_PRESS: Dictionary = {
-	"heroPackage": "res://assets/ui/alpha/HVGA/main_hero_button_shade.png",
-	"package": "res://assets/ui/alpha/HVGA/main_package_button_shade.png",
-	"fragment": "res://assets/ui/alpha/HVGA/main_fragment_button_shade.png",
-	"task": "res://assets/ui/alpha/HVGA/main_task_button_shade.png",
-	"todoList": "res://assets/ui/alpha/HVGA/main_menu_todolist_2.png",
-}
-const RES_BOARD: String = "res://assets/ui/alpha/HVGA/main_shortcut_board.png"
-const RES_DOWN: String = "res://assets/ui/alpha/HVGA/main_down_button.png"
-const RES_UP: String = "res://assets/ui/alpha/HVGA/main_up_button.png"
 
 signal open_requested(key: String)   # 按钮点击 → main_scene 路由（package/fragment→PackagePanel / heroPackage→hero_scene）
 
@@ -63,62 +57,29 @@ var _tween: Tween = null
 func setup_panel(open_initial: bool = false) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE   # 自身不吞，子节点（shade/board/button）各自 STOP 吞
-	_create_shade()
-	_create_board()
-	_create_toggle()
-	_create_buttons()
+	_build_content()
 	if open_initial:
 		_apply_open_instant()   # 照源 isShortcutOpen = identity=="main"（主界面默认展开）
 	else:
 		_apply_closed_instant()
 
 
-func _create_shade() -> void:
-	_shade = ColorRect.new()
-	_shade.color = SHADE_COLOR   # 透明（源 out_board 无视觉，仅点击检测）
-	# 源 shortcut_board_rect = CCRectMake(board_pos.x - touch_w/2, 0, touch_w, 480)：右侧 board 区局部检测（非全屏 shade）
-	_shade.position = Vector2(BOARD_CENTER_X - TOUCH_WIDTH / 2.0, 0.0)
-	_shade.size = Vector2(TOUCH_WIDTH, SCREEN_H)
-	_shade.mouse_filter = Control.MOUSE_FILTER_STOP   # 展开时点 shade（=board 外）→ 收起
+# 建 UI 内容（Phase 重构：从 shortcut_content.tscn instantiate + 绑信号）。
+# shortcut 是 Control 非 PopWindow，无 container → content 直接挂自身（同 battle_prepare 范式）。
+# .tscn 已固化位置/size/texture/visible/modulate/mouse_filter 为收起态；此处只收集节点引用 + 绑 pressed。
+func _build_content() -> void:
+	var content := CONTENT_SCENE.instantiate()
+	add_child(content)
+	_shade = content.get_node("%Shade") as ColorRect
 	_shade.gui_input.connect(_on_shade_gui_input)
-	_shade.visible = false
-	add_child(_shade)
-
-
-func _create_board() -> void:
-	_board = TextureRect.new()
-	if ResourceLoader.exists(RES_BOARD):
-		_board.texture = load(RES_BOARD)
-	# 纹理原始尺寸（91×?）会撑大 TextureRect minimum_size 覆盖 size；IGNORE_SIZE + 清 minimum 保 scaleSize 受控（源 Scale9Sprite 等价）。
-	_board.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_board.custom_minimum_size = Vector2.ZERO
-	_board.size = Vector2(BOARD_WIDTH, BOARD_H_MIN)
-	# 源 anchor=(0.5,1) 顶边中心；Godot position 左上角 = (center_x - w/2, top_y)
-	_board.position = Vector2(BOARD_CENTER_X - BOARD_WIDTH / 2.0, BOARD_TOP_Y)
-	_board.mouse_filter = Control.MOUSE_FILTER_STOP   # 板面吞点击（点 board 内空隙不收起）
-	add_child(_board)
-
-
-func _create_toggle() -> void:
-	# down（收起显示）/ up（展开显示）同位置（源 down/up 都在 shortcut_pos）。
-	_toggle_down = _make_texture_button(RES_DOWN, RES_DOWN)
-	_toggle_down.mouse_filter = Control.MOUSE_FILTER_STOP   # 切换钮须可点（_make_texture_button :201 默认 IGNORE 是给收起态 5 按钮的；toggle 须覆盖 STOP，否则点击穿透被 board STOP 吞致无反应）
-	_place_center_texture(_toggle_down, TOGGLE_CENTER)
+	_board = content.get_node("%Board") as TextureRect
+	_toggle_down = content.get_node("%ToggleDown") as TextureButton
 	_toggle_down.pressed.connect(_toggle_open)
-	add_child(_toggle_down)
-	_toggle_up = _make_texture_button(RES_UP, RES_UP)
-	_toggle_up.mouse_filter = Control.MOUSE_FILTER_STOP
-	_place_center_texture(_toggle_up, TOGGLE_CENTER)
+	_toggle_up = content.get_node("%ToggleUp") as TextureButton
 	_toggle_up.pressed.connect(_toggle_open)
-	add_child(_toggle_up)
-
-
-func _create_buttons() -> void:
-	for i in range(BUTTON_KEYS.size()):
-		var key: String = BUTTON_KEYS[i]
-		var btn := _make_texture_button(String(RES_NORMAL.get(key, "")), String(RES_PRESS.get(key, "")))
+	for key in BUTTON_KEYS:
+		var btn: TextureButton = content.get_node("%" + String(BUTTON_NODE_NAMES[key])) as TextureButton
 		btn.pressed.connect(_on_button_pressed.bind(key))
-		add_child(btn)
 		_buttons[key] = btn
 
 
@@ -216,21 +177,6 @@ func _on_button_pressed(key: String) -> void:
 func _on_shade_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		_close()
-
-
-func _make_texture_button(normal_path: String, press_path: String) -> TextureButton:
-	var btn := TextureButton.new()
-	if normal_path != "" and ResourceLoader.exists(normal_path):
-		btn.texture_normal = load(normal_path)
-	if press_path != "" and ResourceLoader.exists(press_path):
-		btn.texture_pressed = load(press_path)
-	# 不设 ignore_texture_size（默认 false）让按钮按纹理原始尺寸定 size；曾设 true 致 size=0 不可点不可见（@232 实测 size=(0,0)，点击无区域）。
-	btn.mouse_filter = Control.MOUSE_FILTER_IGNORE   # 收起态默认不可点（_open 时切 STOP）
-	return btn
-
-
-func _place_center_texture(btn: TextureButton, center: Vector2) -> void:
-	btn.position = _center_to_topleft(center, btn)
 
 
 func _center_to_topleft(center: Vector2, btn: TextureButton) -> Vector2:
