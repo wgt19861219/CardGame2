@@ -168,7 +168,19 @@ func test_task_panel_shows_main_task_chain() -> void:
 	var panel := TaskPanel.new("task", {})
 	panel.setup_panel(pd, cm, tm)
 	panel.show_window(root)
-	# container 应含主线标题 + 日常标题 + scroll 等 >3 节点
-	assert_gt(panel.container.get_child_count(), 3, "task_panel 含主线+日常分区")
+	# .tscn 重构后 container 直接子是 TaskContent（1 个），ScrollContainer/MainList/DailyList 在其下。
+	# 语义不变：递归找 ScrollContainer >= 2（主线 + 日常两段）。
+	var scroll_count: int = _count_scroll_in(panel.container)
+	assert_gte(scroll_count, 2, "task_panel 含主线+日常分区（>=2 个 ScrollContainer）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 递归统计 panel.container 子树中 ScrollContainer 数（.tscn 重构后非直接子）。
+func _count_scroll_in(node: Node) -> int:
+	var n: int = 0
+	for c in node.get_children():
+		if c is ScrollContainer:
+			n += 1
+		n += _count_scroll_in(c)
+	return n
