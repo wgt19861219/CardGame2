@@ -4,9 +4,10 @@ extends PopWindow
 ## 玩家背包（View 层）— 照源 ui/package.lua（721 行，两 identity 多 tab 4 列网格）。
 ## identity="package" 装备/物品包（5 tab）/ "fragment" 碎片包（3 tab）。
 ## Logic 走 EquipmentClassifier.classify（双容器适配，第 22 段交付）。
-## 本段主壳：多 tab + 4 列网格滚动（ScrollContainer+GridContainer，源 draglist 等价）+ cell 展示。
-## cell 点击 emit cell_clicked（第 24 段接 equipboard 浮层）。坐标用源 cocos 值（Phase 4 视觉校准）。
-## 单机化：去掉 lsr 统计上报 + framework statusbar 返回（用自带关闭按钮，源 close 注释掉靠 framework）。
+## 本段主壳：panel 层（bg.jpg/equipbg/close/handbook button/tab/scroll）静态化进
+## package_content.tscn（instantiate + fill），物品 cell 动态 fill 挂 %Grid。
+## cell 点击 emit cell_clicked（第 24 段接 equipboard 浮层）。
+## 单机化：去掉 lsr 统计上报 + framework statusbar 返回（自带关闭按钮，源 close 注释掉靠 framework）。
 
 # ── identity（源 create(identity)）──
 const IDENTITY_PACKAGE: String = "package"
@@ -19,38 +20,19 @@ const TAB_NAMES: Dictionary = {
 	"all": "全部", "equip": "装备", "scroll": "卷轴",
 	"stone": "魂石", "consume": "消耗品",
 }
+# .tscn 5 tab 满集（fragment 隐藏 stone/consume）。
+const TAB_ALL_KEYS: Array[String] = ["all", "equip", "scroll", "stone", "consume"]
 
-# ── 坐标常量（源 cocos 值）──
-const BG_POS: Vector2 = Vector2(500.0, 213.0)             # 源 :622 equipbg
-const TAB_ORIGIN: Vector2 = Vector2(706.0, 363.0)         # 源 :379 ox,oy
-const TAB_DY: float = 60.0                                # 源 :380
-const TAB_SIZE: Vector2 = Vector2(90.0, 50.0)
-const SCROLL_POS: Vector2 = Vector2(355.0, 35.0)          # 源 :353 cliprect (355,35,295,355)
-const SCROLL_SIZE: Vector2 = Vector2(295.0, 355.0)
-const GRID_COLUMNS: int = 4                               # 源 4 列（refreshList :258）
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
+# panel 层子场景（位置/size 静态化进 .tscn 编辑器可视化调）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/package_content.tscn")
 
-# ── 资源 ──
-const BG_PATH: String = "res://assets/ui/alpha/HVGA/package_equip_bg.png"
-const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 framework.lua:749 全屏背景（pushScene 场景）
-# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
-# TextureRect 默认 size=纹理原始（偏大 1.28），照源无 fix_size 的纯 Sprite 统一 /CS。
-const CONTENT_SCALE: float = 1.28125
-
-# ── 图鉴按钮（源 createHandbookButton :463-538，仅 identity=="package" 建）──
-const HANDBOOK_BTN_CENTER: Vector2 = Vector2(716.0, 55.0)        # 源 :475 ccp(716,55) Scale9Sprite 中心(anchor 0.5,0.5)
-const HANDBOOK_BTN_SIZE: Vector2 = Vector2(92.0, 58.0)           # 源 :478 scaleSize
-const HANDBOOK_BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)    # 源 :472 capInsets CCRectMake(15,22,15,25)
+# ── Scale9 handbook button 样式（.tscn 普通 Button 运行时套 StyleBoxTexture）──
+# 源 createHandbookButton :463-538 sell_number_button Scale9Sprite cap 15,22,15,25。
+const HANDBOOK_BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)
 const HANDBOOK_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const HANDBOOK_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const HANDBOOK_ICON_RES: String = "res://assets/ui/alpha/HVGA/package_handbook_icon.png"
-const HANDBOOK_ICON_OFFSET: Vector2 = Vector2(18.0, 31.0)        # 源 :506 ccp(18,31)（子 Sprite 相对父中心 Y-up）
-const HANDBOOK_LABEL_OFFSET: Vector2 = Vector2(50.0, 29.0)       # 源 :519 ccp(50,29)（子 Label 相对父中心 Y-up）
-const HANDBOOK_LABEL_KEY: String = "HERODETAIL.BOOK"             # 源 :514 T(LSTR("HERODETAIL.BOOK"))
-const HANDBOOK_LABEL_FONT_SIZE: int = 17                         # 源 :515 fontinfo="ui_normal_button" → fontconfigs.lua:24 size=17
+const HANDBOOK_LABEL_KEY: String = "HERODETAIL.BOOK"   # 源 :514 T(LSTR("HERODETAIL.BOOK"))
 
 signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
 
@@ -63,12 +45,7 @@ var _cur_tab: String = "all"
 var _tab_buttons: Dictionary = {}  # tab_key(String) -> Button
 var _grid: GridContainer = null
 var _status_refs: Dictionary = {}   # MainStatusBar 货币条 label 引用（_refresh_status 更新）
-
-
-# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 daily_login/battle_view_coords 标准）。
-# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（CLOSE_BTN_POS 850,590 是 Godot-native 不转）。
-func _g(pos: Vector2) -> Vector2:
-	return BattleViewCoords.to_godot(pos.x, pos.y)
+var _content: Control = null        # .tscn instantiate 根节点（cleanup 引用）
 
 
 # 源 create(identity) + getListData :370-377。identity 从 PopWindow.identity（构造传入）取，
@@ -80,29 +57,88 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	_tabs = TABS_PACKAGE if _identity == IDENTITY_PACKAGE else TABS_FRAGMENT
 	_both = EquipmentClassifier.classify(pd, cm)
 	setup()
-	# package/fragment 源是 pushScene 独立场景（framework.lua:615/628），有 framework bg.jpg 全屏背景；
-	# 本项目单机化用 PopWindow 弹窗替代 pushScene，故 shade 透明 + 补全屏 bg.jpg 还原源视觉。
+	# package/fragment 源是 pushScene 独立场景（framework.lua:615/628），framework 自动建 bg.jpg 全屏背景。
+	# 本项目单机化用 PopWindow 弹窗替代 pushScene，故 shade 透明（.tscn FrameworkBg 已还原源视觉）。
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_create_fullscreen_bg()
-	_create_bg()
-	_create_close_button()
-	_create_handbook_button()
-	_create_tab_buttons()
-	_create_grid()
+	_build_content()
 	_create_status_bar()   # 源 framework.create :755 sbCreateTitle common 3 货币条（所有非 main 场景建）
 	_select_tab("all")
 	cell_clicked.connect(_on_cell_clicked)
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
+# panel 层从 .tscn instantiate（位置/size 可视化）+ fill 动态数据 + 绑定信号。
+# 源 create :597-685：equipbg Sprite + handbook button + list button + listLayer（draglist）。
+func _build_content() -> void:
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	(_content.get_node("%CloseBtn") as TextureButton).pressed.connect(_on_close_pressed)
+	_setup_handbook_button()
+	_setup_tab_buttons()
+	_grid = _content.get_node("%Grid") as GridContainer
+
+
+# 源 createHandbookButton :463-538：仅 identity=="package" 建图鉴按钮（fragment 不建）。
+# .tscn %HandbookBtn 常驻，fragment 时 visible=false；package 时套 Scale9 style + fill icon/label。
+func _setup_handbook_button() -> void:
+	var btn: Button = _content.get_node("%HandbookBtn") as Button
+	if _identity != IDENTITY_PACKAGE:
+		btn.visible = false
+		return   # 源 :526 仅 package 建（fragment 不建）
+	_apply_handbook_style(btn)
+	# 源 :498-509 Sprite package_handbook_icon（parent="handbook"，anchor 0.5,0.5，显示=纹理/CS）。
+	var icon_rect: TextureRect = btn.get_node("HandbookIcon") as TextureRect
+	if ResourceLoader.exists(HANDBOOK_ICON_RES):
+		icon_rect.texture = load(HANDBOOK_ICON_RES) as Texture2D
+	# 源 :510-524 Label T(LSTR("HERODETAIL.BOOK")) fontinfo="ui_normal_button"(17 号白字) + ccc3(255,255,255)。
+	var lbl: Label = btn.get_node("HandbookLabel") as Label
+	lbl.text = String(cm.get_lstr(HANDBOOK_LABEL_KEY))
+	btn.pressed.connect(_on_handbook_pressed)
+
+
+# .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=sell_number_button, pressed=sell_number_button_down）。
+# 视觉等价源 Scale9Sprite sell_number_button + press mask sell_number_button_down。
+func _apply_handbook_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _make_stylebox(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_stylebox(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_stylebox(HANDBOOK_BTN_PRESS_RES, HANDBOOK_BTN_CAP))
+
+
+static func _make_stylebox(res_path: String, cap: Rect2) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res_path) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = cap.position.x
+	sb.texture_margin_top = cap.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - cap.position.x - cap.size.x
+		sb.texture_margin_bottom = tex.get_height() - cap.position.y - cap.size.y
+	return sb
+
+
+# 源 createListButton :378-462：右侧竖排 tab 按钮，第 1 个默认选中。
+# .tscn 5 tab 常驻（位置可视化），按 identity 隐藏不用的（fragment 隐 stone/consume）。
+func _setup_tab_buttons() -> void:
+	for key in TAB_ALL_KEYS:
+		var btn_name: String = "Tab" + key.capitalize() + "Btn"
+		var btn: Button = _content.get_node("%" + btn_name) as Button
+		if _tabs.has(key):
+			btn.text = String(TAB_NAMES.get(key, key))
+			btn.pressed.connect(func() -> void: _select_tab(key))
+			_tab_buttons[key] = btn
+		else:
+			btn.visible = false
+
+
 # 源 framework.lua:755 sbCreateTitle（所有非 main 场景建 3 货币条 money/rmb/vit，common 模式）。
 # package/fragment 源是 pushScene 独立场景，framework 在新场景顶层建货币条；
 # 本项目单机化改 PopWindow 弹窗（避 pushScene），但 bg.jpg 全屏遮 main_scene 货币条，
-# 故在 container 自建（照 hero_scene.gd:41 范式，挂 bg.jpg 之上，统一 MainStatusBar 常量）。
+# 故在 .tscn %StatusHost 自建（照 hero_scene.gd:41 范式，统一 MainStatusBar 常量）。
 func _create_status_bar() -> void:
-	_status_refs = MainStatusBar.build_bars_only(container, MainStatusBar.BAR_POS_X, MainStatusBar.BAR_Y, Callable(self, "_on_vitality_plus"))
+	var host: Control = _content.get_node("%StatusHost") as Control
+	_status_refs = MainStatusBar.build_bars_only(host, MainStatusBar.BAR_POS_X, MainStatusBar.BAR_Y, Callable(self, "_on_vitality_plus"))
 	_refresh_status()
 
 
@@ -127,112 +163,12 @@ func _on_vitality_plus() -> void:
 		Toast.show_message("钻石不足")
 
 
-# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（package/fragment 源是独立场景）。
-func _create_fullscreen_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(FRAMEWORK_BG)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-func _create_bg() -> void:
-	if not ResourceLoader.exists(BG_PATH):
-		return   # headless/缺图降级（不阻塞 Logic）
-	var bg_tex: Texture2D = load(BG_PATH) as Texture2D
-	var bg := TextureRect.new()
-	bg.texture = bg_tex
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 package.lua:613-625 equipbg t="Sprite" config={}，显示=纹理/CS（见 CONTENT_SCALE 注释）
-	var bg_size: Vector2 = bg_tex.get_size() / CONTENT_SCALE
-	bg.size = bg_size
-	bg.position = _g(BG_POS) - bg_size / 2.0   # 源 setPosition 中心锚定→Godot
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(_on_close_pressed)
-	container.add_child(btn)
-
-
-# 源 createHandbookButton :463-538：仅 identity=="package" 建图鉴按钮。Scale9Sprite sell_number_button(92×58) +
-# press mask sell_number_button_down + Sprite package_handbook_icon ccp(18,31) + Label HERODETAIL.BOOK ccp(50,29)。
-# :526 if identity=="package" then readnode:addNode（视觉仅 package 建）。
-# :534 clickHandler → doClickHandbook :230 → ed.ui.handbook.create + pushScene。本项目单机化用 PopWindow 替代 pushScene。
-func _create_handbook_button() -> void:
-	if _identity != IDENTITY_PACKAGE:
-		return   # 源 :526 仅 package 建（fragment 不建）
-	var btn: Button = UiScale9Button.make(HANDBOOK_BTN_RES, HANDBOOK_BTN_PRESS_RES, Vector2.ZERO, HANDBOOK_BTN_SIZE, HANDBOOK_BTN_CAP)
-	# 源 Scale9Sprite anchor(0.5,0.5)，position ccp(716,55) 是中心 → Godot Control position=中心-size/2。
-	btn.position = _g(HANDBOOK_BTN_CENTER) - HANDBOOK_BTN_SIZE * 0.5
-	btn.pressed.connect(_on_handbook_pressed)
-	container.add_child(btn)
-	# 源 :498-509 Sprite package_handbook_icon（parent="handbook"，anchor 0.5,0.5），显示=纹理/CS（无 fix_size）。
-	if ResourceLoader.exists(HANDBOOK_ICON_RES):
-		var icon_tex: Texture2D = load(HANDBOOK_ICON_RES) as Texture2D
-		if icon_tex != null:
-			var icon := TextureRect.new()
-			icon.texture = icon_tex
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			var icon_size: Vector2 = icon_tex.get_size() / CONTENT_SCALE
-			icon.size = icon_size
-			icon.position = _child_offset_from_parent_center(HANDBOOK_ICON_OFFSET, HANDBOOK_BTN_SIZE, icon_size)
-			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			btn.add_child(icon)
-	# 源 :510-524 Label T(LSTR("HERODETAIL.BOOK")) fontinfo="ui_normal_button"(17 号白字) + ccc3(255,255,255)。
-	var lbl := Label.new()
-	lbl.text = String(cm.get_lstr(HANDBOOK_LABEL_KEY))
-	lbl.add_theme_font_size_override("font_size", HANDBOOK_LABEL_FONT_SIZE)
-	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.position = _child_offset_from_parent_center(HANDBOOK_LABEL_OFFSET, HANDBOOK_BTN_SIZE, lbl.get_minimum_size())
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(lbl)
-
-
-# 源 cocos 子节点 ccp(dx,dy)（相对父 anchor 点=父中心，Y-up）→ Godot 子 Control position（相对父左上角，Y-down）。
-# dx 不变（X 同向），dy 翻 Y，加 parent_size/2（父中心→父左上角基准），减 child_size/2（子中心点→子左上角 position）。
-# 等价于源子 anchor(0.5,0.5) 在 Godot 用 TextureRect/Label 左上角 position 表达。
-static func _child_offset_from_parent_center(cocos_offset: Vector2, parent_size: Vector2, child_size: Vector2) -> Vector2:
-	return Vector2(cocos_offset.x + parent_size.x * 0.5, -cocos_offset.y + parent_size.y * 0.5) - child_size * 0.5
-
-
 # 源 doClickHandbook :230-238：ed.ui.handbook.create + pushScene。
 func _on_handbook_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var panel := HandbookPanel.new("handbook", {})
 	panel.setup_panel(pd)
 	panel.show_window(get_parent())
-
-
-# 源 createListButton :378-462：右侧竖排 tab 按钮，第 1 个默认选中。
-func _create_tab_buttons() -> void:
-	for i in range(_tabs.size()):
-		var key: String = _tabs[i]
-		var btn := Button.new()
-		btn.text = String(TAB_NAMES.get(key, key))
-		btn.position = _g(Vector2(TAB_ORIGIN.x, TAB_ORIGIN.y - TAB_DY * i))
-		btn.size = TAB_SIZE
-		btn.toggle_mode = true
-		btn.pressed.connect(func() -> void: _select_tab(key))
-		container.add_child(btn)
-		_tab_buttons[key] = btn
-
-
-# 源 createListLayer :350-369：draglist 滚动区。本项目 ScrollContainer+GridContainer columns=4 等价。
-func _create_grid() -> void:
-	var scroll := ScrollContainer.new()
-	scroll.position = _g(SCROLL_POS)
-	scroll.size = SCROLL_SIZE
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED   # 源仅垂直滚动
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	container.add_child(scroll)
-	_grid = GridContainer.new()
-	_grid.columns = GRID_COLUMNS
-	scroll.add_child(_grid)
 
 
 # 源 doChangeList :202-229：切 tab toggle 可见 + createList(bothList[identity][name])。
@@ -286,7 +222,7 @@ func _make_cell(cell_data: Dictionary) -> Control:
 
 # 源 doClickInList :162-177 → doSelectEquip(id) → equipboard。第 24 段接 equipboard 浮层。
 func _on_cell_gui_input(event: InputEvent, cell_data: Dictionary) -> void:
-	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		AudioPlayer.play_sfx("common_click_feedback")
 		cell_clicked.emit(cell_data)
 
