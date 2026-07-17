@@ -2,19 +2,14 @@ class_name StageDetailPanel
 extends PopWindow
 
 ## 关卡详情（View 层）— 照源 stagedetail.lua create:1536-1934 完整复刻。
-## 委托 StageDetailBuilder 装配节点（cocos→Godot 坐标转换），本类管数据装配（getInformation :772）
-## + checkEnabled :785 + go/sweep/reset/close 交互。源四步 stageselect→stagedetail→battleprepare→battle，
-## 本项目点开战→弹 BattlePreparePanel 布阵面板→进 battle_scene。
+## 重构（2026-07-17）：base 层静态节点位置/size 固化进 stage_detail_content.tscn（instantiate + fill 范式，
+## 同 hero_detail/shop）。本类管数据装配（getInformation :772）+ checkEnabled :785 + go/sweep/reset/close 交互。
+## 源 stagedetail.lua:1550 是 pushScene 独立场景（framework.lua:749 自动铺全屏 bg.jpg），
+## 本项目单机化 pushScene→PopWindow，shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉。
+## 源四步 stageselect→stagedetail→battleprepare→battle，本项目点开战→弹 BattlePreparePanel→进 battle_scene。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_detail_content.tscn")
 const TEAM_MAX: int = 5
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_BTN_SIZE: Vector2 = Vector2(50.0, 30.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const SWEEP_BTN_POS: Vector2 = Vector2(380.0, 380.0)
-const SWEEP_BTN_SIZE: Vector2 = Vector2(100.0, 40.0)
-# 源 framework.lua:749 pushScene 场景自动加全屏 bg.jpg（stagedetail.lua:1550 是 pushScene 独立场景）。
-const FRAMEWORK_BG: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 
 var stage_id: int = 0
 var mgr: StageManager = null
@@ -39,44 +34,34 @@ func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: B
 	_res_info = StageDetailBuilder.get_res_info(StageAccount.stage_type(p_sid))
 	setup()
 	# 源 stagedetail.lua:1550 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
-	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + 补全屏 bg.jpg 还原源视觉（同 PackagePanel 范式）。
+	# 本项目单机化 pushScene→PopWindow，故 shade 透明（.tscn %FrameworkBg 已铺 bg.jpg 还原源视觉，同 PackagePanel 范式）。
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_build()
+	_build_content()
 
 
-# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（stagedetail 源是独立场景）。
-# _build 每次开新 stage 会 queue_free 全部子节点，故 bg 需随每次重建补回（保持最底层）。
-func _create_fullscreen_bg() -> void:
-	var bg := TextureRect.new()
-	bg.texture = load(FRAMEWORK_BG)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(960.0, 640.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-
-
-func _build() -> void:
+# 建 UI 内容。base 层从 .tscn instantiate + fill 动态数据/texture；敌人/奖励/星/扫荡挂各 host。
+func _build_content() -> void:
 	for c in container.get_children():
 		c.queue_free()
-	_create_fullscreen_bg()
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
 	var info: Dictionary = _get_stage_info()
-	_ui = StageDetailBuilder.build(container, info, _res_info, player.cm)
-	StageDetailBuilder.create_enemy(container, _enemies, player.cm)
+	_ui = StageDetailBuilder.setup_content(content, info, _res_info, player.cm)
+	StageDetailBuilder.create_enemy(content.get_node("%EnemyHost"), _enemies, player.cm)
 	if _stage_data != null:
-		StageDetailBuilder.create_reward(container, _stage_data.drops, player.cm)
-	StageDetailBuilder.create_stars(container, int(info.get("star", 0)), int(_res_info.get("star_gap", 55)))
+		StageDetailBuilder.create_reward(content.get_node("%RewardHost"), _stage_data.drops, player.cm)
+	StageDetailBuilder.create_stars(content.get_node("%StarHost"), int(info.get("star", 0)), int(_res_info.get("star_gap", 55)))
 	(_ui["go_button"] as TextureButton).pressed.connect(_on_go_pressed)
 	(_ui["reset"] as TextureButton).pressed.connect(_on_reset_pressed)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
 	# 源 :1906-1910 normal/act/guild 隐藏 count（无 daily limit）。
 	if String(info.get("stage_type", "normal")) == "normal":
 		(_ui["count_title"] as Label).visible = false
 		(_ui["count_number"] as Label).visible = false
 		(_ui["total_number"] as Label).visible = false
-	_create_sweep_button(int(info.get("star", 0)))
-	_create_close_button()
+	_setup_sweep_button(content.get_node("%SweepBtn") as Button, int(info.get("star", 0)))
 	_check_enabled()
 
 
@@ -113,7 +98,7 @@ func _check_enabled() -> void:
 	if reset_btn != null:
 		reset_btn.visible = not _is_count_enabled  # 源 :816 isCountEnabled → reset 隐藏
 	var pn: Label = _ui.get("power_number", null) as Label
-	var gs: Sprite2D = _ui.get("go_button_shade", null) as Sprite2D
+	var gs: TextureRect = _ui.get("go_button_shade", null) as TextureRect
 	if _is_vitality_enabled and _is_count_enabled:
 		if pn != null:
 			pn.add_theme_color_override("font_color", StageDetailBuilder.C_NUM)
@@ -133,21 +118,14 @@ func _daily_limit() -> int:
 
 
 # 源 createRepeatBattle :266-469（3 星 + normal/elite 显示扫荡）。once_label 文案源 :454 PRIVILEGE.FARM。
-func _create_sweep_button(star: int) -> void:
+# .tscn %SweepBtn 默认 visible=false，3 星 + 有 mgr 时切 visible=true + 绑信号。
+func _setup_sweep_button(btn: Button, star: int) -> void:
 	if mgr == null or star < 3:
+		btn.visible = false
 		return
-	var btn := Button.new()
+	btn.visible = true
 	btn.text = String(player.cm.get_lstr("PRIVILEGE.FARM"))  # 源 :454 T(LSTR("PRIVILEGE.FARM"))="扫荡"
-	btn.position = SWEEP_BTN_POS
-	btn.size = SWEEP_BTN_SIZE
 	btn.pressed.connect(_on_sweep_pressed)
-	container.add_child(btn)
-
-
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(remove_window)
-	container.add_child(btn)
 
 
 # 源 doClickGo → battleprepare→battle。本项目弹布阵面板 BattlePreparePanel。

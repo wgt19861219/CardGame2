@@ -1,0 +1,295 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/detail_bg_2.png" id="2_frame2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/detail_title_bg.png" id="3_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/vitalityicon.png" id="4_vit"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/detail_enemy_bg.png" id="5_enemybg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="6_go"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn-disabled.png" id="7_goshade"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="8_reset"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="9_resetp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="10_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="11_backp"]
+
+[node name="StageDetailContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="FrameworkBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 960.0
+offset_bottom = 640.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Frame2" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 130.0
+offset_top = 155.0
+offset_right = 830.0
+offset_bottom = 555.0
+texture = ExtResource("2_frame2")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Frame3" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 228.0
+offset_top = 155.0
+offset_right = 732.0
+offset_bottom = 555.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 228.0
+offset_top = 349.0
+offset_right = 732.0
+offset_bottom = 361.0
+texture = ExtResource("3_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="MapTitleBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 357.0
+offset_top = 147.0
+offset_right = 597.0
+offset_bottom = 187.0
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 377.0
+offset_top = 147.0
+offset_right = 577.0
+offset_bottom = 187.0
+theme_override_colors/font_color = Color(0.98, 0.804, 0.063, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "关卡"
+
+[node name="Detail" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 240.0
+offset_right = 810.0
+offset_bottom = 300.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+mouse_filter = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+
+[node name="PowerTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 330.0
+offset_right = 300.0
+offset_bottom = 354.0
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+text = "体力消耗"
+
+[node name="PowerNumber" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 250.0
+offset_top = 330.0
+offset_right = 340.0
+offset_bottom = 354.0
+theme_override_colors/font_color = Color(0.961, 0.882, 0.745, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+
+[node name="PowerIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 280.0
+offset_top = 332.0
+offset_right = 304.0
+offset_bottom = 362.0
+texture = ExtResource("4_vit")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CountTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 330.0
+offset_top = 330.0
+offset_right = 520.0
+offset_bottom = 354.0
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+text = "今日剩余次数:"
+
+[node name="CountNumber" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 470.0
+offset_top = 330.0
+offset_right = 520.0
+offset_bottom = 354.0
+theme_override_colors/font_color = Color(0.961, 0.882, 0.745, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+
+[node name="TotalNumber" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 490.0
+offset_top = 330.0
+offset_right = 620.0
+offset_bottom = 354.0
+theme_override_colors/font_color = Color(0.961, 0.882, 0.745, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+
+[node name="Reset" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 530.0
+offset_top = 293.0
+offset_right = 630.0
+offset_bottom = 343.0
+texture_normal = ExtResource("8_reset")
+texture_pressed = ExtResource("9_resetp")
+ignore_texture_size = true
+
+[node name="ResetLabel" type="Label" parent="Reset"]
+unique_name_in_owner = true
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+theme_override_colors/font_color = Color(1, 0.808, 0.122, 1)
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "购买"
+
+[node name="EnemyBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 170.0
+offset_top = 430.0
+offset_right = 710.0
+offset_bottom = 510.0
+texture = ExtResource("5_enemybg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EnemyTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 403.0
+offset_right = 300.0
+offset_bottom = 427.0
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+text = "敌方阵容"
+
+[node name="AwardTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 483.0
+offset_right = 300.0
+offset_bottom = 507.0
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+text = "可能获得"
+
+[node name="GoButton" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 712.0
+offset_top = 450.0
+offset_right = 845.0
+offset_bottom = 510.0
+texture_normal = ExtResource("6_go")
+ignore_texture_size = true
+
+[node name="GoButtonShade" type="TextureRect" parent="GoButton"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+texture = ExtResource("7_goshade")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 70.0
+offset_bottom = 45.0
+texture_normal = ExtResource("10_back")
+texture_pressed = ExtResource("11_backp")
+ignore_texture_size = true
+
+[node name="EnemyHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="RewardHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="StarHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="SweepBtn" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 380.0
+offset_top = 380.0
+offset_right = 480.0
+offset_bottom = 420.0
+mouse_filter = 0
+text = "扫荡"
