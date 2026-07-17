@@ -43,7 +43,12 @@ func test_panel_assembles() -> void:
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
 	assert_eq(panel._equip_icons.size(), 6, "6 槽图标")
-	assert_gt(panel.container.get_child_count(), 6, "6 槽 + 返回 + hint")
+	# Phase A：panel 层静态节点（bg/frame/hero_icon/close/stren/faststren/diamond）从 .tscn instantiate
+	# （container→content→%Bg/%CloseBtn...），递归扫全子树。container 直接子节点另含 material_bg/equips/talk。
+	assert_gt(panel.container.get_child_count(), 0, "container 有子节点（content + 子组件 procedural）")
+	assert_not_null(panel._stren_btn, "stren 按钮（.tscn %StrenBtn 套 Scale9）")
+	assert_not_null(panel._faststren_btn, "faststren 按钮（.tscn %FastStrenBtn）")
+	assert_not_null(panel._diamond_cost_label, "钻石 cost label（.tscn %DiamondCostLabel）")
 	panel.remove_window()
 	root.queue_free()
 

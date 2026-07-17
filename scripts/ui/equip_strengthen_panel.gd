@@ -7,21 +7,17 @@ extends PopWindow
 ## 本类保留：装配骨架 + select_slot 编排 + 强化流程（do_click_*/perform_*/_on_enhance_done）+ EE 接线
 ## + 单测访问的私有转发（_add_material/_delete_material/_do_talk/_do_speak/_hide_talk/_set_talk_text/_get_equip_pos）。
 ## 单机化：从 HeroDetailPanel 进（hero 已定），跳过源选英雄流程（doChangeHero:1720）。
+## Phase A 静态化（2026-07-17）：bg/frame/hero_icon/close/stren/faststren/钻石 cost label
+## 从 procedural 改 instantiate equip_strengthen_content.tscn（位置/size 编辑器可视化，照 hero_detail 范式）。
+## att（属性四列）/material（材料）子组件保留 procedural 挂 container（本批只静态化 panel 层）。
 
-# 主类布局/cost 按钮 const（Att/Material/Anim 各持自己的 const）
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_BTN_SIZE: Vector2 = Vector2(80.0, 40.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const STREN_BTN_POS: Vector2 = Vector2(620.0, 540.0)     # 源 stren :666,145
-const STREN_BTN_SIZE: Vector2 = Vector2(130.0, 40.0)
-const FASTSTREN_BTN_POS: Vector2 = Vector2(620.0, 585.0) # 源 faststren :666,60
-const FASTSTREN_BTN_SIZE: Vector2 = Vector2(130.0, 40.0)
+# 静态 panel 层子场景（位置/size 在 .tscn 可视化）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equip_strengthen_content.tscn")
+# Scale9 按钮样式（.tscn 普通 Button 套用，源 stren/faststren capInsets CCRectMake(20,20,53,29)）。
 const STREN_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 const STREN_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
-const SCALE9_CAP: Rect2 = Rect2(20.0, 20.0, 53.0, 29.0)  # 源 stren/faststren capInsets CCRectMake(20,20,53,29)
+const SCALE9_CAP: Rect2 = Rect2(20.0, 20.0, 53.0, 29.0)
 const BTN_LABEL_COLOR: Color = Color(0.918, 0.882, 0.804)  # 源 ccc3(234,225,205) 浅金
-const DIAMOND_COST_POS: Vector2 = Vector2(620.0, 510.0)  # 源 rmb label :715,100
 const SELECT_FADE_DUR: float = 0.2                      # 源 selectEquip:1672-1674 CCFadeTo 0.2s
 # 提示文案 LSTR key（源 equipstrengthen.lua 各处 T(LSTR(...))，运行时 cm.get_lstr 解析为当前语言）。
 # 单机化降级项：TEXT_DIAMOND_SHORT（源 upFastStren:706 showHandyDialog toRecharge 充值弹窗省略，无对应 LSTR → fallback 中文）。
@@ -35,16 +31,6 @@ const TEXT_FAIL_KEY: String = "EQUIPSTRENGTHEN.UNFORTUNATELY_ENCHANTED_FAILED"  
 const TEXT_ENCHANT_KEY: String = "EQUIPSTRENGTHEN.ENCHANTING"                        # 源 :902
 const TEXT_ONECLICK_KEY: String = "EQUIPSTRENGTHEN.ONECLICK_ENCHANTING"              # 源 :1013
 const TEXT_DIAMOND_SHORT: String = "钻石不足"   # 单机化 fallback（源 toRecharge 弹窗省略）
-# --- P1-11 主背景层（源 :1995-2027 mainLayer ui_info：bg+frame+heroIcon）---
-const PANEL_HEIGHT: float = 560.0   # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（=源高 480 + 80 居中边距，照 battle_view_coords.gd BASE_Y）
-const BG_RES: String = "res://assets/ui/alpha/HVGA/bg.jpg"
-const BG_SIZE: Vector2 = Vector2(960.0, 640.0)   # 全屏背景
-const FRAME_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_frame.png"
-const FRAME_COCOS: Vector2 = Vector2(400.0, 230.0)   # 源 :2013
-const FRAME_SIZE: Vector2 = Vector2(800.0, 500.0)   # 面板主框
-const HERO_ICON_RES: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_1.png"
-const HERO_ICON_COCOS: Vector2 = Vector2(135.0, 340.0)  # 源 :2024
-const HERO_ICON_SIZE: Vector2 = Vector2(104.0, 104.0)   # readhero frame 标准
 
 var hero: HeroInstance = null
 var cm: Variant = null
@@ -76,12 +62,10 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -
 	cm = p_cm
 	pd = p_pd
 	setup()
-	_create_background()
-	_create_close_button()
+	_build_content()
 	EquipStrengthenAtt.show_material_bg(self, -1)   # 源 doShowmbPrompt nil → 宽背景（先建 z 底）
 	EquipStrengthenAtt.show_equips(self)
 	_show_hint(_T(TEXT_ADD_MATERIAL_KEY))
-	_create_stren_buttons()
 	if pd != null:
 		_materials = EquipStrengthenMaterial.build_material_list(self)
 		EquipStrengthenMaterial.show_materials(self)
@@ -89,6 +73,27 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -
 	# 推进 EEclickHero/EEselectHero 到 EEclickEquip 等 select_slot(0) emit（架构无选英雄动作）。
 	_maybe_start_ee()
 	select_slot(0)   # 默认选槽 0（源 create:2163 doSelectSlot）+ emit EEclickEquip/EEopenMaterial
+
+
+# Phase A：panel 层静态节点从 .tscn instantiate（bg/frame/hero_icon/close/stren/faststren/钻石 label），
+# 位置/size .tscn 固化。Scale9 样式 + LSTR 文字 + 信号绑定运行时补（.tscn 普通 Button 无九宫格）。
+# att/material 子组件保留 procedural 挂 container（本批只静态化 panel 层）。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	# .tscn 普通 Button 套 Scale9 StyleBoxTexture（源 herodetail-upgrade cap 20,20,53,29，照 hero_detail 范式）。
+	_stren_btn = content.get_node("%StrenBtn") as Button
+	UiScale9Button.apply_with_label(_stren_btn, STREN_BTN_RES, STREN_BTN_PRESS_RES, SCALE9_CAP, _T(TEXT_ENCHANT_KEY), BTN_LABEL_COLOR)
+	_stren_btn.pressed.connect(do_click_stren)
+	_faststren_btn = content.get_node("%FastStrenBtn") as Button
+	UiScale9Button.apply_with_label(_faststren_btn, STREN_BTN_RES, STREN_BTN_PRESS_RES, SCALE9_CAP, _T(TEXT_ONECLICK_KEY), BTN_LABEL_COLOR)
+	_faststren_btn.pressed.connect(do_click_fast_stren)
+	_diamond_cost_label = content.get_node("%DiamondCostLabel") as Label
+	# 源 clickReturn：返回 = close popup（common_close_popup_window 音效）。
+	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	close_btn.pressed.connect(func() -> void:
+		AudioPlayer.play_sfx("common_close_popup_window")
+		remove_window())
 
 
 # 源 enterScene（equipstrengthen.lua:2170-2175）进强化面板 → teach EEclickHero（EE 链起点）。
@@ -101,38 +106,6 @@ func _maybe_start_ee() -> void:
 	Events.bus.emit_tutorial_switch(Array(TutorialData.EE_STEPS))
 	Events.bus.emit_tutorial_step(&"EEclickHero")    # 架构无选英雄 → 推进
 	Events.bus.emit_tutorial_step(&"EEselectHero")   # 推进到 EEclickEquip 等 select_slot
-
-
-# 源 :1995-2027 mainLayer ui_info：bg + frame + heroIcon（z 底层，最先 add）。
-func _create_background() -> void:
-	_add_bg(BG_RES, Vector2.ZERO, BG_SIZE)
-	_add_bg(FRAME_RES, _cocos_center_to_topleft(FRAME_COCOS, FRAME_SIZE), FRAME_SIZE)
-	_add_bg(HERO_ICON_RES, _cocos_center_to_topleft(HERO_ICON_COCOS, HERO_ICON_SIZE), HERO_ICON_SIZE)
-
-
-# 源 anchor 0.5,0.5 pos=中心 → Godot Control 左上。Cocos(800×480,左下)→Godot(960×640,左上)：X+80 居中，Y 翻(PANEL_HEIGHT=560)。
-func _cocos_center_to_topleft(cocos: Vector2, sz: Vector2) -> Vector2:
-	return Vector2(cocos.x - sz.x * 0.5 + 80.0, PANEL_HEIGHT - cocos.y - sz.y * 0.5)
-
-
-func _add_bg(path: String, pos: Vector2, sz: Vector2) -> void:
-	if not ResourceLoader.exists(path):
-		return
-	var tr := TextureRect.new()
-	tr.position = pos
-	tr.size = sz
-	tr.texture = load(path)
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	container.add_child(tr)
-
-
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(func() -> void:
-		AudioPlayer.play_sfx("common_close_popup_window")   # 源 clickReturn
-		remove_window())
-	container.add_child(btn)
 
 
 # 槽点击 handler（Att.show_equips gui_input.connect 用）。
@@ -250,22 +223,6 @@ func perform_enhance_fast() -> bool:
 	if pd == null or hero == null or _selected_slot < 0:
 		return false
 	return pd.enhance_equip_to_max(hero.inst_id, _selected_slot)
-
-
-# 源 createStrenButton:804-1028 — 普通强化按钮 + 钻石一键满级按钮 + 钻石 cost label。
-func _create_stren_buttons() -> void:
-	_stren_btn = UiScale9Button.make(STREN_BTN_RES, STREN_BTN_PRESS_RES, STREN_BTN_POS, STREN_BTN_SIZE, SCALE9_CAP, _T(TEXT_ENCHANT_KEY), BTN_LABEL_COLOR)
-	_stren_btn.set_meta("stren", true)
-	_stren_btn.pressed.connect(do_click_stren)
-	container.add_child(_stren_btn)
-	_faststren_btn = UiScale9Button.make(STREN_BTN_RES, STREN_BTN_PRESS_RES, FASTSTREN_BTN_POS, FASTSTREN_BTN_SIZE, SCALE9_CAP, _T(TEXT_ONECLICK_KEY), BTN_LABEL_COLOR)
-	_faststren_btn.set_meta("stren", true)
-	_faststren_btn.pressed.connect(do_click_fast_stren)
-	container.add_child(_faststren_btn)
-	_diamond_cost_label = Label.new()
-	_diamond_cost_label.position = DIAMOND_COST_POS
-	_diamond_cost_label.set_meta("stren", true)
-	container.add_child(_diamond_cost_label)
 
 
 # 源 doClickStren:626-667 收集 addmtInfo → net op_type=1 → doStrenReply。
