@@ -28,23 +28,32 @@ func _make_panel() -> MidasPanel:
 	return panel
 
 
+# 通用递归计数（按谓词，含类型判断）。.tscn instantiate 多一层 content（container→content→18 节点），
+# container.get_child_count() 仅 1（content），需递归扫全子树数节点（参照 hero_detail 测试）。
+func _count_if_recursive(node: Node, fn: Callable) -> int:
+	var n: int = 1 if fn.call(node) else 0
+	for c in node.get_children():
+		n += _count_if_recursive(c, fn)
+	return n
+
+
 # setup 装配 frame/close/icon/name/desc/cost_board/use 等（源 create 18 节点核心）
 func test_setup_assembles_nodes() -> void:
 	var panel := _make_panel()
-	assert_gt(panel.container.get_child_count(), 6, "装配 6+ 节点（frame/close/icon/name/desc/cost_board/use）")
+	var total: int = _count_if_recursive(panel.container, func(_n: Node) -> bool: return true)
+	assert_gt(total, 6, "装配 6+ 节点（frame/close/icon/name/desc/cost_board/use，递归扫 content）")
 	assert_ne(panel._use_btn, null, "use 按钮创建（源 :883）")
 	assert_true(panel._use_btn is TextureButton, "use 是 TextureButton（源 Scale9Sprite 按钮）")
 	panel.free()
 
 
-# _make_button 返 TextureButton + shade(子0) + label(子1)（源 use/multi_use 结构）
-func test_make_button_structure() -> void:
+# UseBtn 在 .tscn 静态化（TextureButton + Shade 子0 + Label 子1，照源 use_disabled+use_label 结构）。
+# 原 procedural _make_button 工厂已删（.tscn 替代），改测 .tscn 静态按钮结构等价。
+func test_button_structure() -> void:
 	var panel := _make_panel()
-	var btn := panel._make_button("测试", Vector2(130.0, 50.0), MidasPanel.USE_RES, Color.WHITE)
-	assert_eq(btn.get_child_count(), 2, "按钮含 shade + label 两子")
-	assert_true(btn.get_child(0) is ColorRect, "子0 是 shade 蒙版（源 use_disabled）")
-	assert_eq((btn.get_node("Label") as Label).text, "测试", "Label 文本正确")
-	btn.free()
+	assert_eq(panel._use_btn.get_child_count(), 2, "UseBtn 含 shade + label 两子（源 use_disabled + use_label）")
+	assert_true(panel._use_btn.get_child(0) is ColorRect, "子0 是 shade 蒙版（源 use_disabled）")
+	assert_eq((panel._use_btn.get_node("Label") as Label).text, panel._T(MidasPanel.LSTR_USE), "UseBtn Label 文本=MIDAS.USE")
 	panel.free()
 
 
