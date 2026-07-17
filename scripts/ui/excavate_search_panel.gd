@@ -7,39 +7,26 @@ extends PopWindow
 ## 阶段 1：搜索成功 Toast 结果（map 展示阶段 2 接）；history 按钮接 ExcavateHistoryPanel。
 ## P1（2026-07-16）：bg.jpg + frame_bg excavate_empty.jpg + backbtn + Scale9 按钮 + search 按钮纹理
 ## （tavern_button_1 + excavate_icon_search_1）+ LSTR MAP.TODAY/ERRORINFO.INSUFFICIENT/MAP.DIAMOND_MINE。
+##
+## 重构（2026-07-18，hero_detail 范式）：panel 层静态节点（bg/frame_bg/frame/back/title/search_icon/
+## search_button+label/gold_icon/cost_label/explain/history）固化进 excavate_search_content.tscn；
+## 运行时套 Scale9 stylebox（apply_with_label）补九宫格视觉。源 cocos(800×480 左下) →
+## Godot(960×640 左上)：(cx+80, 560-cy)；纹理显示=纹理/CS（源 hello.lua:311 CS=1.28125）。
 
-const BG_TEX: String = "res://assets/ui/alpha/HVGA/bg.jpg"   # 源 uieditor excavatesearch:12 bg.jpg
-const FRAME_BG_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_empty.jpg"   # 源 :118 frame_bg
-const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png"
-const TITLE_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png"
-const MAGNIFIER_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_magnifier.png"
-# 源 :177-184 back_button（backbtn.png，场景级返回）
-const BACK_TEX: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const BACK_P_TEX: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-# 源 :307-321 search_button（tavern_button_1 Scale9 capInsets 21.88,19.53,73.44,20.31 + icon_search_1 标签）
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_search_content.tscn")
+# Scale9 按钮纹理（位置已静态化进 .tscn，运行时套 stylebox）
+# 源 :307-321 search_button（tavern_button_1 Scale9 capInsets 21.88,19.53,73.44,20.31）
 const SEARCH_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_1.png"
 const SEARCH_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_2.png"
 const SEARCH_BTN_CAP: Rect2 = Rect2(21.88, 19.53, 73.44, 20.31)
-const SEARCH_LABEL_RES: String = "res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_1.png"
-const SEARCH_LABEL_PRESS_RES: String = "res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_2.png"
-# 源 :68-101 explain/histroy_button（Scale9 sell_number_button）
+# 源 :68-101 explain/histroy_button（Scale9 sell_number_button cap 15.63,15.63,18.75,18.75）
 const SCALE9_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const SCALE9_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const SCALE9_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 18.75, 18.75)
 const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
-const GOLD_ICON_TEX: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const COLOR_COST_OK: Color = Color(1.0, 174.0 / 255.0, 53.0 / 255.0)   # 源 search.lua:88 ccc3(255,174,53)
 const COLOR_COST_LOW: Color = Color(1.0, 0.0, 0.0)                       # 源 search.lua:86 ccc3(255,0,0)
-const FRAME_W: float = 520.0
-const FRAME_H: float = 400.0
-const TITLE_Y: float = 18.0
-# 源 excavatesearch.lua:150 title fix_wh（强制显示尺寸，1:1 不受 CS 影响）
-const TITLE_W: float = 246.09375   # 源 :150 fix_wh.w
-const TITLE_H: float = 35.9375     # 源 :150 fix_wh.h
-const ICON_SIZE: float = 48.0
-const BTN_SIZE: Vector2 = Vector2(160.0, 50.0)
-const SMALL_FONT: int = 18
-const SEARCH_ANIM_DEG_PER_SEC: float = 180.0   # 源 search.lua:29 palstance=180
+const SEARCH_ANIM_DEG_PER_SEC: float = 180.0   # 源 search.lua:29 palpace=180
 const SEARCH_ANIM_RADIUS: float = 20.0          # 源 :30 radius=20
 const SEARCH_ANIM_DURATION: float = 1.5         # 圆周动画时长（≈1 圈 + 缓冲）
 # 源 map.lua:951-955 TYPE_NAME LSTR 映射（搜索结果反馈用）
@@ -82,7 +69,7 @@ func setup_panel(p_pd: PlayerData, p_rng: BattleRng) -> void:
 	pd = p_pd
 	rng = p_rng
 	setup()
-	_build_ui()
+	_build_content()
 	_refresh_cost()
 
 
@@ -94,109 +81,26 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
-func _build_ui() -> void:
-	# 源 :12 bg.jpg 整体背景（满屏）
-	var bg := TextureRect.new()
-	bg.texture = load(BG_TEX)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = Vector2(960, 640)
-	bg.position = Vector2.ZERO
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(bg)
-	# 源 :118 frame_bg（excavate_empty.jpg，frame_container 内层背景）
-	var frame_bg := TextureRect.new()
-	frame_bg.texture = load(FRAME_BG_TEX)
-	frame_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame_bg.size = Vector2(FRAME_W - 20.0, FRAME_H - 20.0)
-	frame_bg.position = Vector2(960.0 * 0.5 - (FRAME_W - 20.0) * 0.5, 640.0 * 0.5 - (FRAME_H - 20.0) * 0.5)
-	frame_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(frame_bg)
-	var frame := TextureRect.new()
-	frame.texture = load(FRAME_TEX)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = Vector2(FRAME_W, FRAME_H)
-	frame.position = Vector2(960.0 * 0.5 - FRAME_W * 0.5, 640.0 * 0.5 - FRAME_H * 0.5)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(frame)
-	_add_back(frame)
-	_add_title(frame)
-	_add_search_icon(frame)
-	_add_search_button(frame)
-	_add_bottom_buttons(frame)
-
-
-# 源 :177-184 back_button（backbtn.png）
-func _add_back(frame: TextureRect) -> void:
-	var back := TextureButton.new()
-	back.texture_normal = load(BACK_TEX)
-	back.texture_pressed = load(BACK_P_TEX)
-	back.ignore_texture_size = true
-	back.size = Vector2(50, 50)
-	back.position = Vector2(12, 12)
-	back.pressed.connect(remove_window)
-	frame.add_child(back)
-
-
-func _add_title(frame: TextureRect) -> void:
-	var title := TextureRect.new()
-	title.texture = load(TITLE_TEX)
-	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title.size = Vector2(TITLE_W, TITLE_H)   # 源 :150 fix_wh（1:1，不除 CS）
-	title.position = Vector2(frame.size.x * 0.5 - TITLE_W * 0.5, TITLE_Y)
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(title)
-
-
-func _add_search_icon(frame: TextureRect) -> void:
-	_search_icon = TextureRect.new()
-	_search_icon.texture = load(MAGNIFIER_TEX)
-	_search_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_search_icon.size = Vector2(ICON_SIZE, ICON_SIZE)
-	_search_icon.position = Vector2(frame.size.x * 0.5 - ICON_SIZE * 0.5, 110.0)
-	_search_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(_search_icon)
-
-
-# 源 :307-321 search_button（tavern_button_1 Scale9 + icon_search_1 标签覆盖）
-func _add_search_button(frame: TextureRect) -> void:
-	_search_button = UiScale9Button.make(SEARCH_BTN_RES, SEARCH_BTN_PRESS_RES, Vector2(frame.size.x * 0.5 - BTN_SIZE.x * 0.5, 220.0), BTN_SIZE, SEARCH_BTN_CAP)
+# 建 UI：preload .tscn instantiate + 套 Scale9 stylebox + 绑信号。
+# 位置/size 静态节点（bg/frame_bg/frame/back/title/search_icon/search_button/label/gold_icon/
+# cost_label/explain/history）已在 .tscn 固化。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	(content.get_node("%BackBtn") as BaseButton).pressed.connect(remove_window)
+	_search_icon = content.get_node("%SearchIcon") as TextureRect
+	_search_button = content.get_node("%SearchBtn") as Button
+	# search_button：.tscn 普通 Button 套九宫格 stylebox（视觉等价原 UiScale9Button.make）
+	UiScale9Button.apply_with_label(_search_button, SEARCH_BTN_RES, SEARCH_BTN_PRESS_RES, SEARCH_BTN_CAP)
 	_search_button.pressed.connect(_on_search_pressed)
-	frame.add_child(_search_button)
-	# 源 :377-388 search_label（excavate_icon_search_1.png 覆盖在 search_button 上）
-	var search_label := TextureButton.new()
-	search_label.texture_normal = load(SEARCH_LABEL_RES)
-	search_label.texture_pressed = load(SEARCH_LABEL_PRESS_RES)
-	search_label.ignore_texture_size = true
-	search_label.size = Vector2(141, 53)
-	search_label.position = Vector2(frame.size.x * 0.5 - 70.5, 218.0)
-	search_label.mouse_filter = Control.MOUSE_FILTER_IGNORE   # 装饰图标，点击穿透到 _search_button
-	search_label.disabled = true   # 防 TextureButton 自带点击反馈
-	_search_button.add_child(search_label)
-	# 消耗标签 + gold icon（源 :329 gold_icon + :351 cost_label）
-	var gold_icon := TextureRect.new()
-	gold_icon.texture = load(GOLD_ICON_TEX)
-	gold_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	gold_icon.size = Vector2(24, 24)
-	gold_icon.position = Vector2(frame.size.x * 0.5 - 60, 285.0)
-	gold_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(gold_icon)
-	_cost_label = Label.new()
-	_cost_label.size = Vector2(120, 24)
-	_cost_label.position = Vector2(frame.size.x * 0.5 - 30, 285.0)
-	_cost_label.add_theme_font_size_override("font", SMALL_FONT)
-	_cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(_cost_label)
-
-
-# 源 :68-101 explain/histroy_button（Scale9 sell_number_button + LSTR 标签）
-func _add_bottom_buttons(frame: TextureRect) -> void:
-	var explain: Button = UiScale9Button.make(SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, Vector2(40, frame.size.y - 45), Vector2(110, 40), SCALE9_BTN_CAP, _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK), BTN_LABEL_COLOR)
+	_cost_label = content.get_node("%CostLabel") as Label
+	# explain/history：.tscn 普通 Button 套九宫格 stylebox + LSTR 文字
+	var explain: Button = content.get_node("%ExplainBtn") as Button
+	UiScale9Button.apply_with_label(explain, SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, SCALE9_BTN_CAP, _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK), BTN_LABEL_COLOR)
 	explain.pressed.connect(_on_explain_pressed)
-	frame.add_child(explain)
-	var history: Button = UiScale9Button.make(SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, Vector2(frame.size.x - 150, frame.size.y - 45), Vector2(110, 40), SCALE9_BTN_CAP, _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK), BTN_LABEL_COLOR)
+	var history: Button = content.get_node("%HistoryBtn") as Button
+	UiScale9Button.apply_with_label(history, SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, SCALE9_BTN_CAP, _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK), BTN_LABEL_COLOR)
 	history.pressed.connect(_on_history_pressed)
-	frame.add_child(history)
 
 
 # 刷新消耗标签（照 refreshCostLabel:80）：颜色随金币够否。
