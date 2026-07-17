@@ -6,16 +6,13 @@ extends PopWindow
 ## 单机化：去掉 doSendConsume 网络上报（源 ed.send consume_item + registerNetReply eat_exp），
 ## 改即时生效（do_eat_hero 直接 pd.remove_item + hero_manager.add_hero_exp，无 useAmount 延迟累计）。
 ## 长按连续喂药：源 keepeatHandler 加速曲线（oriSpeed/accAcc）简化为固定间隔 repeat。
+## 2026-07-17 重构：panel 层（frame/bg/title/close/scroll）静态化进 eatexp_content.tscn
+## （instantiate + container.add_child + get_node("%..")）；英雄 cell 仍 procedural（数据驱动动态 fill）。
 
-# ── 坐标（源 ui_info + createHero cocos 值，frame 内相对）──
-const FRAME_POS: Vector2 = Vector2(400.0, 215.0)    # 源 frame ccp(400,215)
-const FRAME_SIZE: Vector2 = Vector2(570.0, 345.0)   # 源 fix_wh h=345 + draglist rect w=570
-const TITLE_POS: Vector2 = Vector2(190.0, 8.0)      # 源 title ccp(400,379) → frame 内
-const CLOSE_POS: Vector2 = Vector2(515.0, 5.0)      # 源 close ccp(668,360) → frame 内
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
-const SCROLL_POS: Vector2 = Vector2(20.0, 45.0)
-const SCROLL_SIZE: Vector2 = Vector2(530.0, 290.0)
+# panel 层子场景（位置/size 在 .tscn 可视化）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/eatexp_content.tscn")
+
+# ── cell 内坐标（源 createHero cocos 值，cell 局部）──
 const CELL_MIN_SIZE: Vector2 = Vector2(255.0, 110.0)
 const HEAD_POS: Vector2 = Vector2(8.0, 3.0)         # 源 createHero headPos ccp(7,9)
 const LEVEL_POS: Vector2 = Vector2(115.0, 70.0)     # 源 level ccp(96,40) 调整
@@ -36,14 +33,11 @@ const EAT_FADE: float = 0.2
 # scalexy 进度（无 fix_size）→ 显示=texture/CS；满级态 :403 fix_size=CCSizeMake(145,20) 保留。
 const CONTENT_SCALE: float = 1.28125
 
-const TITLE_BG_H: float = 36.0                  # title_bg 高（源 equip_detail_title_bg 尺寸）
 const EXP_BAR_SIZE: Vector2 = Vector2(140.0, 14.0)   # 经验条尺寸（保留布局参考，实际 bar 用动态 tex/CS）
 # 源 eatexplist.lua:403 heroxp-progress-full.png fix_size=CCSizeMake(145,20)（满级条，源指定尺寸非 tex/CS）。
 const FULL_BAR_FIX_SIZE: Vector2 = Vector2(145.0, 20.0)
 
-# ── 资源 ──
-const FRAME_PATH: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
-const TITLE_BG_PATH: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"
+# ── cell 资源（cell 仍 procedural）──
 const HERO_BG_PATH: String = "res://assets/ui/alpha/HVGA/package_hero_bg.png"
 const EXP_BAR_BG_PATH: String = "res://assets/ui/alpha/HVGA/package_exp_bar_bg.png"
 const EXP_BAR_PATH: String = "res://assets/ui/alpha/HVGA/package_exp_bar.png"
@@ -55,8 +49,7 @@ const LSTR_EXP_FULL := "EATEXPLIST.EXPERIENCE_FULL"        # 源 setExpMax shade
 const LSTR_HERO_EXP_FULL := "EATEXPLIST.HERO_EXPERIENCE_FULL"  # 源 doEat 满级 toast "英雄经验已满"
 const LSTR_ALL_USED := "EATEXPLIST.ALL_COMSUMED"           # 源 useProp 全消耗 toast 后缀
 
-const TITLE_COLOR: Color = Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0)   # 源 ccc3(250,205,16)
-const EAT_LBL_COLOR: Color = Color(1.0, 200.0 / 255.0, 0.0)                    # 源 light_orange
+const EAT_LBL_COLOR: Color = Color(1.0, 200.0 / 255.0, 0.0)   # 源 light_orange
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -64,12 +57,6 @@ var _item_id: int = 0          # 经验药物品 id（源 self.id）
 var _exp_per_pill: int = 0     # 源 self.exp = Equip[id].Exp
 var _cells: Dictionary = {}    # inst_id → {cell, level_label, exp_bar, display_level}
 var _keepeat_inst: int = -1    # 长按目标 inst_id（-1=空闲）
-
-
-# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
-# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot（frame 内子元素已手工算 Godot 局部，只转 frame 全局位置）。
-func _g(pos: Vector2) -> Vector2:
-	return BattleViewCoords.to_godot(pos.x, pos.y)
 
 
 # LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失返空串避免 null 解引用）。
@@ -92,71 +79,19 @@ func setup_panel(item_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	pd = p_pd
 	_exp_per_pill = int(cm.get_raw_table(&"Equip").get(str(item_id), {}).get(&"Exp", 0))
 	setup()
-	_build_ui()
+	_build_content()
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
-func _build_ui() -> void:
-	var frame := Control.new()
-	frame.position = _g(FRAME_POS) - FRAME_SIZE / 2.0
-	frame.size = FRAME_SIZE
-	container.add_child(frame)
-	_add_bg(frame)
-	_add_title(frame)
-	_add_close(frame)
-	_add_hero_list(frame)
-
-
-func _add_bg(parent: Control) -> void:
-	if not ResourceLoader.exists(FRAME_PATH):
-		return
-	var bg := TextureRect.new()
-	bg.texture = load(FRAME_PATH)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.custom_minimum_size = Vector2.ZERO
-	bg.size = FRAME_SIZE
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(bg)
-
-
-# 源 title_bg + title 标签。
-func _add_title(parent: Control) -> void:
-	if ResourceLoader.exists(TITLE_BG_PATH):
-		var title_bg := TextureRect.new()
-		title_bg.texture = load(TITLE_BG_PATH)
-		title_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		title_bg.custom_minimum_size = Vector2.ZERO
-		title_bg.size = Vector2(FRAME_SIZE.x, TITLE_BG_H)
-		title_bg.position = Vector2(0.0, 0.0)
-		title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent.add_child(title_bg)
-	var lbl := Label.new()
-	lbl.text = _T(LSTR_TITLE)
-	lbl.position = TITLE_POS
-	lbl.modulate = TITLE_COLOR
-	lbl.size = Vector2(180.0, 30.0)
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	parent.add_child(lbl)
-
-
-func _add_close(parent: Control) -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_POS)
-	btn.pressed.connect(_on_close_pressed)
-	parent.add_child(btn)
-
-
-# 源 createListLayer + createList :152-201：draglist 列英雄。本项目 ScrollContainer+GridContainer columns=2。
-func _add_hero_list(parent: Control) -> void:
-	var scroll := ScrollContainer.new()
-	scroll.position = SCROLL_POS
-	scroll.size = SCROLL_SIZE
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	parent.add_child(scroll)
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.custom_minimum_size = Vector2(SCROLL_SIZE.x, 0.0)
-	scroll.add_child(grid)
+# 建 UI 内容。panel 层（frame/bg/title/close/scroll）从 .tscn instantiate（位置/size 可视化）。
+# 英雄 cell 仍 procedural 挂 %Grid（数据驱动，每个英雄一个 cell）。
+# 源 create + createListLayer + createList :25-201。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	(content.get_node("%TitleLabel") as Label).text = _T(LSTR_TITLE)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)
+	var grid: GridContainer = content.get_node("%Grid") as GridContainer
 	var inst_ids: Array = pd.hero_manager.heroes.keys()
 	inst_ids.sort()
 	for inst_id in inst_ids:
