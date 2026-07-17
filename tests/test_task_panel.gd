@@ -28,13 +28,21 @@ func _make_panel() -> TaskPanel:
 	return panel
 
 
+# 递归统计 panel.container 子树中 ScrollContainer 数（.tscn 重构后 ScrollContainer 在
+# content 下，非 container 直接子，需递归扫；照 hero_detail 测试 _count_meta_recursive 范式）。
+func _count_scroll_recursive(node: Node) -> int:
+	var count: int = 0
+	for c in node.get_children():
+		if c is ScrollContainer:
+			count += 1
+		count += _count_scroll_recursive(c)
+	return count
+
+
 # setup 装配两段列表（源 ed.ui.task 主线 + ed.ui.dailyTask 日常，各一 ScrollContainer）
 func test_setup_assembles_two_sections() -> void:
 	var panel := _make_panel()
-	var scroll_count: int = 0
-	for c in panel.container.get_children():
-		if c is ScrollContainer:
-			scroll_count += 1
+	var scroll_count: int = _count_scroll_recursive(panel.container)
 	assert_eq(scroll_count, 2, "主线+日常两段滚动列表")
 	panel.free()
 
@@ -147,13 +155,20 @@ func test_setup_uses_source_shade_alpha_200() -> void:
 # 源 @832-835 段标题：task→TASK.TASK="任务"；dailyTask→TASK.DAILY_ACTIVITIES="每日活动"。
 func test_section_titles_use_source_lstr() -> void:
 	var panel := _make_panel()
-	var titles: Array = []
-	for c in panel.container.get_children():
-		if c is Label and not (c as Label).text.is_empty():
-			titles.append(String((c as Label).text))
+	var titles: Array = _collect_label_texts(panel.container)
 	assert_true(titles.has("任务"), "主线段标题 = TASK.TASK")
 	assert_true(titles.has("每日活动"), "日常段标题 = TASK.DAILY_ACTIVITIES")
 	panel.free()
+
+
+# 递归收集 container 子树中所有 Label 的非空 text（.tscn 重构后段标题在 content 下需递归）。
+func _collect_label_texts(node: Node) -> Array:
+	var texts: Array = []
+	for c in node.get_children():
+		if c is Label and not (c as Label).text.is_empty():
+			texts.append(String((c as Label).text))
+		texts.append_array(_collect_label_texts(c))
+	return texts
 
 
 # 源 createEmptyPrompt @788-790：task→TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED；dailyjob→TASK.YOU_HAVE_DONE_TODAYS_TASKS。

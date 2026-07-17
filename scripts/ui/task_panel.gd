@@ -5,9 +5,17 @@ extends PopWindow
 ## basetask.createTask@417-598 共用渲染:bg(task_board/finished)+ icon+iconBg + name/progress/
 ## detail/reward_title 4 Label + reward icons 横排 + completeTag(完成领奖)/fastButton(日常去往)。
 ## 主线(ed.ui.task,Task 表 tm.task)+ 日常(ed.ui.dailyTask,Todolist)两段列表。
+##
+## 重构（2026-07-17，hero_detail 范式）：chrome(frame/title_bg/title/close)+ 段标题+ ScrollContainer
+## 全静态化进 scenes/ui/task_content.tscn（位置/size 编辑器可视化调）；任务行（bg+icon+labels+reward+
+## 按钮）数量随任务变，保留 procedural 挂 %MainList/%DailyList（行内坐标走 _bg_pos 局部）。
+## 源 basetask.create@837-904 chrome 坐标(frame ccp(400,218)/title_bg ccp(400,399)/close ccp(675,382))
+## 经 _to_godot(cx,cy)=(cx+80,560-cy) 转 + 纹理尺寸/CS=1.28125 算 size，固化进 .tscn offset。
+
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/task_content.tscn")
 
 const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
-# ---- 资源(源 task.lua icon_res / reward_icon_res + createTask bgRes)----
+# ---- 行资源(源 task.lua icon_res / reward_icon_res + createTask bgRes)----
 const BOARD_RES := "res://assets/ui/alpha/HVGA/task_board.png"
 const BOARD_FINISHED_RES := "res://assets/ui/alpha/HVGA/task_board_finished.png"
 const ICON_BG_RES := "res://assets/ui/alpha/HVGA/task_icon_bg.png"
@@ -36,7 +44,7 @@ const TYPE_ICON_RES := {
 const BG_W: int = 638
 const BG_H: int = 123
 
-# ---- 源 createTask 坐标(cocos,bg 左下原点 y 向上,:444-509/544/584)----
+# ---- 源 createTask 行内坐标(cocos,bg 左下原点 y 向上,:444-509/544/584)----
 const C_NAME: Vector2 = Vector2(95.0, 71.0)
 const C_PROGRESS: Vector2 = Vector2(450.0, 71.0)
 const C_DETAIL: Vector2 = Vector2(95.0, 46.0)
@@ -65,28 +73,16 @@ const REWARD_ICON_H: int = 20  # 源 :564 reward icon mh
 const FAST_BTN_SIZE: Vector2 = Vector2(60.0, 45.0)  # 源 :757 createFastButton setContentSize
 const ROW_SEP: int = 8
 
-# ---- 源 task.lua basetask.create @837-904 chrome:frame+title_bg+title+close ----
-# CONTENT_SCALE 见上方 line 9（wt3 加 chrome 勿重复定义，重复 const 致 Parse error 连锁 main_scene 编译失败）
-const FRAME_RES: String = "res://assets/ui/alpha/HVGA/package_herolist_bg.png"
-const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/crusade_title_short_bg.png"
-const FRAME_CENTER_COCOS: Vector2 = Vector2(400.0, 218.0)   # 源 :845
-const TITLE_BG_CENTER_COCOS: Vector2 = Vector2(400.0, 399.0)   # 源 :859
-const CLOSE_CENTER_COCOS: Vector2 = Vector2(675.0, 382.0)   # 源 :887
-const TITLE_COLOR: Color = Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0)   # 源 :876 ccc3(250,205,16)
-const TITLE_FONT_SIZE: int = 24   # 源 :870
-const CHROME_Z: int = 30   # 源 :854/:882 title_bg/close z=30
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
-const TITLE_MAIN_POS: Vector2 = Vector2(141.0, 20.0)
-const SCROLL_MAIN_POS: Vector2 = Vector2(141.0, 50.0)
-const SCROLL_MAIN_SIZE: Vector2 = Vector2(638.0, 140.0)
-const TITLE_DAILY_POS: Vector2 = Vector2(141.0, 200.0)
-const SCROLL_DAILY_POS: Vector2 = Vector2(141.0, 230.0)
-const SCROLL_DAILY_SIZE: Vector2 = Vector2(638.0, 360.0)
+# 源 task.lua basetask.create @826 mainLayer=CCLayerColor:create(ccc4(0,0,0,200)) 半透明黑遮罩；
+# framework.lua:644 addChild 到当前场景（popup，非 pushScene），透 main 地图，无全屏 bg.jpg。
+# PopWindow 默认 shade alpha=150/255（popwindow.lua），此处覆盖为源的 200/255。
+const SHADE_ALPHA: float = 200.0 / 255.0
 
 var _player: PlayerData
 var _cm: ConfigManager
 var _tm: TaskManager
+var _main_list: VBoxContainer = null   # .tscn %MainList（主线任务行容器）
+var _daily_list: VBoxContainer = null  # .tscn %DailyList（日常任务行容器）
 
 
 func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -> void:
@@ -94,92 +90,37 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -
 	_cm = p_cm
 	_tm = p_tm
 	setup()
-	# 源 basetask.create @826 mainLayer=CCLayerColor:create(ccc4(0,0,0,200)) 半透明黑遮罩；
-	# framework.lua:644 addChild 到当前场景（popup，非 pushScene），透 main 地图，无全屏 bg.jpg。
-	# PopWindow 默认 shade alpha=150/255（popwindow.lua），此处覆盖为源的 200/255。
 	if shade_layer != null:
-		shade_layer.color.a = 200.0 / 255.0
-	_build_ui()
+		shade_layer.color.a = SHADE_ALPHA
+	_build_content()
 
 
-func _build_ui() -> void:
-	_build_chrome()
-	# 主线任务链(源 ed.ui.task:initTaskList@1038 读 tm.task → Task 表)
-	_build_list_section(true)
-	# 日常任务(源 ed.ui.dailyTask:initTaskList@1542 读 Todolist + player._dailyjob)
-	_build_list_section(false)
+# 建 UI 内容：chrome + 段标题 + Scroll 静态节点从 .tscn instantiate（位置/size 可视化），
+# 任务行 procedural 挂 %MainList/%DailyList。源 basetask.create + createListLayer。
+func _build_content() -> void:
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
+	_main_list = content.get_node("%MainList") as VBoxContainer
+	_daily_list = content.get_node("%DailyList") as VBoxContainer
+	# fill 静态 Label LSTR（chrome title + 段标题）
+	(content.get_node("%Title") as Label).text = _cm.get_lstr("TASK.TASK")
+	(content.get_node("%MainTitleLabel") as Label).text = _cm.get_lstr("TASK.TASK")
+	(content.get_node("%DailyTitleLabel") as Label).text = _cm.get_lstr("TASK.DAILY_ACTIVITIES")
+	# close 按钮（源 :880-903 close z=30）
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	_fill_main_list()
+	_fill_daily_list()
 
 
-# 源 task.lua basetask.create @837-904 chrome:frame(package_herolist_bg,中心 400,218)/
-# title_bg(crusade_title_short_bg,中心 400,399,z=30)/ title(parent title_bg,size 24,金黄)/
-# close(中心 675,382,z=30)。Sprite 无 fix_size → 显示=纹理/CS（同 daily_login_builder._add_centered）。
-func _build_chrome() -> void:
-	# 源 :839-849 frame
-	var frame := TextureRect.new()
-	frame.texture = _load_tex(FRAME_RES)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame.size = (frame.texture.get_size() / CONTENT_SCALE) if frame.texture != null else Vector2.ZERO
-	frame.position = _to_godot(FRAME_CENTER_COCOS.x, FRAME_CENTER_COCOS.y) - frame.size * 0.5
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(frame)
-	# 源 :852-861 title_bg（z=30）
-	var title_bg := TextureRect.new()
-	title_bg.texture = _load_tex(TITLE_BG_RES)
-	title_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title_bg.size = (title_bg.texture.get_size() / CONTENT_SCALE) if title_bg.texture != null else Vector2.ZERO
-	title_bg.position = _to_godot(TITLE_BG_CENTER_COCOS.x, TITLE_BG_CENTER_COCOS.y) - title_bg.size * 0.5
-	title_bg.z_index = CHROME_Z
-	title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(title_bg)
-	# 源 :864-878 title Label（parent title_bg，fontinfo ui_normal_button size 24，金黄 ccc3(250,205,16)；
-	# 源 position ccp(175,35) ≈ title_bg 显示尺寸中心 → Godot 用 size=title_bg.size + 居中对齐等价）
-	var title := Label.new()
-	title.text = _cm.get_lstr("TASK.TASK")
-	title.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
-	title.add_theme_color_override("font_color", TITLE_COLOR)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.size = title_bg.size
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_bg.add_child(title)
-	# 源 :880-903 close（Sprite anchor 0.5,0.5 中心，z=30）
-	var close: TextureButton = UiButton.make(CLOSE_RES, CLOSE_PRESS_RES, _to_godot(CLOSE_CENTER_COCOS.x, CLOSE_CENTER_COCOS.y))
-	close.z_index = CHROME_Z
-	close.pressed.connect(remove_window)
-	container.add_child(close)
-
-
-# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 daily_login_builder/handbook_builder）。
+# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 hero_detail_builder/handbook_builder）。
 static func _to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + 80.0, 560.0 - cy)
 
 
-func _build_list_section(is_main: bool) -> void:
-	var title := Label.new()
-	# 源 @832-835 titleText：task→TASK.TASK="任务"；dailyTask→TASK.DAILY_ACTIVITIES="每日活动"
-	title.text = _cm.get_lstr("TASK.TASK") if is_main else _cm.get_lstr("TASK.DAILY_ACTIVITIES")
-	title.position = TITLE_MAIN_POS if is_main else TITLE_DAILY_POS
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(title)
-	var sc := ScrollContainer.new()
-	sc.position = SCROLL_MAIN_POS if is_main else SCROLL_DAILY_POS
-	sc.size = SCROLL_MAIN_SIZE if is_main else SCROLL_DAILY_SIZE
-	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	container.add_child(sc)
-	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_theme_constant_override("separation", ROW_SEP)
-	sc.add_child(vbox)
-	if is_main:
-		_fill_main(vbox)
-	else:
-		_fill_daily(vbox)
-
-
 # 源 ed.ui.task:initTaskList + basetask.createTask:遍历 tm.task → Task[chain][id] → createTask
-func _fill_main(vbox: VBoxContainer) -> void:
+func _fill_main_list() -> void:
 	if _tm.task.is_empty():
-		vbox.add_child(_make_empty_prompt("task"))
+		_main_list.add_child(_make_empty_prompt("task"))
 		return
 	var task_table: Dictionary = _cm.get_raw_table("Task")
 	for entry in _tm.task:
@@ -190,7 +131,7 @@ func _fill_main(vbox: VBoxContainer) -> void:
 			continue
 		var is_finished: bool = str(entry.get("status", "working")) == "finished"
 		var task: Dictionary = _build_main_task(chain, tid, row, is_finished)
-		vbox.add_child(_make_task_row(task, _on_claim_main.bind(chain, tid)))
+		_main_list.add_child(_make_task_row(task, _on_claim_main.bind(chain, tid)))
 
 
 func _build_main_task(chain: int, tid: int, row: Dictionary, is_finished: bool) -> Dictionary:
@@ -216,10 +157,10 @@ func _get_main_progress(row: Dictionary) -> int:
 
 
 # 源 ed.ui.dailyTask:initTaskList@1542:遍历 Todolist + getDailyjobCount
-func _fill_daily(vbox: VBoxContainer) -> void:
+func _fill_daily_list() -> void:
 	var raw: Dictionary = _cm.get_raw_table("Todolist")
 	if raw.is_empty():
-		vbox.add_child(_make_empty_prompt("dailyjob"))
+		_daily_list.add_child(_make_empty_prompt("dailyjob"))
 		return
 	for job_str in raw:
 		var job_id: int = int(job_str)
@@ -236,7 +177,7 @@ func _fill_daily(vbox: VBoxContainer) -> void:
 			"icon": str(row.get("Icon", "")),
 			"reward": _parse_rewards(row, true),
 		}
-		vbox.add_child(_make_task_row(task, _on_claim_daily.bind(job_id)))
+		_daily_list.add_child(_make_task_row(task, _on_claim_daily.bind(job_id)))
 
 
 # 源 createTask reward:主线单槽(Task Reward Type/ID/Amount)/ 日常双槽(:1525 for 1..2)
@@ -263,7 +204,7 @@ func _parse_rewards(row: Dictionary, is_daily: bool) -> Array:
 	return rewards
 
 
-# ---- 源 basetask.createTask@417-598 完整翻译 ----
+# ---- 源 basetask.createTask@417-598 完整翻译（行内 procedural 挂 vbox）----
 func _make_task_row(task: Dictionary, on_claim: Callable) -> Control:
 	var target: int = int(task.get("target", 1))
 	var progress: int = int(task.get("progress", 0))
@@ -461,4 +402,4 @@ func _on_fast() -> void:
 func _refresh_ui() -> void:
 	for c in container.get_children():
 		c.queue_free()
-	_build_ui()
+	_build_content()
