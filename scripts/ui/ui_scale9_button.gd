@@ -30,6 +30,19 @@ static func make_centered(res_normal: String, res_pressed: String, center_pos: V
 	return make(res_normal, res_pressed, center_pos - size * 0.5, size, cap_insets, label_text, label_color)
 
 
+# Apply Scale9 StyleBox + Label overrides 到已存在 Button（位置/size 在 .tscn 静态化的场景）。
+# 与 make() 区别：make() 创建新 Button 并设 position/size；apply_with_label() 接受 .tscn 已声明的
+# Button（普通 Button 无九宫格图），仅套 normal/hover/pressed stylebox + label color/outline。
+# 用于 procedural→.tscn 重构：位置可视化在 .tscn 调，运行时补九宫格视觉（参照 hero_detail 范式）。
+static func apply_with_label(btn: Button, res_normal: String, res_pressed: String, cap_insets: Rect2, label_text: String = "", label_color: Color = Color.WHITE) -> void:
+	_apply_style(btn, res_normal, res_pressed, cap_insets)
+	if not label_text.is_empty():
+		btn.text = label_text
+		btn.add_theme_color_override("font_color", label_color)
+		btn.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
+		btn.add_theme_constant_override("outline_size", 2)
+
+
 static func _apply_style(btn: Button, res_normal: String, res_pressed: String, cap_insets: Rect2) -> void:
 	var normal_sb: StyleBoxTexture = _make_sb(res_normal, cap_insets)
 	btn.add_theme_stylebox_override("normal", normal_sb)
