@@ -5,17 +5,17 @@ extends PopWindow
 ## 源 selectwindow.base：main_vit_tips 框 530×375 + draglist + btRegisterOutClick（点框外 destroy，无 close 按钮）。
 ## ofavatar：3 类（free/hero/worldcup）分组 + 标题 + 5 列图标网格（hero_icon_frame_1 + Picture）+
 ## 解锁判断（Requirement Type nil/HeroRank/PlayerLevel）+ 点选 set_avatar → destroy。
+##
+## 重构（2026-07-18，hero_detail 范式）：chrome（frame + draglist 容器）静态化进
+## scenes/ui/avatar_content.tscn（位置/size 编辑器可视化调）；分类标题 + 头像网格数量随解锁项变，
+## 保留 procedural 挂 %AvatarList。源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)，
+## 纹理显示=纹理/CS（源 hello.lua:311 setContentScaleFactor(615/480)=1.28125，无 fix 时）。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/avatar_content.tscn")
 const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
-const FRAME_RES: String = "res://assets/ui/alpha/HVGA/main_vit_tips.png"
-const FRAME_CAP: Rect2 = Rect2(10.0, 10.0, 58.0, 26.0)        # 源 base.lua:60 CCRectMake(10,10,58,26)
-const FRAME_SIZE: Vector2 = Vector2(530.0, 375.0)             # 源 scaleSize 530×375
-const FRAME_CENTER: Vector2 = Vector2(400.0, 240.0)           # 源 ccp(400,240) 中心
 const ICON_FRAME_RES: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_1.png"
 const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/detail_title_bg.png"
 const TITLE_BG_CAP: Rect2 = Rect2(100.0, 0.0, 304.0, 12.0)    # 源 ofavatar:112 CCRectMake(100,0,304,12)
-const SCROLL_POS: Vector2 = Vector2(154.0, 60.0)              # 源 base.lua:8 cliprect (154,60,492,365)
-const SCROLL_SIZE: Vector2 = Vector2(492.0, 365.0)
 const GRID_COLS: int = 5                                      # 源 ofavatar:147 (i-1)%5
 const ICON_PAD: float = 10.0                                 # 源 ofavatar:179 fixNodeSize 框-10
 const TITLE_BG_W: float = 300.0                              # 源 ofavatar:113 ContentSize 300
@@ -25,12 +25,7 @@ const HERO_PIC_PREFIX: String = "res://assets/ui/HERO/"       # 源 "UI/HERO/" �
 
 var _pd: PlayerData
 var _cm: ConfigManager
-
-
-# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
-# Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot。
-func _g(pos: Vector2) -> Vector2:
-	return BattleViewCoords.to_godot(pos.x, pos.y)
+var _list: VBoxContainer = null   # .tscn %AvatarList（分类标题 + 头像网格容器）
 
 
 func setup_panel(p_pd: PlayerData, p_cm: ConfigManager) -> void:
@@ -40,44 +35,26 @@ func setup_panel(p_pd: PlayerData, p_cm: ConfigManager) -> void:
 	_build_ui()
 
 
+# 建 UI 内容：chrome 静态节点从 .tscn instantiate（位置/size 可视化）；分类标题 + 头像网格 procedural 挂 %AvatarList。
+# 源 base.lua:54 main_vit_tips Scale9 530×375 @ ccp(400,240) + base.lua:8 cliprect (154,60,492,365)。
+# 源 base.lua:75 btRegisterOutClick：点框外 destroy（无 close 按钮）。
 func _build_ui() -> void:
-	# 源 base.lua:75 btRegisterOutClick：点框外 destroy（无 close 按钮）。
 	shade_layer.gui_input.connect(_on_shade_input)
-	# 源 base.lua:54 窗口框 main_vit_tips Scale9 530×375 @ ccp(400,240) anchor 0.5,0.5。
-	var frame := NinePatchRect.new()
-	var frame_tex: Texture2D = load(FRAME_RES)
-	frame.texture = frame_tex
-	frame.patch_margin_left = int(FRAME_CAP.position.x)
-	frame.patch_margin_top = int(FRAME_CAP.position.y)
-	if frame_tex != null:
-		frame.patch_margin_right = int(frame_tex.get_width() - FRAME_CAP.position.x - FRAME_CAP.size.x)
-		frame.patch_margin_bottom = int(frame_tex.get_height() - FRAME_CAP.position.y - FRAME_CAP.size.y)
-	frame.size = FRAME_SIZE
-	frame.position = _g(FRAME_CENTER) - FRAME_SIZE * 0.5
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(frame)
-	# draglist 等价：ScrollContainer cliprect (154,60,492,365)。
-	var sc := ScrollContainer.new()
-	sc.position = _g(SCROLL_POS)
-	sc.size = SCROLL_SIZE
-	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	container.add_child(sc)
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
-	sc.add_child(vbox)
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
+	_list = content.get_node("%AvatarList") as VBoxContainer
 	# 源 ofavatar:initListData 分类 free/hero/worldcup + 解锁过滤。
 	var groups: Dictionary = _build_groups()
 	for type_key in ["free", "hero", "worldcup"]:
 		if groups.has(type_key) and not (groups[type_key] as Array).is_empty():
-			vbox.add_child(_make_title(_type_title(type_key)))
+			_list.add_child(_make_title(_type_title(type_key)))
 			var grid := GridContainer.new()
 			grid.columns = GRID_COLS
 			grid.add_theme_constant_override("h_separation", 8)
 			grid.add_theme_constant_override("v_separation", 8)
 			for entry in groups[type_key]:
 				grid.add_child(_make_cell(int(entry["key"]), String(entry["res"])))
-			vbox.add_child(grid)
+			_list.add_child(grid)
 
 
 # 源 ofavatar:39 initListData：按 Act Type/Requirement Type 分类 + 解锁过滤。
