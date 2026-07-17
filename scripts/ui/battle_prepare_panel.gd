@@ -4,7 +4,11 @@ extends Control
 ## 战前布阵面板（View 层）— 照源 battleprepare.lua 核心单机段翻译。
 ## 选英雄（按 position 分类 tab all/front/middle/back）+ 上阵/下阵 + maxRange 自动排序 +
 ## gs 显示 + 开始战斗。单机化裁剪：雇佣兵/PVP 防守/公会倒计时/挖矿改阵。
+## 重构（2026-07-17）：UI 静态节点（bg/list_frame/team_bg/5 bucket/4 tab/go/gs label）
+## 固化进 battle_prepare_content.tscn（位置/size 编辑器可视化调）。panel instantiate + fill
+## 动态数据/样式 + 接业务信号。坐标源 cocos(800×480 左下) → Godot(960×640 左上) via (cx+80, 560-cy)。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/battle_prepare_content.tscn")
 const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
 const TEAM_MAX: int = 5  # 源 :171 addTeamMember 上限校验
 
@@ -12,8 +16,14 @@ const TAB_ALL: String = "all"
 const TAB_FRONT: String = "front"
 const TAB_MIDDLE: String = "middle"
 const TAB_BACK: String = "back"
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
+
+# 源 classbtn/classbtnselected 双态图（battleprepare.lua:1844/1857）。整图非 Scale9，Godot 用
+# StyleBoxTexture content_margin=0 让 Button 直接贴图（视觉等价纯 Sprite，源 doChangeListTouch :1216 切 visible）。
+const TAB_N_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
+const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
+# 源 goButton/goPressButton（:1786-1787）普通模式 prepare_go_battle（pvp defend 才用 pvp_button_confirm）。
+const GO_N_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle.png"
+const GO_P_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle_press.png"
 
 # ── 文本 LSTR key（源 battleprepare.lua:1870 BATTLEPREPARE.WHOLE / :1915 UNIT.FRONT_ROW /
 # :1960 UNIT.MIDDLE_ROW / :2005 UNIT.REAR_ROW / :2256 BATTLEPREPARE.COMBAT 战斗力标题 /
@@ -37,17 +47,81 @@ var _heroes_filtered: Array = [] # 当前 tab 过滤后
 var _team: Array = []            # 已上阵 [{inst_id, tid, max_range}]（按 maxRange 降序）
 var _current_tab: String = TAB_ALL
 var _list_grid: GridContainer = null
-var _team_slots: Array[TextureRect] = []  # 5 个槽位底（源 herobucket.png）
+var _team_slots: Array[TextureRect] = []  # 5 个槽位底（源 herobucket.png，.tscn %MemberBg1-5）
 var _gs_label: Label = null
 var _go_button: Button = null
+var _tab_buttons: Dictionary = {}   # tab_key → Button（源 listButton/listButtonSelect 双态切换）
 
 
 func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant) -> void:
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_load_hero_list()
-	_build_ui()
+	_build_content()
 	_load_default_team()
+
+
+# 建 UI 内容（Phase 重构：从 battle_prepare_content.tscn instantiate + fill 动态数据/样式）。
+# battle_prepare 是 Control 非 PopWindow，无 container → content 直接挂自身（保持原挂载语义）。
+func _build_content() -> void:
+	var content := CONTENT_SCENE.instantiate()
+	add_child(content)
+	_list_grid = content.get_node("%ListGrid") as GridContainer
+	# 源 :1843-2065 4 classbtn（all/front/middle/back）+ classbtnselected 双态 + Label。
+	_tab_buttons = {
+		TAB_ALL: content.get_node("%TabAllBtn") as Button,
+		TAB_FRONT: content.get_node("%TabFrontBtn") as Button,
+		TAB_MIDDLE: content.get_node("%TabMiddleBtn") as Button,
+		TAB_BACK: content.get_node("%TabBackBtn") as Button,
+	}
+	for key in _tab_buttons:
+		var btn: Button = _tab_buttons[key] as Button
+		btn.text = _tab_label(key)
+		_apply_tab_style(btn, key == _current_tab)
+		btn.pressed.connect(_on_tab_pressed.bind(key))
+	# 源 :2091-2153 5 member_bg（herobucket.png）槽位。
+	_team_slots.clear()
+	for i in range(TEAM_MAX):
+		_team_slots.append(content.get_node("%MemberBg" + str(i + 1)) as TextureRect)
+	# 源 :2253-2279 gs_title + gs（合并单 label，text="战斗力: N"，行为等价原 panel）。
+	_gs_label = content.get_node("%GsLabel") as Label
+	_gs_label.text = "%s: 0" % cm.get_lstr(LSTR_COMBAT)
+	# 源 :2217-2236 go sprite + go_press。本项目 Button + StyleBox（prepare_go_battle 双态纹理）。
+	_go_button = content.get_node("%GoBtn") as Button
+	_go_button.text = cm.get_lstr(LSTR_CONFIRM)
+	_apply_go_style(_go_button)
+	_go_button.pressed.connect(_on_go_pressed)
+	# 源 :1807-1828 back sprite + back_press。.tscn %BackBtn TextureButton 双态纹理。
+	var back_btn: TextureButton = content.get_node("%BackBtn") as TextureButton
+	back_btn.pressed.connect(_on_back_pressed)
+	_refresh_list()
+	_refresh_team_display()
+	_refresh_gs()
+
+
+# Button 套 StyleBoxTexture（classbtn/classbtnselected 整图，content_margin=0 视觉等价纯贴图）。
+# 源 doChangeListTouch :1216-1237 切 listButtonSelect[k] visible + listLabel color。
+func _apply_tab_style(btn: Button, selected: bool) -> void:
+	var res_path: String = TAB_A_RES if selected else TAB_N_RES
+	btn.add_theme_stylebox_override("normal", _make_stylebox(res_path))
+	btn.add_theme_stylebox_override("hover", _make_stylebox(res_path))
+
+
+# GoBtn 双态：normal/hover=prepare_go_battle，pressed=prepare_go_battle_press（源 :1786-1787）。
+func _apply_go_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _make_stylebox(GO_N_RES))
+	btn.add_theme_stylebox_override("hover", _make_stylebox(GO_N_RES))
+	btn.add_theme_stylebox_override("pressed", _make_stylebox(GO_P_RES))
+
+
+static func _make_stylebox(res_path: String) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	sb.texture = load(res_path) as Texture2D
+	sb.content_margin_left = 0.0
+	sb.content_margin_top = 0.0
+	sb.content_margin_right = 0.0
+	sb.content_margin_bottom = 0.0
+	return sb
 
 
 # 源 getInformation L1697-1721 — 读 player.heroes + Unit 表 Position Type + Skill 表 Max Range 分类。
@@ -70,45 +144,6 @@ func _load_hero_list() -> void:
 		if basic_skill > 0:
 			max_range = int(skill_table.get(str(basic_skill), {}).get("0", {}).get("Max Range", 0))
 		_heroes_all.append({inst_id = int(inst_id), tid = tid, pos_type = pos_type, max_range = max_range})
-
-
-func _build_ui() -> void:
-	# 背景（源 battleprepare.lua:1797 bg.jpg）
-	var bg := TextureRect.new()
-	bg.texture = load("res://assets/ui/alpha/HVGA/bg.jpg")
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT); add_child(bg)
-	# 返回按钮
-	var back: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, Vector2(20.0, 15.0))  # 左上角留小边（用户偏好更靠左上角）
-	back.pressed.connect(_on_back_pressed); add_child(back)
-	# 分类 tab（源 :1870-2005 竖排 classbtn，本项目横排简化；标签照源 LSTR）
-	var tab_box := HBoxContainer.new(); tab_box.position = Vector2(10, 50); tab_box.size = Vector2(400, 30)
-	for tab in [TAB_ALL, TAB_FRONT, TAB_MIDDLE, TAB_BACK]:
-		var btn := Button.new(); btn.text = _tab_label(tab); btn.set_meta("tab", tab)
-		btn.pressed.connect(_on_tab_pressed.bind(tab))
-		tab_box.add_child(btn)
-	add_child(tab_box)
-	# 英雄列表（ScrollContainer + GridContainer）
-	var scroll := ScrollContainer.new(); scroll.position = Vector2(10, 90); scroll.size = Vector2(400, 300)
-	_list_grid = GridContainer.new(); _list_grid.columns = 5
-	scroll.add_child(_list_grid); add_child(scroll)
-	# 队伍底框（源 :2080 heroselected.png）+ 5 槽位（源 :2091 herobucket.png）
-	var team_bg := TextureRect.new()
-	team_bg.texture = load("res://assets/ui/alpha/HVGA/heroselected.png")
-	team_bg.position = Vector2(150, 400); team_bg.size = Vector2(400, 80); add_child(team_bg)
-	var bucket_tex := load("res://assets/ui/alpha/HVGA/herobucket.png")
-	for i in range(TEAM_MAX):
-		var slot := TextureRect.new(); slot.texture = bucket_tex
-		slot.position = Vector2(160 + i * 75, 410); slot.size = Vector2(70, 70)
-		slot.set_meta("slot_index", i)
-		_team_slots.append(slot); add_child(slot)
-	# gs Label（源 :2256-2270 gs_title=战斗力 + gs 数字，本项目合并单标签）
-	_gs_label = Label.new(); _gs_label.text = "%s: 0" % cm.get_lstr(LSTR_COMBAT); _gs_label.position = Vector2(10, 480); add_child(_gs_label)
-	# 开始战斗按钮（源 :2241 conform=确定）
-	_go_button = Button.new(); _go_button.text = cm.get_lstr(LSTR_CONFIRM); _go_button.position = Vector2(600, 410); _go_button.size = Vector2(100, 50)
-	_go_button.pressed.connect(_on_go_pressed); add_child(_go_button)
-	_refresh_list()
-	_refresh_team_display()
-	_refresh_gs()
 
 
 func _refresh_list() -> void:
@@ -199,7 +234,11 @@ func _tab_label(tab: String) -> String:
 
 func _on_tab_pressed(tab: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	_current_tab = tab; _refresh_list()
+	_current_tab = tab
+	# 源 doChangeList :1198-1201 切 listButtonSelect[preList] invisible / listButtonSelect[id] visible。
+	for key in _tab_buttons:
+		_apply_tab_style(_tab_buttons[key] as Button, key == _current_tab)
+	_refresh_list()
 
 
 # 源 loadTeam L1467 — 读上次阵容自动上阵。
