@@ -1,0 +1,97 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/activate_input.png" id="2_namebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/naming_button_roll_1.png" id="3_roll"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/naming_button_roll_2.png" id="4_rollp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="5_btn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="6_btnp"]
+
+[node name="NameInputContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 303.0
+offset_top = 115.0
+offset_right = 658.0
+offset_bottom = 295.0
+texture = ExtResource("1_frame")
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 35
+patch_margin_bottom = 25
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 333.0
+offset_top = 133.0
+offset_right = 533.0
+offset_bottom = 157.0
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+text = "请为您的战队命名"
+
+[node name="NameBg" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 333.0
+offset_top = 179.0
+offset_right = 568.0
+offset_bottom = 221.0
+texture = ExtResource("2_namebg")
+patch_margin_left = 12
+patch_margin_top = 10
+patch_margin_right = 23
+patch_margin_bottom = 23
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+mouse_filter = 2
+
+[node name="Input" type="LineEdit" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 341.0
+offset_top = 187.0
+offset_right = 560.0
+offset_bottom = 213.0
+mouse_filter = 0
+max_length = 12
+
+[node name="RollBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 572.0
+offset_top = 170.0
+offset_right = 634.0
+offset_bottom = 229.0
+texture_normal = ExtResource("3_roll")
+texture_pressed = ExtResource("4_rollp")
+ignore_texture_size = true
+
+[node name="CancelBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 363.0
+offset_top = 238.0
+offset_right = 473.0
+offset_bottom = 283.0
+mouse_filter = 0
+text = "取消"
+
+[node name="OkBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 483.0
+offset_top = 238.0
+offset_right = 593.0
+offset_bottom = 283.0
+mouse_filter = 0
+text = "确认"
