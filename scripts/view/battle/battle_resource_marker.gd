@@ -9,7 +9,14 @@ extends Control
 ## loot 拾取：holo 光环 scale 0.4→1.2 + fade 闪动（源 :970-985）。
 ## marker 原点 = bg 左上角（源 anchor(1,0.5)+position 反算：goldmarker (110,440)→bg左上 (10,418)；
 ## lootmarker (210,440)→bg左上 (125,418)），由 scene.setup 传入。
+##
+## 重构（2026-07-17，hero_detail 范式）：bg + icon + label 静态节点搬进
+## scenes/battle/battle_resource_marker_content.tscn（位置/size 编辑器可视化调），
+## Control 组件 content 挂 panel 自身（坑 7）。setup instantiate + get_node("%Xxx") as
+## 取节点 + _apply_kind_layout fill GOLD/LOOT 差异（bg size / icon texture+pos / label pos）。
+## font_size/font_color/alignment 固化 .tscn theme_override（不再 LabelSettings 运行时建）。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_resource_marker_content.tscn")
 const BG_PATH: String = "res://assets/ui/alpha/HVGA/battle_number_bg.png"
 const GOLD_ICON_PATH: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const LOOT_ICON_PATH: String = "res://assets/ui/alpha/HVGA/chest_small.png"
@@ -28,69 +35,48 @@ const GOLD_PULSE_DURATION: float = 0.1                 # 源 :1004
 const GOLD_PULSE_SCALE: float = 1.25                   # 源 :1007 setScale(1.25)
 const LOOT_PULSE_DURATION: float = 0.3                 # 源 :972
 const LOOT_PULSE_SCALE: float = 1.2                    # 源 :977 ScaleTo(1.2)
-const TEXT_COLOR: Color = Color(1.0, 1.0, 1.0)         # 源 digits/white
-const FONT_SIZE: int = 20                              # 近似数字精灵图高度
-const LABEL_BOX: Vector2 = Vector2(60.0, 22.0)         # Label 居中盒（中心对齐 text_pos）
+const LABEL_BOX: Vector2 = Vector2(60.0, 22.0)         # Label 居中盒（中心对齐 text_pos，.tscn offset 固化 size）
 
 var kind: int = Kind.GOLD
 var _text: Label = null
 var _bg: NinePatchRect = null
+var _icon: Sprite2D = null
 var _value: int = 0
 
 
 # 源 goldmarker/lootmarker 装配：bg_top_left = bg 左上角坐标（marker.position）。
-# kind GOLD → 100×44 + goldicon + text(33,22)；LOOT → 85×44 + chest + text(25,22)。
+# .tscn 已固化 GOLD 基准（bg 100×44 + goldicon + label(33,22) 居中盒）；
+# LOOT 由 _apply_kind_layout 覆盖为 85×44 + chest + label(25,22)。
 func setup(p_kind: int, bg_top_left: Vector2) -> void:
 	kind = p_kind
 	position = bg_top_left
-	var size: Vector2 = GOLD_SIZE if kind == Kind.GOLD else LOOT_SIZE
-	var icon_path: String = GOLD_ICON_PATH if kind == Kind.GOLD else LOOT_ICON_PATH
-	var text_pos: Vector2 = GOLD_TEXT_POS if kind == Kind.GOLD else LOOT_TEXT_POS
-	_create_bg(size)
-	_create_icon(icon_path, size)
-	_text = _create_label(text_pos)
+	var content := CONTENT_SCENE.instantiate()
+	add_child(content)   # Control 组件 content 挂 panel 自身（坑 7，坐标原点 = marker 原点）
+	_bg = content.get_node("%Bg") as NinePatchRect
+	_icon = content.get_node("%Icon") as Sprite2D
+	_text = content.get_node("%ValueLabel") as Label
+	_apply_kind_layout()
 	set_value(0)
 
 
-func _create_bg(size: Vector2) -> void:
-	var bg := NinePatchRect.new()
-	var tex: Texture2D = _load_tex(BG_PATH)
-	if tex != null:
-		bg.texture = tex
-	bg.size = size
-	# 源 createScale9Sprite 九宫格拉伸；patch_margin 默认 0（整体拉伸），视觉边角后调
-	add_child(bg)
-	_bg = bg
-
-
-func _create_icon(icon_path: String, bg_size: Vector2) -> void:
-	var tex: Texture2D = _load_tex(icon_path)
-	if tex == null:
-		return
-	var icon := Sprite2D.new()
-	icon.texture = tex
-	icon.centered = false   # 左上角对齐
-	# 源 anchor(1,0.5) position(size.w-4, size.h*0.5) → icon 右中在 (w-4, h/2)
-	icon.position = Vector2(
-		bg_size.x - ICON_RIGHT_OFFSET - float(tex.get_width()),
-		bg_size.y * 0.5 - float(tex.get_height()) * 0.5
-	)
-	add_child(icon)
-
-
-func _create_label(center_pos: Vector2) -> Label:
-	var lbl := Label.new()
-	var ls := LabelSettings.new()
-	ls.font_size = FONT_SIZE
-	ls.font_color = TEXT_COLOR
-	lbl.label_settings = ls
-	lbl.size = LABEL_BOX
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Label 中心对齐 center_pos（box 左上 = center - size/2）
-	lbl.position = center_pos - LABEL_BOX * 0.5
-	add_child(lbl)
-	return lbl
+# fill GOLD/LOOT 差异：bg size + icon texture/pos + label pos。
+# 源 anchor(1,0.5) position(size.w-4, size.h*0.5) → icon 右中在 (w-4, h/2)。
+func _apply_kind_layout() -> void:
+	var marker_size: Vector2 = GOLD_SIZE if kind == Kind.GOLD else LOOT_SIZE
+	var icon_path: String = GOLD_ICON_PATH if kind == Kind.GOLD else LOOT_ICON_PATH
+	var text_center: Vector2 = GOLD_TEXT_POS if kind == Kind.GOLD else LOOT_TEXT_POS
+	if _bg != null:
+		_bg.size = marker_size
+	if _icon != null:
+		var tex: Texture2D = _load_tex(icon_path)
+		if tex != null:
+			_icon.texture = tex
+			_icon.position = Vector2(
+				marker_size.x - ICON_RIGHT_OFFSET - float(tex.get_width()),
+				marker_size.y * 0.5 - float(tex.get_height()) * 0.5
+			)
+	if _text != null:
+		_text.position = text_center - LABEL_BOX * 0.5
 
 
 # 源 addGold/addLootMarker：text 显 value（gold 千分位，loot 原值）。
