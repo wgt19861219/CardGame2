@@ -1,0 +1,91 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="StarShopBuyWindowContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 246.0
+offset_top = 180.0
+offset_right = 712.0
+offset_bottom = 470.0
+mouse_filter = 0
+
+[node name="Title1Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 190.0
+offset_top = 130.0
+offset_right = 290.0
+offset_bottom = 152.0
+theme_override_colors/font_color = Color(0.505882, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="IconContainer" type="Control" parent="Frame"]
+layout_mode = 3
+offset_left = 180.0
+offset_top = 92.0
+offset_right = 223.0
+offset_bottom = 135.0
+mouse_filter = 2
+
+[node name="AmountLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 240.0
+offset_top = 90.0
+offset_right = 360.0
+offset_bottom = 114.0
+theme_override_colors/font_color = Color(0.513726, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+
+[node name="Title2Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 120.0
+offset_top = 200.0
+offset_right = 160.0
+offset_bottom = 222.0
+theme_override_colors/font_color = Color(0.505882, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 186.0
+offset_top = 90.0
+offset_right = 306.0
+offset_bottom = 114.0
+theme_override_colors/font_color = Color(0.513726, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+
+[node name="CancelBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 81.0
+offset_top = 196.0
+offset_right = 201.0
+offset_bottom = 250.0
+mouse_filter = 0
+
+[node name="OkBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 248.0
+offset_top = 199.0
+offset_right = 368.0
+offset_bottom = 253.0
+mouse_filter = 0
