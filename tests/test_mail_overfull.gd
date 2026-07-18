@@ -4,13 +4,14 @@ extends GutTest
 
 
 # frame（common_alert_bg）+ 2 按钮（强行领取/稍后领取）装配。
+# Phase A 静态化（2026-07-18）：按钮从 TextureButton 改 Button + Scale9（apply_with_label），扫描类型同步改 Button。
 func test_popup_assembles_frame_and_buttons() -> void:
 	var popup := MailOverfullPopup.new()
 	popup.setup([{"id": 371, "amount": 5}], GameData.config)
 	add_child(popup)
-	await get_tree().process_frame   # 等 _ready → _build
+	await get_tree().process_frame   # 等 _ready → _build_content
 	assert_true(_has_tex(popup, popup.FRAME_TEX), "frame 装配（common_alert_bg）")
-	var btns: Array = popup.find_children("*", "TextureButton", true, false)
+	var btns: Array = popup.find_children("*", "Button", true, false)
 	assert_eq(btns.size(), 2, "2 按钮（强行领取+稍后领取）")
 	popup.free()
 
@@ -43,6 +44,8 @@ func test_popup_grid_4_cols() -> void:
 
 
 # P1（2026-07-16）：UI 文案 LSTR 化验证（title/desc/按钮文本走 GameData.config.get_lstr）。
+# Phase A 静态化（2026-07-18）：按钮从 TextureButton+子 Label 改 Button+Scale9，按钮文字走 Button.text 而非子 Label，
+# texts 扫描扩展到 Button（apply_with_label 设 btn.text）。
 func test_popup_texts_use_lstr() -> void:
 	var popup := MailOverfullPopup.new()
 	popup.setup([{"id": 371, "amount": 5}], GameData.config)
@@ -52,6 +55,8 @@ func test_popup_texts_use_lstr() -> void:
 	var texts: Array = []
 	for l in popup.find_children("*", "Label", true, false):
 		texts.append(String(l.text))
+	for b in popup.find_children("*", "Button", true, false):
+		texts.append(String(b.text))
 	assert_true(texts.has(cfg.get_lstr("mailoverfull.1.10.1.003")), "title 走 LSTR mailoverfull.1.10.1.003")
 	assert_true(texts.has(cfg.get_lstr("overfull.1.10.1.001")), "desc1 走 LSTR overfull.1.10.1.001")
 	assert_true(texts.has(cfg.get_lstr("overfull.1.10.1.002")), "desc2 走 LSTR overfull.1.10.1.002")
