@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/nextbtn.png" id="1_btn"]
+
+[node name="BattleNextButtonContent" type="Control"]
+layout_mode = 3
+mouse_filter = 2
+
+[node name="NextBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+texture_normal = ExtResource("1_btn")
+visible = false
+disabled = true
