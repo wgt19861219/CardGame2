@@ -27,9 +27,9 @@ func test_cancel_does_not_emit() -> void:
 	add_child(popup)
 	var emitted := [false]
 	popup.confirmed.connect(func() -> void: emitted[0] = true)
-	# 取消按钮是 frame 第 2 个子（cancel），按其 pressed 直接 queue_free 不 emit
-	var frame: Panel = popup.get_child(1)  # shade(0) + frame(1)
-	var cancel: Button = frame.get_child(1)  # msg(0) + cancel(1)
+	# 重构后子场景 content 挂 panel（child 0）；%CancelBtn unique_name 在 content 子场景内。
+	var content: Node = popup.get_child(0)
+	var cancel: Button = content.get_node("%CancelBtn")
 	cancel.pressed.emit()
 	assert_false(emitted[0], "取消不 emit confirmed")
 	popup.queue_free()
