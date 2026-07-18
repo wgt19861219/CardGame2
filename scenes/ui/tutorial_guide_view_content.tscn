@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tutorial_bubble_big.png" id="1_bubble"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tutorial_head_cm.png" id="2_head"]
+
+; 静态节点（skip/bubble/head/step_label/next）位置/size 固化，编辑器可视化调（hero_detail 范式）。
+; circle/finger 高亮位置随步骤变，挂 %HighlightHost 保留 procedural（源 tutorialmaker getFinger）。
+; 源 const LABEL_POS/BUBBLE_POS 等已是 Godot 坐标（position 赋值），无 to_godot 转换。
+
+[node name="TutorialGuideContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="SkipBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 800.0
+offset_top = 50.0
+offset_right = 880.0
+offset_bottom = 90.0
+text = "跳过引导"
+
+[node name="Bubble" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 300.0
+offset_top = 130.0
+offset_right = 660.0
+offset_bottom = 310.0
+texture = ExtResource("1_bubble")
+expand_mode = 1
+ignore_texture_size = true
+mouse_filter = 2
+
+[node name="Head" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 230.0
+offset_top = 150.0
+offset_right = 320.0
+offset_bottom = 260.0
+texture = ExtResource("2_head")
+expand_mode = 1
+ignore_texture_size = true
+mouse_filter = 2
+
+[node name="StepLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 360.0
+offset_top = 200.0
+offset_right = 640.0
+offset_bottom = 280.0
+mouse_filter = 2
+horizontal_alignment = 0
+
+[node name="NextBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 400.0
+offset_top = 300.0
+offset_right = 480.0
+offset_bottom = 340.0
+text = "下一步"
+
+[node name="HighlightHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
