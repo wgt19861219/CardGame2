@@ -1,0 +1,50 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
+
+[node name="LanguageChangeContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 165.0
+offset_top = 108.0
+offset_right = 795.0
+offset_bottom = 548.0
+texture = ExtResource("1_frame")
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 35
+patch_margin_bottom = 25
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 690.0
+offset_top = 135.0
+offset_right = 740.73
+offset_bottom = 186.51
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
+ignore_texture_size = true
+
+[node name="LangGrid" type="GridContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 120.0
+offset_right = 750.0
+offset_bottom = 400.0
+theme_override_constants/h_separation = 30
+theme_override_constants/v_separation = 40
+columns = 5
+mouse_filter = 2
