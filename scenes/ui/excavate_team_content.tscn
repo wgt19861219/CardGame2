@@ -1,0 +1,82 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+
+[node name="ExcavateTeamContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 200.0
+offset_top = 140.0
+offset_right = 760.0
+offset_bottom = 500.0
+texture = ExtResource("1_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 710.0
+offset_top = 152.0
+offset_right = 750.0
+offset_bottom = 192.0
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
+ignore_texture_size = true
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 200.0
+offset_top = 155.0
+offset_right = 760.0
+offset_bottom = 191.0
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+horizontal_alignment = 1
+text = "驻防队伍"
+
+[node name="HeroBox" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 240.0
+offset_top = 215.0
+offset_right = 720.0
+offset_bottom = 335.0
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="ChangeBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 260.0
+offset_top = 445.0
+offset_right = 440.0
+offset_bottom = 485.0
+text = "调整阵容"
+
+[node name="GiveupBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 560.0
+offset_top = 445.0
+offset_right = 700.0
+offset_bottom = 485.0
+text = "放弃矿点"
+
+[node name="BattleBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 380.0
+offset_top = 440.0
+offset_right = 580.0
+offset_bottom = 484.0
+text = "出战"

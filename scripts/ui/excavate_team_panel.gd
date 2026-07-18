@@ -6,27 +6,26 @@ extends PopWindow
 ## monster 矿点：显示敌人英雄 + 出战（ExcavateBattle.run_excavate_battle headless）。
 ## 单机简化：源 battleprepare/excavateChange/Attack View 战斗 → headless；雇佣兵/联机验证/others 裁剪。
 ## 英雄头像 ReadheroIcon 接入留视觉完善（阶段 2b），当前 Label 显示 tid/level。
+##
+## 重构（2026-07-18，hero_detail 范式）：panel 层静态节点（frame/close/title/hero_box/
+## change/giveup/battle button）固化进 excavate_team_content.tscn；运行时按 owner 切按钮 visible
+## （源 :504-535 按 owner 切 cg_button_container/go_battle_button 可见性）。英雄列表（ReadheroIcon）
+## 保留 procedural 挂 %HeroBox（数量动态）。
 
-const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png"
-const CLOSE_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_P_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
-const FRAME_W: float = 560.0
-const FRAME_H: float = 360.0
-const FONT_TITLE: int = 22
-const FONT_BODY: int = 16
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_team_content.tscn")
 # 源 excavateteam.lua 无 fixed title LSTR；按 owner 显示玩家名/敌人名（单机用 "驻防/敌方" 兜底）
 const TITLE_MINE: String = "驻防队伍"
 const TITLE_MONSTER: String = "敌方守卫"
 # 源 :113 change_team_button → enterExcavateChange（mode=excavateChange）
 const LSTR_CHANGE_TEAM_KEY: String = "EXCAVATETEAM.ADJUST_FORMATION"
 const CHANGE_TEAM_FALLBACK: String = "调整阵容"
-const CHANGE_TEAM_TEXT: String = "换队（用当前阵容）"   # 单机用当前阵容直换（无 battleprepare）
 # 源 :124-128 give_up_button（pop excavategiveup）；"放弃矿点" 单机兜底（无 LSTR）
 const GIVEUP_TEXT: String = "放弃矿点"
 # 源 :178-250 go_battle_button（图标，无 LSTR 文本）；"出战" 单机兜底
 const BATTLE_TEXT: String = "出战"
 const NO_DEFEND_TEXT: String = "尚未驻防，点击「换队」派英雄驻守"   # 单机兜底
 const NO_ENEMY_TEXT: String = "无敌人数据"   # 单机兜底
+const FONT_BODY: int = 16
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
 const TEAM_SET_TEXT: String = "已用当前阵容驻防"   # 单机 Toast（无 LSTR）
 const OWNER_MINE: String = "mine"
@@ -37,6 +36,9 @@ var rng: BattleRng
 var _excavate_id: int
 var _on_closed: Callable
 var _hero_box: HBoxContainer
+var _change_btn: Button
+var _giveup_btn: Button
+var _battle_btn: Button
 
 
 func setup_panel(p_pd: PlayerData, excavate_id: int, p_rng: BattleRng, on_closed: Callable) -> void:
@@ -48,49 +50,33 @@ func setup_panel(p_pd: PlayerData, excavate_id: int, p_rng: BattleRng, on_closed
 	_build_ui()
 
 
+# 建 UI：preload .tscn instantiate + fill 动态数据 + 按 owner 切按钮 visible + 绑信号。
+# 位置/size 静态节点（frame/close/title/hero_box/change/giveup/battle）已在 .tscn 固化。
 func _build_ui() -> void:
-	var frame := TextureRect.new()
-	frame.texture = load(FRAME_TEX)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = Vector2(FRAME_W, FRAME_H)
-	frame.position = Vector2(960.0 * 0.5 - FRAME_W * 0.5, 640.0 * 0.5 - FRAME_H * 0.5)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(frame)
-	_add_close(frame)
-	_add_title(frame)
-	_add_hero_list(frame)
-	_add_action_buttons(frame)
-
-
-func _add_close(frame: TextureRect) -> void:
-	var close := TextureButton.new()
-	close.texture_normal = load(CLOSE_TEX)
-	close.texture_pressed = load(CLOSE_P_TEX)
-	close.ignore_texture_size = true
-	close.size = Vector2(40, 40)
-	close.position = Vector2(frame.size.x - 50, 12)
-	close.pressed.connect(remove_window)
-	frame.add_child(close)
-
-
-func _add_title(frame: TextureRect) -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	container.add_child(content)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
 	var owner: String = String(pd.excavate.get_data(_excavate_id).get("_owner", ""))
-	var title := Label.new()
-	title.text = TITLE_MINE if owner == OWNER_MINE else TITLE_MONSTER
-	title.position = Vector2(0, 15)
-	title.size = Vector2(frame.size.x, 36)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font", FONT_TITLE)
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(title)
-
-
-func _add_hero_list(frame: TextureRect) -> void:
-	_hero_box = HBoxContainer.new()
-	_hero_box.position = Vector2(40, 75)
-	_hero_box.size = Vector2(frame.size.x - 80, 120)
-	_hero_box.add_theme_constant_override("separation", 6)
-	frame.add_child(_hero_box)
+	# 标题 fill 一次（源 :376 setLabelString(name, player._name)，单机用 mine/monster 兜底）
+	var title_node: Label = content.get_node("%Title") as Label
+	title_node.text = TITLE_MINE if owner == OWNER_MINE else TITLE_MONSTER
+	_hero_box = content.get_node("%HeroBox") as HBoxContainer
+	# 三按钮（.tscn 设默认 text 占位，运行时 fill LSTR/fallback 文本）
+	_change_btn = content.get_node("%ChangeBtn") as Button
+	_giveup_btn = content.get_node("%GiveupBtn") as Button
+	_battle_btn = content.get_node("%BattleBtn") as Button
+	_change_btn.text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
+	_giveup_btn.text = GIVEUP_TEXT
+	_battle_btn.text = BATTLE_TEXT
+	_change_btn.pressed.connect(_on_change_team)
+	_giveup_btn.pressed.connect(_on_giveup)
+	_battle_btn.pressed.connect(_on_battle)
+	# 按 owner 切按钮可见（源 :504-535 data._owner=="mine" 时 explain/cg_button shown，
+	# go_battle hidden；非 mine 反过来。单机裁 vitality/guild/explain，保留 change/giveup vs battle 切换）
+	var is_mine: bool = owner == OWNER_MINE
+	_change_btn.visible = is_mine
+	_giveup_btn.visible = is_mine
+	_battle_btn.visible = not is_mine
 	_refresh_hero_list()
 
 
@@ -138,31 +124,6 @@ func _add_hero_icon(info: Dictionary) -> void:
 	icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
 	wrapper.add_child(icon)
 	_hero_box.add_child(wrapper)
-
-
-func _add_action_buttons(frame: TextureRect) -> void:
-	var owner: String = String(pd.excavate.get_data(_excavate_id).get("_owner", ""))
-	if owner == OWNER_MINE:
-		var change := Button.new()
-		# 源 :113 LSTR EXCAVATETEAM.ADJUST_FORMATION = "调整阵容"（单机用当前阵容直换）
-		change.text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
-		change.size = Vector2(180, 40)
-		change.position = Vector2(60, frame.size.y - 55)
-		change.pressed.connect(_on_change_team)
-		frame.add_child(change)
-		var giveup := Button.new()
-		giveup.text = GIVEUP_TEXT
-		giveup.size = Vector2(140, 40)
-		giveup.position = Vector2(frame.size.x - 200, frame.size.y - 55)
-		giveup.pressed.connect(_on_giveup)
-		frame.add_child(giveup)
-	else:
-		var battle := Button.new()
-		battle.text = BATTLE_TEXT
-		battle.size = Vector2(200, 44)
-		battle.position = Vector2(frame.size.x * 0.5 - 100, frame.size.y - 60)
-		battle.pressed.connect(_on_battle)
-		frame.add_child(battle)
 
 
 # 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
