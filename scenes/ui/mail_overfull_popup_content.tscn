@@ -1,0 +1,108 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_alert_bg.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-title-mark.png" id="2_titlebg"]
+
+[node name="MailOverfullPopupContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 248.5
+offset_top = 138.5
+offset_right = 711.5
+offset_bottom = 501.5
+texture = ExtResource("1_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleBg" type="TextureRect" parent="Frame"]
+layout_mode = 3
+offset_left = 51.5
+offset_top = 30.0
+offset_right = 410.5
+offset_bottom = 42.0
+texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 0.0
+offset_top = 20.0
+offset_right = 463.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.992157, 0.843137, 0.066667, 1)
+theme_override_font_sizes/font_size = 23
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "超额提醒"
+
+[node name="ContentVBox" type="VBoxContainer" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 50.0
+offset_top = 65.0
+offset_right = 413.0
+offset_bottom = 65.0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Desc1Label" type="Label" parent="Frame/ContentVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.952941, 0.760784, 0.443137, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+autowrap_mode = 3
+text = "部分道具将超出可携带上限(999个)。如果强行领取，将损失超出的道具。"
+
+[node name="Desc2Label" type="Label" parent="Frame/ContentVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.952941, 0.760784, 0.443137, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+text = "超出："
+
+[node name="Desc3Label" type="Label" parent="Frame/ContentVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.952941, 0.760784, 0.443137, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+text = "是否继续领取？"
+
+[node name="LeftBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 100.5
+offset_top = 293.0
+offset_right = 221.5
+offset_bottom = 348.0
+
+[node name="RightBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 241.5
+offset_top = 293.0
+offset_right = 362.5
+offset_bottom = 348.0

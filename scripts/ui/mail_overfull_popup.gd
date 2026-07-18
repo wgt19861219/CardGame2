@@ -5,17 +5,22 @@ extends Control
 ## frame（common_alert_bg）+ title_bg（herodetail-title-mark）+ 标题"超额提醒"
 ## + 3 段说明（overfull.1.10.1.001/002/003）+ 溢出物品 4 列网格
 ## + 「强行领取」(confirmed)/「稍后领取」(cancel)。left → emit confirmed（调用方继续领取），right → 关闭。
+## Phase A 静态化（2026-07-18）：shade/frame/title_bg/title/desc1·2·3/left·right 从 procedural
+## 改 instantiate mail_overfull_popup_content.tscn（位置/size .tscn 固化，照 hero_detail 范式）。
+## Control 非 PopWindow：content 挂 panel 自身（参考 shortcut/battle_prepare/crusade_reset_confirm 范式）。
+## 溢出物品 4 列网格保留 procedural 挂 %ContentVBox（数量随 items 变，插 desc2/desc3 之间）。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_overfull_popup_content.tscn")
+# 测试用：frame 贴图路径（_has_tex 递归扫 TextureRect.resource_path 比对）。
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/common/common_alert_bg.png"
-const TITLE_BG_TEX: String = "res://assets/ui/alpha/HVGA/herodetail-title-mark.png"
-const BTN_TEX: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
-const BTN_P_TEX: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
-const FRAME_SIZE: Vector2 = Vector2(463.0, 363.0)   # 源 uieditor scaleSize
-const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.5)
-const TITLE_COLOR: Color = Color(253.0 / 255.0, 215.0 / 255.0, 17.0 / 255.0)   # 源 uieditor title ccc3
-const DESC_COLOR: Color = Color(243.0 / 255.0, 194.0 / 255.0, 113.0 / 255.0)   # 源 overfull.lua:47 说明色
-const GRID_COLS: int = 4                # 源 overfull.lua:68-70 4 列
-const ICON_SCALE: float = 0.85          # 源 createIconWithAmount(id, 60) ≈ 60/72
+# 源 overfull.lua:68-70 4 列 / createIconWithAmount(id, 60) ≈ 60/72。
+const GRID_COLS: int = 4
+const ICON_SCALE: float = 0.85
+# 源 uieditor/mailoverfull.lua:16/21/41/47 sell_number_button capInsets 15.63,15.63,19.53,15.63 + 浅金 ccc3(239,230,209)。
+const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
+const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
+const BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
+const BTN_LABEL_COLOR: Color = Color(239.0 / 255.0, 230.0 / 255.0, 209.0 / 255.0)
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
 const LSTR_TITLE_KEY: String = "mailoverfull.1.10.1.003"   # 源 uieditor/mailoverfull.lua:106
 const TITLE_FALLBACK: String = "超额提醒"
@@ -53,59 +58,33 @@ func setup(items: Array, cm: Variant) -> void:
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 模态拦截底层
-	_build()
+	_build_content()
 
 
-func _build() -> void:
-	var frame_pos: Vector2 = Vector2(960.0 * 0.5 - FRAME_SIZE.x * 0.5, 640.0 * 0.5 - FRAME_SIZE.y * 0.5)
-	var shade := ColorRect.new()
-	shade.color = SHADE_COLOR
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
-	var frame := TextureRect.new()
-	frame.texture = load(FRAME_TEX)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = FRAME_SIZE
-	frame.position = frame_pos
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(frame)
-	_add_title(frame)
-	_add_content(frame)
-	_add_buttons(frame)
+# Phase A：静态节点从 .tscn instantiate（位置/size .tscn 固化）+ fill 动态文案/Scale9 + 信号绑定。
+# 溢出物品 4 列网格保留 procedural 挂 %ContentVBox（在 desc2/desc3 之间，照源 overfull.lua ChaosNode 垂直流）。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	add_child(content)   # Control 非 PopWindow：content 挂 panel 自身
+	(content.get_node("%TitleLabel") as Label).text = _lstr(LSTR_TITLE_KEY, TITLE_FALLBACK)
+	var vbox: VBoxContainer = content.get_node("%ContentVBox") as VBoxContainer
+	(vbox.get_node("Desc1Label") as Label).text = _lstr(LSTR_DESC1_KEY, DESC1_FALLBACK)
+	(vbox.get_node("Desc2Label") as Label).text = _lstr(LSTR_DESC2_KEY, DESC2_FALLBACK)
+	(vbox.get_node("Desc3Label") as Label).text = _lstr(LSTR_DESC3_KEY, DESC3_FALLBACK)
+	_build_grid(vbox)
+	# 取消/确认按钮（源 uieditor sell_number_button Scale9 cap 15.63,15.63,19.53,15.63 + 浅金 ccc3）
+	var left_btn: Button = content.get_node("%LeftBtn") as Button
+	UiScale9Button.apply_with_label(left_btn, BTN_RES, BTN_PRESS_RES, BTN_CAP, _lstr(LSTR_LEFT_KEY, LEFT_FALLBACK), BTN_LABEL_COLOR)
+	left_btn.pressed.connect(_on_left)
+	var right_btn: Button = content.get_node("%RightBtn") as Button
+	UiScale9Button.apply_with_label(right_btn, BTN_RES, BTN_PRESS_RES, BTN_CAP, _lstr(LSTR_RIGHT_KEY, RIGHT_FALLBACK), BTN_LABEL_COLOR)
+	right_btn.pressed.connect(_close)
 
 
-func _add_title(frame: TextureRect) -> void:
-	var title_bg := TextureRect.new()
-	title_bg.texture = load(TITLE_BG_TEX)
-	title_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title_bg.size = Vector2(359.0, 12.0)
-	title_bg.position = Vector2(frame.size.x * 0.5 - 179.5, 30.0)
-	title_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(title_bg)
-	var title := Label.new()
-	title.text = _lstr(LSTR_TITLE_KEY, TITLE_FALLBACK)
-	title.position = Vector2(0.0, 20.0)
-	title.size = Vector2(frame.size.x, 30.0)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font", 23)   # 源 uieditor size=23
-	title.add_theme_color_override("font_color", TITLE_COLOR)
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(title)
-
-
-# 3 段说明 + 溢出物品 4 列网格（源 overfull.lua:28-110 ChaosNode 垂直排列）。
-func _add_content(frame: TextureRect) -> void:
-	var vbox := VBoxContainer.new()
-	vbox.position = Vector2(50.0, 65.0)
-	vbox.custom_minimum_size = Vector2(frame.size.x - 100.0, 0.0)
-	vbox.add_theme_constant_override("separation", 8)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(vbox)
-	vbox.add_child(_make_desc(_lstr(LSTR_DESC1_KEY, DESC1_FALLBACK), 16, true))
-	vbox.add_child(_make_desc(_lstr(LSTR_DESC2_KEY, DESC2_FALLBACK), 18, false))
-	var grid := GridContainer.new()
+# 源 overfull.lua:67-84 溢出物品 4 列网格（createIconWithAmount(id, 60, amount)）。
+# grid 创建后插到 vbox 的 desc2(idx=1) 和 desc3(idx=2) 之间（move_child 到 idx=2，保持源 ChaosNode 垂直顺序）。
+func _build_grid(vbox: VBoxContainer) -> void:
+	var grid: GridContainer = GridContainer.new()
 	grid.columns = GRID_COLS
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
@@ -119,57 +98,7 @@ func _add_content(frame: TextureRect) -> void:
 		icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
 		grid.add_child(icon)
 	vbox.add_child(grid)
-	var desc3 := _make_desc(_lstr(LSTR_DESC3_KEY, DESC3_FALLBACK), 18, false)
-	desc3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(desc3)
-
-
-func _make_desc(text: String, font: int, wrap: bool) -> Label:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font", font)
-	lbl.add_theme_color_override("font_color", DESC_COLOR)
-	if wrap:
-		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return lbl
-
-
-func _add_buttons(frame: TextureRect) -> void:
-	var btn_w: float = 121.0   # 源 uieditor scaleSize 121.09
-	var btn_h: float = 55.0
-	var gap: float = 20.0
-	var left := TextureButton.new()
-	left.texture_normal = load(BTN_TEX)
-	left.texture_pressed = load(BTN_P_TEX)
-	left.ignore_texture_size = true
-	left.custom_minimum_size = Vector2(btn_w, btn_h)
-	left.size = Vector2(btn_w, btn_h)
-	left.position = Vector2(frame.size.x * 0.5 - btn_w - gap * 0.5, frame.size.y - 70.0)
-	left.add_child(_make_btn_label(_lstr(LSTR_LEFT_KEY, LEFT_FALLBACK), Vector2(btn_w, btn_h)))
-	left.pressed.connect(_on_left)
-	frame.add_child(left)
-	var right := TextureButton.new()
-	right.texture_normal = load(BTN_TEX)
-	right.texture_pressed = load(BTN_P_TEX)
-	right.ignore_texture_size = true
-	right.custom_minimum_size = Vector2(btn_w, btn_h)
-	right.size = Vector2(btn_w, btn_h)
-	right.position = Vector2(frame.size.x * 0.5 + gap * 0.5, frame.size.y - 70.0)
-	right.add_child(_make_btn_label(_lstr(LSTR_RIGHT_KEY, RIGHT_FALLBACK), Vector2(btn_w, btn_h)))
-	right.pressed.connect(_close)
-	frame.add_child(right)
-
-
-func _make_btn_label(text: String, sz: Vector2) -> Label:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.size = sz
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font", 20)   # 源 uieditor size=20
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return lbl
+	vbox.move_child(grid, 2)   # 插到 desc2(1) 和 desc3(2) 之间
 
 
 # 源 overfull.lua:10-16 left_button clickHandler → leftCallback（继续领取）+ destroy。
