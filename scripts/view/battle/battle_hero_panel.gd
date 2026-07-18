@@ -6,20 +6,19 @@ extends Control
 ## castHandler，hero_panel 自加 frame 边框）+ container herobucket + redmask hp_low 红闪。
 ## update 每 tick 检查 can_cast_manual/current_skill:can_trigger → state cast/trigger/switch +
 ## FCA skill_ready 降级 stub（.abc 缺）+ 死亡变灰 setColor(100,100,100) + auto_combat 自动放。
+##
+## 重构（2026-07-18，hero_detail 范式）：静态节点（FrameBtn/Redmask/Container + 3 Host 位置）从
+## battle_hero_panel_content.tscn instantiate（位置/size 可视化）；动态 portrait/hp_bar/mp_bar 挂 %Host。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_hero_panel_content.tscn")
 const ReadheroIcon: Script = preload("res://scripts/view/battle/readhero_icon.gd")
 const BattleFloatingBar: Script = preload("res://scripts/view/battle/battle_floating_bar.gd")
 const BattleEffect: Script = preload("res://scripts/view/battle/battle_effect.gd")
 
-const CONTAINER_PATH: String = "res://assets/ui/alpha/HVGA/herobucket.png"
-const REDMASK_PATH: String = "res://assets/ui/alpha/HVGA/portraitredmask.png"
+# frame_btn texture_normal 按 rank 动态 fill（FRAME_PATH_FMT % frame_id）。位置/size 在 .tscn。
 const FRAME_PATH_FMT: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_%d.png"
 
-const PORTRAIT_POS: Vector2 = Vector2(0.0, 70.0)        # 源 :36 portrait.icon position
-const HP_BAR_POS: Vector2 = Vector2(0.0, 21.0)          # 源 :67 hp_bar.node position
-const MP_BAR_POS: Vector2 = Vector2(0.0, 8.0)           # 源 :70 mp_bar.node position
-const FRAME_SIZE: Vector2 = Vector2(104.0, 104.0)       # frame_btn 盖 portrait（container 尺寸）
-const FRAME_BTN_OFFSET: Vector2 = Vector2(-2.0, -2.0)   # 源 :42 menu ccp(-2,-2)
+# redmask FadeTo 闪烁 loop（源 :75-76）。位置/texture/初始 visible 在 .tscn。
 const REDMASK_FADE_LOW: float = 64.0 / 255.0            # 源 :75 FadeTo(0.8, 64)
 const DEAD_COLOR: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0)  # 源 :125 ccc3(100,100,100)
 const AUTO_CAST_INTERVAL: float = 0.5                   # 源 :129 skill_ready_timer > 0.5
@@ -51,58 +50,45 @@ var _skill_ready_timer: float = 0.0
 var _skill_ready_effect: Variant = null  # 源 :27 skill_ready FCA 节点
 
 
-# 源 HeroPanelCreate(unit, color)。
+# 源 HeroPanelCreate(unit, color)。Phase：静态节点从 .tscn instantiate（位置/size 可视化）+
+# 动态 portrait/hp_bar/mp_bar 挂 %Host（位置在 .tscn，子组件局部坐标系不变）。
 func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	unit = p_unit
 	cm = p_cm
 	scene = p_scene
-	# 源 :17-22 portrait = createIcon({id, stars, isHideFrame=true})
-	portrait = ReadheroIcon.new()
-	portrait.setup({"id": int(unit.tid), "stars": int(unit.stars), "isHideFrame": true}, cm)
-	portrait.icon.position = PORTRAIT_POS   # 源 :36
-	add_child(portrait)
-	_create_frame_button()   # 源 :38-44 hero_panel 自加 frame（castHandler 按钮）
-	_create_container()      # 源 :63-65 herobucket
-	# 源 :15-16 hp_bar = HpBarCreate(unit,"HP") / mp_bar = HpBarCreate(unit, MP Type)
-	hp_bar = BattleFloatingBar.create(unit, "HP")
-	hp_bar.auto_hide = false   # 源 :66
-	hp_bar.position = HP_BAR_POS
-	add_child(hp_bar)
-	var mp_type: String = str(unit.info.get("MP Type", "MP"))
-	mp_bar = BattleFloatingBar.create(unit, mp_type)
-	mp_bar.auto_hide = false   # 源 :69
-	mp_bar.position = MP_BAR_POS
-	add_child(mp_bar)
-	_create_redmask()   # 源 :72-76
-	frame_btn.disabled = true   # 源 :62 setEnabled(false)
-
-
-# 源 :38-44 frame = CCMenuItemImage(getIconFrameByRank(rank))。frame_btn 接 castHandler（点放大招）。
-func _create_frame_button() -> void:
-	frame_btn = TextureButton.new()
+	var content := CONTENT_SCENE.instantiate()
+	add_child(content)   # Control 组件，content 挂 panel 自身（坑 7）
+	frame_btn = content.get_node("%FrameBtn") as TextureButton
+	redmask = content.get_node("%Redmask") as Sprite2D
+	var portrait_host: Control = content.get_node("%PortraitHost") as Control
+	var hp_bar_host: Control = content.get_node("%HpBarHost") as Control
+	var mp_bar_host: Control = content.get_node("%MpBarHost") as Control
+	# 源 :38-44 frame = CCMenuItemImage(getIconFrameByRank(rank))。texture_normal 按 rank fill。
 	var rank: int = int(unit.rank)
 	var frame_id: int = ReadheroIcon._frame_id_by_rank(rank)
 	frame_btn.texture_normal = _load_tex(FRAME_PATH_FMT % frame_id)
-	frame_btn.size = FRAME_SIZE
-	frame_btn.position = FRAME_BTN_OFFSET   # 源 menu ccpAdd(anchorPointInPoints, ccp(-2,-2))
 	frame_btn.pressed.connect(_on_frame_pressed)
-	portrait.icon.add_child(frame_btn)
+	# 源 :17-22 portrait = createIcon({id, stars, isHideFrame=true})。挂 %PortraitHost（位置 (0,70) 在 .tscn）。
+	portrait = ReadheroIcon.new()
+	portrait.setup({"id": int(unit.tid), "stars": int(unit.stars), "isHideFrame": true}, cm)
+	portrait_host.add_child(portrait)
+	portrait_host.move_child(portrait, 0)   # 让 portrait 在 FrameBtn 之下（视觉等价源 add 顺序）
+	# 源 :15-16 hp_bar = HpBarCreate(unit,"HP") / mp_bar = HpBarCreate(unit, MP Type)
+	hp_bar = BattleFloatingBar.create(unit, "HP")
+	hp_bar.auto_hide = false   # 源 :66
+	hp_bar_host.add_child(hp_bar)
+	var mp_type: String = str(unit.info.get("MP Type", "MP"))
+	mp_bar = BattleFloatingBar.create(unit, mp_type)
+	mp_bar.auto_hide = false   # 源 :69
+	mp_bar_host.add_child(mp_bar)
+	_start_redmask_flicker()   # 源 :72-76 redmask FadeTo 闪烁 loop（节点在 .tscn）
+	frame_btn.disabled = true   # 源 :62 setEnabled(false)
 
 
-# 源 :63-65 container = herobucket，portrait.icon addChild(-2) 装饰底。
-func _create_container() -> void:
-	var container := Sprite2D.new()
-	container.texture = _load_tex(CONTAINER_PATH)
-	container.z_index = -2
-	portrait.icon.add_child(container)
-
-
-# 源 :72-76 redmask = portraitredmask，frame addChild，setVisible(false) + FadeTo 闪烁 loop。
-func _create_redmask() -> void:
-	redmask = Sprite2D.new()
-	redmask.texture = _load_tex(REDMASK_PATH)
-	redmask.visible = false
-	frame_btn.add_child(redmask)
+# 源 :72-76 redmask = portraitredmask，setVisible(false) + FadeTo 闪烁 loop（节点在 .tscn）。
+func _start_redmask_flicker() -> void:
+	if redmask == null:
+		return
 	var t := create_tween().set_loops()   # 源 :75 CCRepeatForever FadeTo(0.8,64)+FadeTo(0.2,255)
 	t.tween_property(redmask, "modulate:a", REDMASK_FADE_LOW, 0.8)
 	t.tween_property(redmask, "modulate:a", 1.0, 0.2)

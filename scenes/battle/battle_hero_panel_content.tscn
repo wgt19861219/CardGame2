@@ -1,0 +1,49 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herobucket.png" id="1_bucket"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/portraitredmask.png" id="2_redmask"]
+
+[node name="BattleHeroPanelContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="PortraitHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 70.0
+mouse_filter = 2
+
+[node name="FrameBtn" type="TextureButton" parent="PortraitHost"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 102.0
+offset_bottom = 102.0
+
+[node name="Redmask" type="Sprite2D" parent="PortraitHost/FrameBtn"]
+unique_name_in_owner = true
+visible = false
+texture = ExtResource("2_redmask")
+
+[node name="Container" type="Sprite2D" parent="PortraitHost"]
+z_index = -2
+texture = ExtResource("1_bucket")
+
+[node name="HpBarHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 21.0
+mouse_filter = 2
+
+[node name="MpBarHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 8.0
+mouse_filter = 2
