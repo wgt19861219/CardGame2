@@ -7,32 +7,28 @@ extends Control
 ## 单机化：createPrompt 升级提示已实现（6 谓词简化版 + Label 降级，源贴图 battledone_failed_*.png 不在仓库）；
 ##   excavate_mode 分支照源不接（excavate 结算特殊）；battleStatist 战斗统计按钮无对应场景照源不接；
 ##   doClickBack/doClickMenu 源 replaceScene(stagedetail)/popScene → 本项目回 main_scene（无独立 stagedetail 场景）。
+##
+## 重构（2026-07-18，hero_detail 范式）：chrome（bg/shelter/light/title/back/menu/battleStatist）静态化进
+## scenes/battle/stage_failed_content.tscn（instantiate + add_child + get_node + fill）。Control 场景根，content
+## 挂 scene 自身（无 PopWindow container）。动态：bg texture fill / title text fill / back·menu·statist 信号
+## 接线 / battleStatist Scale9 StyleBox（apply_with_label）/ battleStatist count Label（procedural 挂 _content）/
+## light 旋转 tween / prompt ≤2 Label 挂 %PromptHost。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_failed_content.tscn")
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
-const SOURCE_UI_PREFIX: String = "UI/alpha/HVGA/"  # 源 getBattleBgRes 返路径前缀（Cocos）
-const LIGHT_TEX: String = ALPHA_HVGA_DIR + "failed_light.png"
-const BACK_TEX: String = ALPHA_HVGA_DIR + "replaybtn.png"
-const BACK_TEX_DISABLED: String = ALPHA_HVGA_DIR + "replaybtn-disabled.png"
-const MENU_TEX: String = ALPHA_HVGA_DIR + "back2mapbtn.png"
-const MENU_TEX_DISABLED: String = ALPHA_HVGA_DIR + "back2mapbtn-disabled.png"
+const SOURCE_UI_PREFIX: String = "UI/alpha/HVGA/"   # 源 getBattleBgRes 返路径前缀（Cocos）
 # P1-16（2026-07-11）battleStatist 战斗统计按钮（源 stagefailed.lua:345-392 else 分支）
-const BATTLE_STATIST_TEX: String = ALPHA_HVGA_DIR + "herodetail-upgrade.png"  # 源 :350
-const BATTLE_STATIST_PRESS_TEX: String = ALPHA_HVGA_DIR + "herodetail-upgrade-mask.png"  # 源 :365
-const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)  # 源 :351 capInsets CCRectMake(20,20,20,20)
-const BATTLE_STATIST_POS: Vector2 = Vector2(500.0, 335.0)   # 源 :355
-const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)    # 源 :358
-const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 26.0)  # 源 :388
+const BATTLE_STATIST_TEX: String = ALPHA_HVGA_DIR + "herodetail-upgrade.png"   # 源 :350
+const BATTLE_STATIST_PRESS_TEX: String = ALPHA_HVGA_DIR + "herodetail-upgrade-mask.png"   # 源 :365
+const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)   # 源 :351 capInsets CCRectMake(20,20,20,20)
+const BATTLE_STATIST_POS: Vector2 = Vector2(500.0, 335.0)   # 源 :355（.tscn BattleStatist offset_left/top 与此对齐）
+const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 26.0)   # 源 :388
 const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"
 
 # 源 stagefailed.lua 坐标（960×640 设计坐标系，照源 ccp 直接用）
-const LIGHT_POS: Vector2 = Vector2(325.0, 480.0)   # 源 :188 light anchor 0.5,0.5
-const TITLE_POS: Vector2 = Vector2(325.0, 350.0)   # 源 :199 title（excavate :159 @325,380）
-const BACK_POS: Vector2 = Vector2(680.0, 315.0)    # 源 :209 back（重玩）
-const MENU_POS: Vector2 = Vector2(680.0, 130.0)    # 源 :233 menu（回主城）
-const PROMPT_Y: float = 165.0                        # 源 :126 createPrompt ph=165
-const PROMPT_POS: Array[Vector2] = [Vector2(205.0, PROMPT_Y), Vector2(445.0, PROMPT_Y)]  # 源 :127
-const ROTATE_DURATION: float = 5.0                  # 源 :394 CCRotateBy(5,360) CCRepeatForever
-const SHELTER_COLOR: Color = Color(0.0, 0.0, 0.0, 200.0 / 255.0)  # 源 :177 ccc4(0,0,0,200)
+const PROMPT_Y: float = 165.0   # 源 :126 createPrompt ph=165
+const PROMPT_POS: Array[Vector2] = [Vector2(205.0, PROMPT_Y), Vector2(445.0, PROMPT_Y)]   # 源 :127
+const ROTATE_DURATION: float = 5.0   # 源 :394 CCRotateBy(5,360) CCRepeatForever
 const TITLE_FAIL_TEXT: String = "失败"
 const TITLE_TIMEOUT_TEXT: String = "超时"
 # 源 :87-116 6 项提示 config（贴图名→文字降级）
@@ -44,6 +40,7 @@ const PROMPT_LABELS: Dictionary = {
 var stage_id: int = 0
 var lose_type: String = "fail"
 var _cm: ConfigManager = null
+var _content: Control = null   # .tscn instantiate（chrome 静态节点 + %PromptHost）
 
 
 func _ready() -> void:
@@ -58,80 +55,41 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 	_cm = p_cm
 	stage_id = int(p_param.get("stage_id", 0))
 	lose_type = String(p_param.get("lose_type", "fail"))
-	_create_bg()
-	_create_shelter()
-	_create_light()
-	_create_title()
-	_create_back_button()
-	_create_menu_button()
-	_create_prompt()   # 源 :84-139 createPrompt 升级提示
-	_create_battle_statist()  # 源 :345-392 battleStatist 按钮（普通关失败）
+	_build_content()
+	_start_light_rotate()
+	_create_prompt()   # 源 :84-139 createPrompt 升级提示（动态挂 %PromptHost）
 
 
-# 源 :163-172 bg Sprite（getBattleBgRes）。Cocos Sprite→Godot TextureRect 全屏适配（背景铺满）。
-# 源 stagefailed.lua:162-171 t="Sprite" config={} 无 fix_size（纯 CCSprite，显示=纹理/CS，position 400,240 中心）。
-# 保留 PRESET_FULL_RECT 让 anchors 撑满 viewport(960×640)；补 EXPAND_IGNORE_SIZE 让纹理 stretch 满屏（默认 KEEP_SIZE 不拉伸）。
-func _create_bg() -> void:
-	var bg := TextureRect.new()
-	bg.name = "Bg"
-	bg.texture = _load_bg()
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+# 建 UI 内容：chrome 静态节点从 .tscn instantiate（位置/size 可视化调）；fill 动态数据 + 接信号。
+# 源 create :163-247 + :345-392。Control 场景根，content 直接挂 scene 自身（坑 7，无 PopWindow container）。
+func _build_content() -> void:
+	_content = CONTENT_SCENE.instantiate()
+	add_child(_content)
+	# bg texture 动态（源 :162-171 getBattleBgRes，stage_id 决定）。
+	(_content.get_node("Bg") as TextureRect).texture = _load_bg()
+	# title text 动态（源 :191-201 getLoseTitleRes，lose_type 决定；源 Sprite 资源缺 → Label 降级）。
+	(_content.get_node("Title") as Label).text = TITLE_TIMEOUT_TEXT if lose_type == "timeout" else TITLE_FAIL_TEXT
+	# back/menu 按钮（源 :202-247 TextureButton + doClickBack/doClickMenu）。
+	(_content.get_node("Back") as BaseButton).pressed.connect(_on_back_pressed)
+	(_content.get_node("Menu") as BaseButton).pressed.connect(_on_menu_pressed)
+	# battleStatist 按钮（源 :345-392 Scale9 + count Label）：.tscn 普通 Button，运行时套 Scale9 StyleBox。
+	var statist_btn: Button = _content.get_node("BattleStatist") as Button
+	UiScale9Button.apply_with_label(statist_btn, BATTLE_STATIST_TEX, BATTLE_STATIST_PRESS_TEX, BATTLE_STATIST_CAP)
+	statist_btn.pressed.connect(_on_battle_statist_pressed)
+	# battleStatist count Label（源 :388 battleCount "数据"）— procedural 挂 _content（位置=BATTLE_STATIST_POS + OFFSET）。
+	var count := Label.new()
+	count.text = _statist_label_text()
+	count.position = BATTLE_STATIST_POS + BATTLE_STATIST_LABEL_OFFSET
+	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_content.add_child(count)
 
 
-# 源 :173-179 shelter ColorLayer ccc4(0,0,0,200)。
-func _create_shelter() -> void:
-	var shelter := ColorRect.new()
-	shelter.name = "Shelter"
-	shelter.color = SHELTER_COLOR
-	shelter.mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截下层点击（源 ColorLayer 触摸）
-	shelter.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(shelter)
-
-
-# 源 :180-190 light failed_light.png anchor 0.5,0.5 @325,480 + :394 CCRotateBy(5,360) forever。
-func _create_light() -> void:
-	var light := Sprite2D.new()
-	light.name = "Light"
-	light.texture = _load(LIGHT_TEX)
-	light.position = LIGHT_POS
-	add_child(light)
+# 源 :180-190 light failed_light.png @325,480 + :394 CCRotateBy(5,360) forever。Light 节点静态化进 .tscn，
+# 旋转 tween procedural 挂 .tscn Light 节点（坑 4 装饰节点 mouse_filter=IGNORE 对 Sprite2D 不适用）。
+func _start_light_rotate() -> void:
+	var light: Sprite2D = _content.get_node("Light") as Sprite2D
 	var t := create_tween().set_loops()   # CCRepeatForever
 	t.tween_property(light, "rotation", TAU, ROTATE_DURATION)   # TAU=360°（源 360 度）
-
-
-# 源 :191-201 title（getLoseTitleRes timeout/fail）。资源缺（failed_title/overtime_title）→ Label 降级。
-func _create_title() -> void:
-	var title := Label.new()
-	title.name = "Title"
-	title.text = TITLE_TIMEOUT_TEXT if lose_type == "timeout" else TITLE_FAIL_TEXT
-	title.position = TITLE_POS
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(title)
-
-
-# 源 :202-215 back replaybtn @680,315（重玩，doClickBack）。
-func _create_back_button() -> void:
-	var back := TextureButton.new()
-	back.name = "Back"
-	back.texture_normal = _load(BACK_TEX)
-	back.texture_pressed = _load(BACK_TEX_DISABLED)
-	back.position = BACK_POS
-	back.pressed.connect(_on_back_pressed)
-	add_child(back)
-
-
-# 源 :226-247 menu back2mapbtn @680,130（回主城，doClickMenu）。
-func _create_menu_button() -> void:
-	var menu := TextureButton.new()
-	menu.name = "Menu"
-	menu.texture_normal = _load(MENU_TEX)
-	menu.texture_pressed = _load(MENU_TEX_DISABLED)
-	menu.position = MENU_POS
-	menu.pressed.connect(_on_menu_pressed)
-	add_child(menu)
 
 
 # 源 doClickBack（:40-55）：replaceScene(stagedetail)。单机化：回 main_scene（无独立 stagedetail 场景）。
@@ -148,8 +106,8 @@ func _on_menu_pressed() -> void:
 
 
 # 源 stagefailed.lua:84-139 createPrompt：6 项 config（判定谓词）取 ≤2 显示，纯 Sprite 不可点。
-# 贴图资源 battledone_failed_*.png 不在源仓库 → Label 降级（同 _create_title 范式）。
-# 谓词简化版（源 readhero.lua:751-829 全队扫描，本项目用现有能力包装）。
+# 贴图资源 battledone_failed_*.png 不在源仓库 → Label 降级（同 title 范式）。
+# 谓词简化版（源 readhero.lua:751-829 全队扫描，本项目用现有能力包装）。挂 %PromptHost（procedural）。
 func _create_prompt() -> void:
 	if _cm == null or GameData.player == null:
 		return
@@ -169,25 +127,13 @@ func _create_prompt() -> void:
 	if _can_enhance_equip(hm):
 		checks.append("enhance")
 	# 源 :117-125 最多取 2 项
+	var host: Control = _content.get_node("%PromptHost") as Control
 	for i in range(mini(checks.size(), 2)):
 		var label := Label.new()
 		label.text = String(PROMPT_LABELS.get(checks[i], checks[i]))
 		label.position = PROMPT_POS[i]
 		label.add_theme_font_size_override("font_size", 16)
-		add_child(label)
-
-
-# 源 stagefailed.lua:345-392 battleStatist 按钮（herodetail-upgrade + battleCount "数据"）。
-func _create_battle_statist() -> void:
-	var btn: Button = UiScale9Button.make(BATTLE_STATIST_TEX, BATTLE_STATIST_PRESS_TEX, BATTLE_STATIST_POS, BATTLE_STATIST_SIZE, BATTLE_STATIST_CAP)
-	btn.name = "BattleStatist"
-	btn.pressed.connect(_on_battle_statist_pressed)
-	add_child(btn)
-	var count := Label.new()
-	count.text = _statist_label_text()
-	count.position = BATTLE_STATIST_POS + BATTLE_STATIST_LABEL_OFFSET
-	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(count)
+		host.add_child(label)
 
 
 func _statist_label_text() -> String:
@@ -224,7 +170,7 @@ func _can_upgrade_hero(hm: HeroManager) -> bool:
 	return false
 
 
-# 源 readhero.lua:799-812 canHeroSkillLevelup：有技能可升级（skill_level < hero.level）。
+# 源 readhero.lua:799-812 canHeroSkillLevelup：有技能可升级（skill_level < hero_level）。
 func _can_skill_upgrade(hm: HeroManager) -> bool:
 	for hero in hm.heroes.values():
 		var h: HeroInstance = hero
