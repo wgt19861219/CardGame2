@@ -1,0 +1,52 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+
+[node name="DungeonDegreeContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="Panel" parent="."]
+layout_mode = 3
+offset_left = 130.0
+offset_top = 170.0
+offset_right = 830.0
+offset_bottom = 470.0
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 0.0
+offset_top = 15.0
+offset_right = 700.0
+offset_bottom = 45.0
+theme_override_colors/font_color = Color(0.91, 0.81, 0.07, 1)
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 830.0
+offset_top = 360.0
+offset_right = 880.73
+offset_bottom = 411.51
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true
+
+[node name="DegreeHost" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 200.0
+offset_top = 250.0
+offset_right = 760.0
+offset_bottom = 430.0
+alignment = 1
+theme_override_constants/separation = 50
+mouse_filter = 2

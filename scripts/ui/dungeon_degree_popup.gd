@@ -4,16 +4,15 @@ extends PopWindow
 ## 副本难度选择弹窗 — 照源 ui/dungeon_map.lua:316-580 showDegreePopup + popupTouchHandler。
 ## 单 boss 4 难度（diff 1 普通/2 精英/3 英雄/4 噩梦），点难度 → degree_selected；close/outLayer 关闭。
 ## 源 Scale9Sprite frame + 多 Sprite 重建 → Panel frame + TextureButton(含 icon/vit 子节点)。
+## 2026-07-18 重构：panel 层（Frame/TitleLabel/CloseBtn/DegreeHost）静态化进
+## scenes/ui/dungeon_degree_popup_content.tscn（位置/size 编辑器可视化，照 hero_detail 范式）。
+## 难度按钮（数量随 difficulties 变）保留 procedural 挂 %DegreeHost（HBox 容器）。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/dungeon_degree_popup_content.tscn")
 const FRAME_POS := Vector2(130.0, 170.0)
 const FRAME_SIZE := Vector2(700.0, 300.0)
-const CLOSE_BTN_POS := Vector2(830.0, 360.0)
 const BTN_SIZE := Vector2(130.0, 120.0)
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
 const ICON_SIZE := Vector2(55.0, 55.0)
-const SEPARATION: int = 50
-const TITLE_COLOR := Color(0.91, 0.81, 0.07)               # 源 :382 ccc3(231,206,19)
 const GRAY_MODULATE := Color(0.4, 0.4, 0.4)                # 源 :467-469 setSpriteGray 近似
 
 const BTN_BG := "res://assets/ui/alpha/HVGA/act/act_select_bg.png"
@@ -27,6 +26,8 @@ const VIT_ICON_SIZE := Vector2(30.0, 35.0)   # 源 :459 fix_height=35
 const VIT_NUM_COLOR := Color(0.91, 0.84, 0.71)  # 源 :447 ccc3(233,214,181)
 
 var boss_idx: int = 0
+var _content: Control = null              # .tscn 根（%Frame/TitleLabel/CloseBtn/DegreeHost 持有者）
+var _degree_host: HBoxContainer = null    # .tscn %DegreeHost（难度按钮容器）
 
 signal degree_selected(p_boss_idx: int, diff_data: Dictionary)
 signal close_requested
@@ -35,46 +36,28 @@ signal close_requested
 func setup_popup(p_boss_idx: int, p_boss_name: String, p_difficulties: Array, p_player_level: int) -> void:
 	boss_idx = p_boss_idx
 	setup()
-	_create_frame(p_boss_name)
-	_create_close_button()
+	_build_content(p_boss_name)
 	_create_degree_buttons(p_difficulties, p_player_level)
 	_play_entrance_scale()  # 源 :486-489 container setScale(0)→CCScaleTo(0.2,1)+CCEaseBackOut
 
 
-func _create_frame(boss_name: String) -> void:
-	var frame := Panel.new()
-	frame.position = FRAME_POS
-	frame.size = FRAME_SIZE
-	container.add_child(frame)
-	# 源 :376-382 text = boss.name or ""（无 fallback；boss_name 由 StageDungeon["Stage Name"] 提供）。
-	var title := Label.new()
-	title.text = boss_name
-	title.position = Vector2(0, 15)
-	title.size = Vector2(FRAME_SIZE.x, 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_color_override("font_color", TITLE_COLOR)
-	frame.add_child(title)
-
-
-func _create_close_button() -> void:
-	var btn: TextureButton = UiButton.make_at(CLOSE_RES, CLOSE_PRESS_RES, CLOSE_BTN_POS)
-	btn.pressed.connect(_on_close)
-	container.add_child(btn)
+# panel 层从 .tscn instantiate（位置/size .tscn 固化）+ fill title + connect close。
+# 源 :376-382 text = boss.name or ""（无 fallback；boss_name 由 StageDungeon["Stage Name"] 提供）。
+func _build_content(boss_name: String) -> void:
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	(_content.get_node("%TitleLabel") as Label).text = boss_name
+	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close)
+	_degree_host = _content.get_node("%DegreeHost") as HBoxContainer
 
 
 ## 源 dungeon_map.lua:388-477 4 难度按钮（act_select_bg + icon + vit 子节点叠加）。
 func _create_degree_buttons(difficulties: Array, player_level: int) -> void:
-	var hbox := HBoxContainer.new()
-	hbox.position = Vector2(FRAME_POS.x + 70, FRAME_POS.y + 80)
-	hbox.size = Vector2(FRAME_SIZE.x - 140, 180)
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", SEPARATION)
-	container.add_child(hbox)
 	for di in range(difficulties.size()):
 		var diff: Dictionary = difficulties[di]
 		var diff_num: int = int(diff["diff"])
 		var unlocked: bool = int(diff["unlock_level"]) <= player_level
-		hbox.add_child(_make_degree_button(diff, diff_num, unlocked))
+		_degree_host.add_child(_make_degree_button(diff, diff_num, unlocked))
 
 
 ## 源 :388-477 难度按钮（act_select_bg + icon）+ vit 行（vit_number+vit_bg+vit_icon）。
