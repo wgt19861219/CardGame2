@@ -58,8 +58,9 @@ func test_title_no_fallback_when_empty() -> void:
 	var popup := DungeonDegreePopup.new("dungeonDegree", {})
 	var diffs := [{"diff": 1, "unlock_level": 1, "vit": 10}]
 	popup.setup_popup(1, "", diffs, 80)
-	# container 首子是 frame Panel，frame 首子是 title Label
-	var frame: Panel = popup.container.get_child(0) as Panel
-	var title: Label = frame.get_child(0) as Label
+	# 2026-07-18 重构：container 首子是 .tscn 实例化的 content（多一层），
+	# title 在 %TitleLabel（Frame 内，unique_name_in_owner）。
+	var content: Control = popup.container.get_child(0) as Control
+	var title: Label = content.get_node("%TitleLabel") as Label
 	assert_eq(title.text, "", "源 :376-382 空名无 fallback（不自造选择难度）")
 	popup.free()
