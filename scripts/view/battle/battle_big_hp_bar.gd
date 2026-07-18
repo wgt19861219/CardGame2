@@ -5,7 +5,13 @@ extends Control
 ## hpLayer 段（red/purple/blue 循环），跨段切换：损血进下段 isMinBlood（fore→0 后换段重置）、
 ## 回血升上段 isMaxBlood。fore/mid 平滑同 HpBar。挂 ui_layer 固定位置（Boss 屏幕顶）。
 ## guild 资源（guildraid_hpbar_boss_* / boss_frame）全就位。
+##
+## 重构（2026-07-18，hero_detail 范式）：6 个 Sprite2D（background/midlayer/foreground/
+## decration/boss_icon_frame/boss_icon）+ 3 个静态贴图（bg/transition/boss_frame）+ centered
+## 固化进 scenes/battle/battle_big_hp_bar_content.tscn；动态贴图（foreground/decration 段色 /
+## boss_icon）+ position（依赖 texture size）+ scale.x（血量百分比）保留 _setup/_layout 计算。
 
+const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_big_hp_bar_content.tscn")
 const GUILD_DIR: String = "res://assets/ui/alpha/HVGA/guild/"
 const EPSILON: float = 0.001
 const INC_SPEED: float = 0.3       # 源 :291
@@ -41,12 +47,16 @@ static func create(unit: Variant, length: float) -> BattleBigHpBar:
 func _setup(unit: Variant, length: float) -> void:
 	_unit = unit
 	_length = length
-	_background = _load_sprite("guildraid_hpbar_boss_bg.png")
-	_midlayer = _load_sprite("guildraid_hpbar_transition.png")
-	_decration = Sprite2D.new()   # 源 :287 CCSprite:create() 空（resetForeground 设贴图）
-	_foreground = Sprite2D.new()  # 源 :288 空（resetForeground 设贴图）
-	_boss_icon_frame = _load_sprite("boss_frame.png")
-	_boss_icon = Sprite2D.new()
+	# Phase A 静态化：6 个 Sprite2D + centered + bg/transition/boss_frame 贴图固化进 .tscn
+	# （content 挂 self — Control 组件坑 7）；position 0,0、动态贴图、scale 由 _layout/resetForeground 设。
+	var content := CONTENT_SCENE.instantiate()
+	add_child(content)
+	_background = content.get_node("%Background") as Sprite2D
+	_midlayer = content.get_node("%Midlayer") as Sprite2D
+	_decration = content.get_node("%Decration") as Sprite2D       # 贴图 resetForeground 动态设
+	_foreground = content.get_node("%Foreground") as Sprite2D     # 贴图 resetForeground 动态设
+	_boss_icon_frame = content.get_node("%BossIconFrame") as Sprite2D
+	_boss_icon = content.get_node("%BossIcon") as Sprite2D
 	var icon_tex: Texture2D = _load_unit_icon(String(unit.boss_icon_name))
 	if icon_tex:
 		_boss_icon.texture = icon_tex
@@ -173,6 +183,8 @@ func _reset_blood_state() -> void:
 
 
 # 源 create 布局段（:306-336）：anchor/position/scale 翻译（Cocos anchor→Godot centered=false 左上角）。
+# Phase A：节点层级 + centered + 静态贴图固化进 .tscn，此函数只设动态 position/scale
+# （依赖 texture size + length + percent）。background position=(0,0) 已在 .tscn。
 func _layout() -> void:
 	var icon_frame_size: Vector2 = _tex_size(_boss_icon_frame)
 	var bg_size: Vector2 = _tex_size(_background)
@@ -184,32 +196,19 @@ func _layout() -> void:
 	var offset_y: float = bg_size.y / 2.0   # 源 :313
 	var offset_x_left: float = (bg_size.x - mid_size.x) / 2.0   # 源 :314
 	var offset_y_down: float = (bg_size.y - mid_size.y) / 2.0   # 源 :315
-	# background：anchor(0.5,0.5) pos(0,0) setScaleX(bg_scale) → centered=true
-	add_child(_background)
-	_background.centered = true
-	_background.position = Vector2.ZERO
+	# background scale 动态（centered=true position=(0,0) 已在 .tscn）
 	_background.scale = Vector2(bg_scale, 1.0)
 	# decration：anchor(1,0.5) pos(offset_x,offset_y) → 左上 = pos-(w,h/2)
-	_background.add_child(_decration)
-	_decration.centered = false
 	_decration.position = Vector2(offset_x - _tex_size(_decration).x, offset_y - _tex_size(_decration).y / 2.0)
 	# midlayer：anchor(0,0) pos(offset_x_left,offset_y_down)
-	_background.add_child(_midlayer)
-	_midlayer.centered = false
 	_midlayer.position = Vector2(offset_x_left, offset_y_down)
 	# foreground：同 midlayer
-	_background.add_child(_foreground)
-	_foreground.centered = false
 	_foreground.position = Vector2(offset_x_left, offset_y_down)
 	_midlayer.scale.x = _percent
 	_foreground.scale.x = _percent
-	# bossIconFrame：anchor(0,0.5) pos(fg_w*bg_scale/2-10, 0) → 左上 = pos-(0,h/2)；子 of self
-	add_child(_boss_icon_frame)
-	_boss_icon_frame.centered = false
+	# bossIconFrame：anchor(0,0.5) pos(fg_w*bg_scale/2-10, 0) → 左上 = pos-(0,h/2)
 	_boss_icon_frame.position = Vector2(fg_size.x * bg_scale / 2.0 - ICON_FRAME_GAP, -icon_frame_size.y / 2.0)
-	# bossIcon：anchor(0.5,0.5) pos(frame_w/2,frame_h/2) → centered=true；子 of bossIconFrame
-	_boss_icon_frame.add_child(_boss_icon)
-	_boss_icon.centered = true
+	# bossIcon：anchor(0.5,0.5) pos(frame_w/2,frame_h/2) → centered=true
 	_boss_icon.position = Vector2(icon_frame_size.x / 2.0, icon_frame_size.y / 2.0)
 
 
@@ -217,20 +216,6 @@ func _tex_size(sprite: Sprite2D) -> Vector2:
 	if sprite and sprite.texture:
 		return sprite.texture.get_size()
 	return Vector2.ZERO
-
-
-func _load_sprite(res: String) -> Sprite2D:
-	if res.is_empty():
-		return null
-	var path: String = GUILD_DIR + res
-	if not ResourceLoader.exists(path):
-		return null
-	var tex: Texture2D = load(path) as Texture2D
-	if tex == null:
-		return null
-	var s := Sprite2D.new()
-	s.texture = tex
-	return s
 
 
 func _set_sprite_texture(sprite: Sprite2D, res: String) -> void:
