@@ -48,12 +48,15 @@ func _find_first_textured(node: Node) -> TextureRect:
 func test_exercise_7_buttons() -> void:
 	var panel := ExercisePanel.new()
 	add_child(panel)
-	var btn_count: int = 0
-	for c in panel.get_children():
-		if c is GridContainer:
-			btn_count = c.get_child_count()
-			break
-	assert_eq(btn_count, 7, "应有 7 个入口按钮")
+	# chrome 静态化进 exercise_content.tscn，EntryGrid 在 content 子层；
+	# unique name 仅从 scene 根（content）可访问，故经 content 锚定。
+	var content: Node = panel.get_child(0)
+	var grid: Node = content.get_node_or_null("%EntryGrid")
+	assert_not_null(grid, "EntryGrid 应存在")
+	if grid == null:
+		panel.queue_free()
+		return
+	assert_eq(grid.get_child_count(), 7, "应有 7 个入口按钮")
 	panel.queue_free()
 
 
