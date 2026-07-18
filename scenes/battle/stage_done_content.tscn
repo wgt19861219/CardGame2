@@ -1,0 +1,146 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/lettherebelight.png" id="1_light"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/star_left.png" id="2_star1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/star_center.png" id="3_star2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/star_right.png" id="4_star3"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/replaybtn.png" id="5_replay"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/replaybtn-disabled.png" id="6_replayp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/nextstagebtn.png" id="7_next"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/nextstagebtn-disabled.png" id="8_nextp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bigyellowbar.png" id="9_infobg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/wing_win_bg_1.png" id="10_top1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/wing_win_bg_2.png" id="11_top2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/yellowbar_win_bg.png" id="12_title1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shadow_win_bg.png" id="13_title2"]
+
+[node name="StageDoneContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Shelter" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.588235)
+
+[node name="Light" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(372, 400)
+texture = ExtResource("1_light")
+modulate = Color(1, 1, 1, 0)
+
+[node name="Star1" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(260, 402)
+texture = ExtResource("2_star1")
+scale = Vector2(0, 0)
+
+[node name="Star2" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(378, 410)
+texture = ExtResource("3_star2")
+scale = Vector2(0, 0)
+
+[node name="Star3" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(488, 402)
+texture = ExtResource("4_star3")
+scale = Vector2(0, 0)
+
+[node name="InfoBg" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(380, 198)
+texture = ExtResource("9_infobg")
+modulate = Color(1, 1, 1, 0)
+
+[node name="TopWinBg1" type="Sprite2D" parent="InfoBg"]
+position = Vector2(0, 140)
+texture = ExtResource("10_top1")
+
+[node name="TopWinBg2" type="Sprite2D" parent="InfoBg"]
+position = Vector2(0, 140)
+texture = ExtResource("11_top2")
+
+[node name="InfoTitleBg2" type="Sprite2D" parent="InfoBg"]
+position = Vector2(0, 40)
+texture = ExtResource("13_title2")
+
+[node name="InfoTitleBg1" type="Sprite2D" parent="InfoBg"]
+position = Vector2(0, 90)
+texture = ExtResource("12_title1")
+
+[node name="GoldIcon" type="Sprite2D" parent="InfoBg"]
+position = Vector2(-40, 90)
+
+[node name="ExpIcon" type="Sprite2D" parent="InfoBg"]
+position = Vector2(30, 90)
+
+[node name="Lv" type="Label" parent="InfoBg"]
+unique_name_in_owner = true
+offset_left = -60.0
+offset_top = 90.0
+offset_right = 40.0
+offset_bottom = 110.0
+text = "LV 1"
+
+[node name="Gold" type="Label" parent="InfoBg"]
+unique_name_in_owner = true
+offset_left = -10.0
+offset_top = 90.0
+offset_right = 80.0
+offset_bottom = 110.0
+text = "+0"
+
+[node name="Exp" type="Label" parent="InfoBg"]
+unique_name_in_owner = true
+offset_left = 60.0
+offset_top = 90.0
+offset_right = 150.0
+offset_bottom = 110.0
+text = "+0"
+
+[node name="BattleStatistNode" type="Sprite2D" parent="InfoBg"]
+unique_name_in_owner = true
+position = Vector2(150, 90)
+modulate = Color(1, 1, 1, 0)
+
+[node name="Replay" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 710.0
+offset_top = 315.0
+offset_right = 838.0
+offset_bottom = 438.0
+texture_normal = ExtResource("5_replay")
+texture_pressed = ExtResource("6_replayp")
+ignore_texture_size = true
+modulate = Color(1, 1, 1, 0)
+visible = false
+
+[node name="Next" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 710.0
+offset_top = 100.0
+offset_right = 838.0
+offset_bottom = 223.0
+texture_normal = ExtResource("7_next")
+texture_pressed = ExtResource("8_nextp")
+ignore_texture_size = true
+modulate = Color(1, 1, 1, 0)

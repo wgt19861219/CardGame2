@@ -40,15 +40,17 @@ func _make_scene(stars: int = 2) -> StageDoneScene:
 
 func test_setup_creates_nodes() -> void:
 	var scene := _make_scene()
-	assert_not_null(scene.get_node_or_null("Bg"), "Bg 节点")
-	assert_not_null(scene.get_node_or_null("Shelter"), "Shelter 节点")
-	assert_not_null(scene.get_node_or_null("Light"), "Light 节点")
-	assert_not_null(scene.get_node_or_null("Star1"), "Star1")
-	assert_not_null(scene.get_node_or_null("Star2"), "Star2")
-	assert_not_null(scene.get_node_or_null("Star3"), "Star3")
-	assert_not_null(scene.get_node_or_null("Replay"), "Replay 按钮")
-	assert_not_null(scene.get_node_or_null("Next"), "Next 按钮")
-	assert_not_null(scene.get_node_or_null("InfoBg"), "InfoBg 节点")
+	# 重构后静态节点在 stage_done_content.tscn（scene._content 子树，unique_name % 查找）
+	var c: Control = scene._content
+	assert_not_null(c.get_node_or_null("%Bg"), "Bg 节点")
+	assert_not_null(c.get_node_or_null("%Shelter"), "Shelter 节点")
+	assert_not_null(c.get_node_or_null("%Light"), "Light 节点")
+	assert_not_null(c.get_node_or_null("%Star1"), "Star1")
+	assert_not_null(c.get_node_or_null("%Star2"), "Star2")
+	assert_not_null(c.get_node_or_null("%Star3"), "Star3")
+	assert_not_null(c.get_node_or_null("%Replay"), "Replay 按钮")
+	assert_not_null(c.get_node_or_null("%Next"), "Next 按钮")
+	assert_not_null(c.get_node_or_null("%InfoBg"), "InfoBg 节点")
 	scene.queue_free()
 
 
@@ -62,7 +64,7 @@ func test_play_enter_sets_anim_flag() -> void:
 func test_initial_state_hidden() -> void:
 	# 动画起点：star scale=0 / info_bg modulate.a=0 / button modulate.a=0 / gold·exp label "+0"
 	var scene := _make_scene()
-	var star1: Sprite2D = scene.get_node("Star1")
+	var star1: Sprite2D = scene._content.get_node("%Star1")
 	# tween 启动后 GUT 同步不 step，但创建时浮点级微小插值（0.00001），用容差断言接近 0
 	assert_almost_eq(star1.scale.x, 0.0, 0.01, "Star1 scale≈0（动画起点）")
 	assert_eq(scene._info_bg.modulate.a, 0.0, "info_bg modulate.a=0（fade 前）")
@@ -95,10 +97,10 @@ func test_skip_stars_final() -> void:
 	# stars=2 → skip 后 Star1/Star2 scale=1，Star3 scale=0
 	var scene := _make_scene(2)
 	scene.skip_anim()
-	assert_eq((scene.get_node("Star1") as Sprite2D).scale, Vector2.ONE, "Star1 scale=1（stars=2）")
-	assert_eq((scene.get_node("Star2") as Sprite2D).scale, Vector2.ONE, "Star2 scale=1")
+	assert_eq((scene._content.get_node("%Star1") as Sprite2D).scale, Vector2.ONE, "Star1 scale=1（stars=2）")
+	assert_eq((scene._content.get_node("%Star2") as Sprite2D).scale, Vector2.ONE, "Star2 scale=1")
 	# Star3（stars=2 时第3颗）未在 skip 终态设置，保留初始+tween 微小残留，用容差
-	assert_almost_eq((scene.get_node("Star3") as Sprite2D).scale.x, 0.0, 0.01, "Star3 scale≈0")
+	assert_almost_eq((scene._content.get_node("%Star3") as Sprite2D).scale.x, 0.0, 0.01, "Star3 scale≈0")
 	scene.queue_free()
 
 
@@ -139,21 +141,21 @@ func test_skip_idempotent() -> void:
 
 func test_replay_pressed_connected() -> void:
 	var scene := _make_scene()
-	var replay: TextureButton = scene.get_node("Replay")
+	var replay: TextureButton = scene._content.get_node("%Replay")
 	assert_true(replay.pressed.is_connected(scene._on_replay_pressed), "Replay pressed 连接")
 	scene.queue_free()
 
 
 func test_next_pressed_connected() -> void:
 	var scene := _make_scene()
-	var next_btn: TextureButton = scene.get_node("Next")
+	var next_btn: TextureButton = scene._content.get_node("%Next")
 	assert_true(next_btn.pressed.is_connected(scene._on_next_pressed), "Next pressed 连接")
 	scene.queue_free()
 
 
 func test_shelter_full_rect() -> void:
 	var scene := _make_scene()
-	var shelter: ColorRect = scene.get_node("Shelter")
+	var shelter: ColorRect = scene._content.get_node("%Shelter")
 	assert_eq(shelter.anchor_right, 1.0, "Shelter 全屏 anchor_right=1")
 	assert_eq(shelter.anchor_bottom, 1.0, "Shelter 全屏 anchor_bottom=1")
 	scene.queue_free()
