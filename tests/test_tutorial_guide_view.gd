@@ -9,8 +9,12 @@ func test_panel_assembles() -> void:
 	var view := TutorialGuideView.new("tutorial", {})
 	view.setup_panel(tm)
 	view.show_window(root)
-	# skip + bubble + head + label + next = 5
-	assert_eq(view.container.get_child_count(), 5, "skip + bubble + head + label + next")
+	# 静态化后 container 只挂 content 一个（hero_detail 范式）；5 个关键节点递归查
+	# （skip + bubble + head + label + next）。
+	assert_eq(view.container.get_child_count(), 1, "container 单 content 子节点")
+	assert_not_null(view.step_label, "step label 存在（.tscn %StepLabel）")
+	assert_eq(view.find_children("*", "Button", true, false).size(), 2, "next + skip 2 Button")
+	assert_eq(view.find_children("*", "TextureRect", true, false).size(), 2, "bubble + head 2 TextureRect")
 	assert_true(view.step_label.text.find("FTintoMain") >= 0, "显示首步 FTintoMain")
 	view.remove_window()
 	root.queue_free()
