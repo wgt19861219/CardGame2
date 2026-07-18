@@ -20,8 +20,10 @@ func test_setup_rewards_mixed() -> void:
 	]
 	popup.setup_rewards(rewards, cm)
 	popup.show_window(root)
-	# 3 reward + 关闭 = 4
-	assert_eq(popup.container.get_child_count(), 4, "gold + crusadepoint + item + 关闭")
+	# .tscn 重构后：reward 挂 %RewardHost（3 reward），CloseBtn 静态进 .tscn。
+	# container 下钻：container → _content → %RewardHost/%CloseBtn（坑 6 扫描深度）。
+	assert_eq(popup._reward_host.get_child_count(), 3, "gold + crusadepoint + item 挂 RewardHost")
+	assert_not_null(popup._content.get_node_or_null("%CloseBtn"), "CloseBtn 在 tscn")
 	popup.remove_window()
 	root.queue_free()
 
