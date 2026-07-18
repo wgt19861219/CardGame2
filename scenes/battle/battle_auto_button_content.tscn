@@ -1,0 +1,13 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="BattleAutoButtonContent" type="Control"]
+layout_mode = 3
+mouse_filter = 2
+
+[node name="AutoButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 140.0
+offset_bottom = 36.0
+mouse_filter = 0
+text = "自动战斗 关"
