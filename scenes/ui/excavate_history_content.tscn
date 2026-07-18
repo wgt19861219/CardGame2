@@ -1,0 +1,73 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_window_title_bg.png" id="2_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+
+[node name="ExcavateHistoryContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 180.0
+offset_top = 100.0
+offset_right = 780.0
+offset_bottom = 540.0
+texture = ExtResource("1_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 730.0
+offset_top = 112.0
+offset_right = 770.0
+offset_bottom = 152.0
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+
+[node name="Title" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 219.453125
+offset_top = 112.0
+offset_right = 740.546875
+offset_bottom = 151.0625
+texture = ExtResource("2_title")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EmptyLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 220.0
+offset_top = 180.0
+offset_right = 740.0
+offset_bottom = 500.0
+theme_override_font_sizes/font_size = 14
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HistoryScroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 220.0
+offset_top = 180.0
+offset_right = 740.0
+offset_bottom = 500.0
+horizontal_scroll_mode = 0
+
+[node name="HistoryList" type="VBoxContainer" parent="HistoryScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 6
