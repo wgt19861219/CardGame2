@@ -1,0 +1,97 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="1_again"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="2_againp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="4_closep"]
+
+[node name="PopTavernLootContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="LootHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="CostHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="RewardLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 354.0
+offset_top = 175.0
+offset_right = 554.0
+offset_bottom = 195.0
+theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "成功打开宝箱"
+
+[node name="AgainBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 325.22
+offset_top = 485.42
+offset_right = 454.78
+offset_bottom = 534.58
+texture_normal = ExtResource("1_again")
+texture_pressed = ExtResource("2_againp")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="Label" type="Label" parent="AgainBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "再抽一次"
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 523.22
+offset_top = 485.42
+offset_right = 652.78
+offset_bottom = 534.58
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="Label" type="Label" parent="CloseBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "确定"
