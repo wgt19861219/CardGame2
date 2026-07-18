@@ -9,14 +9,20 @@ func before_all() -> void:
 	cm.load_all()
 
 
+# Phase A 静态化（2026-07-18）：chrome 搬进 pop_tavern_loot_content.tscn，
+# container → Content → {LootHost/CostHost/RewardLabel/AgainBtn/CloseBtn}。
+# 扫描层级改：container 1 子（Content），Content 5 静态子（不含 loot icons/cost_row，挂 host 内）。
 func test_setup_loot_single() -> void:
 	var root := Node.new()
 	add_child(root)
 	var popup := PopTavernLoot.new("poptavernloot", {})
 	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "one", {"pay": "Diamond", "number": 288})
 	popup.show_window(root)
-	# 1 图标 + 再抽 + 关闭 + cost_label + cost_icon + reward_label = 6 子
-	assert_eq(popup.container.get_child_count(), 6, "单抽：1 图标 + 2 按钮 + cost 行 2 + reward_label")
+	assert_eq(popup.container.get_child_count(), 1, "container 仅挂 Content（.tscn 根）")
+	var content: Control = popup.container.get_child(0)
+	assert_eq(content.get_child_count(), 5, "Content 5 静态子（LootHost + CostHost + RewardLabel + AgainBtn + CloseBtn）")
+	assert_eq(popup._loot_host.get_child_count(), 1, "单抽 LootHost 1 loot icon")
+	assert_eq(popup._cost_host.get_child_count(), 2, "CostHost 2（cost_label + cost_icon）")
 	popup.remove_window()
 	root.queue_free()
 
@@ -28,9 +34,10 @@ func test_setup_loot_aggregates() -> void:
 	# 同 id 101 两笔 → 聚合为 1 图标
 	popup.setup_loot([{"id": 101, "amount": 1}, {"id": 101, "amount": 2}, {"id": 102, "amount": 1}], cm, "bronze", "ten")
 	popup.show_window(root)
-	# 聚合后 2 种（101/102）+ 2 按钮 + cost 行 2 + reward_label = 7（十连 cost_info 空时无 cost 行）
-	# setup_loot 默认空 cost_info → cost 行跳过 → 2 图标 + 2 按钮 + reward_label = 5
-	assert_eq(popup.container.get_child_count(), 5, "聚合：2 图标 + 2 按钮 + reward_label（无 cost 行）")
+	assert_eq(popup.container.get_child_count(), 1, "container 仅挂 Content")
+	# 聚合后 2 种（101/102），setup_loot 默认空 cost_info → cost 行跳过 → CostHost 0 子
+	assert_eq(popup._loot_host.get_child_count(), 2, "聚合 LootHost 2 loot icons")
+	assert_eq(popup._cost_host.get_child_count(), 0, "无 cost_info → CostHost 空")
 	popup.remove_window()
 	root.queue_free()
 
@@ -62,13 +69,9 @@ func test_button_position_to_godot() -> void:
 	var popup := PopTavernLoot.new("poptavernloot", {})
 	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze")
 	popup.show_window(root)
-	# _g((310,50)) = (390, 510)；按钮 position = center - size/2（UiButton.make 中心对齐）
-	var children: Array[Node] = popup.container.get_children()
-	var again_btn: TextureButton = null
-	for c in children:
-		if c is TextureButton and c.pressed.is_connected(popup._on_again):
-			again_btn = c
-			break
+	# _g((310,50)) = (390, 510)；按钮中心 = position + size/2（.tscn offset 固化中心对齐）
+	# Phase A：AgainBtn 在 Content 内（container → Content → AgainBtn），递归扫全子树。
+	var again_btn: TextureButton = _find_texture_btn_recursive(popup.container, popup._on_again)
 	assert_not_null(again_btn, "再抽按钮存在")
 	# center_x 390 → position.x = 390 - size.x/2
 	var again_center_x: float = again_btn.position.x + again_btn.size.x * 0.5
@@ -99,11 +102,8 @@ func test_setup_loot_with_box_anim() -> void:
 	popup.show_window(root)
 	# _play_box_anim 在 show 入场（SHOW_SEC=0.2）完成后由 _after_show 异步触发；await 让 tween process。
 	await popup.box_shown   # P2-GUT-2：信号等待（_after_show 里 box FCA 就位）
-	var has_fca: bool = false
-	for c in popup.container.get_children():
-		if c is FcaAnimation:
-			has_fca = true
-			break
+	# Phase A：FCA 挂 %LootHost（container → Content → LootHost → FCA），递归扫全子树。
+	var has_fca: bool = _has_node_of_type(popup.container, FcaAnimation)
 	assert_true(has_fca, "bronze box_type → 开箱 FCA 节点")
 	popup.remove_window()
 	root.queue_free()
@@ -146,3 +146,24 @@ func test_burst_on_hero_loot() -> void:
 	assert_true(has_light, "hero loot → 橙色品质光效（品质6）")
 	popup.remove_window()
 	root.queue_free()
+
+
+# 递归扫子树找 TextureButton 且 pressed 连了 target_callable（Phase A：.tscn 多层 content 扫描）。
+func _find_texture_btn_recursive(node: Node, target_callable: Callable) -> TextureButton:
+	for c in node.get_children():
+		if c is TextureButton and (c as TextureButton).pressed.is_connected(target_callable):
+			return c
+		var found: TextureButton = _find_texture_btn_recursive(c, target_callable)
+		if found != null:
+			return found
+	return null
+
+
+# 递归扫子树找指定类型节点（Phase A：FCA 挂 LootHost 内多层扫描）。
+func _has_node_of_type(node: Node, type: GDScript) -> bool:
+	if is_instance_of(node, type):
+		return true
+	for c in node.get_children():
+		if _has_node_of_type(c, type):
+			return true
+	return false

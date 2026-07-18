@@ -5,6 +5,11 @@ extends PopWindow
 ## 动画照源 show(245) container scale 入场 / createLootAnim(462) icon 飞 bpos→loot 位 /
 ## destroy(259) container scale 退场。
 ## 待补：shadow 白光 FadeOut（:510）+ playBurst 光效旋转（:468）+ magic 分支 fade（:549-559）。
+##
+## Phase A 静态化（2026-07-18，照 hero_detail 范式）：双按钮（again/close）+ reward_label
+## 进 pop_tavern_loot_content.tscn（位置/size 编辑器可视化）。loot icons / FCA / shadow / burst
+## 保留 procedural 挂 %LootHost（动态数量 + 飞出/旋转动画）；cost_row 保留 procedural 挂
+## %CostHost（cost_val 长度决定布局，源 :1015-1019 后处理右对齐 x=240）。
 
 signal draw_again
 # P2-GUT-2：入场 + 开箱 FCA 就位（box 阶段完成）
@@ -12,23 +17,27 @@ signal box_shown
 # P2-GUT-2：所有 loot 飞出 + 品质光效加完（产出动画完成）
 signal loot_anim_done
 
+# 静态 panel 层子场景（位置/size 在 .tscn 可视化）。
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/pop_tavern_loot_content.tscn")
 const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
 const GRID_ORIGIN: Vector2 = Vector2(190.0, 150.0)   # 源 getLootPos :417-422 十连布局起点
 const GRID_CELL: Vector2 = Vector2(100.0, 105.0)     # 源 dx,dy
 const GRID_COLS: int = 5                              # 源 :424 i%5
 const SINGLE_POS: Vector2 = Vector2(400.0, 280.0)    # 源 单抽居中
-# 源 playButtonAnim :781 tavern ccp(310,50) / :820 ok ccp(508,50) — Cocos 800×480 中心坐标，_g() 转 godot。
-const AGAIN_BTN_CENTER: Vector2 = Vector2(310.0, 50.0)
-const CLOSE_BTN_CENTER: Vector2 = Vector2(508.0, 50.0)
 # 源 :741-772 status==0 cost 行（消费展示）：cost_icon + cost 右对齐到 x=240（godot 320）。
 const COST_ROW_RIGHT_X: float = 240.0   # 源 cost anchor(1,0.5) ccp(240,50)
 const COST_ROW_Y: float = 50.0          # 源 cost/ccp(50)/cost_icon ccp(48)
 const COST_ICON_RES_GOLD: String = "res://assets/ui/alpha/HVGA/task_gold_icon_2.png"
 const COST_ICON_RES_RMB: String = "res://assets/ui/alpha/HVGA/task_rmb_icon_2.png"
-const COST_BG_RES: String = "res://assets/ui/alpha/HVGA/tip_detail_bg.png"   # 源 :743 tip_detail_bg.png scalexy y=2
-# 源 :850-863 reward_label（dpText，金黄色 ccc3(231,206,19)）ccp(374,375)。
-const REWARD_LABEL_CENTER: Vector2 = Vector2(374.0, 375.0)
-const REWARD_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
+const SINGLE_THRESHOLD: int = 1   # loot 种类 <= 此值用单抽布局
+const BOX_ANIM_POS: Vector2 = Vector2(400.0, 240.0)   # 源 playBoxAnim bpos
+# 源 :287-296 box_type → 开箱 FCA resource（magic .abc 格式本项目不支持，留待）
+const BOX_FCA_MAP: Dictionary = {
+	"bronze": "effect/eff_UI_tarven_open_chest",
+	"silver": "effect/eff_UI_tarven_open_chest_silver",
+	"gold": "effect/eff_UI_tarven_open_chest_gold",
+}
+const ANIM_BASE: String = "res://assets/anim_frames/"
 # LSTR key（照源 poptavernloot.lua :662-674）。CHATCONFIG.SHOW_REWAD_BY_CHEST 源 zh-CN.lua 数据缺，
 # 走中文 fallback（源 en-US "Successfully opened the treasure chest. "）。
 const LSTR_DRAW_ONCE: StringName = &"POPTAVERNLOOT.DRAW_ONCE_AGAIN"   # 源 :662
@@ -39,20 +48,6 @@ const FALLBACK_DRAW_ONCE: String = "再抽一次"
 const FALLBACK_DRAW_TEN: String = "再抽十次"
 const FALLBACK_CONFIRM: String = "确定"
 const FALLBACK_OPEN_CHEST: String = "成功打开宝箱"   # 源 zh-CN.lua 缺 SHOW_REWAD 译文，走中文 fallback
-const AGAIN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_1.png"   # 源 playButtonAnim :778 tavern 按钮（再抽一次）
-const AGAIN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_2.png"   # 源 :789（press）
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"   # 源 :817 ok 按钮（关闭/确认）
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"   # 源 :828（press）
-const AGAIN_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)   # 源 tavern_label ccc3(231,206,19) 金黄
-const SINGLE_THRESHOLD: int = 1   # loot 种类 <= 此值用单抽布局
-const BOX_ANIM_POS: Vector2 = Vector2(400.0, 240.0)   # 源 playBoxAnim bpos
-# 源 :287-296 box_type → 开箱 FCA resource（magic .abc 格式本项目不支持，留待）
-const BOX_FCA_MAP: Dictionary = {
-	"bronze": "effect/eff_UI_tarven_open_chest",
-	"silver": "effect/eff_UI_tarven_open_chest_silver",
-	"gold": "effect/eff_UI_tarven_open_chest_gold",
-}
-const ANIM_BASE: String = "res://assets/anim_frames/"
 
 # ---- 抽卡动画（照源 poptavernloot.lua show/createLootAnim/destroy）----
 const SHOW_SEC: float = 0.2                        # 源 show CCScaleTo(0.2,1) EaseBackOut
@@ -77,6 +72,9 @@ var box_type: String = ""
 var times: String = "one"   # 源 create :213 self.times = times（"one"/"ten"）
 var cost_info: Dictionary = {}   # 源 :214 self.cost = addition.cost（{pay, number}），status==0 cost 行用
 var _cm: Variant = null
+var _content: Control = null       # .tscn instantiate 根（container 子）
+var _loot_host: Control = null     # %LootHost：动态 loot icons / FCA 挂载
+var _cost_host: Control = null     # %CostHost：cost_row procedural 挂载
 var _loot_icons: Array[Control] = []
 var _loot_targets: Array[Vector2] = []
 
@@ -93,10 +91,32 @@ func setup_loot(loots: Array, p_cm: Variant, p_box_type: String = "", p_times: S
 	cost_info = p_cost_info
 	_cm = p_cm
 	setup()
+	_build_content()
 	_aggregate(loots, p_cm)
-	_create_buttons()
 	_create_cost_row()
-	_create_reward_label()
+
+
+# Phase A：instantiate .tscn + 缓存 host + fill 双按钮文字（位置/纹理 .tscn 固化）+ 绑信号。
+# 源 playButtonAnim（:656-1044）status==0 分支：tavern/tavern_press（tvText）+ ok/ok_press（okTxt）
+# + reward_label（dpText 金黄 ccc3(231,206,19)）。
+func _build_content() -> void:
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	_loot_host = _content.get_node("%LootHost") as Control
+	_cost_host = _content.get_node("%CostHost") as Control
+	# reward_label（源 :850-863 dpText；CHATCONFIG.SHOW_REWAD_BY_CHEST 源拼写 REWAD）
+	var reward_lbl: Label = _content.get_node("%RewardLabel") as Label
+	reward_lbl.text = _lstr_or(LSTR_OPEN_CHEST, FALLBACK_OPEN_CHEST)
+	# again 按钮（源 :781 tavern_button_1 + tvText 金黄）
+	var again_btn: TextureButton = _content.get_node("%AgainBtn") as TextureButton
+	(again_btn.get_node("Label") as Label).text = _tv_text()
+	again_btn.pressed.connect(_on_again)
+	# close 按钮（源 :817 tavern_button_normal_1 + okTxt）
+	var close_btn: TextureButton = _content.get_node("%CloseBtn") as TextureButton
+	(close_btn.get_node("Label") as Label).text = _lstr_or(LSTR_CONFIRM, FALLBACK_CONFIRM)
+	close_btn.pressed.connect(func() -> void:
+		AudioPlayer.play_sfx("common_click_feedback")   # 源 tavern.clickCloseLoots（soundres.lua:292）
+		remove_window())
 
 
 # 聚合同 id（源 throwLoots :167-200 合并）→ icon 初始 scale0+bpos（源 createLootAnim :535-536 初始态）。
@@ -111,7 +131,7 @@ func _aggregate(loots: Array, p_cm: Variant) -> void:
 		var icon: Control = ReadequipIcon.create_icon(int(lid), int(agg[lid]), p_cm)
 		icon.scale = Vector2.ZERO
 		icon.position = _g(BOX_BPOS)
-		container.add_child(icon)
+		_loot_host.add_child(icon)
 		_loot_icons.append(icon)
 		_loot_targets.append(_loot_pos(idx, is_single))
 		idx += 1
@@ -125,30 +145,9 @@ func _loot_pos(index: int, is_single: bool) -> Vector2:
 	return _g(Vector2(GRID_ORIGIN.x + GRID_CELL.x * col, GRID_ORIGIN.y + GRID_CELL.y * row))
 
 
-# 源 playButtonAnim（:656-1044）status==0 分支：cost 行 + tavern/tavern_press（tvText 金黄）+ ok/ok_press（okTxt）+ reward_label（dpText 金黄）。
-# tvText 单/十连分支（源 :661-668）：one→DRAW_ONCE_AGAIN / ten→DRAW_10_AGAIN / magic 强制 once。
-func _create_buttons() -> void:
-	var tv_text: String = _tv_text()
-	var again: TextureButton = UiButton.make(AGAIN_RES, AGAIN_PRESS_RES, _g(AGAIN_BTN_CENTER), tv_text, AGAIN_COLOR)
-	again.pressed.connect(_on_again)
-	container.add_child(again)
-	var close_text: String = _lstr_or(LSTR_CONFIRM, FALLBACK_CONFIRM)
-	var close: TextureButton = UiButton.make(CLOSE_RES, CLOSE_PRESS_RES, _g(CLOSE_BTN_CENTER), close_text)
-	close.pressed.connect(func() -> void:
-		AudioPlayer.play_sfx("common_click_feedback")   # 源 tavern.clickCloseLoots（soundres.lua:292）
-		remove_window())
-	container.add_child(close)
-
-
-# 源 :661-668 tvText：times=="one"→DRAW_ONCE_AGAIN / "ten"→DRAW_10_AGAIN / magic 强制 once。
-func _tv_text() -> String:
-	if times == "ten" and box_type != "magic":
-		return _lstr_or(LSTR_DRAW_TEN, FALLBACK_DRAW_TEN)
-	return _lstr_or(LSTR_DRAW_ONCE, FALLBACK_DRAW_ONCE)
-
-
 # 源 playButtonAnim :741-772 status==0 cost 行：cost_bg + cost_icon + cost Label。
 # 源 :1015-1019 后处理：cost_icon+cost 右对齐 x=240，cost_bg 居中包裹。简化：cost_icon+cost 紧贴右对齐。
+# 位置依赖 cost_val 字符串长度 → 保留 procedural 挂 %CostHost。
 func _create_cost_row() -> void:
 	if cost_info.is_empty():
 		return   # 单机化未传 cost（panel setup_loot 默认空）→ 不显消费行
@@ -167,7 +166,7 @@ func _create_cost_row() -> void:
 	cost_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	cost_lbl.add_theme_constant_override("outline_size", 1)
 	cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(cost_lbl)
+	_cost_host.add_child(cost_lbl)
 	# cost_icon 紧贴 cost 左侧（源 anchor 1,0.5）
 	var icon_res: String = COST_ICON_RES_RMB if pay == "Diamond" else COST_ICON_RES_GOLD
 	if not ResourceLoader.exists(icon_res):
@@ -181,23 +180,14 @@ func _create_cost_row() -> void:
 		icon.scale = Vector2(1.2, 1.2)   # 源 :756 钻石 icon scale 1.2
 	icon.position = Vector2(godot_right.x - cost_w - icon.size.x, godot_right.y - icon.size.y * 0.5)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(icon)
+	_cost_host.add_child(icon)
 
 
-# 源 playButtonAnim :850-863 reward_label（dpText 金黄 ccc3(231,206,19) ccp(374,375)）。
-# status==0 dpText=CHATCONFIG.SHOW_REWAD_BY_CHEST（源拼写 REWAD）。zh-CN.lua 源数据缺译文 → 走中文 fallback。
-func _create_reward_label() -> void:
-	var text: String = _lstr_or(LSTR_OPEN_CHEST, FALLBACK_OPEN_CHEST)
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.size = Vector2(200.0, 20.0)
-	lbl.position = _g(REWARD_LABEL_CENTER) - lbl.size * 0.5
-	lbl.add_theme_color_override("font_color", REWARD_COLOR)
-	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	lbl.add_theme_constant_override("outline_size", 1)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(lbl)
+# 源 :661-668 tvText：times=="one"→DRAW_ONCE_AGAIN / "ten"→DRAW_10_AGAIN / magic 强制 once。
+func _tv_text() -> String:
+	if times == "ten" and box_type != "magic":
+		return _lstr_or(LSTR_DRAW_TEN, FALLBACK_DRAW_TEN)
+	return _lstr_or(LSTR_DRAW_ONCE, FALLBACK_DRAW_ONCE)
 
 
 # cm.get_lstr 缺失（返 key 本身）→ fallback。
@@ -275,7 +265,7 @@ func _play_box_anim() -> void:
 		return
 	var fca := FcaAnimation.new()
 	fca.position = _g(BOX_ANIM_POS)
-	container.add_child(fca)
+	_loot_host.add_child(fca)
 	var resource: String = BOX_FCA_MAP[box_type]
 	var ani_path: String = ANIM_BASE + resource + ".ani"
 	if not ResourceLoader.exists(ani_path):
