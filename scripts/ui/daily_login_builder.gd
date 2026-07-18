@@ -4,31 +4,16 @@ extends RefCounted
 ## dailylogin 月签到 View 工厂（照源 ui/popwindow/dailylogin.lua）。
 ## create :734-887 主框架 + createSubhead :653-720 累计签到 +
 ## createList :380-420 网格 + createRewardItem :222-378 单格 + getRewardData :147-181 查表。
-## 源 draglist（cliprect 滚动）→ Godot ScrollContainer（引擎适配，铁律允许）。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：to_godot(cx+80, 560-cy)（同 handbook_builder）。
+## 重构（2026-07-18，hero_detail 范式）：chrome（frame/title_bg/act_bg/close/title/explain/subhead 3 label/
+## grid ScrollContainer）静态化进 daily_login_content.tscn，panel 用 preload + get_node("%..")；
+## 本 builder 仅保留 fill_grid（content + 单格 procedural 挂 %GridScroll）+ 数据查表。
+## 源坐标 cocos(800×480 左下) → godot(960×640 左上)：(cx+80, 560-cy)（在 .tscn 固化，运行时不算）。
 ## 单机化：源 status common/vip（VIP 双倍选项）→ 仅 common（领后 received）；VIP 角标保留装饰。
 
 # 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
 const CONTENT_SCALE: float = 1.28125
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
 const FALLBACK_YEAR: int = 2018
 const COLS: int = 5   # 源 :241 wa=5 五列
-# 源 create :749-874 主框架坐标（cocos）
-const FRAME_CENTER: Vector2 = Vector2(400.0, 240.0)
-const FRAME_SIZE: Vector2 = Vector2(578.0, 420.0)
-const FRAME_CAP: Rect2 = Rect2(50.0, 50.0, 478.0, 50.0)
-const TITLE_BG_CRUSADE_CENTER: Vector2 = Vector2(400.0, 441.0)
-const ACT_BG_CENTER: Vector2 = Vector2(400.0, 420.0)
-const ACT_BG_H: float = 35.0   # 源 :811 fix_size (0,35)
-const TITLE_CENTER: Vector2 = Vector2(400.0, 444.0)
-const CLOSE_CENTER: Vector2 = Vector2(675.0, 440.0)
-const EXPLAIN_CENTER: Vector2 = Vector2(190.0, 400.0)
-const EXPLAIN_SIZE: Vector2 = Vector2(105.0, 50.0)
-const EXPLAIN_CAP: Rect2 = Rect2(20.0, 15.0, 88.0, 19.0)
-const SUBHEAD_CENTER: Vector2 = Vector2(400.0, 386.0)
-# 源 createListLayer :636 cliprect（cocos）→ Godot 滚动区
-const CLIP_COCOS: Rect2 = Rect2(140.0, 40.0, 520.0, 335.0)
 # 源 createRewardItem :231-243 网格（content 内坐标，godot 左上原点）
 const CELL_OX: float = 58.0    # 源 ox=140+58，相对 reward_bg 左上
 const CELL_OY: float = 56.0    # 源 oy=372-56，y 翻转后 56
@@ -44,26 +29,12 @@ const VIP_BG_TOPLEFT_LOCAL: Vector2 = Vector2(0.0, -0.5)  # 源 vip_bg ccp(0,102
 const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 21.5)        # 源 vipTag ccp(24,80), y=101.5-80
 const LIGHT_CENTER_LOCAL: Vector2 = Vector2(51.0, 51.5)   # 源 light ccp(51,50), y=101.5-50
 # 颜色（源 ccc3）
-const TITLE_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
-const SUBHEAD_PRE_COLOR: Color = Color(238.0 / 255.0, 204.0 / 255.0, 119.0 / 255.0)
-const SUBHEAD_NUM_COLOR: Color = Color(1.0, 1.0, 1.0)
-const SUBHEAD_SUF_COLOR: Color = Color(1.0, 204.0 / 255.0, 91.0 / 255.0)
-const EXPLAIN_LABEL_COLOR: Color = Color(225.0 / 255.0, 209.0 / 255.0, 186.0 / 255.0)
 const AMOUNT_STROKE_COLOR: Color = Color(95.0 / 255.0, 64.0 / 255.0, 43.0 / 255.0)
 const VIP_NUM_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
 # 字号（源 size）
-const FONT_TITLE: int = 18
-const FONT_SUBHEAD: int = 16
 const FONT_AMOUNT: int = 24
 const FONT_VIP: int = 14
 # 资源
-const FRAME_RES: String = "res://assets/ui/alpha/HVGA/dailylogin/dailylogin_frame.png"
-const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/crusade_title_short_bg.png"
-const ACT_BG_RES: String = "res://assets/ui/alpha/HVGA/act/act_popup_bg.png"
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
-const EXPLAIN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
-const EXPLAIN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
 const REWARD_BG_RES: String = "res://assets/ui/alpha/HVGA/dailylogin/dailylogin_reward_bg.png"
 const REWARD_BG_CAP: Rect2 = Rect2(15.0, 15.0, 24.0, 25.0)
 const MATRIX_RES: String = "res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix.png"
@@ -77,81 +48,12 @@ const ICON_GOLD_RES: String = "res://assets/ui/alpha/HVGA/task_gold_icon.png"
 const STATIC_ICON_MAP: Dictionary = {"Diamond": ICON_DIAMOND_RES, "Gold": ICON_GOLD_RES}
 
 
-# 源 cocos(cx,cy) → Godot(cx+80, 560-cy)（同 handbook_builder 范式）。
-static func to_godot(cx: float, cy: float) -> Vector2:
-	return Vector2(cx + OFFSET_X, BASE_Y - cy)
-
-
-# 源 create :734-887 主框架。返 {title, close, explain, subhead_num}（供 panel 接线/刷新）。
-# cm 用于 LSTR 化（奖励说明/累计签到/次，源 create :862 + createSubhead :662/:697）。
-static func create_chrome(parent: Control, title_text: String, checkin_num: int, cm: Variant) -> Dictionary:
-	_add_nine_patch(parent, FRAME_RES, FRAME_CAP, to_godot(FRAME_CENTER.x, FRAME_CENTER.y) - FRAME_SIZE * 0.5, FRAME_SIZE)
-	_add_centered(parent, TITLE_BG_RES, TITLE_BG_CRUSADE_CENTER)
-	var act_tex: Texture2D = load(ACT_BG_RES) as Texture2D
-	if act_tex != null:
-		var act := TextureRect.new()
-		act.texture = act_tex
-		act.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		act.size = Vector2(act_tex.get_size().x / CONTENT_SCALE, ACT_BG_H)   # 源 fix_size(0,35)：宽=纹理/CS，高=35
-		act.position = to_godot(ACT_BG_CENTER.x, ACT_BG_CENTER.y) - act.size * 0.5
-		act.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		parent.add_child(act)
-	var close: TextureButton = UiButton.make(CLOSE_RES, CLOSE_PRESS_RES, to_godot(CLOSE_CENTER.x, CLOSE_CENTER.y))
-	parent.add_child(close)
-	var title := Label.new()
-	title.text = title_text
-	title.add_theme_font_size_override("font_size", FONT_TITLE)
-	title.add_theme_color_override("font_color", TITLE_COLOR)
-	title.add_theme_color_override("font_outline_color", Color.BLACK)
-	title.add_theme_constant_override("outline_size", 2)
-	title.position = to_godot(TITLE_CENTER.x, TITLE_CENTER.y) - title.get_minimum_size() * 0.5
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(title)
-	var explain_text: String = cm.get_lstr("DAILYLOGIN.AWARDS_DESCRIPTION") if cm != null else "奖励说明"
-	var explain: Button = UiScale9Button.make_centered(EXPLAIN_RES, EXPLAIN_PRESS_RES, to_godot(EXPLAIN_CENTER.x, EXPLAIN_CENTER.y), EXPLAIN_SIZE, EXPLAIN_CAP, explain_text, EXPLAIN_LABEL_COLOR)
-	parent.add_child(explain)
-	var subhead_num: Label = _create_subhead(parent, checkin_num, cm)
-	return {"title": title, "close": close, "explain": explain, "subhead_num": subhead_num}
-
-
-# 源 createSubhead :653-720。返 subhead 数字 Label（供 refreshSubhead 更新）。
-# cm 用于 LSTR 化（源 :662 THIS_MONTH_HAS_A_TOTAL_ATTENDANCE + :697 TIMES）。
-static func _create_subhead(parent: Control, checkin_num: int, cm: Variant) -> Label:
-	var anchor: Vector2 = to_godot(SUBHEAD_CENTER.x, SUBHEAD_CENTER.y)
-	var pre_text: String = cm.get_lstr("DAILYLOGIN.THIS_MONTH_HAS_A_TOTAL_ATTENDANCE") if cm != null else "本月已累计签到"
-	var pre := Label.new()
-	pre.text = pre_text
-	pre.add_theme_font_size_override("font_size", FONT_SUBHEAD)
-	pre.add_theme_color_override("font_color", SUBHEAD_PRE_COLOR)
-	pre.position = anchor
-	pre.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(pre)
-	var num := Label.new()
-	num.text = str(checkin_num)
-	num.add_theme_font_size_override("font_size", FONT_SUBHEAD)
-	num.add_theme_color_override("font_color", SUBHEAD_NUM_COLOR)
-	num.position = anchor + Vector2(pre.get_minimum_size().x + 5.0, 0.0)
-	num.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(num)
-	var suf := Label.new()
-	suf.text = cm.get_lstr("DAILYLOGIN.TIMES") if cm != null else "次"
-	suf.add_theme_font_size_override("font_size", FONT_SUBHEAD)
-	suf.add_theme_color_override("font_color", SUBHEAD_SUF_COLOR)
-	suf.position = num.position + Vector2(num.get_minimum_size().x + 5.0, 0.0)
-	suf.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(suf)
-	return num
-
-
-# 源 createList :380-420 + createListLayer :634-652。返 {scroll, content, cells}。
-static func create_grid(parent: Control, data_list: Array, cell_statuses: Array, cm: Variant) -> Dictionary:
+# 源 createList :380-420 + createListLayer :634-652。返 {content, cells}。
+# scroll 由 .tscn 静态化（位置/size 固化），content + cells 动态挂 scroll。
+static func fill_grid(scroll: ScrollContainer, data_list: Array, cell_statuses: Array, cm: Variant) -> Dictionary:
 	var da: int = data_list.size()
-	var scroll := ScrollContainer.new()
-	scroll.position = to_godot(CLIP_COCOS.position.x, CLIP_COCOS.position.y + CLIP_COCOS.size.y)
-	scroll.size = CLIP_COCOS.size
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	parent.add_child(scroll)
+	for c in scroll.get_children():
+		c.queue_free()
 	var ha: int = maxi(1, int(ceil(float(da) / float(COLS))))
 	var gw: float = CELL_DX * float(COLS) + GRID_PAD_X
 	var gh: float = CELL_DY * float(ha) + GRID_PAD_Y
@@ -165,7 +67,7 @@ static func create_grid(parent: Control, data_list: Array, cell_statuses: Array,
 	for i in range(da):
 		var st: String = String(cell_statuses[i]) if i < cell_statuses.size() else "future"
 		cells.append(create_reward_cell(content, i + 1, data_list[i], st, cm))
-	return {"scroll": scroll, "content": content, "cells": cells}
+	return {"content": content, "cells": cells}
 
 
 # 源 createRewardItem :222-378。返 {button, data, day, status}（status 供 panel/测试）。
@@ -322,22 +224,6 @@ static func _add_nine_patch(parent: Control, res_path: String, cap: Rect2, top_l
 	np.size = target_size
 	np.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(np)
-
-
-# Sprite 中心定位（源 anchor 0.5,0.5）。
-static func _add_centered(parent: Control, res_path: String, cocos_center: Vector2) -> void:
-	var tex: Texture2D = load(res_path) as Texture2D
-	if tex == null:
-		return
-	var s := TextureRect.new()
-	s.texture = tex
-	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 Sprite config={}（如 crusade_title_short_bg :768）→ 显示=纹理/CS。
-	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
-	s.size = sz
-	s.position = to_godot(cocos_center.x, cocos_center.y) - sz * 0.5
-	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(s)
 
 
 # board 内贴图（checked/vip_bg）。is_topleft=true 用左上定位否则中心。
