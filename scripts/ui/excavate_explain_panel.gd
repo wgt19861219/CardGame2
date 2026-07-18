@@ -4,18 +4,17 @@ extends PopWindow
 ## 藏宝地穴玩法说明（View 层）— 照源 ui/popwindow/excavateexplain.lua createContent:4。
 ## 纯文本（背景故事 4 行 + 标题 + 规则段 16 个 LSTR 子句合成 10 条规则）。
 ## 无联机依赖，直接复用。P1（2026-07-16）：LSTR EXCAVATEEXPLAIN.* 全键照译。
+##
+## 重构（2026-07-18，hero_detail 范式）：panel 层静态节点（frame/close/title/scroll/list）
+## 固化进 scenes/ui/excavate_explain_content.tscn；故事段+规则段 LSTR label 数量固定但
+## 内容动态，保留 procedural 挂 %StoryList（autowrap + 颜色 + 字号运行时设）。
 
-const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png"
-const TITLE_TEXT_FALLBACK: String = "藏宝地穴说明"
-const LSTR_TITLE_KEY: String = "EXCAVATEEXPLAIN._ANUBAR_WARS"  # 源无独立 title LSTR，沿用故事标题
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_explain_content.tscn")
 # 源 ccc3(255,255,221) 故事段（excavateexplain.lua:45）
 const COLOR_STORY: Color = Color(1.0, 1.0, 221.0 / 255.0)
 # 源 ccc3(238,204,119) 规则段（:61）
 const COLOR_RULE: Color = Color(238.0 / 255.0, 204.0 / 255.0, 119.0 / 255.0)
 const FONT_SIZE: int = 16    # 源 ed.createttf(v, 16)
-const TITLE_FONT: int = 22
-const FRAME_W: float = 600.0
-const FRAME_H: float = 480.0
 const CONTENT_W: float = 500.0
 
 # 故事段 4 行（照 text_list_1 :8-13，4 个 LSTR key 顺序）
@@ -79,10 +78,12 @@ const RULE_FALLBACKS: Array[String] = [
 	"10.在藏宝地穴的战斗中，防守方的英雄会获得一定初始能量。",
 ]
 
+var _story_list: VBoxContainer = null
+
 
 func setup_panel() -> void:
 	setup()
-	_build_ui()
+	_build_content()
 
 
 # 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
@@ -93,60 +94,20 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
-func _build_ui() -> void:
-	var frame := TextureRect.new()
-	frame.texture = load(FRAME_TEX)
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE   # [[texture-rect-expand-ignore-size]]
-	frame.size = Vector2(FRAME_W, FRAME_H)
-	frame.position = Vector2(960.0 * 0.5 - FRAME_W * 0.5, 640.0 * 0.5 - FRAME_H * 0.5)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.add_child(frame)
-	_add_close(frame)
-	_add_title(frame)
-	_add_content(frame)
-
-
-func _add_close(frame: TextureRect) -> void:
-	var close := TextureButton.new()
-	close.texture_normal = load("res://assets/ui/alpha/HVGA/herodetail-detail-close.png")
-	close.texture_pressed = load("res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png")
-	close.ignore_texture_size = true
-	close.size = Vector2(40, 40)
-	close.position = Vector2(frame.size.x - 50, 12)
-	close.pressed.connect(remove_window)
-	frame.add_child(close)
-
-
-func _add_title(frame: TextureRect) -> void:
-	var label := Label.new()
-	label.text = TITLE_TEXT_FALLBACK   # 源 explainwindow 基类标题，无独立 LSTR
-	label.size = Vector2(frame.size.x, 40)
-	label.position = Vector2(0, 15)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font", TITLE_FONT)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(label)
-
-
-func _add_content(frame: TextureRect) -> void:
-	var sc := ScrollContainer.new()
-	sc.size = Vector2(frame.size.x - 60, frame.size.y - 90)
-	sc.position = Vector2(30, 65)
-	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	sc.mouse_filter = Control.MOUSE_FILTER_PASS
-	frame.add_child(sc)
-	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_theme_constant_override("separation", 6)
-	sc.add_child(vbox)
+# 建 UI：preload .tscn instantiate + 绑 close + fill 故事/规则 LSTR labels。
+# 位置/size 静态节点（frame/close/title/scroll/list）已在 .tscn 固化。
+func _build_content() -> void:
+	var content := CONTENT_SCENE.instantiate()
+	container.add_child(content)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	_story_list = content.get_node("%StoryList") as VBoxContainer
 	# 故事段（照 :37-46 4 行 + 尾签名）
 	for i in range(STORY_KEYS.size()):
-		vbox.add_child(_make_label(_lstr(STORY_KEYS[i], STORY_FALLBACKS[i]), COLOR_STORY))
-	vbox.add_child(_make_label(_lstr(STORY_TITLE_KEY, STORY_TITLE_FALLBACK), COLOR_STORY, HORIZONTAL_ALIGNMENT_RIGHT))
+		_story_list.add_child(_make_label(_lstr(STORY_KEYS[i], STORY_FALLBACKS[i]), COLOR_STORY))
+	_story_list.add_child(_make_label(_lstr(STORY_TITLE_KEY, STORY_TITLE_FALLBACK), COLOR_STORY, HORIZONTAL_ALIGNMENT_RIGHT))
 	# 规则段（照 :53-62，源每子句独立 label，颜色 ccc3(238,204,119)）
 	for i in range(RULE_KEYS.size()):
-		vbox.add_child(_make_label(_lstr(RULE_KEYS[i], RULE_FALLBACKS[i]), COLOR_RULE))
+		_story_list.add_child(_make_label(_lstr(RULE_KEYS[i], RULE_FALLBACKS[i]), COLOR_RULE))
 
 
 func _make_label(text: String, color: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
