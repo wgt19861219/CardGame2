@@ -49,12 +49,9 @@ func test_item_has_bg_texture() -> void:
 	mgr.add_hero(1)
 	var hero: HeroInstance = mgr.find_hero_by_tid(1)
 	var item := HeroPackageItem.create_from_entry(hero, cm, mgr)
-	var has_bg: bool = false
-	for c in item.get_children():
-		if c is TextureRect:
-			has_bg = true
-			break
-	assert_true(has_bg, "item 应含 TextureRect bg 子节点")
+	# Phase A 重构（2026-07-18）：bg 在 content 子场景下，递归扫描（坑 6 .tscn 多一层 content）。
+	var bg: TextureRect = _find_first_texture_rect(item)
+	assert_not_null(bg, "item 应含 TextureRect bg 子节点（content 下）")
 
 
 # 子节点全部 mouse_filter=IGNORE（装饰不吞点击），唯 item 自身 STOP（源 bg 点击由 draglist 捕获）。
@@ -62,6 +59,28 @@ func test_item_decorations_ignore_mouse() -> void:
 	var entry: Dictionary = {"tid": 2, "miss": true}
 	var mgr := HeroManager.new(cm)
 	var item := HeroPackageItem.create_from_entry(entry, cm, mgr)
-	for c in item.get_children():
+	# Phase A 重构（2026-07-18）：装饰在 content 子树，递归收集 Control（head 是 Node2D 自动断链不进）。
+	var decos: Array = []
+	_collect_controls(item, decos)
+	for c in decos:
+		assert_eq((c as Control).mouse_filter, Control.MOUSE_FILTER_IGNORE, "装饰子节点应 IGNORE 鼠标")
+	assert_gt(decos.size(), 5, "应收集多个装饰节点（bg/name/mark/slot/bar 等）")
+
+
+# Phase A 重构辅助：递归找首个 TextureRect（.tscn 多一层 content，坑 6）。
+static func _find_first_texture_rect(node: Node) -> TextureRect:
+	for c in node.get_children():
+		if c is TextureRect:
+			return c as TextureRect
+		var sub: TextureRect = _find_first_texture_rect(c)
+		if sub != null:
+			return sub
+	return null
+
+
+# Phase A 重构辅助：递归收集 Control（head 是 Node2D 自动断链不进 head 子树）。
+static func _collect_controls(node: Node, out: Array) -> void:
+	for c in node.get_children():
 		if c is Control:
-			assert_eq((c as Control).mouse_filter, Control.MOUSE_FILTER_IGNORE, "装饰子节点应 IGNORE 鼠标")
+			out.append(c)
+			_collect_controls(c, out)

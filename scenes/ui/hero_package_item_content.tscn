@@ -1,0 +1,189 @@
+[gd_scene format=3 uid="uid://dubxujk421wr8"]
+
+[ext_resource type="Texture2D" uid="uid://bubb6e8yl61o7" path="res://assets/ui/alpha/HVGA/package_hero_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" uid="uid://dcc6o3qcgpf0p" path="res://assets/ui/alpha/HVGA/gocha.png" id="2_gocha"]
+[ext_resource type="Texture2D" uid="uid://porylixo2mac" path="res://assets/ui/alpha/HVGA/main_deal_tag.png" id="3_dealtag"]
+[ext_resource type="Texture2D" uid="uid://csx7niibndmik" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress_bg.png" id="4_progbg"]
+[ext_resource type="Texture2D" uid="uid://r62klw38nq0r" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress.png" id="5_prog"]
+[ext_resource type="Texture2D" uid="uid://cmdjxge00hynk" path="res://assets/ui/alpha/HVGA/heropackage_available.png" id="6_avail"]
+
+[node name="HeroPackageItemContent" type="Control" unique_id=601363715]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="." unique_id=1222466941]
+layout_mode = 0
+offset_left = -26.5
+offset_top = -11.5
+offset_right = 286.5
+offset_bottom = 111.5
+mouse_filter = 2
+texture = ExtResource("1_bg")
+expand_mode = 1
+
+[node name="HeadHost" type="Control" parent="." unique_id=2113479301]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = -19.5
+offset_top = -1.5
+offset_right = -19.5
+offset_bottom = -1.5
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="." unique_id=1385220039]
+unique_name_in_owner = true
+layout_mode = 0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="SuffixLabel" type="Label" parent="." unique_id=1441676601]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="MarkRect" type="TextureRect" parent="." unique_id=1984512238]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 0
+offset_left = 229.0
+offset_top = -2.0
+offset_right = 266.0
+offset_bottom = 39.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="EquipGroup" type="Control" parent="." unique_id=1553999783]
+unique_name_in_owner = true
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="EquipSlot1" type="TextureRect" parent="EquipGroup" unique_id=1124040423]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 67.5
+offset_top = 82.5
+offset_right = 89.5
+offset_bottom = 104.5
+mouse_filter = 2
+texture = ExtResource("2_gocha")
+expand_mode = 1
+
+[node name="EquipSlot2" type="TextureRect" parent="EquipGroup" unique_id=1636581600]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 89.5
+offset_top = 82.5
+offset_right = 111.5
+offset_bottom = 104.5
+mouse_filter = 2
+texture = ExtResource("2_gocha")
+expand_mode = 1
+
+[node name="EquipSlot3" type="TextureRect" parent="EquipGroup" unique_id=1846824292]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 111.5
+offset_top = 82.5
+offset_right = 133.5
+offset_bottom = 104.5
+mouse_filter = 2
+texture = ExtResource("2_gocha")
+expand_mode = 1
+
+[node name="EquipSlot4" type="TextureRect" parent="EquipGroup" unique_id=1403129619]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 133.5
+offset_top = 82.5
+offset_right = 155.5
+offset_bottom = 104.5
+mouse_filter = 2
+texture = ExtResource("2_gocha")
+expand_mode = 1
+
+[node name="EquipSlot5" type="TextureRect" parent="EquipGroup" unique_id=541677996]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 155.5
+offset_top = 82.5
+offset_right = 177.5
+offset_bottom = 104.5
+mouse_filter = 2
+texture = ExtResource("2_gocha")
+expand_mode = 1
+
+[node name="EquipSlot6" type="TextureRect" parent="EquipGroup" unique_id=334713598]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 177.5
+offset_top = 82.5
+offset_right = 199.5
+offset_bottom = 104.5
+mouse_filter = 2
+texture = ExtResource("2_gocha")
+expand_mode = 1
+
+[node name="DealTag" type="TextureRect" parent="EquipGroup" unique_id=1585716563]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 213.5
+offset_top = 21.5
+offset_right = 213.5
+offset_bottom = 21.5
+mouse_filter = 2
+texture = ExtResource("3_dealtag")
+expand_mode = 1
+
+[node name="StoneGroup" type="Control" parent="." unique_id=1554689906]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="BarBg" type="TextureRect" parent="StoneGroup" unique_id=1612391235]
+layout_mode = 0
+offset_left = 63.5
+offset_top = 72.5
+offset_right = 253.22
+offset_bottom = 106.5
+mouse_filter = 2
+texture = ExtResource("4_progbg")
+expand_mode = 1
+
+[node name="BarFill" type="TextureRect" parent="StoneGroup" unique_id=892270563]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 63.5
+offset_top = 80.5
+offset_right = 63.5
+offset_bottom = 106.5
+mouse_filter = 2
+texture = ExtResource("5_prog")
+expand_mode = 1
+
+[node name="StoneLabel" type="Label" parent="StoneGroup" unique_id=377176750]
+unique_name_in_owner = true
+layout_mode = 0
+theme_override_font_sizes/font_size = 14
+
+[node name="SummonLight" type="TextureRect" parent="StoneGroup" unique_id=1444349091]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.588)
+layout_mode = 0
+offset_left = -26.5
+offset_top = -11.5
+offset_right = 286.5
+offset_bottom = 111.5
+mouse_filter = 2
+texture = ExtResource("6_avail")
+expand_mode = 1

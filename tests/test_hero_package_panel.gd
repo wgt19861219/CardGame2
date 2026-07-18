@@ -107,8 +107,12 @@ func test_grid_item_scaled_no_overlap() -> void:
 	root.queue_free()
 
 
+# Phase A 重构（2026-07-18）：item bg 在 content 子场景下，递归扫描（坑 6 .tscn 多一层 content）。
 static func _first_texture(node: Node) -> TextureRect:
 	for c in node.get_children():
 		if c is TextureRect:
 			return c
+		var sub: TextureRect = _first_texture(c)
+		if sub != null:
+			return sub
 	return null

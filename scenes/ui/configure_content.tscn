@@ -1,23 +1,23 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://demscqpqa6doh"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/avatar_head_bg.png" id="4_headbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_head_frame_silver.png" id="5_headframe"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="6_namebg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="7_btn"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="8_btnp"]
+[ext_resource type="Texture2D" uid="uid://8hyx1ovdjrfh" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" uid="uid://bldpeks6ew5b2" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
+[ext_resource type="Texture2D" uid="uid://cagmvsd4c6nbu" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
+[ext_resource type="Texture2D" uid="uid://bdijklfiaap4h" path="res://assets/ui/alpha/HVGA/avatar_head_bg.png" id="4_headbg"]
+[ext_resource type="Texture2D" uid="uid://dbhkrric2nc0h" path="res://assets/ui/alpha/HVGA/main_head_frame_silver.png" id="5_headframe"]
+[ext_resource type="Texture2D" uid="uid://02gx63nx2ssl" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="6_namebg"]
 
-[node name="ConfigureContent" type="Control"]
+[node name="ConfigureContent" type="Control" unique_id=728678537]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="Frame" type="NinePatchRect" parent="."]
-layout_mode = 3
+[node name="Frame" type="NinePatchRect" parent="." unique_id=670902166]
+layout_mode = 0
 offset_left = 224.0
 offset_top = 105.0
 offset_right = 724.0
@@ -29,11 +29,10 @@ patch_margin_right = 43
 patch_margin_bottom = 26
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
-mouse_filter = 2
 
-[node name="CloseBtn" type="TextureButton" parent="."]
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=1051926067]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 694.0
 offset_top = 110.0
 offset_right = 744.73
@@ -42,147 +41,138 @@ texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
 
-[node name="HeadBg" type="TextureRect" parent="."]
-layout_mode = 3
+[node name="HeadBg" type="TextureRect" parent="." unique_id=1122898611]
+layout_mode = 0
 offset_left = 225.0
 offset_top = 160.0
 offset_right = 305.0
 offset_bottom = 240.0
+mouse_filter = 2
 texture = ExtResource("4_headbg")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="HeadFrame" type="TextureRect" parent="."]
+[node name="HeadFrame" type="TextureRect" parent="." unique_id=963598336]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 240.0
 offset_top = 160.0
 offset_right = 320.0
 offset_bottom = 240.0
+mouse_filter = 2
 texture = ExtResource("5_headframe")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="HeadIconHost" type="Control" parent="."]
+[node name="HeadIconHost" type="Control" parent="." unique_id=549184840]
 unique_name_in_owner = true
-layout_mode = 3
+anchors_preset = 0
 offset_left = 230.0
 offset_top = 165.0
 offset_right = 300.0
 offset_bottom = 235.0
 mouse_filter = 2
 
-[node name="NameBg" type="TextureRect" parent="."]
-layout_mode = 3
+[node name="NameBg" type="TextureRect" parent="." unique_id=1739818570]
+layout_mode = 0
 offset_left = 337.0
 offset_top = 135.0
 offset_right = 562.0
 offset_bottom = 165.0
+mouse_filter = 2
 texture = ExtResource("6_namebg")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="NameLabel" type="Label" parent="."]
+[node name="NameLabel" type="Label" parent="." unique_id=1894284564]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 349.0
 offset_top = 142.0
 offset_right = 562.0
 offset_bottom = 166.0
 theme_override_font_sizes/font_size = 20
-mouse_filter = 2
 text = "玩家"
 
-[node name="InfoLine1" type="Label" parent="."]
+[node name="InfoLine1" type="Label" parent="." unique_id=402882160]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 349.0
 offset_top = 170.0
 offset_right = 562.0
 offset_bottom = 192.0
 theme_override_colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
 theme_override_font_sizes/font_size = 19
-mouse_filter = 2
 
-[node name="InfoLine2" type="Label" parent="."]
+[node name="InfoLine2" type="Label" parent="." unique_id=192641511]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 349.0
 offset_top = 192.0
 offset_right = 562.0
 offset_bottom = 214.0
 theme_override_colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
 theme_override_font_sizes/font_size = 19
-mouse_filter = 2
 
-[node name="InfoLine3" type="Label" parent="."]
+[node name="InfoLine3" type="Label" parent="." unique_id=1863430891]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 349.0
 offset_top = 214.0
 offset_right = 562.0
 offset_bottom = 236.0
 theme_override_colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
 theme_override_font_sizes/font_size = 19
-mouse_filter = 2
 
-[node name="ChangeNameBtn" type="Button" parent="."]
+[node name="ChangeNameBtn" type="Button" parent="." unique_id=508964241]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 630.0
 offset_top = 147.0
 offset_right = 760.0
 offset_bottom = 202.0
-mouse_filter = 0
 text = "修改名字"
 
-[node name="ChangeHeadBtn" type="Button" parent="."]
+[node name="ChangeHeadBtn" type="Button" parent="." unique_id=393929176]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 630.0
 offset_top = 220.0
 offset_right = 760.0
 offset_bottom = 275.0
-mouse_filter = 0
 text = "更换头像"
 
-[node name="SaveManagerBtn" type="Button" parent="."]
+[node name="SaveManagerBtn" type="Button" parent="." unique_id=887369569]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 630.0
 offset_top = 301.0
 offset_right = 760.0
 offset_bottom = 356.0
-mouse_filter = 0
 text = "存档管理"
 
-[node name="SetupBtn" type="Button" parent="."]
+[node name="SetupBtn" type="Button" parent="." unique_id=69960514]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 244.0
 offset_top = 390.0
 offset_right = 424.0
 offset_bottom = 445.0
-mouse_filter = 0
 text = "系统设置"
 
-[node name="LangBtn" type="TextureButton" parent="."]
+[node name="LangBtn" type="TextureButton" parent="." unique_id=1985356001]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 444.0
 offset_top = 385.0
 offset_right = 544.0
 offset_bottom = 445.0
 ignore_texture_size = true
 
-[node name="LangLabel" type="Label" parent="."]
+[node name="LangLabel" type="Label" parent="." unique_id=846977457]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 554.0
 offset_top = 405.0
 offset_right = 724.0
 offset_bottom = 430.0
 theme_override_colors/font_color = Color(0.862745, 0.690196, 0.403922, 1)
 theme_override_font_sizes/font_size = 20
-mouse_filter = 2
 text = "语言"
