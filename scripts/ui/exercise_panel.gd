@@ -9,6 +9,13 @@ extends Control
 ## ActStageGroupDungeon Group Name）。本项目为 main_scene 两个触发点（em/equip）聚合为单弹窗
 ## 选具体入口，文字标签为本聚合层可用性简化（源无对应 LSTR，照 :1459 硬编码先例保留中文）。
 ## 单机化裁剪：源公会等级/开放日 checkExerciseEnabled 恒 true。
+##
+## 重构（2026-07-18，hero_detail 范式）：chrome（bg/title/close/EntryGrid 容器）静态化进
+## scenes/ui/exercise_content.tscn（位置/size 编辑器可视化调）；入口按钮数据驱动，
+## 保留 procedural 挂 %EntryGrid（挂 meta + bind 回调）。panel 是 Control 非 PopWindow，
+## content 挂 panel 自身（无 container 中间层）。
+
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/exercise_content.tscn")
 
 # 入口 group ids 照源 exerciseres.lua entry_stage（:7-20）。name 照源 :1459 硬编码先例 + FCA 主题。
 const ENTRY_KEYS: Array = [
@@ -33,22 +40,13 @@ func set_entry_callback(cb: Callable) -> void:
 	_on_entry_selected = cb
 
 
+# 建 UI：chrome（bg/title/close/EntryGrid 容器）从 .tscn instantiate（位置/size 可视化），
+# 入口按钮 procedural 挂 %EntryGrid（数据驱动，挂 meta + bind 回调）。
 func _build_ui() -> void:
-	# 背景
-	var bg := ColorRect.new(); bg.color = Color(0.1, 0.1, 0.15, 0.95)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT); add_child(bg)
-	# 标题（源 exercise 场景无文字标题 LSTR，靠 descres 图 act_popup_title 展示，本弹窗加文字标识）
-	var title := Label.new(); title.text = "试炼"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 20); title.size = Vector2(800, 30)
-	title.add_theme_font_size_override("font_size", 24)
-	add_child(title)
-	# 关闭按钮
-	var close := Button.new(); close.text = "×"; close.position = Vector2(750, 10); close.size = Vector2(40, 40)
-	close.pressed.connect(queue_free); add_child(close)
-	# 入口按钮列表（GridContainer 2 列）
-	var grid := GridContainer.new(); grid.columns = 2
-	grid.position = Vector2(200, 80); grid.size = Vector2(400, 300)
+	var content := CONTENT_SCENE.instantiate()
+	add_child(content)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(queue_free)
+	var grid: GridContainer = content.get_node("%EntryGrid") as GridContainer
 	for entry in ENTRY_KEYS:
 		var btn := Button.new()
 		btn.text = String(entry.name)
@@ -56,7 +54,6 @@ func _build_ui() -> void:
 		btn.set_meta("entry", entry)
 		btn.pressed.connect(_on_entry_pressed.bind(entry))
 		grid.add_child(btn)
-	add_child(grid)
 
 
 func _on_entry_pressed(entry: Dictionary) -> void:
