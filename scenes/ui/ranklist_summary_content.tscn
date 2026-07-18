@@ -1,0 +1,84 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+
+[node name="RanklistSummaryContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 308.0
+offset_top = 168.0
+offset_right = 653.0
+offset_bottom = 473.0
+texture = ExtResource("1_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="AvatarHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 52.0
+offset_top = 272.0
+offset_right = 117.0
+offset_bottom = 337.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 110.0
+offset_top = 40.0
+offset_right = 335.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(0.969, 0.925, 0.776, 1)
+mouse_filter = 2
+text = "Name Lv99"
+
+[node name="LastRankTitleLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 30.0
+offset_top = 83.0
+offset_right = 150.0
+offset_bottom = 107.0
+theme_override_colors/font_color = Color(1, 0.8, 0.463, 1)
+mouse_filter = 2
+text = "上轮排名"
+
+[node name="LastRankValueLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 162.0
+offset_top = 83.0
+offset_right = 282.0
+offset_bottom = 107.0
+theme_override_colors/font_color = Color(0.969, 0.925, 0.776, 1)
+mouse_filter = 2
+text = "1"
+
+[node name="PowerTitleLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 30.0
+offset_top = 171.0
+offset_right = 150.0
+offset_bottom = 195.0
+theme_override_colors/font_color = Color(1, 0.8, 0.463, 1)
+mouse_filter = 2
+text = "总战力"
+
+[node name="PowerValueLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 162.0
+offset_top = 171.0
+offset_right = 282.0
+offset_bottom = 195.0
+theme_override_colors/font_color = Color(0.969, 0.925, 0.776, 1)
+mouse_filter = 2
+text = "0"
