@@ -4,15 +4,11 @@ extends Control
 ## 分解确认框 — 照源 herosplit/window.lua:88-103 firstConfirm ed.popConfirmDialog。
 ## "确认分解 {name}？" + 取消/确认，确认 → emit confirmed（调用方执行 split）。
 ## popConfirmDialog sell_number_button capInsets 15.63,15.63,19.53,15.63 + 浅金 ccc3(234,225,205)（confirmdialog.lua）。
+## 重构（2026-07-18）：静态节点（shade/frame/msg/cancel/ok）固化进
+## scenes/ui/hero_split_confirm_content.tscn（位置/size 编辑器可视化调，照 hero_detail 范式）。
+## Control 非 PopWindow，无 container → content 直接挂自身（同 shortcut/battle_prepare 范式）。
 
-const FRAME_POS: Vector2 = Vector2(330.0, 250.0)
-const FRAME_SIZE: Vector2 = Vector2(300.0, 130.0)
-const MSG_POS: Vector2 = Vector2(0.0, 25.0)
-const MSG_SIZE: Vector2 = Vector2(300.0, 30.0)
-const BTN_SIZE: Vector2 = Vector2(90.0, 35.0)
-const CANCEL_POS: Vector2 = Vector2(40.0, 75.0)
-const OK_POS: Vector2 = Vector2(170.0, 75.0)
-const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.5)
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_split_confirm_content.tscn")
 # 源 confirmdialog.lua popConfirmDialog（herosplit:98 调）sell_number_button capInsets 15.63,15.63,19.53,15.63 + 浅金。
 const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
@@ -31,7 +27,7 @@ var _msg_label: Label = null
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截底层（模态）
-	_build()
+	_build_content()
 
 
 func set_message(text: String) -> void:
@@ -40,28 +36,19 @@ func set_message(text: String) -> void:
 		_msg_label.text = text
 
 
-func _build() -> void:
-	var shade := ColorRect.new()
-	shade.color = SHADE_COLOR
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
-	var frame := Panel.new()
-	frame.position = FRAME_POS
-	frame.size = FRAME_SIZE
-	add_child(frame)
-	_msg_label = Label.new()
+# 建 UI 内容：静态节点从 .tscn instantiate（位置/size .tscn 固化）+ fill 动态数据/样式 + 信号绑定。
+# Control 非 PopWindow，无 container → content 直接挂自身（同 shortcut/battle_prepare 范式）。
+func _build_content() -> void:
+	var content: Control = CONTENT_SCENE.instantiate() as Control
+	add_child(content)
+	_msg_label = content.get_node("%MsgLabel") as Label
 	_msg_label.text = _msg_text
-	_msg_label.position = MSG_POS
-	_msg_label.size = MSG_SIZE
-	_msg_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	frame.add_child(_msg_label)
-	var cancel: Button = UiScale9Button.make(BTN_RES, BTN_PRESS_RES, CANCEL_POS, BTN_SIZE, BTN_CAP, CANCEL_TEXT, BTN_LABEL_COLOR)
+	var cancel: Button = content.get_node("%CancelBtn") as Button
+	UiScale9Button.apply_with_label(cancel, BTN_RES, BTN_PRESS_RES, BTN_CAP, CANCEL_TEXT, BTN_LABEL_COLOR)
 	cancel.pressed.connect(_close)
-	frame.add_child(cancel)
-	var ok: Button = UiScale9Button.make(BTN_RES, BTN_PRESS_RES, OK_POS, BTN_SIZE, BTN_CAP, OK_TEXT, BTN_LABEL_COLOR)
+	var ok: Button = content.get_node("%OkBtn") as Button
+	UiScale9Button.apply_with_label(ok, BTN_RES, BTN_PRESS_RES, BTN_CAP, OK_TEXT, BTN_LABEL_COLOR)
 	ok.pressed.connect(_on_ok)
-	frame.add_child(ok)
 
 
 func _close() -> void:
