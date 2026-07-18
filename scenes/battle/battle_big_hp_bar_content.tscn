@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guildraid_hpbar_boss_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guildraid_hpbar_transition.png" id="2_mid"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/boss_frame.png" id="3_frame"]
+
+[node name="BattleBigHpBarContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Background" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+centered = true
+position = Vector2(0, 0)
+texture = ExtResource("1_bg")
+
+[node name="Decration" type="Sprite2D" parent="Background"]
+unique_name_in_owner = true
+centered = false
+
+[node name="Midlayer" type="Sprite2D" parent="Background"]
+unique_name_in_owner = true
+centered = false
+texture = ExtResource("2_mid")
+
+[node name="Foreground" type="Sprite2D" parent="Background"]
+unique_name_in_owner = true
+centered = false
+
+[node name="BossIconFrame" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+centered = false
+texture = ExtResource("3_frame")
+
+[node name="BossIcon" type="Sprite2D" parent="BossIconFrame"]
+unique_name_in_owner = true
+centered = true
