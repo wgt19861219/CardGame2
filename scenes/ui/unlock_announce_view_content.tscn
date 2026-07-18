@@ -1,0 +1,52 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/unlock_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/lettherebelight.png" id="2_light"]
+
+; unlock_announce_view 内容子场景（hero_detail 范式，2026-07-18）：
+; bg/light/label 静态节点位置/size 固化（编辑器可视化调），icon/fca 保留 procedural。
+; 源 tutorialmaker.lua:80-113 createExhibitionLayer；CCSprite 无 fix_size → sprite 显示=tex/1.28125。
+; bg 居中（offsets=-size/2..+size/2）；light/label 照源相对 bg 中心算偏移（详见 unlock_announce_view.gd）。
+; .tscn 禁 # 注释（用 ;）。
+
+[node name="UnlockContent" type="Control"]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = -214.2439
+offset_top = -64.0
+offset_right = 214.2439
+offset_bottom = 64.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Light" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = -235.6976
+offset_top = -150.2439
+offset_right = 64.7902
+offset_bottom = 150.2439
+texture = ExtResource("2_light")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 60.0
+offset_top = -20.0
+offset_right = 380.0
+offset_bottom = 20.0
+mouse_filter = 2
+horizontal_alignment = 0
+text = ""

@@ -6,28 +6,25 @@ extends PopWindow
 ## 结构：半透黑底（点击关闭）+ container（scale 弹出/关闭）+ unlock_bg 底图 + lettherebelight 光晕旋转
 ## + icon 静态图标（icon_res step）/ fca 降级（本项目 Spine 未在 UI 落地，留 TODO）+ 解锁文案。
 ## 触发：PlayerData.check_unlocks → EventBus.feature_unlocked → main_scene 弹此 View。
+##
+## 重构（2026-07-18，hero_detail 范式）：bg/light/label 静态节点搬
+## scenes/ui/unlock_announce_view_content.tscn（位置/size 编辑器可视化调，offsets 照源公式算）；
+## icon/fca 保留 procedural（不同 step 资源/降级路径不同，互斥二选一）。
 
 # 源 announce.lua:130/172 CCScaleTo(0.2, 1/0) + CCEaseBackOut/In
 const ANIM_DURATION: float = 0.2
 # 源 tutorialmaker.lua:104 CCRotateBy:create(5, 360) 光晕旋转
 const LIGHT_ROTATE_TIME: float = 5.0
-# 源 createExhibitionLayer 用图（assets 齐）
-const RES_BG: String = "res://assets/ui/alpha/HVGA/unlock_bg.png"
-const RES_LIGHT: String = "res://assets/ui/alpha/HVGA/lettherebelight.png"
+# 静态节点子场景（%Bg/%Light/%Label 位置/size 固化；icon/fca 留 procedural 挂 _panel）
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/unlock_announce_view_content.tscn")
 # fca_res step 的 atlas 静态图（照源 createExhibitionLayer 调 createFcaNode(fca_res) 不传 aniType →
 # else LegendAminationEffect → Spine 资源 fallback createStaticSpriteFromSpineAtlas 取最大 region，
 # resource_manager.lua:595/548-558）。Spine 动画的正确用途是 main_scene aniType=1 按钮（见 main_scene.gd）。
 const SPINE_DIR: String = "res://assets/spine"
-# panel 子节点相对偏移（源 cocos ccp 布局 → Godot 居中重排，视觉验收校准）
-const PANEL_W: int = 500
-const LIGHT_OFFSET: Vector2 = Vector2(-150.0, 0.0)
-const LABEL_OFFSET: Vector2 = Vector2(60.0, 0.0)
-const LABEL_WIDTH: int = 320
-# 布局比例/尺寸常量（源 cocos 坐标 → Godot 居中重排）
+# 子节点对齐比例（.tscn offsets 已照源公式算；_light pivot 用 _light.size*HALF 算）
 const HALF: float = 0.5
-const LIGHT_X_RATIO: float = 0.3
+# label 字号（源 createTTF res.label_size）
 const FONT_SIZE: int = 20
-const LABEL_HEIGHT: int = 40
 # 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
 # 源 tutorialmaker.lua:84/96/100 createSprite（unlock_bg/icon_res/lettherebelight）全无 fix_size → sprite 显示=tex/CS。
 # Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28，/CS 等价源显示。
@@ -56,52 +53,44 @@ func show_step(step: StringName, parent: Node) -> void:
 
 
 # 源 createExhibitionLayer :80-113：panel(unlock_bg + light + icon + label)。
+# bg/light/label 从 .tscn instantiate（位置/size 可视化），icon/fca 保留 procedural。
 func _setup_panel(cfg: Dictionary) -> void:
 	setup()  # PopWindow 建 shade + container
 	shade_layer.gui_input.connect(_on_shade_input)
-	# panel 居中（源 CCSprite container 锚点 0.5/0.5），子节点相对屏幕中心偏移
-	_panel = Control.new()
-	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2.ZERO
+	# panel 居中（UnlockContent 根节点 anchors_preset=8 已在 .tscn 设；container 子节点 position=0）
+	_panel = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_panel)
-	# bg unlock_bg（源 :84-86）
-	var bg: TextureRect = _make_texture(RES_BG)
-	bg.position = -bg.size * HALF
-	_panel.add_child(bg)
-	# light lettherebelight 旋转（源 :100-106，所有 step 都显示）
-	_light = _make_texture(RES_LIGHT)
-	_light.position = bg.position + Vector2(bg.size.x * LIGHT_X_RATIO, bg.size.y * HALF - _light.size.y * HALF) + LIGHT_OFFSET
+	# light 旋转中心（源 CCRotateBy 360°/5s 绕 light 中心，.tscn size=300×300 → pivot=size/2）
+	_light = _panel.get_node("%Light") as TextureRect
 	_light.pivot_offset = _light.size * HALF
-	_panel.add_child(_light)
 	# icon/fca（源 :95-98）：createExhibitionLayer 调 createFcaNode(fca_res) 不传 aniType →
 	# else LegendAminationEffect → Spine 资源 fallback createStaticSpriteFromSpineAtlas 最大 region 静态图。
 	# icon step 用静态图标。两者互斥（fca step 无 icon）。
 	if cfg.has("fca_res"):
 		var fca_icon: TextureRect = _make_static_from_atlas(String(cfg["fca_res"]))
 		if fca_icon != null:
+			# 居中于 light（源 icon_pos = light_pos + light 尺寸偏移）
 			fca_icon.position = _light.position + (_light.size - fca_icon.size) * HALF
 			_panel.add_child(fca_icon)
 	elif cfg.has("icon"):
 		var icon: TextureRect = _make_texture(String(cfg["icon"]))
+		# 居中于 light（源 icon_pos = light_pos + light 尺寸偏移）
 		icon.position = _light.position + (_light.size - icon.size) * HALF
 		_panel.add_child(icon)
-	# label 解锁文案（源 :107-110）
-	var label: Label = Label.new()
+	# label 解锁文案（源 :107-110，text/fontColor/fontSize 动态 fill；位置/size 在 .tscn 固化）
+	var label: Label = _panel.get_node("%Label") as Label
 	label.text = String(cfg.get("text", ""))
 	label.add_theme_color_override("font_color", TutorialData.UNLOCK_FONT_COLOR)
 	label.add_theme_font_size_override("font", FONT_SIZE)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	label.size = Vector2(LABEL_WIDTH, LABEL_HEIGHT)
-	label.position = bg.position + Vector2(bg.size.x * HALF, bg.size.y * HALF - LABEL_HEIGHT * HALF) + LABEL_OFFSET
-	_panel.add_child(label)
 
 
+# icon_res step 静态 TextureRect（源 tutorialmaker.lua:96 createSprite 无 fix_size → sprite 显示=texture/CS）
 func _make_texture(res_path: String) -> TextureRect:
 	var rect: TextureRect = TextureRect.new()
 	var tex: Texture2D = load(res_path)
 	if tex != null:
 		rect.texture = tex
-		# 源 tutorialmaker.lua:84/96 createSprite 无 fix_size → sprite 显示=texture/CS
+		# 源 createSprite 无 fix_size → sprite 显示=texture/CS
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.size = tex.get_size() / CONTENT_SCALE
 	return rect
