@@ -1,0 +1,66 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/back2mapbtn.png" id="1_exit"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sound_on.png" id="2_sound"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/resume_battle.png" id="3_resume"]
+
+[node name="BattlePauseLayerContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="ExitBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 335.0
+offset_top = 295.0
+offset_right = 475.0
+offset_bottom = 418.0
+texture_normal = ExtResource("1_exit")
+
+[node name="ExitLabel" type="Label" parent="."]
+layout_mode = 3
+offset_left = 335.0
+offset_top = 380.0
+offset_right = 475.0
+offset_bottom = 404.0
+mouse_filter = 2
+text = "退出战斗"
+
+[node name="SoundBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 480.0
+offset_top = 295.0
+offset_right = 608.0
+offset_bottom = 418.0
+texture_normal = ExtResource("2_sound")
+
+[node name="SoundLabel" type="Label" parent="."]
+layout_mode = 3
+offset_left = 480.0
+offset_top = 380.0
+offset_right = 608.0
+offset_bottom = 404.0
+mouse_filter = 2
+text = "音效"
+
+[node name="ResumeBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 625.0
+offset_top = 295.0
+offset_right = 753.0
+offset_bottom = 418.0
+texture_normal = ExtResource("3_resume")
+
+[node name="ResumeLabel" type="Label" parent="."]
+layout_mode = 3
+offset_left = 625.0
+offset_top = 380.0
+offset_right = 753.0
+offset_bottom = 404.0
+mouse_filter = 2
+text = "继续战斗"
