@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/CombatAcceleration_1.png" id="1_btn_tex"]
+
+[node name="BattleSpeedButtonContent" type="Control"]
+layout_mode = 3
+mouse_filter = 2
+
+[node name="Btn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+texture_normal = ExtResource("1_btn_tex")
+
+[node name="Label" type="Label" parent="Btn"]
+unique_name_in_owner = true
+visible = false
+offset_left = 52.0
+offset_top = 30.0
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+mouse_filter = 2
+text = "1x"
