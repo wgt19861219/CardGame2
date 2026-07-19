@@ -34,6 +34,12 @@ const DOT_ELITE_Y: float = 515.0                       # 源 elite_chapter_dot_y
 const STAR_POS_1: Array = [Vector2(37.0, 15.0)]
 const STAR_POS_2: Array = [Vector2(26.0, 18.0), Vector2(48.0, 18.0)]
 const STAR_POS_3: Array = [Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.0, 18.0)]
+const TEXTURE_CONFIG_JSON: String = "res://resources/data/TextureConfig.json"   # 源 TextureConfig.lua 表
+
+# 源 stageselect.lua:1610-1612 clipStencil 712×372 @ cocos(44,20)。
+# cocos (44,20) 左下原点 → godot (44+80, 560-(20+372)) = (124,168) 左上原点；size 不变（to_godot 不缩放）。
+const CLIP_RECT: Rect2 = Rect2(124.0, 168.0, 712.0, 372.0)
+const CLIP_OFFSET: Vector2 = Vector2(124.0, 168.0)   # layer 局部坐标系偏移：子节点 position 减此值
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
@@ -70,14 +76,21 @@ static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Vari
 
 # 源 createMap + createStage — 地图层（章节 bg + route + stage 圆点 + 星 + 指针）。
 # 返回 {node, stage_buttons(sid->TextureButton)}。
+# 源 stageselect.lua:1608-1615 create — clipLayer = ClippingNode(stencil=712×372 @ cocos(44,20))，
+# mapContainer 挂 clipLayer 下，剪掉章节 bg 超出 frame 边框的部分。
+# Godot 等价：layer 自身设 clip_contents=true + rect=(124,168,712,372)，子节点 position 减 CLIP_OFFSET。
+# cocos clipStencil(44,20) → godot (44+80, 560-(20+372)) = (124,168)；712×372 不变（to_godot 不缩放）。
 static func create_map_layer(container: Control, chapter: int, mode: String, cm: Variant, star_of: Callable) -> Dictionary:
 	var layer := Control.new()
 	layer.name = "MapLayer"
 	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.clip_contents = true
+	layer.position = CLIP_RECT.position
+	layer.size = CLIP_RECT.size
 	container.add_child(layer)
 	var ch: Dictionary = StageSelectMapClass.get_chapter(chapter)
-	_make_centered_child(layer, StageSelectMapClass.get_bg_res(chapter), ch.get("bg", {}).get("pos", [400, 212]))
-	_make_centered_child(layer, StageSelectMapClass.get_route_res(chapter), ch.get("route", {}).get("pos", [400, 212]))
+	_make_centered_child(layer, StageSelectMapClass.get_bg_res(chapter), ch.get("bg", {}).get("pos", [400, 212]), CLIP_OFFSET)
+	_make_centered_child(layer, StageSelectMapClass.get_route_res(chapter), ch.get("route", {}).get("pos", [400, 212]), CLIP_OFFSET)
 	var tag: int = StageSelectMapClass.get_tag(chapter)
 	var buttons: Dictionary = {}
 	for s in StageSelectMapClass.get_stages(chapter):
@@ -90,8 +103,8 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		var btn := TextureButton.new()
 		btn.texture_normal = load(icon_res) as Texture2D
 		btn.ignore_texture_size = true
-		btn.size = _tex_size(icon_res) / CONTENT_SCALE   # 修 ignore_texture_size 不设 size → 0×0 不可点（同 [[texture-button-ignore-texture-size-zero]]）
-		btn.position = to_godot(float(pos[0]), float(pos[1])) - btn.size * 0.5
+		btn.size = _display_size(icon_res)   # 源 createSprite ContentScale 已含；修 ignore_texture_size 不设 size → 0×0 不可点（同 [[texture-button-ignore-texture-size-zero]]）
+		btn.position = to_godot(float(pos[0]), float(pos[1])) - btn.size * 0.5 - CLIP_OFFSET
 		btn.set_meta(&"stage_info", info)
 		var dec_type := String(dec["type"])
 		if dec_type == "locked":
@@ -100,7 +113,7 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 			_add_stars(btn, info, mode, star_of)
 		layer.add_child(btn)
 		if dec_type == "current":
-			_add_pointer(layer, info)
+			_add_pointer(layer, info, CLIP_OFFSET)
 		if dec_type != "locked":
 			var sid: int = _current_sid(info, mode)
 			if sid > 0:
@@ -108,7 +121,7 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 	return {"node": layer, "stage_buttons": buttons}
 
 
-static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant) -> void:
+static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant, offset: Vector2 = Vector2.ZERO) -> void:
 	if res.is_empty() or not ResourceLoader.exists(res):
 		return
 	var tex: Texture2D = load(res) as Texture2D
@@ -117,11 +130,12 @@ static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant) 
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 章节 bg/route 源 createSprite 无 fix_size → 显示尺寸=纹理/CS（笔误漏 /CS，同 _make_centered_at）。
-	var display_size: Vector2 = tex.get_size() / CONTENT_SCALE
+	# 源 createSprite = CCSprite + setScale(ContentScale)，显示=纹理 × ContentScale / CS（_display_size 已含）。
+	# 修 bug：原 tex.get_size()/CS 漏乘 ContentScale，致章节 bg 显示 365×198 偏小（应 730×396 铺满）。
+	var display_size: Vector2 = _display_size(res)
 	node.size = display_size
 	var p: Array = cocos_pos if cocos_pos is Array else [400, 212]
-	node.position = to_godot(float(p[0]), float(p[1])) - display_size * 0.5
+	node.position = to_godot(float(p[0]), float(p[1])) - display_size * 0.5 - offset
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
 
@@ -138,8 +152,8 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	var bg := TextureRect.new()
 	bg.texture = load(STAR_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 :1262 starBg = ed.createSprite 无 fix → 显示=纹理/CS。
-	bg.size = _tex_size(STAR_BG) / CONTENT_SCALE
+	# 源 :1262 starBg = ed.createSprite（含 ContentScale，本项目 STAR_BG 无 TextureConfig 条目 → CS=1 等价）。
+	bg.size = _display_size(STAR_BG)
 	bg.position = Vector2(82.0, 38.0) - bg.size * 0.5   # 源 star_bg ccp(82,38) 局部（icon 左上原点）
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(bg)
@@ -148,8 +162,8 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 		var star := TextureRect.new()
 		star.texture = load(STAR) as Texture2D
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 源 :1268 star = ed.createSprite 无 fix → 显示=纹理/CS。
-		star.size = _tex_size(STAR) / CONTENT_SCALE
+		# 源 :1268 star = ed.createSprite（含 ContentScale，STAR 无条目 → CS=1 等价）。
+		star.size = _display_size(STAR)
 		star.position = spos[i] - star.size * 0.5
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.add_child(star)
@@ -157,7 +171,7 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 
 # 源 currentTag stagepointer（:1299-1312 上下浮动，简化静态）。
 # 源 :1301-1305 — key 关（info.eid）ccp(pos.x, pos.y+60)；非 key 关 ccp(pos.x-1, pos.y+30)。
-static func _add_pointer(layer: Control, info: Dictionary) -> void:
+static func _add_pointer(layer: Control, info: Dictionary, offset: Vector2 = Vector2.ZERO) -> void:
 	if not ResourceLoader.exists(POINTER):
 		return
 	var pos: Array = info.get("pos", [0, 0])
@@ -169,9 +183,9 @@ static func _add_pointer(layer: Control, info: Dictionary) -> void:
 	var p := TextureRect.new()
 	p.texture = load(POINTER) as Texture2D
 	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 :1299 currentTag = ed.createSprite 无 fix → 显示=纹理/CS。
-	p.size = _tex_size(POINTER) / CONTENT_SCALE
-	p.position = to_godot(cx + dx, cy + dy) - p.size * 0.5
+	# 源 :1299 currentTag = ed.createSprite（含 ContentScale，POINTER 无条目 → CS=1 等价）。
+	p.size = _display_size(POINTER)
+	p.position = to_godot(cx + dx, cy + dy) - p.size * 0.5 - offset
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(p)
 
@@ -182,6 +196,44 @@ static func _current_sid(info: Dictionary, mode: String) -> int:
 	if mode == "guild":
 		return int(info.get("guildInstanceId", 0))
 	return int(info.get("id", 0))
+
+
+static var _tex_config_cache: Dictionary = {}
+
+
+# 源 resource_manager.lua:44-57 getSpriteOriginalScale + createSprite（:58-76）。
+# 源 createSprite = CCSprite(contentSize=纹理/CS) + setScale(ContentScale)，最终 Cocos 显示=纹理 × CS / CS=纹理 × ContentScale。
+# 本项目 Godot 直接显示纹理原像素，等价：Godot 显示像素 = 纹理像素 × ContentScale / CS。
+# ContentScale 规则：TextureConfig 表无条目 → 1；Prescaled=false（Win32 平台）→ 1；ContentScale=0 → 1；否则返回 ContentScale。
+# 实测影响：stageselect_map_bg_1.jpg/map1.png/bg.jpg 等 48 个 CS=2 大图原本漏放大 → 章节 bg 居中显示 365×198（偏小），
+# 修后 730×396 几乎铺满弹窗，照源视觉。CS=0/1 的小图（圆点/星/指针/frame）不受影响。
+static func _display_size(res_path: String) -> Vector2:
+	var base: Vector2 = _tex_size(res_path)
+	var cs: float = _content_scale_of(res_path)
+	return base * cs / CONTENT_SCALE
+
+
+static func _content_scale_of(res_path: String) -> float:
+	# res://assets/ui/alpha/HVGA/x.png → UI/alpha/HVGA/x.png（TextureConfig key 格式，源用大写 UI）
+	# 本项目 assets 目录用小写 ui（windows 不分大小写），TextureConfig key 保留源大写。
+	var ui_key: String = res_path.replace("res://assets/ui/", "UI/")
+	var cfg: Dictionary = _load_tex_config()
+	var entry: Dictionary = cfg.get(ui_key, {})
+	if entry.is_empty():
+		return 1.0   # 源 not config → 1
+	if not bool(entry.get("Prescaled", false)):
+		return 1.0   # 源 EDFLAGWIN32 and not Prescaled → 1
+	var cs: int = int(entry.get("ContentScale", 0))
+	return float(cs) if cs != 0 else 1.0
+
+
+static func _load_tex_config() -> Dictionary:
+	if _tex_config_cache.is_empty():
+		var f := FileAccess.open(TEXTURE_CONFIG_JSON, FileAccess.READ)
+		if f != null:
+			var parsed: Variant = JSON.parse_string(f.get_as_text())
+			_tex_config_cache = parsed if parsed is Dictionary else {}
+	return _tex_config_cache
 
 
 static func _tex_size(res: String) -> Vector2:
@@ -230,8 +282,8 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 	var tex: Texture2D = load(res) as Texture2D
 	if tex == null:
 		return
-	# title_bg/frame 源 createSprite 无 fix_size → 显示尺寸=纹理/CS（[[content-scale-factor]]）
-	var display_size := tex.get_size() / CONTENT_SCALE
+	# title_bg/frame 源 createSprite（含 ContentScale；本项目 Normal_title_bg/stage-map-frame 等条目 CS=0 → 返 1，等价）。
+	var display_size := _display_size(res)
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -253,8 +305,8 @@ static func create_chapter_dots(container: Control, max_chapter: int, current: i
 		var dot := TextureRect.new()
 		dot.texture = load(res) as Texture2D
 		dot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 源 :688-693 createSprite(res.dotRes.current/normal) 无 fix → 显示=纹理/CS。
-		dot.size = _tex_size(res) / CONTENT_SCALE
+		# 源 :688-693 createSprite（含 ContentScale，dot 纹理无条目 → CS=1 等价）。
+		dot.size = _display_size(res)
 		dot.position = Vector2(DOT_CENTER_X + DOT_GAP_X * (float(i) - center), y) - dot.size * 0.5
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(dot)
