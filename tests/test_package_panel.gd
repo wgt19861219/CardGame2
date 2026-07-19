@@ -44,7 +44,7 @@ func test_setup_package_5_tabs() -> void:
 	panel.show_window(root)
 	assert_eq(panel._tab_buttons.size(), 5, "package identity 5 tab（all/equip/scroll/stone/consume）")
 	assert_eq(panel._tabs, ["all", "equip", "scroll", "stone", "consume"], "tab 顺序照源 packageres")
-	assert_true(bool(panel._tab_buttons["all"].button_pressed), "默认 all tab 选中")
+	assert_eq(int((panel._tab_buttons["all"] as TextureButton).z_index), 3, "默认 all tab 选中（z=3）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -108,8 +108,26 @@ func test_tab_switch_changes_grid() -> void:
 	assert_eq(panel._grid.get_child_count(), 1, "equip tab 只 PARTS（REEL 是 scroll）")
 	panel._select_tab("scroll")
 	assert_eq(panel._grid.get_child_count(), 1, "scroll tab 只 REEL")
-	assert_true(bool(panel._tab_buttons["scroll"].button_pressed), "scroll tab 选中态")
-	assert_false(bool(panel._tab_buttons["equip"].button_pressed), "equip tab 取消选中")
+	assert_eq(int((panel._tab_buttons["scroll"] as TextureButton).z_index), 3, "scroll tab 选中态（z=3）")
+	assert_eq(int((panel._tab_buttons["equip"] as TextureButton).z_index), 1, "equip tab 取消选中（z=1）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# tab classbtn 纹理化（2026-07-19，照源 package.lua:378-462 createListButton + hero_package 范式）。
+func test_tab_buttons_use_classbtn_texture() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	var all_btn: TextureButton = panel._tab_buttons["all"] as TextureButton
+	assert_eq(all_btn.stretch_mode, TextureButton.STRETCH_SCALE, "tab stretch_mode=SCALE（避 KEEP 纹理原尺寸溢出）")
+	assert_eq(all_btn.texture_normal.resource_path, PackagePanel.CLASSBTN_SEL_RES, "选中 tab texture_normal=classbtnselected")
+	var equip_btn: TextureButton = panel._tab_buttons["equip"] as TextureButton
+	assert_eq(equip_btn.texture_normal.resource_path, PackagePanel.CLASSBTN_RES, "未选中 tab texture_normal=classbtn")
+	var all_lbl: Label = panel._tab_labels["all"] as Label
+	assert_eq(all_lbl.text, "全部", "all tab label LSTR 填充（BATTLEPREPARE.WHOLE=全部）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -138,6 +156,33 @@ func test_empty_player_grid() -> void:
 	var panel := _make_panel("package", pd)
 	panel.show_window(root)
 	assert_eq(panel._grid.get_child_count(), 0, "空玩家 grid 空")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 点 cell 弹 equipboard（单例 + refresh 切换，源 doSelectEquip :185-200 首次 create / 已有 refresh）。
+func test_cell_click_switch_refresh_equipboard() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var parts_id: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var reel_id: int = _find_equip_id_by_category("EQUIP.REEL")
+	assert_gt(parts_id, 0, "PARTS id 存在")
+	assert_gt(reel_id, 0, "REEL id 存在")
+	pd.add_item(parts_id, 1)
+	pd.add_item(reel_id, 1)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	# 首次点 parts cell → 建 _equipboard（非模态浮层）
+	panel._on_cell_clicked({"id": parts_id, "amount": 1, "type": 1})
+	assert_not_null(panel._equipboard, "首次点 cell 建 _equipboard")
+	var board1: EquipboardPanel = panel._equipboard
+	assert_eq(board1._item_id, parts_id, "首次 _item_id=parts")
+	# 再点 reel cell → refresh 同实例（不重建，源 doSelectEquip refresh；非模态不阻塞 cell 点击）
+	panel._on_cell_clicked({"id": reel_id, "amount": 1, "type": 1})
+	assert_eq(panel._equipboard, board1, "再点 cell refresh 同实例（非重建）")
+	assert_eq(panel._equipboard._item_id, reel_id, "refresh 切换 _item_id=reel")
+	panel._equipboard.remove_window()
 	panel.remove_window()
 	root.queue_free()
 

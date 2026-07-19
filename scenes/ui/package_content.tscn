@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_equip_bg.png" id="2_equipbg"]
@@ -7,6 +7,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="5_hb"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="6_hbp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_handbook_icon.png" id="7_icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtn.png" id="8_classbtn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtnselected.png" id="9_classbtnsel"]
 
 [node name="PackageContent" type="Control"]
 layout_mode = 3
@@ -75,59 +77,134 @@ theme_override_font_sizes/font_size = 17
 mouse_filter = 2
 text = "图鉴"
 
-[node name="TabAllBtn" type="Button" parent="."]
+[node name="TabAllBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 741.0
 offset_top = 172.0
 offset_right = 831.0
 offset_bottom = 222.0
-mouse_filter = 0
-toggle_mode = true
-text = "全部"
+texture_normal = ExtResource("8_classbtn")
+texture_pressed = ExtResource("9_classbtnsel")
+ignore_texture_size = true
+stretch_mode = 1
 
-[node name="TabEquipBtn" type="Button" parent="."]
+[node name="TabEquipBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 741.0
 offset_top = 232.0
 offset_right = 831.0
 offset_bottom = 282.0
-mouse_filter = 0
-toggle_mode = true
-text = "装备"
+texture_normal = ExtResource("8_classbtn")
+texture_pressed = ExtResource("9_classbtnsel")
+ignore_texture_size = true
+stretch_mode = 1
 
-[node name="TabScrollBtn" type="Button" parent="."]
+[node name="TabScrollBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 741.0
 offset_top = 292.0
 offset_right = 831.0
 offset_bottom = 342.0
-mouse_filter = 0
-toggle_mode = true
-text = "卷轴"
+texture_normal = ExtResource("8_classbtn")
+texture_pressed = ExtResource("9_classbtnsel")
+ignore_texture_size = true
+stretch_mode = 1
 
-[node name="TabStoneBtn" type="Button" parent="."]
+[node name="TabStoneBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 741.0
 offset_top = 352.0
 offset_right = 831.0
 offset_bottom = 402.0
-mouse_filter = 0
-toggle_mode = true
-text = "魂石"
+texture_normal = ExtResource("8_classbtn")
+texture_pressed = ExtResource("9_classbtnsel")
+ignore_texture_size = true
+stretch_mode = 1
 
-[node name="TabConsumeBtn" type="Button" parent="."]
+[node name="TabConsumeBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 741.0
 offset_top = 412.0
 offset_right = 831.0
 offset_bottom = 462.0
-mouse_filter = 0
-toggle_mode = true
+texture_normal = ExtResource("8_classbtn")
+texture_pressed = ExtResource("9_classbtnsel")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="TabAllLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 741.0
+offset_top = 169.0
+offset_right = 831.0
+offset_bottom = 219.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "全部"
+
+[node name="TabEquipLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 741.0
+offset_top = 229.0
+offset_right = 831.0
+offset_bottom = 279.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "装备"
+
+[node name="TabScrollLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 741.0
+offset_top = 289.0
+offset_right = 831.0
+offset_bottom = 339.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "卷轴"
+
+[node name="TabStoneLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 741.0
+offset_top = 349.0
+offset_right = 831.0
+offset_bottom = 399.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "魂石"
+
+[node name="TabConsumeLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 741.0
+offset_top = 409.0
+offset_right = 831.0
+offset_bottom = 459.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "消耗品"
 
 [node name="ScrollHost" type="ScrollContainer" parent="."]

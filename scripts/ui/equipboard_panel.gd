@@ -26,6 +26,8 @@ const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 # ICON_POS = 源 board.lua:320 ccp(50,328) → _gl(50, 385-328=57)。icon 动态建（ReadequipIcon.create_icon
 # 返回 size=72×72 Control），fill 时挂 %IconHost 并设 position=ICON_POS（frame 内左上）。
 const ICON_POS: Vector2 = Vector2(50.0, 57.0)
+# att_bg 底边固定（money_board 上方避覆盖；源 att_bg anchor 0.5,1 底固定 ccp(143,287)，向上扩）。
+const ATT_BG_BOTTOM: float = 263.0
 
 # ── Scale9 按钮（源 ofpackage.lua:108-119 left_button / :154-165 right_button）──
 # 源 Scale9Sprite package_button.png + package_button_down.png，capInsets CCRectMake(10,10,236,29)。
@@ -33,6 +35,12 @@ const ICON_POS: Vector2 = Vector2(50.0, 57.0)
 const BTN_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/package_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_down.png"
 const BTN_CAP: Rect2 = Rect2(10.0, 10.0, 236.0, 29.0)
+
+# ── 侧滑动画（源 ofpackage.lua:292-298 popin：起始 ccp(-142,213) 屏幕左外 → CCMoveTo 0.2 CCEaseOut → ccp(182,213)）──
+# 源 frame 中心 ccp(182,213) anchor(0.5,0.5) → Godot frame 左上 (118,154.5)（.tscn offset 已固化，避开 package equipbg 重叠）。
+# 起始 ccp(-142,213) 中心 → Godot frame 左上 x=-206（屏幕左外），y 不变。
+const SLIDE_START_X: float = -206.0
+const SLIDE_TIME: float = 0.2
 
 # ── 文本 LSTR key（源 ofpackage.lua:140 PACKAGE.SELL / :225 PACKAGE.DETAIL / :227 MIDAS.USE /
 # :229 EQUIPCRAFT.SYNTHESIS；卖出 toast 用 ofsell.lua:427 EQUIPINFO.MONEY_GAINED）──
@@ -59,15 +67,35 @@ var _frame: Control = null  # .tscn %Frame（base 容器，fill 动态数据的�
 # 源 create(param) :264-278。param={id, doSell, doUse, doCheck, doCompose}（package.lua 注入）。
 # 本项目 cell_data 含 {id, makeId, amount, category, type, needAmount}（EquipmentClassifier 输出）。
 func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData) -> void:
-	_cell_data = p_cell_data
 	cm = p_cm
 	pd = p_pd
+	_update_cell_fields(p_cell_data)
+	setup()
+	# 非模态浮层（照源 equipboard.mainLayer 挂 package.mainLayer 无遮罩）：shade 透明 + IGNORE，
+	# 不拦底层 cell 点击——用户可点其他物品切换 equipboard 内容（源 doSelectEquip :197-198 refresh）。
+	if shade_layer != null:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# PopWindow 根 Control 默认 STOP（吞底层点击=模态弹窗）；非模态须根 IGNORE，
+	# 让 frame 外区域（cell 网格）点击穿透到下层 package（根 IGNORE 不影响子按钮 STOP 独立命中）。
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_build_content()
+	register_on_enter(_play_slide_in)
+	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+
+
+# 更新 cell 字段（setup_panel 首次 + refresh 切换共用，源 doSelectEquip self.selectid=id + refreshPropType）。
+func _update_cell_fields(p_cell_data: Dictionary) -> void:
+	_cell_data = p_cell_data
 	_item_id = int(p_cell_data.get("id", 0))
 	_make_id = int(p_cell_data.get("makeId", _item_id))
 	_prop_type = _judge_prop_type()
-	setup()
-	_build_content()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+
+
+# 源 doSelectEquip :197-198 已有 equipLayer → refresh(id) 切换内容（不重建浮层，保留侧滑位置）。
+func refresh(p_cell_data: Dictionary) -> void:
+	_update_cell_fields(p_cell_data)
+	_refresh_content()
 
 
 # 源 refreshPropType :233-253 查 Category==FRAGMENT（源单一 equip_qunty，碎片=Category FRAGMENT 物品）。
@@ -91,20 +119,72 @@ func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	_frame = content.get_node("%Frame") as Control
-	_fill_icon()
-	(_frame.get_node("%NameLabel") as Label).text = _equip_name()   # 源 initTitle :328
-	var amt: int = int(_cell_data.get("amount", 0))   # 源 board.lua:60 text=HAVE..amount..ITEM
-	(_frame.get_node("%AmountLabel") as Label).text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
-	_fill_sell_price()
 	var sell_btn: Button = _frame.get_node("%SellBtn") as Button   # 源 left_button :109
 	_apply_button_style(sell_btn)
 	sell_btn.text = cm.get_lstr(LSTR_SELL)
 	sell_btn.pressed.connect(_on_sell_pressed)
 	var right_btn: Button = _frame.get_node("%RightBtn") as Button   # 源 right_button :154
 	_apply_button_style(right_btn)
-	right_btn.text = _right_button_label()
 	right_btn.pressed.connect(_on_right_pressed)
-	(_frame.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)   # 源 board.lua:437 close
+	var close_btn: TextureButton = _frame.get_node("%CloseBtn") as TextureButton
+	close_btn.visible = false   # 源 ofpackage create:272 setCloseVisible(false)（ofpackage 无 close，靠切 cell/卖出/退出场景）
+	close_btn.pressed.connect(_on_close_pressed)   # 连接保留（visible=false 不触发，无害）
+	_refresh_content()
+
+
+# 刷新动态数据（icon/name/amount/price/right label）——_build_content 首次 + refresh 切换共用。
+func _refresh_content() -> void:
+	var host: Control = _frame.get_node("%IconHost") as Control
+	for c in host.get_children():
+		c.free()
+	_fill_icon()
+	(_frame.get_node("%NameLabel") as Label).text = _equip_name()   # 源 initTitle :328
+	var amt: int = int(_cell_data.get("amount", 0))   # 源 board.lua:60 text=HAVE..amount..ITEM
+	(_frame.get_node("%AmountLabel") as Label).text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
+	_fill_sell_price()
+	_fill_att()
+	(_frame.get_node("%RightBtn") as Button).text = _right_button_label()
+
+
+# 源 board.lua initAtt :106-282：属性 labels（getDescription 组合 "力量 +100" + 强化加成）+ 碎片合成信息。
+func _fill_att() -> void:
+	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
+	for c in host.get_children():
+		c.free()
+	var rows: Array = ReadequipData.get_description(_item_id, 0, cm)   # level 0（package 物品未装备无强化等级）
+	for row in rows:
+		var r: Dictionary = row as Dictionary
+		var lbl := Label.new()
+		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
+		lbl.add_theme_font_size_override("font_size", 18)
+		lbl.add_theme_color_override("font_color", Color(0.251, 0.247, 0.247, 1))   # 源 att color ccc3(64,63,63)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		host.add_child(lbl)
+	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title + fragment_amount "X/Y"）
+	if _prop_type == PROPTYPE_FRAGMENT:
+		var frag_lbl := Label.new()
+		frag_lbl.text = "合成所需碎片 %d/%d" % [int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
+		frag_lbl.add_theme_font_size_override("font_size", 18)
+		frag_lbl.add_theme_color_override("font_color", Color(0.259, 0.176, 0.11, 1))   # 源 fragment ccc3(66,45,28)
+		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		host.add_child(frag_lbl)
+	# att_bg + host 自适应属性内容高度（源 board.lua:263 att_bg setContentSize(bw, attListHeight+12)）。
+	# 底固定（ATT_BG_BOTTOM = money_board 上方），向上扩避覆盖 money_board（源 att_bg anchor 0.5,1 底固定）。
+	var host_min: Vector2 = host.get_combined_minimum_size()
+	var bg: TextureRect = _frame.get_node("%AttBg") as TextureRect
+	var bg_h: float = host_min.y + 12.0
+	bg.offset_top = ATT_BG_BOTTOM - bg_h
+	bg.size.y = bg_h
+	host.offset_top = bg.offset_top + 6.0
+	host.size.y = host_min.y
+
+
+# 源 ofpackage.lua:292-298 popin：frame 从屏幕左外侧滑入目标位置（.tscn offset），0.2s EaseOut。
+func _play_slide_in() -> void:
+	var target_pos: Vector2 = _frame.position   # .tscn offset 目标 (118, 154.5)
+	_frame.position = Vector2(SLIDE_START_X, target_pos.y)   # 起始屏幕左外
+	var tw: Tween = create_tween()
+	tw.tween_property(_frame, "position", target_pos, SLIDE_TIME).set_ease(Tween.EASE_OUT)
 
 
 # 源 initTitle :320 createIcon — 挂 %IconHost，position=ICON_POS（frame 内 _gl 后）。
@@ -118,12 +198,13 @@ func _fill_icon() -> void:
 # 源 refreshPrice :207-217：price<=0 隐藏 money_board（本 项目用 %SellPriceLabel visible 切换）。
 func _fill_sell_price() -> void:
 	var price: int = _sell_price()
-	var lbl: Label = _frame.get_node("%SellPriceLabel") as Label
+	var board: TextureRect = _frame.get_node("%MoneyBoard") as TextureRect
 	if price > 0:
-		lbl.text = cm.get_lstr(LSTR_SALE_COST) + str(price)
-		lbl.visible = true
+		(board.get_node("%SellTitleLabel") as Label).text = cm.get_lstr(LSTR_SALE_COST)
+		(board.get_node("%SellNumberLabel") as Label).text = str(price)
+		board.visible = true
 	else:
-		lbl.visible = false
+		board.visible = false
 
 
 # 源 Scale9Sprite package_button/package_button_down → .tscn Button 套 StyleBoxTexture（九宫格）。

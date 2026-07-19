@@ -1,8 +1,11 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="4_attbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/money_board.png" id="5_money"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon.png" id="6_gold"]
 
 [node name="EquipboardContent" type="Control"]
 layout_mode = 3
@@ -14,10 +17,10 @@ mouse_filter = 2
 [node name="Frame" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 336.0
-offset_top = 127.5
-offset_right = 624.0
-offset_bottom = 512.5
+offset_left = 118.0
+offset_top = 154.5
+offset_right = 406.0
+offset_bottom = 539.5
 mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="Frame"]
@@ -40,60 +43,116 @@ mouse_filter = 2
 
 [node name="NameLabel" type="Label" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 92.0
 offset_top = 40.0
 offset_right = 300.0
-offset_bottom = 64.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 18
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0.259, 0.176, 0.11, 1)
+theme_override_font_sizes/font_size = 24
 mouse_filter = 2
 
 [node name="AmountLabel" type="Label" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 90.0
 offset_top = 75.0
 offset_right = 300.0
 offset_bottom = 99.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(0.263, 0.231, 0.22, 1)
 theme_override_font_sizes/font_size = 18
 mouse_filter = 2
 
-[node name="SellPriceLabel" type="Label" parent="Frame"]
+[node name="AttBg" type="TextureRect" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 144.0
-offset_top = 285.0
-offset_right = 400.0
-offset_bottom = 309.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
+layout_mode = 0
+offset_left = 15.0
+offset_top = 95.0
+offset_right = 275.0
+offset_bottom = 265.0
+mouse_filter = 2
+texture = ExtResource("4_attbg")
+expand_mode = 1
+
+[node name="AttHost" type="VBoxContainer" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 22.0
+offset_top = 100.0
+offset_right = 265.0
+offset_bottom = 260.0
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="MoneyBoard" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 52.0
+offset_top = 268.0
+offset_right = 236.0
+offset_bottom = 308.0
+mouse_filter = 2
+texture = ExtResource("5_money")
+expand_mode = 1
+
+[node name="SellTitleLabel" type="Label" parent="Frame/MoneyBoard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 8.0
+offset_top = 14.0
+offset_right = 110.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.263, 0.231, 0.22, 1)
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+text = "单位售价"
+
+[node name="SellIcon" type="TextureRect" parent="Frame/MoneyBoard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 116.0
+offset_top = 12.0
+offset_right = 138.0
+offset_bottom = 34.0
+mouse_filter = 2
+texture = ExtResource("6_gold")
+expand_mode = 1
+
+[node name="SellNumberLabel" type="Label" parent="Frame/MoneyBoard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 142.0
+offset_top = 14.0
+offset_right = 240.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.608, 0.133, 0.055, 1)
 theme_override_font_sizes/font_size = 18
 mouse_filter = 2
+text = ""
 
 [node name="SellBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 82.0
-offset_top = 345.0
+offset_top = 320.0
 offset_right = 207.0
-offset_bottom = 394.0
+offset_bottom = 369.0
 mouse_filter = 0
 text = "卖出"
 
 [node name="RightBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 212.0
-offset_top = 345.0
+offset_top = 320.0
 offset_right = 337.0
-offset_bottom = 394.0
+offset_bottom = 369.0
 mouse_filter = 0
 text = "详情"
 
 [node name="CloseBtn" type="TextureButton" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 286.0
 offset_top = 27.0
 offset_right = 337.0

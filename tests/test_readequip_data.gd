@@ -140,6 +140,21 @@ func test_wear_equip() -> void:
 	assert_eq(mgr.wear_equip(iid, 99), false, "越界 slot → false")
 
 
+# get_description（照源 readequip.getDescription:74-130）：组合属性描述行（"力量 +100"）。
+func test_get_description_returns_att_rows() -> void:
+	var equip_id := 0
+	for tid in cm.get_raw_table(&"Equip"):
+		var row: Dictionary = cm.get_raw_table(&"Equip").get(tid, {})
+		if float(row.get("STR", 0)) != 0.0:
+			equip_id = int(tid)
+			break
+	assert_gt(equip_id, 0, "有 STR 属性的装备存在")
+	var rows := ReadequipData.get_description(equip_id, 0, cm)
+	assert_gt(rows.size(), 0, "get_description 返属性行")
+	var first := rows[0] as Dictionary
+	assert_true(String(first.get("att", "")).length() > 0, "首行 att 描述非空")
+
+
 # ===== 第三十四轮 Step 5 钻石一键满级（照源 getFastStrenCost:1294 + upFastStren:701）=====
 
 # 源 getFastStrenCost:1294-1304 exp=0 → up × Σ le（当前级全部 + 后续完整级）。

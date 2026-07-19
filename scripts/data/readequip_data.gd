@@ -57,6 +57,55 @@ static func get_add_att_list(item_id: int, level: int, cm: Variant) -> Dictionar
 	return att
 
 
+# 源 readequip.value :39-42：Equip 表字段值（Name/Description/Category/Comment 等）。
+static func value(item_id: int, field: String, cm: Variant) -> Variant:
+	var row: Dictionary = cm.get_raw_table("Equip").get(str(item_id), {})
+	return row.get(field, null)
+
+
+# 源 readequip.getDescription :74-130 formatList：STR==INT==AGI → ALL_ATT 合并（三属性相等显示"全属性"）。
+static func _format_list(list: Dictionary) -> void:
+	var s: float = float(list.get("STR", 0))
+	var i: float = float(list.get("INT", 0))
+	var a: float = float(list.get("AGI", 0))
+	if s == i and s == a:
+		list["ALL_ATT"] = s
+		list.erase("STR")
+		list.erase("INT")
+		list.erase("AGI")
+
+
+# 源 readequip.getDescription :74-130：组合属性描述行（attList/addList/sufList）。
+# 返 [{att, add, suffix}, ...]：att="力量 +100", add="+5"（强化加成）, suffix="%"。供 equipboard att_bg 显示。
+static func get_description(item_id: int, level: int, cm: Variant) -> Array:
+	var att: Dictionary = get_att_list(item_id, cm)
+	var add: Dictionary = get_add_att_list(item_id, level, cm)
+	_format_list(att)
+	_format_list(add)
+	var rows: Array = []
+	var all_att: float = float(att.get("ALL_ATT", 0))
+	if all_att > 0.0:   # 源 :96-107 ALL_ATT 优先（三属性相等合并）
+		var cn: String = BaseresData.get_att_pre("ALL_ATT", cm)
+		var add_all: float = float(add.get("ALL_ATT", 0))
+		rows.append({"att": cn + " +" + str(int(all_att)), "add": (" +" + str(int(add_all))) if add_all > 0 else "", "suffix": ""})
+	for key in BaseresData.ATT_NAME:   # 源 :108-128 单属性
+		var v: float = float(att.get(key, 0))
+		if v == 0.0:
+			continue
+		var cn: String = BaseresData.get_att_pre(key, cm)
+		var element: String = ""
+		if cn != "":
+			element = cn + (" +" if v > 0 else " ") + str(int(v))
+		elif v > 0 or float(add.get(key, 0)) > 0:
+			element = str(int(v))
+		var add_v: float = float(add.get(key, 0))
+		if add_v != 0.0:
+			rows.append({"att": element, "add": " +" + str(int(add_v)), "suffix": BaseresData.get_att_suffix(key)})
+		else:
+			rows.append({"att": element + BaseresData.get_att_suffix(key), "add": "", "suffix": ""})
+	return rows
+
+
 # 源 readequip.getEquipLevelExp :244-260 — Enhancement[Equip.Quality] → le(Price_i 累积) + ml(Max Level)。
 static func get_equip_level_exp(item_id: int, cm: Variant) -> Dictionary:
 	var equip_row: Dictionary = cm.get_raw_table("Equip").get(str(item_id), {})

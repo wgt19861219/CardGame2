@@ -22,6 +22,13 @@ const TAB_NAMES: Dictionary = {
 }
 # .tscn 5 tab 满集（fragment 隐藏 stone/consume）。
 const TAB_ALL_KEYS: Array[String] = ["all", "equip", "scroll", "stone", "consume"]
+# 源 packageres.list_key name LSTR keys（照源 ui/parameter/packageres.lua:11-30）。
+const TAB_LSTR_KEYS: Array[String] = [
+	"BATTLEPREPARE.WHOLE", "EQUIPCRAFT.GEAR", "EQUIP.REEL", "EQUIP.SOUL_STONE", "EQUIP.CONSUMABLES",
+]
+# 源 package.lua:378-462 createListButton classbtn/classbtnselected 纹理（同 hero_package tab）。
+const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
+const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 
 # panel 层子场景（位置/size 静态化进 .tscn 编辑器可视化调）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/package_content.tscn")
@@ -42,10 +49,12 @@ var _identity: String = ""
 var _tabs: Array[String] = []
 var _both: Dictionary = {}        # classify 输出 {prop, fragment}
 var _cur_tab: String = "all"
-var _tab_buttons: Dictionary = {}  # tab_key(String) -> Button
+var _tab_buttons: Dictionary = {}  # tab_key(String) -> TextureButton
+var _tab_labels: Dictionary = {}   # tab_key(String) -> Label（运行时跟随 button position/size）
 var _grid: GridContainer = null
 var _status_refs: Dictionary = {}   # MainStatusBar 货币条 label 引用（_refresh_status 更新）
 var _content: Control = null        # .tscn instantiate 根节点（cleanup 引用）
+var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipLayer，点 cell refresh 非重建）
 
 
 # 源 create(identity) + getListData :370-377。identity 从 PopWindow.identity（构造传入）取，
@@ -121,15 +130,25 @@ static func _make_stylebox(res_path: String, cap: Rect2) -> StyleBoxTexture:
 # 源 createListButton :378-462：右侧竖排 tab 按钮，第 1 个默认选中。
 # .tscn 5 tab 常驻（位置可视化），按 identity 隐藏不用的（fragment 隐 stone/consume）。
 func _setup_tab_buttons() -> void:
-	for key in TAB_ALL_KEYS:
-		var btn_name: String = "Tab" + key.capitalize() + "Btn"
-		var btn: Button = _content.get_node("%" + btn_name) as Button
+	for i in range(TAB_ALL_KEYS.size()):
+		var key: String = TAB_ALL_KEYS[i]
+		var btn: TextureButton = _content.get_node("%Tab" + key.capitalize() + "Btn") as TextureButton
+		var lbl: Label = _content.get_node("%Tab" + key.capitalize() + "Label") as Label
 		if _tabs.has(key):
-			btn.text = String(TAB_NAMES.get(key, key))
-			btn.pressed.connect(func() -> void: _select_tab(key))
+			# stretch_mode 强制 SCALE（ignore_texture_size=true 默认 KEEP 纹理原尺寸溢出，同 hero_package 范式）。
+			btn.stretch_mode = TextureButton.STRETCH_SCALE
+			btn.pressed.connect(_select_tab.bind(key))
 			_tab_buttons[key] = btn
+			lbl.text = str(cm.get_lstr(TAB_LSTR_KEYS[i])) if cm != null else String(TAB_NAMES.get(key, key))
+			lbl.z_index = 24   # 源 createListButton label z=24（classbtn normal z=1/3, press z=20, label 最上）
+			# label 框运行时对齐 button（.tscn offset 仅预览），上移 3px 视觉居中（同 hero_package）。
+			lbl.position = Vector2(btn.offset_left, btn.offset_top - 3.0)
+			lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
+			_tab_labels[key] = lbl
 		else:
 			btn.visible = false
+			lbl.visible = false
+	_update_tab_visual()
 
 
 # 源 framework.lua:755 sbCreateTitle（所有非 main 场景建 3 货币条 money/rmb/vit，common 模式）。
@@ -175,10 +194,18 @@ func _on_handbook_pressed() -> void:
 func _select_tab(key: String) -> void:
 	_cur_tab = key
 	AudioPlayer.play_sfx("common_click_feedback")
-	for k in _tab_buttons:
-		var btn: Button = _tab_buttons[k]
-		btn.button_pressed = (k == key)
+	_update_tab_visual()
 	_fill_grid()
+
+
+# 源 doChangeList（package.lua:202-229）+ createListButton normal/press 切换：
+# 选中 tab texture_normal=classbtnselected z=3 凸出；未选中 classbtn z=1（同 hero_package _update_tab_visual）。
+func _update_tab_visual() -> void:
+	for key in _tab_buttons:
+		var btn: TextureButton = _tab_buttons[key]
+		var selected: bool = key == _cur_tab
+		btn.texture_normal = load(CLASSBTN_SEL_RES if selected else CLASSBTN_RES)
+		btn.z_index = 3 if selected else 1
 
 
 # 当前 tab 填充 grid（_select_tab + _on_sold 刷新共用）。
@@ -193,10 +220,15 @@ func _fill_grid() -> void:
 
 # cell 点击 → 弹 EquipboardPanel（第 24 段，照源 doSelectEquip → equipboard ofpackage）。
 func _on_cell_clicked(cell_data: Dictionary) -> void:
-	var board := EquipboardPanel.new("equipboard", {})
-	board.setup_panel(cell_data, cm, pd)
-	board.sold.connect(_on_sold)
-	board.show_window(get_parent())
+	# 源 doSelectEquip :185-200：首次 create+popin，已有 → refresh(id) 切换内容（非模态浮层，不阻塞 cell 点击）。
+	# _equipboard 卖出/close 后自 remove_window → is_instance_valid 失效 → 下次点 cell 新建。
+	if _equipboard != null and is_instance_valid(_equipboard):
+		_equipboard.refresh(cell_data)
+		return
+	_equipboard = EquipboardPanel.new("equipboard", {})
+	_equipboard.setup_panel(cell_data, cm, pd)
+	_equipboard.sold.connect(_on_sold)
+	_equipboard.show_window(self)   # 挂 package（照源 equipboard.mainLayer 挂 package.mainLayer），随 package remove_window / 退出场景销毁
 
 
 # 卖出后重 classify + 重填当前 tab（持有量变化，cell 可能消失）+ 刷新货币条（金币变化）。
