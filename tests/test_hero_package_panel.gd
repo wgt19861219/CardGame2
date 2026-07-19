@@ -107,6 +107,32 @@ func test_grid_item_scaled_no_overlap() -> void:
 	root.queue_free()
 
 
+# 源 doChangeList z-order（heropackage.lua:16-23）：选中 tab setZOrder(3) 凸出 list_bg(z=2)，
+# 未选中 setZOrder(1) 被背景框挡左缘。静态 z：list_bg=2(:497)/buttonLabel=4(:542)/draglist=10(:762)。
+func test_tab_zorder_matches_source() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	# 默认 clid="all"：选中 tab z=3（凸出），其余 z=1（被 list_bg z=2 挡）
+	assert_eq((panel._tabs["all"] as TextureButton).z_index, 3, "all 选中 z=3")
+	assert_eq((panel._tabs["front"] as TextureButton).z_index, 1, "front 未选中 z=1")
+	# 静态 z（照源 ui_info z 值）：ListBg=2 / label=4 / HeroScroll(draglist)=10
+	var content: Control = panel._scroll.get_parent() as Control
+	assert_eq((content.get_node("ListBg") as TextureRect).z_index, 2, "ListBg z=2（源 list_bg）")
+	assert_eq((panel._tab_labels["all"] as Label).z_index, 4, "label z=4（源 buttonLabel）")
+	assert_eq(panel._scroll.z_index, 10, "HeroScroll z=10（源 draglist zorder）")
+	# 切到 front：front 升 z=3，all 回 z=1
+	panel._on_tab_pressed("front")
+	assert_eq((panel._tabs["front"] as TextureButton).z_index, 3, "切 front 后 front z=3")
+	assert_eq((panel._tabs["all"] as TextureButton).z_index, 1, "切 front 后 all 回 z=1")
+	panel.remove_window()
+	root.queue_free()
+
+
 # Phase A 重构（2026-07-18）：item bg 在 content 子场景下，递归扫描（坑 6 .tscn 多一层 content）。
 static func _first_texture(node: Node) -> TextureRect:
 	for c in node.get_children():
