@@ -79,6 +79,29 @@ func _build_content() -> void:
 	_scroll = content.get_node("%HeroScroll") as ScrollContainer
 	_grid = content.get_node("%GridHost") as Control
 	_update_tab_visual()
+	# 源 heropackage.lua:459-477 refreshSplitButton：底部 herosplit 按钮（classbtn Scale9 120×75），
+	# 源有 global_config._hero_split_ending 活动时间戳 gate；单机化无服务端活动 → 恒显（守卫留下轮）。
+	# 本轮降级：点击 Toast 提示"功能下轮接入"（源 herosplit 独立面板 UI 待完整移植）。
+	_add_herosplit_button(content)
+
+
+# 源 heropackage.lua:682-747 herosplit ui_info：Scale9 classbtn 120×75 at ccp(695,60) + label。
+func _add_herosplit_button(content: Control) -> void:
+	var btn_pos: Vector2 = _to_godot(Vector2(695.0, 60.0))   # 源 :687
+	var btn := UiScale9Button.make(
+		CLASSBTN_RES, CLASSBTN_RES,
+		btn_pos, Vector2(120.0, 75.0),
+		Rect2(40.0, 25.0, 40.0, 25.0),   # 源 :684 capInsets
+		cm.get_lstr(&"heropackage.1.10.1.001") if cm != null else "分解",
+		Color.WHITE)
+	btn.pressed.connect(_on_herosplit_pressed)
+	content.add_child(btn)
+
+
+# 本轮降级：源 herosplit 独立面板（选英雄→选灵魂石→二次确认）下轮完整移植。
+func _on_herosplit_pressed() -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	Toast.show_message("「分解」功能下轮接入（源 herosplit 独立面板待移植）")
 
 
 func _update_tab_visual() -> void:
@@ -201,10 +224,7 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	detail.evolve_requested.connect(func() -> void:
 		if detail.perform_evolve():
 			detail.refresh_content())
-	detail.split_requested.connect(func() -> void:
-		if not detail.perform_split().is_empty():
-			detail.remove_window()
-			_refresh_after_change())
+	# split 入口搬回 hero_package（herosplit 按钮，源 :459-477），不再从 hero_detail 进（4→2 回源 2026-07-18）。
 	detail.upgrade_rank_requested.connect(func() -> void:
 		if detail.perform_upgrade_rank():
 			detail.refresh_content())

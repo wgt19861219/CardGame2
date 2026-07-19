@@ -174,15 +174,12 @@ static func fill_info_board(base: Control, hero: HeroInstance, cm: Variant) -> L
 	return gs_lbl
 
 
-# fill 4 action button（%EvolveBtn/%UpgradeRankBtn/%SplitBtn/%EnhanceBtn）Scale9 样式 + LSTR text。
-# 源 window.lua:2158/2322 evolve/upgrade label = T(LSTR("HERODETAIL.EVOLUTION_"/"ADVANCE_"))。
-# 分解/强化源独立面板（split_button 缺图降级），本项目硬编码中文。
+# fill 1 action button（%UpgradeRankBtn）Scale9 样式 + LSTR text。
+# 源 window.lua:2158 upgrade label = T(LSTR("HERODETAIL.ADVANCE_"))。
+# ⚠️偏离源：evolve 文字按钮已删（用户简化决策 2026-07-18），升星由 %GetStoneBtn +号按钮触发（源 +号是 stonedetail 入口）。
 static func fill_action_buttons(base: Control, cm: Variant) -> void:
 	var labels: Dictionary = {
-		"EvolveBtn": String(cm.get_lstr(&"HERODETAIL.EVOLUTION_")) if cm != null else "升星",
 		"UpgradeRankBtn": String(cm.get_lstr(&"HERODETAIL.ADVANCE_")) if cm != null else "进阶",
-		"SplitBtn": "分解",
-		"EnhanceBtn": "强化",
 	}
 	for btn_name in labels:
 		var btn: Button = base.get_node("%" + btn_name)
@@ -199,6 +196,40 @@ static func _apply_detail_style(btn: Button) -> void:
 	btn.add_theme_color_override("font_color", Color.BLACK)
 	btn.add_theme_color_override("font_outline_color", Color.WHITE)
 	btn.add_theme_constant_override("outline_size", 2)
+
+
+# 源 herodetail/window.lua:1665-1720 refreshStone + createStoneBar：灵魂石进度条（stone_icon + bar_bg + bar + label + get_stone +号）。
+# sa/sn 来自 ReadheroHandbook.get_stone_amount/get_stone_need；is_max_star 时 label 变「已进化到顶级」+ 隐藏 stone_bar/get_stone/evolve 按钮。
+const STONE_BAR_W: float = 180.0   # 源 class.stone_bar_len = 180
+const STONE_BAR_OFFSET_X: float = 279.5   # StoneBar offset_left（bg 偏移 221.5 + 源局部 58）
+const LSTR_MAX_STAR: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
+static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_mgr: HeroManager) -> void:
+	var stone_icon: TextureRect = base.get_node("%StoneIcon") as TextureRect
+	var bar_bg: TextureRect = base.get_node("%StoneBarBg") as TextureRect
+	var bar: TextureRect = base.get_node("%StoneBar") as TextureRect
+	var lbl: Label = base.get_node("%StoneBarLabel") as Label
+	var get_stone: TextureButton = base.get_node("%GetStoneBtn") as TextureButton
+	var sa: int = ReadheroHandbook.get_stone_amount(int(hero.tid), cm, hero_mgr)
+	var sn: int = ReadheroHandbook.get_stone_need(int(hero.tid), cm, hero_mgr)
+	# 源 herodetail.checkHeroMaxStar（window.lua:1670 等价）：hero._stars >= Unit.Max Stars。
+	# HeroData.max_stars = cm Unit 表 "Max Stars" 字段（hero_data.gd:34）；hero 实例无 data 字段，直接查表。
+	var max_stars: int = int(cm.get_int(&"Unit", int(hero.tid), &"Max Stars")) if cm != null else 5
+	var is_max_star: bool = hero.stars >= max_stars
+	# 源 :1668 label：满星「已进化到顶级」/ 否则 "sa/sn"
+	var text: String = (String(cm.get_lstr(LSTR_MAX_STAR)) if cm != null else "已进化到顶级") if is_max_star else ("%d/%d" % [sa, sn])
+	lbl.text = text
+	# 源 :1670 ui.evolve:setVisible(not isMaxStar) + :1812 get_stone 满星隐藏。
+	# evolve 文字按钮已删（简化），升星改由 GetStoneBtn +号触发，满星时 +号也隐藏。
+	stone_icon.visible = not is_max_star
+	bar_bg.visible = not is_max_star
+	bar.visible = not is_max_star
+	get_stone.visible = not is_max_star
+	if is_max_star:
+		lbl.visible = true   # 满星仍显示 label
+		return
+	# 源 :1676 ratio = min(a/ta, 1)，stencil 宽 = stone_bar_len * ratio → Godot TextureRect offset_right 控宽
+	var ratio: float = clampf(float(sa) / float(sn if sn > 0 else 1), 0.0, 1.0)
+	bar.offset_right = STONE_BAR_OFFSET_X + STONE_BAR_W * ratio
 
 
 static func _make_stylebox(res_path: String) -> StyleBoxTexture:

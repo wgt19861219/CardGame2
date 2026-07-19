@@ -21,8 +21,8 @@ const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 
 const BG_OFFSET: Vector2 = Vector2(-26.5, -11.5)   # bg 中心对齐 cell 中心；scale 1/CS 后 bg 244 居中 cell
 const BG_H: float = 123.0
 const EQUIP_SLOT_COUNT: int = 6
-const EQUIP_BG_SIZE: float = 22.0                       # 源 scale 22/w（gocha 94）
-const EQUIP_ICON_SIZE: float = 16.0                     # 源 :215 scale 16/w
+const EQUIP_BG_SIZE: float = 28.0                       # ⚠️偏离源 22（源 scale 22/w gocha 94）→ 28 放大易辨识（用户决策 2026-07-18）
+const EQUIP_ICON_SIZE: float = 20.0                     # ⚠️偏离源 16，按源比例 16/22×28≈20 同步放大
 const EQUIP_EMPTY_ALPHA: float = 100.0 / 255.0          # 源 :236 setOpacity(100)
 const BAR_BG_W: float = 204.0 * 0.93                    # progress_bg 204×34 × scale 0.93（源 :143）
 const BAR_BG_H: float = 34.0                            # progress_bg 纹理高（源 :142 204×34）
@@ -35,8 +35,8 @@ const AVAILABLE_ALPHA: float = 150.0 / 255.0            # 源 :160 setOpacity(15
 const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"          # 源 :225 可穿戴蓝+
 const PLUS_CRAFT_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png" # 源 :227 仅可合成黄+
 const DEAL_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"                 # 源 :244 canDealTag
-const PLUS_SIGN_TARGET: float = 24.0   # 源 :233 plusSign setScale(24/w)
-const DEAL_TAG_TARGET: float = 24.0    # 源 :244 tag setScale(24/w)
+const PLUS_SIGN_TARGET: float = 30.0   # ⚠️偏离源 24，按源比例 24/22×28≈30 同步放大（用户决策 2026-07-18）
+const DEAL_TAG_TARGET: float = 24.0    # 源 :244 tag setScale(24/w)（独立尺寸不跟槽放大）
 # 源 baseheroitem :29-37 name：ow<w 时 setScale(ow/w)，setPosition(177-min(w,ow)/2, 72) anchor(0,0.5)。
 const NAME_CENTER_X: float = 177.0                      # 源 :36 x=177-min(w,ow)/2
 const NAME_POS_Y: float = 72.0                          # 源 :36 y=72 anchor(0,0.5)
@@ -61,12 +61,14 @@ var is_miss: bool = false
 var _entry: Variant = null
 var head: ReadheroIcon = null
 var _content: Control = null
+var _name_host: Control = null
 var _name_lbl: Label = null
 var _suffix_lbl: Label = null
 var _mark_rect: TextureRect = null
 var _equip_group: Control = null
 var _stone_group: Control = null
 var _equip_slots: Array[TextureRect] = []
+var _tip_host: Control = null
 var _deal_tag: TextureRect = null
 var _bar_fill: TextureRect = null
 var _stone_label: Label = null
@@ -105,17 +107,22 @@ func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: Player
 	else:
 		_fill_equips()
 	# 两形态 visible 切换（坑 5）：拥有→EquipGroup / 未拥有→StoneGroup + 头像灰化。
+	# TipHost 已从 EquipGroup 拎到根平级（用户决策"红点和装备槽平级"），不再跟随 EquipGroup visible 链，
+	# 此处显式按形态控可见（未拥有形态无装备可穿戴，红点必隐）。
 	_equip_group.visible = not is_miss
 	_stone_group.visible = is_miss
+	_tip_host.visible = false
 
 
 # Phase A 重构：取 .tscn 节点引用（fill 用）。
 func _cache_nodes() -> void:
+	_name_host = _content.get_node("%NameHost") as Control
 	_name_lbl = _content.get_node("%NameLabel") as Label
 	_suffix_lbl = _content.get_node("%SuffixLabel") as Label
 	_mark_rect = _content.get_node("%MarkRect") as TextureRect
 	_equip_group = _content.get_node("%EquipGroup") as Control
 	_stone_group = _content.get_node("%StoneGroup") as Control
+	_tip_host = _content.get_node("%TipHost") as Control
 	_deal_tag = _content.get_node("%DealTag") as TextureRect
 	_bar_fill = _content.get_node("%BarFill") as TextureRect
 	_stone_label = _content.get_node("%StoneLabel") as Label
@@ -156,15 +163,19 @@ func _fill_name() -> void:
 		total_w += suffix_w
 	else:
 		_suffix_lbl.visible = false
-	# 源 :33-35 ow<w 时 setScale(ow/w)；:36 setPosition(177 - min(w,ow)/2, 72) anchor(0,0.5)
+	# NameHost 位置/尺寸 .tscn 固化（用户决策，不按源动态算法）。name+suffix 拼接整体在 NameHost 内部居中：
+	# fill 算整体宽 total_w，左起点 = (NameHost 宽 - total_w×scale) / 2，suffix 紧贴 name 右侧。
+	# 源超宽缩放保留：scale_val 防超长名字溢出 NameHost。
+	# host_w 用 offset（.tscn 固化值），不读 size（_build 阶段未布局 size 可能为 0）。
 	var scale_val: float = min(1.0, NAME_MAX_W / total_w) if total_w > 0.0 else 1.0
-	var pos_x: float = NAME_CENTER_X - min(total_w, NAME_MAX_W) * 0.5
-	var base_pos: Vector2 = _place(Vector2(pos_x, NAME_POS_Y), Vector2(0.0, 0.5), Vector2(total_w, name_size.y))
+	var host_w: float = _name_host.offset_right - _name_host.offset_left
+	var render_w: float = total_w * scale_val
+	var start_x: float = (host_w - render_w) * 0.5
 	_name_lbl.scale = Vector2(scale_val, scale_val)
-	_name_lbl.position = base_pos
+	_name_lbl.position = Vector2(start_x, 0.0)
 	if star > 0:
 		_suffix_lbl.scale = Vector2(scale_val, scale_val)
-		_suffix_lbl.position = base_pos + Vector2(name_size.x * scale_val, 0.0)
+		_suffix_lbl.position = Vector2(start_x + name_size.x * scale_val, 0.0)
 
 
 # 源 baseheroitem :38-42 markIcon = hero_mark_res[Main Attrib]（icon_str/agi/int.png，setScale(0.8) @ (110,72) anchor(0.5,0.5)）。
@@ -226,16 +237,17 @@ func _fill_plus_sign(res_path: String, slot_bg: TextureRect, slot_size: Vector2)
 	slot_bg.add_child(icon)
 
 
-# 源 heroitem.lua:243-248 canDealTag — main_deal_tag.png setScale(24/w) at (240, 90)（DealTag position 已烘焙）。
+# 源 heroitem.lua:243-248 canDealTag — main_deal_tag.png setScale(24/w) at (240, 90)（TipHost position 已烘焙，DealTag 挂其下）。
+# 位置由 %TipHost 在编辑器可视化调（DealTag 本地 (0,0)，size fill）。
 func _fill_deal_tag() -> void:
 	var tex: Texture2D = _load_tex(DEAL_TAG_RES)
 	if tex == null:
-		return   # 保持 visible=false
+		return   # 保持 _tip_host.visible = false
 	var orig_w: float = float(tex.get_width())
 	var scale_val: float = DEAL_TAG_TARGET / orig_w if orig_w > 0.0 else 1.0
 	var tag_size := tex.get_size() * scale_val
 	_deal_tag.size = tag_size
-	_deal_tag.visible = true
+	_tip_host.visible = true
 
 
 func _fill_equip_icon(item_id: int, slot_bg: TextureRect, slot_size: Vector2) -> void:

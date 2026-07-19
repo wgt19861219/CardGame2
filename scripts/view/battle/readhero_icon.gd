@@ -20,10 +20,15 @@ const FRAME_SCALE_PAD: float = 5.0                      # 源 :368 (size.width+5
 const ALPHA_THRESHOLD: float = 0.02                     # 源 createClippingNode :346 0.02
 const STAR_DX: float = 12.0                             # 源 :385 dx=12
 const STAR_BASE_X: float = 47.0                         # 源 :386 size.width/2-5 = 52-5
-const STAR_Y: float = 6.0                               # 源 :386 y=6
+# ⚠️源 y=6 是 cocos 左下原点（star 中心距底 6）→ Godot 左上原点 y = CONTAINER_SIZE.y - 6 = 98（修 2026-07-18 y 翻转 bug，
+# 旧值 6=顶部，错；源本意 star 贴 container 底部）。
+const STAR_Y: float = 98.0
 const STAR_Z: int = 5                                   # 源 :396 addChild(s, 5)
-const LEVEL_BG_POS: Vector2 = Vector2(2.0, 15.0)        # 源 :358
-const LEVEL_LABEL_POS: Vector2 = Vector2(18.0, 26.0)    # 源 :363
+# ⚠️源 cocos 左下原点：bg y=15 anchor(0,0) → bg 下边距底 15，label y=26 anchor(0.5,0.5) → label 中心距底 26。
+# Godot 左上原点翻转：bg 下边 y = CONTAINER_SIZE.y - 15 = 89（bg 高 34，上边 y=55）；label 中心 y = 104 - 26 = 78。
+# （修 2026-07-18 y 翻转 bug，旧值 (2,15)/(18,26) 直接抄 cocos=顶部，错；源本意 level 贴 container 底部）。
+const LEVEL_BG_POS: Vector2 = Vector2(2.0, 55.0)
+const LEVEL_LABEL_POS: Vector2 = Vector2(18.0, 78.0)
 const LEVEL_FONT_SIZE: int = 14                         # 源 :361 createttf(level,14)
 const LEVEL_Z: int = 25                                 # 源 :364 addChild(label, 25)
 const CLIP_PATH_PREFIX: String = "UI/"                  # 源路径前缀 → res://assets/ui/
@@ -35,9 +40,9 @@ const HP_BAR_PATH: String = CRUSADE_DIR + "crusade_hp_bar.png"
 const MP_BAR_BG_PATH: String = CRUSADE_DIR + "crusade_mp_bar_bg.png"
 const MP_BAR_PATH: String = CRUSADE_DIR + "crusade_mp_bar.png"
 const DEAD_PATH: String = CRUSADE_DIR + "crusade_text_dead.png"  # 照源 readhero.lua:238/274 引用；源项目亦缺此图（HVGA/crusade/ 27 资源无 dead），源 createSprite 缺图≈nil，_create_dead_shade 等价
-const HP_BAR_POS: Vector2 = Vector2(11.0, 71.0)   # 源 :285 ccp(11,71) 锚点(0,0.5)
-const MP_BAR_POS: Vector2 = Vector2(11.0, 64.0)   # 源 :295 ccp(11,64)
-const DEAD_POS: Vector2 = Vector2(44.0, 65.0)     # 源 :275 ccp(44,65)
+const HP_BAR_POS: Vector2 = Vector2(11.0, 33.0)   # 源 :285 ccp(11,71) anchor(0,0.5)→节点垂直中心 y 翻转 104-71=33
+const MP_BAR_POS: Vector2 = Vector2(11.0, 40.0)   # 源 :295 ccp(11,64) anchor(0,0.5)→节点垂直中心 y 翻转 104-64=40
+const DEAD_POS: Vector2 = Vector2(44.0, 39.0)     # 源 :275 (44,65) anchor(0.5,0.5)→中心 y 翻转 104-65=39
 const HP_PERC_DENOM: float = 10000.0              # 源 setScaleX(hp/10000)，hp 0-10000 万分比
 const SHADE_ALPHA: float = 150.0 / 255.0          # 源 :277 ccc4(0,0,0,150)
 const DEAD_Z: int = 10                            # 源 :276 addChild(die, 10)
@@ -158,10 +163,16 @@ func _create_stars(star_count: int) -> void:
 		stars.append(s)
 
 
-# 源 :355-366 level：heropackage_level_bg(@2,15) + levelLabel(@18,26, size14)。
+# 源 :355-366 level：heropackage_level_bg(@2,15,anchor 0,0) + levelLabel(@18,26,anchor 0.5,0.5,size14)。
+# 源 label anchor(0.5,0.5) → (18,26) 是中心；bg anchor(0,0) → (2,15) 是左下角（均 cocos 左下原点）。
+# 源 label 中心 (18,26) 不在 bg 正中（bg 中心 cocos (23.5,32)，偏左下 (5.5,6)）——勿假设 label 居中 bg。
+# Godot Label position 是左上角无 anchor：size=bg_size 框 + position=LEVEL_LABEL_POS-bg_size/2 + CENTER 对齐
+# 让文字中心 = 源中心 Godot (18,78)（104-26=78）。旧实现误用 LEVEL_BG_POS 致中心 (23.5,72) 偏 (+5.5,-6)。
 func _create_level(level: int) -> void:
+	var bg_tex: Texture2D = _load_tex(LEVEL_BG_PATH)
+	var bg_size: Vector2 = bg_tex.get_size() if bg_tex != null else Vector2(43.0, 34.0)
 	var bg := Sprite2D.new()
-	bg.texture = _load_tex(LEVEL_BG_PATH)
+	bg.texture = bg_tex
 	bg.centered = false
 	bg.position = LEVEL_BG_POS
 	icon.add_child(bg)
@@ -171,7 +182,8 @@ func _create_level(level: int) -> void:
 	ls.font_size = LEVEL_FONT_SIZE
 	lbl.label_settings = ls
 	lbl.text = str(level)
-	lbl.position = LEVEL_LABEL_POS
+	lbl.size = bg_size
+	lbl.position = LEVEL_LABEL_POS - bg_size / 2.0
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.z_index = LEVEL_Z

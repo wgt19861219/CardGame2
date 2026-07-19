@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://cmdjxge00hynk" path="res://assets/ui/alpha/HVGA/heropackage_available.png" id="6_avail"]
 
 [node name="HeroPackageItemContent" type="Control" unique_id=601363715]
+custom_minimum_size = Vector2(300, 0)
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -35,44 +36,59 @@ offset_right = -19.5
 offset_bottom = -1.5
 mouse_filter = 2
 
-[node name="NameLabel" type="Label" parent="." unique_id=1385220039]
+[node name="MarkRect" type="TextureRect" parent="." unique_id=1984512238]
 unique_name_in_owner = true
 layout_mode = 0
+offset_left = 227.0
+offset_top = 4.0
+offset_right = 264.0
+offset_bottom = 36.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="NameHost" type="Control" parent="." unique_id=1385220039]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 91.0
+offset_top = 7.0
+offset_right = 235.0
+offset_bottom = 35.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="NameHost" unique_id=1385220040]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 118.0
+offset_bottom = 28.0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
 
-[node name="SuffixLabel" type="Label" parent="." unique_id=1441676601]
+[node name="SuffixLabel" type="Label" parent="NameHost" unique_id=1441676602]
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 20
-
-[node name="MarkRect" type="TextureRect" parent="." unique_id=1984512238]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(1, 1)
-layout_mode = 0
-offset_left = 229.0
-offset_top = -2.0
-offset_right = 266.0
-offset_bottom = 39.0
-mouse_filter = 2
-expand_mode = 1
+horizontal_alignment = 1
 
 [node name="EquipGroup" type="Control" parent="." unique_id=1553999783]
 unique_name_in_owner = true
 anchors_preset = 0
+offset_left = 104.0
+offset_top = 10.0
+offset_right = 272.0
+offset_bottom = 99.0
 mouse_filter = 2
 
 [node name="EquipSlot1" type="TextureRect" parent="EquipGroup" unique_id=1124040423]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 67.5
-offset_top = 82.5
-offset_right = 89.5
-offset_bottom = 104.5
+offset_top = 61.0
+offset_right = 28.0
+offset_bottom = 89.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -80,10 +96,10 @@ expand_mode = 1
 [node name="EquipSlot2" type="TextureRect" parent="EquipGroup" unique_id=1636581600]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 89.5
-offset_top = 82.5
-offset_right = 111.5
-offset_bottom = 104.5
+offset_left = 28.0
+offset_top = 61.0
+offset_right = 56.0
+offset_bottom = 89.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -91,10 +107,10 @@ expand_mode = 1
 [node name="EquipSlot3" type="TextureRect" parent="EquipGroup" unique_id=1846824292]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 111.5
-offset_top = 82.5
-offset_right = 133.5
-offset_bottom = 104.5
+offset_left = 56.0
+offset_top = 61.0
+offset_right = 84.0
+offset_bottom = 89.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -102,10 +118,10 @@ expand_mode = 1
 [node name="EquipSlot4" type="TextureRect" parent="EquipGroup" unique_id=1403129619]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 133.5
-offset_top = 82.5
-offset_right = 155.5
-offset_bottom = 104.5
+offset_left = 84.0
+offset_top = 61.0
+offset_right = 112.0
+offset_bottom = 89.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -113,10 +129,10 @@ expand_mode = 1
 [node name="EquipSlot5" type="TextureRect" parent="EquipGroup" unique_id=541677996]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 155.5
-offset_top = 82.5
-offset_right = 177.5
-offset_bottom = 104.5
+offset_left = 112.0
+offset_top = 61.0
+offset_right = 140.0
+offset_bottom = 89.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -124,22 +140,30 @@ expand_mode = 1
 [node name="EquipSlot6" type="TextureRect" parent="EquipGroup" unique_id=334713598]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 177.5
-offset_top = 82.5
-offset_right = 199.5
-offset_bottom = 104.5
+offset_left = 140.0
+offset_top = 61.0
+offset_right = 168.0
+offset_bottom = 89.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
 
-[node name="DealTag" type="TextureRect" parent="EquipGroup" unique_id=1585716563]
+[node name="TipHost" type="Control" parent="." unique_id=1585716563]
 unique_name_in_owner = true
-visible = false
+anchors_preset = 0
+offset_left = 201.5
+offset_top = 9.0
+offset_right = 222.5
+offset_bottom = 31.0
+mouse_filter = 2
+
+[node name="DealTag" type="TextureRect" parent="TipHost" unique_id=1585716564]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 213.5
-offset_top = 21.5
-offset_right = 213.5
-offset_bottom = 21.5
+offset_left = 67.5
+offset_top = -24.0
+offset_right = 88.5
+offset_bottom = -2.0
 mouse_filter = 2
 texture = ExtResource("3_dealtag")
 expand_mode = 1

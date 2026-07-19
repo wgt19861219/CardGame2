@@ -83,21 +83,6 @@ func test_evolve_signal() -> void:
 	root.queue_free()
 
 
-func test_split_signal() -> void:
-	var root := Node.new()
-	add_child(root)
-	var hero := HeroInstance.new(1, 1, 1)
-	var panel := HeroDetailPanel.new("herodetail", {})
-	panel.setup_panel(hero, cm)
-	panel.show_window(root)
-	var emitted: Array[bool] = [false]
-	panel.split_requested.connect(func() -> void: emitted[0] = true)
-	panel.split_requested.emit()
-	assert_eq(emitted[0], true, "分解按钮信号")
-	panel.remove_window()
-	root.queue_free()
-
-
 # perform_evolve 信号→hero_manager.evolve 闭环（碎片+金币足 → stars+1）
 func test_perform_evolve_success() -> void:
 	var mgr := HeroManager.new(cm)

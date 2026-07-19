@@ -66,7 +66,7 @@ func test_hero_click_connects_action_signals() -> void:
 	assert_not_null(detail, "HeroDetailPanel 弹出")
 	if detail != null:
 		assert_gt(detail.evolve_requested.get_connections().size(), 0, "evolve_requested 已接（升星闭环）")
-		assert_gt(detail.split_requested.get_connections().size(), 0, "split_requested 已接（分解闭环）")
+		# split 入口搬回 hero_package（herosplit 按钮），不再从 hero_detail 进（4→2 回源 2026-07-18）。
 		assert_gt(detail.upgrade_skill_requested.get_connections().size(), 0, "upgrade_skill_requested 已接（技能升级闭环）")
 		detail.queue_free()
 	panel.remove_window()

@@ -8,7 +8,6 @@ extends PopWindow
 ## 照源 heropackage.lua / equipstrengthen.lua 交互简化。
 
 signal evolve_requested
-signal split_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
 
@@ -123,6 +122,8 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	var result: Dictionary = HeroDetailBuilder.setup_base(_base_layer, hero, cm)
 	_gs_label = result["gs_label"] as Label
 	_tab_buttons = result["tab_buttons"] as Dictionary
+	if hero_manager != null:
+		HeroDetailBuilder.fill_stone_bar(_base_layer, hero, cm, hero_manager)
 	_pre_gs = hero.gs if hero != null else -1
 	_bind_signals()
 	_show_equips()
@@ -152,15 +153,15 @@ func _rebuild_content() -> void:
 	_build_content(saved_tab)
 
 
-# 绑定 .tscn 静态按钮信号：%CloseBtn + 4 action（升星/进阶/分解/强化）+ 3 tab。
+# 绑定 .tscn 静态按钮信号：%CloseBtn + 2 action（升星/进阶）+ 3 tab。
+# 源 herodetail 右侧只有 2 按钮（evolve 升星 + upgrade 进阶）；split 在 heropackage（源 :459-477）、
+# strengthen 在 main_scene estren（源 main.lua:1424-1434）。回源架构，4→2（2026-07-18）。
 func _bind_signals() -> void:
 	(_base_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")   # 源 heroDetail.closeWindow（soundres.lua:204）
 		remove_window())
-	_wire_action_button("%EvolveBtn", evolve_requested, "common_click_feedback")   # 源 heroDetail.clickUpgrade（soundres.lua:217）
+	_wire_action_button("%GetStoneBtn", evolve_requested, "common_click_feedback")   # +号按钮执行升星（简化偏离源，源 evolve 文字按钮已删）
 	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")   # 源 hero_upgrade（:867-901 rank+1）
-	(_base_layer.get_node("%SplitBtn") as BaseButton).pressed.connect(_on_split_pressed)
-	(_base_layer.get_node("%EnhanceBtn") as BaseButton).pressed.connect(_on_strengthen_pressed)
 	for key in _tab_buttons:
 		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
 
@@ -170,14 +171,6 @@ func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> v
 		if not sound_key.is_empty():
 			AudioPlayer.play_sfx(sound_key)
 		sig.emit())
-
-
-# 源 equipstrengthen 独立面板（2176 行），本项目从 HeroDetailPanel "强化"按钮进。
-func _on_strengthen_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
-	panel.setup_panel(hero, cm, pd)
-	panel.show_window(get_parent())
 
 
 # ---- Phase B：tab 内容 fill（挂各 host，visible 切换）----
@@ -260,14 +253,22 @@ func _show_equips() -> void:
 		var ceid: int = int(hero.equip_slots[i]) if i < hero.equip_slots.size() else 0   # 已穿戴
 		var eid: int = int(rank_equip.get("Equip" + str(i + 1) + " ID", 0))              # Hero_equip 配方
 		var icon: Control = _create_equip_slot_icon(ceid, eid)
-		# 源 getEquipIconPos（window.lua:1105-1106）：cocos x = 255+289*((i)%2), y = 385-70*floor(i/2)（i 从 0）。
-		# 源 anchor(0.5,0.5) 中心 → Godot Control position = godot_center - icon.size/2（create_icon 显式 set size 可读）。
-		var cocos_x: float = EQUIP_POS_X + EQUIP_X_GAP * float(i % 2)
-		var cocos_y: float = EQUIP_POS_Y - EQUIP_Y_GAP * float(i / 2)
-		icon.position = HeroDetailBuilder.to_godot(cocos_x, cocos_y) - icon.size * 0.5
-		icon.mouse_filter = Control.MOUSE_FILTER_STOP
-		icon.gui_input.connect(_make_equip_click_handler(i))   # 源 doClickEquip → equipcraft（空槽也可点）
-		host.add_child(icon)   # 装备挂 %EquipSlotHost（base 层组织，随 base 右移让位）
+		# 装备槽已静态化进 .tscn（EquipSlot1-6 挂 EquipSlotHost/{Left,Right}Column VBox），fill 时取静态槽
+		# 作 host 挂 icon（position=0 相对槽本地坐标 + 清静态槽占位 texture 避免双框）。
+		var slot_host: TextureRect = _base_layer.get_node_or_null("%EquipSlot" + str(i + 1)) as TextureRect
+		if slot_host != null:
+			slot_host.texture = null   # 清占位白框（icon 自带品质边框）
+			# icon position=0 即填满（icon 跟槽都 ICON_SIZE 84×84）。不设 icon.size 避免
+			# 干扰 VBox 布局（运行时 VBox 按子节点 minimum_size 排，强制设 icon.size 会撑大槽致间隔消失）。
+			icon.position = Vector2.ZERO
+			icon.gui_input.connect(_make_equip_click_handler(i))
+			slot_host.add_child(icon)
+		else:
+			# fallback：静态槽缺失时挂 EquipSlotHost（旧 procedural 范式）
+			icon.position = HeroDetailBuilder.to_godot(EQUIP_POS_X + EQUIP_X_GAP * float(i % 2), EQUIP_POS_Y - EQUIP_Y_GAP * float(i / 2)) - icon.size * 0.5
+			icon.mouse_filter = Control.MOUSE_FILTER_STOP
+			icon.gui_input.connect(_make_equip_click_handler(i))
+			host.add_child(icon)
 
 
 # 源 createEquipIcon 三态：icon_id = ceid or eid；未穿戴配方（ceid<=0 and eid>0）灰显 setSpriteGray。
@@ -493,18 +494,8 @@ func perform_upgrade_rank() -> bool:
 	return ok
 
 
-# 分解按钮：照源 herosplit/window.lua:88-104 firstConfirm popConfirmDialog 二次确认 → emit split_requested。
-func _on_split_pressed() -> void:
-	# 源 herosplit:97-99 T(LSTR("window.1.10.1.003"), name) = "是否确认分解英雄%s？"
-	var display_name: String = HeroDetailBuilder.get_display_name(hero, cm) if hero != null else ""
-	var msg_pattern: String = get_lstr_fallback(LSTR_SPLIT_CONFIRM, "确认分解 %s？")
-	var confirm := HeroSplitConfirm.new()
-	confirm.set_message(msg_pattern % display_name)
-	confirm.confirmed.connect(func() -> void: emit_signal("split_requested"))
-	get_parent().add_child(confirm)
-
-
 # 分解：hero_manager.split（移除英雄，返碎片 {fragment_id,count}）。
+# split 入口已搬回 hero_package（源 herodetail 无此按钮，4→2 回源 2026-07-18）。
 func perform_split() -> Dictionary:
 	if hero_manager == null or hero == null:
 		return {}
