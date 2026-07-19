@@ -59,8 +59,21 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 # 返 ui 引用 dict（panel 后处理显隐/色用，同旧 build 返回兼容）。
 static func setup_content(content: Control, info: Dictionary, res_info: Dictionary, cm: Variant) -> Dictionary:
 	var left: int = int(info.get("count_limit", 0)) - int(info.get("count", 0))
-	# texture fill（按 stage_type 切 frame3/map_title_bg texture + title_bg size）
-	_set_texture(content.get_node("%Frame3") as TextureRect, String(res_info.get("frame", "")))
+	# texture + size/pos fill。源 getResInformation 只给 frameRes+framePos（无 size）→ createSprite 无 fix_size
+	# → 显示=纹理×CS/CS_factor（display_size，同 stage_select frame 730×396）。原 frame3 走 tscn 静态 offset
+	# 504×400（IGNORE_SIZE stretch 变形）→ 同 stage-map-frame 纹理在两场景 size/比例不一致（用户反馈"背景框不一样"）。
+	var frame3: TextureRect = content.get_node("%Frame3") as TextureRect
+	var frame_res: String = String(res_info.get("frame", ""))
+	_set_texture(frame3, frame_res)
+	var frame_size: Vector2 = TexDisplaySize.display_size(frame_res)
+	var frame_pos: Vector2 = Vector2(res_info.get("frame_pos", Vector2(400.0, 205.0)))
+	var frame_center: Vector2 = to_godot(frame_pos.x, frame_pos.y)
+	# 用 offset 直接定 rect：size/position 属性在 layout_mode 3 下不覆盖 tscn offset，builder 设了等于没设，
+	# frame3 仍按 tscn 504×400 显示（用户看 5-6 成屏）。offset 是底层 rect 定义，运行时生效。
+	frame3.offset_left = frame_center.x - frame_size.x * 0.5
+	frame3.offset_right = frame_center.x + frame_size.x * 0.5
+	frame3.offset_top = frame_center.y - frame_size.y * 0.5
+	frame3.offset_bottom = frame_center.y + frame_size.y * 0.5
 	_set_texture(content.get_node("%MapTitleBg") as TextureRect, String(res_info.get("title_bg", "")))
 	var title_bg: TextureRect = content.get_node("%TitleBg") as TextureRect
 	_set_texture(title_bg, TITLE_BG_RES)
