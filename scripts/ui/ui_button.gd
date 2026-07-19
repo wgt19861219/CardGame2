@@ -20,7 +20,7 @@ static func make(res_normal: String, res_pressed: String, center_pos: Vector2, l
 	btn.texture_normal = normal_tex
 	btn.texture_pressed = _load(res_pressed) if ResourceLoader.exists(res_pressed) else normal_tex
 	btn.ignore_texture_size = true
-	var sz: Vector2 = (normal_tex.get_size() / CONTENT_SCALE) if normal_tex != null else Vector2(100.0, 40.0)
+	var sz: Vector2 = TexDisplaySize.display_size(res_normal) if normal_tex != null else Vector2(100.0, 40.0)
 	btn.position = center_pos - sz * 0.5
 	btn.size = sz
 	if not label_text.is_empty():
@@ -46,7 +46,7 @@ static func make_at(res_normal: String, res_pressed: String, top_left: Vector2, 
 	btn.ignore_texture_size = true
 	btn.position = top_left
 	if normal_tex != null:
-		btn.size = normal_tex.get_size() / CONTENT_SCALE
+		btn.size = TexDisplaySize.display_size(res_normal)
 	if not label_text.is_empty():
 		var lbl := Label.new()
 		lbl.text = label_text

@@ -187,7 +187,7 @@ func _button_size(btn: TextureButton) -> Vector2:
 	# 源 shortcut.lua:196-231 5 按钮 t="Sprite" config={isCascadeOpacity} 无 fix；
 	# :284-309 down/up toggle t="Sprite" config={} 无 fix → 显示=纹理/CS
 	if btn.texture_normal != null:
-		return btn.texture_normal.get_size() / CONTENT_SCALE
+		return TexDisplaySize.display_size(btn.texture_normal.resource_path)
 	return Vector2(76.0, 76.0)   # 估算（无纹理降级，Phase 4 校准）
 
 

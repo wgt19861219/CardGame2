@@ -45,7 +45,7 @@ fi
 # "load 成功但方法没被收集"致测试数下降）。加测试后调高 GUT_MIN_TESTS（当前基线 1161）。
 # env 覆盖便于验证断言生效：GUT_MIN_TESTS=2000 bash check.sh 应 fail。
 GUT_MIN_TESTS=${GUT_MIN_TESTS:-1161}
-gut_tests=$(printf '%s' "$GUT_OUTPUT" | awk '/^Tests[[:space:]]+/{print $2; exit}')
+gut_tests=$(awk '/^Tests[[:space:]]+/{print $2; exit}' <<<"$GUT_OUTPUT")   # here-string：避 printf|awk 管道 SIGPIPE（awk exit 致 printf broken pipe，pipefail 放大为 141）
 if [ -z "$gut_tests" ]; then
 	echo "❌ 无法从 GUT 输出解析 Tests 计数（输出格式变？），门禁失败"
 	exit 1

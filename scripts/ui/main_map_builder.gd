@@ -171,6 +171,8 @@ func _from_center(cocos_pos: Vector2, tex_size: Vector2) -> Vector2:
 
 
 func _tex_size(name: String) -> Vector2:
-	var tex: Texture2D = load(BG_DIR + name)
+	var res: String = BG_DIR + name
 	# cloud4/5/6 + left/right_side + bg3 源 config={} 无 fix → 显示=纹理/CS（grass fix_height 另走 :87 不经此函数）
-	return (tex.get_size() / CONTENT_SCALE) if tex != null else Vector2.ZERO
+	if not ResourceLoader.exists(res):
+		return Vector2.ZERO
+	return TexDisplaySize.display_size(res)

@@ -108,7 +108,7 @@ func _add_hero_icon(res_path: String, center_pos: Vector2) -> TextureRect:
 	var tr := TextureRect.new()
 	tr.texture = load(res_path)
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var target_size: Vector2 = tr.texture.get_size() / CONTENT_SCALE
+	var target_size: Vector2 = TexDisplaySize.display_size(res_path)
 	tr.position = center_pos - target_size / 2.0
 	tr.size = target_size
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE

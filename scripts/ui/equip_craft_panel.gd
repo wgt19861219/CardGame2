@@ -345,7 +345,7 @@ func _set_history(index: int, id: int) -> void:
 			var arrow := TextureRect.new()
 			arrow.texture = load(HISTORY_ARROW_PATH)
 			arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			arrow.custom_minimum_size = (arrow.texture as Texture2D).get_size() / CONTENT_SCALE
+			arrow.custom_minimum_size = TexDisplaySize.display_size(HISTORY_ARROW_PATH)
 			arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			container_layer.add_child(arrow)
 		container_layer.add_child(icon_bg)

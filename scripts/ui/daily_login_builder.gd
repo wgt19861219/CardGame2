@@ -78,8 +78,7 @@ static func create_reward_cell(content: Control, day: int, data: Dictionary, sta
 	var board_res: String = MATRIX_YELLOW_RES if status == "common" else MATRIX_RES
 	var board_tex: Texture2D = load(board_res) as Texture2D
 	# 源 dailylogin :254-262 board config={}（纯 Sprite）→ 显示=纹理/CS。
-	var raw_bsz: Vector2 = board_tex.get_size() if board_tex != null else Vector2(133.0, 130.0)
-	var bsz: Vector2 = raw_bsz / CONTENT_SCALE
+	var bsz: Vector2 = TexDisplaySize.display_size(board_res) if board_tex != null else Vector2(133.0, 130.0) / CONTENT_SCALE
 	var board := TextureButton.new()
 	board.texture_normal = board_tex
 	board.ignore_texture_size = true
@@ -172,7 +171,7 @@ static func _make_reward_icon(data: Dictionary, cm: Variant) -> Control:
 	rect.texture = tex
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# 源 createRewardItem :327 ed.createSprite(ires)（task_rmb/gold_icon 无 fix）→ 显示=纹理/CS。
-	rect.size = tex.get_size() / CONTENT_SCALE
+	rect.size = TexDisplaySize.display_size(res_path)
 	return rect
 
 
@@ -200,7 +199,7 @@ static func _add_light(board: TextureButton) -> void:
 	light.texture = tex
 	light.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# 源 :297-311 light config={}（纯 Sprite）→ 显示=纹理/CS。
-	light.size = tex.get_size() / CONTENT_SCALE
+	light.size = TexDisplaySize.display_size(LIGHT_RES)
 	light.pivot_offset = light.size * 0.5
 	light.position = LIGHT_CENTER_LOCAL - light.pivot_offset
 	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -235,7 +234,7 @@ static func _add_image_to_board(board: TextureButton, res_path: String, local_po
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# 源 checked/vip_bg config={}（:284/:342 纯 Sprite）→ 显示=纹理/CS。
-	var sz: Vector2 = tex.get_size() / CONTENT_SCALE
+	var sz: Vector2 = TexDisplaySize.display_size(res_path)
 	s.size = sz
 	s.position = local_pos if is_topleft else (local_pos - sz * 0.5)
 	s.z_index = z

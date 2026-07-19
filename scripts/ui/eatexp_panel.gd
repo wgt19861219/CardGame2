@@ -152,7 +152,7 @@ func _create_exp_bar(parent: Control, hero: HeroInstance) -> TextureRect:
 	# :403 满 bar fix_size=CCSizeMake(145,20) 保留。原 EXPAND_KEEP_SIZE 是 CS 遗漏（偏大 1.28），改 IGNORE_SIZE。
 	bar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bar.position = EXP_BAR_POS
-	bar.size = FULL_BAR_FIX_SIZE if is_max else (bar.texture.get_size() / CONTENT_SCALE)
+	bar.size = FULL_BAR_FIX_SIZE if is_max else TexDisplaySize.display_size(EXP_BAR_PATH)
 	bar.scale.x = _bar_scale(hero)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if bg_tex != null:
@@ -162,7 +162,7 @@ func _create_exp_bar(parent: Control, hero: HeroInstance) -> TextureRect:
 		bar_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bar_bg.custom_minimum_size = Vector2.ZERO
 		bar_bg.position = EXP_BAR_POS
-		bar_bg.size = bg_tex.get_size() / CONTENT_SCALE
+		bar_bg.size = TexDisplaySize.display_size(EXP_BAR_BG_PATH)
 		bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		parent.add_child(bar_bg)
 	parent.add_child(bar)

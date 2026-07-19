@@ -132,7 +132,7 @@ static func _add_title(btn: Button, title_text: String) -> void:
 	if tex == null:
 		return
 	# title 源 createSprite(br.titleres) 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）
-	var display_size := tex.get_size() / CONTENT_SCALE
+	var display_size := TexDisplaySize.display_size(TITLE_BG)
 	var title := TextureRect.new()
 	title.texture = tex
 	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
