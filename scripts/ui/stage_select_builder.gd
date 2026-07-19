@@ -90,7 +90,8 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		var btn := TextureButton.new()
 		btn.texture_normal = load(icon_res) as Texture2D
 		btn.ignore_texture_size = true
-		btn.position = to_godot(float(pos[0]), float(pos[1])) - _tex_size(icon_res) * 0.5
+		btn.size = _tex_size(icon_res) / CONTENT_SCALE   # 修 ignore_texture_size 不设 size → 0×0 不可点（同 [[texture-button-ignore-texture-size-zero]]）
+		btn.position = to_godot(float(pos[0]), float(pos[1])) - btn.size * 0.5
 		btn.set_meta(&"stage_info", info)
 		var dec_type := String(dec["type"])
 		if dec_type == "locked":

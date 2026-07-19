@@ -55,6 +55,7 @@ static func finalize_stage(scene) -> void:
 		"stage_id": sid, "victory": bool(r["won"]), "heroes": tids,
 		"stars": int(r["stars"]), "loots": loots, "excavate_mode": false, "isPveMode": true,
 		"hero_hp_mp": r.get("hero_hp_mp", {}),  # 源 stageaccount:138-139 hp/mp（BattleUnit 快照）
+		"lose_type": String(r.get("lose_type", "fail")),  # 源 doFailed.loseType（timeout/fail）→ stage_failed 标题
 	}
 	GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
 	SceneManager.change_scene(STAGE_DONE_PATH if bool(r["won"]) else STAGE_FAILED_PATH)

@@ -178,7 +178,8 @@ func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, play
 		player.take_stage_reward(sid, stars, player_tids, loots)
 		# 源 record.lua successFarmStage：通关触发日常任务进度（FarmChapter/FarmPVEStage/FarmElitePVEStage）
 		_record_stage_dailyjob(player, sid)
-	return {"ok": true, "won": won, "stars": stars, "exp": int(exit_r["exp"]), "money": int(exit_r["money"]), "loots": loots, "hero_hp_mp": _collect_hero_hp_mp(eng)}
+	# 源 doFailed.loseType（battle_engine.lua:1507/1197/1207）：timeout(RESULT_TIMEOUT)/fail → stage_failed 标题。
+	return {"ok": true, "won": won, "stars": stars, "exp": int(exit_r["exp"]), "money": int(exit_r["money"]), "loots": loots, "hero_hp_mp": _collect_hero_hp_mp(eng), "lose_type": "timeout" if int(eng.last_result) == BattleEngine.RESULT_TIMEOUT else "fail"}
 
 
 ## 玩家单位 hp/mp 万分比快照（源 stageaccount:138-139 hp=hero:hp_perc() 返 0-10000，本项目 HeroInstance

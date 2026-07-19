@@ -322,7 +322,7 @@ func pve_mode() -> bool:
 # 源 victory（battle_engine.lua:1591-1662）：本轮核心骨架（单波直接结算；多波 nextBattle Phase 2.1续）
 func victory(_skip: bool = false) -> void:
 	running = false
-	AudioPlayer.play_sfx("battle_cheer")   # 源 downExit/victory（battle_engine.lua:1103/1153 playEffect(win=deo.battle_cheer)）
+	AudioPlayer.play_sfx("battle_win")   # 源 downExit/victory（battle_engine.lua:1103/1153 playEffect(win=deo.battle_win)，soundres:64 battle_win.mp3）
 	# 源：wave_id < Waves and not skip → 下一波（nextBattle/showNextButton）Phase 2.1续补
 	death_count = 0
 	for unit in unit_list:
