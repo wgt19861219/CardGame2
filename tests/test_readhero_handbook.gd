@@ -110,6 +110,28 @@ func test_classify_handbook_miss_in_all_with_fragment() -> void:
 	assert_true(_list_has_tid(all, 2), "tid=2 有碎片应在 all 列表（未召唤条目）")
 
 
+# 源 classifyByPos :884-901 — Position Type（LSTR key UNIT.FRONT_ROW/MIDDLE_ROW/REAR_ROW）分前/中/后。
+# 防回归：旧 POS="Front" find 匹配不上 "FRONT_ROW" 全大写 → front/middle/back 全空（bug 2026-07-19，点 tab 不筛选）。
+func test_classify_handbook_position_buckets_nonempty() -> void:
+	var mgr := HeroManager.new(cm)
+	var raw: Dictionary = cm.get_raw_table(&"Unit")
+	var want: Dictionary = {"UNIT.FRONT_ROW": false, "UNIT.MIDDLE_ROW": false, "UNIT.REAR_ROW": false}
+	for tid_str in raw:
+		if not tid_str.is_valid_int() or int(tid_str) >= 100:
+			continue
+		var pos: String = String(raw.get(tid_str, {}).get(&"Position Type", ""))
+		if want.has(pos) and not want[pos]:
+			mgr.add_hero(int(tid_str))
+			want[pos] = true
+	var cls: Dictionary = ReadheroHandbook.classify_handbook(cm, mgr)
+	if want["UNIT.FRONT_ROW"]:
+		assert_gt((cls["front"] as Array).size(), 0, "前排水英雄应进 front 桶（POS 匹配 key）")
+	if want["UNIT.MIDDLE_ROW"]:
+		assert_gt((cls["middle"] as Array).size(), 0, "中排水英雄应进 middle 桶")
+	if want["UNIT.REAR_ROW"]:
+		assert_gt((cls["back"] as Array).size(), 0, "后排水英雄应进 back 桶")
+
+
 # 源 orderHeroFunction — level desc 排序（高 level 在前）。
 func test_order_heroes_by_level_desc() -> void:
 	var mgr := HeroManager.new(cm)

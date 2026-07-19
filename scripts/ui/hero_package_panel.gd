@@ -69,20 +69,39 @@ func _build_content() -> void:
 	for i in range(TAB_KEYS.size()):
 		var key: String = TAB_KEYS[i]
 		var btn: TextureButton = content.get_node("%" + TAB_BTN_NAMES[i]) as TextureButton
+		# stretch_mode 强制 SCALE：ignore_texture_size=true 时默认 KEEP（纹理原尺寸 145×75 溢出 button 框），
+		# 致纹理 center 偏离 button center（字偏左上）+ 纹理 75 高重叠。SCALE 让纹理缩到 /CS 后的 button size。
+		btn.stretch_mode = TextureButton.STRETCH_SCALE
 		btn.pressed.connect(_on_tab_pressed.bind(key))
 		_tabs[key] = btn
 		var lbl: Label = content.get_node("%" + TAB_LBL_NAMES[i]) as Label
 		lbl.text = cm.get_lstr(TAB_LSTR_KEYS[i]) if cm != null else TAB_LABELS[i]
 		_tab_labels[key] = lbl
 	# close = backbtn 返回主界面（源 framework statusbar 注入 backbtn）。
-	(content.get_node("%CloseBtn") as TextureButton).pressed.connect(_on_close_pressed)
+	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	close_btn.stretch_mode = TextureButton.STRETCH_SCALE   # 同 tab：backbtn 纹理 74×75 也要缩到 /CS size
+	close_btn.pressed.connect(_on_close_pressed)
 	_scroll = content.get_node("%HeroScroll") as ScrollContainer
 	_grid = content.get_node("%GridHost") as Control
+	# 源 heropackage.lua z-order：list_bg z=2(:497) / buttonLabel z=4(:542 等) / draglist zorder=10(:762)。
+	# tab z 动态切在 _update_tab_visual（选中 3 / 未选中 1）。照源运行时 setZOrder（源即运行时设）。
+	(content.get_node("ListBg") as TextureRect).z_index = 2
+	_scroll.z_index = 10
+	for key in _tab_labels:
+		var lbl: Label = _tab_labels[key] as Label
+		lbl.z_index = 4
+		# label 框运行时对齐 button（.tscn label offset 仅作编辑器预览），内部 halign/valign CENTER → 文字几何居中
+		var btn: TextureButton = _tabs[key] as TextureButton
+		# -3：字精确居中 button 几何中心(195)后视觉略偏下（椭圆主体 center 194.5 + 中文字视觉重心），
+		# 上移 3px 落到 ~192，相对椭圆主体略偏上，视觉正中。
+		lbl.position = Vector2(btn.offset_left, btn.offset_top - 3.0)
+		lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
 	_update_tab_visual()
-	# 源 heropackage.lua:459-477 refreshSplitButton：底部 herosplit 按钮（classbtn Scale9 120×75），
-	# 源有 global_config._hero_split_ending 活动时间戳 gate；单机化无服务端活动 → 恒显（守卫留下轮）。
-	# 本轮降级：点击 Toast 提示"功能下轮接入"（源 herosplit 独立面板 UI 待完整移植）。
-	_add_herosplit_button(content)
+	# 🔴隐藏分解按钮（2026-07-19 用户决策）：业务逻辑不通——_on_herosplit_pressed=Toast 占位，
+	# Logic hero_manager.split + HeroSplitConfirm 确认框组件就绪但未接线，缺源 herosplit 独立选英雄面板
+	# （ui/herosplit/：选英雄→选碎片→explain→二次确认→split）。待完整移植（任务看板 todo）。
+	# _add_herosplit_button 函数 + _on_herosplit_pressed 保留备后续接线。
+	# _add_herosplit_button(content)
 
 
 # 源 heropackage.lua:682-747 herosplit ui_info：Scale9 classbtn 120×75 at ccp(695,60) + label。
@@ -105,8 +124,13 @@ func _on_herosplit_pressed() -> void:
 
 
 func _update_tab_visual() -> void:
+	# 源 doChangeList（heropackage.lua:16-23）：选中 tab setZOrder(3) 凸出 list_bg(z=2)；
+	# 未选中 setZOrder(1) 被背景框挡（重叠区左缘约 30px）；texture_normal 切 classbtn/selected。
 	for key in _tabs:
-		(_tabs[key] as TextureButton).texture_normal = load(CLASSBTN_SEL_RES if key == _clid else CLASSBTN_RES)
+		var btn: TextureButton = _tabs[key]
+		var selected: bool = key == _clid
+		btn.texture_normal = load(CLASSBTN_SEL_RES if selected else CLASSBTN_RES)
+		btn.z_index = 3 if selected else 1
 
 
 func _on_tab_pressed(key: String) -> void:

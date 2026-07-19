@@ -8,9 +8,11 @@ extends RefCounted
 
 const FALLBACK_STONE_ID: int = 335            # 源 getStoneid :646 fid or 335
 const HERO_TYPE_ID_MAX: int = 100             # 源 player.lua:1472 unitType id<100="hero"
-const POS_FRONT: String = "Front"             # 源 classifyByPos find T(LSTR("UNIT.FRONT_ROW"))
-const POS_MIDDLE: String = "Middle"
-const POS_REAR: String = "Rear"
+# Position Type 实际值是 LSTR key（Unit.json "UNIT.FRONT_ROW"/"UNIT.MIDDLE_ROW"/"UNIT.REAR_ROW"），
+# find 匹配 key。旧值 "Front"/"Middle"/"Rear" 匹配不上 "FRONT_ROW" 全大写 → front/middle/back 全空（bug）。
+const POS_FRONT: String = "UNIT.FRONT_ROW"
+const POS_MIDDLE: String = "UNIT.MIDDLE_ROW"
+const POS_REAR: String = "UNIT.REAR_ROW"
 # 源 player.lua:2155-2178 hero_star / hero_max_star 表（rank 1-22 → 当前 star / 上限）。
 # 索引 0 占位，索引 = rank（Lua 1-based → GDScript 0-based 加占位对齐；表本身 22 元素 + 1 占位 = 23）。
 const HERO_STAR: Array[int] = [
