@@ -258,10 +258,14 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 			detail.refresh_content())
 	# 源 heropackage.lua:228 clickHero → draglist.listLayer:setVisible(false) 隐藏列表，
 	# 避卡片星透过 hero_detail 弹窗半透 shade（0.588）。
-	_scroll.visible = false
+	# 治本：整个 hero_package container 隐藏。源 herodetail 靠 mainLayer z=120 + 不透明 bg 盖住 hero_package，
+	# 目标 hero_detail 是 PopWindow（shade 半透 0.588），盖不住 hero_package 全部内容（tab/close/list_bg/卡片全透，
+	# 不只 ListBg）→ 须整体隐藏 container。detail 关闭（tree_exiting）恢复。
+	# _scroll 内的 draglist 照源 :228 也 setVisible(false)，container.visible 已含，无需单独设。
+	container.visible = false
 	detail.show_window(get_parent())
-	# 源 :156 destroyHandler → listLayer:setVisible(true) 关详情后恢复列表。
-	detail.tree_exiting.connect(func() -> void: _scroll.visible = true)
+	# 源 :156 destroyHandler → listLayer:setVisible(true) 关详情后恢复。
+	detail.tree_exiting.connect(func() -> void: container.visible = true)
 
 
 # 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足源弹 stonedetail（本项目未实现，降级）。

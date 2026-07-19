@@ -32,6 +32,7 @@ func _create_bg() -> void:
 	bg.position = Vector2.ZERO
 	bg.size = get_viewport_rect().size
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.z_index = -1   # 源 framework.lua:749 addChild(bg, -1) 底层；否则 bg.jpg 盖住上层弹窗详情内容（层级 bug）
 	add_child(bg)
 
 
