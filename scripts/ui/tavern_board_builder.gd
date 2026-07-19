@@ -285,7 +285,7 @@ static func _tex(res_path: String) -> TextureRect:
 	t.texture = load(res_path) as Texture2D
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	if t.texture != null:
-		t.size = t.texture.get_size() / CONTENT_SCALE
+		t.size = TexDisplaySize.display_size(res_path)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return t
 
@@ -311,7 +311,7 @@ static func _button(normal: String, pressed: String, cx: float, cy: float) -> Te
 	btn.texture_normal = load(RES_DIR + normal) as Texture2D
 	btn.texture_pressed = load(RES_DIR + pressed) as Texture2D
 	btn.ignore_texture_size = true
-	var sz: Vector2 = (btn.texture_normal.get_size() / CONTENT_SCALE) if btn.texture_normal != null else Vector2(80.0, 32.0)
+	var sz: Vector2 = TexDisplaySize.display_size(RES_DIR + normal) if btn.texture_normal != null else Vector2(80.0, 32.0)
 	btn.size = sz
 	btn.position = _scroll_pos(cx, cy, sz)
 	return btn

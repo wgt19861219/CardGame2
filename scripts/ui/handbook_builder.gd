@@ -82,7 +82,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 	var cell := Control.new()
 	var bg_tex: Texture2D = load(EQUIP_BG_RES) as Texture2D
 	# 源 handbook.lua:424 createSprite 无 fix_size,显示=纹理/CS(见 CONTENT_SCALE 注释)
-	var bg_size: Vector2 = bg_tex.get_size() / CONTENT_SCALE if bg_tex != null else Vector2(114, 114) / CONTENT_SCALE
+	var bg_size: Vector2 = TexDisplaySize.display_size(EQUIP_BG_RES) if bg_tex != null else Vector2(114, 114) / CONTENT_SCALE
 	cell.custom_minimum_size = bg_size
 	cell.size = bg_size
 	var bg := TextureRect.new()
@@ -104,7 +104,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		icon_bg.texture = load(ICON_BG_RES) as Texture2D
 		icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		# 源 handbook.lua:434 createSprite 无 fix_size,显示=纹理/CS(见 CONTENT_SCALE 注释)
-		icon_bg.size = icon_bg.texture.get_size() / CONTENT_SCALE if icon_bg.texture != null else Vector2(66, 66) / CONTENT_SCALE
+		icon_bg.size = TexDisplaySize.display_size(ICON_BG_RES) if icon_bg.texture != null else Vector2(66, 66) / CONTENT_SCALE
 		icon_bg.position = EQUIP_ICON_POS
 		icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon_bg)
@@ -112,7 +112,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		lock.texture = load(ICON_LOCK_RES) as Texture2D
 		lock.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		# 源 :436 createSprite 无 fix_size,显示=纹理/CS;源 :437 ccp(33,33)=iconBg 中心,lock 居中于 icon_bg
-		var lock_sz: Vector2 = lock.texture.get_size() / CONTENT_SCALE if lock.texture != null else Vector2.ZERO
+		var lock_sz: Vector2 = TexDisplaySize.display_size(ICON_LOCK_RES) if lock.texture != null else Vector2.ZERO
 		lock.size = lock_sz
 		lock.position = (icon_bg.size - lock_sz) * 0.5
 		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE

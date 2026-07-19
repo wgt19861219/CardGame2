@@ -147,8 +147,8 @@ func _make_cell(aid: int, picture_res: String) -> Control:
 	btn.texture_normal = frame_tex
 	btn.ignore_texture_size = true
 	if frame_tex != null:
-		# 源 ofavatar:173 frame ed.createSprite 无 fix → 显示=纹理/CS（:179 icon fixNodeSize 连带，btn.size 改 icon 自动对）
-		var frame_size: Vector2 = frame_tex.get_size() / CONTENT_SCALE
+		# 源 ofavatar:173 frame ed.createSprite 无 fix → 显示=纹理×CS/CS（ed.createSprite setScale(ContentScale)，此前漏乘 ContentScale）
+		var frame_size: Vector2 = TexDisplaySize.display_size(ICON_FRAME_RES)
 		btn.size = frame_size
 		btn.custom_minimum_size = frame_size
 	btn.pressed.connect(_on_avatar_selected.bind(aid))

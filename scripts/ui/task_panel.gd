@@ -239,7 +239,7 @@ func _add_icon(bg: TextureRect, task: Dictionary) -> void:
 	var icon_bg := TextureRect.new()
 	icon_bg.texture = _load_tex(ICON_BG_RES)
 	icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var ibg_size: Vector2 = (icon_bg.texture.get_size() / CONTENT_SCALE) if icon_bg.texture else Vector2(94.0, 101.0) / CONTENT_SCALE   # 源 task.lua:526/537/541 iconBg createSprite 无 fix
+	var ibg_size: Vector2 = TexDisplaySize.display_size(ICON_BG_RES) if icon_bg.texture else Vector2(94.0, 101.0) / CONTENT_SCALE   # 源 task.lua:526/537/541 iconBg createSprite 无 fix
 	icon_bg.custom_minimum_size = ibg_size
 	icon_bg.position = _bg_pos(C_ICON_BG) - ibg_size * 0.5
 	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE

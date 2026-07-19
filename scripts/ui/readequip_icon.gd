@@ -91,8 +91,7 @@ static func _make_star(res_path: String, i: int) -> TextureRect:
 	if tex != null:
 		t.texture = tex
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var tex_size: Vector2 = tex.get_size() if tex != null else Vector2.ZERO
-	var base_size: Vector2 = tex_size / CONTENT_SCALE
+	var base_size: Vector2 = TexDisplaySize.display_size(res_path) if tex != null else Vector2.ZERO
 	t.size = base_size
 	t.scale = Vector2(STAR_SCALE, STAR_SCALE)
 	var actual_size: Vector2 = base_size * STAR_SCALE
@@ -128,8 +127,8 @@ static func refresh_stars(container: Control, new_level: int) -> void:
 			if tex != null:
 				blue.texture = tex
 			blue.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			# 同 _make_star：源 :1249-1252 setScale(0.9)，size=纹理/CS 与灰星一致（覆盖等位）
-			blue.size = tex.get_size() / CONTENT_SCALE if tex != null else Vector2.ZERO
+			# 同 _make_star：源 :1249-1252 setScale(0.9)，size=纹理×CS/CS 与灰星一致（覆盖等位）
+			blue.size = TexDisplaySize.display_size(STAR_BLUE_RES) if tex != null else Vector2.ZERO
 			blue.scale = old_star.scale
 			blue.position = pos
 			blue.visible = false

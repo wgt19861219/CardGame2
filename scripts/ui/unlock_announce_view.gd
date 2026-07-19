@@ -92,7 +92,7 @@ func _make_texture(res_path: String) -> TextureRect:
 		rect.texture = tex
 		# 源 createSprite 无 fix_size → sprite 显示=texture/CS
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		rect.size = tex.get_size() / CONTENT_SCALE
+		rect.size = TexDisplaySize.display_size(res_path)
 	return rect
 
 
@@ -114,6 +114,9 @@ func _make_static_from_atlas(res_name: String) -> TextureRect:
 	# 源 createFcaNode 不传 aniType → else LegendAminationEffect → createStaticSpriteFromSpineAtlas
 	# 取最大 region 静态显示（无 fix_size），等价 sprite 显示=texture/CS。
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# atlas region 保留 tex.get_size()/CS：helper _base_size 会 load(resource_path) 得整图 ≠ region 尺寸
+	# （resource_path 空时还会 fallback 45×45）。本项目 spine 未移植 → load_atlas 失败 return null，此分支降级死代码。
+	# 未来 spine 移植后若需修正 ContentScale，须 helper 增加 display_size_for_tex(tex) 用 region 自身 get_size 做 base。
 	rect.size = tex.get_size() / CONTENT_SCALE
 	return rect
 

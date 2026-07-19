@@ -175,7 +175,7 @@ func _create_cost_row() -> void:
 	var icon := TextureRect.new()
 	icon.texture = icon_tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.size = (icon_tex.get_size() / CONTENT_SCALE) if icon_tex != null else Vector2(20.0, 20.0)   # 源 poptavernloot:752-761 cost_icon t="Sprite" 无 fix
+	icon.size = TexDisplaySize.display_size(icon_res) if icon_tex != null else Vector2(20.0, 20.0)   # 源 poptavernloot:752-761 cost_icon t="Sprite" 无 fix
 	if pay != "Gold":
 		icon.scale = Vector2(1.2, 1.2)   # 源 :756 钻石 icon scale 1.2
 	icon.position = Vector2(godot_right.x - cost_w - icon.size.x, godot_right.y - icon.size.y * 0.5)

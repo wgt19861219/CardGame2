@@ -190,7 +190,7 @@ static func _create_prompt_box(panel, icon_node: Control) -> void:
 	# 源 equipcraft.lua:331 ed.createSprite("craft_promt_bg.png") 无 fix_size（纯 Sprite 显示=纹理/CS）。
 	# 原 PROMPT_SIZE=(180,40) 硬编码与源纹理原尺寸关系未知；改 tex/CS 等价源 sprite 显示，EXPAND_IGNORE_SIZE 让 size 生效。
 	prompt_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	prompt_bg.size = (prompt_bg.texture as Texture2D).get_size() / CONTENT_SCALE
+	prompt_bg.size = TexDisplaySize.display_size(PROMPT_BG_PATH)
 	prompt_bg.position = (icon_node as Control).position + Vector2(0.0, PROMPT_OFFSET_Y)
 	prompt_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel._tree.add_child(prompt_bg)

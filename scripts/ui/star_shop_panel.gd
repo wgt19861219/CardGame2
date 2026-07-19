@@ -182,7 +182,7 @@ func _add_none_tag(parent: Control) -> void:
 	var tag_tex: Texture2D = load(UI_DIR + "shop_star_none_tag.png")
 	none_tag.texture = tag_tex
 	none_tag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	none_tag.size = tag_tex.get_size() / CONTENT_SCALE   # 源 shop.lua:577-588 noneTag t="Sprite" 无 fix
+	none_tag.size = TexDisplaySize.display_size(UI_DIR + "shop_star_none_tag.png")   # 源 shop.lua:577-588 noneTag t="Sprite" 无 fix
 	none_tag.position = NONE_TAG_POS
 	none_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(none_tag)

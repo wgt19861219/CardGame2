@@ -63,7 +63,7 @@ static func _frame_display_size(frame_res: String) -> Vector2:
 	var tex: Texture2D = load(path) as Texture2D
 	if tex == null:
 		return Vector2(702.0, 424.0)
-	return tex.get_size() / CONTENT_SCALE
+	return TexDisplaySize.display_size(path)
 
 
 static func fill_bg(bg: TextureRect, frame_res: String) -> void:
@@ -186,7 +186,7 @@ static func _add_texture(parent: Control, path: String, pos: Vector2) -> void:
 		return
 	var tr := TextureRect.new()
 	tr.position = pos
-	tr.size = tex.get_size() / CONTENT_SCALE
+	tr.size = TexDisplaySize.display_size(path)
 	tr.texture = tex
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE

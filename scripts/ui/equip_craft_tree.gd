@@ -124,7 +124,7 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 	trunk.texture = load(LINE_RES[components - 1])
 	trunk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# trunk 源 Sprite 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）
-	var trunk_size: Vector2 = trunk.texture.get_size() / CONTENT_SCALE
+	var trunk_size: Vector2 = TexDisplaySize.display_size(LINE_RES[components - 1])
 	trunk.size = trunk_size
 	trunk.position = _gl(TRUNK_POS) - trunk_size / 2.0
 	trunk.rotation_degrees = LINE_ROT[components - 1]
@@ -230,7 +230,7 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 	bg.texture = load(GETWAY_BG_PATH)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# getway_bg 源 createSprite 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）
-	var bg_size: Vector2 = bg.texture.get_size() / CONTENT_SCALE
+	var bg_size: Vector2 = TexDisplaySize.display_size(GETWAY_BG_PATH)
 	bg.size = bg_size
 	bg.position = _gl(GETWAY_BG_POS) - bg_size / 2.0   # 源 setPosition(142,177) 中心锚定
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -269,7 +269,7 @@ static func _build_one_getway(panel, tree: Control, stage_table: Dictionary, raw
 	board.texture = load(GETWAY_BOARD_PATH)
 	board.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# board 源 createSprite 无 fix_size → 显示=纹理/CS（[[content-scale-factor]]）；子节点 position 不动
-	var board_size: Vector2 = board.texture.get_size() / CONTENT_SCALE
+	var board_size: Vector2 = TexDisplaySize.display_size(GETWAY_BOARD_PATH)
 	board.size = board_size
 	board.position = _gl(Vector2(142.0, GETWAY_BOARD_Y_BASE - GETWAY_BOARD_DY * idx)) - board_size / 2.0
 	board.mouse_filter = Control.MOUSE_FILTER_STOP
