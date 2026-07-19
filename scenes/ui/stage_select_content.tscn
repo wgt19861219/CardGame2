@@ -1,65 +1,73 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://n1wbit8b2ap"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade_Button_bg.png" id="2_modebg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/elitetoggle-ns.png" id="3_toggle"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/prevchap.png" id="4_prev"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/nextchap.png" id="5_next"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="6_back"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="7_backp"]
+[ext_resource type="Texture2D" uid="uid://iiqj0g6fyk20" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" uid="uid://2e4w8o86xixb" path="res://assets/ui/alpha/HVGA/crusade_Button_bg.png" id="2_modebg"]
+[ext_resource type="Texture2D" uid="uid://350wwqs5k0lr" path="res://assets/ui/alpha/HVGA/elitetoggle-ns.png" id="3_toggle"]
+[ext_resource type="Texture2D" uid="uid://kt1ab3b2q8fd" path="res://assets/ui/alpha/HVGA/prevchap.png" id="4_prev"]
+[ext_resource type="Texture2D" uid="uid://d1folv1hfojcj" path="res://assets/ui/alpha/HVGA/nextchap.png" id="5_next"]
+[ext_resource type="Texture2D" uid="uid://dqa34v8g886cf" path="res://assets/ui/alpha/HVGA/backbtn.png" id="6_back"]
+[ext_resource type="Texture2D" uid="uid://cxusvs3ojqiiw" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="7_backp"]
 
-[node name="StageSelectContent" type="Control"]
+[node name="StageSelectContent" type="Control" unique_id=950695773]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="FrameworkBg" type="TextureRect" parent="."]
+[node name="FrameworkBg" type="TextureRect" parent="." unique_id=1685530278]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_right = 960.0
 offset_bottom = 640.0
+mouse_filter = 2
 texture = ExtResource("1_bg")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="MapLayerHost" type="Control" parent="."]
+[node name="MapLayerHost" type="Control" parent="." unique_id=1488640222]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="FrameLayer" type="Control" parent="."]
+[node name="FrameLayer" type="Control" parent="." unique_id=732908642]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="ModeLayer" type="Control" parent="."]
-layout_mode = 3
+[node name="ModeLayer" type="Control" parent="." unique_id=1967117237]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="ModeBg" type="TextureRect" parent="ModeLayer"]
-layout_mode = 3
+[node name="ModeBg" type="TextureRect" parent="ModeLayer" unique_id=887296568]
+layout_mode = 0
 offset_left = 138.9
 offset_top = 176.1
 offset_right = 821.1
 offset_bottom = 233.9
+mouse_filter = 2
 texture = ExtResource("2_modebg")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="ModeNormalBtn" type="TextureButton" parent="ModeLayer"]
+[node name="ModeNormalBtn" type="TextureButton" parent="ModeLayer" unique_id=772182018]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 374.7
 offset_top = 183.9
 offset_right = 475.3
@@ -67,22 +75,23 @@ offset_bottom = 236.1
 texture_normal = ExtResource("3_toggle")
 ignore_texture_size = true
 
-[node name="ModeNormalLabel" type="Label" parent="ModeLayer/ModeNormalBtn"]
-layout_mode = 3
+[node name="ModeNormalLabel" type="Label" parent="ModeLayer/ModeNormalBtn" unique_id=1592253789]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 18
-mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ModeEliteBtn" type="TextureButton" parent="ModeLayer"]
+[node name="ModeEliteBtn" type="TextureButton" parent="ModeLayer" unique_id=1230082028]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 484.7
 offset_top = 183.9
 offset_right = 585.3
@@ -90,22 +99,24 @@ offset_bottom = 236.1
 texture_normal = ExtResource("3_toggle")
 ignore_texture_size = true
 
-[node name="ModeEliteLabel" type="Label" parent="ModeLayer/ModeEliteBtn"]
-layout_mode = 3
+[node name="ModeEliteLabel" type="Label" parent="ModeLayer/ModeEliteBtn" unique_id=2120611889]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 18
-mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ModeGuildBtn" type="TextureButton" parent="ModeLayer"]
+[node name="ModeGuildBtn" type="TextureButton" parent="ModeLayer" unique_id=1264505756]
 unique_name_in_owner = true
-layout_mode = 3
+visible = false
+layout_mode = 0
 offset_left = 518.7
 offset_top = 183.9
 offset_right = 619.3
@@ -113,30 +124,33 @@ offset_bottom = 236.1
 texture_normal = ExtResource("3_toggle")
 ignore_texture_size = true
 
-[node name="ModeGuildLabel" type="Label" parent="ModeLayer/ModeGuildBtn"]
-layout_mode = 3
+[node name="ModeGuildLabel" type="Label" parent="ModeLayer/ModeGuildBtn" unique_id=1202345885]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 18
-mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DotContainer" type="Control" parent="."]
+[node name="DotContainer" type="Control" parent="." unique_id=1747792091]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="PrevArrow" type="TextureButton" parent="."]
+[node name="PrevArrow" type="TextureButton" parent="." unique_id=647193036]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 136.5
 offset_top = 315.7
 offset_right = 179.5
@@ -144,9 +158,9 @@ offset_bottom = 374.3
 texture_normal = ExtResource("4_prev")
 ignore_texture_size = true
 
-[node name="NextArrow" type="TextureButton" parent="."]
+[node name="NextArrow" type="TextureButton" parent="." unique_id=1664610432]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 778.5
 offset_top = 315.7
 offset_right = 821.5
@@ -154,9 +168,9 @@ offset_bottom = 374.3
 texture_normal = ExtResource("5_next")
 ignore_texture_size = true
 
-[node name="CloseBtn" type="TextureButton" parent="."]
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=1106406555]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 20.0
 offset_top = 15.0
 offset_right = 77.8

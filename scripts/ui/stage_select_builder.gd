@@ -56,6 +56,9 @@ static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Vari
 	}
 	for mode in buttons:
 		var btn: TextureButton = buttons[mode]
+		# ignore_texture_size=true 不设 stretch_mode → 默认 KEEP 纹理原尺寸(129×67)溢出 offset(100.6×52.2)致相邻重叠
+		# （[[texture-button-stretch-mode-keep-default]]，同 hero_package tab 根因），强制 SCALE 缩到 offset size
+		btn.stretch_mode = TextureButton.STRETCH_SCALE
 		var selected: bool = mode == current_mode
 		var res_path: String = MODE_TOGGLE_S if selected else MODE_TOGGLE_NS
 		if ResourceLoader.exists(res_path):
@@ -199,10 +202,13 @@ static func _current_sid(info: Dictionary, mode: String) -> int:
 # 源 createFrame（:944+）title_bg + frame 边框；createTitle（:885）章节名 Label。
 # 三 mode frame/title_bg 纹理 size 不同 → 保留 procedural 建（每次 _refresh_view 清 FrameLayer 重建）。
 static func create_frame_and_title(container: Control, chapter: int, mode: String, cm: Variant) -> void:
-	_make_centered_at(container, _title_bg_res(mode), TITLE_POS)
+	# 源 z order（mainLayer addChild 第二参）：frameContainer=5（下）、titleBg=21、titleContainer=22（上）。
+	# 本项目靠建序定 z（add_child 后建在上）：frame 先建（z 下），title_bg 后建（z 上压 frame 上边框，照源 titleBg 压 frame），
+	# title Label 最后建（行 224，z 最上，照源 titleContainer=22）。原序 title_bg→frame 致 frame 压 title_bg 被用户反馈"标题被边框挡"。
 	# 源 createFrame :967-970 — mode != normal ccp(400,207)→godot(480,353)；normal ccp(400,205)→godot(480,355)
 	var frame_y: float = 355.0 if mode == "normal" else 353.0
 	_make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
+	_make_centered_at(container, _title_bg_res(mode), TITLE_POS)
 	var chapter_table: Dictionary = cm.get_raw_table(&"Chapter")
 	var ch_row: Dictionary = chapter_table.get(str(chapter), {})
 	var pre: String = String(ch_row.get("Pre Chapter Name", ""))
