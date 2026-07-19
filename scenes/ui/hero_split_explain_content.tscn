@@ -1,0 +1,79 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+
+[sub_resource type="StyleBoxFlat" id="sb_explain"]
+bg_color = Color(0.12, 0.1, 0.08, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.7, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[node name="HeroSplitExplainContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="Frame" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 180.0
+offset_top = 120.0
+offset_right = 780.0
+offset_bottom = 520.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("sb_explain")
+
+[node name="TitleLabel" type="Label" parent="Frame"]
+layout_mode = 0
+offset_left = 430.0
+offset_top = 130.0
+offset_right = 530.0
+offset_bottom = 158.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.52, 1)
+theme_override_font_sizes/font_size = 22
+text = "详细规则"
+horizontal_alignment = 1
+
+[node name="CloseBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 720.0
+offset_top = 125.0
+offset_right = 776.0
+offset_bottom = 181.0
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Frame"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 165.0
+offset_right = 760.0
+offset_bottom = 500.0
+
+[node name="ExplainLabel" type="Label" parent="Frame/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 3
+text = ""

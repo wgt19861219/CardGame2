@@ -89,16 +89,26 @@ func hero_evolve(tid: int) -> Dictionary:
 	var new_id := add_hero(tid)
 	return {"ok": true, "inst_id": new_id}
 
-## 分解：返还 HeroStars.Convert Fragments 数量的专属碎片，移除英雄。
-func split(inst_id: int) -> Dictionary:
+## 分解预览（照源 split 返还碎片）：返 {fragment_id, count}，不执行。供 splitwindow 显示返还详情。
+## 源联机由 query_split_return 服务器算（local_server 空壳）；单机化本地查 HeroStars.Convert Fragments + Fragment ID。
+func preview_split(inst_id: int) -> Dictionary:
 	var hero := get_hero(inst_id)
 	if hero == null:
 		return {}
 	var convert_count := config.get_int(&"HeroStars", hero.stars, &"Convert Fragments")
 	var frag_id := config.get_int(&"Fragment", hero.tid, &"Fragment ID")
-	heroes.erase(inst_id)
-	_add_fragment(frag_id, convert_count)
 	return {"fragment_id": frag_id, "count": convert_count}
+
+
+## 分解：返还 HeroStars.Convert Fragments 数量的专属碎片，移除英雄。
+func split(inst_id: int) -> Dictionary:
+	var hero := get_hero(inst_id)
+	if hero == null:
+		return {}
+	var preview := preview_split(inst_id)
+	heroes.erase(inst_id)
+	_add_fragment(preview["fragment_id"], preview["count"])
+	return preview
 
 ## 碎片合成：消耗 Fragment 表配方的专属+通用碎片+金币，获得目标英雄。
 ## 照源 fragmentcompose.lua doCompose :123-149：专属优先扣，不足用通用补（≤通用需求）。

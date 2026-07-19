@@ -97,11 +97,9 @@ func _build_content() -> void:
 		lbl.position = Vector2(btn.offset_left, btn.offset_top - 3.0)
 		lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
 	_update_tab_visual()
-	# 🔴隐藏分解按钮（2026-07-19 用户决策）：业务逻辑不通——_on_herosplit_pressed=Toast 占位，
-	# Logic hero_manager.split + HeroSplitConfirm 确认框组件就绪但未接线，缺源 herosplit 独立选英雄面板
-	# （ui/herosplit/：选英雄→选碎片→explain→二次确认→split）。待完整移植（任务看板 todo）。
-	# _add_herosplit_button 函数 + _on_herosplit_pressed 保留备后续接线。
-	# _add_herosplit_button(content)
+	# 分解按钮（2026-07-19 接线完成）：HeroSplitWindow 务实方案——内联英雄网格 + 返还预览 + 二次确认。
+	# 源 herosplit 联机系统（selectwindow/split_return local_server 空壳）单机化简化，详见 hero_split_window.gd。
+	_add_herosplit_button(content)
 
 
 # 源 heropackage.lua:682-747 herosplit ui_info：Scale9 classbtn 120×75 at ccp(695,60) + label。
@@ -117,10 +115,13 @@ func _add_herosplit_button(content: Control) -> void:
 	content.add_child(btn)
 
 
-# 本轮降级：源 herosplit 独立面板（选英雄→选灵魂石→二次确认）下轮完整移植。
+# 源 heropackage.lua herosplit 按钮 → split.popMain（单机化：弹 HeroSplitWindow）。
 func _on_herosplit_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	Toast.show_message("「分解」功能下轮接入（源 herosplit 独立面板待移植）")
+	var window := HeroSplitWindow.new("herosplit", {})
+	window.setup_panel(_hero_mgr, cm, pd)
+	window.split_done.connect(_refresh_after_change)
+	window.show_window(get_parent())
 
 
 func _update_tab_visual() -> void:

@@ -1,0 +1,123 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+
+[sub_resource type="StyleBoxFlat" id="sb_frame"]
+bg_color = Color(0.12, 0.1, 0.08, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.7, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[node name="HeroSplitWindowContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 131.0
+offset_top = 96.0
+offset_right = 833.0
+offset_bottom = 543.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("sb_frame")
+
+[node name="TitleLabel" type="Label" parent="Frame"]
+layout_mode = 0
+offset_left = 421.0
+offset_top = 110.0
+offset_right = 543.0
+offset_bottom = 138.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.52, 1)
+theme_override_font_sizes/font_size = 22
+text = "分解英雄"
+horizontal_alignment = 1
+
+[node name="CloseBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 762.0
+offset_top = 100.0
+offset_right = 818.0
+offset_bottom = 156.0
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true
+stretch_mode = 1
+
+[node name="HeroScroll" type="ScrollContainer" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 155.0
+offset_top = 150.0
+offset_right = 600.0
+offset_bottom = 390.0
+
+[node name="GridHost" type="GridContainer" parent="Frame/HeroScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 4
+
+[node name="DetailTitleLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 165.0
+offset_top = 398.0
+offset_right = 365.0
+offset_bottom = 424.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.89, 0.52, 1)
+theme_override_font_sizes/font_size = 20
+text = "分解详情"
+
+[node name="GainLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 165.0
+offset_top = 430.0
+offset_right = 365.0
+offset_bottom = 456.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+text = "你将获得："
+
+[node name="ReturnHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 345.0
+offset_top = 410.0
+offset_right = 600.0
+offset_bottom = 530.0
+mouse_filter = 2
+
+[node name="ExplainBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 150.0
+offset_top = 470.0
+offset_right = 290.0
+offset_bottom = 525.0
+text = "详细规则"
+
+[node name="SplitBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 670.0
+offset_top = 470.0
+offset_right = 810.0
+offset_bottom = 525.0
+text = "分解"
+disabled = true
