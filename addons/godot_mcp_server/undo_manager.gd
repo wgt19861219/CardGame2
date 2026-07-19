@@ -43,35 +43,34 @@ func create_action_mixed(action_name: String, do_ops: Array, undo_ops: Array) ->
 	undo_redo.commit_action()
 
 
-func _add_method(undo_redo: UndoRedo, mode: String, target: Object, method: String, args: Array) -> void:
-	if target == null:
-		push_warning("undo_manager: null target for method '%s'" % method)
+func _add_method(undo_redo: EditorUndoRedoManager, mode: String, target: Object, method: String, args: Array) -> void:
+	if not is_instance_valid(target):
+		push_warning("undo_manager: invalid (freed/null) target for method '%s'" % method)
 		return
-	var cb := Callable(target, method)
-	if args.size() > 0:
-		cb = cb.bindv(args)
-	if mode == "do":
-		undo_redo.add_do_method(cb)
-	else:
-		undo_redo.add_undo_method(cb)
+	# EditorUndoRedoManager.add_do_method/add_undo_method 签名是 (Object, StringName, ...args)
+	# vararg，不接受 Callable（UndoRedo 风格 add_do_method(cb) 会静默不注册 do_method
+	# -> commit_action 执行空 do_ops -> add_child 从未调用 -> 节点不落地 bug）。
+	# 用 callv 把 args 数组 spread 成 vararg 参数，确保 do_method 正确注册。
+	var mname := "add_do_method" if mode == "do" else "add_undo_method"
+	undo_redo.callv(mname, [target, method] + args)
 
 
-func _add_method_call(undo_redo: UndoRedo, mode: String, m: Dictionary) -> void:
+func _add_method_call(undo_redo: EditorUndoRedoManager, mode: String, m: Dictionary) -> void:
 	var args: Array = m.get("args", [])
 	var target: Object = m.target
 	var method: String = m.method
 	_add_method(undo_redo, mode, target, method, args)
 
 
-func _apply_op(undo_redo: UndoRedo, mode: String, op: Dictionary) -> void:
+func _apply_op(undo_redo: EditorUndoRedoManager, mode: String, op: Dictionary) -> void:
 	var op_type: String = op.get("type", "method")
 	match op_type:
 		"method":
 			_add_method_call(undo_redo, mode, op)
 		"property":
 			var target: Object = op.target
-			if target == null:
-				push_warning("undo_manager: null target for property '%s'" % str(op.get("property", "")))
+			if not is_instance_valid(target):
+				push_warning("undo_manager: invalid (freed/null) target for property '%s'" % str(op.get("property", "")))
 				return
 			var prop: String = str(op.get("property", ""))
 			if prop.is_empty():
@@ -85,12 +84,12 @@ func _apply_op(undo_redo: UndoRedo, mode: String, op: Dictionary) -> void:
 		"reference":
 			# Issue 1: add_do_reference/add_undo_reference 仅限 Node，不接受 Resource
 			var val = op.value
-			if val is Node:
+			if val is Node and is_instance_valid(val):
 				if mode == "do":
 					undo_redo.add_do_reference(val)
 				else:
 					undo_redo.add_undo_reference(val)
 			else:
-				push_warning("undo_manager: reference skipped — value is %s, not Node" % ("" if val == null else val.get_class()))
+				push_warning("undo_manager: reference skipped — value is %s, not valid Node" % ("" if val == null else val.get_class()))
 		_:
 			push_warning("undo_manager: unknown op type '%s', skipping" % op_type)

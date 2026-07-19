@@ -116,6 +116,10 @@ func guard_text_resource_write(path: String, force: bool = false) -> Dictionary:
 				}
 			}
 		return {}
+	# P1-9 fix: .gd 也检查 ResourceLoader 缓存(与 shader :109-118 对称) — 未在编辑器打开但已 load/preload 的脚本
+	# TS 写入会与内存 stale Resource 冲突(磁盘新/内存旧 → 调试噩梦)
+	if ResourceLoader.has_cached(target):
+		return {"error": {"code": -32009, "message": "Refusing to write cached script resource %s" % target, "data": {"suggestion": "Reload the script in Godot or pass force=true."}}}
 	# 检查脚本编辑器（Issue 6: get_open_scripts 返回 Resource，直接访问 resource_path）
 	if _plugin == null:
 		return {}

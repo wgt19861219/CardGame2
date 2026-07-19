@@ -52,11 +52,6 @@ func _generate_and_write_secret() -> void:
 	# I-3 SECURITY: secret 明文写入 .godot/mcp_editor.key。Godot FileAccess 无权限参数(无法设 0600)。
 	# 本地单用户开发场景可接受;多用户/共享主机需手动 chmod 0600(Linux/macOS)或 icacls 限制(Windows),
 	# 否则同机其他用户可读 secret 导致本地提权。详见 CLAUDE.md bridge 规则“多用户环境不安全”。
-	_secret = _generate_secret()
-	if _secret.length() < 32:
-		push_error("[MCP] Secret generation failed — WebSocket server will not start")
-		_secret = ""
-		return
 	var project_dir: String = _get_project_dir()
 	if project_dir == "":
 		push_warning("[MCP] Cannot determine project dir; editor auth disabled")
@@ -66,9 +61,25 @@ func _generate_and_write_secret() -> void:
 	if dir and not dir.dir_exists(".godot"):
 		dir.make_dir(".godot")
 	_secret_file = godot_dir.path_join("mcp_editor.key")
+	# S4-editor: 固定 secret 模式(本地测试, env GODOT_MCP_EDITOR_PERSISTENT_SECRET=true)。
+	# mcp_editor.key 存在且有效则复用,跳过重生+写入+_restrict,打破"重生→覆盖写→
+	# MCP 端 TTL 缓存不同步"窗口(对称 bridge mcp_bridge.gd:216-226 S4)。默认 false。
+	# 不调 _start_server — 由 _ready:49 统一调(避免双重调用致 TCPServer 孤儿)。
+	var _persistent_secret := OS.get_environment("GODOT_MCP_EDITOR_PERSISTENT_SECRET").to_lower() == "true"
+	if _persistent_secret and FileAccess.file_exists(_secret_file):
+		var _existing := FileAccess.get_file_as_string(_secret_file)
+		if _existing.length() >= 32:
+			_secret = _existing
+			print("[MCP] Reusing persistent editor secret (GODOT_MCP_EDITOR_PERSISTENT_SECRET=true)")
+			return
+	_secret = _generate_secret()
+	if _secret.length() < 32:
+		push_error("[MCP] Secret generation failed — WebSocket server will not start")
+		_secret = ""
+		return
 	# Windows: FileAccess.close 走 atomic rename(drivers/windows/file_access_windows.cpp:276, Godot #40366),
 	# 杀软拦 rename → "Safe save failed" 红字(非致命但误导用户)。改用 PowerShell WriteAllText 直接写绕开。
-	# 配合 _restrict_secret_permissions 用 icacls USERNAME:F + /inheritance:r(USERNAME 全控、其他用户无权限,
+	# 配合 _restrict_secret_permissions 用 icacls USERNAME:M + /inheritance:r(USERNAME Modify、其他用户无权限,
 	# 比 USERNAME:R 更合理——R 是 anti-pattern: addon 以 USERNAME 身份却要覆盖自己只读的 key,
 	# 只能靠 atomic rename 绕 ACL,正是红字根源)。secret 经环境变量传递(不经命令行暴露,见 I-3)。
 	# Linux/macOS 的 FileAccess.close 不走 atomic,直接用。
@@ -124,11 +135,11 @@ func _restrict_secret_permissions(path: String) -> void:
 		if username.is_empty() or not RegEx.create_from_string("^[A-Za-z0-9_-]+$").search(username):
 			push_warning("[MCP] Cannot restrict secret permissions: username '%s' has unexpected chars" % username)
 			return
-		# USERNAME:F(全控) + /inheritance:r(移除继承,其他用户无 ACE 无权限)。
+		# USERNAME:M(Modify) + /inheritance:r(移除继承,其他用户无 ACE 无权限)。
 		# 原 USERNAME:R 是 anti-pattern: addon 以 USERNAME 身份运行却要覆盖自己只读的 key,
 		# 只能靠 FileAccess atomic rename 绕 ACL → 触发 "Safe save failed" 红字(Godot #40366)。
-		# F 让 _generate_and_write_secret 的 PowerShell WriteAllText 能直接覆盖写,其他用户仍无权限(比 R 更严)。
-		exit_code = OS.execute("icacls", PackedStringArray([path, "/inheritance:r", "/grant:r", "%s:F" % username]), [])
+		# M 让 _generate_and_write_secret 的 PowerShell WriteAllText 能直接覆盖写,其他用户仍无权限(比 R 更严)。
+		exit_code = OS.execute("icacls", PackedStringArray([path, "/inheritance:r", "/grant:r", "%s:M" % username]), [])
 		if exit_code != 0:
 			push_warning("[MCP] icacls failed (exit %d), secret may keep default permissions: %s" % [exit_code, path])
 	elif os_name in ["Linux", "FreeBSD", "macOS"]:
@@ -172,6 +183,11 @@ func _get_project_dir() -> String:
 	return ""
 
 func _delete_secret_file() -> void:
+	# S4-editor: 固定 secret 模式不删(持久化供下次启动复用 + 与 MCP 端 TTL 缓存保持同步)。
+	# 对称 bridge mcp_bridge.gd:441-443。
+	var _persistent_secret := OS.get_environment("GODOT_MCP_EDITOR_PERSISTENT_SECRET").to_lower() == "true"
+	if _persistent_secret:
+		return
 	if _secret_file != "" and FileAccess.file_exists(_secret_file):
 		DirAccess.remove_absolute(_secret_file)
 		print("[MCP] Auth secret file deleted")
@@ -192,7 +208,8 @@ func _start_server() -> void:
 	push_error("[MCP] All ports (%d-%d) occupied" % [BASE_PORT, MAX_PORT])
 
 func _process(delta: float) -> void:
-	if not _server: return
+	# P1-5 fix: _exit_tree 后残留 deferred _process 调用时 _server 可能已 stop/free, is_instance_valid 守卫防误用
+	if not _server or not is_instance_valid(_server): return
 
 	if _server.is_connection_available():
 		var tcp_peer = _server.take_connection()
@@ -245,6 +262,11 @@ func _handle_message(text: String, peer: WebSocketPeer) -> void:
 		peer.send_text(JSON.stringify({"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid JSON-RPC"}}))
 		return
 
+	# security P2#1 fix: params 非 Dictionary 防御(防畸形输入致 handle 内 params.get 报错中断帧处理, 多 peer 互影响)
+	var _rpc_params = parsed.get("params", {})
+	if _rpc_params != null and not (_rpc_params is Dictionary):
+		peer.send_text(JSON.stringify({"jsonrpc": "2.0", "id": parsed.get("id"), "error": {"code": -32602, "message": "Invalid params: must be an object"}}))
+		return
 	# Auth endpoint — always allowed
 	if parsed.get("method") == "auth":
 		if _secret == "":
@@ -300,7 +322,7 @@ func _handle_message(text: String, peer: WebSocketPeer) -> void:
 		return
 
 	if parsed.get("method") == "operation_end":
-		_heartbeat.resume()
+		_heartbeat.resume(pid)  # P1#1 fix: per-peer resume
 		_update_panel("MCP: %d client(s) connected" % _peers.size())
 		var _op_panel := _get_panel()
 		if _op_panel: _op_panel.set_operation_active(false)
@@ -313,6 +335,7 @@ func _handle_message(text: String, peer: WebSocketPeer) -> void:
 
 	if parsed.get("method") == "ping":
 		_heartbeat.reset_activity(peer.get_instance_id())
+		peer.send_text(JSON.stringify({"jsonrpc": "2.0", "id": parsed.get("id"), "result": {}}))  # ipc P0-2 fix: ping 回响应
 		return
 
 	_request_counter = (_request_counter + 1) % 1000000
@@ -326,7 +349,11 @@ func _handle_message(text: String, peer: WebSocketPeer) -> void:
 		reply["error"] = response.error
 	else:
 		reply["result"] = response.result
-	peer.send_text(JSON.stringify(reply))
+	# security P1#3 fix: peer.send_text 对 >1MB 消息返回 ERR_INVALID_DATA, 检查返回值
+	# 失败时 reply 本身发不出, 改发精简 error(远小于 1MB), 让客户端收到明确 -32010 而非 30s 超时
+	var _reply_str := JSON.stringify(reply)
+	if peer.send_text(_reply_str) != OK:
+		peer.send_text(JSON.stringify({"jsonrpc": "2.0", "id": parsed.get("id"), "error": {"code": -32010, "message": "Response exceeds 1MB WebSocket limit"}}))
 
 func _send_session_sync(peer: WebSocketPeer) -> void:
 	var open_scenes: Array = []
@@ -400,3 +427,4 @@ func _exit_tree() -> void:
 	_auth_fail_count.clear()
 	_auth_locked_until.clear()
 	_delete_secret_file()
+	_server = null  # P1-5 fix: 置 null 防 deferred _process 误用已 stop 的 server

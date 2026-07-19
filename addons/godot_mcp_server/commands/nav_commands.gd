@@ -31,29 +31,37 @@ func handle_nav_create_region(params: Dictionary, request_id: int) -> Dictionary
 	if pos != null and pos is Dictionary:
 		nav.position = Vector3(float(pos.get("x", 0.0)), float(pos.get("y", 0.0)), float(pos.get("z", 0.0)))
 
-	if _undo_manager != null:
-		_undo_manager.create_action_mixed("Create Nav Region (req:%d)" % request_id,
-			[
-				{"type": "method", "target": parent_node, "method": "add_child", "args": [nav]},
-				{"type": "method", "target": nav, "method": "set_owner", "args": [root]},
-				{"type": "reference", "value": nav}
-			],
-			[
-				{"type": "method", "target": parent_node, "method": "remove_child", "args": [nav]}
-			]
-		)
-	else:
-		parent_node.add_child(nav)
-		nav.owner = root
-
+	# P0-2 修复: mesh 在入栈前初始化(附着 nav, 随 reference 保护, undo/redo 不丢)
 	var mesh = NavigationMesh.new()
 	mesh.geometry_parsed_collision_mask = 0xFFFFFFFF
 	nav.navigation_mesh = mesh
 
+	var want_bake: bool = params.get("bake", false)
 	var bake_result: bool = false
-	if params.get("bake", false):
-		nav.bake_navigation_mesh()
-		bake_result = nav.navigation_mesh != null
+	if _undo_manager != null:
+		var do_ops: Array = [
+			{"type": "method", "target": parent_node, "method": "add_child", "args": [nav]},
+			{"type": "method", "target": nav, "method": "set_owner", "args": [root]},
+			{"type": "reference", "value": nav}
+		]
+		if want_bake:
+			# P1 修复: bake 作为 do_method 入 undo 栈(commit 时执行, redo 重 bake),
+			# 取代原 action 外单独 bake —— 避免 Ctrl+Z 撤 add_node 后 bake 残留、redo
+			# 不重 bake 的游离态。undo 无清空 method, 但 nav 被 reference 保护且 redo
+			# 总是 fresh bake, undo→redo 周期内 mesh 状态一致。
+			do_ops.append({"type": "method", "target": nav, "method": "bake_navigation_mesh", "args": []})
+		_undo_manager.create_action_mixed("Create Nav Region (req:%d)" % request_id, do_ops,
+			[
+				{"type": "method", "target": parent_node, "method": "remove_child", "args": [nav]}
+			])
+		# commit_action 已执行 do_methods(含 bake), 读结果
+		bake_result = want_bake and nav.navigation_mesh != null
+	else:
+		parent_node.add_child(nav)
+		nav.owner = root
+		if want_bake:
+			nav.bake_navigation_mesh()
+			bake_result = nav.navigation_mesh != null
 
 	return {"result": {"node_path": str(nav.get_path()), "type": "NavigationRegion3D", "baked": bake_result}}
 

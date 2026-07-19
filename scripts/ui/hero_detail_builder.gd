@@ -33,7 +33,7 @@ const STAR_COUNT: int = 5
 # ---- card 图鉴视图（源 card.lua，Phase B 静态化进 .tscn %TabCardView）----
 # 源 card.lua:135 ui.container ccp(400,240) 相对 cardLayer；cardLayer 挂 container，pop endPos(-200,0)（window.lua:513）。
 # 世界 cocos = 400-200 = 200（已含 pop -200 偏移）。card_frame size .tscn 固化（编辑器拖），fill 只设 texture。
-const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 240.0)
+const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center（+50y → godot y=320 对齐 CardFrame center 320）
 const CARD_ART_MAX_SIZE: Vector2 = Vector2(240.0, 240.0)   # Art 缩放上限（frame 内贴图区）
 
 # ---- skill 升级按钮（源 skillstren.lua:345-364）----
@@ -352,8 +352,12 @@ static func _make_card_art(art_res: String) -> TextureRect:
 	var sp := TextureRect.new()
 	sp.texture = tex
 	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var sc: float = min(CARD_ART_MAX_SIZE.x / tex.get_size().x, CARD_ART_MAX_SIZE.y / tex.get_size().y)
-	sp.size = tex.get_size() * sc
+	sp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED   # cover 铺满 + 裁剪溢出
+	sp.size = Vector2(369.0, 570.0)
+	# 源 art_mask.png 圆角裁剪（createClippingNode）。Godot 用 shader 圆角 alpha 近似（四角透明）。
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/rounded_corners.gdshader")
+	sp.material = mat
 	sp.position = to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0) - sp.size * 0.5
 	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return sp

@@ -64,6 +64,55 @@ func get_scene_tree() -> Dictionary:
 	return {"result": {"success": true, "tree": _serialize_tree(root, 0, 5)}}
 
 
+# 批 2 readScene：场景统计（迭代单遍 stack DFS，无爆栈）。只聚合不传树。
+# 与 bridge mcp_bridge.gd _cmd_get_scene_stats 同算法（各自实现，跨文件共享成本高 YAGNI）。
+const TYPE_WINDOW: int = 2000
+const HARD_STOP: int = 50000
+
+func get_scene_stats() -> Dictionary:
+	var ei := _get_ei()
+	if ei == null:
+		return {"error": {"code": -32004, "message": "EditorInterface not available"}}
+	var root: Node = ei.get_edited_scene_root()
+	if root == null:
+		return {"error": {"code": -32005, "message": "No current scene"}}
+	var node_count: int = 0
+	var type_count: Dictionary = {}
+	var truncated: bool = false
+	# 批 2 M2：Godot 场景树不变量保证无环（节点不能是自己的祖先），stack DFS 不会无限循环；HARD_STOP 兜底防 OOM
+	var stack: Array = [root]
+	while stack.size() > 0:
+		if node_count >= HARD_STOP:
+			truncated = true
+			break
+		var node: Node = stack.pop_back()
+		node_count += 1
+		if node_count <= TYPE_WINDOW:
+			var cls: String = node.get_class()
+			type_count[cls] = int(type_count.get(cls, 0)) + 1
+		for c in node.get_children():
+			stack.push_back(c)
+	var type_top_n: Variant = null
+	if node_count <= TYPE_WINDOW:
+		var entries: Array = []
+		for key in type_count.keys():
+			entries.append({"type": key, "n": int(type_count[key])})
+		entries.sort_custom(func(a, b): return int(a["n"]) > int(b["n"]))
+		type_top_n = entries.slice(0, 5)
+	return {
+		"result": {
+			"success": true,
+			"stats": {
+				"path": root.scene_file_path,
+				"root": root.name,
+				"nodeCount": node_count,
+				"typeTopN": type_top_n,
+				"truncated": truncated,
+			}
+		}
+	}
+
+
 func _cache_paths_recursive(node: Node, depth: int = 0) -> void:
 	if node and depth < 50:
 		_node_paths[node.get_instance_id()] = {
@@ -109,8 +158,15 @@ func _on_node_removed(node: Node) -> void:
 
 
 func cleanup() -> void:
-	if _syncing:
-		stop_sync()
+	# P1-6 fix: 无条件尝试断开信号(防御 start_sync 中 connect 成功但 _syncing 状态异常的竞态 → 信号永久泄漏)
+	var tree = get_tree()
+	if tree != null:
+		if tree.node_added.is_connected(_on_node_added):
+			tree.node_added.disconnect(_on_node_added)
+		if tree.node_removed.is_connected(_on_node_removed):
+			tree.node_removed.disconnect(_on_node_removed)
+	_syncing = false
+	_node_paths.clear()
 
 
 func _serialize_tree(node: Node, depth: int, max_depth: int) -> Dictionary:
@@ -124,4 +180,6 @@ func _serialize_tree(node: Node, depth: int, max_depth: int) -> Dictionary:
 		for child in node.get_children():
 			children.append(_serialize_tree(child, depth + 1, max_depth))
 		result["children"] = children
+	elif node.get_child_count() > 0:
+		result["truncated"] = true  # 批 2 顺带修：depth 截断标记（调用方可判断树被截）
 	return result

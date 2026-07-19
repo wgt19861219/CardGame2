@@ -127,8 +127,9 @@ func handle_instance_scene(params: Dictionary) -> Dictionary:
 		var val = properties[key]
 		if val is Object:
 			continue
-		if CommandHelpers.property_exists_and_type_ok(instance, key, val):
-			instance.set(key, val)
+		var coerced = CommandHelpers.coerce_value_for_property(instance, key, val)
+		if CommandHelpers.property_exists_and_type_ok(instance, key, coerced):
+			instance.set(key, coerced)
 
 	var ei := _get_ei()
 	if ei == null:
@@ -181,6 +182,7 @@ func handle_set_instance_property(params: Dictionary, request_id: int = 0) -> Di
 
 	if target == root or target.owner != root:
 		return {"error": {"code": -32004, "message": "NODE_NOT_INSTANCE"}}
+	prop_value = CommandHelpers.coerce_value_for_property(target, prop_name, prop_value)
 
 	var blocked: Array = ["script", "owner", "name", "parent", "children", "tree", "meta", "process_mode", "process_priority",
 		"process_input", "process_unhandled_input", "process_unhandled_key_input",

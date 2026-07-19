@@ -18,6 +18,10 @@ func setup(plugin: EditorPlugin) -> void:
 	_plugin = plugin
 
 func _input(event: InputEvent) -> void:
+	# P0-4 fix: 编辑器态不捕获输入(防抢占编辑器快捷键 + 回放重注入触发 Ctrl+S/Delete 等危险操作)
+	# recording 走 Bridge(game-bridge)运行时游戏捕获, 编辑器插件路径禁用
+	if Engine.is_editor_hint():
+		return
 	if not _recording:
 		return
 	var now := Time.get_ticks_msec()
@@ -84,6 +88,9 @@ func _append_event(entry: Dictionary) -> void:
 # ─── recording_start ────────────────────────────────────────────────────────
 
 func handle_recording_start(params: Dictionary) -> Dictionary:
+	# P0-4 fix: 编辑器态拒绝录制, recording 应走 Bridge
+	if Engine.is_editor_hint():
+		return {"error": {"code": -32009, "message": "Recording in editor mode is disabled. Use game_bridge (Bridge) recording instead - editor _input capture is disabled to avoid side effects."}}
 	_recording = true
 	_recorded_events = []
 	_record_start_time = Time.get_ticks_msec()
@@ -106,6 +113,9 @@ func handle_recording_stop(params: Dictionary) -> Dictionary:
 # ─── recording_play ─────────────────────────────────────────────────────────
 
 func handle_recording_play(params: Dictionary) -> Dictionary:
+	# P0-4 fix: 编辑器态拒绝回放(防 Input.parse_input_event 重注入编辑器触发危险操作)
+	if Engine.is_editor_hint():
+		return {"error": {"code": -32009, "message": "Playback in editor mode is disabled. Use game_bridge (Bridge) recording playback instead."}}
 	var events_json: String = params.get("events_json", "")
 	if events_json == "":
 		return {"error": {"code": -32004, "message": "events_json is required"}}

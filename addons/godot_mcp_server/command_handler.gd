@@ -13,6 +13,7 @@ var _editor_guards: Node
 var _animation_commands: Node
 var _recording_commands: Node
 var _ui_commands: Node
+var _asset_commands: Node
 
 func setup(plugin: EditorPlugin) -> void:
 	_undo_manager = preload("undo_manager.gd").new()
@@ -67,10 +68,14 @@ func setup(plugin: EditorPlugin) -> void:
 	_ui_commands.setup(plugin, _undo_manager)
 	add_child(_ui_commands)
 
+	_asset_commands = preload("commands/asset/asset_commands.gd").new()
+	_asset_commands.setup(plugin, _undo_manager)
+	add_child(_asset_commands)
+
 func cleanup() -> void:
 	var modules = [
 		_sync_commands, _recording_commands, _animation_commands,
-		_ui_commands, _scene_commands, _node_commands,
+		_ui_commands, _asset_commands, _scene_commands, _node_commands,
 		_test_commands, _export_commands, _particle_commands,
 		_nav_commands, _animtree_commands, _undo_manager,
 	]
@@ -83,6 +88,7 @@ func cleanup() -> void:
 	_recording_commands = null
 	_animation_commands = null
 	_ui_commands = null
+	_asset_commands = null
 	_scene_commands = null
 	_node_commands = null
 	_test_commands = null
@@ -107,6 +113,15 @@ func handle(method: String, params: Dictionary, request_id: int) -> Dictionary:
 			return _scene_commands.handle_set_instance_property(params, request_id)
 		"add_node":
 			return _node_commands.handle_add_node(params, request_id)
+		"remove_node":
+			return _node_commands.handle_remove_node(params, request_id)
+		# editor-version-tear §5: edit_node / batch_add_nodes 经 editor-method-map 登记,
+		# editor 连接时直走 node_commands handler（per-property undo / 批量 UndoRedo，改内存），
+		# 不再 fallback headless spawnGodot 改盘（致磁盘/内存版本撕裂）
+		"edit_node":
+			return _node_commands.handle_edit_node(params, request_id)
+		"batch_add_nodes":
+			return _node_commands.handle_batch_add_nodes(params, request_id)
 		"test_assert":
 			return _test_commands.handle_test_assert(params)
 		"export_list_presets":
@@ -118,13 +133,13 @@ func handle(method: String, params: Dictionary, request_id: int) -> Dictionary:
 		"particles_create":
 			return _particle_commands.handle_particles_create(params, request_id)
 		"particles_set_emission":
-			return _particle_commands.handle_particles_set_emission(params)
+			return _particle_commands.handle_particles_set_emission(params, request_id)
 		"particles_set_process":
-			return _particle_commands.handle_particles_set_process(params)
+			return _particle_commands.handle_particles_set_process(params, request_id)
 		"particles_load_preset":
-			return _particle_commands.handle_particles_load_preset(params)
+			return _particle_commands.handle_particles_load_preset(params, request_id)
 		"particles_set_material":
-			return _particle_commands.handle_particles_set_material(params)
+			return _particle_commands.handle_particles_set_material(params, request_id)
 		"nav_create_region":
 			return _nav_commands.handle_nav_create_region(params, request_id)
 		"nav_bake_mesh":
@@ -151,6 +166,8 @@ func handle(method: String, params: Dictionary, request_id: int) -> Dictionary:
 			return _sync_commands.stop_sync()
 		"editor_get_scene_tree":
 			return _sync_commands.get_scene_tree()
+		"editor_get_scene_stats":
+			return _sync_commands.get_scene_stats()
 		# --- animation ------------------------------------------------
 		"animation_track":
 			return _animation_commands.handle_animation_track(params, request_id)
@@ -184,6 +201,17 @@ func handle(method: String, params: Dictionary, request_id: int) -> Dictionary:
 			return _ui_commands.handle_theme_create(params)
 		"theme_set_property":
 			return _ui_commands.handle_theme_set_property(params)
+		# --- asset -----------------------------------------------------
+		"asset_create":
+			return _asset_commands.handle_create(params, request_id)
+		"asset_path":
+			return _asset_commands.handle_path(params, request_id)
+		"asset_batch":
+			return _asset_commands.handle_batch(params, request_id)
+		"asset_undo":
+			return _asset_commands.handle_undo(params, request_id)
+		"asset_save":
+			return _asset_commands.handle_save(params, request_id)
 		# Tools NOT routed here (headless-only via TS/GDScript executor):
 		#   animation (play/stop/seek/list_players) - runtime AnimationPlayer control
 		#   recording_save / recording_load - file I/O handled by TS side
@@ -193,11 +221,23 @@ func handle(method: String, params: Dictionary, request_id: int) -> Dictionary:
 			if _editor_guards == null:
 				return {"error": {"code": -32003, "message": "Editor guards not available"}}
 			var guard_path: String = params.get("path", "")
-			var force: bool = params.get("force", false)
-			var guard_result = _editor_guards.guard_text_resource_write(guard_path, force)
+			# P1-7 (2026-07-06 RCE 审查): 忽略客户端 force — 防已认证 WS 客户端直传 force=true
+			# 绕过文本资源写守卫。force 仅供服务端内部逻辑（如未来经 confirm_and_execute
+			# 校验 confirm token 后才设 true），客户端 force 永远视为 false。
+			var guard_result = _editor_guards.guard_text_resource_write(guard_path, false)
 			if guard_result.is_empty():
 				return {"result": {"status": "ok", "path": guard_path}}
 			return guard_result
+		# P1-2 (2026-07-06 review): 场景离线保存守卫 — TS 侧 scene save 写前调,
+		# 防覆盖编辑器中打开的场景致磁盘/内存版本撕裂(与 guard_text_resource_write 对称)
+		"guard_offline_scene_save":
+			if _editor_guards == null:
+				return {"error": {"code": -32003, "message": "Editor guards not available"}}
+			var scene_guard_path: String = params.get("path", "")
+			var scene_guard_result = _editor_guards.guard_offline_scene_save(scene_guard_path)
+			if scene_guard_result.is_empty():
+				return {"result": {"status": "ok", "path": scene_guard_path}}
+			return scene_guard_result
 		_:
 			return {"error": {"code": -32601, "message": "Unknown method: %s" % method}}
 

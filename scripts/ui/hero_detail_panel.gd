@@ -80,19 +80,25 @@ const TAB_DETAIL: String = "detail"   # 源 doClickDetail → setOpenMode("att")
 const TAB_CARD: String = "card"       # 源 doClickCard → setOpenMode("card") 图鉴层
 const TAB_SKILL: String = "skill"     # 源 doClickSkill → setOpenMode("skill") 技能层
 const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 card 图鉴。源 setOpenMode(nil)=doMoveBack 无 tab，用户要进显图鉴
-const BASE_SLIDE_OFFSET: float = 140.0   # 源 doMove（window.lua:300）base container 右移量，让位 tab 内容
+const BASE_SLIDE_OFFSET: float = 178.0   # 源 doMove 140（window.lua:300 container 右移）。目标 1:1 框偏大（CS 遗漏）。CloseBtn 移出 base 固定屏幕右上（不随 base），base 自由：178 让 bg left=399.5，card/popup 框（offset 95.5/464.5 - tab view 左移 75 = 屏幕 right 389.5）与 bg 留 gap 10（接近源 /CS 紧凑感）
 # 源 doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
 # tab 内容层挂 animLayer 原点（cocos 世界坐标），内容 ccp 需叠加此 pop 偏移。
 const TAB_POP_OFFSET_X: float = -200.0
 # 源 att 内容走 draglist→att.bg(ccp(400,240), attributes.lua:603)→container 链，att ccp 额外 +400（bg 基准）。
 # skill/card 内容直接挂 container（无 bg 中间层），只叠 TAB_POP_OFFSET_X。
 const ATT_BG_COCOS_X: float = 400.0
+# 源 readhero.lua:992 card_type_icon（big 版，card tab 用）：type → 类型图标资源。
+const CARD_TYPE_ICON_RES: Dictionary = {
+	"STR": "res://assets/ui/alpha/HVGA/card/card_att_str_big.png",
+	"AGI": "res://assets/ui/alpha/HVGA/card/card_att_agi_big.png",
+	"INT": "res://assets/ui/alpha/HVGA/card/card_att_int_big.png",
+}
 
 var hero: HeroInstance = null
 var cm: Variant = null
 var hero_manager: HeroManager = null
 var pd: PlayerData = null
-var _desc_label: Label = null   # 当前技能描述 Label（null 无，源 destroyDescBoard）
+var _desc_label: Control = null   # 技能描述弹板（NinePatchRect bg + label 子，源 createDescBoard；null 无 = destroyDescBoard）
 var _gs_label: Label = null     # GS 战斗力 Label（.tscn %GsNum，源 ui.gs createInfoBoard:1254-1268）
 var _pre_gs: int = -1           # 源 pregs（上次显示 gs，refreshgsAfterWear:172/175 比对）
 var _current_tab: String = ""   # 当前激活 tab（源 self.openMode：nil/att/card/skill）
@@ -132,6 +138,9 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		"detail": content.get_node("%TabDetailView") as Control,
 		"skill": content.get_node("%TabSkillView") as Control,
 	}
+	# tab 内容 z=-1 在 base(bg)下层：侧滑时从 bg 底部滑出（源 tab layer 在 mainLayer z=120 之下，非盖在 bg 上）
+	for k in _tab_views:
+		(_tab_views[k] as CanvasItem).z_index = -1
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
 	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
 	_fill_card_view()
@@ -157,7 +166,7 @@ func _rebuild_content() -> void:
 # 源 herodetail 右侧只有 2 按钮（evolve 升星 + upgrade 进阶）；split 在 heropackage（源 :459-477）、
 # strengthen 在 main_scene estren（源 main.lua:1424-1434）。回源架构，4→2（2026-07-18）。
 func _bind_signals() -> void:
-	(_base_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
+	(_base_layer.get_parent().get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")   # 源 heroDetail.closeWindow（soundres.lua:204）
 		remove_window())
 	_wire_action_button("%GetStoneBtn", evolve_requested, "common_click_feedback")   # +号按钮执行升星（简化偏离源，源 evolve 文字按钮已删）
@@ -187,9 +196,59 @@ func _fill_card_view() -> void:
 		return
 	var view: Control = _tab_views["card"] as Control
 	HeroDetailBuilder.setup_card_view(view, hero, cm)
+	_fill_card_type_icon(view)
+	_fill_card_skill_icons(view)
 	var art_host: Control = view.get_node("%CardArtHost") as Control
 	for c in art_host.get_children():
 		c.set_meta(&"tab_content", true)   # Art 标记（测试识别 card 内容渲染）
+
+
+# 源 getHeroCard type icon（readhero.lua:1069-1082）：card_att_X_big at ccp(32,67) fix_size 47×42。
+# 相对 Art ccp(123,215)：dx=32-123=-91, dy=67-215=-148（cocos）→ godot dx=-91, dy=+148。
+func _fill_card_type_icon(view: Control) -> void:
+	if cm == null or hero == null:
+		return
+	var type_str: String = String(cm.lookup("Unit", "Main Attrib", int(hero.tid)))
+	var res: String = CARD_TYPE_ICON_RES.get(type_str, "")
+	if res.is_empty():
+		return
+	var tex: Texture2D = _load_texture(res)
+	if tex == null:
+		return
+	var icon := TextureRect.new()
+	icon.texture = tex
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.size = Vector2(47.0, 42.0)
+	var art_center: Vector2 = HeroDetailBuilder.to_godot(HeroDetailBuilder.CARD_CENTER_COCOS.x, HeroDetailBuilder.CARD_CENTER_COCOS.y + 50.0)
+	icon.position = art_center + Vector2(-91.0, 148.0) - icon.size * 0.5
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_child(icon)
+	icon.set_meta(&"tab_content", true)
+
+
+# 源 getHeroCard skillIcon（readhero.lua:1122-1130）：4 个 SkillGroup.Icon at ccp(130.5+27.2*(i-1),28) scale 22。
+func _fill_card_skill_icons(view: Control) -> void:
+	if cm == null or hero == null:
+		return
+	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
+	var art_center: Vector2 = HeroDetailBuilder.to_godot(HeroDetailBuilder.CARD_CENTER_COCOS.x, HeroDetailBuilder.CARD_CENTER_COCOS.y + 50.0)
+	for i in range(4):
+		var slot_info: Dictionary = sg.get(str(i + 1), {})
+		var icon_res: String = String(slot_info.get("Icon", ""))
+		if icon_res.is_empty():
+			continue
+		var tex: Texture2D = _load_ui_texture(icon_res)
+		if tex == null:
+			continue
+		var icon := TextureRect.new()
+		icon.texture = tex
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.size = Vector2(22.0, 22.0)
+		# 源相对 Art：dx=130.5+27.2*i-123=7.5+27.2*i, dy=28-215=-187 → godot dx, dy=+187
+		icon.position = art_center + Vector2(7.5 + 27.2 * float(i), 187.0) - icon.size * 0.5
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		view.add_child(icon)
+		icon.set_meta(&"tab_content", true)
 
 
 # 源 attributes.lua:133 createAttDetail 循环 res.att_name（全 21）+ res.att_pre[k]..":" + base + addIcon + add + suffix。
@@ -207,10 +266,24 @@ func _fill_attributes() -> void:
 		var row: Dictionary = att[key]
 		var pre: String = get_lstr_fallback(ATTR_PRE_LSTR.get(key, ""), key)
 		var suffix: String = String(ATTR_SUFFIX.get(key, ""))
-		var lbl := Label.new()
-		lbl.text = pre + ": " + str(int(row["all"])) + " (+" + str(int(row["add"])) + ")" + suffix
-		lbl.position = HeroDetailBuilder.to_godot(LIST_LEFT + TAB_POP_OFFSET_X + ATT_BG_COCOS_X, cocos_y)
-		_add_tab_content(host, lbl)
+		# 源 refreshAttPos（attributes.lua:49-75）：name: + base + addIcon(+) + add + suffix 多 label 横排（width 累计）。
+		# HBoxContainer 自动横排 = 源 width 累计（avoid 手算 Label 宽度，Container 自动 layout）。
+		var row_box := HBoxContainer.new()
+		row_box.position = HeroDetailBuilder.to_godot(LIST_LEFT + TAB_POP_OFFSET_X + ATT_BG_COCOS_X, cocos_y)
+		row_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row_box.add_theme_constant_override("separation", 3)   # 源 addIcon 后 +3 间距
+		var name_lbl := Label.new()
+		name_lbl.text = pre + ":"
+		row_box.add_child(name_lbl)
+		var base_lbl := Label.new()
+		base_lbl.text = str(int(row["all"]))
+		row_box.add_child(base_lbl)
+		if int(row["add"]) > 0:
+			var add_lbl := Label.new()
+			add_lbl.text = "+" + str(int(row["add"])) + suffix
+			add_lbl.modulate = SKILL_GROWTH_COLOR   # 源 add 黄 ccc3(231,206,19)
+			row_box.add_child(add_lbl)
+		_add_tab_content(host, row_box)
 		cocos_y -= LINE_HEIGHT   # 源下一行 cocos y 减（往下）
 
 
@@ -418,15 +491,25 @@ func _toggle_skill_desc(slot: int) -> void:
 		return
 	var desc: String = ReadheroSkill.get_skill_description(hero, slot + 1, cm)
 	var growth: String = ReadheroSkill.get_skill_desc(hero, slot + 1, cm)
+	# 源 skillstren.lua:14 createDescBoard：Scale9Sprite bg（herodetail-skill-tip.png）+ description label（ox=27）。
+	var bg := NinePatchRect.new()
+	bg.texture = _load_texture("res://assets/ui/alpha/HVGA/herodetail-skill-tip.png")
+	bg.patch_margin_left = 20
+	bg.patch_margin_top = 52
+	bg.patch_margin_right = 200
+	bg.patch_margin_bottom = 5   # 源 capInsets(20,52,200,5)
+	bg.position = SKILL_DESC_POS
+	bg.size = Vector2(280.0, 100.0)
 	var lbl := Label.new()
 	lbl.text = desc + ("\n" + growth if not growth.is_empty() else "")
-	lbl.position = SKILL_DESC_POS
+	lbl.position = Vector2(27.0, 15.0)
 	lbl.add_theme_font_size_override("font_size", 13)
 	if not growth.is_empty():
 		lbl.modulate = SKILL_GROWTH_COLOR
-	_add_tab_content(_desc_host, lbl)
-	lbl.set_meta("slot", slot)
-	_desc_label = lbl
+	bg.add_child(lbl)
+	_add_tab_content(_desc_host, bg)
+	bg.set_meta("slot", slot)
+	_desc_label = bg
 
 
 func _hide_skill_desc() -> void:
@@ -451,18 +534,36 @@ func _on_tab_pressed(key: String) -> void:
 func _show_tab_content(key: String) -> void:
 	_current_tab = key
 	HeroDetailBuilder.set_tab_selected(_tab_buttons, key)
-	if _base_layer != null:
-		_base_layer.position.x = BASE_SLIDE_OFFSET   # 源 doMove :300 base 右移让位 tab 内容
+	_slide_base_to(BASE_SLIDE_OFFSET)
+	# 源 tab layer pop CCMoveTo(-200,0)：tab 内容从左滑入（止态 -75，在树时从 +400 屏幕外滑入）
 	for k in _tab_views:
-		(_tab_views[k] as CanvasItem).visible = (k == key)
+		var v: Control = _tab_views[k] as Control
+		if k == key:
+			v.visible = true
+			var start_x: float = 400.0 if is_inside_tree() else -75.0
+			v.offset_left = start_x
+			v.offset_right = start_x
+			if is_inside_tree():
+				var tw: Tween = create_tween()
+				tw.tween_property(v, "offset_left", -75.0, 0.2)
+				tw.parallel().tween_property(v, "offset_right", -75.0, 0.2)
+		else:
+			v.visible = false
+
+
+# 源 doMove/doMoveBack container CCMoveTo 0.2s（在树+非止态才动画，首次 _build_content 不在树直接设止态）。
+func _slide_base_to(target_x: float) -> void:
+	if _base_layer != null and is_inside_tree() and not is_equal_approx(_base_layer.position.x, target_x):
+		create_tween().tween_property(_base_layer, "position:x", target_x, 0.2)
+	elif _base_layer != null:
+		_base_layer.position.x = target_x
 
 
 # 源 setOpenMode(nil) → doMoveBack（window.lua:289-296 base 回 (0,0)）+ destroyXLayer。
 func _close_tab() -> void:
 	_current_tab = ""
 	HeroDetailBuilder.set_tab_selected(_tab_buttons, "")
-	if _base_layer != null:
-		_base_layer.position.x = 0.0   # 源 doMoveBack :291 base 回位
+	_slide_base_to(0.0)
 	for k in _tab_views:
 		(_tab_views[k] as CanvasItem).visible = false
 	_hide_skill_desc()

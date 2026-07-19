@@ -31,6 +31,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+z_index = 1
 
 [node name="Bg" type="TextureRect" parent="BaseLayer" unique_id=1605552371]
 layout_mode = 0
@@ -188,13 +189,14 @@ mouse_filter = 2
 texture = ExtResource("4_staryel")
 expand_mode = 1
 
-[node name="CloseBtn" type="TextureButton" parent="BaseLayer" unique_id=2058700208]
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=2058700208]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 706.0
+offset_left = 889.0
 offset_top = 22.0
-offset_right = 757.0
+offset_right = 940.0
 offset_bottom = 73.0
+z_index = 2
 texture_normal = ExtResource("5_close")
 texture_pressed = ExtResource("6_closep")
 ignore_texture_size = true
@@ -440,16 +442,19 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+z_index = -1
 
 [node name="CardFrame" type="TextureRect" parent="TabCardView" unique_id=649205390]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 115.275
+offset_left = 95.5
 offset_top = 35.0
-offset_right = 444.725
+offset_right = 464.5
 offset_bottom = 605.0
 mouse_filter = 2
 expand_mode = 1
@@ -480,9 +485,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+z_index = -1
 
 [node name="PopupBg" type="TextureRect" parent="TabDetailView" unique_id=564267849]
 layout_mode = 0
@@ -511,9 +519,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+z_index = -1
 
 [node name="PopupBg" type="TextureRect" parent="TabSkillView" unique_id=2019248026]
 layout_mode = 0
