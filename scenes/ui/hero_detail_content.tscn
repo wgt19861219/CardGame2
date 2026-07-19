@@ -447,10 +447,10 @@ mouse_filter = 2
 [node name="CardFrame" type="TextureRect" parent="TabCardView" unique_id=649205390]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 140.32
-offset_top = 104.2
-offset_right = 419.68
-offset_bottom = 535.8
+offset_left = 115.275
+offset_top = 35.0
+offset_right = 444.725
+offset_bottom = 605.0
 mouse_filter = 2
 expand_mode = 1
 
@@ -486,10 +486,10 @@ mouse_filter = 2
 
 [node name="PopupBg" type="TextureRect" parent="TabDetailView" unique_id=564267849]
 layout_mode = 0
-offset_left = 136.0
-offset_top = 97.525
-offset_right = 424.0
-offset_bottom = 542.475
+offset_left = 95.5
+offset_top = 35.0
+offset_right = 464.5
+offset_bottom = 605.0
 mouse_filter = 2
 texture = ExtResource("7_popup")
 expand_mode = 1
@@ -517,10 +517,10 @@ mouse_filter = 2
 
 [node name="PopupBg" type="TextureRect" parent="TabSkillView" unique_id=2019248026]
 layout_mode = 0
-offset_left = 136.0
-offset_top = 97.525
-offset_right = 424.0
-offset_bottom = 542.475
+offset_left = 95.5
+offset_top = 35.0
+offset_right = 464.5
+offset_bottom = 605.0
 mouse_filter = 2
 texture = ExtResource("7_popup")
 expand_mode = 1
