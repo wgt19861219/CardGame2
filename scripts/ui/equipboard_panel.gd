@@ -23,11 +23,13 @@ const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"
 const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 
 # ── frame 内子节点坐标（源 cocos 值经 _gl 转 Frame Control 内左上 y-down）──
-# ICON_POS = 源 board.lua:320 ccp(50,328) → _gl(50, 385-328=57)。icon 动态建（ReadequipIcon.create_icon
-# 返回 size=72×72 Control），fill 时挂 %IconHost 并设 position=ICON_POS（frame 内左上）。
-const ICON_POS: Vector2 = Vector2(50.0, 57.0)
-# att_bg 底边固定（money_board 上方避覆盖；源 att_bg anchor 0.5,1 底固定 ccp(143,287)，向上扩）。
-const ATT_BG_BOTTOM: float = 263.0
+# ICON_POS = 源 board.lua:320 ccp(50,328)。icon 未显式 setAnchorPoint → Cocos 默认 anchor(0.5,0.5)
+# = 中心；icon 右边 50+36=86 正好接 name x=92（佐证中心语义）。源中心(50,328) → Godot 中心(50,57)
+# → Control 左上 = 中心 - size/2 = (50-36, 57-36) = (14,21)（ICON_SIZE=72，readequip_icon.gd:19）。
+const ICON_POS: Vector2 = Vector2(14.0, 21.0)
+const ICON_SCALE: float = 0.8   # 用户视觉偏好缩小（源 createIcon 无 scale，原 size 显示）
+# att_bg 顶边固定（icon 正下方；源 att_bg anchor 0.5,1 顶固定 ccp(143,287) → Godot 顶 y=385-287=98，向下扩）。
+const ATT_TOP: float = 98.0
 
 # ── Scale9 按钮（源 ofpackage.lua:108-119 left_button / :154-165 right_button）──
 # 源 Scale9Sprite package_button.png + package_button_down.png，capInsets CCRectMake(10,10,236,29)。
@@ -82,6 +84,7 @@ func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData) -> vo
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	register_on_enter(_play_slide_in)
+	register_on_enter(_relayout_att_bg)   # 首次入树后重算 att_bg（setup 时未入树 min 不可靠，致首次介绍/定价重叠）
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
@@ -169,14 +172,21 @@ func _fill_att() -> void:
 		frag_lbl.add_theme_color_override("font_color", Color(0.259, 0.176, 0.11, 1))   # 源 fragment ccc3(66,45,28)
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
-	# att_bg + host 自适应属性内容高度（源 board.lua:263 att_bg setContentSize(bw, attListHeight+12)）。
-	# 底固定（ATT_BG_BOTTOM = money_board 上方），向上扩避覆盖 money_board（源 att_bg anchor 0.5,1 底固定）。
+	_relayout_att_bg()
+
+
+# att_bg + host 自适应属性内容高度（源 board.lua:263 att_bg setContentSize(bw, attListHeight+12)）。
+# 顶固定（ATT_TOP = icon 正下方），向下扩（att_list 标签堆叠，源 att_bg anchor 0.5,1 顶固定）。
+# 首次 setup 时 panel 未入树，host.get_combined_minimum_size 不可靠（Label 字体布局未就绪 → 偏小 →
+# labels 溢出到 money_board 致首次介绍/定价重叠），故 setup_panel 另 register_on_enter 入树后重算。
+func _relayout_att_bg() -> void:
+	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	var host_min: Vector2 = host.get_combined_minimum_size()
 	var bg: TextureRect = _frame.get_node("%AttBg") as TextureRect
 	var bg_h: float = host_min.y + 12.0
-	bg.offset_top = ATT_BG_BOTTOM - bg_h
+	bg.offset_top = ATT_TOP
 	bg.size.y = bg_h
-	host.offset_top = bg.offset_top + 6.0
+	host.offset_top = ATT_TOP + 6.0
 	host.size.y = host_min.y
 
 
@@ -193,6 +203,7 @@ func _fill_icon() -> void:
 	var host: Control = _frame.get_node("%IconHost") as Control
 	var icon: Control = ReadequipIcon.create_icon(_item_id, 0, cm)
 	icon.position = ICON_POS
+	icon.scale = Vector2(ICON_SCALE, ICON_SCALE)   # 缩小（用户偏好，源 createIcon 原 size）
 	host.add_child(icon)
 
 
@@ -219,11 +230,19 @@ static func _make_button_stylebox(res_path: String) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
 	var tex: Texture2D = load(res_path) as Texture2D
 	sb.texture = tex
+	# 源 capInsets CCRectMake(x,y,w,h) Cocos 左下原点（y=cap 底边距图底）。Godot 左上原点 top/bottom 翻转：
+	# Godot top = Cocos 顶 margin = tex.h-(y+h)；bottom = Cocos 底 margin = y。
+	# package_button 335×67 cap(10,10,236,29) → texture_margin(left10, top28, right89, bottom10)。
 	sb.texture_margin_left = BTN_CAP.position.x
-	sb.texture_margin_top = BTN_CAP.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - BTN_CAP.position.x - BTN_CAP.size.x
-		sb.texture_margin_bottom = tex.get_height() - BTN_CAP.position.y - BTN_CAP.size.y
+	sb.texture_margin_right = (tex.get_width() - BTN_CAP.position.x - BTN_CAP.size.x) if tex != null else 0.0
+	sb.texture_margin_top = (tex.get_height() - BTN_CAP.position.y - BTN_CAP.size.y) if tex != null else 0.0
+	sb.texture_margin_bottom = BTN_CAP.position.y
+	# content_margin = 0：Button text 在全 Button rect 几何中心居中（照源 label mediate 居中 Scale9Sprite）。
+	# cap 不对称致 texture_margin 不对称，默认 content=texture_margin 会让 text 居中偏移的九宫格内容区（字体不居中）。
+	sb.set_content_margin(SIDE_LEFT, 0)
+	sb.set_content_margin(SIDE_TOP, 0)
+	sb.set_content_margin(SIDE_RIGHT, 0)
+	sb.set_content_margin(SIDE_BOTTOM, 0)
 	return sb
 
 
