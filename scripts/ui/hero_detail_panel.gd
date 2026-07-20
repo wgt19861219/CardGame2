@@ -155,7 +155,6 @@ func _fill_card_view() -> void:
 	if cm == null:
 		return
 	var view: Control = _tab_views["card"] as Control
-	HeroDetailBuilder.setup_card_view(view, hero, cm)
 	HeroDetailTabs.fill_card_view(view, hero, cm)
 
 

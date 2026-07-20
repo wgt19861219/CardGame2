@@ -1,13 +1,15 @@
 class_name HeroDetailTabs
 extends RefCounted
 
-## HeroDetailPanel「图鉴 card」+「技能 skill」tab 内容工厂（task#9 拆分 2026-07-20）。
-## 从 hero_detail_panel.gd 外迁的纯绘制函数：card 视图 fill（类型图标/技能图标/星数）+
-## skill 行绘制（图标 TextureButton+边框 / 升级按钮）+ 技能描述弹板建。
-## 照源 readhero.lua:1069-1158 card / skillstren.lua:424-451 skill / skillstren.lua:14 desc。
-## 不含 panel 状态（_desc_label/_skill_host 等），全 static + 参数化，panel 传 host + on_click Callable。
-## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback（避免 class_name 循环引用）。
+## HeroDetailPanel「图鉴 card」+「技能 skill」tab 内容工厂（task#9 拆分 2026-07-20 + builder P2 拆分）。
+## 含 card 基础结构（frame/art/name，源 card.lua:127-140）+ card 图标/星数（readhero.lua:1069-1158）+
+## skill 行绘制（图标+升级按钮，源 skillstren.lua:424-451）+ 技能描述弹板（skillstren.lua:14）。
+## 不含 panel 状态，全 static + 参数化，panel 传 host + on_click Callable。
+## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback + HeroDetailBuilder.to_godot（避 class_name 循环）。
 
+# 源 card.lua:135 ui.container ccp(400,240) 相对 cardLayer；cardLayer 挂 container，pop endPos(-200,0)（window.lua:513）。
+# 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
+const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center（+50y → godot y=320 对齐 CardFrame center 320）
 # 源 readhero.lua:992 card_type_icon（big 版）：type → 类型图标资源。
 const CARD_TYPE_ICON_RES: Dictionary = {
 	"STR": "res://assets/ui/alpha/HVGA/card/card_att_str_big.png",
@@ -24,24 +26,87 @@ const SKILL_BTN_SIZE: Vector2 = Vector2(80.0, 28.0)
 const SKILL_DESC_POS: Vector2 = Vector2(400.0, 100.0)      # 描述弹板位置
 const SKILL_GROWTH_COLOR: Color = Color(1.0, 0.81, 0.07)   # 源 ccc3(231,206,19) 成长值黄
 const SKILL_TIP_RES: String = "res://assets/ui/alpha/HVGA/herodetail-skill-tip.png"
+# 源 skillstren.lua:345 升级按钮（Sprite herodetail_skill_upgrade_button_1.png 无文字 + button_press _2.png）。
+const SKILL_UP_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png"
+const SKILL_UP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_2.png"
+const SKILL_UP_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)
 # 源 UI 路径前缀映射（仿 readhero_icon.gd:81 Portrait）。
 const UI_PATH_PREFIX: String = "UI/"
 const UI_PATH_REPLACE: String = "res://assets/ui/"
 
 
-# ==================== card 图鉴视图 fill ====================
+# ==================== card 图鉴视图 fill（Phase B：.tscn %TabCardView 已建节点）====================
 
-# fill card view 入口：%CardFrame/%CardArtHost/%CardNameLabel 由 builder.setup_card_view 填，
-# 本函数补类型图标 + 技能图标 + 星数（源 getHeroCard readhero.lua:1069-1158）+ 标记 Art 子。
+# 统一 fill card view（panel._fill_card_view 入口）：frame/art/name 基础（源 card.lua:127-140）+
+# 类型图标/技能图标/星数（readhero.lua:1069-1158）+ 标记 Art 子（测试识别 card 内容渲染）。
 static func fill_card_view(view: Control, hero: HeroInstance, cm: Variant) -> void:
 	if cm == null:
 		return
+	_fill_card_frame(view.get_node("%CardFrame") as TextureRect, hero.rank)
+	_fill_card_art(view.get_node("%CardArtHost") as Control, hero, cm)
+	_fill_card_name(view.get_node("%CardNameLabel") as Label, hero, cm)
 	_fill_card_type_icon(view, hero, cm)
 	_fill_card_skill_icons(view, hero, cm)
 	_fill_card_stars(view, hero)
 	var art_host: Control = view.get_node("%CardArtHost") as Control
 	for c in art_host.get_children():
-		c.set_meta(&"tab_content", true)   # Art 标记（测试识别 card 内容渲染）
+		c.set_meta(&"tab_content", true)   # Art 标记
+
+
+# fill %CardFrame texture（源 card_frame rank 色，herodetailres.lua:27-51）。
+static func _fill_card_frame(frame: TextureRect, rank: int) -> void:
+	frame.texture = load(_card_frame_res(rank)) as Texture2D
+
+
+# fill %CardArtHost（源 card.lua:111 Art = row.Art，居中缩放进 frame + 圆角 shader 近似源 art_mask 裁剪）。
+static func _fill_card_art(host: Control, hero: HeroInstance, cm: Variant) -> void:
+	var art_res: String = String(cm.lookup("Unit", "Art", int(hero.tid)))
+	var art: TextureRect = _make_card_art(art_res)
+	if art != null:
+		host.add_child(art)
+
+
+# fill %CardNameLabel text（源 card.lua:112 name = Display Name）。get_display_name 在 builder（共用）。
+static func _fill_card_name(label: Label, hero: HeroInstance, cm: Variant) -> void:
+	label.text = HeroDetailBuilder.get_display_name(hero, cm)
+
+
+# rank → card_bg_{color}.png（源 card_frame 索引）。red 缺图 → orange 降级。
+static func _card_frame_res(rank: int) -> String:
+	var color: String = "white"
+	if rank >= 12:
+		color = "orange"
+	elif rank >= 7:
+		color = "purple"
+	elif rank >= 4:
+		color = "blue"
+	elif rank >= 2:
+		color = "green"
+	return "res://assets/ui/alpha/HVGA/card/card_bg_%s.png" % color
+
+
+# Art 立绘 TextureRect（源 :134 ed.readhero.getHeroCard）：居中缩放进 frame + 圆角 shader 近似源 art_mask 裁剪。
+static func _make_card_art(art_res: String) -> TextureRect:
+	if art_res.is_empty():
+		return null
+	var path: String = art_res.replace(UI_PATH_PREFIX, UI_PATH_REPLACE)
+	if not ResourceLoader.exists(path):
+		return null
+	var tex: Texture2D = load(path) as Texture2D
+	if tex == null:
+		return null
+	var sp := TextureRect.new()
+	sp.texture = tex
+	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED   # cover 铺满 + 裁剪溢出
+	sp.size = Vector2(369.0, 570.0)
+	# 源 art_mask.png 圆角裁剪（createClippingNode）。Godot 用 shader 圆角 alpha 近似（四角透明）。
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/rounded_corners.gdshader")
+	sp.material = mat
+	sp.position = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0) - sp.size * 0.5
+	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return sp
 
 
 # 源 getHeroCard type icon（readhero.lua:1069-1082）：card_att_X_big at ccp(32,67) fix_size 47×42。
@@ -60,7 +125,7 @@ static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant)
 	icon.texture = tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = Vector2(47.0, 42.0)
-	var art_center: Vector2 = HeroDetailBuilder.to_godot(HeroDetailBuilder.CARD_CENTER_COCOS.x, HeroDetailBuilder.CARD_CENTER_COCOS.y + 50.0)
+	var art_center: Vector2 = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0)
 	icon.position = art_center + Vector2(-91.0, 148.0) - icon.size * 0.5
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	view.add_child(icon)
@@ -72,7 +137,7 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 	if cm == null or hero == null:
 		return
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
-	var art_center: Vector2 = HeroDetailBuilder.to_godot(HeroDetailBuilder.CARD_CENTER_COCOS.x, HeroDetailBuilder.CARD_CENTER_COCOS.y + 50.0)
+	var art_center: Vector2 = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0)
 	for i in range(4):
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
 		var icon_res: String = String(slot_info.get("Icon", ""))
@@ -93,14 +158,13 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 
 
 # 源 getHeroCard stars（readhero.lua:1149-1158）：card_star_big at ccp(25+14*(i-1),27) scale 0.5 z=6-i。
-# 相对 Art ccp(123,215)：dx=-98+14*i，dy=+188（cocos y 翻转 godot）。
 static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 	if hero == null:
 		return
 	var tex: Texture2D = _load_texture(CARD_STAR_RES)
 	if tex == null:
 		return
-	var art_center: Vector2 = HeroDetailBuilder.to_godot(HeroDetailBuilder.CARD_CENTER_COCOS.x, HeroDetailBuilder.CARD_CENTER_COCOS.y + 50.0)
+	var art_center: Vector2 = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0)
 	for i in range(hero.stars):
 		var star := TextureRect.new()
 		star.texture = tex
@@ -116,10 +180,8 @@ static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 # ==================== skill 行绘制（图标 + 升级按钮）====================
 
 # 源 readhero.lua:1011 createSkillIcon + skillstren.lua:758 board_i pressHandler。
-# 边框 Sprite2D（equip_frame_white centered 居中）+ 图标 TextureButton（可点击 → 描述弹板）。
-# locked=true 灰显（源 skillstren.lua:434 setSpriteGray，modulate 降亮近似）。
-# icon_pos = 中心 godot 坐标（panel _fill_skills 用 SKILL_ICON_COCOS_X + TAB_POP_OFFSET_X 算好传入）。
-# on_click = 图标点击回调（panel 传 Callable(self,"_toggle_skill_desc").bind(slot)）。
+# 边框 Sprite2D（equip_frame_white centered）+ 图标 TextureButton（可点击 → 描述弹板）。
+# locked=true 灰显（源 skillstren.lua:434 setSpriteGray）。icon_pos/on_click 由 panel 传入。
 static func create_skill_icon(skill_host: Control, icon_res: String, icon_pos: Vector2, locked: bool, slot: int, on_click: Callable) -> void:
 	var tex: Texture2D = _load_ui_texture(icon_res)
 	if tex == null:
@@ -146,10 +208,16 @@ static func create_skill_icon(skill_host: Control, icon_res: String, icon_pos: V
 
 
 # 源 skillstren.lua:345 createSkillLevelBoard 升级按钮（herodetail_skill_upgrade_button_1.png 无文字）。
-# pos = 按钮 godot 左上（panel 算好传入，中心 = pos + size/2 传 builder.create_skill_upgrade_button）。
+# pos = 按钮 godot 左上基准（panel 算好传入，center = pos + SKILL_BTN_SIZE/2）。
 # on_click = 升级回调（panel 传 Callable(self,"_on_skill_upgrade_clicked").bind(idx)）。
 static func create_skill_upgrade_button(skill_host: Control, pos: Vector2, on_click: Callable) -> void:
-	var btn: TextureButton = HeroDetailBuilder.create_skill_upgrade_button(skill_host, pos + SKILL_BTN_SIZE * 0.5)
+	var btn := TextureButton.new()
+	btn.texture_normal = load(SKILL_UP_BTN_RES) as Texture2D
+	btn.texture_pressed = load(SKILL_UP_BTN_PRESS_RES) as Texture2D
+	btn.ignore_texture_size = true
+	btn.size = SKILL_UP_BTN_SIZE
+	btn.position = pos + SKILL_BTN_SIZE * 0.5 - SKILL_UP_BTN_SIZE * 0.5
+	skill_host.add_child(btn)
 	btn.set_meta(&"tab_content", true)   # 标记 tab 内容（测试识别）
 	btn.set_meta(&"skill_upgrade", true)   # 标记技能升级按钮（测试识别）
 	btn.pressed.connect(on_click)

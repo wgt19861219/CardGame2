@@ -1,11 +1,11 @@
 class_name HeroDetailBuilder
 extends RefCounted
 
-## HeroDetailPanel 视觉工厂（Phase A+B 重构 2026-07-17）。
-## base 层 + tab view（card/detail/skill）位置+size 静态化进 hero_detail_content.tscn（编辑器可视化调）。
-## 本类只往 .tscn 节点填动态数据（fill_*）+ 给 .tscn 普通 Button 套 Scale9 样式（apply_*）。
-## tab 内容（属性/技能行/Art）fill 到各 tab view 的 host（visible 切换，不再 free+重建）。
-## 源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)，同 hero_package/handbook 范式。
+## HeroDetailPanel 视觉工厂（Phase A+B 重构 2026-07-17 + builder P2 拆分 2026-07-20）。
+## base 层 fill（portrait/name board/stars/info/action/stone bar）+ tab 按钮 Scale9 样式。
+## base 层 + tab view 位置+size 静态化进 hero_detail_content.tscn（编辑器可视化调）。
+## card 基础（frame/art/name）+ skill 行绘制 + desc board 已外迁 HeroDetailTabs（P2 拆分）。
+## 源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)。
 
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
@@ -30,17 +30,6 @@ const PORTRAIT_REPLACE: String = "res://assets/ui/"
 # 源 parameter.lua:24 hero_max_star=5（.tscn 建 %StarYellow1-5 / %StarGrey1-5）。
 const STAR_COUNT: int = 5
 
-# ---- card 图鉴视图（源 card.lua，Phase B 静态化进 .tscn %TabCardView）----
-# 源 card.lua:135 ui.container ccp(400,240) 相对 cardLayer；cardLayer 挂 container，pop endPos(-200,0)（window.lua:513）。
-# 世界 cocos = 400-200 = 200（已含 pop -200 偏移）。card_frame size .tscn 固化（编辑器拖），fill 只设 texture。
-const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center（+50y → godot y=320 对齐 CardFrame center 320）
-const CARD_ART_MAX_SIZE: Vector2 = Vector2(240.0, 240.0)   # Art 缩放上限（frame 内贴图区）
-
-# ---- skill 升级按钮（源 skillstren.lua:345-364）----
-const SKILL_UP_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png"
-const SKILL_UP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_2.png"
-const SKILL_UP_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)
-
 
 static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + OFFSET_X, BASE_Y - cy)
@@ -50,7 +39,6 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 
 # 统一准备 base 层动态数据 + 按钮样式。base = .tscn instantiate 后的 %BaseLayer。
 # 返 {gs_label, tab_buttons}（panel 持有：gs_label 供 refresh_gs_after_wear，tab_buttons 供 tab 切换）。
-# 静态节点（%Bg/%NameBg/%StarGrey×5/%CloseBtn + 坐标）.tscn 已固化，此处不碰。
 static func setup_base(base: Control, hero: HeroInstance, cm: Variant) -> Dictionary:
 	fill_portrait(base.get_node("%PortraitHost"), hero, cm)
 	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), hero, cm)
@@ -146,6 +134,14 @@ static func _type_icon_res(attrib: String) -> String:
 	return ""
 
 
+# Unit Display Name（源 card/name 共用，LSTR key → 本地化名）。tabs._fill_card_name 也调本方法。
+static func get_display_name(hero: HeroInstance, cm: Variant) -> String:
+	if cm == null:
+		return ""
+	var name_key: String = String(cm.lookup("Unit", "Display Name", int(hero.tid)))
+	return String(cm.get_lstr(name_key))
+
+
 # fill %StarYellow1-5 visible（stars 个数；灰星底 %StarGrey1-5 恒显，源 createHeroStars :1341-1392）。
 static func fill_stars(yellow_stars: Array, stars: int) -> void:
 	for i in range(yellow_stars.size()):
@@ -176,7 +172,7 @@ static func fill_info_board(base: Control, hero: HeroInstance, cm: Variant) -> L
 
 # fill 1 action button（%UpgradeRankBtn）Scale9 样式 + LSTR text。
 # 源 window.lua:2158 upgrade label = T(LSTR("HERODETAIL.ADVANCE_"))。
-# ⚠️偏离源：evolve 文字按钮已删（用户简化决策 2026-07-18），升星由 %GetStoneBtn +号按钮触发（源 +号是 stonedetail 入口）。
+# ⚠️偏离源：evolve 文字按钮已删（用户简化决策 2026-07-18），升星由 %GetStoneBtn +号按钮触发。
 static func fill_action_buttons(base: Control, cm: Variant) -> void:
 	var labels: Dictionary = {
 		"UpgradeRankBtn": String(cm.get_lstr(&"HERODETAIL.ADVANCE_")) if cm != null else "进阶",
@@ -212,14 +208,12 @@ static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_
 	var sa: int = ReadheroHandbook.get_stone_amount(int(hero.tid), cm, hero_mgr)
 	var sn: int = ReadheroHandbook.get_stone_need(int(hero.tid), cm, hero_mgr)
 	# 源 herodetail.checkHeroMaxStar（window.lua:1670 等价）：hero._stars >= Unit.Max Stars。
-	# HeroData.max_stars = cm Unit 表 "Max Stars" 字段（hero_data.gd:34）；hero 实例无 data 字段，直接查表。
 	var max_stars: int = int(cm.get_int(&"Unit", int(hero.tid), &"Max Stars")) if cm != null else 5
 	var is_max_star: bool = hero.stars >= max_stars
 	# 源 :1668 label：满星「已进化到顶级」/ 否则 "sa/sn"
 	var text: String = (String(cm.get_lstr(LSTR_MAX_STAR)) if cm != null else "已进化到顶级") if is_max_star else ("%d/%d" % [sa, sn])
 	lbl.text = text
 	# 源 :1670 ui.evolve:setVisible(not isMaxStar) + :1812 get_stone 满星隐藏。
-	# evolve 文字按钮已删（简化），升星改由 GetStoneBtn +号触发，满星时 +号也隐藏。
 	stone_icon.visible = not is_max_star
 	bar_bg.visible = not is_max_star
 	bar.visible = not is_max_star
@@ -284,95 +278,3 @@ static func _make_tab_stylebox(res_path: String) -> StyleBoxTexture:
 		sb.texture_margin_right = tex.get_width() - TAB_CAP.position.x - TAB_CAP.size.x
 		sb.texture_margin_bottom = tex.get_height() - TAB_CAP.position.y - TAB_CAP.size.y
 	return sb
-
-
-# ==================== card 图鉴视图 fill（Phase B：.tscn %TabCardView 已建节点）====================
-
-# 统一 fill card view（%CardFrame texture + %CardArtHost Art + %CardNameLabel 名字）。
-# 源 card.lua:127-140 createCard：rank 色边框（card_frame）+ Art 立绘 + 名字。
-static func setup_card_view(view: Control, hero: HeroInstance, cm: Variant) -> void:
-	if cm == null:
-		return
-	fill_card_frame(view.get_node("%CardFrame"), hero.rank)
-	fill_card_art(view.get_node("%CardArtHost"), hero, cm)
-	fill_card_name(view.get_node("%CardNameLabel"), hero, cm)
-
-
-# fill %CardFrame texture（源 card_frame rank 色，herodetailres.lua:27-51）。
-# size .tscn 固化（编辑器拖 offset 调），expand_mode=EXPAND_IGNORE_SIZE 纹理缩进 size。
-static func fill_card_frame(frame: TextureRect, rank: int) -> void:
-	frame.texture = load(_card_frame_res(rank)) as Texture2D
-
-
-# fill %CardArtHost（源 card.lua:111 Art = row.Art，UI/art/card_bg_big_X.jpg 居中缩放进 frame）。
-static func fill_card_art(host: Control, hero: HeroInstance, cm: Variant) -> void:
-	var art_res: String = String(cm.lookup("Unit", "Art", int(hero.tid)))
-	var art: TextureRect = _make_card_art(art_res)
-	if art != null:
-		host.add_child(art)
-
-
-# fill %CardNameLabel text（源 card.lua:112 name = Display Name）。
-static func fill_card_name(label: Label, hero: HeroInstance, cm: Variant) -> void:
-	label.text = get_display_name(hero, cm)
-
-
-# Unit Display Name（源 card/name 共用，LSTR key → 本地化名）。
-static func get_display_name(hero: HeroInstance, cm: Variant) -> String:
-	if cm == null:
-		return ""
-	var name_key: String = String(cm.lookup("Unit", "Display Name", int(hero.tid)))
-	return String(cm.get_lstr(name_key))
-
-
-# rank → card_bg_{color}.png（源 card_frame 索引）。red 缺图 → orange 降级。
-static func _card_frame_res(rank: int) -> String:
-	var color: String = "white"
-	if rank >= 12:
-		color = "orange"
-	elif rank >= 7:
-		color = "purple"
-	elif rank >= 4:
-		color = "blue"
-	elif rank >= 2:
-		color = "green"
-	return "res://assets/ui/alpha/HVGA/card/card_bg_%s.png" % color
-
-
-# Art 立绘 TextureRect（源 :134 ed.readhero.getHeroCard）：居中缩放进 frame，略上偏让出底部 name 区。
-static func _make_card_art(art_res: String) -> TextureRect:
-	if art_res.is_empty():
-		return null
-	var path: String = art_res.replace(PORTRAIT_PREFIX, PORTRAIT_REPLACE)
-	if not ResourceLoader.exists(path):
-		return null
-	var tex: Texture2D = load(path) as Texture2D
-	if tex == null:
-		return null
-	var sp := TextureRect.new()
-	sp.texture = tex
-	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED   # cover 铺满 + 裁剪溢出
-	sp.size = Vector2(369.0, 570.0)
-	# 源 art_mask.png 圆角裁剪（createClippingNode）。Godot 用 shader 圆角 alpha 近似（四角透明）。
-	var mat := ShaderMaterial.new()
-	mat.shader = preload("res://shaders/rounded_corners.gdshader")
-	sp.material = mat
-	sp.position = to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0) - sp.size * 0.5
-	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return sp
-
-
-# ==================== skill 升级按钮（tab 内容动态挂 host，源 skillstren.lua:345-364）====================
-
-# 源 skillstren.lua 技能升级按钮 = Sprite herodetail_skill_upgrade_button_1.png（无文字，纯图标）
-# + button_press herodetail_skill_upgrade_button_2.png。本项目 TextureButton（normal/pressed 双态）居中于 pos。
-static func create_skill_upgrade_button(parent: Control, godot_center_pos: Vector2) -> TextureButton:
-	var btn := TextureButton.new()
-	btn.texture_normal = load(SKILL_UP_BTN_RES) as Texture2D
-	btn.texture_pressed = load(SKILL_UP_BTN_PRESS_RES) as Texture2D
-	btn.ignore_texture_size = true
-	btn.size = SKILL_UP_BTN_SIZE
-	btn.position = godot_center_pos - SKILL_UP_BTN_SIZE * 0.5
-	parent.add_child(btn)
-	return btn
