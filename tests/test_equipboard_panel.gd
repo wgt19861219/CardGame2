@@ -136,3 +136,25 @@ func test_compose_opens_fragment_compose_panel() -> void:
 	assert_true(has_compose, "fragment 右按钮弹 FragmentComposePanel")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── 合成回调（FragmentComposePanel.composed → equipboard emit composed + 关闭，源 downFragmentCompose :21-46）──
+
+func test_compose_emits_composed_signal() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var recipe: Dictionary = _find_hero_fragment_recipe()
+	var frag_id: int = int(recipe["frag_id"])
+	var hero_tid: int = int(recipe["tid"])
+	var cell: Dictionary = {"id": frag_id, "makeId": hero_tid, "amount": 5, "category": "BATTLE.HERO", "type": 2, "needAmount": 10}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var composed_args: Array = []
+	panel.composed.connect(func(i: int) -> void: composed_args.append(i))
+	panel._on_frag_composed()   # 触发合成回调（emit composed + remove_window）
+	assert_eq(composed_args.size(), 1, "composed 信号 emit 一次")
+	assert_eq(int(composed_args[0]), frag_id, "composed item_id = 碎片 id")
+	assert_true(panel.is_queued_for_deletion(), "合成后 equipboard queue_free 关闭（源 consumeAmount :55 amount<=0 popout 等价）")
+	root.queue_free()

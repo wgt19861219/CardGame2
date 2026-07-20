@@ -54,6 +54,7 @@ const LSTR_ITEM: String = "EQUIPINFO.ITEM"        # board.lua:87 持有量后缀
 const LSTR_SALE_COST: String = "EQUIPINFO.UNIT_SALE_COST"  # ofpackage.lua:66 售价标题
 
 signal sold(item_id: int)           # 卖出后通知调用方刷新（PackagePanel 重 classify）
+signal composed(item_id: int)       # 碎片合成后通知调用方刷新（PackagePanel 重 classify，源 downFragmentCompose）
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -275,7 +276,16 @@ func _on_right_pressed() -> void:
 func _open_compose() -> void:
 	var panel := FragmentComposePanel.new("fragmentcompose", {})
 	panel.setup_panel(_make_id, cm, pd)
+	panel.composed.connect(_on_frag_composed)   # 源 downFragmentCompose :21-46 合成成功回调
 	panel.show_window(get_parent())
+
+
+# 源 downFragmentCompose :21-46 合成成功 → consumeAmount 刷新 list + tag 可见性。
+# 本项目 emit composed 通知 PackagePanel 重 classify（碎片 cell 数量/角标变化），并关闭浮层
+# （合成后碎片 cell 数据失效，照源 consumeAmount :55 amount<=0 equipLayer:popout 等价）。
+func _on_frag_composed() -> void:
+	composed.emit(_item_id)
+	remove_window()
 
 
 # 详情（源 param.doCheck → equipdetail.create(id)）。第 26 段接 EquipdetailPanel。

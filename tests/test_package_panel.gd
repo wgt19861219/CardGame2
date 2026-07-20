@@ -187,6 +187,25 @@ func test_cell_click_switch_refresh_equipboard() -> void:
 	root.queue_free()
 
 
+# 合成回调刷新 grid（equipboard.composed → _on_sold 重 classify + 重填，源 downFragmentCompose consumeAmount :47-74）。
+func test_compose_refreshes_grid() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var parts_id: int = _find_equip_id_by_category("EQUIP.PARTS")
+	pd.add_item(parts_id, 1)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	assert_eq(panel._grid.get_child_count(), 1, "初始 1 cell")
+	panel._on_cell_clicked({"id": parts_id, "amount": 1, "type": 1})
+	assert_not_null(panel._equipboard, "点 cell 建 _equipboard")
+	pd.sell_equip(parts_id, 1)   # 模拟持有量变化（合成/卖出消耗，1→0）
+	panel._equipboard.composed.emit(parts_id)   # 触发 composed → _on_sold 刷新
+	assert_eq(panel._grid.get_child_count(), 0, "composed → _on_sold 刷新 grid，持有量 0 cell 消失")
+	panel.remove_window()
+	root.queue_free()
+
+
 # ── 顶部货币条（源 framework.lua:755 sbCreateTitle common，所有非 main 场景建 3 货币条）──
 
 func test_status_bar_built_with_three_bars() -> void:
