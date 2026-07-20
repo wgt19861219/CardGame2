@@ -1,6 +1,6 @@
 shader_type canvas_item;
 // 源 createClippingNode(cardres, art_mask.png) 圆角遮罩的 Godot 近似（hero_detail card 立绘边角圆角）。
-uniform float radius : hint_range(0.0, 0.5) = 0.06;
+uniform float radius : hint_range(0.0, 0.5) = 0.07;
 
 void fragment() {
 	vec2 p = abs(UV - 0.5);

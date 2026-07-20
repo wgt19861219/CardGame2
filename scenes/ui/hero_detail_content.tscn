@@ -458,6 +458,7 @@ offset_right = 464.5
 offset_bottom = 605.0
 mouse_filter = 2
 expand_mode = 1
+z_index = 1
 
 [node name="CardArtHost" type="Control" parent="TabCardView" unique_id=1358059727]
 unique_name_in_owner = true
@@ -477,6 +478,7 @@ offset_top = 458.0
 offset_right = 360.0
 offset_bottom = 482.0
 theme_override_font_sizes/font_size = 22
+z_index = 2
 
 [node name="TabDetailView" type="Control" parent="." unique_id=1296177190]
 unique_name_in_owner = true
@@ -502,15 +504,23 @@ mouse_filter = 2
 texture = ExtResource("7_popup")
 expand_mode = 1
 
-[node name="AttribListHost" type="Control" parent="TabDetailView" unique_id=1760374850]
+[node name="AttribListHost" type="ScrollContainer" parent="TabDetailView" unique_id=1760374850]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 0
+offset_left = 113.5
+offset_top = 50.0
+offset_right = 362.5
+offset_bottom = 465.0
 mouse_filter = 2
+horizontal_scroll_mode = 0
+
+[node name="AttribVBox" type="VBoxContainer" parent="TabDetailView/AttribListHost" unique_id=1760374851]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
 
 [node name="TabSkillView" type="Control" parent="." unique_id=719953858]
 unique_name_in_owner = true

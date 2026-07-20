@@ -1,0 +1,154 @@
+class_name HeroDetailAttribs
+extends RefCounted
+
+## HeroDetailPanel「详细属性」tab 内容工厂（task#9 拆分 2026-07-20）。
+## 从 hero_detail_panel.gd 外迁的纯绘制函数：属性列表 fill（简介标题+Description+Narrative+
+## 属性标题+成长值+21 属性）。照源 attributes.lua createAttList（:455-563）draglist 竖排，
+## 本项目 ScrollContainer+%AttribVBox 替代 draglist（cliprect 249×415 照源）。
+## 不含 panel 状态，全 static + 参数化（hero/cm/vbox）。Logic 层不依赖 Control 子类可 headless 单测。
+
+# 源 baseres.lua:5 att_name 全集 21 个（照源 attributes.lua 循环 #att_name，禁裁剪）。
+const DISPLAY_ATTRIBS: Array[String] = ["STR", "INT", "AGI", "HP", "AD", "AP", "ARM", "MR", "CRIT", "MCRIT", "HPS", "MPS", "DODG", "ARMP", "MRI", "LFS", "CDR", "HEAL", "HIT", "SKL", "SILR"]
+# 源 baseres.lua:80 att_pre（属性显示前缀 LSTR key）。SILR 源 T("") 空 → 用 key 本身 fallback。
+const ATTR_PRE_LSTR: Dictionary = {
+	"STR": "BASERES.STRENGTH_", "INT": "BASERES.INTELLIGENCE_", "AGI": "BASERES.AGILITY_",
+	"HP": "BASERES.MAXIMUM_HP_", "AD": "BASERES.PHYSICAL_ATTACK_", "AP": "BASERES.MAGIC_STRENGTH_",
+	"ARM": "BASERES.PHYSICAL_ARMOR_", "MR": "BASERES.MAGIC_RESISTANCE_",
+	"CRIT": "BASERES.PHYSICAL_CRIT_", "MCRIT": "BASERES.MAGIC_CRIT_",
+	"HPS": "BASERES.HP_REPLIES_", "MPS": "BASERES.ENERGY_RECOVERY_", "DODG": "BASERES.DODGE_",
+	"ARMP": "BASERES.PHYSICAL_ARMOR_PENETRATION", "MRI": "BASERES.IGNORE_MAGIC_RESISTANCE",
+	"LFS": "BASERES.VAMPIRE_LEVEL_", "CDR": "BASERES.REDUCE_ENERGY_CONSUMPTION",
+	"HEAL": "BASERES.IMPROVE_THERAPEUTIC_SKILL_EFFECT",
+	"HIT": "baseres.1.10.1.004", "SKL": "baseres.1.10.1.005",
+}
+# 源 baseres.lua:105 att_suffix（属性后缀，大多空）。
+const ATTR_SUFFIX: Dictionary = {"CDR": "%", "HEAL": "%", "SKL": " "}
+# 源 attributes.lua att 颜色（toccc3 int→RGB）：name/旁白 15843697、base/growth值 16771782、add 10543386。
+const ATT_PRE_COLOR: Color = Color(0.945, 0.757, 0.443)   # 源 toccc3(15843697)
+const ATT_BASE_COLOR: Color = Color(1.0, 0.918, 0.776)  # 源 toccc3(16771782)
+const ATT_ADD_COLOR: Color = Color(0.627, 0.882, 0.102) # 源 toccc3(10543386)
+const ATT_TITLE_COLOR: Color = Color(0.984, 0.808, 0.063)  # 源 ccc3(251,206,16)
+const ATT_GROWTH_NAME_COLOR: Color = Color(1.0, 0.302, 0.0) # 源 ccc3(255,77,0)
+const ATT_DESC_COLOR: Color = Color.WHITE              # 源 des 默认色（config 无 color）
+const ATT_TEXT_WIDTH: float = 235.0   # 源 des dimension CCSizeMake(235,0)
+const ATT_TITLE_MARK_RES: String = "res://assets/ui/alpha/HVGA/herodetail-title-mark.png"
+
+
+# 源 attributes.lua createAttList（:455-563）draglist 竖排：简介标题+Description+Narrative+
+# 属性标题+成长值（createGrowth）+ 21 属性（createAttDetail）。本项目 ScrollContainer+%AttribVBox 替代 draglist。
+static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant) -> void:
+	if hero == null or cm == null:
+		return
+	for c in vbox.get_children():
+		c.free()
+	_add_section_title(vbox, &"HERODETAILATT.HERO_INTROUDUCEMENT", "英雄简介", cm)
+	var desc: String = String(cm.lookup(&"Unit", "Description", int(hero.tid)))
+	if not desc.is_empty():
+		_add_text(vbox, desc, 18, ATT_DESC_COLOR)
+	var narrative: String = String(cm.lookup(&"Unit", "Narrative", int(hero.tid)))
+	if not narrative.is_empty():
+		_add_text(vbox, narrative, 16, ATT_PRE_COLOR)
+	_add_section_title(vbox, &"HERODETAILATT.HERO_ATTRIBUTES", "英雄属性", cm)
+	_add_growth(vbox, hero, cm)
+	var att: Dictionary = ReadheroAttribs.get_hero_att_by_hero(hero, cm)
+	for key in DISPLAY_ATTRIBS:
+		if not att.has(key):
+			continue   # 源 refreshAttPos base<=0 且 add<=0 隐藏（setScaleY(0)）
+		var row: Dictionary = att[key]
+		var pre: String = get_lstr_fallback(String(ATTR_PRE_LSTR.get(key, "")), key, cm)
+		var suffix: String = String(ATTR_SUFFIX.get(key, ""))
+		var row_box := HBoxContainer.new()
+		row_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row_box.add_theme_constant_override("separation", 1)
+		var name_lbl := Label.new()
+		name_lbl.text = pre + ":"
+		name_lbl.modulate = ATT_PRE_COLOR
+		row_box.add_child(name_lbl)
+		var base_lbl := Label.new()
+		base_lbl.text = str(int(row["all"]))
+		base_lbl.modulate = ATT_BASE_COLOR
+		row_box.add_child(base_lbl)
+		if int(row["add"]) > 0:
+			var add_lbl := Label.new()
+			add_lbl.text = "+" + str(int(row["add"])) + suffix
+			add_lbl.modulate = ATT_ADD_COLOR
+			row_box.add_child(add_lbl)
+		vbox.add_child(row_box)
+
+
+# 源 createAttList title-mark + des_title（20 size 黄 ccc3(251,206,16)，HERO_INTROUDUCEMENT/HERO_ATTRIBUTES）。
+static func _add_section_title(vbox: VBoxContainer, lstr_key: StringName, fallback: String, cm: Variant) -> void:
+	var tex: Texture2D = _load_texture(ATT_TITLE_MARK_RES)
+	if tex != null:
+		var mark := TextureRect.new()
+		mark.texture = tex
+		mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		mark.stretch_mode = TextureRect.STRETCH_SCALE
+		mark.custom_minimum_size = Vector2(80.0, 12.0)
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(mark)
+	var lbl := Label.new()
+	lbl.text = String(cm.get_lstr(lstr_key)) if cm != null else fallback
+	lbl.modulate = ATT_TITLE_COLOR
+	lbl.add_theme_font_size_override("font_size", 20)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(lbl)
+
+
+# 源 createAttList des/narrative（dimension 235×0 自动换行，18/16 size）。
+static func _add_text(vbox: VBoxContainer, text: String, size: int, color: Color) -> void:
+	if text.is_empty():
+		return
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.modulate = color
+	lbl.add_theme_font_size_override("font_size", size)
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.custom_minimum_size = Vector2(ATT_TEXT_WIDTH, 0.0)
+	lbl.size_flags_horizontal = Control.SIZE_FILL
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(lbl)
+
+
+# 源 createGrowth（:296-401）：STR/INT/AGI 名（红 ccc3(255,77,0)）+ 值（toccc3(16771782)），16 size。
+static func _add_growth(vbox: VBoxContainer, hero: HeroInstance, cm: Variant) -> void:
+	if hero == null or cm == null:
+		return
+	var growth: Dictionary = ReadheroData.get_growth(int(hero.tid), hero.stars, cm)
+	if growth.is_empty():
+		return
+	var names: Dictionary = {
+		"STR": get_lstr_fallback("HERODETAILATT.STRENGTH_GROWTH_", "力量成长", cm),
+		"INT": get_lstr_fallback("HERODETAILATT.INTELLIGENCE_GROWTH_", "智力成长", cm),
+		"AGI": get_lstr_fallback("HERODETAILATT.AGILITY_GROWTH_", "敏捷成长", cm),
+	}
+	for k in ["STR", "INT", "AGI"]:
+		if not growth.has(k):
+			continue
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var name_lbl := Label.new()
+		name_lbl.text = String(names[k])
+		name_lbl.modulate = ATT_GROWTH_NAME_COLOR
+		name_lbl.add_theme_font_size_override("font_size", 16)
+		row.add_child(name_lbl)
+		var val_lbl := Label.new()
+		val_lbl.text = str(int(growth[k]))
+		val_lbl.modulate = ATT_BASE_COLOR
+		val_lbl.add_theme_font_size_override("font_size", 16)
+		row.add_child(val_lbl)
+		vbox.add_child(row)
+
+
+# cm 可能为 null（测试降级）的 LSTR fallback：key 空或 cm null → 返 fallback（源英文 key）。
+# panel/tabs 共用（单向：tabs → HeroDetailAttribs.get_lstr_fallback，避免 class_name 循环）。
+static func get_lstr_fallback(lstr_key: String, fallback: String, cm: Variant) -> String:
+	if lstr_key.is_empty() or cm == null:
+		return fallback
+	return String(cm.get_lstr(lstr_key))
+
+
+static func _load_texture(path: String) -> Texture2D:
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
