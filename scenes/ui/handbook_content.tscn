@@ -390,6 +390,20 @@ mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="PageTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 380.0
+offset_top = 115.0
+offset_right = 580.0
+offset_bottom = 143.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+z_index = 20
+
 [node name="EquipGridHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3

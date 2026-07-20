@@ -39,6 +39,13 @@ const TAG_LSTR: Array[String] = [
 	"HANDBOOK.HEALTH", "HANDBOOK.PHYSICAL_ATTACK", "HANDBOOK.MAGIC_ATTACK", "HANDBOOK.ARMOR",
 	"HANDBOOK.CRIT", "HANDBOOK.HEALTH_SUPPLY", "HANDBOOK.MAGIC_SUPPLY", "SKILL.HEAL",
 ]
+# 12 tag 分类标题 LSTR(源 tagText.title1-12 :53-64,切 tag 时 pageTitle 显示)。与 TAG_LSTR 同序。
+const TITLE_LSTR: Array[String] = [
+	"HANDBOOK.WHOLE", "HANDBOOK.POWER", "HANDBOOK.AGILITY", "HANDBOOK.INTELLIGENCE",
+	"BASERES.MAXIMUM_HP", "BASERES.PHYSICAL_ATTACK", "BASERES.MAGIC_STRENGTH", "BASERES.PHYSICAL_ARMOR",
+	"HANDBOOK.PHYSICAL_CRIT_MAGIC_CRIT", "BASERES.RECOVER_HP_AFTER_EACH_BATTLE",
+	"BASERES.REPLENISH_ENERGY_AFTER_EACH_BATTLE", "BASERES.IMPROVE_THERAPEUTIC_SKILL_EFFECT",
+]
 const TAG_COUNT: int = 12
 
 
@@ -85,6 +92,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 	var bg_size: Vector2 = TexDisplaySize.display_size(EQUIP_BG_RES) if bg_tex != null else Vector2(114, 114) / CONTENT_SCALE
 	cell.custom_minimum_size = bg_size
 	cell.size = bg_size
+	cell.pivot_offset = bg_size * 0.5   # 中心缩放(began setScale 0.95 围绕中心,源 anchor 0.5,0.5)
 	var bg := TextureRect.new()
 	bg.texture = bg_tex
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -134,6 +142,13 @@ static func _add_name_label(parent: Control, text: String) -> void:
 	lbl.position = EQUIP_NAME_POS
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(lbl)
+
+
+# 源 setPageTitle :475 pageTitle = tagText["title" .. tagTextIndex[listName]]。index 1-12 → TITLE_LSTR。
+static func title_text(index: int, cm: Variant) -> String:
+	if index < 1 or index > TAG_COUNT:
+		return ""
+	return _lstr(cm, TITLE_LSTR[index - 1])
 
 
 static func _lstr(cm: Variant, key: String) -> String:
