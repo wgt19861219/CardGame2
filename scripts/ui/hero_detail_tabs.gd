@@ -10,16 +10,28 @@ extends RefCounted
 # 源 card.lua:135 ui.container ccp(400,240) 相对 cardLayer；cardLayer 挂 container，pop endPos(-200,0)（window.lua:513）。
 # 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
 const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center 世界 cocos（container center = frame center）
-# card tab container（源 Art 逻辑区 242×420）Godot 坐标。.tscn CardFrame 369×570 = 源 frame 315×545 放大
-# sx=369/315=1.169 sy=570/545=1.045。container Godot size 283×439，center 同 CardFrame center (280,320)。
-# 源 star/skillIcon/type ccp 相对 container 左下角（cocos 左下原点 y 向上），按 COORD_SX/SY 放大到 Godot。
-const CONTAINER_ORIGIN: Vector2 = Vector2(138.5, 539.5)   # container 左下角 Godot（280-141.5, 320+219.5）
-const CONTAINER_SIZE: Vector2 = Vector2(335.0, 417.0)   # card_bg 镂空区 Godot（纹理 286×401 × CardFrame 放大，实测 tmp_hole_check）
-const CONTAINER_LOGIC_HEIGHT: float = 439.0   # 源 container 逻辑高 420 Cocos × COORD_SY 1.045（readhero.lua:1053+1134 Art setScale(420/ArtH) 显示高=container 高，非镂空高 401）
-const CARD_FRAME_SIZE: Vector2 = Vector2(369.0, 570.0)   # CardFrame 阶级框 size Godot（Art 铺满框基准，offset 95.5,35→464.5,605）
-const COORD_SX: float = 1.169   # Godot CardFrame 宽 / 源 frame 宽（369/315）
-const COORD_SY: float = 1.045   # Godot CardFrame 高 / 源 frame 高（570/545）
-const ART_CENTER: Vector2 = Vector2(280.0, 261.0)   # 源 Art ccp(123,215)=container center；Godot 镂空 center 实测 281,260
+# 源 readhero.lua:1053 container CCSizeMake(242, 420)；frame card_bg_*.png 315×545（实测 PNG IHDR）；
+# Art setScale(420/ArtH) 显示高=container 高 420（readhero.lua:1134）。frame 镂空区 PIL 实测 294×372 居中偏上 77px。
+# 项目 CardFrame .tscn offset (122.5,47.5)→(437.5,592.5) size 315×545 照源原尺寸（不放大，旧 369×570 偏大用户反馈）。
+const CONTAINER_ORIGIN: Vector2 = Vector2(138.5, 539.5)   # container 左下角 Godot（保留兼容旧调用，Art fill 不再用）
+const CONTAINER_SIZE: Vector2 = Vector2(335.0, 417.0)   # 旧镂空区估算（保留兼容，Art fill 不再用）
+const CONTAINER_LOGIC_HEIGHT: float = 282.0   # 保留兼容（旧 Art fill 用），新 Art 公式改用 CARD_HOLE_SIZE
+const CARD_FRAME_SIZE: Vector2 = Vector2(315.0, 545.0)   # CardFrame 阶级框 size 照源 PNG IHDR（offset 122.5,47.5→437.5,592.5）
+# Art 内缩量（像素）：Art size = CardFrame size - INSET*2，让 Art 4 角落在 frame 圆角装饰内圈不超出。
+# PIL 实测 CardFrame 4 角圆角半径约 8px，Art 之前 = frame size 时 4 角凸出 frame 圆角外 5px（38px² 面积），
+# 内缩 8px 后 Art 4 角在 frame 圆角装饰内圈，0 凸出（牺牲少量边缘 Art 内容换边角整齐）。
+const CARD_FRAME_INSET: float = 8.0
+# card_bg 镂空区 PIL alpha<128 flood fill 实测 bbox (10,10)~(303,476) center png (156.5, 243.0)。
+# 源 frame png 315×545，镂空 294×467 居中偏上 29.5px（png y_center 243 vs frame center 272.5）。
+# Art 纹理实测 card_bg_big_*.jpg 536×928 ratio 0.5776，CardFrame 315×545 ratio 0.5780，**两者几乎同比例**。
+# 用户要"按比例铺满框"= Art 铺满整个 CardFrame 315×545（不是镂空 294×467），Art 315×545 完全覆盖 frame，
+# frame 边框装饰 + name 条从 Art 之上盖下来（源效果）。
+const CARD_HOLE_SIZE: Vector2 = Vector2(294.0, 467.0)   # 保留（PIL alpha<128 实测，作参考）
+const COORD_SX: float = 1.0   # 照源 1:1（旧 1.169=369/315 是错放大）
+const COORD_SY: float = 1.0   # 照源 1:1（旧 1.045=570/545 是错放大）
+# Art center 对齐 CardFrame center (280,320)，让 Art 相对 frame 上下对称铺满。
+# （先前对齐镂空 center (279, 290.5) 致 Art 偏上：顶超出 frame 11px + 底距 frame 47px，用户反馈"顶超出底留白"）
+const ART_CENTER: Vector2 = Vector2(280.0, 320.0)   # Art 显示中心 = CardFrame center
 const ART_MODULATE: Color = Color(1.0, 1.0, 1.0)   # 原始不提亮（暗根因=层级：TabCardView z-1 被 BaseLayer Bg 盖，改 z 解决非提亮）
 const ART_MASK_RES: String = "res://assets/ui/alpha/HVGA/art_mask.png"
 # 源 readhero.lua:992 card_type_icon（big 版）：type → 类型图标资源。
@@ -73,7 +85,7 @@ static func _fill_card_frame(frame: TextureRect, rank: int) -> void:
 # fill %CardArtHost（源 card.lua:111 Art = row.Art，居中缩放进 frame + 圆角 shader 近似源 art_mask 裁剪）。
 static func _fill_card_art(host: Control, hero: HeroInstance, cm: Variant) -> void:
 	var art_res: String = String(cm.lookup("Unit", "Art", int(hero.tid)))
-	var art: TextureRect = _make_card_art(art_res)
+	var art: TextureRect = _make_card_art(art_res, hero.rank)
 	if art != null:
 		host.add_child(art)
 
@@ -97,8 +109,13 @@ static func _card_frame_res(rank: int) -> String:
 	return "res://assets/ui/alpha/HVGA/card/card_bg_%s.png" % color
 
 
-# Art 立绘 TextureRect（源 readhero.lua:1136-1139 createClippingNode(cardres, art_mask) + setScale(420/ArtH)）。
-static func _make_card_art(art_res: String) -> TextureRect:
+# Art 立绘 TextureRect（源 readhero.lua:1131-1134 createClippingNode(cardres, art_mask) + setScale(420/ArtH)）。
+# 用户需求（2026-07-20）：立绘"按比例铺满框中"= cover CardFrame 315×545（Art ratio 0.5776 ≈ frame ratio 0.5780，
+# 显示 ≈315×545 完全覆盖 frame，frame 边框装饰 + name 条从 Art 之上盖下来）。
+# 用户反馈"Art 4 个边角凸出 frame 圆角外"，根因：源 art_mask.png 圆角半径 3px < CardFrame 圆角 8px，且 Art size = frame size
+# 致 Art 方角从 frame 圆角透明区露出。修法：Art size 内缩 CARD_FRAME_INSET（8px）让 Art 方角落在 frame 圆角装饰内圈，
+# 不超出 frame 边界（牺牲少量边缘 Art 内容换边角整齐）。
+static func _make_card_art(art_res: String, rank: int) -> TextureRect:
 	if art_res.is_empty():
 		return null
 	var path: String = art_res.replace(UI_PATH_PREFIX, UI_PATH_REPLACE)
@@ -110,20 +127,25 @@ static func _make_card_art(art_res: String) -> TextureRect:
 	var sp := TextureRect.new()
 	sp.texture = tex
 	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# Art 区 = card_bg 镂空区 = 源 container 242×420 放大到 Godot（CONTAINER_SIZE 283×439）。
-	# Art size 按镂空框宽 × 纹理 ratio（335×579 ratio 0.578），完整显示纹理不裁不变形。
-	# 镂空框 335×417（ratio 0.803 宽矮）< Art 高 579，Art 上下被 card_bg 边框/name 区盖（源效果）。
-	var tex_ratio: float = float(tex.get_width()) / float(tex.get_height())
-	sp.size = Vector2(CONTAINER_LOGIC_HEIGHT * tex_ratio, CONTAINER_LOGIC_HEIGHT)   # 源 setScale(420/ArtH) uniform：Art 高=container 逻辑高 439、宽按纹理 ratio（用户选 A 完整不裁，窄高立绘横向<镂空→左右留空=镂空透明）
-	sp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED   # fit size 不裁不变形（完整立绘头脚），ratio 0.578≠镂空0.803 致横向留空
-	sp.modulate = ART_MODULATE   # 提亮（Art 纹理 mean 95 偏暗=源设计，用户要亮）
-	# 源 art_mask.png 裁剪（createClippingNode setStencil art_mask + alphaThreshold 0.5）。
+	# Art size = CardFrame size - 内缩 ×2（上下/左右各内缩 CARD_FRAME_INSET）。
+	# Art ratio ≈ frame ratio，内缩后仍铺满 frame 内圈（圆角装饰内），4 角不超出 frame 圆角。
+	# Art center 保持 = CardFrame center (280, 320)，Art 上下/左右对称内缩。
+	var tex_w: float = float(tex.get_width())
+	var tex_h: float = float(tex.get_height())
+	var target_w: float = CARD_FRAME_SIZE.x - CARD_FRAME_INSET * 2.0
+	var target_h: float = CARD_FRAME_SIZE.y - CARD_FRAME_INSET * 2.0
+	var cover_scale: float = max(target_w / tex_w, target_h / tex_h)
+	var disp_w: float = tex_w * cover_scale
+	var disp_h: float = tex_h * cover_scale
+	sp.size = Vector2(disp_w, disp_h)
+	sp.stretch_mode = TextureRect.STRETCH_SCALE
+	sp.modulate = ART_MODULATE
+	# 源 art_mask.png 裁剪（保留作 Art 圆角效果，Art 内缩后 4 角已在 frame 圆角内不再凸出）。
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://shaders/art_mask.gdshader")
 	mat.set_shader_parameter("mask_tex", load(ART_MASK_RES) as Texture2D)
 	sp.material = mat
-	sp.position = ART_CENTER - sp.size * 0.5
-	# Art z 默认 0 < card_bg frame(z=1)（源 addChild(card) 不传 z=0）；frame 镂空透明，Art 从镂空透出（源 createClippingNode 效果）
+	sp.position = ART_CENTER - sp.size * 0.5   # Art center 居中到镂空 center
 	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return sp
 

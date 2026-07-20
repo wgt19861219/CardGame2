@@ -97,9 +97,13 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		"detail": content.get_node("%TabDetailView") as Control,
 		"skill": content.get_node("%TabSkillView") as Control,
 	}
-	# tab 内容 z=-1 在 base(bg)下层：侧滑时从 bg 底部滑出（源 tab layer 在 mainLayer z=120 之下，非盖在 bg 上）
-	for k in _tab_views:
-		(_tab_views[k] as CanvasItem).z_index = -1
+	# tab view 的 z_index 由 .tscn 决定，运行时不再强制覆盖：
+	# - TabCardView z=2（高于 BaseLayer z=0，让 Art 立绘盖在 herodetail-bg 之上）
+	# - TabDetailView / TabSkillView z=-1（自带 PopupBg 当背景）
+	# 先前循环 `z_index = -1` 是 bug：把 TabCardView 拉到 BaseLayer/Bg 之下，Art 从 CardFrame
+	# 镂空区被全屏 bg 盖住，立绘"看起来暗"实为根本没显示。源 card.lua:129-154 cardLayer
+	# 是 CCLayerColor(opacity=0 透明)整个盖住 baseLayer + cardLayer:setZOrder(10)，本项目的
+	# 等价实现就是让 TabCardView z > BaseLayer/Bg z。
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
 	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
 	_fill_card_view()

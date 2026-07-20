@@ -452,10 +452,10 @@ z_index = 2
 [node name="CardFrame" type="TextureRect" parent="TabCardView" unique_id=649205390]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
+offset_left = 122.5
+offset_top = 47.5
+offset_right = 437.5
+offset_bottom = 592.5
 mouse_filter = 2
 expand_mode = 1
 z_index = 1
