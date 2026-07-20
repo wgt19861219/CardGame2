@@ -43,7 +43,7 @@ func handle_add_node(params: Dictionary, request_id: int) -> Dictionary:
 		return {"error": {"code": -32004, "message": "Invalid node name: %s" % node_name}}
 
 	if not _is_allowed_node_type(node_type):
-		return {"error": {"code": -32004, "message": "Blocked node type: %s" % node_type}}
+		return {"error": {"code": -32004, "message": "Blocked node type: %s. Control 类（TextureRect/Button 等）请用 ui_create_control 工具" % node_type}}
 
 	var parent_node: Node = root
 	if not parent_path.is_empty():
@@ -51,7 +51,10 @@ func handle_add_node(params: Dictionary, request_id: int) -> Dictionary:
 		# Godot get_node_or_null 受场景树结构限制无法逃出 root,但显式拒绝 .. 段与项目防御一致。
 		if CommandHelpers.has_path_traversal(parent_path):
 			return {"error": {"code": -32002, "message": "Invalid parent path (traversal): %s" % parent_path}}
-		parent_node = root.get_node_or_null(parent_path)  # IMP-1: null-safe; get_node() pushes error on missing path
+		# F1 (2026-07-20): 复用 CommandHelpers.find_node（识别 "root"/root_name/"root/" 前缀），
+		# 对齐 handle_edit_node / handle_batch_add_nodes / headless godot_operations.gd:316。
+		# 原 root.get_node_or_null 不识别 "root"（root 不是自己的子节点）→ editor 路由 add_node parent="root" 失效。
+		parent_node = CommandHelpers.find_node(root, parent_path)
 		if not parent_node:
 			return {"error": {"code": -32002, "message": "Parent not found: %s" % parent_path}}
 
@@ -218,7 +221,7 @@ func handle_batch_add_nodes(params: Dictionary, request_id: int) -> Dictionary:
 		if node_name.is_empty() or not _name_re.search(node_name):
 			return {"error": {"code": -32004, "message": "nodes[%d].node_name invalid: %s" % [i, node_name]}}
 		if not _is_allowed_node_type(node_type):
-			return {"error": {"code": -32004, "message": "nodes[%d].node_type blocked: %s" % [i, node_type]}}
+			return {"error": {"code": -32004, "message": "nodes[%d].node_type blocked: %s. Control 类（TextureRect/Button 等）请用 ui_create_control 工具" % [i, node_type]}}
 		if CommandHelpers.has_path_traversal(parent_path):
 			return {"error": {"code": -32002, "message": "nodes[%d].parent traversal: %s" % [i, parent_path]}}
 		var parent_node: Node = root if parent_path.is_empty() else CommandHelpers.find_node(root, parent_path)
