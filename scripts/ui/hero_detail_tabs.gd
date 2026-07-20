@@ -9,7 +9,19 @@ extends RefCounted
 
 # 源 card.lua:135 ui.container ccp(400,240) 相对 cardLayer；cardLayer 挂 container，pop endPos(-200,0)（window.lua:513）。
 # 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
-const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center（+50y → godot y=320 对齐 CardFrame center 320）
+const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center 世界 cocos（container center = frame center）
+# card tab container（源 Art 逻辑区 242×420）Godot 坐标。.tscn CardFrame 369×570 = 源 frame 315×545 放大
+# sx=369/315=1.169 sy=570/545=1.045。container Godot size 283×439，center 同 CardFrame center (280,320)。
+# 源 star/skillIcon/type ccp 相对 container 左下角（cocos 左下原点 y 向上），按 COORD_SX/SY 放大到 Godot。
+const CONTAINER_ORIGIN: Vector2 = Vector2(138.5, 539.5)   # container 左下角 Godot（280-141.5, 320+219.5）
+const CONTAINER_SIZE: Vector2 = Vector2(335.0, 417.0)   # card_bg 镂空区 Godot（纹理 286×401 × CardFrame 放大，实测 tmp_hole_check）
+const CONTAINER_LOGIC_HEIGHT: float = 439.0   # 源 container 逻辑高 420 Cocos × COORD_SY 1.045（readhero.lua:1053+1134 Art setScale(420/ArtH) 显示高=container 高，非镂空高 401）
+const CARD_FRAME_SIZE: Vector2 = Vector2(369.0, 570.0)   # CardFrame 阶级框 size Godot（Art 铺满框基准，offset 95.5,35→464.5,605）
+const COORD_SX: float = 1.169   # Godot CardFrame 宽 / 源 frame 宽（369/315）
+const COORD_SY: float = 1.045   # Godot CardFrame 高 / 源 frame 高（570/545）
+const ART_CENTER: Vector2 = Vector2(280.0, 261.0)   # 源 Art ccp(123,215)=container center；Godot 镂空 center 实测 281,260
+const ART_MODULATE: Color = Color(1.0, 1.0, 1.0)   # 原始不提亮（暗根因=层级：TabCardView z-1 被 BaseLayer Bg 盖，改 z 解决非提亮）
+const ART_MASK_RES: String = "res://assets/ui/alpha/HVGA/art_mask.png"
 # 源 readhero.lua:992 card_type_icon（big 版）：type → 类型图标资源。
 const CARD_TYPE_ICON_RES: Dictionary = {
 	"STR": "res://assets/ui/alpha/HVGA/card/card_att_str_big.png",
@@ -85,7 +97,7 @@ static func _card_frame_res(rank: int) -> String:
 	return "res://assets/ui/alpha/HVGA/card/card_bg_%s.png" % color
 
 
-# Art 立绘 TextureRect（源 :134 ed.readhero.getHeroCard）：居中缩放进 frame + 圆角 shader 近似源 art_mask 裁剪。
+# Art 立绘 TextureRect（源 readhero.lua:1136-1139 createClippingNode(cardres, art_mask) + setScale(420/ArtH)）。
 static func _make_card_art(art_res: String) -> TextureRect:
 	if art_res.is_empty():
 		return null
@@ -98,19 +110,25 @@ static func _make_card_art(art_res: String) -> TextureRect:
 	var sp := TextureRect.new()
 	sp.texture = tex
 	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED   # cover 铺满 + 裁剪溢出
-	sp.size = Vector2(369.0, 570.0)
-	# 源 art_mask.png 圆角裁剪（createClippingNode）。Godot 用 shader 圆角 alpha 近似（四角透明）。
+	# Art 区 = card_bg 镂空区 = 源 container 242×420 放大到 Godot（CONTAINER_SIZE 283×439）。
+	# Art size 按镂空框宽 × 纹理 ratio（335×579 ratio 0.578），完整显示纹理不裁不变形。
+	# 镂空框 335×417（ratio 0.803 宽矮）< Art 高 579，Art 上下被 card_bg 边框/name 区盖（源效果）。
+	var tex_ratio: float = float(tex.get_width()) / float(tex.get_height())
+	sp.size = Vector2(CONTAINER_LOGIC_HEIGHT * tex_ratio, CONTAINER_LOGIC_HEIGHT)   # 源 setScale(420/ArtH) uniform：Art 高=container 逻辑高 439、宽按纹理 ratio（用户选 A 完整不裁，窄高立绘横向<镂空→左右留空=镂空透明）
+	sp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED   # fit size 不裁不变形（完整立绘头脚），ratio 0.578≠镂空0.803 致横向留空
+	sp.modulate = ART_MODULATE   # 提亮（Art 纹理 mean 95 偏暗=源设计，用户要亮）
+	# 源 art_mask.png 裁剪（createClippingNode setStencil art_mask + alphaThreshold 0.5）。
 	var mat := ShaderMaterial.new()
-	mat.shader = preload("res://shaders/rounded_corners.gdshader")
+	mat.shader = preload("res://shaders/art_mask.gdshader")
+	mat.set_shader_parameter("mask_tex", load(ART_MASK_RES) as Texture2D)
 	sp.material = mat
-	sp.position = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0) - sp.size * 0.5
+	sp.position = ART_CENTER - sp.size * 0.5
+	# Art z 默认 0 < card_bg frame(z=1)（源 addChild(card) 不传 z=0）；frame 镂空透明，Art 从镂空透出（源 createClippingNode 效果）
 	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return sp
 
 
 # 源 getHeroCard type icon（readhero.lua:1069-1082）：card_att_X_big at ccp(32,67) fix_size 47×42。
-# 相对 Art ccp(123,215)：dx=32-123=-91, dy=67-215=-148（cocos）→ godot dx=-91, dy=+148。
 static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant) -> void:
 	if cm == null or hero == null:
 		return
@@ -125,8 +143,9 @@ static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant)
 	icon.texture = tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = Vector2(47.0, 42.0)
-	var art_center: Vector2 = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0)
-	icon.position = art_center + Vector2(-91.0, 148.0) - icon.size * 0.5
+	# 源 type ccp(32,67) 相对 container 左下角（cocos 左下 y 向上）→ Godot: origin + (cx*SX, -cy*SY)
+	icon.position = CONTAINER_ORIGIN + Vector2(32.0 * COORD_SX, -67.0 * COORD_SY) - icon.size * 0.5
+	icon.z_index = 3   # 在 Art(z=2) 之上
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	view.add_child(icon)
 	icon.set_meta(&"tab_content", true)
@@ -137,7 +156,6 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 	if cm == null or hero == null:
 		return
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
-	var art_center: Vector2 = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0)
 	for i in range(4):
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
 		var icon_res: String = String(slot_info.get("Icon", ""))
@@ -150,8 +168,9 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 		icon.texture = tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.size = Vector2(22.0, 22.0)
-		# 源相对 Art：dx=130.5+27.2*i-123=7.5+27.2*i, dy=28-215=-187 → godot dx, dy=+187
-		icon.position = art_center + Vector2(7.5 + 27.2 * float(i), 187.0) - icon.size * 0.5
+		# 源 skillIcon ccp(130.5+27.2*(i-1),28) 相对 container 左下角 → Godot: origin + (cx*SX, -cy*SY)
+		icon.position = CONTAINER_ORIGIN + Vector2((130.5 + 27.2 * float(i)) * COORD_SX, -28.0 * COORD_SY) - icon.size * 0.5
+		icon.z_index = 3   # 在 Art(z=2) 之上
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		view.add_child(icon)
 		icon.set_meta(&"tab_content", true)
@@ -164,13 +183,13 @@ static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 	var tex: Texture2D = _load_texture(CARD_STAR_RES)
 	if tex == null:
 		return
-	var art_center: Vector2 = HeroDetailBuilder.to_godot(CARD_CENTER_COCOS.x, CARD_CENTER_COCOS.y + 50.0)
 	for i in range(hero.stars):
 		var star := TextureRect.new()
 		star.texture = tex
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		star.size = CARD_STAR_SIZE
-		star.position = art_center + Vector2(-98.0 + 14.0 * float(i), 188.0) - star.size * 0.5
+		# 源 star ccp(25+14*(i-1),27) 相对 container 左下角 → Godot: origin + (cx*SX, -cy*SY)
+		star.position = CONTAINER_ORIGIN + Vector2((25.0 + 14.0 * float(i)) * COORD_SX, -27.0 * COORD_SY) - star.size * 0.5
 		star.z_index = 3   # 在 CardFrame(z=1) / CardNameLabel(z=2) 上
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		view.add_child(star)

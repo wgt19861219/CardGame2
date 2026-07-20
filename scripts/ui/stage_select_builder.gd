@@ -22,7 +22,8 @@ const DOT_CURRENT: String = "res://assets/ui/alpha/HVGA/stageselect_chapter_curs
 const POINTER: String = "res://assets/ui/alpha/HVGA/stagepointer.png"
 const STAR_BG: String = "res://assets/ui/alpha/HVGA/stageselect_star_bg.png"
 const STAR: String = "res://assets/ui/alpha/HVGA/stageselect_star.png"
-const TITLE_POS: Vector2 = Vector2(477.0, 167.0)        # 源 titleBg ccp(397,393) → godot（标题图 + 文字同位）
+# 用户偏好（2026-07-20）：标题栏移到 frame 上边框附近（跨边框稍下，源 titleBg 在 frame top 下方 65）。
+const TITLE_POS: Vector2 = Vector2(477.0, 117.0)
 const DOT_CENTER_X: float = 480.0                      # 源 getDotPos x=400+dx*(cur-center)，dx=20
 const DOT_GAP_X: float = 20.0
 const DOT_NORMAL_Y: float = 520.0                      # 源 normal_chapter_dot_y=40 → 560-40
@@ -32,10 +33,24 @@ const STAR_POS_1: Array = [Vector2(37.0, 15.0)]
 const STAR_POS_2: Array = [Vector2(26.0, 18.0), Vector2(48.0, 18.0)]
 const STAR_POS_3: Array = [Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.0, 18.0)]
 
-# 源 stageselect.lua:1610-1612 clipStencil 712×372 @ cocos(44,20)。
-# cocos (44,20) 左下原点 → godot (44+80, 560-(20+372)) = (124,168) 左上原点；size 不变（to_godot 不缩放）。
-const CLIP_RECT: Rect2 = Rect2(124.0, 168.0, 712.0, 372.0)
-const CLIP_OFFSET: Vector2 = Vector2(124.0, 168.0)   # layer 局部坐标系偏移：子节点 position 减此值
+# frame png 936×507 实测（PIL alpha + ascii）：简单**细线矩形框**，边框线 16-19px + 四角加粗，
+# 中间镂空透明区 903×471 @ godot (28,120.5)，**无任何内部装饰**。
+# 源 stageselect.lua:1610-1612 clipStencil 712×372 @ cocos(44,20) 是 stage 圆点活动区，致 bg display
+# 936×508（cs=2）只显示中间 712×372、周围 ~95px 大片空白（用户反馈"非常小"）。
+# bg clip 改 frame 边框线内沿镂空区（用户偏好 2026-07-20"按 frame 宽拉伸"+"不盖边框"）：
+# bg display 936×508 铺满镂空区 903×471 + frame 16-19px 细边框围绕。偏离源 clipStencil 712，
+# 但 bg display 本为铺满 frame 设计（cs=2），符合 frame 视觉结构。
+const CLIP_RECT: Rect2 = Rect2(28.0, 120.5, 903.0, 471.0)
+const CLIP_OFFSET: Vector2 = Vector2(28.0, 120.5)   # layer 局部坐标系偏移：子节点 position 减此值
+# 用户偏好（2026-07-20）：bg clip 712→903 拉伸后圆点/pointer 跟拉伸（bg 铺满后圆点照源 cocos 挤中央）。
+# bg/route display 936（cs=2）已铺满 clip 903 不动；圆点放大 1.268 about clipStencil center cocos(400,206)
+# 后到 clip 903 边缘，仍在 route 路径线上（路径铺满 route 图，放大后对应路径其他段）。
+const STRETCH_SCALE: float = 1.268   # 903/712（bg clip 拉伸比）
+const STRETCH_CENTER: Vector2 = Vector2(400.0, 206.0)   # 源 clipStencil center cocos（放大中心）
+# panel/builder 共享 meta key（stage_select_panel 切换动画识别 frame/title/pointer 节点用）。
+const META_FRAME: StringName = &"ss_frame"
+const META_TITLE: StringName = &"ss_title"
+const META_POINTER: StringName = &"ss_pointer"
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
@@ -103,7 +118,9 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		btn.texture_normal = load(icon_res) as Texture2D
 		btn.ignore_texture_size = true
 		btn.size = TexDisplaySize.display_size(icon_res)   # 源 createSprite ContentScale 已含；修 ignore_texture_size 不设 size → 0×0 不可点（同 [[texture-button-ignore-texture-size-zero]]）
-		btn.position = to_godot(float(pos[0]), float(pos[1])) - btn.size * 0.5 - CLIP_OFFSET
+		var _cx: float = STRETCH_CENTER.x + (float(pos[0]) - STRETCH_CENTER.x) * STRETCH_SCALE
+		var _cy: float = STRETCH_CENTER.y + (float(pos[1]) - STRETCH_CENTER.y) * STRETCH_SCALE
+		btn.position = to_godot(_cx, _cy) - btn.size * 0.5 - CLIP_OFFSET
 		btn.set_meta(&"stage_info", info)
 		var dec_type := String(dec["type"])
 		if dec_type == "locked":
@@ -184,8 +201,11 @@ static func _add_pointer(layer: Control, info: Dictionary, offset: Vector2 = Vec
 	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# 源 :1299 currentTag = ed.createSprite（含 ContentScale，POINTER 无条目 → CS=1 等价）。
 	p.size = TexDisplaySize.display_size(POINTER)
-	p.position = to_godot(cx + dx, cy + dy) - p.size * 0.5 - offset
+	var _pcx: float = STRETCH_CENTER.x + (cx + dx - STRETCH_CENTER.x) * STRETCH_SCALE
+	var _pcy: float = STRETCH_CENTER.y + (cy + dy - STRETCH_CENTER.y) * STRETCH_SCALE
+	p.position = to_godot(_pcx, _pcy) - p.size * 0.5 - offset
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.set_meta(META_POINTER, true)   # panel _bob_all_pointers 识别后启动上下浮动 tween（源 currentTag:1308）
 	layer.add_child(p)
 
 
@@ -199,16 +219,26 @@ static func _current_sid(info: Dictionary, mode: String) -> int:
 
 
 
-# 源 createFrame（:944+）title_bg + frame 边框；createTitle（:885）章节名 Label。
-# 三 mode frame/title_bg 纹理 size 不同 → 保留 procedural 建（每次 _refresh_view 清 FrameLayer 重建）。
-static func create_frame_and_title(container: Control, chapter: int, mode: String, cm: Variant) -> void:
-	# 源 z order（mainLayer addChild 第二参）：frameContainer=5（下）、titleBg=21、titleContainer=22（上）。
-	# 本项目靠建序定 z（add_child 后建在上）：frame 先建（z 下），title_bg 后建（z 上压 frame 上边框，照源 titleBg 压 frame），
-	# title Label 最后建（行 224，z 最上，照源 titleContainer=22）。原序 title_bg→frame 致 frame 压 title_bg 被用户反馈"标题被边框挡"。
+# 源 createFrame(:944)+createTitleBg(:926) — frame 边框 + title_bg（随 mode 变，章节切换不重建）。
+# 节点 set_meta(META_FRAME) 供 panel 章节 op 时识别跳过（源 createFrame 仅 create/mode 调，:325/:1618）。
+# z order：frame 先建（z 下）、title_bg 后建（z 上压 frame 上边框，照源 titleBg z=21 压 frame z=5）。
+static func create_frame(container: Control, mode: String) -> void:
 	# 源 createFrame :967-970 — mode != normal ccp(400,207)→godot(480,353)；normal ccp(400,205)→godot(480,355)
 	var frame_y: float = 355.0 if mode == "normal" else 353.0
-	_make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
-	_make_centered_at(container, _title_bg_res(mode), TITLE_POS)
+	var frame: CanvasItem = _make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
+	if frame != null:
+		frame.set_meta(META_FRAME, true)
+	# 用户偏好（2026-07-20）：title_bg 提到 mode 上层（z_index 200 + z_as_relative false 全局），
+	# 避免 mode 按钮（ModeLayer 在 FrameLayer 后 z 上）遮挡 title_bg（"按钮挡住标题栏"）。
+	var title_bg: CanvasItem = _make_centered_at(container, _title_bg_res(mode), TITLE_POS)
+	if title_bg != null:
+		title_bg.set_meta(META_FRAME, true)
+		title_bg.z_index = 200
+		title_bg.z_as_relative = false
+
+
+# 源 createTitle(:885) — 章节名 Label（章节/mode 变都重建 fade）。set_meta(META_TITLE) 供 panel crossfade 识别。
+static func create_title(container: Control, chapter: int, cm: Variant) -> void:
 	var chapter_table: Dictionary = cm.get_raw_table(&"Chapter")
 	var ch_row: Dictionary = chapter_table.get(str(chapter), {})
 	var pre: String = String(ch_row.get("Pre Chapter Name", ""))
@@ -224,6 +254,7 @@ static func create_frame_and_title(container: Control, chapter: int, mode: Strin
 	lbl.size = Vector2(240.0, 24.0)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.set_meta(META_TITLE, true)
 	container.add_child(lbl)
 
 
@@ -235,12 +266,12 @@ static func _title_bg_res(mode: String) -> String:
 	return TITLE_BG_ELITE if mode == "elite" else (TITLE_BG_GUILD if mode == "guild" else TITLE_BG_NORMAL)
 
 
-static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) -> void:
+static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) -> CanvasItem:
 	if res.is_empty() or not ResourceLoader.exists(res):
-		return
+		return null
 	var tex: Texture2D = load(res) as Texture2D
 	if tex == null:
-		return
+		return null
 	# title_bg/frame 源 createSprite（含 ContentScale；本项目 Normal_title_bg/stage-map-frame 等条目 CS=0 → 返 1，等价）。
 	var display_size := TexDisplaySize.display_size(res)
 	var node := TextureRect.new()
@@ -250,6 +281,7 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 	node.position = godot_center - display_size * 0.5
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
+	return node
 
 
 # 源 createDot（:676）+ getDotPos（:76）— 章节导航点（max 章横排，current 用 cursor）。

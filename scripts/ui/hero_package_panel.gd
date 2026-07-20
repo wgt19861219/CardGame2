@@ -264,9 +264,17 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	# 不只 ListBg）→ 须整体隐藏 container。detail 关闭（tree_exiting）恢复。
 	# _scroll 内的 draglist 照源 :228 也 setVisible(false)，container.visible 已含，无需单独设。
 	container.visible = false
-	detail.show_window(get_parent())
+	# 货币栏（hero_scene 顶部）也要隐藏：hero_detail 是 PopWindow（shade 半透 0.588）盖不住货币栏，
+	# 货币栏从 shade 半透露出（变暗叠在 detail tab view 上）视觉遮挡（2026-07-20 用户反馈）。
+	var host: Node = get_parent()
+	if host != null and host.has_method(&"set_bars_visible"):
+		host.set_bars_visible(false)
+	detail.show_window(host)
 	# 源 :156 destroyHandler → listLayer:setVisible(true) 关详情后恢复。
-	detail.tree_exiting.connect(func() -> void: container.visible = true)
+	detail.tree_exiting.connect(func() -> void:
+		container.visible = true
+		if host != null and host.has_method(&"set_bars_visible"):
+			host.set_bars_visible(true))
 
 
 # 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足源弹 stonedetail（本项目未实现，降级）。

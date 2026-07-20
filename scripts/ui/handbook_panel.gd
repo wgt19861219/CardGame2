@@ -22,6 +22,10 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/handbook_content.tsc
 # tag 按钮 index(1-12) → list key。1=ALL(源 tagTextIndex :26-39)。
 const TAG_KEYS: Array[String] = ["ALL", "STR", "AGI", "INT", "HP", "AD", "AP", "ARM", "CRIT", "HPS", "MPS", "HEAL"]
 const PER_PAGE: int = 12   # 源 createList :455 ceil(eAmount/12)
+# 网格整体上移让 slot1 bg 顶贴近 PageTitle"全部"标题底(.tscn y=84)。correct(=0) 间距 9px
+# (源布局),用户要求上移:LIFT=9 → slot1 bg 顶 y=84(贴标题底,间距 0,最大不重叠上移)。
+# 偏离源(源间距 9)。>0 往上,每 +1 网格顶上移 1px;>9 网格与标题重叠。
+const GRID_LIFT_Y: float = 9.0
 
 # ── 2026-07-20 补全 5 项常量(照源 handbook.lua)──
 const LSTR_NOT_UNLOCKED: String = "HANDBOOK.NOT_YET_UNLOCKED_PLEASE_UPGRADE_YOURSELF"   # #2 源 :132
@@ -57,6 +61,10 @@ func setup_panel(p_player: PlayerData) -> void:
 	if shade_layer != null:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 全屏场景(照源 pushScene 替换 package):z_index 提高盖住底层 package 内部高 z 元素。
+	# package tab/Grid z=1-3 照源 package.lua,Godot z_index 同 canvas 全局比较(cocos z 局部于 mainLayer),
+	# handbook 挂 MainScene z=0 会被 package z=3 元素穿透显示在上。z=100 盖住(> package 内部 z max)。
+	z_index = 100
 	_tabs_data = EquipmentClassifier.classify_equip(_cm, _player.MAX_TEAM_LEVEL)
 	_build_content()
 
@@ -146,7 +154,7 @@ func _build_grid_cells() -> void:
 		var info: Dictionary = list[i]
 		var slot: int = i - start + 1   # 源 :460 getIconPosition(i - 12*(page-1))
 		var cell: Control = HandbookBuilder.create_equip_cell(info, _player.team_level, _cm)
-		cell.position = HandbookBuilder.icon_position(slot) - cell.custom_minimum_size * 0.5   # anchor(0.5,0.5) 近似
+		cell.position = HandbookBuilder.icon_position(slot) - cell.custom_minimum_size * 0.5 - Vector2(0, GRID_LIFT_Y)   # 源 bg 中心对齐 icon_position - GRID_LIFT_Y(网格顶贴 PageTitle 下,用户要求上移偏离源)
 		var is_open: bool = bool(cell.get_meta(&"is_open", false))
 		var eid: int = int(cell.get_meta(&"id", 0))
 		cell.gui_input.connect(_on_cell_input.bind(cell, is_open, eid))

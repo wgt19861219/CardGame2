@@ -66,3 +66,14 @@ func _open_hero_package() -> void:
 	var panel := HeroPackagePanel.new("heropackage", {})
 	panel.setup_panel(GameData.player.hero_manager, GameData.config, GameData.player)
 	panel.show_window(self)
+
+
+## 设置货币条可见性。hero_detail 是 PopWindow（shade 半透 0.588）盖不住本场景顶部货币栏，
+## 货币栏会从 shade 半透露出（变暗叠在 detail tab view 上）视觉遮挡。照源 hero_detail 独立场景
+## （mainLayer z=120 + 不透明 bg）盖底层；本项目简化为 PopWindow，须 hero_package 点英雄时手动隐藏（同 container）。
+func set_bars_visible(v: bool) -> void:
+	for key in ["gold", "diamond", "vitality"]:
+		if _status_refs.has(key):
+			var lbl: Label = _status_refs[key] as Label
+			if lbl != null and lbl.get_parent() != null:
+				(lbl.get_parent() as CanvasItem).visible = v

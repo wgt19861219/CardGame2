@@ -447,7 +447,7 @@ offset_right = -75.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-z_index = -1
+z_index = 2
 
 [node name="CardFrame" type="TextureRect" parent="TabCardView" unique_id=649205390]
 unique_name_in_owner = true
@@ -478,7 +478,7 @@ offset_top = 458.0
 offset_right = 360.0
 offset_bottom = 482.0
 theme_override_font_sizes/font_size = 22
-z_index = 2
+z_index = 3
 
 [node name="TabDetailView" type="Control" parent="." unique_id=1296177190]
 unique_name_in_owner = true

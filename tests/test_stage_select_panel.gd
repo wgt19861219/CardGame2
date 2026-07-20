@@ -247,7 +247,7 @@ func test_has_fullscreen_bg() -> void:
 func test_frame_position_matches_source() -> void:
 	var c := Control.new()
 	add_child(c)
-	StageSelectBuilder.create_frame_and_title(c, 1, "normal", cm)
+	StageSelectBuilder.create_frame(c, "normal")
 	var frame_center_y: float = -1.0
 	for child in c.get_children():
 		if child is TextureRect:
@@ -271,8 +271,9 @@ func test_stage_pointer_key_stage_offset() -> void:
 		c.queue_free()
 		return
 	var key_ptr: TextureRect = c.get_child(0) as TextureRect
-	var key_expect_y: float = 560.0 - (284.0 + 60.0)   # key: cy+60
-	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, key_expect_y, 1.5, "key 关指针 y=cy+60")
+	# pointer 跟 bg clip 拉移（×1.268 about cocos(400,206)，builder STRETCH）：key 关 cy+60 放大后期望 y。
+	var key_expect_y: float = 560.0 - (206.0 + (284.0 + 60.0 - 206.0) * 1.268)
+	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, key_expect_y, 1.5, "key 关指针 y=放大后 cy+60")
 	c.queue_free()
 	var c2 := Control.new()
 	add_child(c2)
@@ -280,6 +281,6 @@ func test_stage_pointer_key_stage_offset() -> void:
 	StageSelectBuilder._add_pointer(c2, nonkey_info)
 	if c2.get_child_count() > 0:
 		var nk_ptr: TextureRect = c2.get_child(0) as TextureRect
-		var nk_expect_y: float = 560.0 - (200.0 + 30.0)   # 非 key: cy+30
+		var nk_expect_y: float = 560.0 - (206.0 + (200.0 + 30.0 - 206.0) * 1.268)   # 放大后 非 key: cy+30
 		assert_almost_eq(nk_ptr.position.y + nk_ptr.size.y * 0.5, nk_expect_y, 1.5, "非 key 关指针 y=cy+30")
 	c2.queue_free()

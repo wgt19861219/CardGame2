@@ -8,8 +8,11 @@ extends RefCounted
 ## 源 tag 用触摸区机制(getTagPosition 12 区 + 单精灵切换),Godot 适配为 12 TextureButton(引擎适配,铁律允许)。
 ## 坐标源 cocos(800×480 左下) → Godot(960×640 左上):(cx+80, 560-cy)(同 hero_package/HeroDetailBuilder 范式)。
 
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
+# 源 cocos(800×480 左下) → Godot(960×640 左上) 全屏等比 ×SC(高满 640,宽裁). handbook 是全屏场景
+# (源 pushScene),不用 popup 居中(cx+80),改全屏缩放铺满. SC=640/480,OFFSET_X=400×SC-480(横向居中).
+const SCREEN_SCALE: float = 1.3333
+const OFFSET_X: float = -53.33
+const BASE_Y: float = 640.0
 # 源 hello.lua:311 setContentScaleFactor(1.28125):cocos sprite 显示=纹理/CS(无 fix_size 时)。
 # TextureRect 默认 size=纹理原始(偏大 1.28),照源无 fix_size 的纯 Sprite 统一 /CS。
 const CONTENT_SCALE: float = 1.28125
@@ -49,9 +52,9 @@ const TITLE_LSTR: Array[String] = [
 const TAG_COUNT: int = 12
 
 
-# 源 cocos(cx,cy) → Godot(cx+80, 560-cy)。
+# 源 cocos(cx,cy) → Godot 全屏(cx×SC + OFFSET_X, BASE_Y - cy×SC)。
 static func to_godot(cx: float, cy: float) -> Vector2:
-	return Vector2(cx + OFFSET_X, BASE_Y - cy)
+	return Vector2(cx * SCREEN_SCALE + OFFSET_X, BASE_Y - cy * SCREEN_SCALE)
 
 
 # 源 getIconPosition :412-421。slot 1-12(页内序),左列 1-6 / 右列 7-12。
@@ -93,6 +96,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 	cell.custom_minimum_size = bg_size
 	cell.size = bg_size
 	cell.pivot_offset = bg_size * 0.5   # 中心缩放(began setScale 0.95 围绕中心,源 anchor 0.5,0.5)
+	cell.scale = Vector2(SCREEN_SCALE, SCREEN_SCALE)   # 全屏放大(跟 book_bg ×SC,cell 内部源坐标自动放大)
 	var bg := TextureRect.new()
 	bg.texture = bg_tex
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -104,7 +108,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 	var is_open: bool = player_level >= lr   # 源 :428
 	if is_open:
 		var icon: Control = ReadequipIcon.create_icon(int(info["id"]), 0, cm)
-		icon.position = EQUIP_ICON_POS
+		icon.position = Vector2(EQUIP_ICON_POS.x, bg_size.y - EQUIP_ICON_POS.y)   # 源 cocos y 向上→Godot y 向下翻转(icon 在 bg 上部)
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon)
 	else:
@@ -113,7 +117,7 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		# 源 handbook.lua:434 createSprite 无 fix_size,显示=纹理/CS(见 CONTENT_SCALE 注释)
 		icon_bg.size = TexDisplaySize.display_size(ICON_BG_RES) if icon_bg.texture != null else Vector2(66, 66) / CONTENT_SCALE
-		icon_bg.position = EQUIP_ICON_POS
+		icon_bg.position = Vector2(EQUIP_ICON_POS.x, bg_size.y - EQUIP_ICON_POS.y)   # 源 cocos y 向上→Godot 翻转
 		icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon_bg)
 		var lock := TextureRect.new()
@@ -126,20 +130,20 @@ static func create_equip_cell(info: Dictionary, player_level: int, cm: Variant) 
 		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon_bg.add_child(lock)
 		name_text = _lstr(cm, "HANDBOOK.LV_D_ACTIVATED") % lr   # 源 :441 T(LSTR("HANDBOOK.LV_D_ACTIVATED"), lr)
-	_add_name_label(cell, name_text)
+	_add_name_label(cell, name_text, Vector2(EQUIP_NAME_POS.x, bg_size.y - EQUIP_NAME_POS.y))   # 源 cocos y 向上(17=bg 下部)→Godot 翻转(name 在 bg 下部)
 	cell.set_meta(&"is_open", is_open)
 	cell.set_meta(&"id", int(info["id"]))
 	return cell
 
 
-static func _add_name_label(parent: Control, text: String) -> void:
+static func _add_name_label(parent: Control, text: String, pos: Vector2) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", EQUIP_NAME_FONT)
 	lbl.add_theme_color_override("font_color", EQUIP_NAME_COLOR)
 	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	lbl.add_theme_constant_override("outline_size", 2)   # 源 :444 shadow 近似
-	lbl.position = EQUIP_NAME_POS
+	lbl.position = pos
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(lbl)
 
