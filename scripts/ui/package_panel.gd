@@ -257,10 +257,11 @@ func _make_cell(cell_data: Dictionary) -> Control:
 		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
 	# 把 cell 内所有 Sprite2D/Label 直接 scale 到 PACKAGE_CELL_SCALE，position 同步按 scale 缩。
 	_scale_cell_children(cell)
-	# 套 wrapper 占 GridContainer 单元格位（ICON_SIZE×ICON_SIZE）。
+	# 套 wrapper 占 GridContainer 单元格位（PACKAGE_CELL_SIZE×PACKAGE_CELL_SIZE）。
+	# 用户决策 2026-07-21：frame 缩到 65 + GridContainer sep=7，4 列 4*65+3*7=281 < ScrollHost 295 不裁切。
 	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
-	wrapper.size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
+	wrapper.custom_minimum_size = Vector2(ReadequipIcon.PACKAGE_CELL_SIZE, ReadequipIcon.PACKAGE_CELL_SIZE)
+	wrapper.size = Vector2(ReadequipIcon.PACKAGE_CELL_SIZE, ReadequipIcon.PACKAGE_CELL_SIZE)
 	wrapper.add_child(cell)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
 	wrapper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
