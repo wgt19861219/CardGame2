@@ -241,13 +241,6 @@ func _on_sold(_item_id: int) -> void:
 
 # 源 loadEquip :278-318：package createIconWithAmount(id) / fragment createIconWithTag(makeId)。
 # package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
-# 套 wrapper（size=ICON_SIZE）+ 把 cell 内所有 Sprite2D 直接 scale + position 重算缩到 ICON_SIZE 内。
-# 源 frame PIL 实测 94×95，ICON_SIZE=72 < frame → 必须缩小 frame + icon + amount 才能不溢出 wrapper。
-# 先前 v2/v3 用 cell.scale 无效（GridContainer 按 cell.size=72 布局，cell.scale 只缩 Control rect 不缩
-# Sprite2D 实际渲染到布局外的溢出 → 用户反馈"v2/v3 视觉一样没变化"）。
-# 正解：直接给每个 Sprite2D 设 scale = PACKAGE_CELL_SCALE + position *= PACKAGE_CELL_SCALE，
-# Sprite2D 自己缩小，GridContainer 按 cell.size=72 布局，相邻 cell 的 Sprite2D 不再互相覆盖。
-# ICON_SIZE 不动（避免连锁 12+ 下游已验收场景）。
 func _make_cell(cell_data: Dictionary) -> Control:
 	var amount: int = int(cell_data["amount"])
 	var cell: Control
@@ -255,56 +248,9 @@ func _make_cell(cell_data: Dictionary) -> Control:
 		cell = ReadequipIcon.create_icon_with_tag(int(cell_data["makeId"]), amount, cm, pd)
 	else:
 		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
-	# 把 cell 内所有 Sprite2D/Label 直接 scale 到 PACKAGE_CELL_SCALE，position 同步按 scale 缩。
-	_scale_cell_children(cell)
-	# 套 wrapper 占 GridContainer 单元格位（PACKAGE_CELL_SIZE×PACKAGE_CELL_SIZE）。
-	# 用户决策 2026-07-21：frame 缩到 65 + GridContainer sep=7，4 列 4*65+3*7=281 < ScrollHost 295 不裁切。
-	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(ReadequipIcon.PACKAGE_CELL_SIZE, ReadequipIcon.PACKAGE_CELL_SIZE)
-	wrapper.size = Vector2(ReadequipIcon.PACKAGE_CELL_SIZE, ReadequipIcon.PACKAGE_CELL_SIZE)
-	wrapper.add_child(cell)
-	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
-	wrapper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
-	return wrapper
-
-
-# 把 cell 内所有子节点（Sprite2D + Label）直接 scale 到 PACKAGE_CELL_SCALE。
-# 源 frame 94×95 → scale 0.766 → 72×72.8 装进 wrapper。
-# equip icon（如 gold 100×100）先按源公式缩到 frame 内（85×85）再整体 scale 0.766 → 65×65 居中。
-# Sprite2D self.scale 改了，渲染 size 真实缩小，GridContainer 按 cell.size=72 布局，相邻不互相覆盖。
-# position 同步 *= PACKAGE_CELL_SCALE（Sprite2D 在 cell 内的局部坐标按比例缩）。
-func _scale_cell_children(cell: Control) -> void:
-	var frame_size := Vector2(ReadequipIcon.SOURCE_FRAME_W, ReadequipIcon.SOURCE_FRAME_H)
-	var frame_center := frame_size * 0.5
-	var sc: float = ReadequipIcon.PACKAGE_CELL_SCALE
-	for c in cell.get_children():
-		if c is Sprite2D:
-			var s: Sprite2D = c
-			if s.texture == null:
-				continue
-			var tex_size: Vector2 = s.texture.get_size()
-			if tex_size.x < 1.0 or tex_size.y < 1.0:
-				continue
-			# 先判断是否 frame（tex ≈ frame_size）：frame 直接套 PACKAGE_CELL_SCALE + position 按 scale 缩。
-			var is_frame: bool = absf(tex_size.x - frame_size.x) < 1.0 and absf(tex_size.y - frame_size.y) < 1.0
-			if is_frame:
-				# frame self.scale 套 PACKAGE_CELL_SCALE，position (0,0) 不动（scale 从原点缩）。
-				s.scale = Vector2(sc, sc)
-			else:
-				# equip/stone icon：先按源公式缩到 frame 内（85×85 居中 frame），再整体套 PACKAGE_CELL_SCALE。
-				var icon_in_frame_scale: float = (frame_size.x - 9.0) / tex_size.x
-				var combined: float = icon_in_frame_scale * sc
-				s.scale = Vector2(combined, combined)
-				# 居中 frame 内（frame_center - icon_scaled/2），再整体 position *= PACKAGE_CELL_SCALE。
-				var pos_in_frame: Vector2 = frame_center - (tex_size * icon_in_frame_scale) * 0.5
-				s.position = pos_in_frame * sc
-		elif c is Label:
-			# amount label：position 按 scale 缩，theme_override_font_size 按 scale 缩（避免字太大）。
-			var lbl: Label = c
-			lbl.position *= sc
-			var orig_size: int = lbl.get_theme_font_size(&"font_size")
-			if orig_size > 0:
-				lbl.add_theme_font_size_override(&"font_size", int(orig_size * sc))
+	cell.mouse_filter = Control.MOUSE_FILTER_STOP
+	cell.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
+	return cell
 
 
 # 源 doClickInList :162-177 → doSelectEquip(id) → equipboard。第 24 段接 equipboard 浮层。

@@ -17,17 +17,6 @@ const TICK_PATH: String = "res://assets/ui/alpha/HVGA/fragment_tick.png"
 const FRAME_COLORS: Array[String] = ["white", "green", "blue", "purple", "orange"]
 const HERO_DEFAULT_QUALITY: int = 1   # 源 createIcon hero 分支 quality 默认 1
 const ICON_SIZE: float = 72.0
-# 源 equip_frame PIL 实测 94×95（createIcon bg=ed.createSprite(equip_frame_X.png) 原大，ContentScale=1）。
-# 供 package_panel._make_cell cell size/pivot 算 frame 中心用（cell scale 缩到 wrapper PACKAGE_CELL_SIZE）。
-const SOURCE_FRAME_W: float = 94.0
-const SOURCE_FRAME_H: float = 95.0
-# 源 equip_frame PIL 实测 94×95（createIcon bg 原大，ContentScale=1）。
-# 源 package 网格 dx=75/dy=80 + frame 94×95 原大 → 源设计 frame 边框重叠 19×15（连续网格风）。
-# 用户反馈"太紧没间隔边缘重叠"不喜欢源重叠，主动选偏离源：frame 缩到 65 + GridContainer sep=7，
-# 4 列总宽 4*65+3*7=281 < ScrollHost 295 不裁切，相邻 cell 有清晰 7px 间隔。
-# 仅 package 场景用（其他场景仍 ICON_SIZE=72 + frame 溢出原行为，未改）。
-const PACKAGE_CELL_SIZE: float = 65.0   # 用户决策 2026-07-21（偏离源 94×95 重叠设计）
-const PACKAGE_CELL_SCALE: float = 0.691   # = PACKAGE_CELL_SIZE / 源 frame_w 94（65/94≈0.6915 取 0.691）
 const ICON_OFFSET: Vector2 = Vector2(9.0, 9.0)
 const AMOUNT_POS: Vector2 = Vector2(40.0, 50.0)
 const STONE_ICON_POS: Vector2 = Vector2(36.0, 38.0)     # 源 createHeroStone stone ccp(36,38.5)
@@ -230,7 +219,4 @@ static func _load_sprite(path: String, fallback: String) -> Sprite2D:
 	if ResourceLoader.exists(res_path):
 		sprite.texture = load(res_path)
 	sprite.centered = false
-	# NEAREST 防止 frame 缩放后边框线被 LINEAR 采样模糊/丢失（package cell scale 0.691 时
-	# LINEAR 把源 2-3px 右/下边框采成 1px 看似"被裁切"；NEAREST 保留硬边）。
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	return sprite
