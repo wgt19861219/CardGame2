@@ -230,4 +230,7 @@ static func _load_sprite(path: String, fallback: String) -> Sprite2D:
 	if ResourceLoader.exists(res_path):
 		sprite.texture = load(res_path)
 	sprite.centered = false
+	# NEAREST 防止 frame 缩放后边框线被 LINEAR 采样模糊/丢失（package cell scale 0.691 时
+	# LINEAR 把源 2-3px 右/下边框采成 1px 看似"被裁切"；NEAREST 保留硬边）。
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	return sprite
