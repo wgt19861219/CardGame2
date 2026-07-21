@@ -266,15 +266,11 @@ func _make_cell(cell_data: Dictionary) -> Control:
 	wrapper.custom_minimum_size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
 	wrapper.size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
 	wrapper.add_child(cell)
-	# cell size 暴露真实 frame 尺寸（94×95），pivot=frame 中心，scale 后以 pivot 为中心缩。
-	cell.size = Vector2(ReadequipIcon.SOURCE_FRAME_W, ReadequipIcon.SOURCE_FRAME_H)
-	var frame_center := Vector2(ReadequipIcon.SOURCE_FRAME_W, ReadequipIcon.SOURCE_FRAME_H) * 0.5
-	cell.pivot_offset = frame_center
+	# cell pivot 默认 (0,0) position 默认 (0,0)：scale 从左上角缩，frame 从 wrapper (0,0) 开始画贴左边无空白。
+	# 先前用 pivot=frame_center + position=-pivot*(1-scale) 让 cell 内容画到 wrapper 左上 -11px 外，
+	# 被 ScrollHost clip_contents 裁掉左边 frame 边框 + 视觉左边留白多（用户反馈"边缘裁剪+左边边距大"）。
+	# pivot=(0,0) 时子节点 wrapper_pos = local_pos * scale，frame (0,0)~(94,95) 缩到 (0,0)~(72,72.8) 完整贴 wrapper。
 	cell.scale = Vector2(ReadequipIcon.PACKAGE_CELL_SCALE, ReadequipIcon.PACKAGE_CELL_SCALE)
-	# Godot Control.scale 以 pivot_offset 为中心缩放子节点：子节点渲染起点 = cell.position + (local - pivot)*scale + pivot。
-	# frame Sprite2D 在 cell 局部 (0,0)，要让 frame 渲染起点落在 wrapper (0,0)：
-	#   cell.position + (0 - pivot)*scale + pivot = 0  →  cell.position = pivot*(scale - 1) = -pivot*(1-scale)
-	cell.position = -frame_center * (1.0 - ReadequipIcon.PACKAGE_CELL_SCALE)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
 	wrapper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
 	return wrapper
