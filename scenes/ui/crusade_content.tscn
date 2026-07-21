@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_2.png" id="5_fog2"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_3.png" id="6_fog3"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_4.png" id="7_fog4"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="8_start"]
 
 [node name="CrusadeContent" type="Control"]
 layout_mode = 3
@@ -144,16 +145,19 @@ offset_right = 690.0
 offset_bottom = 490.0
 mouse_filter = 2
 
-[node name="StartBtn" type="Button" parent="."]
+[node name="StartBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 visible = false
 layout_mode = 3
-offset_left = 700.0
-offset_top = 410.0
-offset_right = 780.0
-offset_bottom = 450.0
+offset_left = 720.0
+offset_top = 380.0
+offset_right = 816.0
+offset_bottom = 472.0
 mouse_filter = 0
-text = "开战"
+texture_normal = ExtResource("8_start")
+texture_pressed = ExtResource("8_start")
+ignore_texture_size = true
+stretch_mode = 0
 
 [node name="ResultLabel" type="Label" parent="."]
 unique_name_in_owner = true

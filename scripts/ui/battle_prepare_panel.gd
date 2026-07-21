@@ -24,6 +24,19 @@ const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 # 源 goButton/goPressButton（:1786-1787）普通模式 prepare_go_battle（pvp defend 才用 pvp_button_confirm）。
 const GO_N_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle.png"
 const GO_P_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle_press.png"
+# 源 doChangeListTouch:1200-1229 选中态切色：选中 ccc3(230,190,76) 金黄 / 未选 ccc3(196,187,170) 浅灰棕。
+const TAB_FONT_COLOR_SELECTED: Color = Color(0.902, 0.745, 0.298)
+const TAB_FONT_COLOR_UNSELECTED: Color = Color(0.769, 0.733, 0.667)
+# 源 fontconfigs.lua:23-31 ui_normal_button override：shadow ccc3(42,31,22) 深棕（非默认 63,5,0 深红）/ offset (0,2) / size 20。
+const TAB_SHADOW_COLOR: Color = Color(0.165, 0.122, 0.086)
+const TAB_SHADOW_OFFSET_Y: int = 2
+const TAB_FONT_SIZE: int = 20
+const TAB_LABEL_NODE_NAMES: Dictionary = {
+	TAB_ALL: "%TabAllLabel",
+	TAB_FRONT: "%TabFrontLabel",
+	TAB_MIDDLE: "%TabMiddleLabel",
+	TAB_BACK: "%TabBackLabel",
+}
 
 # ── 文本 LSTR key（源 battleprepare.lua:1870 BATTLEPREPARE.WHOLE / :1915 UNIT.FRONT_ROW /
 # :1960 UNIT.MIDDLE_ROW / :2005 UNIT.REAR_ROW / :2256 BATTLEPREPARE.COMBAT 战斗力标题 /
@@ -51,6 +64,7 @@ var _team_slots: Array[TextureRect] = []  # 5 个槽位底（源 herobucket.png�
 var _gs_label: Label = null
 var _go_button: Button = null
 var _tab_buttons: Dictionary = {}   # tab_key → Button（源 listButton/listButtonSelect 双态切换）
+var _tab_labels: Dictionary = {}    # tab_key → Label（独立 Label 子节点，Button.text 内嵌 label 受 stylebox 干扰）
 
 
 func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant) -> void:
@@ -76,7 +90,11 @@ func _build_content() -> void:
 	}
 	for key in _tab_buttons:
 		var btn: Button = _tab_buttons[key] as Button
-		btn.text = _tab_label(key)
+		btn.text = ""
+		# 收集独立 Label 子节点（.tscn %TabXxxLabel），fill text 不走 Button.text（避 stylebox 干扰）。
+		var lbl: Label = content.get_node(TAB_LABEL_NODE_NAMES[key]) as Label
+		lbl.text = _tab_label(key)
+		_tab_labels[key] = lbl
 		_apply_tab_style(btn, key == _current_tab)
 		btn.pressed.connect(_on_tab_pressed.bind(key))
 	# 源 :2091-2153 5 member_bg（herobucket.png）槽位。
@@ -101,10 +119,20 @@ func _build_content() -> void:
 
 # Button 套 StyleBoxTexture（classbtn/classbtnselected 整图，content_margin=0 视觉等价纯贴图）。
 # 源 doChangeListTouch :1216-1237 切 listButtonSelect[k] visible + listLabel color。
+# 选中色 ccc3(230,190,76) 金黄 / 未选 ccc3(196,187,170) 浅灰棕（源 :1200-1229）。
 func _apply_tab_style(btn: Button, selected: bool) -> void:
 	var res_path: String = TAB_A_RES if selected else TAB_N_RES
 	btn.add_theme_stylebox_override("normal", _make_stylebox(res_path))
 	btn.add_theme_stylebox_override("hover", _make_stylebox(res_path))
+	# 同步切独立 Label 字色（按 tab_key 反查 _tab_labels）
+	for key in _tab_buttons:
+		if _tab_buttons[key] == btn and _tab_labels.has(key):
+			var lbl: Label = _tab_labels[key] as Label
+			var color: Color = TAB_FONT_COLOR_SELECTED if selected else TAB_FONT_COLOR_UNSELECTED
+			lbl.add_theme_color_override("font_color", color)
+			lbl.add_theme_color_override("font_shadow_color", TAB_SHADOW_COLOR)
+			lbl.add_theme_constant_override("shadow_offset_y", TAB_SHADOW_OFFSET_Y)
+			lbl.add_theme_font_size_override("font_size", TAB_FONT_SIZE)
 
 
 # GoBtn 双态：normal/hover=prepare_go_battle，pressed=prepare_go_battle_press（源 :1786-1787）。

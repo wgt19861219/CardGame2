@@ -1,4 +1,7 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
 
 [node name="ExerciseContent" type="Control"]
 layout_mode = 3
@@ -27,14 +30,16 @@ mouse_filter = 2
 horizontal_alignment = 1
 text = "试炼"
 
-[node name="CloseBtn" type="Button" parent="."]
+[node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 750.0
-offset_top = 10.0
-offset_right = 790.0
-offset_bottom = 50.0
-text = "×"
+offset_left = 797.0
+offset_top = 177.0
+offset_right = 862.0
+offset_bottom = 243.0
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true
 
 [node name="EntryGrid" type="GridContainer" parent="."]
 unique_name_in_owner = true
@@ -44,3 +49,4 @@ offset_top = 80.0
 offset_right = 600.0
 offset_bottom = 380.0
 columns = 2
+

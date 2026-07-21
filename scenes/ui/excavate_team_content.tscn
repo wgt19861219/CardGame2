@@ -1,8 +1,14 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="4_start"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn-disabled.png" id="5_startp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button.png" id="6_change"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button_press.png" id="7_changep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="8_giveup"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="9_giveupp"]
 
 [node name="ExcavateTeamContent" type="Control"]
 layout_mode = 3
@@ -59,24 +65,66 @@ unique_name_in_owner = true
 layout_mode = 3
 offset_left = 260.0
 offset_top = 445.0
-offset_right = 440.0
-offset_bottom = 485.0
+offset_right = 385.0
+offset_bottom = 494.0
+mouse_filter = 0
+
+[node name="ChangeLabel" type="Label" parent="ChangeBtn"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "调整阵容"
 
 [node name="GiveupBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 560.0
+offset_left = 575.0
 offset_top = 445.0
 offset_right = 700.0
-offset_bottom = 485.0
-text = "放弃矿点"
+offset_bottom = 494.0
+mouse_filter = 0
 
-[node name="BattleBtn" type="Button" parent="."]
+[node name="GiveupLabel" type="Label" parent="GiveupBtn"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "撤退"
+
+[node name="BattleBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 380.0
-offset_top = 440.0
-offset_right = 580.0
-offset_bottom = 484.0
-text = "出战"
+offset_left = 440.0
+offset_top = 380.0
+offset_right = 540.0
+offset_bottom = 476.0
+mouse_filter = 0
+texture_normal = ExtResource("4_start")
+texture_pressed = ExtResource("5_startp")
+ignore_texture_size = true
+stretch_mode = 0

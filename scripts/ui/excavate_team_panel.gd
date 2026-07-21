@@ -16,13 +16,22 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_team_conten
 # 源 excavateteam.lua 无 fixed title LSTR；按 owner 显示玩家名/敌人名（单机用 "驻防/敌方" 兜底）
 const TITLE_MINE: String = "驻防队伍"
 const TITLE_MONSTER: String = "敌方守卫"
-# 源 :113 change_team_button → enterExcavateChange（mode=excavateChange）
+# 源 :733-760 change_team_button → enterExcavateChange（mode=excavateChange）
 const LSTR_CHANGE_TEAM_KEY: String = "EXCAVATETEAM.ADJUST_FORMATION"
 const CHANGE_TEAM_FALLBACK: String = "调整阵容"
-# 源 :124-128 give_up_button（pop excavategiveup）；"放弃矿点" 单机兜底（无 LSTR）
-const GIVEUP_TEXT: String = "放弃矿点"
-# 源 :178-250 go_battle_button（图标，无 LSTR 文本）；"出战" 单机兜底
+# 源 :761-788 give_up_button（pop excavategiveup）；源 LSTR("excavateteam.1.10.1.002")="撤退"
+const GIVEUP_TEXT: String = "撤退"
+# 源 :538-564 go_battle_button（startbtn 整图，无文本）；保留 BATTLE_TEXT 仅作 fallback 注释（TextureButton 无 text）
 const BATTLE_TEXT: String = "出战"
+# ── Scale9 button 样式（.tscn 普通 Button 套 StyleBoxTexture）──
+# 源 excavateteam.lua:733-760 task_button Scale9 cap 15.63,15.63,19.53,15.63。
+const CHANGE_BTN_RES: String = "res://assets/ui/alpha/HVGA/task_button.png"
+const CHANGE_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/task_button_press.png"
+const CHANGE_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
+# 源 excavateteam.lua:761-788 sell_number_button Scale9 cap 15.63,15.63,19.53,15.63。
+const GIVEUP_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
+const GIVEUP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
+const GIVEUP_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
 const NO_DEFEND_TEXT: String = "尚未驻防，点击「换队」派英雄驻守"   # 单机兜底
 const NO_ENEMY_TEXT: String = "无敌人数据"   # 单机兜底
 const FONT_BODY: int = 16
@@ -38,7 +47,7 @@ var _on_closed: Callable
 var _hero_box: HBoxContainer
 var _change_btn: Button
 var _giveup_btn: Button
-var _battle_btn: Button
+var _battle_btn: TextureButton
 
 
 func setup_panel(p_pd: PlayerData, excavate_id: int, p_rng: BattleRng, on_closed: Callable) -> void:
@@ -61,13 +70,18 @@ func _build_ui() -> void:
 	var title_node: Label = content.get_node("%Title") as Label
 	title_node.text = TITLE_MINE if owner == OWNER_MINE else TITLE_MONSTER
 	_hero_box = content.get_node("%HeroBox") as HBoxContainer
-	# 三按钮（.tscn 设默认 text 占位，运行时 fill LSTR/fallback 文本）
+	# 三按钮（.tscn ChangeBtn/GiveupBtn Button + 独立 Label，BattleBtn TextureButton 整图无文本）
 	_change_btn = content.get_node("%ChangeBtn") as Button
 	_giveup_btn = content.get_node("%GiveupBtn") as Button
-	_battle_btn = content.get_node("%BattleBtn") as Button
-	_change_btn.text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
-	_giveup_btn.text = GIVEUP_TEXT
-	_battle_btn.text = BATTLE_TEXT
+	_battle_btn = content.get_node("%BattleBtn") as TextureButton
+	# ChangeBtn/GiveupBtn 套 Scale9 stylebox（视觉等价源 DGButton task_button/sell_number_button）。
+	_apply_change_btn_style(_change_btn)
+	_apply_giveup_btn_style(_giveup_btn)
+	# fill 独立 Label（Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）
+	_change_btn.text = ""
+	_giveup_btn.text = ""
+	(content.get_node("%ChangeLabel") as Label).text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
+	(content.get_node("%GiveupLabel") as Label).text = GIVEUP_TEXT
 	_change_btn.pressed.connect(_on_change_team)
 	_giveup_btn.pressed.connect(_on_giveup)
 	_battle_btn.pressed.connect(_on_battle)
@@ -132,6 +146,32 @@ func _lstr(key: String, fallback: String) -> String:
 	if cfg != null:
 		return cfg.get_lstr(key)
 	return fallback
+
+
+# ChangeBtn 双态：normal/hover=task_button，pressed=task_button_press（源 :733-760）。
+func _apply_change_btn_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_sb(CHANGE_BTN_PRESS_RES, CHANGE_BTN_CAP))
+
+
+# GiveupBtn 双态：normal/hover=sell_number_button，pressed=sell_number_button_down（源 :761-788）。
+func _apply_giveup_btn_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_sb(GIVEUP_BTN_PRESS_RES, GIVEUP_BTN_CAP))
+
+
+static func _make_sb(res_path: String, cap_insets: Rect2) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res_path) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = cap_insets.position.x
+	sb.texture_margin_top = cap_insets.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
+		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
+	return sb
 
 
 func _on_change_team() -> void:

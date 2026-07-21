@@ -48,7 +48,7 @@ var fog_rects: Array[TextureRect] = []
 var result_label: Label = null
 var current_select: int = 0   # 当前选中关（源 currentSelectStage）
 var enemy_preview_box: Control = null   # 源 battleLayer.hero1-5 敌方阵容容器
-var start_btn: Button = null   # 源 battleLayer.start "开始战斗"（选关后 visible）
+var start_btn: TextureButton = null   # 源 battleLayer.start "开始战斗"（选关后 visible）
 var _shake_timer: Timer = null   # 源 :91 shakeBox 定时器（1.5s 周期）
 var _hint_anchor: Control = null   # 源 currentStageHint 锤点（绝对定位，子 stage_hint 浮动）
 var stage_hint: Label = null   # 源 mainLayer.currentStageHint 导航箭头（▼ 降级）
@@ -85,7 +85,7 @@ func _build_content() -> void:
 	(content.get_node("%StartBtn") as BaseButton).pressed.connect(_on_start_pressed)
 	result_label = content.get_node("%ResultLabel") as Label
 	enemy_preview_box = content.get_node("%EnemyPreviewHost") as Control
-	start_btn = content.get_node("%StartBtn") as Button
+	start_btn = content.get_node("%StartBtn") as TextureButton
 	start_btn.visible = false   # 源 :204 未选关隐藏
 	result_label.text = "远征：第 " + str(player.crusade_manager.cur_stage) + " 关"
 	_hint_anchor = content.get_node("%HintAnchor") as Control
