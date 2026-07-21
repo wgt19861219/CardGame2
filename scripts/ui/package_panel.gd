@@ -241,9 +241,15 @@ func _on_sold(_item_id: int) -> void:
 
 # 源 loadEquip :278-318：package createIconWithAmount(id) / fragment createIconWithTag(makeId)。
 # package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
-# 套 clipper（clip_contents=true size=ICON_SIZE）裁 frame Sprite2D 溢出（源 frame 94×95，ICON_SIZE=72，
-# 溢出 22×23px 会画到相邻 cell 上致视觉重叠）。clipper 内 cell 位置 (0,0)，gui_input 由 clipper 接。
+# 套 wrapper（size=ICON_SIZE）+ cell 整体 scale 缩到 wrapper 内：源 frame PIL 实测 94×95，ICON_SIZE=72，
+# cell scale = 72/94 ≈ 0.766 让 frame + equip icon + amount 一起等比缩到 wrapper 72×72 内不溢出（完整不裁）。
+# cell 内部坐标保持源 94×95 体系（ICON_OFFSET/AMOUNT_POS 不动，避免连锁其他场景）。
+# cell pivot = frame 中心 (47,47.5)，scale 后 frame 中心不动；cell.position 让 frame 中心对齐 wrapper 中心。
 # ICON_SIZE 不动（避免连锁 12+ 下游已验收场景：stage_done/equip_strengthen/equip_craft 等）。
+# 先前 clipper 裁溢出会把 equip icon 也裁掉（用户反馈"图片被裁剪"）→ 改 scale 整体缩小不裁。
+# 但 equip icon ICON_OFFSET=(9,9) + 100×100 画到 (109,109) 超 frame (94,95) 边界 15px → 缩后仍超 wrapper。
+# 修法：遍历 cell 子 Sprite2D，给超出 frame 的 equip icon 单独 scale 适配 frame 内（源 createIcon 公式
+# equip:setScale((bg.w-9)/equip.w)，bg.w=94 → equip 缩到 85×85）+ position 居中 frame（frame_center - icon/2）。
 func _make_cell(cell_data: Dictionary) -> Control:
 	var amount: int = int(cell_data["amount"])
 	var cell: Control
@@ -251,14 +257,52 @@ func _make_cell(cell_data: Dictionary) -> Control:
 		cell = ReadequipIcon.create_icon_with_tag(int(cell_data["makeId"]), amount, cm, pd)
 	else:
 		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
-	# 套 clipper 裁 frame 溢出。clipper 占 GridContainer 单元格位（ICON_SIZE×ICON_SIZE），cell 在内 (0,0)。
-	var clipper := Control.new()
-	clipper.custom_minimum_size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
-	clipper.clip_contents = true
-	clipper.add_child(cell)
-	clipper.mouse_filter = Control.MOUSE_FILTER_STOP
-	clipper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
-	return clipper
+	# package 局部修正：equip icon（非 frame 的 Sprite2D）单独 scale + 居中 frame 内。
+	# 源 createIcon equip:setScale((bg.w-9)/equip.w) 让 icon 适配 frame 内；Godot 漏了这步致 icon 100×100 溢出 frame。
+	# 仅 package 场景修（其他场景的 cell 不经此 wrapper，保持原行为）。
+	_rescale_equip_icon_to_frame(cell)
+	# 套 wrapper 占 GridContainer 单元格位（ICON_SIZE×ICON_SIZE），cell 在内整体 scale 缩到不溢出。
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
+	wrapper.size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
+	wrapper.add_child(cell)
+	# cell size 暴露真实 frame 尺寸（94×95），pivot=frame 中心，scale 后以 pivot 为中心缩。
+	cell.size = Vector2(ReadequipIcon.SOURCE_FRAME_W, ReadequipIcon.SOURCE_FRAME_H)
+	var frame_center := Vector2(ReadequipIcon.SOURCE_FRAME_W, ReadequipIcon.SOURCE_FRAME_H) * 0.5
+	cell.pivot_offset = frame_center
+	cell.scale = Vector2(ReadequipIcon.PACKAGE_CELL_SCALE, ReadequipIcon.PACKAGE_CELL_SCALE)
+	# Godot Control.scale 以 pivot_offset 为中心缩放子节点：子节点渲染起点 = cell.position + (local - pivot)*scale + pivot。
+	# frame Sprite2D 在 cell 局部 (0,0)，要让 frame 渲染起点落在 wrapper (0,0)：
+	#   cell.position + (0 - pivot)*scale + pivot = 0  →  cell.position = pivot*(scale - 1) = -pivot*(1-scale)
+	cell.position = -frame_center * (1.0 - ReadequipIcon.PACKAGE_CELL_SCALE)
+	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
+	wrapper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
+	return wrapper
+
+
+# 源 createIcon :744-758 equip:setScale((bg.w-9)/equip.w) + equip 在 frame 内居中。
+# Godot readequip_icon.create_icon 漏了 equip scale（icon 100×100 原大溢出 frame 94×95）。
+# package 场景局部修正：给 cell 内非 frame 的 Sprite2D（equip icon）设 scale 适配 frame 内 + 居中。
+# 不改 readequip_icon 全局（避免连锁其他场景）。
+func _rescale_equip_icon_to_frame(cell: Control) -> void:
+	var frame_size := Vector2(ReadequipIcon.SOURCE_FRAME_W, ReadequipIcon.SOURCE_FRAME_H)
+	var frame_center := frame_size * 0.5
+	for c in cell.get_children():
+		if c is Sprite2D:
+			var s: Sprite2D = c
+			if s.texture == null:
+				continue
+			var tex_size: Vector2 = s.texture.get_size()
+			if tex_size.x < 1.0 or tex_size.y < 1.0:
+				continue
+			# frame 本身（tex ≈ frame_size）不动；其他 equip icon 按源公式缩 + 居中 frame。
+			if absf(tex_size.x - frame_size.x) < 1.0 and absf(tex_size.y - frame_size.y) < 1.0:
+				continue   # frame Sprite2D
+			# 源公式：(bg.w - 9) / icon.w，让 icon 适配 frame 内留 9px 边距（icon 显示 ≈85×85 居中 frame）。
+			var icon_scale: float = (frame_size.x - 9.0) / tex_size.x
+			s.scale = Vector2(icon_scale, icon_scale)
+			# icon 居中 frame：position = frame_center - (tex_size * icon_scale) / 2
+			s.position = frame_center - (tex_size * icon_scale) * 0.5
 
 
 # 源 doClickInList :162-177 → doSelectEquip(id) → equipboard。第 24 段接 equipboard 浮层。
