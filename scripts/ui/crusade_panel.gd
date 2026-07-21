@@ -13,6 +13,11 @@ extends PopWindow
 
 # crusade_content.tscn：base 静态层（位置/size 编辑器可视化调）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/crusade_content.tscn")
+# ResetBtn Scale9 样式（源 ui_normal_button：tavern_button_normal_1/2.png，cap 14,20,60,23）。
+const RESET_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
+const RESET_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
+const RESET_BTN_CAP: Rect2 = Rect2(14.0, 20.0, 60.0, 23.0)
+const LSTR_RESET_KEY: String = "CRUSADECONFIG.RESTART"   # 源 :514 T(LSTR("CRUSADECONFIG.RESTART")) = "重新开始"
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
 const STAGE_SIZE: Vector2 = Vector2(110.0, 110.0)
 const BOX_SIZE: Vector2 = Vector2(60.0, 60.0)
@@ -72,7 +77,11 @@ func _build_content() -> void:
 	container.add_child(content)
 	# 收集 .tscn 静态节点（位置/size 已固化，运行时只 fill 数据/纹理/visible）。
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	(content.get_node("%ResetBtn") as BaseButton).pressed.connect(_on_reset)
+	var reset_btn: Button = content.get_node("%ResetBtn") as Button
+	_apply_reset_button_style(reset_btn)
+	# 源 LSTR("CRUSADECONFIG.RESTART") = "重新开始"（降级 fallback；原"重置"是旧项目降级文字，照源改）
+	(content.get_node("%ResetLabel") as Label).text = _lstr(LSTR_RESET_KEY, "重新开始")
+	reset_btn.pressed.connect(_on_reset)
 	(content.get_node("%StartBtn") as BaseButton).pressed.connect(_on_start_pressed)
 	result_label = content.get_node("%ResultLabel") as Label
 	enemy_preview_box = content.get_node("%EnemyPreviewHost") as Control
@@ -135,6 +144,28 @@ func _box_texture(i: int) -> String:
 ## 资源安全加载（exists 预检，避 headless/未 import 时 load push_error）。
 static func _load_tex(path: String) -> Variant:
 	return load(path) if ResourceLoader.exists(path) else null
+
+
+# .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=tavern_button_normal_1, pressed=tavern_button_normal_2）。
+# 视觉等价源 ui_normal_button Scale9Sprite + press mask。文字 fill 到独立 Label 子节点 %ResetLabel
+# （Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）。
+func _apply_reset_button_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
+static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = cap_insets.position.x
+	sb.texture_margin_top = cap_insets.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
+		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
+	return sb
 
 
 ## 源 refreshBattleState:324-343 + boxImg:23-25：current/locked/passed 状态纹理。

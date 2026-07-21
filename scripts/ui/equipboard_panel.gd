@@ -125,7 +125,9 @@ func _build_content() -> void:
 	_frame = content.get_node("%Frame") as Control
 	var sell_btn: Button = _frame.get_node("%SellBtn") as Button   # 源 left_button :109
 	_apply_button_style(sell_btn)
-	sell_btn.text = cm.get_lstr(LSTR_SELL)
+	# fill 独立 Label 子节点 %SellLabel（Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，
+	# 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_detail）。
+	(_frame.get_node("%SellLabel") as Label).text = cm.get_lstr(LSTR_SELL)
 	sell_btn.pressed.connect(_on_sell_pressed)
 	var right_btn: Button = _frame.get_node("%RightBtn") as Button   # 源 right_button :154
 	_apply_button_style(right_btn)
@@ -147,7 +149,8 @@ func _refresh_content() -> void:
 	(_frame.get_node("%AmountLabel") as Label).text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
 	_fill_sell_price()
 	_fill_att()
-	(_frame.get_node("%RightBtn") as Button).text = _right_button_label()
+	# fill 独立 Label 子节点 %RightLabel（范式同 SellLabel）。
+	(_frame.get_node("%RightLabel") as Label).text = _right_button_label()
 
 
 # 源 board.lua initAtt :106-282：属性 labels（getDescription 组合 "力量 +100" + 强化加成）+ 碎片合成信息。

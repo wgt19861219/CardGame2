@@ -11,8 +11,15 @@ func before_all() -> void:
 
 
 func _find_button_recursive(node: Node, text: String) -> bool:
-	if node is Button and (node as Button).text == text:
-		return true
+	# SweepBtn 改用独立 Label 子节点 %SweepLabel 承载文字（Button.text 清空，照 hero_detail 范式），
+	# 故 Button 自身 + 其 Label 子节点的 text 均扫描。
+	if node is Button:
+		if (node as Button).text == text:
+			return true
+		for c in node.get_children():
+			if c is Label and (c as Label).text == text:
+				return true
+		return false
 	for c in node.get_children():
 		if _find_button_recursive(c, text):
 			return true

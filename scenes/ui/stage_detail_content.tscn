@@ -292,4 +292,26 @@ offset_top = 380.0
 offset_right = 480.0
 offset_bottom = 420.0
 mouse_filter = 0
+
+[node name="SweepLabel" type="Label" parent="SweepBtn"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.807843, 0.121569, 1)
+theme_override_colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "扫荡"

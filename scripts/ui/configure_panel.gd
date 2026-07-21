@@ -10,7 +10,7 @@ extends PopWindow
 ## 重构（2026-07-18，照 hero_detail 范式）：chrome（frame/close/head_bg/head_frame/name_bg/name_label/
 ## 3 info_line/3 Scale9 action 按钮/setup_button/lang_button/lang_label）静态化进 configure_content.tscn
 ## （位置/size 编辑器可视化调）。head_icon 走 avatar+portrait_mask shader 完全动态，保留 procedural 挂
-## %HeadIconHost（位置静态化进 .tscn，icon 局部 pos=0,0）。Scale9 按钮套 UiScale9Button.apply_with_label
+## %HeadIconHost（位置静态化进 .tscn，icon 局部 pos=0,0）。Scale9 按钮套 _make_sb
 ## 补九宫格视觉（位置 .tscn，纹理/label fill）。坐标：源 Cocos ccp(左下) → _to_godot - FRAME_POS（frame 内），
 ## 本重构将所有坐标 + FRAME_POS(224,105) 一次性写死进 .tscn 全屏系。
 
@@ -25,7 +25,7 @@ const PortraitMaskShader: Shader = preload("res://shaders/portrait_mask.gdshader
 const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)
-const BTN_LABEL_COLOR: Color = Color(235.0 / 255.0, 223.0 / 255.0, 207.0 / 255.0)
+# 源 sell_number_button label 色 (235,223,207) 浅米已搬进 .tscn 4 Label 子节点的 theme_override_colors/font_color（范式同 hero_detail）。
 const LANG_ICON_DIR: String = "res://assets/ui/alpha/HVGA/lang/"   # 源 getLanguagePng :71
 const DEFAULT_LANG_KEY: String = "zh-CN"
 
@@ -109,9 +109,32 @@ func _fill_info_line(content: Node, idx: int, text: String) -> void:
 
 # .tscn 普通 Button 套 Scale9 StyleBox（sell_number_button + cap 15,22,15,25）+ i18n label + 绑信号。
 # 位置/size .tscn 已固化（4 按钮共用 BTN_RES/cap，setup_btn 仅 size 180×55 不同，cap 一致）。
+# fill 独立 Label 子节点 %XxxLabel（Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，
+# 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_detail）。
+# Label 字色/阴影已在 .tscn 静态声明（照源 sell_number_button 文字 浅米色 + 黑描边），不在此覆盖。
 func _apply_scale9_btn(btn: Button, label_text: String, handler: Callable) -> void:
-	UiScale9Button.apply_with_label(btn, BTN_RES, BTN_PRESS_RES, BTN_CAP, label_text, BTN_LABEL_COLOR)
+	btn.add_theme_stylebox_override("normal", _make_sb(BTN_RES, BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_sb(BTN_RES, BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_sb(BTN_PRESS_RES, BTN_CAP))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	# fill 独立 Label 子节点（.tscn 已建 %XxxLabel，命名规则 XxxBtn → XxxLabel）
+	var label_name: String = btn.name.replace("Btn", "Label")
+	var lbl: Label = btn.get_node_or_null(label_name)
+	if lbl != null:
+		lbl.text = label_text
 	btn.pressed.connect(handler)
+
+
+static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = cap_insets.position.x
+	sb.texture_margin_top = cap_insets.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
+		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
+	return sb
 
 
 func _on_change_name() -> void:

@@ -128,6 +128,27 @@ offset_left = 630.0
 offset_top = 147.0
 offset_right = 760.0
 offset_bottom = 202.0
+
+[node name="ChangeNameLabel" type="Label" parent="ChangeNameBtn" unique_id=508964242]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "修改名字"
 
 [node name="ChangeHeadBtn" type="Button" parent="." unique_id=393929176]
@@ -137,6 +158,27 @@ offset_left = 630.0
 offset_top = 220.0
 offset_right = 760.0
 offset_bottom = 275.0
+
+[node name="ChangeHeadLabel" type="Label" parent="ChangeHeadBtn" unique_id=393929177]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "更换头像"
 
 [node name="SaveManagerBtn" type="Button" parent="." unique_id=887369569]
@@ -146,6 +188,27 @@ offset_left = 630.0
 offset_top = 301.0
 offset_right = 760.0
 offset_bottom = 356.0
+
+[node name="SaveManagerLabel" type="Label" parent="SaveManagerBtn" unique_id=887369570]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "存档管理"
 
 [node name="SetupBtn" type="Button" parent="." unique_id=69960514]
@@ -155,6 +218,27 @@ offset_left = 244.0
 offset_top = 390.0
 offset_right = 424.0
 offset_bottom = 445.0
+
+[node name="SetupLabel" type="Label" parent="SetupBtn" unique_id=69960515]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "系统设置"
 
 [node name="LangBtn" type="TextureButton" parent="." unique_id=1985356001]

@@ -43,7 +43,28 @@ offset_top = 50.0
 offset_right = 780.0
 offset_bottom = 90.0
 mouse_filter = 0
-text = "重置"
+
+[node name="ResetLabel" type="Label" parent="ResetBtn"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "重新开始"
 
 [node name="FogLayer" type="Control" parent="."]
 unique_name_in_owner = true

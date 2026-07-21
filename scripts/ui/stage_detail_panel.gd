@@ -10,6 +10,10 @@ extends PopWindow
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_detail_content.tscn")
 const TEAM_MAX: int = 5
+# SweepBtn Scale9 样式（源 stagedetail.lua:378/392 tavern_button_normal_1/2.png，cap 20,15,90,15）。
+const SWEEP_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
+const SWEEP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
+const SWEEP_BTN_CAP: Rect2 = Rect2(20.0, 15.0, 90.0, 15.0)
 
 var stage_id: int = 0
 var mgr: StageManager = null
@@ -119,13 +123,31 @@ func _daily_limit() -> int:
 
 # 源 createRepeatBattle :266-469（3 星 + normal/elite 显示扫荡）。once_label 文案源 :454 PRIVILEGE.FARM。
 # .tscn %SweepBtn 默认 visible=false，3 星 + 有 mgr 时切 visible=true + 绑信号。
+# 套 Scale9 stylebox（tavern_button_normal_1/2 cap 20,15,90,15）+ fill 独立 Label 子节点 %SweepLabel
+# （Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）。
 func _setup_sweep_button(btn: Button, star: int) -> void:
 	if mgr == null or star < 3:
 		btn.visible = false
 		return
 	btn.visible = true
-	btn.text = String(player.cm.get_lstr("PRIVILEGE.FARM"))  # 源 :454 T(LSTR("PRIVILEGE.FARM"))="扫荡"
+	btn.add_theme_stylebox_override("normal", _make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_sb(SWEEP_BTN_PRESS_RES, SWEEP_BTN_CAP))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	(btn.get_node("SweepLabel") as Label).text = String(player.cm.get_lstr("PRIVILEGE.FARM"))  # 源 :454 T(LSTR("PRIVILEGE.FARM"))="扫荡"
 	btn.pressed.connect(_on_sweep_pressed)
+
+
+static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	var tex: Texture2D = load(res) as Texture2D
+	sb.texture = tex
+	sb.texture_margin_left = cap_insets.position.x
+	sb.texture_margin_top = cap_insets.position.y
+	if tex != null:
+		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
+		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
+	return sb
 
 
 # 源 doClickGo → battleprepare→battle。本项目弹布阵面板 BattlePreparePanel。

@@ -173,6 +173,9 @@ static func fill_info_board(base: Control, hero: HeroInstance, cm: Variant) -> L
 # fill 1 action button（%UpgradeRankBtn）Scale9 样式 + LSTR text。
 # 源 window.lua:2158 upgrade label = T(LSTR("HERODETAIL.ADVANCE_"))。
 # ⚠️偏离源：evolve 文字按钮已删（用户简化决策 2026-07-18），升星由 %GetStoneBtn +号按钮触发。
+# UpgradeRankBtn 用独立 Label 子节点 %UpgradeRankLabel 居中（Button.text 内嵌 label 受 stylebox
+# content_margin 干扰致字体偏左上，改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1
+# 稳定居中，范式同 tab 按钮 fill_tab_labels）。
 static func fill_action_buttons(base: Control, cm: Variant) -> void:
 	var labels: Dictionary = {
 		"UpgradeRankBtn": String(cm.get_lstr(&"HERODETAIL.ADVANCE_")) if cm != null else "进阶",
@@ -180,7 +183,11 @@ static func fill_action_buttons(base: Control, cm: Variant) -> void:
 	for btn_name in labels:
 		var btn: Button = base.get_node("%" + btn_name)
 		_apply_detail_style(btn)
-		btn.text = labels[btn_name]
+		# fill 独立 Label 子节点（.tscn 已建 %XxxLabel），不 fill Button.text
+		var label_key: String = btn_name.replace("Btn", "Label")
+		var lbl: Label = btn.get_node_or_null("%" + label_key)
+		if lbl != null:
+			lbl.text = labels[btn_name]
 
 
 # .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=detail-n，pressed=detail-pressed-n），
@@ -248,6 +255,10 @@ static func collect_tab_buttons(base: Control) -> Dictionary:
 
 
 # fill 3 tab LSTR text（源 :1468/:1545/:1622 HERODETAIL.DETAILED_PROPERTIES / ILLUSTRATIONS / TODOLIST.SKILLS_UPGRADING）。
+# 套 detail-n stylebox（normal+hover）+ detail-pressed-n（pressed，防 Button 默认 pressed 位移变形）。
+# 文字 fill 到独立 Label 子节点 %TabXxxLabel（Button.text 内嵌 label 受 stylebox content_margin 干扰致字体偏左上，
+# 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_package tab）。
+# 源 label size=20 fontinfo=ui_normal_button 在 Scale9Sprite scaleSize 内居中。
 static func fill_tab_labels(tab_buttons: Dictionary, cm: Variant) -> void:
 	var labels: Dictionary = {
 		"detail": String(cm.get_lstr(&"HERODETAIL.DETAILED_PROPERTIES")) if cm != null else "详细属性",
@@ -255,7 +266,18 @@ static func fill_tab_labels(tab_buttons: Dictionary, cm: Variant) -> void:
 		"skill": String(cm.get_lstr(&"TODOLIST.SKILLS_UPGRADING")) if cm != null else "技能升级",
 	}
 	for key in tab_buttons:
-		(tab_buttons[key] as Button).text = labels[key]
+		var btn: Button = tab_buttons[key] as Button
+		# StyleBox 覆盖 normal/hover/pressed 三态
+		var sb_normal: StyleBoxTexture = _make_tab_stylebox(TAB_N_RES)
+		var sb_pressed: StyleBoxTexture = _make_tab_stylebox("res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png")
+		btn.add_theme_stylebox_override("normal", sb_normal)
+		btn.add_theme_stylebox_override("hover", sb_normal)
+		btn.add_theme_stylebox_override("pressed", sb_pressed)
+		# fill 独立 Label 子节点（.tscn 已建 %TabXxxLabel，命名规则 Tab{Key}Label）
+		var label_name: String = "Tab" + key.capitalize() + "Label"
+		var lbl: Label = btn.get_node_or_null("%" + label_name)
+		if lbl != null:
+			lbl.text = labels[key]
 
 
 # 切 tab 选中态：选中 → detail-a stylebox，未选 → detail-n（源 :321-323 切 _select visible）。
