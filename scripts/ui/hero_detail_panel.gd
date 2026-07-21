@@ -110,6 +110,8 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	# 隐藏 AttribListHost 的垂直滚动条视觉，保留滚动功能。
 	# 方案：给 ScrollContainer 内的 VScrollBar 用 StyleBoxEmpty 覆盖 grabber/scroll 等 theme 项
 	# （visible=false 会禁用滚动，必须用 stylebox 透明）。
+	# 滚轮事件本身不靠 ScrollContainer 内置处理（gui_input 收不到 WHEEL_UP/DOWN），
+	# 改由本脚本 _input 接管（仅 detail tab 激活 + 鼠标在 host 上时滚，见 _handle_scroll_event）。
 	var detail_host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
 	var detail_v_scroll := detail_host.get_node_or_null("_v_scroll") as Control
 	if detail_v_scroll != null:
@@ -118,10 +120,6 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		detail_v_scroll.add_theme_stylebox_override("grabber", empty)
 		detail_v_scroll.add_theme_stylebox_override("grabber_highlight", empty)
 		detail_v_scroll.add_theme_stylebox_override("grabber_pressed", empty)
-	# 保底：给 detail_host 自己挂 gui_input 接管滚轮（shade_layer STOP 可能吞上层事件，
-	# ScrollContainer 内部 ScrollBar 滚轮路径不可靠，直接监听 host gui_input 改 scroll_vertical）。
-	if not detail_host.gui_input.is_connected(_on_detail_scroll):
-		detail_host.gui_input.connect(_on_detail_scroll)
 	var detail_vbox: VBoxContainer = detail_host.get_node("AttribVBox") as VBoxContainer
 	HeroDetailAttribs.fill_attributes(detail_vbox, hero, cm)
 	_fill_skills()
@@ -238,20 +236,42 @@ func _on_skill_upgrade_clicked(idx: int) -> void:
 	upgrade_skill_requested.emit(idx)
 
 
-# detail tab AttribListHost 滚轮接管：shade_layer STOP 吞滚轮，ScrollContainer 内部 ScrollBar
-# 可能收不到事件，直接监听 host.gui_input 改 scroll_vertical 保底。
-# 滚轮一格 50 像素（Godot 默认 SCROLL_FACTOR 等价）。
-func _on_detail_scroll(event: InputEvent) -> void:
-	if not (event is InputEventMouseButton):
+# detail tab 滚轮接管：ScrollContainer 内置 _gui_input 处理滚轮后 accept_event，
+# 既不 emit gui_input 信号也不让事件冒泡，故 host.gui_input 收不到 WHEEL_UP/DOWN。
+# 改走 _input（所有事件都过此处，先于 GUI/_gui_input），仅当 detail tab 激活 +
+# 鼠标落在 AttribListHost 上时改 scroll_vertical（滚轮一格 50px，Godot 默认等价）。
+# 兼容触控板：PanGesture（笔记本两指滑动）按 delta.y 滚。
+func _input(event: InputEvent) -> void:
+	_handle_scroll_event(event)
+
+
+func _handle_scroll_event(event: InputEvent) -> void:
+	if not is_inside_tree() or _current_tab != TAB_DETAIL:
 		return
-	var mb := event as InputEventMouseButton
 	var host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
-	if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-		host.scroll_vertical = max(0, host.scroll_vertical - 50)
-		host.accept_event()
-	elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		host.scroll_vertical += 50
-		host.accept_event()
+	if host == null:
+		return
+	var scroll_delta: int = 0
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if not host.get_global_rect().has_point(mb.global_position):
+			return
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+			scroll_delta = -50
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			scroll_delta = 50
+	elif event is InputEventPanGesture:
+		var pan := event as InputEventPanGesture
+		var mouse_pos := get_global_mouse_position()
+		if not host.get_global_rect().has_point(mouse_pos):
+			return
+		scroll_delta = int(pan.delta.y * 50.0)
+	else:
+		return
+	if scroll_delta == 0:
+		return
+	host.scroll_vertical = max(0, host.scroll_vertical + scroll_delta)
+	get_viewport().set_input_as_handled()
 
 
 # 源 window.lua:170-191 refreshgsAfterWear：gs 变了 → 更新文本 + 锚点居中 + scale 1.2→1
