@@ -42,10 +42,14 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 	for c in vbox.get_children():
 		c.free()
 	_add_section_title(vbox, &"HERODETAILATT.HERO_INTROUDUCEMENT", "英雄简介", cm)
-	var desc: String = String(cm.lookup(&"Unit", "Description", int(hero.tid)))
+	# Unit 表 Description/Narrative 字段值是 LSTR key（如 UNIT.FRONT_TANKS_...），
+	# 直接 lookup 拿到的是 key 本身（用户看到的英文 key），需过 get_lstr 翻译。
+	var desc_raw: String = String(cm.lookup(&"Unit", "Description", int(hero.tid)))
+	var desc: String = cm.get_lstr(desc_raw) if cm != null and not desc_raw.is_empty() else desc_raw
 	if not desc.is_empty():
 		_add_text(vbox, desc, 18, ATT_DESC_COLOR)
-	var narrative: String = String(cm.lookup(&"Unit", "Narrative", int(hero.tid)))
+	var narrative_raw: String = String(cm.lookup(&"Unit", "Narrative", int(hero.tid)))
+	var narrative: String = cm.get_lstr(narrative_raw) if cm != null and not narrative_raw.is_empty() else narrative_raw
 	if not narrative.is_empty():
 		_add_text(vbox, narrative, 16, ATT_PRE_COLOR)
 	_add_section_title(vbox, &"HERODETAILATT.HERO_ATTRIBUTES", "英雄属性", cm)
@@ -77,6 +81,8 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 
 
 # 源 createAttList title-mark + des_title（20 size 黄 ccc3(251,206,16)，HERO_INTROUDUCEMENT/HERO_ATTRIBUTES）。
+# 源 setPosition(list_center, ...) anchor(0.5,1) 居中——title-mark + title label 都在 list 中心 x=142。
+# 项目用 VBox 默认左对齐，需给 title-mark + title label 设 size_flags_horizontal=SIZE_SHRINK_CENTER 居中。
 static func _add_section_title(vbox: VBoxContainer, lstr_key: StringName, fallback: String, cm: Variant) -> void:
 	var tex: Texture2D = _load_texture(ATT_TITLE_MARK_RES)
 	if tex != null:
@@ -85,12 +91,15 @@ static func _add_section_title(vbox: VBoxContainer, lstr_key: StringName, fallba
 		mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		mark.stretch_mode = TextureRect.STRETCH_SCALE
 		mark.custom_minimum_size = Vector2(80.0, 12.0)
+		mark.size_flags_horizontal = Control.SIZE_SHRINK_CENTER   # 源 list_center 居中
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vbox.add_child(mark)
 	var lbl := Label.new()
 	lbl.text = String(cm.get_lstr(lstr_key)) if cm != null else fallback
 	lbl.modulate = ATT_TITLE_COLOR
 	lbl.add_theme_font_size_override("font_size", 20)
+	lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER   # 源 list_center 居中
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(lbl)
 

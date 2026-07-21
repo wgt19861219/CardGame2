@@ -12,6 +12,9 @@
 [ext_resource type="Texture2D" uid="uid://r62klw38nq0r" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress.png" id="10_bar"]
 [ext_resource type="Texture2D" uid="uid://rqps1iu8v4up" path="res://assets/ui/alpha/HVGA/herodetail_status_plus_icon_1.png" id="11_getstone"]
 [ext_resource type="Texture2D" uid="uid://b64rmyhqgasx7" path="res://assets/ui/alpha/HVGA/equip_frame_white.png" id="12_equipframe"]
+[ext_resource type="PackedScene" uid="uid://ca2d7tab8a01r" path="res://scenes/ui/hero_detail_card_tab.tscn" id="13_cardtab"]
+[ext_resource type="PackedScene" uid="uid://bd3d7uacbb02s" path="res://scenes/ui/hero_detail_detail_tab.tscn" id="14_detailtab"]
+[ext_resource type="PackedScene" uid="uid://ce4d8vbdcc03t" path="res://scenes/ui/hero_detail_skill_tab.tscn" id="15_skilltab"]
 
 [node name="HeroDetailContent" type="Control" unique_id=109460258]
 layout_mode = 3
@@ -519,133 +522,11 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text = "技能升级"
 
-[node name="TabCardView" type="Control" parent="." unique_id=1535216378]
+[node name="TabCardView" parent="." instance=ExtResource("13_cardtab")]
 unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-z_index = 2
 
-[node name="CardFrame" type="TextureRect" parent="TabCardView" unique_id=649205390]
+[node name="TabDetailView" parent="." instance=ExtResource("14_detailtab")]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 122.5
-offset_top = 47.5
-offset_right = 437.5
-offset_bottom = 592.5
-mouse_filter = 2
-expand_mode = 1
-z_index = 1
 
-[node name="CardArtHost" type="Control" parent="TabCardView" unique_id=1358059727]
+[node name="TabSkillView" parent="." instance=ExtResource("15_skilltab")]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="CardNameLabel" type="Label" parent="TabCardView" unique_id=637144394]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 200.0
-offset_top = 458.0
-offset_right = 360.0
-offset_bottom = 482.0
-theme_override_font_sizes/font_size = 22
-z_index = 3
-
-[node name="TabDetailView" type="Control" parent="." unique_id=1296177190]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-z_index = 2
-
-[node name="PopupBg" type="TextureRect" parent="TabDetailView" unique_id=564267849]
-layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
-mouse_filter = 2
-texture = ExtResource("7_popup")
-expand_mode = 1
-
-[node name="AttribListHost" type="ScrollContainer" parent="TabDetailView" unique_id=1760374850]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 113.5
-offset_top = 50.0
-offset_right = 362.5
-offset_bottom = 465.0
-mouse_filter = 2
-horizontal_scroll_mode = 0
-
-[node name="AttribVBox" type="VBoxContainer" parent="TabDetailView/AttribListHost" unique_id=1760374851]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 2
-theme_override_constants/separation = 4
-
-[node name="TabSkillView" type="Control" parent="." unique_id=719953858]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-z_index = 2
-
-[node name="PopupBg" type="TextureRect" parent="TabSkillView" unique_id=2019248026]
-layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
-mouse_filter = 2
-texture = ExtResource("7_popup")
-expand_mode = 1
-
-[node name="SkillListHost" type="Control" parent="TabSkillView" unique_id=1407299746]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="DescHost" type="Control" parent="TabSkillView" unique_id=2019793611]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2

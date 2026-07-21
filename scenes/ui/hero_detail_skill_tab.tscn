@@ -1,0 +1,218 @@
+[gd_scene format=3 uid="uid://ce4d8vbdcc03t"]
+
+[ext_resource type="Texture2D" uid="uid://c6hc85fvmusfb" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="1_popup"]
+
+[node name="TabSkillView" type="Control"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+z_index = 2
+
+[node name="EditPlaceholder" type="ReferenceRect" parent="."]
+editor_only = true
+layout_mode = 0
+offset_left = 95.5
+offset_top = 35.0
+offset_right = 464.5
+offset_bottom = 605.0
+mouse_filter = 2
+border_color = Color(0, 1, 0.7, 1)
+border_width = 2.0
+
+[node name="PopupBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 95.5
+offset_top = 35.0
+offset_right = 464.5
+offset_bottom = 605.0
+mouse_filter = 2
+texture = ExtResource("1_popup")
+expand_mode = 1
+
+[node name="SkillListHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DescHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PH_Skill1_Icon" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 186.0
+offset_right = 224.0
+offset_bottom = 234.0
+mouse_filter = 2
+color = Color(0.3, 0.3, 0.3, 0.5)
+
+[node name="PH_Skill1_Name" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 188.0
+offset_right = 365.0
+offset_bottom = 208.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 16
+text = "技能名1"
+
+[node name="PH_Skill1_Lvl" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 210.0
+offset_right = 365.0
+offset_bottom = 230.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "lv.1"
+
+[node name="PH_Skill1_Btn" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 355.0
+offset_top = 210.0
+offset_right = 395.0
+offset_bottom = 240.0
+mouse_filter = 2
+color = Color(0.5, 0.5, 0.5, 0.5)
+
+[node name="PH_Skill2_Icon" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 276.0
+offset_right = 224.0
+offset_bottom = 324.0
+mouse_filter = 2
+color = Color(0.3, 0.3, 0.3, 0.5)
+
+[node name="PH_Skill2_Name" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 278.0
+offset_right = 365.0
+offset_bottom = 298.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 16
+text = "技能名2"
+
+[node name="PH_Skill2_Lvl" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 300.0
+offset_right = 365.0
+offset_bottom = 320.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "lv.1"
+
+[node name="PH_Skill2_Btn" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 355.0
+offset_top = 300.0
+offset_right = 395.0
+offset_bottom = 330.0
+mouse_filter = 2
+color = Color(0.5, 0.5, 0.5, 0.5)
+
+[node name="PH_Skill3_Icon" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 366.0
+offset_right = 224.0
+offset_bottom = 414.0
+mouse_filter = 2
+color = Color(0.3, 0.3, 0.3, 0.5)
+
+[node name="PH_Skill3_Name" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 368.0
+offset_right = 365.0
+offset_bottom = 388.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 16
+text = "技能名3"
+
+[node name="PH_Skill3_Lvl" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 390.0
+offset_right = 365.0
+offset_bottom = 410.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "lv.1"
+
+[node name="PH_Skill3_Btn" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 355.0
+offset_top = 390.0
+offset_right = 395.0
+offset_bottom = 420.0
+mouse_filter = 2
+color = Color(0.5, 0.5, 0.5, 0.5)
+
+[node name="PH_Skill4_Icon" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 456.0
+offset_right = 224.0
+offset_bottom = 504.0
+mouse_filter = 2
+color = Color(0.3, 0.3, 0.3, 0.5)
+
+[node name="PH_Skill4_Name" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 458.0
+offset_right = 365.0
+offset_bottom = 478.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
+theme_override_font_sizes/font_size = 16
+text = "技能名4"
+
+[node name="PH_Skill4_Lvl" type="Label" parent="."]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 480.0
+offset_right = 365.0
+offset_bottom = 500.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "lv.1"
+
+[node name="PH_Skill4_Btn" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 355.0
+offset_top = 480.0
+offset_right = 395.0
+offset_bottom = 510.0
+mouse_filter = 2
+color = Color(0.5, 0.5, 0.5, 0.5)

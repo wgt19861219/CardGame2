@@ -107,7 +107,22 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
 	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
 	_fill_card_view()
-	var detail_vbox: VBoxContainer = (_tab_views["detail"] as Control).get_node("AttribListHost/AttribVBox") as VBoxContainer
+	# 隐藏 AttribListHost 的垂直滚动条视觉，保留滚动功能。
+	# 方案：给 ScrollContainer 内的 VScrollBar 用 StyleBoxEmpty 覆盖 grabber/scroll 等 theme 项
+	# （visible=false 会禁用滚动，必须用 stylebox 透明）。
+	var detail_host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
+	var detail_v_scroll := detail_host.get_node_or_null("_v_scroll") as Control
+	if detail_v_scroll != null:
+		var empty := StyleBoxEmpty.new()
+		detail_v_scroll.add_theme_stylebox_override("scroll", empty)
+		detail_v_scroll.add_theme_stylebox_override("grabber", empty)
+		detail_v_scroll.add_theme_stylebox_override("grabber_highlight", empty)
+		detail_v_scroll.add_theme_stylebox_override("grabber_pressed", empty)
+	# 保底：给 detail_host 自己挂 gui_input 接管滚轮（shade_layer STOP 可能吞上层事件，
+	# ScrollContainer 内部 ScrollBar 滚轮路径不可靠，直接监听 host gui_input 改 scroll_vertical）。
+	if not detail_host.gui_input.is_connected(_on_detail_scroll):
+		detail_host.gui_input.connect(_on_detail_scroll)
+	var detail_vbox: VBoxContainer = detail_host.get_node("AttribVBox") as VBoxContainer
 	HeroDetailAttribs.fill_attributes(detail_vbox, hero, cm)
 	_fill_skills()
 	_show_tab_content(tab)
@@ -159,6 +174,14 @@ func _fill_card_view() -> void:
 	if cm == null:
 		return
 	var view: Control = _tab_views["card"] as Control
+	# 清空 .tscn 编辑器占位节点（PH_ 前缀，挂在 view 根下或 CardArtHost 下）
+	for c in view.get_children():
+		if c is Control and c.name.begins_with("PH_"):
+			c.queue_free()
+	var art_host := view.get_node("%CardArtHost") as Control
+	for c in art_host.get_children():
+		if c.name.begins_with("PH_"):
+			c.queue_free()
 	HeroDetailTabs.fill_card_view(view, hero, cm)
 
 
@@ -170,6 +193,13 @@ func _fill_card_view() -> void:
 func _fill_skills() -> void:
 	if hero == null:
 		return
+	# 清空 .tscn 编辑器占位节点（PH_ 前缀，挂在 TabSkillView 根下）+ SkillListHost 旧动态子节点
+	var skill_view: Control = _tab_views["skill"] as Control
+	for c in skill_view.get_children():
+		if c is Control and c.name.begins_with("PH_"):
+			c.queue_free()
+	for c in _skill_host.get_children():
+		c.free()
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
 	for i in SKILL_COUNT:
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
@@ -206,6 +236,22 @@ func _fill_skills() -> void:
 func _on_skill_upgrade_clicked(idx: int) -> void:
 	Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
 	upgrade_skill_requested.emit(idx)
+
+
+# detail tab AttribListHost 滚轮接管：shade_layer STOP 吞滚轮，ScrollContainer 内部 ScrollBar
+# 可能收不到事件，直接监听 host.gui_input 改 scroll_vertical 保底。
+# 滚轮一格 50 像素（Godot 默认 SCROLL_FACTOR 等价）。
+func _on_detail_scroll(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mb := event as InputEventMouseButton
+	var host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
+	if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+		host.scroll_vertical = max(0, host.scroll_vertical - 50)
+		host.accept_event()
+	elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		host.scroll_vertical += 50
+		host.accept_event()
 
 
 # 源 window.lua:170-191 refreshgsAfterWear：gs 变了 → 更新文本 + 锚点居中 + scale 1.2→1

@@ -1,0 +1,65 @@
+[gd_scene format=3 uid="uid://ca2d7tab8a01r"]
+
+[node name="TabCardView" type="Control" unique_id=460883805]
+unique_name_in_owner = true
+visible = false
+z_index = 2
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="EditPlaceholder" type="ReferenceRect" parent="." unique_id=786915829]
+layout_mode = 0
+offset_left = 122.5
+offset_top = 47.5
+offset_right = 437.5
+offset_bottom = 592.5
+mouse_filter = 2
+border_color = Color(0, 1, 0.7, 1)
+border_width = 2.0
+
+[node name="CardFrame" type="TextureRect" parent="." unique_id=2119671309]
+unique_name_in_owner = true
+z_index = 1
+layout_mode = 0
+offset_left = 122.5
+offset_top = 47.5
+offset_right = 437.5
+offset_bottom = 592.5
+mouse_filter = 2
+expand_mode = 1
+
+[node name="CardArtHost" type="Control" parent="." unique_id=1179606391]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PH_ArtPlaceholder" type="ColorRect" parent="CardArtHost"]
+layout_mode = 0
+offset_left = 130.5
+offset_top = 56.5
+offset_right = 429.5
+offset_bottom = 583.5
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.3, 0.6)
+
+[node name="CardNameLabel" type="Label" parent="." unique_id=302242378]
+unique_name_in_owner = true
+z_index = 3
+layout_mode = 0
+offset_left = 200.0
+offset_top = 458.0
+offset_right = 360.0
+offset_bottom = 482.0
+theme_override_font_sizes/font_size = 22
