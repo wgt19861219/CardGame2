@@ -241,6 +241,9 @@ func _on_sold(_item_id: int) -> void:
 
 # 源 loadEquip :278-318：package createIconWithAmount(id) / fragment createIconWithTag(makeId)。
 # package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
+# 套 clipper（clip_contents=true size=ICON_SIZE）裁 frame Sprite2D 溢出（源 frame 94×95，ICON_SIZE=72，
+# 溢出 22×23px 会画到相邻 cell 上致视觉重叠）。clipper 内 cell 位置 (0,0)，gui_input 由 clipper 接。
+# ICON_SIZE 不动（避免连锁 12+ 下游已验收场景：stage_done/equip_strengthen/equip_craft 等）。
 func _make_cell(cell_data: Dictionary) -> Control:
 	var amount: int = int(cell_data["amount"])
 	var cell: Control
@@ -248,9 +251,14 @@ func _make_cell(cell_data: Dictionary) -> Control:
 		cell = ReadequipIcon.create_icon_with_tag(int(cell_data["makeId"]), amount, cm, pd)
 	else:
 		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
-	cell.mouse_filter = Control.MOUSE_FILTER_STOP
-	cell.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
-	return cell
+	# 套 clipper 裁 frame 溢出。clipper 占 GridContainer 单元格位（ICON_SIZE×ICON_SIZE），cell 在内 (0,0)。
+	var clipper := Control.new()
+	clipper.custom_minimum_size = Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE)
+	clipper.clip_contents = true
+	clipper.add_child(cell)
+	clipper.mouse_filter = Control.MOUSE_FILTER_STOP
+	clipper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
+	return clipper
 
 
 # 源 doClickInList :162-177 → doSelectEquip(id) → equipboard。第 24 段接 equipboard 浮层。
