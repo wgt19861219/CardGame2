@@ -191,13 +191,9 @@ func _fill_card_view() -> void:
 func _fill_skills() -> void:
 	if hero == null:
 		return
-	# 清空 .tscn 编辑器占位节点（PH_ 前缀，挂在 TabSkillView 根下）+ SkillListHost 旧动态子节点
+	# skill 行节点全静态化进 hero_detail_skill_tab.tscn（%Skill{1..4}Board/Frame/Icon/Name/Lvl/Btn），
+	# 本函数只 fill 数据 + 绑信号，位置/size 留 .tscn 编辑器可视化调（AGENTS.md .tscn 子场景范式）。
 	var skill_view: Control = _tab_views["skill"] as Control
-	for c in skill_view.get_children():
-		if c is Control and c.name.begins_with("PH_"):
-			c.queue_free()
-	for c in _skill_host.get_children():
-		c.free()
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
 	for i in SKILL_COUNT:
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
@@ -205,29 +201,41 @@ func _fill_skills() -> void:
 		var init_level: int = int(slot_info.get("Init Level", 1))
 		var unlock_rank: int = int(slot_info.get("Unlock", 1))
 		var icon_res: String = String(slot_info.get("Icon", ""))
-		var cocos_y: float = SKILL_ORI_HEIGHT - SKILL_BD_HEIGHT * float(i)   # 第 i 行 y 基准（i=0→350）
 		var locked: bool = hero.rank < unlock_rank
-		var icon_pos: Vector2 = HeroDetailBuilder.to_godot(SKILL_ICON_COCOS_X + TAB_POP_OFFSET_X, cocos_y)
-		HeroDetailTabs.create_skill_icon(_skill_host, icon_res, icon_pos, locked, i, Callable(self, "_toggle_skill_desc").bind(i))
-		var name_lbl := Label.new()
+		var slot_idx: int = i + 1   # .tscn 节点名 1-based（%Skill1Icon..%Skill4Icon）
+		# fill icon 纹理（动态，每技能不同）+ 灰显锁定 + 测试 meta
+		var icon_btn: TextureButton = skill_view.get_node("%Skill" + str(slot_idx) + "Icon") as TextureButton
+		var icon_tex: Texture2D = HeroDetailTabs.load_skill_icon(icon_res)
+		if icon_tex != null:
+			icon_btn.texture_normal = icon_tex
+			icon_btn.texture_hover = icon_tex
+		icon_btn.modulate = HeroDetailTabs.SKILL_GRAY_MODULATE if locked else Color.WHITE
+		icon_btn.set_meta(&"skill_icon", true)
+		for c in icon_btn.pressed.get_connections():
+			icon_btn.pressed.disconnect(c.callable)
+		icon_btn.pressed.connect(_toggle_skill_desc.bind(i))
+		# frame 灰显锁定
+		var frame: TextureRect = skill_view.get_node("%Skill" + str(slot_idx) + "Frame") as TextureRect
+		frame.modulate = HeroDetailTabs.SKILL_GRAY_MODULATE if locked else Color.WHITE
+		# fill name 文本
+		var name_lbl: Label = skill_view.get_node("%Skill" + str(slot_idx) + "Name") as Label
 		name_lbl.text = display_name
-		name_lbl.position = HeroDetailBuilder.to_godot(SKILL_NAME_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_NAME_DY)
-		_add_tab_content(_skill_host, name_lbl)
-		if locked:   # 源 createSkillUnlockLabel :445 ccp(365, ori-5-bd*i)
+		# fill lvl 文本（锁定显示"rank X 解锁"+隐藏 btn，已解锁显示 lv.X+显示 btn）+ 测试 meta
+		var lvl_lbl: Label = skill_view.get_node("%Skill" + str(slot_idx) + "Lvl") as Label
+		var btn: TextureButton = skill_view.get_node("%Skill" + str(slot_idx) + "Btn") as TextureButton
+		if locked:
 			var color_text: String = HeroDetailAttribs.get_lstr_fallback(String(RANK_COLOR_LSTR.get(unlock_rank, "")), str(unlock_rank), cm)
-			var unlock_lbl := Label.new()
-			unlock_lbl.text = HeroDetailAttribs.get_lstr_fallback(String(LSTR_SKILL_UNLOCK), "rank %s 解锁", cm) % color_text
-			unlock_lbl.position = HeroDetailBuilder.to_godot(SKILL_LVL_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_LVL_DY)
-			_add_tab_content(_skill_host, unlock_lbl)
-		else:   # 已解锁 → 等级 + 升级按钮（源 lvl ccp(365,ori-5) :322 / btn ccp(495,ori-15) :351）
+			lvl_lbl.text = HeroDetailAttribs.get_lstr_fallback(String(LSTR_SKILL_UNLOCK), "rank %s 解锁", cm) % color_text
+			btn.visible = false
+		else:
 			var cur_level: int = int(hero.skill_levels[i]) if i < hero.skill_levels.size() else 1
 			var show_level: int = cur_level - init_level + 1
-			var lvl_lbl := Label.new()
 			lvl_lbl.text = "lv." + str(show_level)
-			lvl_lbl.position = HeroDetailBuilder.to_godot(SKILL_LVL_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_LVL_DY)
-			_add_tab_content(_skill_host, lvl_lbl)
-			var btn_pos: Vector2 = HeroDetailBuilder.to_godot(SKILL_BTN_COCOS_X + TAB_POP_OFFSET_X, cocos_y + SKILL_BTN_DY)
-			HeroDetailTabs.create_skill_upgrade_button(_skill_host, btn_pos, Callable(self, "_on_skill_upgrade_clicked").bind(i))
+			btn.visible = true
+			for c in btn.pressed.get_connections():
+				btn.pressed.disconnect(c.callable)
+			btn.pressed.connect(_on_skill_upgrade_clicked.bind(i))
+			btn.set_meta(&"skill_upgrade", true)
 
 
 # 技能升级按钮回调（源 skillstren.lua:345 升级按钮 pressHandler：tutorial + upgrade 信号）。

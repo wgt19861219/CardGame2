@@ -155,10 +155,12 @@ func test_panel_skill_icon() -> void:
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
 	panel._show_tab_content("skill")
-	# 4 边框 Sprite2D + 4 图标 TextureButton（可点击触发描述弹板）。
-	# 扫 skill view 子树（避开 portrait FCA 的 Sprite2D，其在 %BaseLayer %PortraitHost）。
-	var frame_count: int = _count_if_recursive(panel._tab_views["skill"] as Node, func(n: Node) -> bool:
-		return n is Sprite2D)
+	# 4 边框 TextureRect（%Skill1Frame..%Skill4Frame）+ 4 图标 TextureButton（meta skill_icon）。
+	# 静态化后 frame 是 TextureRect（非 Sprite2D），按 unique name 数 %Skill{1..4}Frame。
+	var frame_count: int = 0
+	for slot in range(1, 5):
+		if (panel._tab_views["skill"] as Node).has_node("%Skill" + str(slot) + "Frame"):
+			frame_count += 1
 	var icon_btn_count: int = _count_meta_recursive(panel._tab_views["skill"] as Node, "skill_icon")
 	assert_eq(frame_count, 4, "4 equip_frame_white 边框")
 	assert_eq(icon_btn_count, 4, "4 技能图标 TextureButton")

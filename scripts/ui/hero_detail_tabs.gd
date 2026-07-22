@@ -220,6 +220,12 @@ static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 
 # ==================== skill 行绘制（图标 + 升级按钮）====================
 
+# skill_tab 静态化后 panel fill 用：加载技能图标纹理（动态，每技能不同）。
+# create_skill_icon/create_skill_upgrade_button 保留兼容（DescHost 等），skill_tab 改 .tscn + 本函数 fill。
+static func load_skill_icon(icon_res: String) -> Texture2D:
+	return _load_ui_texture(icon_res)
+
+
 # 源 readhero.lua:1011 createSkillIcon + skillstren.lua:758 board_i pressHandler。
 # 边框 Sprite2D（equip_frame_white centered）+ 图标 TextureButton（可点击 → 描述弹板）。
 # locked=true 灰显（源 skillstren.lua:434 setSpriteGray）。icon_pos/on_click 由 panel 传入。
