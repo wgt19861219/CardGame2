@@ -266,7 +266,7 @@ func _build_status_bar() -> void:
 	# Panel 默认 StyleBox 灰底 → 改透明（map 已延伸到顶，露 mountain 天）。
 	bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(bar)
-	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self), _open_midas)
+	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self), _open_midas, GameData.player, GameData.config)
 	# 每日签到入口按钮（照源 statusbar.lua:403-410 dailylogin 按钮 clickHandler→showDailyLogin）。
 	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
 	dl_btn.pressed.connect(_open_daily_login)

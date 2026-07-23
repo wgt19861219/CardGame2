@@ -170,11 +170,100 @@ func _build_main_task(chain: int, tid: int, row: Dictionary, is_finished: bool) 
 	}
 
 
-# 源 getProgress@1064 + getCount:查 Task[chain][id] Task Progress Type/ID + player record（FarmPVEStage 等）。
-# TaskManager 当前只有 dailyjob_count（日常），主任务 progress 记录系统未接（需各行为点 hook record_by_type）。
-# 降级返 0；完成态靠 entry.status=="finished"（领奖后）判定，不依赖 progress。Logic 待接主任务 record。
+# 源 task.lua:1064-1080 getProgress + :150-215 getCount：查 Task[chain][id] Task Progress Type/ID，
+# 按类型实时查 player 状态（源非事件累计——CompleteStage/PlayerLevel/HeroRank/MultiHeroRank 全实时查询；
+# 仅 FarmStage/KillMonster 用 getTaskCount record，TaskManager 未接 → 降级返 0）。
+# Task 表 5 type 分布（实测 task.json）：CompleteStage 144 / MultiHeroRank 38 / FarmStage 25 /
+# PlayerLevel 24 / HeroRank 2 → 4/5 type 实时查覆盖 89% 主任务。
 func _get_main_progress(row: Dictionary) -> int:
-	return 0
+	var ptype: String = String(row.get("Task Progress Type", ""))
+	var pids: Array = _pid_values(row.get("Task Progress ID", {}))
+	var target: int = int(row.get("Task Target", 1))
+	return _get_count(ptype, pids, target, _player)
+
+
+# 源 getCount@150-215 翻译：按 Task Progress Type 查 player 实时状态。
+# pid 字段：源 lua table {v1, v2}（v==0 跳过），项目 JSON Dictionary {"1":v1,"2":v2}（_pid_values 转 Array）。
+# 照源完整翻译 9 type（Task 表实测用 5 个，余 4 个 ItemQuantity/HeroLevel/MultiHeroLevel/KillMonster
+# 为源完整性保留，便于后续扩展或 mod）。
+func _get_count(ptype: String, pids: Array, target: int, player: PlayerData) -> int:
+	match ptype:
+		# 源 :159-164：pid 中任一关卡通关（stars>0）→ 返 target（视为完成）
+		"CompleteStage":
+			for v in pids:
+				if int(v) != 0 and player.stage_manager.stage_stars(int(v)) > 0:
+					return target
+			return 0
+		# 源 :173-174：当前战队等级
+		"PlayerLevel":
+			return player.team_level
+		# 源 :181-186：英雄 tid 的 rank（品质阶）
+		"HeroRank":
+			for v in pids:
+				if int(v) != 0:
+					var h: HeroInstance = player.hero_manager.find_hero_by_tid(int(v))
+					if h != null:
+						return h.rank
+			return 0
+		# 源 :187-198：rank>=v 的英雄数量
+		"MultiHeroRank":
+			for v in pids:
+				if int(v) != 0:
+					return _count_heroes_by_rank(player, int(v))
+			return 0
+		# 源 :199-210：level>v 的英雄数量
+		"MultiHeroLevel":
+			for v in pids:
+				if int(v) != 0:
+					return _count_heroes_by_level(player, int(v))
+			return 0
+		# 源 :175-180：英雄 tid 的 level
+		"HeroLevel":
+			for v in pids:
+				if int(v) != 0:
+					var h: HeroInstance = player.hero_manager.find_hero_by_tid(int(v))
+					if h != null:
+						return h.level
+			return 0
+		# 源 :167-172：物品持有量（源 equip_qunty[v]，项目 items dict）
+		"ItemQuantity":
+			for v in pids:
+				if int(v) != 0:
+					return int(player.items.get(int(v), 0))
+			return 0
+		# 源 :165/212 getTaskCount(chain,id) 需 record 计数（未接）→ 降级 0
+		"KillMonster", "FarmStage":
+			return 0
+		_:
+			return 0
+
+
+# 源 :189-197 / :200-209 遍历 ed.player.heroes 统计满足条件的英雄数。
+static func _count_heroes_by_rank(player: PlayerData, rank_min: int) -> int:
+	var count: int = 0
+	for inst_id in player.hero_manager.heroes:
+		var h: HeroInstance = player.hero_manager.heroes[inst_id]
+		if h.rank >= rank_min:
+			count += 1
+	return count
+
+
+static func _count_heroes_by_level(player: PlayerData, level_min: int) -> int:
+	var count: int = 0
+	for inst_id in player.hero_manager.heroes:
+		var h: HeroInstance = player.hero_manager.heroes[inst_id]
+		if h.level > level_min:
+			count += 1
+	return count
+
+
+# pid 字段：源 lua table {v1, v2} → JSON Dictionary {"1":v1,"2":v2}（取 values）；兼容裸 Array/单值。
+static func _pid_values(pid_raw: Variant) -> Array:
+	if pid_raw is Dictionary:
+		return (pid_raw as Dictionary).values()
+	if pid_raw is Array:
+		return pid_raw
+	return []
 
 
 # 源 ed.ui.dailyTask:initTaskList@1542 + task.lua:1489-1495：只显示当前时段的日常任务（checkDailyjobDisplay 时间窗；checkdbTrigger VIP 单机化不接）。
