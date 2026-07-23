@@ -166,8 +166,10 @@ func _add_currency(y: float, icon_path: String, amount: int) -> float:
 	return y + 30.0   # 源 :211 y=y-30
 
 
-# ok（照 doClickRead:483 + doReadMail:494-531）：未读+附件 → claim（+overfull 检查）；未读 → mark_read；已读 → 关闭。
+# ok（照 doClickRead:483 + doReadMail:494-531）：未读+附件 → claim（+overfull 检查）；未读无附件 → mark_read+erase；已读 → 关闭。
 # P1-4：overfull 改弹 MailOverfullPopup（替 Toast 降级，忠实源 overfull.lua 弹窗）。
+# C10/C11（2026-07-23）：未读无附件分支照源 read_mail:2755-2760 补 erase（mark_read 仅改客户端 status，
+#   raw 未移除致未读无附件邮件永久留列表）；已读分支补 else: _close()（源 doClickRead:483-491 else destroy）。
 func _on_ok() -> void:
 	var has_attach: bool = bool(_mail.get("attached", false))
 	var is_unread: bool = str(_mail.get("status", "")) == "unread"
@@ -182,7 +184,13 @@ func _on_ok() -> void:
 			return
 		_claim_and_close()
 	elif is_unread:
+		# 源 read_mail handler :2755-2760 未读邮件点 ok 后从 mails 移除（不论有无附件）。
+		# claim_attach 内已 erase（未读+附件分支），此处未读无附件分支照源补 erase。
 		pd.mailbox.mark_read(_mail_id)
+		pd.mailbox.erase_mail(_mail_id)
+		_close()
+	else:
+		# C11：源 doClickRead:483-491 else 分支 destroy({skipAnim=true, callback}) 关闭弹窗。
 		_close()
 
 

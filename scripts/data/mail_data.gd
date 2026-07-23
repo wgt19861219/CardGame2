@@ -148,6 +148,15 @@ func mark_read(mail_id: int) -> void:
 		raw["_status"] = "read"
 
 
+# 从列表移除邮件（照源 local_server.lua:2755-2760 read_mail handler：未读邮件点 ok 后，
+# 服务端无条件从 localdata.mails 移除该 id；已读点 ok 不移除——源 doClickRead:483 else 分支仅 destroy）。
+# 单机：未读无附件分支与未读有附件分支（claim_attach 已 erase）对齐，均从 _raw_mails 移除。
+func erase_mail(mail_id: int) -> void:
+	var raw: Dictionary = _find_raw(mail_id)
+	if not raw.is_empty():
+		_raw_mails.erase(raw)
+
+
 # 取单封 format（点击列表项时）。
 func get_mail(mail_id: int) -> Dictionary:
 	var raw: Dictionary = _find_raw(mail_id)

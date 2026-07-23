@@ -55,10 +55,28 @@ const LSTR_PROMPT := "MIDAS.YOUVE_USED_UP_DAILY_GOLDEN_HAND_TIMES_\\N_UPGRADING_
 const LSTR_USE := "MIDAS.USE"                              # 源 refreshButton times<maxTimes / use 按钮 / 历史行
 const LSTR_MULTI := "midas.1.10.1.002"                     # 源 multi_use_label + createMultiWindow 段1 "连续使用"
 
-# 历史记录（源 createHistory :710-756 scrollView；简化单行文本挂 %HistoryHost）
-const HISTORY_LINE_HEIGHT: float = 18.0
-const HISTORY_START_Y: float = 6.0
-const HISTORY_ROW_X: float = 8.0
+# 历史记录（源 createHistory :710-756 scrollView；C8 照源 initHistoryItemHandler :425-545 每行
+# 6 节点横向布局 + 可选 ratio 图。HBoxContainer 替源 HorizontalNode + separation=5 近似 offset。）
+const HISTORY_LINE_HEIGHT: float = 28.0    # 源 itemSize=(435,35)；缩 28 容纳 24 icon
+const HISTORY_START_Y: float = 2.0
+const HISTORY_ROW_X: float = 4.0
+const HISTORY_FONT: int = 14               # 源 size=20（缩 14 适配行高 + 排版紧凑）
+const HISTORY_ICON_H: float = 22.0         # 源 fix_height=30/35（goldicon），缩 22 适配行高
+const HISTORY_SEP: int = 5                 # HBoxContainer separation（源 offset=5/10 简化统一）
+# 源 initHistoryItemHandler :487-498 shop_token_icon + :508-517 goldicon_small
+const HISTORY_TOKEN_RES: String = "res://assets/ui/alpha/HVGA/shop_token_icon.png"
+const HISTORY_GOLD_RES: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
+# 源 :532-544 ratio_res（midas_crip2/3/10.png）缺 → Label 降级（与暴击飘字 CRIP_TEXT 降级一致）
+const HISTORY_RATIO_RES: Dictionary = {
+	2: "res://assets/ui/alpha/HVGA/midas/midas_crip2.png",
+	3: "res://assets/ui/alpha/HVGA/midas/midas_crip3.png",
+	4: "res://assets/ui/alpha/HVGA/midas/midas_crip10.png",
+}
+# 源 :466-528 行内 6 节点 color ccc3→Color
+const HISTORY_USE_COLOR: Color = Color(1.0, 246.0 / 255.0, 143.0 / 255.0)      # 源 ccc3(255,246,143)
+const HISTORY_COST_COLOR: Color = Color(50.0 / 255.0, 223.0 / 255.0, 253.0 / 255.0)  # 源 ccc3(50,223,253)
+const HISTORY_GET_COLOR: Color = Color(1.0, 246.0 / 255.0, 143.0 / 255.0)      # 源 ccc3(255,246,143)
+const HISTORY_ACQUIRE_COLOR: Color = Color(1.0, 175.0 / 255.0, 52.0 / 255.0)   # 源 ccc3(255,175,52)
 const RATIO_TEXT: Dictionary = {1: "", 2: " ×2!", 3: " ×3!", 4: " ×10!!"}
 const RATIO_COLOR: Dictionary = {
 	1: Color.WHITE, 2: Color(1.0, 0.4, 0.7), 3: Color(1.0, 0.4, 0.7), 4: Color(1.0, 0.36, 0.27),
@@ -332,8 +350,9 @@ func _close_confirm() -> void:
 	_confirm_layer = null
 
 
-# 源 createHistory :710-757 scrollView push（Panel 容器 + 行 Label；源 initHistoryItemHandler 多图标简化为单行文本）
-# .tscn %HistoryHost 静态化（位置/size 固化），行 Label 动态挂 host（局部坐标）。
+# 源 createHistory :710-757 scrollView push（每行 initHistoryItemHandler :425-545 6 节点 + 可选 ratio 图）
+# .tscn %HistoryHost 静态化（位置/size 固化），行 HBoxContainer 动态挂 host（局部坐标）。
+# C8（2026-07-23）：照源补多节点（USE/cost/token icon/GET/gold icon/acquire + 可选 ratio 图）替单行 Label。
 func _rebuild_history() -> void:
 	for c in _history_host.get_children():
 		c.queue_free()
@@ -342,15 +361,70 @@ func _rebuild_history() -> void:
 	var y: float = HISTORY_START_Y
 	for h in _history:
 		var ratio: int = int(h.get("ratio", 1))
-		var row := Label.new()
-		# 源结构：USE + cost + shop_token + GET + goldicon + acquire + ratio_res → 简化 "USE cost GET acquire ratio"
-		row.text = "%s %d %s %d%s" % [_T(LSTR_USE), int(h.get("cost", 0)), _T("ADDEQUIP.GET"), int(h.get("acquire", 0)), str(RATIO_TEXT.get(ratio, ""))]
+		var row := HBoxContainer.new()
 		row.position = Vector2(HISTORY_ROW_X, y)
-		row.modulate = RATIO_COLOR.get(ratio, Color.WHITE)
-		row.add_theme_font_size_override("font_size", 14)
+		row.add_theme_constant_override("separation", HISTORY_SEP)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# 源 :466-475 USE label（ccc3(255,246,143)）
+		_add_history_label(row, _T(LSTR_USE), HISTORY_USE_COLOR)
+		# 源 :476-486 cost 数字（ccc3(50,223,253)）
+		_add_history_label(row, str(int(h.get("cost", 0))), HISTORY_COST_COLOR)
+		# 源 :487-496 shop_token icon（fix_height=30）
+		_add_history_icon(row, HISTORY_TOKEN_RES)
+		# 源 :497-507 GET label（ccc3(255,246,143)）
+		_add_history_label(row, _T("ADDEQUIP.GET"), HISTORY_GET_COLOR)
+		# 源 :508-517 goldicon_small（fix_height=35）
+		_add_history_icon(row, HISTORY_GOLD_RES)
+		# 源 :518-528 acquire 数字（ccc3(255,175,52)）
+		_add_history_label(row, str(int(h.get("acquire", 0))), HISTORY_ACQUIRE_COLOR)
+		# 源 :532-544 可选 ratio_res（ratio>=2，ccc3(255,104,174) or ratio=10 ccc3(194,91,68)）
+		if ratio >= 2:
+			_add_history_ratio(row, ratio)
 		_history_host.add_child(row)
 		y += HISTORY_LINE_HEIGHT
+
+
+# 历史 HBoxContainer 子 Label 工厂（源 :466-528 各 Label 节点；text+color+size 一致）
+func _add_history_label(parent: HBoxContainer, text: String, col: Color) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.modulate = col
+	lbl.add_theme_font_size_override("font_size", HISTORY_FONT)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(lbl)
+
+
+# 历史 HBoxContainer 子 TextureRect 工厂（源 :488-495 / :508-516 Sprite fix_height）
+func _add_history_icon(parent: HBoxContainer, res_path: String) -> void:
+	if not ResourceLoader.exists(res_path):
+		return
+	var tex: Texture2D = load(res_path) as Texture2D
+	if tex == null:
+		return
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	# 源 fix_height=N（按纹路高缩放保持宽高比，避 TextureRect 原尺寸撑大行高）
+	var th: float = float(tex.get_height())
+	var tw: float = float(tex.get_width())
+	var ratio_h: float = HISTORY_ICON_H if th > 0.0 else HISTORY_ICON_H
+	tr.custom_minimum_size = Vector2(tw * ratio_h / maxf(th, 1.0), HISTORY_ICON_H)
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(tr)
+
+
+# 源 :532-544 ratio_res（ratio>=2）。midas_crip*.png 缺 → Label "×N" 降级（与 CRIP_TEXT 一致）。
+func _add_history_ratio(parent: HBoxContainer, ratio: int) -> void:
+	var res_path: String = String(HISTORY_RATIO_RES.get(ratio, ""))
+	if res_path != "" and ResourceLoader.exists(res_path):
+		_add_history_icon(parent, res_path)
+		return
+	# 降级 Label（源 ratio_config[ratio].color）
+	var rtext: String = String(RATIO_TEXT.get(ratio, ""))
+	if rtext == "":
+		return
+	_add_history_label(parent, rtext, RATIO_COLOR.get(ratio, Color.WHITE))
 
 
 # 源 getCost：GradientPrice[times+1].Midas

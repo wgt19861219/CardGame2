@@ -2,6 +2,7 @@ extends GutTest
 
 ## MailDetailPanel UI 装配验证（P1-4：title_bg/attach_bg 装饰背景 + attach_common 7 货币忠实路径）。
 # headless 逻辑视觉验收：节点结构断言替 bridge 交互截图。
+# C10/C11（2026-07-23）：_on_ok 三分支（未读+附件/未读无附件/已读）行为验证。
 
 
 # P1-4：title_bg（equip_craft_money_bg，源 createTitle :9-20）装配。
@@ -67,3 +68,60 @@ func _has_label_text(node: Node, text: String) -> bool:
 		if _has_label_text(c, text):
 			return true
 	return false
+
+
+# ── C10/C11（2026-07-23）：_on_ok 三分支行为验证 ──
+# 源 content.lua:483-491 doClickRead + local_server.lua:2750-2779 read_mail handler。
+# 未读无附件 → mark_read+erase_mail（C10 补 erase）；已读 → _close（C11 补 else 分支）。
+
+# 构造 PlayerData（含 1 封指定状态/附件的 raw 邮件），setup_panel 取该邮件后调 _on_ok。
+# 用 PlayerData.new(GameData.config) 真实例（保 setup_panel 类型注解兼容）+ 自定义 MailData 注入。
+func _make_pd_with_mail(mail_id: int, status: String, attached: bool) -> PlayerData:
+	var pd := PlayerData.new(GameData.config)
+	var md := MailData.new()
+	var raw: Dictionary = {
+		"_id": mail_id,
+		"_status": status,
+		"_date": "2026-07-23",
+		"_content": {"_plain_mail": {"_from": "系统", "_title": "通知", "_content": "内容"}},
+		"_money": 5000 if attached else 0,
+		"_diamonds": 0,
+		"_skill_point": 0,
+		"_items": [],
+	}
+	md._raw_mails = [raw]
+	pd.mailbox = md
+	return pd
+
+
+# C10：未读无附件邮件点 ok → mark_read + erase_mail（照源 read_mail:2755-2760 从 mails 移除）。
+# 修复前 mark_read 只改 status，未读无附件邮件永久留列表（claim_attach 分支已 erase，此处对齐）。
+func test_on_ok_unread_no_attach_erases_mail() -> void:
+	var pd := _make_pd_with_mail(100, "unread", false)
+	var panel := MailDetailPanel.new("mail_detail", {})
+	add_child(panel)
+	var closed := [false]
+	panel.setup_panel(pd, 100, Callable(func() -> void: closed[0] = true))
+	assert_eq(str(panel._mail.get("status", "")), "unread", "mail 100 初始 unread")
+	assert_false(bool(panel._mail.get("attached", true)), "mail 100 无附件")
+	panel._on_ok()
+	assert_eq(pd.mailbox.ordered_mails().size(), 0, "未读无附件点 ok 后从 mails 移除（照源 read_mail）")
+	assert_eq(pd.mailbox.get_mail(100), {}, "get_mail 返空（raw 已 erase）")
+	assert_true(closed[0], "_on_closed 回调被触发（_close）")
+	panel.free()
+
+
+# C11：已读邮件点 ok → _close（源 doClickRead:483-491 else 分支 destroy+callback）。
+# 修复前三分支无 else，已读邮件点 ok 啥也不做（不关闭）。
+func test_on_ok_read_closes_panel() -> void:
+	var pd := _make_pd_with_mail(200, "read", false)
+	var panel := MailDetailPanel.new("mail_detail", {})
+	add_child(panel)
+	var closed := [false]
+	panel.setup_panel(pd, 200, Callable(func() -> void: closed[0] = true))
+	assert_eq(str(panel._mail.get("status", "")), "read", "mail 200 初始 read")
+	panel._on_ok()
+	# 已读点 ok 不 erase（源 doClickRead else 仅 destroy，不触发 read_mail handler）
+	assert_ne(pd.mailbox.get_mail(200), {}, "已读点 ok 不 erase（源 doClickRead else destroy 不移除 raw）")
+	assert_true(closed[0], "已读点 ok 触发 _close（源 destroy callback）")
+	panel.free()
