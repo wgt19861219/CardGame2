@@ -64,6 +64,26 @@ func test_mark_read() -> void:
 	assert_eq(str(m["status"]), "read", "mark_read 后 status=read")
 
 
+# C10（2026-07-23）：erase_mail 从 _raw_mails 移除邮件（照源 local_server.lua:2755-2760
+# read_mail handler：未读邮件点 ok 后服务端无条件从 localdata.mails 移除该 id）。
+# mark_read 仅改 status 不移除 raw，claim_attach 内部已 erase，本方法补未读无附件路径的 erase。
+func test_erase_mail() -> void:
+	assert_eq(_md.ordered_mails().size(), 2, "初始 2 封")
+	_md.erase_mail(1)
+	var ids: Array = []
+	for m in _md.ordered_mails():
+		ids.append(int(m["id"]))
+	assert_false(ids.has(1), "erase_mail 后 id=1 从列表移除")
+	assert_eq(_md.get_mail(1), {}, "get_mail 返空（raw 已移除）")
+	assert_eq(ids.has(2), true, "其他邮件保留")
+
+
+# erase_mail 对不存在 id 安全（照源 handler 循环无匹配不报错）。
+func test_erase_mail_nonexistent_safe() -> void:
+	_md.erase_mail(999)   # 不存在
+	assert_eq(_md.ordered_mails().size(), 2, "不存在 id 不影响列表")
+
+
 # claim 已领取邮件（附件已清）→ 不重复发资源。
 func test_claim_no_duplicate() -> void:
 	var mp := _MockPlayer.new()

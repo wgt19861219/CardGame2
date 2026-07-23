@@ -33,6 +33,50 @@ const ITEM_NAME_POS: Vector2 = Vector2(100.0, 21.0)
 const ITEM_COIN_POS: Vector2 = Vector2(40.0, 121.0)
 const ITEM_PRICE_POS: Vector2 = Vector2(110.0, 121.0)
 const ITEM_SOLDOUT_POS: Vector2 = Vector2(55.0, 60.0)
+# C7（2026-07-23）：源 shop.lua:468-486 saleIcon + tagIcon
+# 源 saleIcon ccp(75,50) → Godot y = ITEM_SIZE.y - 50 = 96
+const ITEM_SALE_POS: Vector2 = Vector2(75.0, 96.0)
+# 源 tagIcon ccp(55,55) → Godot y = ITEM_SIZE.y - 55 = 91
+const ITEM_TAG_POS: Vector2 = Vector2(55.0, 91.0)
+# 源 marketconfig.lua:4 scaleIcon = shop_sale_6.png
+const SALE_ICON: String = "shop_sale_6.png"
+# 源 marketconfig.lua:288-293 getHotTagRes：hot→shop_new.png / old→shop_hot.png
+const TAG_HOT_ICON: String = "shop_new.png"
+const TAG_OLD_ICON: String = "shop_hot.png"
+# C7 资源缺 Label 降级（shop_sale_6.png / shop_new.png / shop_hot.png 源 + 本项目均缺）
+const SALE_FALLBACK_TEXT: String = "SALE"                # 打折标
+const SALE_FALLBACK_COLOR: Color = Color(1.0, 0.3, 0.3) # 红色打折标
+const TAG_FALLBACK: Dictionary = {
+	# 源 hot key 映射 shop_new.png（"新"标）→ Label "NEW"
+	"hot": {"text": "NEW", "color": Color(0.2, 0.8, 0.2)},
+	# 源 old key 映射 shop_hot.png（"热"标）→ Label "HOT"
+	"old": {"text": "HOT", "color": Color(1.0, 0.5, 0.1)},
+}
+
+
+# 源 marketconfig.lua:288-293 getHotTagRes：hot→shop_new.png / old→shop_hot.png（无匹配返 nil）
+static func _get_tag_icon(tag: String) -> String:
+	match tag:
+		"hot":
+			return TAG_HOT_ICON
+		"old":
+			return TAG_OLD_ICON
+		_:
+			return ""
+
+
+# C7：资源存在 → TextureRect；资源缺 → Label 降级（项目资源缺范式，同 soldout Label）
+static func _add_texture_or_label(parent: Control, path: String, pos: Vector2, fallback_text: String, fallback_color: Color) -> void:
+	if ResourceLoader.exists(path):
+		_add_texture(parent, path, pos)
+		return
+	var lbl := Label.new()
+	lbl.text = fallback_text
+	lbl.position = pos
+	lbl.modulate = fallback_color
+	lbl.add_theme_font_size_override("font_size", 14)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(lbl)
 const SOLDOUT_OPACITY: float = 0.5  # 源 :108 setOpacity(120/255≈0.47)
 const UNKNOWN_NAME: String = "???"
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
@@ -165,6 +209,17 @@ static func _create_item(g: Dictionary, top_left: Vector2, config: Dictionary, p
 	price_lbl.position = ITEM_PRICE_POS
 	price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	item.add_child(price_lbl)
+	# C7（2026-07-23）：源 shop.lua:468-486 saleIcon（data.sale==1）+ tagIcon（tagRes 非空）。
+	# 源 createCommon:357 sale = v._is_sale；:400 tagRes = config.getHotTagRes(data.tag)。
+	# 项目 ShopManager.get_goods 字段名 is_sale（照源 _is_sale 翻译），tag 暂无（isShowHotTag 缺口）。
+	# shop_sale_6.png / shop_new.png / shop_hot.png 资源缺（源 + 本项目均缺）→ Label 降级（与 soldout 范式一致）。
+	if int(g.get("is_sale", 0)) == 1:
+		_add_texture_or_label(item, UI_DIR + SALE_ICON, ITEM_SALE_POS, SALE_FALLBACK_TEXT, SALE_FALLBACK_COLOR)
+	var tag_str: String = String(g.get("tag", ""))
+	var tag_icon: String = _get_tag_icon(tag_str)
+	if tag_icon != "":
+		var fb: Dictionary = TAG_FALLBACK.get(tag_str, {"text": "", "color": Color.WHITE})
+		_add_texture_or_label(item, UI_DIR + tag_icon, ITEM_TAG_POS, String(fb.get("text", "")), Color(fb.get("color", Color.WHITE)))
 	if int(g.get("amount", 0)) <= 0:
 		var sold := Label.new()
 		sold.text = "售罄"   # 源 :110/491 noneTag 贴图（noneTagRes）缺 → Label 降级

@@ -116,3 +116,63 @@ func test_view_vip_when_maxed() -> void:
 	panel._apply_source_visibility()
 	assert_true(panel._prompt.visible, "用尽次数时 prompt 显（源 refreshCost :407）")
 	panel.free()
+
+
+# ── C8（2026-07-23）：历史行多节点（源 initHistoryItemHandler :425-545 6 节点 + 可选 ratio 图）──
+
+# 源每行 6 节点（USE label + cost + shop_token icon + GET label + goldicon + acquire）+ ratio 图。
+# 修复前每行 1 Label（"USE cost GET acquire ×N"）；照源补 6 节点 HBoxContainer。
+func test_history_row_has_six_nodes() -> void:
+	var panel := _make_panel()
+	panel._history = [{"cost": 10, "acquire": 5000, "ratio": 1}]   # ratio=1 无 ratio 图
+	panel._rebuild_history()
+	# HBoxContainer + 6 子节点（USE label / cost label / token icon / GET label / gold icon / acquire label）
+	var rows: Array = panel._history_host.get_children()
+	assert_eq(rows.size(), 1, "1 行历史")
+	var row: HBoxContainer = rows[0] as HBoxContainer
+	assert_true(row is HBoxContainer, "行容器是 HBoxContainer（源 HorizontalNode）")
+	# token/gold icon 资源存在 → 6 子节点；若资源缺则降级少 icon（项目两 icon 资源均就位 → 6）
+	assert_gte(row.get_child_count(), 6, "行内至少 6 子节点（源 6 节点）")
+	# 第 1 子是 Label 且 text 是 USE LSTR（源 :469 T(LSTR MIDAS.USE)）
+	var first_child: Label = row.get_child(0) as Label
+	assert_eq(first_child.text, panel._T(MidasPanel.LSTR_USE), "行首 Label = MIDAS.USE（源 :469）")
+	panel.free()
+
+
+# 源 :532-544 ratio>=2 行追加 ratio 图（ratio_res 缺 → Label 降级 ×N!）
+func test_history_row_ratio_appends_label_when_image_missing() -> void:
+	var panel := _make_panel()
+	panel._history = [{"cost": 10, "acquire": 10000, "ratio": 4}]   # ratio=4 → midas_crip10.png 缺 → Label
+	panel._rebuild_history()
+	var row: HBoxContainer = panel._history_host.get_child(0) as HBoxContainer
+	# 源 6 节点 + ratio 降级 Label = 7 子节点（midas_crip10.png 缺）
+	assert_gte(row.get_child_count(), 7, "ratio=4 追加 ratio 图/Label（源 :532-544）")
+	# 末子是 ratio 降级 Label，text="×10!!"（RATIO_TEXT[4]）
+	var last: Label = row.get_child(row.get_child_count() - 1) as Label
+	assert_eq(last.text, String(MidasPanel.RATIO_TEXT[4]), "ratio=4 降级 Label ×10!!（源 ratio_res 缺）")
+	panel.free()
+
+
+# 空历史 → 不建行（_rebuild_history early return）
+func test_history_empty_no_rows() -> void:
+	var panel := _make_panel()
+	panel._history = []
+	panel._rebuild_history()
+	assert_eq(panel._history_host.get_child_count(), 0, "空历史 0 行")
+	panel.free()
+
+
+# 多行历史 → 每行 6+ 节点结构一致
+func test_history_multiple_rows() -> void:
+	var panel := _make_panel()
+	panel._history = [
+		{"cost": 10, "acquire": 5000, "ratio": 1},
+		{"cost": 20, "acquire": 10000, "ratio": 2},
+		{"cost": 30, "acquire": 30000, "ratio": 3},
+	]
+	panel._rebuild_history()
+	assert_eq(panel._history_host.get_child_count(), 3, "3 行历史")
+	for i in range(3):
+		var row: HBoxContainer = panel._history_host.get_child(i) as HBoxContainer
+		assert_gte(row.get_child_count(), 6, "第 %d 行至少 6 子节点" % i)
+	panel.free()

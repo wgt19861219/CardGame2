@@ -100,25 +100,55 @@ func _make_buy_handler(slot: int) -> Callable:
 			_on_buy(slot)
 
 
-# 源 doClickInProduct + shop_consume + buyReply。
+# 源 doClickInProduct:239-279 + openBuyPanel:314-322 + doBuy:167-188。
+# C6（2026-07-23）：照源补 equipboard ofbuy 确认面板（源 openBuyPanel → equipboard.init("ofbuy", data)），
+# 确认后触发 confirmed → _do_buy 实际 shop_mgr.buy（源 param.doBuy 闭包 → confirmed 信号）。
+# 售罄商品照源 showTalk("Soldout") 不弹确认面板。
 func _on_buy(slot: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	var ok: bool = shop_mgr.buy(shop_id, slot, pd, cm)
-	if ok:
-		Toast.show_message("购买成功")   # 源 shop.lua:122 硬编码字面量（非 LSTR）
-		_show_talk("Purchase")   # 源 shop.lua:130 购买后对话
-	else:
-		# 照源 buy 失败区分：slot 越界 / amount<=0 → 售罄；否则货币不足。
-		var goods: Array = shop_mgr.get_goods(shop_id)
-		var sold_out: bool = true
-		if slot >= 0 and slot < goods.size():
-			var g: Dictionary = goods[slot]
-			sold_out = int(g.get("amount", 0)) <= 0
-		if sold_out:
-			_show_talk("Soldout")   # 源 shop.lua:246 点售罄商品
-		# 源 shop.lua:173/175 "金币不足"/"钻石不足" 硬编码字面量；interfax/gladiator 才走 LSTR（本项目统一降级字面量）。
-		Toast.show_message("已售罄" if sold_out else "货币不足")
-	call_deferred("_rebuild")
+	var goods: Array = shop_mgr.get_goods(shop_id)
+	if slot < 0 or slot >= goods.size():
+		return
+	var g: Dictionary = goods[slot]
+	if int(g.get("amount", 0)) <= 0:
+		_show_talk("Soldout")   # 源 shop.lua:246 点售罄商品
+		Toast.show_message("已售罄")
+		return
+	# 源 openBuyPanel:314-322 equipboard.init("ofbuy", data)。data 字段照源 createCommon:343-358。
+	var amount: int = int(g.get("amount", 1))
+	var price: int = int(g.get("price", 0))
+	var cost: int = price * maxi(amount, 1)   # 源 createCommon:351 cost = price * max(amount,1)
+	var popup := EquipboardOfbuyPanel.new("equipboardofbuy", {})
+	popup.setup_panel({
+		"id": int(g.get("id", 0)),
+		"amount": amount,
+		"pay": String(g.get("type", "gold")),
+		"price": price,
+		"cost": cost,
+	}, cm)
+	popup.confirmed.connect(_make_buy_confirm_handler(slot))
+	container.add_child(popup)
+
+
+# 实际购买执行（源 param.doBuy → doBuy:167-188 handler）。确认弹窗 confirmed 后触发。
+func _make_buy_confirm_handler(slot: int) -> Callable:
+	return func() -> void:
+		var ok: bool = shop_mgr.buy(shop_id, slot, pd, cm)
+		if ok:
+			Toast.show_message("购买成功")   # 源 shop.lua:122 硬编码字面量（非 LSTR）
+			_show_talk("Purchase")   # 源 shop.lua:130 购买后对话
+		else:
+			# 照源 buy 失败区分：slot 越界 / amount<=0 → 售罄；否则货币不足。
+			var goods2: Array = shop_mgr.get_goods(shop_id)
+			var sold_out: bool = true
+			if slot >= 0 and slot < goods2.size():
+				var g2: Dictionary = goods2[slot]
+				sold_out = int(g2.get("amount", 0)) <= 0
+			if sold_out:
+				_show_talk("Soldout")
+			# 源 shop.lua:173/175 "金币不足"/"钻石不足" 硬编码字面量；interfax/gladiator 才走 LSTR（本项目统一降级字面量）。
+			Toast.show_message("已售罄" if sold_out else "货币不足")
+		call_deferred("_rebuild")
 
 
 # 源 doClickRefresh + shop_refresh（:302-313）。P1-8 照源 showConfirmDialog → 独立 ShopRefreshConfirm。
