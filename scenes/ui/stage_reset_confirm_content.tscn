@@ -1,0 +1,55 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="StageResetConfirmContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.5)
+mouse_filter = 2
+
+[node name="Frame" type="Panel" parent="."]
+layout_mode = 3
+offset_left = 280.0
+offset_top = 230.0
+offset_right = 680.0
+offset_bottom = 410.0
+mouse_filter = 2
+
+[node name="Msg" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 10.0
+offset_top = 20.0
+offset_right = 390.0
+offset_bottom = 110.0
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+mouse_filter = 2
+text = "重置关卡进入次数需要花费%d钻石.\\n是否继续？（今日已重置%d次）"
+
+[node name="CancelBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 60.0
+offset_top = 120.0
+offset_right = 170.0
+offset_bottom = 155.0
+mouse_filter = 0
+
+[node name="OkBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 230.0
+offset_top = 120.0
+offset_right = 340.0
+offset_bottom = 155.0
+mouse_filter = 0

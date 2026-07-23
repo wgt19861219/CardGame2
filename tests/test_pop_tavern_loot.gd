@@ -27,18 +27,55 @@ func test_setup_loot_single() -> void:
 	root.queue_free()
 
 
-func test_setup_loot_aggregates() -> void:
+# 源 throwLoots :167-200：仅 shuffle 不合并同 id（10 个相同 equip 显 10 icon，非聚合 1 个）。
+# 3 loot（2 个同 id 101 + 1 个 102）→ 3 个独立 icon（P1-C4 修复，旧版按 id 聚合是 bug）。
+func test_setup_loot_no_merge() -> void:
 	var root := Node.new()
 	add_child(root)
 	var popup := PopTavernLoot.new("poptavernloot", {})
-	# 同 id 101 两笔 → 聚合为 1 图标
 	popup.setup_loot([{"id": 101, "amount": 1}, {"id": 101, "amount": 2}, {"id": 102, "amount": 1}], cm, "bronze", "ten")
 	popup.show_window(root)
 	assert_eq(popup.container.get_child_count(), 1, "container 仅挂 Content")
-	# 聚合后 2 种（101/102），setup_loot 默认空 cost_info → cost 行跳过 → CostHost 0 子
-	assert_eq(popup._loot_host.get_child_count(), 2, "聚合 LootHost 2 loot icons")
+	# 照源 throwLoots 不合并 → 3 个独立 icon（旧 _aggregate 聚合为 2 是偏离源）
+	assert_eq(popup._loot_host.get_child_count(), 3, "不合并同 id → 3 loot icons（源 throwLoots 行为）")
 	assert_eq(popup._cost_host.get_child_count(), 0, "无 cost_info → CostHost 空")
 	popup.remove_window()
+	root.queue_free()
+
+
+# 源 poptavernloot.lua:287-296 BOX_FCA_MAP：补全 magic/starshop（P1-C2 修复）。
+func test_box_fca_map_includes_magic_starshop() -> void:
+	assert_true(PopTavernLoot.BOX_FCA_MAP.has("magic"), "BOX_FCA_MAP 含 magic")
+	assert_true(PopTavernLoot.BOX_FCA_MAP.has("starshop"), "BOX_FCA_MAP 含 starshop")
+	# starshop 复用 gold 资源（源 :292）
+	assert_eq(String(PopTavernLoot.BOX_FCA_MAP["starshop"]), "effect/eff_UI_tarven_open_chest_gold",
+		"starshop 复用 gold FCA 资源")
+	# magic 资源名照源拼写（tavern 非 tarven）
+	assert_eq(String(PopTavernLoot.BOX_FCA_MAP["magic"]), "effect/eff_UI_tavern_open_magicsoul",
+		"magic FCA 资源照源拼写")
+
+
+# 源 getLootPos :406-409 magic 分支：ccpAdd(matrix_center_pos, magic_loot_pos[index])（P1-C3 修复）。
+func test_magic_circle_layout() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	# magic box 3 loot → 圆环前 3 个位置
+	popup.setup_loot([{"id": 101, "amount": 1}, {"id": 102, "amount": 1}, {"id": 103, "amount": 1}], cm, "magic", "ten")
+	popup.show_window(root)
+	assert_eq(popup._loot_targets.size(), 3, "magic 3 loot targets")
+	# 第 1 个 target 应在 matrix_center_pos + magic_loot_pos[0]（经 _g 坐标转换）
+	var expected0 := popup._g(PopTavernLoot.MAGIC_CENTER_POS + PopTavernLoot.MAGIC_LOOT_POS[0])
+	assert_almost_eq(popup._loot_targets[0].x, expected0.x, 0.5, "magic loot[0] x = center + magic_pos[0]")
+	assert_almost_eq(popup._loot_targets[0].y, expected0.y, 0.5, "magic loot[0] y = center + magic_pos[0]")
+	# 非 magic（bronze）回退 GRID 布局（2 loot → index 0 = GRID_ORIGIN）
+	var popup2 := PopTavernLoot.new("poptavernloot", {})
+	popup2.setup_loot([{"id": 101, "amount": 1}, {"id": 102, "amount": 1}], cm, "bronze", "ten")
+	popup2.show_window(root)
+	var bronze_expected := popup2._g(PopTavernLoot.GRID_ORIGIN)
+	assert_almost_eq(popup2._loot_targets[0].x, bronze_expected.x, 0.5, "bronze loot[0] x = GRID_ORIGIN")
+	popup.remove_window()
+	popup2.remove_window()
 	root.queue_free()
 
 

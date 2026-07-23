@@ -31,12 +31,24 @@ const COST_ICON_RES_GOLD: String = "res://assets/ui/alpha/HVGA/task_gold_icon_2.
 const COST_ICON_RES_RMB: String = "res://assets/ui/alpha/HVGA/task_rmb_icon_2.png"
 const SINGLE_THRESHOLD: int = 1   # loot 种类 <= 此值用单抽布局
 const BOX_ANIM_POS: Vector2 = Vector2(400.0, 240.0)   # 源 playBoxAnim bpos
-# 源 :287-296 box_type → 开箱 FCA resource（magic .abc 格式本项目不支持，留待）
+# 源 poptavernloot.lua:287-296 playBoxAnim fca_res 映射（8 box_type 全表照源）。
+# magic 资源 eff_UI_tavern_open_magicsoul（注意源拼写 tavern 非 tarven）/ starshop 复用 gold 资源。
 const BOX_FCA_MAP: Dictionary = {
 	"bronze": "effect/eff_UI_tarven_open_chest",
 	"silver": "effect/eff_UI_tarven_open_chest_silver",
 	"gold": "effect/eff_UI_tarven_open_chest_gold",
+	"magic": "effect/eff_UI_tavern_open_magicsoul",
+	"starshop": "effect/eff_UI_tarven_open_chest_gold",
 }
+# 源 poptavernloot.lua:9 matrix_center_pos（magic 圆环中心 ccp(400,280)）
+const MAGIC_CENTER_POS: Vector2 = Vector2(400.0, 280.0)
+# 源 poptavernloot.lua:44-55 magic_loot_pos（10 个相对圆环位置，照源 ccp 值）
+const MAGIC_LOOT_POS: Array[Vector2] = [
+	Vector2(-105.0, 95.0), Vector2(105.0, 95.0), Vector2(215.0, 10.0),
+	Vector2(100.0, -95.0), Vector2(-100.0, -95.0), Vector2(-215.0, 10.0),
+	Vector2(0.0, 0.0), Vector2(-160.0, -20.0), Vector2(160.0, -20.0),
+	Vector2(0.0, 110.0),
+]
 const ANIM_BASE: String = "res://assets/anim_frames/"
 # LSTR key（照源 poptavernloot.lua :662-674）。CHATCONFIG.SHOW_REWAD_BY_CHEST 源 zh-CN.lua 数据缺，
 # 走中文 fallback（源 en-US "Successfully opened the treasure chest. "）。
@@ -67,6 +79,8 @@ const LIGHT_POS: Vector2 = Vector2(33.0, 35.0)     # 源 :483 ccp(33,35)
 const BURST_ROTATE_SEC: float = 5.0                # 源 :486 CCRotateBy(5,360) RepeatForever
 const HERO_BURST_QUALITY: int = 6                  # 源 :573 hero → playBurst(icon,6) 固定橙色
 const FULL_CIRCLE_DEG: float = 360.0               # 源 :486 旋转一圈度数
+# 源 player.lua itemType：id < 100 为 hero（throwLoots isHero 判定用，与 player_data HERO_ID_MAX 同源）
+const HERO_ID_MAX: int = 100
 
 var box_type: String = ""
 var times: String = "one"   # 源 create :213 self.times = times（"one"/"ten"）
@@ -119,16 +133,17 @@ func _build_content() -> void:
 		remove_window())
 
 
-# 聚合同 id（源 throwLoots :167-200 合并）→ icon 初始 scale0+bpos（源 createLootAnim :535-536 初始态）。
+# 源 throwLoots :167-200：仅 shuffle（random swap 20 次）+ 同英雄 amount desc 排序，**不合并同 id**。
+# loots 每项独立成 icon（源 10 个相同 equip 显 10 icon，非聚合 1 个）。
+# icon 初始 scale0+bpos（源 createLootAnim :535-536 初始态）。
 func _aggregate(loots: Array, p_cm: Variant) -> void:
-	var agg: Dictionary = {}   # id → amount
-	for loot in loots:
-		var lid: int = int(loot["id"])
-		agg[lid] = int(agg.get(lid, 0)) + int(loot["amount"])
-	var is_single: bool = agg.size() <= SINGLE_THRESHOLD
+	var thrown: Array = loots.duplicate()
+	_throw_loots(thrown)
+	var is_single: bool = thrown.size() <= SINGLE_THRESHOLD
 	var idx: int = 0
-	for lid in agg:
-		var icon: Control = ReadequipIcon.create_icon(int(lid), int(agg[lid]), p_cm)
+	for loot in thrown:
+		var lid: int = int(loot["id"])
+		var icon: Control = ReadequipIcon.create_icon(lid, int(loot["amount"]), p_cm)
 		icon.scale = Vector2.ZERO
 		icon.position = _g(BOX_BPOS)
 		_loot_host.add_child(icon)
@@ -137,7 +152,57 @@ func _aggregate(loots: Array, p_cm: Variant) -> void:
 		idx += 1
 
 
+# 源 throwLoots :167-200 in-place：#loots<=1 跳过 / 否则 random seed + swap 首 + 20 次 random swap
+# + 同英雄（isHero）amount 降序（把 amount 大的同英雄 loot 提前）。
+# 单机化：math.randomseed(os.time()) → BattleRng/RandomNumberGenerator 等价（仅洗牌顺序不影响产出）。
+func _throw_loots(loots: Array) -> void:
+	if loots.size() <= 1:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var n: int = loots.size()
+	# 源 :175 首次 swap loots[1] ↔ loots[random(1,n)]
+	var r0: int = rng.randi_range(0, n - 1)
+	var t0: Variant = loots[0]
+	loots[0] = loots[r0]
+	loots[r0] = t0
+	# 源 :179-185 20 次随机 swap
+	for _i in range(20):
+		var r1: int = rng.randi_range(0, n - 1)
+		var r2: int = rng.randi_range(0, n - 1)
+		var t: Variant = loots[r1]
+		loots[r1] = loots[r2]
+		loots[r2] = t
+	# 源 :186-199 同英雄 amount desc（isHero loot 找后续同英雄 amount 更小者 swap 提前）
+	for i in range(n):
+		var loot_i: Dictionary = loots[i]
+		if not _is_hero_loot(loot_i):
+			continue
+		for j in range(i, n):
+			var loot_j: Dictionary = loots[j]
+			if _is_hero_loot(loot_j) and _same_hero(loot_i, loot_j) \
+					and int(loot_j["amount"]) < int(loot_i["amount"]):
+				var t: Variant = loots[i]
+				loots[i] = loots[j]
+				loots[j] = t
+
+
+# 源 poptavernloot.lua:13-30 isHero：itemType(id)=="hero"（hero id < 100，HERO_ID_MAX 项目常量）。
+# 简化：id < 100 视为英雄 loot（源 readhero.getMakeid + Convert Fragments 分支单机化合并判定）。
+func _is_hero_loot(loot: Dictionary) -> bool:
+	return int(loot.get("id", 0)) < HERO_ID_MAX
+
+
+# 源 poptavernloot.lua:32-42 checkSameHero：两 loot 均是 hero 且 id 相同（简化：直接比 id）。
+func _same_hero(a: Dictionary, b: Dictionary) -> bool:
+	return int(a.get("id", 0)) == int(b.get("id", 0))
+
+
 func _loot_pos(index: int, is_single: bool) -> Vector2:
+	# 源 getLootPos :406-409 magic 分支：ccpAdd(matrix_center_pos, magic_loot_pos[index])
+	if box_type == "magic":
+		var mi: int = clampi(index, 0, MAGIC_LOOT_POS.size() - 1)
+		return _g(MAGIC_CENTER_POS + MAGIC_LOOT_POS[mi])
 	if is_single:
 		return _g(SINGLE_POS)
 	var col: int = index % GRID_COLS

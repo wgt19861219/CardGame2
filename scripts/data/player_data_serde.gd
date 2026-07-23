@@ -45,6 +45,7 @@ static func to_dict(pd: PlayerData) -> Dictionary:
 		"shop_auto_refresh": pd.shop_auto_refresh.duplicate(true),
 		"shop_expire_end": pd.shop_expire_end.duplicate(true),
 		"stage_limit": pd.stage_limit.duplicate(true),
+		"stage_reset_times": pd.stage_reset_times.duplicate(true),
 	}
 
 
@@ -113,4 +114,6 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 	for k in see_data: pd.shop_expire_end[int(k)] = int(see_data[k])
 	var sl_data: Dictionary = data.get("stage_limit", {})
 	for k in sl_data: pd.stage_limit[int(k)] = int(sl_data[k])
+	var srt_data: Dictionary = data.get("stage_reset_times", {})
+	for k in srt_data: pd.stage_reset_times[int(k)] = int(srt_data[k])
 	return pd

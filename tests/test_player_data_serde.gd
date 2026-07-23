@@ -86,3 +86,16 @@ func test_from_dict_corrupted_tavern_record_does_not_crash() -> void:
 	var d: Dictionary = {"tavern_record": {"bad_key": "not_a_dict"}}
 	var pd := PlayerDataSerde.from_dict(d, cm)
 	assert_true(pd.tavern_record.is_empty(), "损坏 tavern_record 值被跳过，不崩溃")
+
+
+
+# C1 stage_reset_times 持久化往返（P1-C1 修复：精英关 reset 计费次数持久化）
+func test_roundtrip_preserves_stage_reset_times() -> void:
+	var pd := PlayerData.new(cm)
+	pd.stage_reset_times[5] = 3
+	pd.stage_reset_times[12] = 7
+	var d: Dictionary = PlayerDataSerde.to_dict(pd)
+	assert_eq(int(d["stage_reset_times"][5]), 3, "to_dict 含 stage_reset_times")
+	var pd2 := PlayerDataSerde.from_dict(d, cm)
+	assert_eq(int(pd2.stage_reset_times.get(5, 0)), 3, "stage_reset_times 往返 key=5")
+	assert_eq(int(pd2.stage_reset_times.get(12, 0)), 7, "stage_reset_times 往返 key=12")

@@ -26,6 +26,8 @@ const BOARD_CENTER_X: float = 240.0
 const BOARD_DX: float = 240.0
 const BOARD_CENTER_Y: float = 355.0
 const REFRESH_INTERVAL_SEC: float = 1.0
+# 源 tavern.lua:58 / playerlimit.lua:282 Magic Soul Box VIP 解锁 key
+const MAGIC_VIP_KEY: String = "Magic Soul Box"
 # 源 LSTR key（照源 tavern.lua + tavernres.lua）。cm 缺失时 fallback 中文（_lstr 内返 key，
 # 由 panel 判 key==lstr 走 fallback）。
 const LSTR_CHECK: StringName = &"RECHARGE.VIEW"                # 源 :737 check_label
@@ -106,6 +108,23 @@ func _create_boards() -> void:
 		_board_host.add_child(board["container"])
 		_boards[key] = board
 		TavernBoardBuilder.play_light_anim(board)   # 源 :1397 createItemLayer 末尾调 playLightAnim
+	# 源 refreshItemLayer:1402-1418 magic board VIP 显隐（showvip > vip → magicLayer 隐藏）。
+	_refresh_magic_board_visibility()
+
+
+# 源 tavern.lua:1402-1418 refreshItemLayer：magic board 显隐按 getAreaShowvip（unlock-2）门控。
+# showvip > vip → magicLayer.setVisible(false)（源同时重排 bronze/gold 居中；本项目简化保 3 board 横排孔位）。
+# showvip <= vip → magicLayer.setVisible(true)（达 unlock-2 起显示；达 unlock 可抽，_on_draw 内门控）。
+func _refresh_magic_board_visibility() -> void:
+	if _player == null or _cm == null:
+		return
+	var showvip: int = VipData.get_area_show_vip(MAGIC_VIP_KEY, _cm)
+	var magic_board: Dictionary = _boards.get("MagicSoul", {})
+	if magic_board.is_empty():
+		return
+	var container: Control = magic_board.get("container", null)
+	if container != null:
+		container.visible = showvip <= _player.vip_level
 
 
 # 源 LSTR 文案准备（cm.get_lstr 缺失走 fallback 中文）。texts 注入 builder（builder 不查 LSTR）。
@@ -267,6 +286,16 @@ func _make_hero_preview_icon(tid: int) -> Control:
 
 
 func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten: bool) -> void:
+	# 源 doTavern:57-64 magic VIP 门控：getAreaUnlockvip > vip → toRecharge dialog 拒绝。
+	# 项目单机化用 Toast（源 toRecharge dialog 的 explaination 文案）。
+	if tavern_type == "MagicSoul":
+		var ulv: int = VipData.get_area_unlock_vip(MAGIC_VIP_KEY, _cm)
+		if ulv > p_player.vip_level:
+			var tpl: String = String(_cm.get_lstr("TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE"))
+			if tpl == "TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE":
+				tpl = "VIP等级达到%d级解锁该功能，是否充值？"
+			_result_label.text = tpl % ulv
+			return
 	# 源 doTavern isFree（tavern.lua:67-70）：单抽且 isShowFree；magic 例外十连也判 isShowFree。
 	var now: int = int(Time.get_unix_time_from_system())
 	var is_free: bool = TavernData.is_show_free(p_player, tavern_type, now) and (tavern_type == "MagicSoul" or not is_ten)

@@ -179,19 +179,48 @@ func _on_sweep_pressed() -> void:
 		Toast.show_message(String(r.get("msg", "扫荡失败")))  # 项目适配 toast
 
 
-# 源 createRepeatBattle :266-469 购买次数（钻石）。源 :519-522 needHighervip dialog / :541 toRecharge dialog；
-# 项目单机化用 Toast 简化（无 dialog 系统），文案是项目自定（源用 dialog 体系无对应 LSTR key）。
+# 源 doPayReset（stagedetail.lua:514-535）+ doResetElite（:536-563）+ doResetEliteLimit（:503-512）。
+# 流程：getResetEliteCost 读 GradientPrice[times+1]["Elite Reset"]（梯度计费 20/50/.../1000）
+# + checkStageLimitResetTimesMax VIP 次数上限（needHighervip dialog 拒绝）
+# + 弹确认框（showConfirmDialog，RESET_COSTS 文案 + 已重置次数）
+# + doResetElite 扣钻 + refreshStageEliteLimit（清 stage_limit + reset_times++）。
+# 项目单机化：CrusadeResetConfirm 范式简化（文案 + 确认/取消），needHighervip/toRecharge 用 Toast。
 func _on_reset_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	var cost: int = int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Reset Cost", 0))
-	if cost <= 0:
-		Toast.show_message("该关卡无法购买次数")  # 项目适配 toast（源 needHighervip dialog）
+	# 源 :518 checkStageLimitResetTimesMax → needHighervip dialog（VIP 次数上限提示）
+	if StageResetData.is_reset_times_max(player, stage_id):
+		Toast.show_message("VIP 等级不足，无法继续重置")  # 项目适配 toast（源 needHighervip dialog）
 		return
+	var cost: int = StageResetData.get_reset_cost(player, stage_id)
+	# 源 :516 getResetEliteCost 返 nil（GradientPrice 行缺失）→ 项目 -1 表不可重置
+	if cost <= 0:
+		Toast.show_message("该关卡无法购买次数")
+		return
+	var times: int = StageResetData.get_reset_times(player, stage_id)
+	# 源 :524-532 弹 showConfirmDialog，文案 RESET_COSTS__D_DIAMONDS（%d 钻石/%d 已重置次数）。
+	# 项目单机化：CrusadeResetConfirm 范式（独立 Control 确认框）。
+	var msg: String = String(player.cm.get_lstr("STAGEDETAIL.RESET_COSTS__D_DIAMONDS_\\N_WISH_TO_CONTINUEYOU_HAVE_RESET__D_TIMES_TODAY"))
+	if msg == "STAGEDETAIL.RESET_COSTS__D_DIAMONDS_\\N_WISH_TO_CONTINUEYOU_HAVE_RESET__D_TIMES_TODAY":
+		msg = "重置关卡进入次数需要花费%d钻石.\n是否继续？（今日已重置%d次）"
+	msg = msg % [cost, times]
+	var popup := StageResetConfirm.new()
+	popup.setup_msg(msg, player.cm)
+	popup.confirmed.connect(_do_reset_elite.bind(cost))
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(popup)
+
+
+# 源 doResetElite（stagedetail.lua:536-562）：扣钻（_rmb 即 diamond）+ refreshStageEliteLimit + refresh UI。
+# 单机化：源走 netdata/netreply 网络流程，项目直接本地执行（doResetEliteLimit handler 内逻辑）。
+func _do_reset_elite(cost: int) -> void:
+	# 源 :541-544 pay 且 cost > _rmb → toRecharge dialog
 	if player.diamond < cost:
-		Toast.show_message("钻石不足")  # 项目适配 toast（源 :541 toRecharge dialog）
+		Toast.show_message("钻石不足，请充值")  # 项目适配 toast（源 toRecharge dialog）
 		return
 	player.diamond -= cost
-	player.stage_limit[stage_id] = int(player.stage_limit.get(stage_id, 0)) - 1
+	# 源 :1045-1051 refreshStageEliteLimit：清 stage_limit[normalStageId] + reset_times[normalStageId]++
+	StageResetData.refresh_elite_limit(player, stage_id)
 	_check_enabled()
 
 
