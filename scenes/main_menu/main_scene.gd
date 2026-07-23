@@ -27,6 +27,7 @@ const TaskPanel = preload("res://scripts/ui/task_panel.gd")
 const RanklistPanel = preload("res://scripts/ui/ranklist_panel.gd")
 const MainStatusBar = preload("res://scripts/ui/main_status_bar.gd")
 const MidasPanel = preload("res://scripts/ui/midas_panel.gd")
+const EquipStrengthenPanel = preload("res://scripts/ui/equip_strengthen_panel.gd")
 const DailyLoginPanel = preload("res://scripts/ui/daily_login_panel.gd")
 const HandbookPanel = preload("res://scripts/ui/handbook_panel.gd")
 const LadderPanel = preload("res://scripts/ui/ladder_panel.gd")
@@ -58,34 +59,8 @@ const EXCAVATE_LOSE_TEXT: String = "战斗失败，再接再厉"          # exca
 const DAILY_BTN_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_1.png"
 const DAILY_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_2.png"
 const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 94.0)
-
-# 15 入口按钮（照源 mainres.lua res_pos + button_key）。pos = 源 ccp(左下原点) → Godot(左上原点)：godot_y = MAP_H - cocos_y。
-# pos 存源按钮中心点（CCSprite anchorPoint 0.5），_make_entry 转 Button 左上角（pos - BTN_SIZE/2）。
-# title 存源 mainres.lua 的 LSTR key（mainres.Campaign / TimeRift / Trials / Crusade 等，zh-CN.lua:4857-4871），_make_entry 显示时 get_lstr 解析中文（照源 main.lua:533 br.title=T(LSTR(...))）。
-# scale 照源（defence=0.9 / shop=0.8 / starshop=0.8，其余默认 1；mainres 多数 scale 注释掉）。
-# unlock 照源 unlock_keys（defence=COT/pvp=PVP/shop=shop/estren=Enhance/exercise=Exercise/volcano=Crusade/handbook=Guild/excavate=Excavate）。
-#   shop/Crusade/Guild/Excavate 不在 PlayerLevel.Unlock 表 → FeatureLimit 默认解锁（照源 playerlimit 设计）+ push_warning（照源 :74 print）。
-#   sshop/ssshop 子商店走 PlayerLevel.Unlock（源 shopButtonType summon/into，简化为等级解锁）。
-# light 照源 mainres.lightPos + lightSize（[px, py, sw, sh]；py 源 y 上 → Godot y 下翻 Y），press 光效按下显示（源 :592-604）。
-# 路由照源 getMainButtonHandler（main.lua:1328-1514），见 _on_entry_pressed。
-# starshop 源走 FCA（无 aniType，.abc），本项目 spine/ 无资源 → load_skeleton 失败降级（待 FcaAnimation 接入）。
-const ENTRIES: Array = [
-	{"id": "pve", "title": "mainres.Campaign", "pos": [625, 401], "parent": 4, "res": "eff_UI_Main_Pve", "touch": [-10, 0], "radius": 100, "light": [0, 19, 230, 350]},
-	{"id": "pvp", "title": "mainres.Arean", "pos": [355, 386], "unlock": "PVP", "res": "eff_UI_Main_Pvp", "touch": [-15, 0], "radius": 65, "light": [0, 40, 350, 400]},
-	{"id": "shop", "title": "mainres.Merchant", "pos": [1000, 311], "unlock": "shop", "scale": 0.8, "res": "eff_UI_Main_Shop", "gap": [2.75, 2.75, 1.71, 2, 6], "touch": [25, 0], "radius": 68, "light": [0, 50, 300, 300]},
-	{"id": "tavern", "title": "mainres.Chests", "pos": [1290, 446], "res": "eff_UI_Main_Tarven", "touch": [0, 13], "radius": 100, "light": [0, 30, 300, 200]},
-	{"id": "defence", "title": "mainres.TimeRift", "pos": [1270, 256], "unlock": "COT", "scale": 0.9, "res": "eff_UI_Main_Guard", "touch": [-10, 10], "radius": 65, "light": [0, 40, 300, 300]},
-	{"id": "estren", "title": "mainres.Enchanting", "pos": [475, 261], "unlock": "Enhance", "res": "eff_UI_Main_Skill", "touch": [-10, 2], "radius": 85, "light": [0, 60, 250, 250]},
-	{"id": "exercise", "title": "mainres.Trials", "pos": [1150, 351], "unlock": "Exercise", "res": "eff_UI_Main_Exercise", "touch": [0, 13], "radius": 85, "light": [0, 35, 200, 250]},
-	{"id": "volcano", "title": "mainres.Crusade", "pos": [670, 186], "parent": 2, "unlock": "Crusade", "res": "eff_UI_Main_Volcano", "touch": [0, -30], "radius": 100, "light": [0, 40, 250, 250]},
-	{"id": "handbook", "title": "mainres.Guild", "pos": [115, 446], "unlock": "Guild", "res": "eff_UI_Main_Guild", "touch": [0, -5], "radius": 150, "light": [0, 30, 500, 500]},
-	{"id": "mailbox", "title": "mainres.Mailbox", "pos": [1000, 466], "res": "eff_UI_Main_Mailbox", "gap": [2, 4, 0, 0, 0], "touch": [0, 40], "radius": 60, "light": [8, 45, 200, 200]},
-	{"id": "sshop", "title": "mainres.GoblinMerchant", "pos": [195, 336], "unlock": "sshop", "res": "eff_UI_Main_Shop2", "gap": [1.46, 1.46, 1.46, 1, 6], "touch": [0, 0], "radius": 68, "light": [0, 25, 317, 300]},
-	{"id": "ssshop", "title": "mainres.Godfather", "pos": [10, 316], "unlock": "ssshop", "res": "eff_UI_Main_Shop3", "gap": [2, 4, 0, 0, 0], "touch": [0, 0], "radius": 40, "light": [0, 45, 307, 200]},
-	{"id": "starshop", "title": "mainres.StarShop", "pos": [82, 296], "scale": 0.8, "res": "eff_UI_Main_Shop_Star", "gap": [1.4583, 1.4583, 2.04167, 3, 10], "touch": [0, 35], "radius": 60, "light": [-6, 30, 150, 180]},
-	{"id": "excavate", "title": "mainres.Excavate", "pos": [1450, 346], "unlock": "Excavate", "res": "eff_UI_Main_Treasure", "touch": [0, -50], "radius": 100, "light": [0, 75, 600, 400]},
-	{"id": "ranklist", "title": "mainres.Rank", "pos": [860, 386], "res": "eff_UI_Main_Rank", "touch": [0, 30], "radius": 50, "light": [0, 30, 150, 250]},
-]
+# 15 入口按钮数据外移 main_scene_entries.gd（控 LINT005 ≤400，第九轮 P1-B 入口接线）。
+const MainSceneEntries = preload("res://scripts/ui/main_scene_entries.gd")
 
 var _status_refs: Dictionary = {}   # MainStatusBar 节点引用（label/head/vip）
 var _tutorial_view: TutorialGuideView = null   # 持引用供 EE/unlock/SU 跨阶段刷新
@@ -200,7 +175,7 @@ func _build_map() -> void:
 	_parallax = MainParallax.new()
 	_parallax.setup(_containers.top, _containers.middle, _containers.bottom, _containers.verytop, float(_containers.get("map_width", 0.0)))
 	_parallax.scroll_to(BG_INIT_OFFSET, 0.0)   # 源 create:1067 setbgOffset(bgOffset=-300) → refreshMapPos clamp 到 [_map_min_x, 212]
-	for e in ENTRIES:
+	for e in MainSceneEntries.ENTRIES:
 		_entry_host(int(e.get("parent", 1))).add_child(_make_entry(e))
 	_add_lightning(_containers.top)   # 照源 createMainFca lightning 加 topContainer
 
@@ -276,7 +251,7 @@ func _is_unlocked(key: StringName) -> bool:
 
 
 func _find_entry(entry_id: String) -> Dictionary:
-	for e in ENTRIES:
+	for e in MainSceneEntries.ENTRIES:
 		if String(e["id"]) == entry_id:
 			return e
 	return {}
@@ -291,7 +266,7 @@ func _build_status_bar() -> void:
 	# Panel 默认 StyleBox 灰底 → 改透明（map 已延伸到顶，露 mountain 天）。
 	bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(bar)
-	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self))
+	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self), _open_midas)
 	# 每日签到入口按钮（照源 statusbar.lua:403-410 dailylogin 按钮 clickHandler→showDailyLogin）。
 	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
 	dl_btn.pressed.connect(_open_daily_login)
@@ -371,6 +346,24 @@ func _open_midas() -> void:
 	panel.show_window(self)
 
 
+## 装备强化入口（照源 ui/main.lua:1424-1434 estren → pushScene equipstrengthen.create）。
+## 源面板自带英雄选择流程（select_hero 按钮触发 doChangeHero:1720 → selectwindow 基建），
+## 本项目单机化裁剪该流程（selectwindow 缺失），从 player team 第一个英雄作默认 hero 进面板
+## （恢复源"入口直接可达"语义，不依赖 HeroDetail 进）。hero_manager.get_hero 照 player_data.team 阵容。
+func _open_equip_strengthen() -> void:
+	var p: PlayerData = GameData.player
+	if p.team.is_empty():
+		Toast.show_message("阵容为空，无法进入装备强化")
+		return
+	var hero: HeroInstance = p.hero_manager.get_hero(p.team[0])
+	if hero == null:
+		Toast.show_message("英雄不存在")
+		return
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, GameData.config, p)
+	panel.show_window(self)
+
+
 ## 每日登录奖励入口（照源 ask_daily_login :2096 + login 后自动弹，本项目按钮入口）。
 func _open_daily_login() -> void:
 	var panel := DailyLoginPanel.new("daily_login", {})
@@ -438,7 +431,7 @@ func _on_entry_pressed(entry_id: String) -> void:
 		"exercise":
 			_open_exercise_panel()            # 源 :1447 exercise.create("equip") → 弹试炼入口选择
 		"estren":
-			Toast.show_message("「装备强化」请从英雄详情进入（需选择英雄）")  # 源 :1424 equipstrengthen.create
+			_open_equip_strengthen()                   # 源 ui/main.lua:1424-1434 pushScene equipstrengthen.create
 		"mailbox":
 			_open_mailbox()                                # 源 :1458 mailbox.create
 		"handbook":

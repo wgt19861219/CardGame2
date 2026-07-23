@@ -40,3 +40,14 @@ func test_unknown_entry_no_crash() -> void:
 	_scene._on_entry_pressed("pvp")
 	_scene._on_entry_pressed("nonsense_id")
 	assert_true(true, "未知/裁剪入口走 Toast 分支不崩")
+
+
+# B4 入口接线（第九轮 P1-B4）：estren → EquipStrengthenPanel 打开
+# （照源 ui/main.lua:1424-1434 pushScene equipstrengthen.create 独立场景可达）。
+# 直接测 _open_equip_strengthen（unlock 检查由 _on_entry_pressed 上游负责，此处聚焦入口可达性）。
+func test_estren_entry_opens_panel() -> void:
+	assert_true(is_instance_valid(_scene), "main_scene 实例有效")
+	var before: int = _scene.get_child_count()
+	_scene._open_equip_strengthen()
+	var after: int = _scene.get_child_count()
+	assert_true(after > before, "estren → EquipStrengthenPanel 打开（源 pushScene equipstrengthen.create）（before=%d after=%d）" % [before, after])
