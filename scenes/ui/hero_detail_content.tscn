@@ -432,6 +432,39 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text = "进阶"
 
+; 觉醒按钮（单机化新增；源 hero_detail 无觉醒按钮——源 awake 由服务器注入玩家不可主动激活）
+; 位置：UpgradeRankBtn 正下方（同为"英雄养成"动作区），可见性由 panel 运行时按 Can Awake + 碎片数控制
+[node name="AwakeBtn" type="Button" parent="BaseLayer" unique_id=700100001]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 608.0
+offset_top = 425.0
+offset_right = 708.0
+offset_bottom = 467.0
+
+[node name="AwakeLabel" type="Label" parent="BaseLayer/AwakeBtn" unique_id=700100002]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.247, 0.020, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "觉醒"
+
 [node name="TabDetailBtn" type="Button" parent="BaseLayer" unique_id=643380600]
 unique_name_in_owner = true
 layout_mode = 0

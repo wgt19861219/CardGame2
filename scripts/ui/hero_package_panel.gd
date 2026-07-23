@@ -257,6 +257,10 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 		if detail.perform_upgrade_skill(idx):
 			Events.bus.emit_tutorial_step(&"SUcomplete")
 			detail.refresh_content())
+	# 觉醒信号（单机化新增）：成功 perform_awake 内部已弹展示面板并衔接触发 refresh_content，
+	# 这里仅挂占位保持信号注册对称（实际刷新由 awake panel.closed 触发，避免双刷新）。
+	detail.awake_requested.connect(func() -> void:
+		detail.perform_awake())
 	# 源 heropackage.lua:228 clickHero → draglist.listLayer:setVisible(false) 隐藏列表，
 	# 避卡片星透过 hero_detail 弹窗半透 shade（0.588）。
 	# 治本：整个 hero_package container 隐藏。源 herodetail 靠 mainLayer z=120 + 不透明 bg 盖住 hero_package，

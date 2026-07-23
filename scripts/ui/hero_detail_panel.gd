@@ -12,6 +12,7 @@ extends PopWindow
 signal evolve_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
+signal awake_requested                     # 觉醒（单机化新增，源无觉醒养成激活；碎片觉醒方案 C）
 
 # base + tab view 子场景（Phase A+B 静态化：位置+size 在 .tscn 可视化）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_detail_content.tscn")
@@ -148,6 +149,7 @@ func _bind_signals() -> void:
 		remove_window())
 	_wire_action_button("%GetStoneBtn", evolve_requested, "common_click_feedback")   # +号按钮执行升星（简化偏离源，源 evolve 文字按钮已删）
 	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")   # 源 hero_upgrade（:867-901 rank+1）
+	_setup_awake_button()   # 单机化新增：觉醒按钮（Can Awake=true + 碎片够 才显示）
 	for key in _tab_buttons:
 		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
 
@@ -157,6 +159,32 @@ func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> v
 		if not sound_key.is_empty():
 			AudioPlayer.play_sfx(sound_key)
 		sig.emit())
+
+
+# 觉醒按钮可见性 + Scale9 样式（单机化新增，源 hero_detail 无觉醒入口）。
+# 显示条件：Unit.Can Awake=true 且 hero.awake==false；扣碎片够不够由点击时 perform_awake 再校验。
+# 按钮用 hero_detail 通用 Scale9 样式（_apply_detail_style 等价），文字 "觉醒"（源 LSTR 缺走 fallback）。
+const AWAKE_LSTR_KEY: StringName = &"HERODETAIL.AWAKE_"
+const AWAKE_FALLBACK_TEXT: String = "觉醒"
+func _setup_awake_button() -> void:
+	var awake_btn: BaseButton = _base_layer.get_node_or_null("%AwakeBtn") as BaseButton
+	if awake_btn == null:
+		return
+	var can_show: bool = hero != null and not hero.awake and cm != null and cm.get_bool(&"Unit", int(hero.tid), &"Can Awake")
+	awake_btn.visible = can_show
+	if not can_show:
+		return
+	# 套 Scale9 样式（复用 UpgradeRankBtn 的 detail-n 样式，照源 action button Scale9Sprite 等价）
+	if awake_btn is Button:
+		HeroDetailBuilder._apply_detail_style(awake_btn as Button)
+		var lbl: Label = awake_btn.get_node_or_null("%AwakeLabel") as Label
+		if lbl != null:
+			lbl.text = String(cm.get_lstr(AWAKE_LSTR_KEY)) if cm != null and cm.has_method("get_lstr") else AWAKE_FALLBACK_TEXT
+			if lbl.text == String(AWAKE_LSTR_KEY):
+				lbl.text = AWAKE_FALLBACK_TEXT
+	awake_btn.pressed.connect(func() -> void:
+		AudioPlayer.play_sfx("common_click_feedback")
+		awake_requested.emit())
 
 
 # ---- Phase B：tab 内容 fill（挂各 host，visible 切换）----
@@ -471,3 +499,28 @@ func perform_upgrade_skill(idx: int) -> bool:
 	if pd == null or hero == null:
 		return false
 	return pd.upgrade_hero_skill(hero.inst_id, idx)
+
+
+# 觉醒（单机化新增）：AwakeHelper.awake_hero 扣 50 专属碎片 + hero.awake=true。
+# 成功后弹 HeroAwakePanel（B）展示觉醒动画，关闭后 refresh_content 隐藏按钮。
+# 源无觉醒养成激活逻辑（源 awake 由服务器 protoAwake 注入）；本项目用户授权碎片觉醒方案。
+func perform_awake() -> bool:
+	if pd == null or hero == null:
+		return false
+	var result: Dictionary = AwakeHelper.awake_hero(pd, hero)
+	if not bool(result.get("ok", false)):
+		AudioPlayer.play_sfx("common_alert")   # 碎片不足或其他校验失败
+		return false
+	AudioPlayer.play_sfx("common_hero_upgrade")   # 觉醒成功音效（复用升星音）
+	_show_awake_popup()
+	return true
+
+
+# 弹觉醒展示弹窗（B），关闭后刷新本面板（按钮隐藏 + stars/gs 等更新）。
+func _show_awake_popup() -> void:
+	if not is_inside_tree():
+		return
+	var panel := HeroAwakePanel.new("popheroawake", {})
+	panel.setup_awake(hero, cm)
+	panel.closed.connect(refresh_content)
+	panel.show_window(get_parent())
