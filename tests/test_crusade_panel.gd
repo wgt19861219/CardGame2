@@ -47,22 +47,47 @@ func test_stage_n_runs() -> void:
 	root.queue_free()
 
 
-func test_team_tids_from_heroes() -> void:
+# P1-B3（2026-07-23）：源 crusade.lua:431-441 start() pushScene battleprepare（mode=crusade +
+# heroLimit level=20）。原 _on_start 直接 run_crusade_battle 跳过战前调阵容，照源修复为弹
+# BattlePreparePanel（mode=crusade）。
+func test_start_opens_battle_prepare_mode_crusade() -> void:
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
 	pd.hero_manager.add_hero(1)
-	pd.hero_manager.add_hero(2)
-	# P1-2026-07-10：crusade heroLimit level=20，英雄等级需 ≥20 才能上场
 	var h1: HeroInstance = pd.hero_manager.get_hero(pd.hero_manager.heroes.keys()[0])
-	if h1 != null: h1.level = 20
-	var h2: HeroInstance = pd.hero_manager.get_hero(pd.hero_manager.heroes.keys()[1])
-	if h2 != null: h2.level = 20
+	if h1 != null: h1.level = 20   # 满足 heroLimit level=20
 	var panel := CrusadePanel.new("crusade", {})
 	panel.setup_panel(pd, BattleRng.new(1))
 	panel.show_window(root)
-	var tids: Array = panel._team_tids()
-	assert_eq(tids.size(), 2, "team_tids 取所有 ≥20 级英雄（无 team）")
+	panel._on_stage_n(1)   # 选第 1 关
+	var before: int = root.get_child_count()
+	panel._on_start_pressed()
+	assert_eq(root.get_child_count(), before + 1, "_on_start 弹 BattlePreparePanel")
+	var bp: Node = root.get_child(before)
+	assert_true(bp is BattlePreparePanel, "弹出的是 BattlePreparePanel")
+	assert_eq((bp as BattlePreparePanel).mode, "crusade", "mode=crusade（源 crusade.lua:435）")
+	assert_eq((bp as BattlePreparePanel).min_level, 20, "min_level=20（源 :436 heroLimit detail）")
+	assert_eq((bp as BattlePreparePanel).stage_id, -3, "stage_id=-2-1=-3（源 :432 stageId=-2-currentStage）")
+	assert_false(panel.start_btn.visible, "start_btn 隐藏（源 :440 battleLayer setVisible(false)）")
+	(bp as BattlePreparePanel).queue_free()
+	panel.remove_window()
+	root.queue_free()
+
+
+# P1-B3：crusade 战斗结束（同步）通过 crusade_battle_finished 信号回调刷新 crusade_panel。
+func test_crusade_battle_finished_refreshes_label() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_hero(1)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	panel._on_crusade_battle_finished(true, 3)
+	assert_true(panel.result_label.text.contains("胜利"), "won → result_label 含\"胜利\"")
+	panel._on_crusade_battle_finished(false, 5)
+	assert_true(panel.result_label.text.contains("失败"), "lost → result_label 含\"失败\"")
 	panel.remove_window()
 	root.queue_free()
 

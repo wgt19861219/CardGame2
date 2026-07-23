@@ -30,6 +30,40 @@ func _make_panel() -> BattlePreparePanel:
 	return panel
 
 
+# P1-B3（2026-07-23）：源 crusade.lua:434-438 start() 传 mode=crusade + heroLimit level=20。
+# battleprepare.lua:7 min_crusade_level=20 + :1154 getAllListWithLimit + :962 上阵校验双保险。
+func _make_crusade_panel(min_level: int = 20) -> BattlePreparePanel:
+	var pd := _make_player()
+	# 把部分英雄设 <20 级（验证过滤）
+	var keys: Array = pd.hero_manager.heroes.keys()
+	for i in range(keys.size()):
+		var h: HeroInstance = pd.hero_manager.heroes[keys[i]]
+		h.level = 10 if i < 2 else 25   # 前 2 个 <20，后 4 个 ≥20
+	var rng := BattleRng.new(12345)
+	var panel := BattlePreparePanel.new()
+	panel.setup(-3, pd, null, rng, cm, "crusade", min_level)   # stage_id=-3（crusade 标识）
+	return panel
+
+
+func test_crusade_mode_loads_panel_state() -> void:
+	var panel := _make_crusade_panel()
+	assert_eq(panel.mode, "crusade", "mode=crusade（源 crusade.lua:435）")
+	assert_eq(panel.min_level, 20, "min_level=20（源 :436 heroLimit detail）")
+	assert_eq(panel.stage_id, -3, "stage_id 透传（crusade 负标识）")
+	panel.queue_free()
+
+
+# 源 :1154 getAllListWithLimit（crusade 模式 heroLimit level=20 过滤列表）+ :962 上阵校验双保险。
+func test_crusade_mode_filters_low_level_heroes() -> void:
+	var panel := _make_crusade_panel(20)
+	# 6 英雄：前 2 级 10（过滤），后 4 级 25（保留）→ 列表 4 个
+	assert_eq(panel._heroes_all.size(), 4, "crusade 模式 _heroes_all 过滤 <level 20（源 :1154）")
+	for h in panel._heroes_all:
+		var hero = panel.player.hero_manager.heroes[h.inst_id]
+		assert_true(int(hero.level) >= 20, "列表英雄均 ≥20 级（源 heroLimit level=20）")
+	panel.queue_free()
+
+
 func test_panel_assembles() -> void:
 	var panel := _make_panel()
 	assert_not_null(panel._list_grid, "列表 GridContainer 应装配")
