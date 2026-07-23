@@ -25,6 +25,8 @@ static func to_dict(pd: PlayerData) -> Dictionary:
 		"vip_level": pd.vip_level,
 		"skill_points": pd.skill_points,
 		"skill_reset_times": pd.skill_reset_times,
+		"skill_cd_time": pd.skill_cd_time,
+		"skill_last_reset_date": pd.skill_last_reset_date,
 		"player_name": pd.player_name,
 		"avatar": pd.avatar,
 		"team": pd.team,
@@ -68,8 +70,10 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 	pd.team_level = int(data.get("team_level", 1))
 	pd.team_exp = int(data.get("team_exp", 0))
 	pd.vip_level = int(data.get("vip_level", 0))
-	pd.skill_points = int(data.get("skill_points", 0))
+	pd.skill_points = int(data.get("skill_points", PlayerData.SKILL_DEFAULT_POINTS))
 	pd.skill_reset_times = int(data.get("skill_reset_times", 0))
+	pd.skill_cd_time = int(data.get("skill_cd_time", 0))
+	pd.skill_last_reset_date = int(data.get("skill_last_reset_date", 0))
 	pd.player_name = String(data.get("player_name", "Player"))
 	pd.avatar = int(data.get("avatar", 0))
 	var team_arr: Array = data.get("team", [])

@@ -17,6 +17,8 @@ const BUY_VIT_HARD_CAP: int = 9999     # 源 :1798 买体可囤积上限（区�
 const SKILL_POINT_COST: int = 1        # 技能升级消耗技能点
 const SKILL_BUY_AMOUNT: int = 10       # 源 local_server:2185 buy_skill_stren_point 每次 chance+=10
 const SKILL_BUY_MAX_TIMES: int = 30    # 源 skillstren.lua:467 GradientPrice 封顶第 30 行
+# 源 local_server.lua:85 DEFAULT_DATA.skill.chance=5（新玩家初始技能点）
+const SKILL_DEFAULT_POINTS: int = 5
 const TEAM_EXP_PER_LEVEL: int = 100       # 简化：每级 100 经验（PlayerLevel 表集成后续）
 const REWARD_MULTIPLIER: int = 10         # 源 takeStageReward 金币/战队经验 ×10（:1332/1339）
 const LOOT_TYPE_HERO: String = "hero"     # 源 player.lua:1351 loots type=="hero" → addHero
@@ -43,8 +45,11 @@ var vitality_today_buy: int = 0     # 今日买体力次数（源 todaybuy，受
 var team_level: int = 1
 var team_exp: int = 0
 var vip_level: int = 0  # VIP 等级（源 VIP 表特权查询）
-var skill_points: int = 0  # 技术点（受 VIP["Max Skill Points"] 上限，源 player.lua:704）
+# 源 DEFAULT_DATA.skill：chance=5(初始技能点) / cd_time=0(恢复时间戳) / reset_times=0(梯度计费次数) / last_reset_date=0(跨日重置戳)
+var skill_points: int = SKILL_DEFAULT_POINTS  # 受 VIP["Max Skill Points"] 上限，源 player.lua:704
 var skill_reset_times: int = 0  # 今日已购技能强化点次数（源 player.lua:718 reset_times，梯度计费+跨日重置）
+var skill_cd_time: int = 0  # 技能点上次恢复时间戳（源 player.lua:674 _skill_levelup_cd，CD 300s 恢复 1 点）
+var skill_last_reset_date: int = 0  # 跨日重置参考日期戳（源 player.lua:720 _last_reset_date，checkTwoDateod 判跨日）
 var player_name: String = "Player"
 var avatar: int = 0
 var team: Array[int] = []  # 参战英雄 inst_id 列表（阵容；供 BattleSetup 构造 player_team）
@@ -180,20 +185,19 @@ func buy_vitality() -> bool:
 	return true
 
 
-## 增加技能点（受 VIP["Max Skill Points"] 上限，源 player.lua:704）。
+## 增加技能点（受 VIP["Max Skill Points"] 上限，源 player.lua:704）。Logic 委托 SkillPointManager。
 func add_skill_point(amount: int = 1) -> void:
-	var limit: int = int(VipData.get_vip_field(vip_level, "Max Skill Points", cm))
-	if limit > 0:
-		skill_points = min(skill_points + amount, limit)
-	else:
-		skill_points += amount
+	SkillPointManager.add(self, amount)
 
 
 ## 买技能强化点（照源 local_server:2184-2193 + skillstren.lua:187-202/463-468）。
 ## 源 handler 只 chance+=10+reset_times++，扣钻在 client（addrmb(-cost)）。
 ## 单机化 Logic 统一入口：梯度计费 GradientPrice[min(reset_times+1,30)]["Skill Upgrade Reset"] 钻石。
+## 买前先跨日重置 skill_reset_times（源 player.lua:727 getSkillResetTimes 内部 resetSkillData→:718-731）。
 ## 返是否成功（钻石不足返 false）。
 func buy_skill_stren_point() -> bool:
+	# 源 player.lua:727 getSkillResetTimes 先 resetSkillData 跨日归 0 再返次数（梯度回退第 1 档）
+	SkillPointManager.check_cross_day_reset(self, Time.get_unix_time_from_system())
 	var cost: int = _get_skill_buy_cost()
 	if diamond < cost:
 		return false
@@ -201,6 +205,12 @@ func buy_skill_stren_point() -> bool:
 	skill_reset_times += 1
 	add_skill_point(SKILL_BUY_AMOUNT)
 	return true
+
+
+## 按时间自动恢复技能点（照源 player.lua:658-686 getSkillLvupChance）。CD 间隔 300s，上限 VIP["Max Skill Points"]。
+## Logic 委托 SkillPointManager（控行数 + 可单测）。返回本次恢复量。
+func recover_skill_point(now_seconds: int) -> int:
+	return SkillPointManager.recover(self, now_seconds)
 
 
 ## 下一笔购买钻石消耗（源 skillstren.lua:463-468 getResetCost）。
