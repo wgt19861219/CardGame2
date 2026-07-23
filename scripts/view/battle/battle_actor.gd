@@ -277,6 +277,17 @@ func play_effect(effect_name: String, origin: Vector2, scale: float = 1.0, heigh
 		scene.play_effect_on_scene(effect_name, origin, scale, height, zorder)
 
 
+# 源 ed.scene:startCameraShakeAnimationY（battle_scene.lua:1440）的 View 桥——hero hook 鸭子调
+# u.actor.start_camera_shake_animation_y(...)，转发到 BattleScene（三层分离：Logic 不 import scene）。
+# scene==null（纯 Logic 测试 / headless 无场景）自动跳过，等价源 ed.run_with_scene 守卫。
+func start_camera_shake_animation_y(max_height: float, shake_time: float, shake_num: int) -> void:
+	var scene := get_parent()
+	while scene != null and not scene.has_method("start_camera_shake_animation_y"):
+		scene = scene.get_parent()
+	if scene != null and scene.has_method("start_camera_shake_animation_y"):
+		scene.start_camera_shake_animation_y(max_height, shake_time, shake_num)
+
+
 # 源 unit.lua:1674 playGoldDropEffect — monster 死亡掉金币飘字 + addGold。
 # combat die 鸭子调 u.actor.play_gold_drop_effect()（需 model.config.money>0，源 self.model.money）。
 var _gold_drop_played: bool = false

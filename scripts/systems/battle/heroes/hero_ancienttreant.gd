@@ -2,7 +2,7 @@ extends RefCounted
 
 ## AncientTreant（远古树人）英雄 hook（Logic 层）— 照源 battle/heroes/AncientTreant.lua（66 行）。
 ## atk createProjectile：basefunc + enableTrack + 3D 追踪 velocity 一次性（targetV 归一×1500 加到 velocity/z_speed）。
-## atk2 takeEffectAt：basefunc + startCameraShakeAnimationY（纯 View，Logic 等价默认 → Phase 4 补，本轮跳过）。
+## atk2 takeEffectAt：basefunc + startCameraShakeAnimationY(10,0.1,10)（View 相机震动，经 actor 转发 scene）。
 ## atk6 start：caster.addBuff(Buff 56) → basefunc（源 basefunc(skill) 不传 target，selectTarget 自动）。
 ## atk6 finish：basefunc → dps_mod×1.5 + addBuff(Buff 97) + enterActionStageFromOneStage(2)。
 ## isBossCreateWithEffect=false + setDisapearWhenDie(false)。
@@ -13,6 +13,9 @@ const ATK6_FINISH_BUFF_ID: int = 97  # 源 :35 finish addBuff(97)
 const ATK6_DPS_MOD_MULT: float = 1.5  # 源 :34 dps_mod*1.5
 const ATK6_NEXT_STAGE: int = 2     # 源 :39 enterActionStageFromOneStage(2)
 const DIST_INV_EXP: float = -0.5   # 源 :13 ^-0.5（三维距离倒数，归一化指数）
+const ATK2_SHAKE_MAX: float = 10.0  # 源 :45 startCameraShakeAnimationY(10,0.1,10) max_height
+const ATK2_SHAKE_TIME: float = 0.1  # 源 :45 shake_time
+const ATK2_SHAKE_NUM: int = 10      # 源 :45 shake_num
 
 
 func apply(hero: Variant) -> void:
@@ -47,10 +50,11 @@ func _create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# 源 :53-55 atk2 takeEffectAt：basefunc + startCameraShakeAnimationY(10,0.1,10)（纯 View 相机震动，Phase 4 补）。
+# 源 :42-47 atk2 takeEffectAt：basefunc + if ed.run_with_scene then startCameraShakeAnimationY(10,0.1,10)。
+# actor 转发 scene==null 自动跳过（等价 run_with_scene 守卫）。
 func _atk2_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	BattleSkillEffect.take_effect_at(skill, location, src)  # basefunc
-	# 源 startCameraShakeAnimationY(10, 0.1, 10)（View 相机震动）Phase 4
+	skill.caster.actor.start_camera_shake_animation_y(ATK2_SHAKE_MAX, ATK2_SHAKE_TIME, ATK2_SHAKE_NUM)  # 源 :45
 
 
 # 源 :24-30 skill6_start（addBuff Buff56 → basefunc；源 basefunc(skill) 不传 target，selectTarget 自动）。
