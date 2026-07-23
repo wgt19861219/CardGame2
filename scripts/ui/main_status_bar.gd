@@ -5,7 +5,10 @@ extends RefCounted
 ## 从 main_scene 拆出重建：头像（银/金框切换 + 昵称 + VIP 角标）+ 3 货币条（图标 + 数字 + 加号按钮）。
 ## 替代旧裸文字 Label 占位。main_scene._build_status_bar 委托本类 + _refresh_status 更新 label。
 ##
-## 单机化：源 doClickMidas/doClickrmb/buyVitality 加号按钮 → Toast 提示（单机直接调 PlayerData）。
+## 入口接线（照源 statusbar.lua:41-68 registerTitleTouchHandler）：
+## - money_bg 整条可点 → doClickMidas（gold_plus_handler，main_scene 传 _open_midas）
+## - vitality 加号按钮 → buyVitality（vitality_plus_handler）
+## - rmb 加号单机化裁剪（充值无单机等价；diamond_plus_handler 空→加号 IGNORE）
 
 const HEAD_POS: Vector2 = Vector2(70.0, 52.0)        # 源 head_bg_pos（左上头像区）
 const HEAD_SIZE: Vector2 = Vector2(137.0, 105.0)
@@ -35,7 +38,9 @@ const BAR_Y: float = 30.0
 
 # 装配完整状态栏（头像 + 货币条）。返回 refs dict 供 _refresh_status 更新 label。
 # vitality_plus_handler：体力加号点击回调（main_scene 传 _on_vitality_plus→buy_vitality）。
-static func build(parent: Control, vitality_plus_handler: Callable = Callable(), head_click_handler: Callable = Callable()) -> Dictionary:
+# gold_plus_handler：金币条整条点击回调（照源 statusbar.lua:41-49 money_bg 可点→doClickMidas，
+#   main_scene 传 _open_midas）。非空→bar Control gui_input 连接（整条可点）；空→bar 不响应。
+static func build(parent: Control, vitality_plus_handler: Callable = Callable(), head_click_handler: Callable = Callable(), gold_plus_handler: Callable = Callable()) -> Dictionary:
 	var vip_idx: int = 0   # build 时默认银框，refresh 按 PlayerData.vip_level 切金框（P2-5 已实现见 refresh）
 	var refs: Dictionary = {}
 	# 头像区（源 createHead）
@@ -80,6 +85,16 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	refs["gold"] = _build_bar(parent, BAR_POS_X[0], GOLD_ICON_RES)
 	refs["diamond"] = _build_bar(parent, BAR_POS_X[1], DIAMOND_ICON_RES)
 	refs["vitality"] = _build_bar(parent, BAR_POS_X[2], VITALITY_ICON_RES, vitality_plus_handler)
+	# 源 statusbar.lua:41-49 money_bg 整条可点 → doClickMidas（非加号点击，整条 bar 点击）。
+	# gold_plus_handler 非 empty → bar Control（gold Label 的 parent）gui_input 连接整条点击。
+	if gold_plus_handler.is_valid():
+		var gold_lbl: Label = refs["gold"] as Label
+		gold_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE   # 避 Label STOP 吞点击，让 bar 整条可点
+		var gold_bar: Control = gold_lbl.get_parent()
+		var g: Callable = gold_plus_handler
+		gold_bar.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+				g.call())
 	return refs
 
 
