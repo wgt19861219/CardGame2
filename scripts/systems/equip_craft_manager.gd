@@ -38,7 +38,10 @@ static func enhance_equip(pd: PlayerData, inst_id: int, slot: int, materials: Di
 		return false   # 源 :577 moneyCost<=0 doSpeak NO_MATERIAL_ADDED
 	var quality: int = int(equip_table.get(str(item_id), {}).get("Quality", 0))
 	var unit_price: float = float(pd.cm.get_raw_table(&"Enhancement").get(str(quality), {}).get("Unit Price", 0))
-	var cost: int = int(unit_price * add_exp)
+	# 源 ui/equipstrengthen.lua:512-514：target=min(材料累计经验, 满级上限-cur_exp)，cost=单价×(target-ori)。
+	# 玩家放超量材料时 cost 必须按截断后经验算，否则多扣金币（满级前 add_exp > max_exp-cur_exp 的情况）。
+	var eff_exp: float = min(add_exp, max_exp - cur_exp)
+	var cost: int = int(unit_price * eff_exp)
 	if pd.hero_manager.gold < cost:
 		return false
 	pd.hero_manager.add_money(-cost)

@@ -93,7 +93,10 @@ static func take_effect_on(skill: BattleSkill, p_target: Variant, src: Variant =
 		return [false, 0.0]
 	var pr: Array = skill.power(source, p_target)  # 走 skill.power 分发（英雄 hook，如 Luna/SF/Med），返 [power, crit_mod]
 	var p_power: float = float(pr[0])
-	var crit_mod: float = float(pr[1])
+	# 源 battle/skill.lua:590 传 getDamage 的是 info["CRIT%"]/100（:559 解构的 coefficient 被丢弃未用）。
+	# Med_atk2.power 返 [base×mod, mod]（非主目标 mod=0.5）若透传 pr[1] 将致暴击概率减半；照源 :590 用 CRIT%/100。
+	# WD/Luna 路径 pr[1] 恒 1.0（info CRIT%=100），切换无副作用（第八轮 WD base[1] 修正保留 hero_wd.gd 不动）。
+	var crit_mod: float = float(info.get("CRIT%", CRIT_DEFAULT)) / float(CRIT_DEFAULT)
 	var dt: String = str(info.get("Damage Type", ""))
 	var affect_field: String = "mp" if bool(info.get("Affect MP", false)) else "hp"
 	var dmg: float = 0.0  # 源 :562 local dmg = 0（Heal/无伤害类保持 0，末尾 return true, dmg）

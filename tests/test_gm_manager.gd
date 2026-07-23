@@ -114,3 +114,21 @@ func test_bits_helper() -> void:
 	# 验证 bits 解码与源 tools.lua:66 一致
 	assert_eq(GmManager._bits(0b1111111111, 0, 10), 1023, "低 10 位全 1 = 1023")
 	assert_eq(GmManager._bits(0b111110000000000, 10, 11), 0b11111, "11-21 位 = 31")
+
+
+# 源 local_server.lua:2001 `if moneyType and amount then`（Lua 0 truthy，amount=0 进入设金币=0）。
+# 第九轮 A6：原目标 `and amount != 0` 跳过 amount=0，GM 清零金币无效（Lua truthy vs GDScript falsy 盲点）。
+func test_set_money_amount_zero_clears_gold() -> void:
+	var pd := _make_player()
+	pd.hero_manager.add_money(1000)
+	assert_true(pd.hero_manager.gold >= 1000, "add_money(1000) 后 gold >= 1000")
+	GmManager.execute(pd, cm, {"_set_money": {"_type": "gold", "_amount": 0}})
+	assert_eq(pd.hero_manager.gold, 0, "amount=0 应清零 gold（照源 Lua truthy，不被 amount!=0 跳过）")
+
+
+# 源 :2001 同语义覆盖 diamond/crusadepoint（amount=0 清零不被跳过）。
+func test_set_money_amount_zero_clears_diamond() -> void:
+	var pd := _make_player()
+	assert_eq(pd.diamond, 5000, "默认 diamond=5000（apply_default_data）")
+	GmManager.execute(pd, cm, {"_set_money": {"_type": "diamond", "_amount": 0}})
+	assert_eq(pd.diamond, 0, "amount=0 应清零 diamond")

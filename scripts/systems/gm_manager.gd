@@ -128,7 +128,9 @@ static func _find_hero_by_tid(player: PlayerData, tid: int) -> HeroInstance:
 static func _set_money(player: PlayerData, sm: Dictionary) -> void:
 	var money_type: String = String(sm.get("_type", ""))
 	var amount: int = int(sm.get("_amount", 0))
-	if money_type != "" and amount != 0:
+	# 源 local_server.lua:2001 `if moneyType and amount then`（Lua 0 truthy，amount=0 进入设金币=0）。
+	# 勿加 amount!=0 守卫（Lua truthy vs GDScript falsy 翻译盲点，关联 memory lua-truthy-falsy-gdscript-pitfall）。
+	if money_type != "":
 		match money_type:
 			"gold":
 				player.hero_manager.gold = amount

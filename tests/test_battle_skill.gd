@@ -260,3 +260,38 @@ func test_take_effect_on_heal_with_buff() -> void:
 	BattleSkillEffect.take_effect_on(s, t)
 	assert_eq(t.healed.size(), 1, "Heal → take_heal")
 	assert_eq(t.buffs.size(), 1, "P0-1：Heal + Buff ID → fall-through buff 命中 add_buff（照源 :610-614）")
+
+
+# ===== 第九轮 A2：crit_mod 消费端用 info["CRIT%"]/100（源 battle/skill.lua:590）=====
+# 源 :559 `local power, coefficient = self:power(source, target)` 解构 coefficient，但 :590 传 getDamage
+# 的是 `info["CRIT%"]/100`（coefficient 丢弃）。原目标 :96 `crit_mod=pr[1]` 透传 power 第二返值，
+# Med_atk2.power 返 [base×mod, mod]（非主目标 mod=0.5）将致暴击概率减半；照源 :590 用 CRIT%/100。
+# 模拟 hero_hooks["power"] 返 [150, 0.5]，验证传 take_damage 的 crit_mod=CRIT%/100=1.0（非 0.5）。
+func test_take_effect_on_crit_mod_from_info_not_power_return() -> void:
+	var s := _make_skill({"Plus Ratio": 1.0, "Plus Attr": "AD", "Basic Num": 50, "CRIT%": 100})
+	s.hero_hooks["power"] = func(_sk: Variant, _src: Variant, _t: Variant) -> Array:
+		return [150.0, 0.5]   # 模拟 Med 非主目标 dmg_modifier=0.5
+	var t := MockTarget.new()
+	BattleSkillEffect.take_effect_on(s, t)
+	assert_eq(t.taken.size(), 1, "AD 命中 → take_damage")
+	assert_eq(float(t.taken[0]["amount"]), 150.0, "amount=hook 返的 power=150（非 basefunc 1×100+50）")
+	assert_eq(float(t.taken[0]["crit_mod"]), 1.0, "crit_mod=CRIT%/100=1.0（源 :590），非 pr[1]=0.5")
+
+
+# 源 :590 CRIT%=50 → crit_mod=0.5（CRIT% 字段直传 take_damage，与 power 返值无关）。
+# 数据表 skill.lua:1441 某技能 CRIT%=50（验证低 CRIT% 透传）。
+func test_take_effect_on_crit_mod_low_crit_pct() -> void:
+	var s := _make_skill({"Plus Ratio": 1.0, "Plus Attr": "AD", "Basic Num": 50, "CRIT%": 50})
+	var t := MockTarget.new()
+	BattleSkillEffect.take_effect_on(s, t)
+	assert_eq(t.taken.size(), 1, "AD 命中 → take_damage")
+	assert_eq(float(t.taken[0]["crit_mod"]), 0.5, "CRIT%=50 → crit_mod=0.5（源 :590 CRIT%/100）")
+
+
+# 对照：默认无 CRIT% 字段 → crit_mod=1.0（CRIT_DEFAULT=100，源 power 默认满）。
+func test_take_effect_on_crit_mod_default_when_missing() -> void:
+	var s := _make_skill({"Plus Ratio": 1.0, "Plus Attr": "AD", "Basic Num": 50})
+	var t := MockTarget.new()
+	BattleSkillEffect.take_effect_on(s, t)
+	assert_eq(t.taken.size(), 1, "AD 命中 → take_damage")
+	assert_eq(float(t.taken[0]["crit_mod"]), 1.0, "无 CRIT% → 默认 100/100=1.0")
