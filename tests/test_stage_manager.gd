@@ -305,15 +305,56 @@ func test_enter_act_stage_key_cost_gate() -> void:
 # ── 副本段结算（源 local_server.lua:787-829）──
 
 func test_exit_dungeon_coins_reward() -> void:
-	# 源 :801 getDungeonCoinReward(difficulty) 副本硬币 + :805-810 扣 Key Cost（净 = coins - keyCost）
+	# 源 :416-422 getDungeonCoinReward(difficulty) 副本硬币范围随机 + :805-810 扣 Key Cost（净 = coins - keyCost）
 	var mgr := StageManager.new(cm)
 	var pd := PlayerData.new(cm)
 	var sid := 50013  # Difficulty=1
 	var key_cost: int = int(cm.get_raw_table("StageDungeon").get(str(sid), {}).get("Key Cost", 0))
 	var r: Dictionary = mgr.exit_stage(sid, 3, true, pd)
 	assert_true(r.has("coins"), "副本结算返 coins 字段")
-	assert_eq(int(r["coins"]), 10, "diff1 副本硬币 10")
-	assert_eq(pd.dungeonpoint, 10 - key_cost, "dungeonpoint 净 = coins(10) - keyCost（源 :802-809）")
+	# 源 diff1 范围 {5,8}（修复 A3：固定值 10 → 范围随机）
+	var coins: int = int(r["coins"])
+	assert_true(coins >= 5 and coins <= 8, "diff1 副本硬币在范围 [5,8]，实际 %d" % coins)
+	assert_eq(pd.dungeonpoint, coins - key_cost, "dungeonpoint 净 = coins - keyCost（源 :802-809）")
+
+
+# A3 修复测试：源 :417-418 四档硬币范围随机（固定种子可复现）
+func test_exit_dungeon_coin_ranges_four_diffs() -> void:
+	var ranges: Dictionary = {1: Vector2i(5, 8), 2: Vector2i(10, 15), 3: Vector2i(20, 30), 4: Vector2i(35, 50)}
+	var diff_keys: Array = ranges.keys()
+	for diff in diff_keys:
+		var range: Vector2i = ranges[diff]
+		var rng := RandomNumberGenerator.new()
+		rng.seed = (int(diff) + 1) * 111  # 固定种子可复现
+		for _i in range(50):
+			var c: int = StageDungeonLogic.get_dungeon_coin_reward(int(diff), rng)
+			assert_true(c >= range.x and c <= range.y, "diff %d 硬币 %d 在范围 [%d,%d]" % [int(diff), c, range.x, range.y])
+
+
+# A4 修复测试：源 :482-500 checkHeroicPrereq — 英雄副本组前置未通关被拒
+func test_check_enter_dungeon_heroic_prereq_denied() -> void:
+	# 构造最小场景：注入 ActStageGroupDungeon[40001] = {Stages:[50001,0,0]}
+	# heroicPrereq[40005]=40001，50001 未通关（stage_stars=0）→ 拒绝
+	var local_cm := ConfigManager.new()
+	local_cm.load_all()
+	var table: Dictionary = local_cm.get_raw_table("ActStageGroupDungeon")
+	table["40001"] = {"Stages": [50001, 0, 0]}
+	var mgr := StageManager.new(local_cm)
+	# 50001 未通关 → stage_stars(50001)=0
+	assert_eq(mgr.stage_stars(50001), 0, "前置 50001 未通关")
+	var err: String = StageDungeonLogic.check_enter_dungeon(mgr, 50001, 40005, PlayerData.new(local_cm), local_cm)
+	assert_eq(err, "heroic_prereq", "英雄副本组 40005 前置 40001 未通关 → 拒绝")
+	# 通关 50001 后放行（stars>=1）
+	mgr.progress[50001] = 3
+	var err2: String = StageDungeonLogic.check_enter_dungeon(mgr, 50001, 40005, PlayerData.new(local_cm), local_cm)
+	assert_ne(err2, "heroic_prereq", "前置通关后不再以 heroic_prereq 拒绝")
+
+
+# A4 修复测试：源 :483-484 非英雄副本组（不在 heroicPrereq）无前置
+func test_check_heroic_prereq_non_heroic_pass() -> void:
+	var mgr := StageManager.new(cm)
+	var r: Dictionary = StageDungeonLogic.check_heroic_prereq(50001, mgr, cm)
+	assert_true(bool(r.get("ok", false)), "普通副本组 50001 无 heroic 前置 → 放行")
 
 
 func test_exit_dungeon_gold_by_diff() -> void:
