@@ -33,7 +33,6 @@ const HINT_OFFSET_Y: float = -30.0      # 源 :321 pos.y+30（cocos y 向上→G
 const HINT_OFFSET_BOX_X: float = 40.0   # 源 :313 上关宝箱 offsetX=40
 const HINT_FLOAT_DELTA: float = 10.0    # 源 :616 ccp(0,10)
 const HINT_FLOAT_TIME: float = 0.5      # 源 :616 0.5s
-const TEAM_MAX: int = 5   # 上场英雄上限（源 5v5）
 const ENEMY_ICON_SCALE: float = 0.65   # 源 :231 setScale(0.8) → 0.65 适配（5×104 太宽）
 const ENEMY_ICON_GAP: int = 5
 const ENEMY_HP_FULL: int = 10000   # 源 _hp_perc 满血万分比（:215 if 0<_hp_perc）
@@ -318,38 +317,31 @@ func _on_stage_n(i: int) -> void:
 		result_label.text = "第 %d/%d 关  (无敌人数据)" % [i, max_stage]
 
 
-## 源 doClickStart：点"开战" → run_crusade_battle + 刷新状态。
+## 源 crusade.lua:431-441 start()：pushScene battleprepare（mode=crusade + stage_id=-2-cur +
+## heroLimit level=20 + hireMercenary）+ battleLayer setVisible(false)。
+## 目标单机化：弹 BattlePreparePanel（mode=crusade），玩家战前调阵容/看敌方；战斗同步执行，
+## 通过 crusade_battle_finished 信号回调刷新本面板（源 battleprepare.doGo :231-233 enterCrusade）。
 func _on_start_pressed() -> void:
 	if player == null or rng == null or current_select == 0:
 		return
-	var tids: Array[int] = _team_tids()
-	if tids.is_empty():
-		result_label.text = "无上场英雄"
-		return
-	var r: Dictionary = player.crusade_manager.run_crusade_battle(current_select, player, tids, rng)
-	if bool(r.get("won", false)):
-		result_label.text = "第 " + str(current_select) + " 关 胜利"
+	var stage_id: int = -2 - current_select   # 源 :432 stageId = -2 - currentStage（crusade 负标识）
+	var panel := BattlePreparePanel.new()
+	panel.setup(stage_id, player, player.crusade_manager, rng, player.cm, "crusade", CRUSADE_HERO_MIN_LEVEL)
+	panel.crusade_battle_finished.connect(_on_crusade_battle_finished)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(panel)
+	if start_btn != null:
+		start_btn.visible = false   # 源 :440 panel.battleLayer:setVisible(false)
+
+
+## 源 battleprepare doGo → enterCrusade → popScene 回 crusade 自动刷新。目标同步跑 + 信号回调刷新。
+func _on_crusade_battle_finished(won: bool, stage: int) -> void:
+	if won:
+		result_label.text = "第 " + str(stage) + " 关 胜利"
 	else:
-		result_label.text = "第 " + str(current_select) + " 关 失败"
+		result_label.text = "第 " + str(stage) + " 关 失败"
 	_refresh_stage_states()
-
-
-## 上场英雄 tid 列表（player.team inst_id → tid；空则取前 TEAM_MAX 个英雄）。
-## P1-2026-07-10：照源 crusade.lua:436 heroLimit={type="level",detail=20} 等级≥20 过滤。
-func _team_tids() -> Array[int]:
-	var tids: Array[int] = []
-	for inst_id in player.team:
-		var hero: HeroInstance = player.hero_manager.get_hero(int(inst_id))
-		if hero != null and hero.level >= CRUSADE_HERO_MIN_LEVEL:
-			tids.append(hero.tid)
-	if tids.is_empty():
-		for inst_id in player.hero_manager.heroes:
-			var hero: HeroInstance = player.hero_manager.heroes[inst_id]
-			if hero.level >= CRUSADE_HERO_MIN_LEVEL:
-				tids.append(hero.tid)
-			if tids.size() >= TEAM_MAX:
-				break
-	return tids
 
 
 ## 源 crusade.lua:91 ListenTimer(Timer:Always(1.5), shakeBox) —— 每 1.5s 触发 box 弹跳检查。

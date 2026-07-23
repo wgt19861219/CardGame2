@@ -7,6 +7,14 @@ extends Control
 ## 重构（2026-07-17）：UI 静态节点（bg/list_frame/team_bg/5 bucket/4 tab/go/gs label）
 ## 固化进 battle_prepare_content.tscn（位置/size 编辑器可视化调）。panel instantiate + fill
 ## 动态数据/样式 + 接业务信号。坐标源 cocos(800×480 左下) → Godot(960×640 左上) via (cx+80, 560-cy)。
+##
+## mode（源 battleprepare.lua:1746 self.mode = info.mode）：
+##   "stage"（默认）= 普通关卡，_on_go_pressed 走 mgr.assemble_stage_battle 进 battle_scene。
+##   "crusade"（源 crusade.lua:434-438 start() 传 mode=crusade + heroLimit level=20）=
+##     同步跑 mgr.run_crusade_battle + emit crusade_battle_finished（crusade_panel 接回刷新）。
+
+# 源 :7 min_crusade_level = 20（crusade 模式 heroLimit detail）。crusade 战斗结束（同步）回调上层刷新。
+signal crusade_battle_finished(won: bool, stage: int)
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/battle_prepare_content.tscn")
 const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
@@ -55,6 +63,8 @@ var player: Variant = null
 var mgr: Variant = null
 var rng: Variant = null
 var cm: Variant = null
+var mode: String = "stage"      # 源 :1746 self.mode = info.mode（"stage" 默认 / "crusade"）
+var min_level: int = 0          # 源 :7 min_crusade_level=20 + :1737 heroLimit（crusade 模式等级过滤）
 var _heroes_all: Array = []      # 全部可选英雄 [{inst_id, tid, pos_type, max_range}]
 var _heroes_filtered: Array = [] # 当前 tab 过滤后
 var _team: Array = []            # 已上阵 [{inst_id, tid, max_range}]（按 maxRange 降序）
@@ -67,8 +77,11 @@ var _tab_buttons: Dictionary = {}   # tab_key → Button（源 listButton/listBu
 var _tab_labels: Dictionary = {}    # tab_key → Label（独立 Label 子节点，Button.text 内嵌 label 受 stylebox 干扰）
 
 
-func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant) -> void:
+# 源 battleprepare.lua:1730-1756 create(info)：info.mode/info.heroLimit 透传面板。
+# p_mode/p_min_level 可选（默认 "stage" + 0 = 不限等级），向后兼容 stage_detail_panel 5 参数调用。
+func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant, p_mode: String = "stage", p_min_level: int = 0) -> void:
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
+	mode = p_mode; min_level = p_min_level
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_load_hero_list()
 	_build_content()
@@ -153,6 +166,8 @@ static func _make_stylebox(res_path: String) -> StyleBoxTexture:
 
 
 # 源 getInformation L1697-1721 — 读 player.heroes + Unit 表 Position Type + Skill 表 Max Range 分类。
+# 源 :1701-1702 classify("exercise","position",{limit=heroLimit})：crusade 模式 heroLimit level=20
+# 过滤掉 <20 级英雄（:7 min_crusade_level + :962 上阵校验双保险，列表源 :1154 getAllListWithLimit）。
 func _load_hero_list() -> void:
 	_heroes_all.clear()
 	if player == null or player.hero_manager == null:
@@ -161,6 +176,8 @@ func _load_hero_list() -> void:
 	var skill_table: Dictionary = cm.get_raw_table(&"Skill")
 	for inst_id in player.hero_manager.heroes:
 		var hero = player.hero_manager.heroes[inst_id]
+		if mode == "crusade" and int(hero.level) < min_level:
+			continue   # 源 :1154 getAllListWithLimit + :962 crusade 等级 <min_crusade_level 不入列表
 		var tid: int = int(hero.tid)
 		var unit: Dictionary = unit_table.get(str(tid), {})
 		var pos_raw: String = String(unit.get("Position Type", ""))
@@ -295,6 +312,8 @@ func _on_back_pressed() -> void:
 
 
 # 源 doGo → requestBattle → doGo L306 — 读阵容→assemble_stage_battle→进 battle_scene。
+# 源 :231-233 crusade 分支：engine:enterCrusade(...)。目标 crusade 模式 mgr.run_crusade_battle
+# 同步跑（不进 battle_scene，照 crusade_panel 既有实现），emit crusade_battle_finished 给 crusade_panel。
 func _on_go_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if _team.size() < TEAM_MAX:
@@ -306,6 +325,9 @@ func _on_go_pressed() -> void:
 	if tids.is_empty():
 		_show_toast(cm.get_lstr(LSTR_NOTENOUGH))   # 源 :279 请选择出战英雄
 		return
+	if mode == "crusade":
+		_run_crusade_go(tids)
+		return
 	var asm_r: Dictionary = mgr.assemble_stage_battle(stage_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
 		return
@@ -315,6 +337,16 @@ func _on_go_pressed() -> void:
 	}
 	queue_free()
 	SceneManager.change_scene("res://scenes/battle/battle_scene.tscn")
+
+
+# 源 crusade.lua:432 stageId = -2 - currentStage：crusade 标识负数。BattlePreparePanel 收到的是
+# stage_id 负值，run_crusade_battle 需还原 stage 号（1-15）= -stage_id - 2。同步跑 + emit + queue_free。
+func _run_crusade_go(tids: Array[int]) -> void:
+	var stage: int = -stage_id - 2   # 源 crusade.lua:432 stageId = -2 - currentStage 反推
+	var r: Dictionary = mgr.run_crusade_battle(stage, player, tids, rng)
+	var won: bool = bool(r.get("won", false))
+	queue_free()
+	crusade_battle_finished.emit(won, stage)
 
 
 func _show_toast(text: String) -> void:

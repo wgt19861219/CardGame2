@@ -57,6 +57,7 @@ func show_story(story_name: String) -> void:
 ## 创建对话框 UI（源 createMainLayer:108-117 + uiRes 装配）。
 ## chrome 静态节点从 .tscn instantiate（位置/size/texture/font/color 已固化）；
 ## heroIcon 留 _show_section 动态创建（每节 icon 不同）。Control 非 PopWindow，content 挂 panel 自身。
+## 源 showStory :235-237 战斗场景下 pauseBattle("story")，剧情演出时怪物停止打。
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 自身吞点击（gui_input 推进剧情）
@@ -66,6 +67,34 @@ func _build_ui() -> void:
 	_ui["name_frame"] = content.get_node("%NameFrame") as TextureRect
 	_ui["name"] = content.get_node("%Name") as Label
 	_ui["content"] = content.get_node("%Content") as Label
+	_set_battle_pause(true)   # 源 :235-237 currentScene==ed.scene → pauseBattle("story")
+
+
+## 源 closeStory:168-175：关闭层 + resumeBattle + FireEvent StoryEnd。
+func _close_story() -> void:
+	_set_battle_pause(false)   # 源 :176-178 currentScene==ed.scene → resumeBattle("story")
+	queue_free()
+	story_ended.emit(_story_name)
+
+
+# 源 :235 ed.getCurrentScene()==ed.scene 判定 battle scene。目标鸭子类型查 current_scene.pause_locks
+# （battle_scene 的 pause_locks 字典 + is_paused 标量，参照第八轮 P1-17 多 reason 范式）。
+# story_view 也可能从 main_scene 触发（OpeningMain 等），非 battle scene 时 no-op（源语义一致）。
+func _set_battle_pause(locked: bool) -> void:
+	var tree: SceneTree = get_tree()
+	var scene: Node = tree.current_scene if tree != null else null
+	_apply_story_pause(scene, locked)
+
+
+# static helper：直接接受 scene 参数（避开 get_tree().current_scene 切换的引擎限制，便于单测注入 mock）。
+static func _apply_story_pause(scene: Node, locked: bool) -> void:
+	if scene == null or not ("pause_locks" in scene):
+		return
+	var locks: Variant = scene.get("pause_locks")
+	if not locks is Dictionary:
+		return
+	(locks as Dictionary)["story"] = locked
+	scene.set("is_paused", (locks as Dictionary).values().has(true))
 
 
 ## 源 showStorySection:177-184 + changeStoryInfo:138-167：显示当前节 + 推进。
@@ -95,12 +124,6 @@ func _show_section() -> void:
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		_show_section()
-
-
-## 源 closeStory:168-175：关闭层 + resumeBattle + FireEvent StoryEnd。
-func _close_story() -> void:
-	queue_free()
-	story_ended.emit(_story_name)
 
 
 # heroIcon（源 sprite 无 fix_size）→ 显示=texture/CS（center 为中心点，转左上角 position）。
