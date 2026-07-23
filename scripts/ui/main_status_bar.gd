@@ -10,7 +10,11 @@ extends RefCounted
 ## - vitality 加号按钮 → buyVitality（vitality_plus_handler）
 ## - rmb 加号单机化裁剪（充值无单机等价；diamond_plus_handler 空→加号 IGNORE）
 
-const HEAD_POS: Vector2 = Vector2(70.0, 52.0)        # 源 head_bg_pos（左上头像区）
+# C13 坐标基准核查结论：statusbar 是 framework HUD 层（标准 UI），走 to_godot(cx,cy)=(cx+80,560-cy)
+# （源 800×480 左下原点 → Godot 960×640 左上原点 + 居中偏移 80）；非 main_scene ENTRIES 的 MAP_H-cocos_y
+# 基准（map 全屏背景适配，950×640 整张图）。两者不冲突——ENTRIES 是 map 装饰，statusbar 是 framework HUD。
+# 源 uires.lua:40 head_bg_pos = ccp(winLeft+70, 434) → HEAD_POS 中心点 = (150, 126)。
+const HEAD_POS: Vector2 = Vector2(150.0, 126.0)
 const HEAD_SIZE: Vector2 = Vector2(137.0, 105.0)
 const HEAD_FRAME_RES: Array = [
 	"res://assets/ui/alpha/HVGA/main_head_bg_silver.png",   # VIP=0 银色
@@ -32,15 +36,22 @@ const GOLD_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_goldicon_small.png
 const DIAMOND_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_rmbicon.png"
 const VITALITY_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_vitalityicon.png"
 const PLUS_ICON_RES: String = "res://assets/ui/alpha/HVGA/main_status_plus_icon_1.png"
-const BAR_POS_X: Array = [208.0, 391.0, 574.0]   # 等距 183（框 178 + gap 5 避重叠；源 rmb-vitality 间距 167<178 重叠，改等距 183；整体宽 544=178×3+5×2 居中 (960-544)/2=208）
-const BAR_Y: float = 30.0
+# 源 statusbar.lua:725/792/859 money/rmb/vit_bg 中心点：ccp(251,450)/ccp(434,450)/ccp(601,450) → to_godot(+80,560-y)
+# = (331,110)/(514,110)/(681,110)。源不等距：money→rmb 间距 183，rmb→vit 间距 167（旧版改等距 183 违反源）。
+const BAR_POS_X: Array = [331.0, 514.0, 681.0]
+const BAR_Y: float = 110.0
+# 源 statusbar.lua:728/795/862 Scale9Sprite scaleSize：money/rmb 178×48，vit_bg 145×48（源不等宽！）
+const BAR_SIZE: Vector2 = Vector2(178.0, 48.0)
+const VIT_BAR_SIZE: Vector2 = Vector2(145.0, 48.0)
 
 
 # 装配完整状态栏（头像 + 货币条）。返回 refs dict 供 _refresh_status 更新 label。
 # vitality_plus_handler：体力加号点击回调（main_scene 传 _on_vitality_plus→buy_vitality）。
 # gold_plus_handler：金币条整条点击回调（照源 statusbar.lua:41-49 money_bg 可点→doClickMidas，
 #   main_scene 传 _open_midas）。非空→bar Control gui_input 连接（整条可点）；空→bar 不响应。
-static func build(parent: Control, vitality_plus_handler: Callable = Callable(), head_click_handler: Callable = Callable(), gold_plus_handler: Callable = Callable()) -> Dictionary:
+# player/cm：vit_bg 按住提示卡需要（源 statusbar.lua:69-79 pressHandler→createVitalityPrompt）。
+#   传入则启用按住提示卡（C12）；不传则 vit_bg 不响应按住（仅 vitality 加号点击仍工作）。
+static func build(parent: Control, vitality_plus_handler: Callable = Callable(), head_click_handler: Callable = Callable(), gold_plus_handler: Callable = Callable(), player: PlayerData = null, cm: ConfigManager = null) -> Dictionary:
 	var vip_idx: int = 0   # build 时默认银框，refresh 按 PlayerData.vip_level 切金框（P2-5 已实现见 refresh）
 	var refs: Dictionary = {}
 	# 头像区（源 createHead）
@@ -81,10 +92,10 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	vip_lbl.visible = false
 	head.add_child(vip_lbl)
 	refs["vip"] = vip_lbl
-	# 货币条（源 createTitle gold/rmb/vitality）
-	refs["gold"] = _build_bar(parent, BAR_POS_X[0], GOLD_ICON_RES)
-	refs["diamond"] = _build_bar(parent, BAR_POS_X[1], DIAMOND_ICON_RES)
-	refs["vitality"] = _build_bar(parent, BAR_POS_X[2], VITALITY_ICON_RES, vitality_plus_handler)
+	# 货币条（源 createTitle gold/rmb/vitality）。vit_bg 用源 145×48（比 money/rmb 178×48 窄）
+	refs["gold"] = _build_bar(parent, BAR_POS_X[0], GOLD_ICON_RES, Callable(), BAR_Y, BAR_SIZE)
+	refs["diamond"] = _build_bar(parent, BAR_POS_X[1], DIAMOND_ICON_RES, Callable(), BAR_Y, BAR_SIZE)
+	refs["vitality"] = _build_bar(parent, BAR_POS_X[2], VITALITY_ICON_RES, vitality_plus_handler, BAR_Y, VIT_BAR_SIZE)
 	# 源 statusbar.lua:41-49 money_bg 整条可点 → doClickMidas（非加号点击，整条 bar 点击）。
 	# gold_plus_handler 非 empty → bar Control（gold Label 的 parent）gui_input 连接整条点击。
 	if gold_plus_handler.is_valid():
@@ -95,28 +106,34 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 		gold_bar.gui_input.connect(func(ev: InputEvent) -> void:
 			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 				g.call())
+	# 源 statusbar.lua:69-79 vit_bg pressHandler→createVitalityPrompt / liftHandler→destroyPromptCard。
+	# 按住 vit_bg 显体力恢复进度提示卡（C12），松开销毁。vit 加号 Button STOP 独立命中不冲突。
+	if player != null and cm != null:
+		_attach_vit_prompt(refs["vitality"] as Label, parent, player, cm)
 	return refs
 
 
 # 仅货币条（无头像）— 非 main 场景用（源 framework.createTitle 所有场景建货币条，createHead 只 main）。
-# bar_pos_x/bar_y 由调用方传源 common 位置（heroScene：cocos(251,434,601) y450 → godot [311,494,661] y110）。
+# bar_pos_x/bar_y 由调用方传源 common 中心点（heroScene：cocos(251,434,601) y450 → godot [331,514,681] y110）。
 static func build_bars_only(parent: Control, bar_pos_x: Array, bar_y: float, vitality_plus_handler: Callable = Callable()) -> Dictionary:
 	var refs: Dictionary = {}
-	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, Callable(), bar_y)
-	refs["diamond"] = _build_bar(parent, float(bar_pos_x[1]), DIAMOND_ICON_RES, Callable(), bar_y)
-	refs["vitality"] = _build_bar(parent, float(bar_pos_x[2]), VITALITY_ICON_RES, vitality_plus_handler, bar_y)
+	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, Callable(), bar_y, BAR_SIZE)
+	refs["diamond"] = _build_bar(parent, float(bar_pos_x[1]), DIAMOND_ICON_RES, Callable(), bar_y, BAR_SIZE)
+	refs["vitality"] = _build_bar(parent, float(bar_pos_x[2]), VITALITY_ICON_RES, vitality_plus_handler, bar_y, VIT_BAR_SIZE)
 	return refs
 
 
 # 装配单条货币条：背景条 + 图标 + 数字 label + 加号。返回 label ref。
 # plus_handler 非空（vitality）→ 加号是 Button 可点（照源 statusbar:59-68 radius=30 圆形点击 → buyVitality）；
 # plus_handler 空（gold/diamond）→ 加号 IGNORE（gold 走 midas_btn，diamond 充值单机化裁剪；避 STOP 吞点击）。
-static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler: Callable = Callable(), bar_y: float = BAR_Y) -> Label:
+# x/bar_y 为源 Scale9Sprite 中心点（anchor 0.5,0.5），内部转 Godot 左上角定位（减 size/2）。
+static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler: Callable = Callable(), bar_y: float = BAR_Y, bar_size: Vector2 = BAR_SIZE) -> Label:
 	var bar := Control.new()
-	bar.position = Vector2(x, bar_y)
-	bar.size = Vector2(178.0, 48.0)
+	# 源 Scale9Sprite anchor(0.5,0.5) 中心定位 → Godot Control position 左上角（减 size/2）
+	bar.position = Vector2(x - bar_size.x / 2.0, bar_y - bar_size.y / 2.0)
+	bar.size = bar_size
 	parent.add_child(bar)
-	_add_texture_rect(bar, BAR_BG_RES, Vector2.ZERO, Vector2(178.0, 48.0), "bg")
+	_add_texture_rect(bar, BAR_BG_RES, Vector2.ZERO, bar_size, "bg")
 	_add_texture_rect(bar, icon_res, Vector2(142.0, 8.0), Vector2(32.0, 32.0), "icon")
 	var lbl := Label.new()
 	lbl.position = Vector2(50.0, 16.0)
@@ -141,6 +158,22 @@ static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler
 		var plus := _add_texture_rect(bar, PLUS_ICON_RES, Vector2(4.0, 8.0), Vector2(32.0, 32.0), "plus")
 		plus.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return lbl
+
+
+# vit_bg 按住提示卡接线（源 statusbar.lua:69-79 pressHandler/liftHandler）。
+# vit_bg bar Control mouse_filter=PASS + gui_input 监听 mouse pressed/released（不影响 plus_btn STOP）。
+static func _attach_vit_prompt(vit_lbl: Label, parent: Control, player: PlayerData, cm: ConfigManager) -> void:
+	if vit_lbl == null:
+		return
+	vit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 避 Label STOP 吞事件
+	var vit_bar: Control = vit_lbl.get_parent()
+	vit_bar.mouse_filter = Control.MOUSE_FILTER_PASS   # 让事件冒泡到 bar（plus_btn 仍独立命中）
+	vit_bar.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+			if (ev as InputEventMouseButton).pressed:
+				VitPromptCard.show(parent, player, cm)
+			else:
+				VitPromptCard.destroy_prompt())
 
 
 # 刷新状态栏数值（main_scene._refresh_status 调）。

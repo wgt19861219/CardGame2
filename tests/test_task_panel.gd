@@ -235,3 +235,101 @@ func test_resolve_fast_target_unknown_type_fallback() -> void:
 	var r: Dictionary = TaskPanel.resolve_fast_target("SomeUnknownType")
 	assert_eq(String(r.get("action", "")), "toast", "未知 type → action=toast")
 	assert_eq(String(r.get("msg", "")), "前往任务目标", "未知 type → 默认 Toast 文案")
+
+
+# ==== C9 主任务进度实时查询（照源 task.lua:150-215 getCount + :1064-1080 getProgress）====
+
+# _pid_values：源 lua table {v1,v2} → JSON Dictionary {"1":v1,"2":v2}；兼容 Array/单值。
+func test_pid_values_from_dict() -> void:
+	assert_eq(TaskPanel._pid_values({"1": 10001, "2": 0}), [10001, 0], "Dictionary {1:10001,2:0} → [10001, 0]")
+	assert_eq(TaskPanel._pid_values({"1": 5}), [5], "单元素 dict")
+	assert_eq(TaskPanel._pid_values([3, 7]), [3, 7], "裸 Array 透传")
+	assert_eq(TaskPanel._pid_values(""), [], "非 dict/array → 空")
+	assert_eq(TaskPanel._pid_values({}), [], "空 dict → 空")
+
+
+# PlayerLevel：返 player.team_level（源 :173-174）
+func test_get_count_player_level() -> void:
+	var panel := _make_panel()
+	panel._player.team_level = 15
+	var n: int = panel._get_count("PlayerLevel", [0], 1, panel._player)
+	assert_eq(n, 15, "PlayerLevel → team_level=15")
+	panel.free()
+
+
+# CompleteStage：pid 任一关卡通关（stars>0）→ 返 target（源 :159-164）
+func test_get_count_complete_stage_passed() -> void:
+	var panel := _make_panel()
+	var stage_id: int = 10001
+	# mark stage 通关：stage_manager.stage_stars 返 stars>0
+	panel._player.stage_manager.progress[stage_id] = 3
+	var n_pass: int = panel._get_count("CompleteStage", [stage_id], 5, panel._player)
+	assert_eq(n_pass, 5, "通关 → 返 target=5（视为完成）")
+	# 未通关 stage → 返 0
+	var n_fail: int = panel._get_count("CompleteStage", [99999], 5, panel._player)
+	assert_eq(n_fail, 0, "未通关 → 返 0")
+	panel.free()
+
+
+# HeroRank：查英雄 tid 的 rank（源 :181-186）
+func test_get_count_hero_rank() -> void:
+	var panel := _make_panel()
+	# PlayerData.new 不调 apply_default_data（保单测空档假设），手动 add_hero
+	panel._player.hero_manager.add_hero(1)   # tid=1, rank=1 默认
+	var n: int = panel._get_count("HeroRank", [1], 3, panel._player)
+	assert_eq(n, 1, "HeroRank tid=1 → rank=1（默认初始）")
+	# 不存在的 tid → 0
+	var n_missing: int = panel._get_count("HeroRank", [999], 3, panel._player)
+	assert_eq(n_missing, 0, "HeroRank 不存在 tid=999 → 0")
+	panel.free()
+
+
+# MultiHeroRank：rank>=v 的英雄数量（源 :187-198）
+func test_get_count_multi_hero_rank() -> void:
+	var panel := _make_panel()
+	# 手动加 3 英雄 rank=1
+	panel._player.hero_manager.add_hero(1)
+	panel._player.hero_manager.add_hero(2)
+	panel._player.hero_manager.add_hero(3)
+	var n_all: int = panel._get_count("MultiHeroRank", [1], 5, panel._player)
+	assert_eq(n_all, 3, "MultiHeroRank rank>=1 → 3 英雄（全默认 rank=1）")
+	# rank>=3 → 0（无英雄 rank>=3）
+	var n_high: int = panel._get_count("MultiHeroRank", [3], 5, panel._player)
+	assert_eq(n_high, 0, "MultiHeroRank rank>=3 → 0")
+	panel.free()
+
+
+# FarmStage：源 getTaskCount record 未接 → 降级返 0
+func test_get_count_farm_stage_fallback_zero() -> void:
+	var panel := _make_panel()
+	var n: int = panel._get_count("FarmStage", [18], 10, panel._player)
+	assert_eq(n, 0, "FarmStage 降级返 0（TaskManager 未接 record）")
+	panel.free()
+
+
+# ItemQuantity：物品当前持有量（源 :167-172 equip_qunty[v]）
+func test_get_count_item_quantity() -> void:
+	var panel := _make_panel()
+	panel._player.items[101] = 7
+	var n: int = panel._get_count("ItemQuantity", [101], 5, panel._player)
+	assert_eq(n, 7, "ItemQuantity → items[101]=7")
+	panel.free()
+
+
+# 未知 type → 0（fallback）
+func test_get_count_unknown_type() -> void:
+	var panel := _make_panel()
+	var n: int = panel._get_count("UnknownType", [1], 5, panel._player)
+	assert_eq(n, 0, "未知 type → 0")
+	panel.free()
+
+
+# _get_main_progress：组装 + 调 _get_count（端到端）
+func test_get_main_progress_end_to_end_player_level() -> void:
+	var panel := _make_panel()
+	panel._player.team_level = 20
+	# PlayerLevel type，Task Target=10
+	var row: Dictionary = {"Task Progress Type": "PlayerLevel", "Task Progress ID": {"1": 0}, "Task Target": 10}
+	var n: int = panel._get_main_progress(row)
+	assert_eq(n, 20, "_get_main_progress PlayerLevel → 20")
+	panel.free()
