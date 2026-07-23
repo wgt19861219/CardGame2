@@ -56,6 +56,22 @@ static func finalize_stage(scene) -> void:
 		"stars": int(r["stars"]), "loots": loots, "excavate_mode": false, "isPveMode": true,
 		"hero_hp_mp": r.get("hero_hp_mp", {}),  # 源 stageaccount:138-139 hp/mp（BattleUnit 快照）
 		"lose_type": String(r.get("lose_type", "fail")),  # 源 doFailed.loseType（timeout/fail）→ stage_failed 标题
+		"unit_list": _snapshot_units(scene.engine),  # battleStatist 战斗统计弹窗用（源 ed.engine.unit_list，切场景销毁 engine 故快照）
 	}
 	GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
 	SceneManager.change_scene(STAGE_DONE_PATH if bool(r["won"]) else STAGE_FAILED_PATH)
+
+
+# 源 stagedone/stagefailed doClickStatist → battleStatist.create(ed.engine.unit_list)。结算切场景销毁
+# engine，故快照 unit_list 轻量 Dictionary（tid/camp/dmg_statistics/rank/stars/level，battleStatistics 需要的字段）。
+static func _snapshot_units(engine: Variant) -> Array:
+	var out: Array = []
+	if engine == null:
+		return out
+	for unit in engine.unit_list:
+		out.append({
+			"tid": int(unit.tid), "camp": int(unit.camp),
+			"dmg_statistics": float(unit.dmg_statistics),
+			"rank": int(unit.rank), "stars": int(unit.stars), "level": int(unit.level),
+		})
+	return out
