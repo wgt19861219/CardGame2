@@ -143,10 +143,13 @@ func _statist_label_text() -> String:
 	return "数据"
 
 
-# 源 doClickStatist → 战斗统计弹窗。单机化：暂无统计面板，Toast 占位。
+# 源 doClickStatist → ed.ui.battleStatist.create(ed.engine.unit_list)。finalizer 快照 unit_list 存入 last_result。
+# panel 全屏模态挂 scene 根（Control），setup 后自管理（cExit/遮罩关闭 queue_free）。
 func _on_battle_statist_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	Toast.show_message("战斗统计")
+	var panel := BattleStatisticsPanel.new()
+	add_child(panel)
+	panel.setup(Array(GameData.last_result.get("unit_list", [])), _cm)
 
 
 # 源 readhero.lua:775-782 canHeroEvolve：扫已有英雄，碎片够升星。
