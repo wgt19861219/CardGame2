@@ -331,23 +331,23 @@ func test_exit_dungeon_coin_ranges_four_diffs() -> void:
 			assert_true(c >= range.x and c <= range.y, "diff %d 硬币 %d 在范围 [%d,%d]" % [int(diff), c, range.x, range.y])
 
 
-# A4 修复测试：源 :482-500 checkHeroicPrereq — 英雄副本组前置未通关被拒
+# A4 修复测试：源 ui/dungeon.lua:37 isHeroicUnlocked（实际生效版，5000x）— 英雄副本组前置未通关被拒
 func test_check_enter_dungeon_heroic_prereq_denied() -> void:
-	# 构造最小场景：注入 ActStageGroupDungeon[40001] = {Stages:[50001,0,0]}
-	# heroicPrereq[40005]=40001，50001 未通关（stage_stars=0）→ 拒绝
+	# 真实 ActStageGroupDungeon[50001].Stages=[50001,50002,50003]（BLACKROCK 普通组）
+	# heroicPrereq[50005]=50001，50005(NAXXRAMAS 英雄组) 前置 50001 组全部 Stages 未通关 → 拒绝
 	var local_cm := ConfigManager.new()
 	local_cm.load_all()
-	var table: Dictionary = local_cm.get_raw_table("ActStageGroupDungeon")
-	table["40001"] = {"Stages": [50001, 0, 0]}
 	var mgr := StageManager.new(local_cm)
-	# 50001 未通关 → stage_stars(50001)=0
+	# 50001/50002/50003 未通关 → stage_stars=0
 	assert_eq(mgr.stage_stars(50001), 0, "前置 50001 未通关")
-	var err: String = StageDungeonLogic.check_enter_dungeon(mgr, 50001, 40005, PlayerData.new(local_cm), local_cm)
-	assert_eq(err, "heroic_prereq", "英雄副本组 40005 前置 40001 未通关 → 拒绝")
-	# 通关 50001 后放行（stars>=1）
+	var err: String = StageDungeonLogic.check_enter_dungeon(mgr, 50001, 50005, PlayerData.new(local_cm), local_cm)
+	assert_eq(err, "heroic_prereq", "英雄副本组 50005 前置 50001 组未通关 → 拒绝")
+	# 通关 50001 组全部 Stages（50001/50002/50003）后放行（stars>=1）
 	mgr.progress[50001] = 3
-	var err2: String = StageDungeonLogic.check_enter_dungeon(mgr, 50001, 40005, PlayerData.new(local_cm), local_cm)
-	assert_ne(err2, "heroic_prereq", "前置通关后不再以 heroic_prereq 拒绝")
+	mgr.progress[50002] = 3
+	mgr.progress[50003] = 3
+	var err2: String = StageDungeonLogic.check_enter_dungeon(mgr, 50001, 50005, PlayerData.new(local_cm), local_cm)
+	assert_ne(err2, "heroic_prereq", "前置全通关后不再以 heroic_prereq 拒绝")
 
 
 # A4 修复测试：源 :483-484 非英雄副本组（不在 heroicPrereq）无前置

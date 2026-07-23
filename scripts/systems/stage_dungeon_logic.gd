@@ -22,8 +22,10 @@ const DUNGEON_MAX_BUY_DEFAULT: int = 3       # 源 :690 MaxBuyPerDay fallback
 const DUNGEON_BUYCOST_DEFAULT: int = 50      # 源 :700 BuyCost fallback
 const DUNGEON_GOLD_FALLBACK: int = 2000      # 源 :796 fallback
 const EXP_MULTIPLIER: int = 10  # 源 PVE 经验 ×10
-# 源 :476-480 heroicPrereq 映射：英雄副本组 → 对应普通副本组（要求该普通组所有 Boss 通关）
-const HEROIC_PREREQ: Dictionary = {40005: 40001, 40006: 40002, 40007: 40003}
+# 源 ui/dungeon.lua:37 heroicPrereq（实际生效版，5000x 匹配 ActStageGroupDungeon 数据表）：
+# 英雄副本组 → 对应普通副本组（要求该普通组 Stages 所有 Boss 通关）。
+# 注：local_server.lua:476 同名映射用 4000x 是源 latent bug（4000x 在 5000x 数据表查不到→永远放行），不照。
+const HEROIC_PREREQ: Dictionary = {50005: 50001, 50006: 50002, 50007: 50003}
 
 
 ## 源 :416-422 getDungeonCoinReward：按难度档硬币范围随机。
