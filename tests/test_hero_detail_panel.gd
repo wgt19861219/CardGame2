@@ -185,6 +185,7 @@ func test_upgrade_skill_signal() -> void:
 
 func test_perform_upgrade_skill_success() -> void:
 	var pd := PlayerData.new(cm)
+	pd.skill_points = 0   # 重置初始 5（A7 默认值）以独立验证 add+consume 语义
 	pd.add_skill_point(5)
 	pd.hero_manager.gold = 10000
 	var inst_id: int = pd.hero_manager.add_hero(1)
