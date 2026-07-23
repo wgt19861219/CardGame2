@@ -302,6 +302,22 @@ func add_fragment(frag_id: int, count: int) -> void:
 		return
 	_add_fragment(frag_id, count)
 
+
+## 查碎片数（公开入口；觉醒养成 AwakeHelper.can_awake_with_count 用）。
+func fragment_count(frag_id: int) -> int:
+	return _fragment_count(frag_id)
+
+
+## 扣碎片（单机化觉醒激活用；不足返 false，不部分扣）。
+## 源无此公开接口（源 equip_qunty 扣减在 consumeEquip 服务端）。
+func spend_fragment(frag_id: int, count: int) -> bool:
+	if frag_id <= 0 or count <= 0:
+		return false
+	if _fragment_count(frag_id) < count:
+		return false
+	_add_fragment(frag_id, -count)
+	return true
+
 ## 序列化（持久化用，入口 int 校验）。
 func to_dict() -> Dictionary:
 	var heroes_data: Array[Dictionary] = []
