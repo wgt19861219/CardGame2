@@ -214,3 +214,49 @@ func test_enhance_equip_to_max_max_level_blocked() -> void:
 	hero.equip_exp[0] = 999999   # 满级
 	pd.add_diamond(999999)
 	assert_eq(pd.enhance_equip_to_max(iid, 0), false, "满级 → false")
+
+
+# ===== 第九轮 A1：enhance_equip 金币按满级截断后经验算（源 ui/equipstrengthen.lua:512-514）=====
+# 源 :512 target=min(targetExp, 满级上限)，:514 cost=单价×(target-ori)。
+# 玩家放超量材料（add_exp > max_exp - cur_exp）时，cost 必按截断后经验算，否则多扣金币。
+func test_enhance_equip_cost_truncated_near_max() -> void:
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	var target_id := _find_enhanceable()
+	hero.equip_slots[0] = target_id
+	var q := int(cm.get_raw_table(&"Equip").get(str(target_id), {}).get("Quality", 0))
+	var unit_price := float(cm.get_raw_table(&"Enhancement").get(str(q), {}).get("Unit Price", 0))
+	var le: Array = ReadequipData.get_equip_level_exp(target_id, cm)["le"]
+	var max_exp: float = 0.0
+	for v in le:
+		max_exp += float(v)
+	var gap: float = 10.0
+	var cur_exp: float = max_exp - gap   # 差 10 经验满级
+	hero.equip_exp[0] = cur_exp
+	pd.hero_manager.add_money(1000000)
+	pd.add_item(target_id, 9999)   # 放超量材料（add_exp 远超 gap）
+	var gold_before: int = pd.hero_manager.gold
+	assert_eq(pd.enhance_equip(iid, 0, {target_id: 9999}), true, "超量材料强化成功")
+	var consumed: int = gold_before - pd.hero_manager.gold
+	assert_eq(consumed, int(unit_price * gap), "cost 按截断后经验算（源 :512-514 target=min，非 × add_exp）")
+	assert_eq(float(hero.equip_exp[0]), max_exp, "最终经验 = 满级上限（不溢出）")
+
+
+# 边界：cur_exp 等于 max_exp 时 enhance_equip 直接 false（已满级守卫，源 checkMaxLevel）。
+func test_enhance_equip_at_max_returns_false() -> void:
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	var target_id := _find_enhanceable()
+	hero.equip_slots[0] = target_id
+	var le: Array = ReadequipData.get_equip_level_exp(target_id, cm)["le"]
+	var max_exp: float = 0.0
+	for v in le:
+		max_exp += float(v)
+	hero.equip_exp[0] = max_exp   # 已满级
+	pd.hero_manager.add_money(1000000)
+	pd.add_item(target_id, 10)
+	var gold_before: int = pd.hero_manager.gold
+	assert_eq(pd.enhance_equip(iid, 0, {target_id: 1}), false, "已满级 → false（守卫前置）")
+	assert_eq(pd.hero_manager.gold, gold_before, "失败不扣金币")
