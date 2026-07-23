@@ -22,7 +22,10 @@ const ENTRIES: Array = [
 	{"id": "estren", "title": "mainres.Enchanting", "pos": [475, 261], "unlock": "Enhance", "res": "eff_UI_Main_Skill", "touch": [-10, 2], "radius": 85, "light": [0, 60, 250, 250]},
 	{"id": "exercise", "title": "mainres.Trials", "pos": [1150, 351], "unlock": "Exercise", "res": "eff_UI_Main_Exercise", "touch": [0, 13], "radius": 85, "light": [0, 35, 200, 250]},
 	{"id": "volcano", "title": "mainres.Crusade", "pos": [670, 186], "parent": 2, "unlock": "Crusade", "res": "eff_UI_Main_Volcano", "touch": [0, -30], "radius": 100, "light": [0, 40, 250, 250]},
-	{"id": "handbook", "title": "mainres.Guild", "pos": [115, 446], "unlock": "Guild", "res": "eff_UI_Main_Guild", "touch": [0, -5], "radius": 150, "light": [0, 30, 500, 500]},
+	# 第九轮 P1-B2（用户决策 B）：title 改「图鉴」对齐实际行为（click 开 HandbookPanel 装备图鉴）。
+	# 源该按钮=公会（联机 mainres.Guild / eff_UI_Main_Guild），源 main 无图鉴入口；目标单机化自建图鉴入口。
+	# 图标保留 eff_UI_Main_Guild：源 main 无图鉴按钮→无专属建筑图标，借用公会建筑图标，待补图鉴建筑资源。
+	{"id": "handbook", "title": "图鉴", "pos": [115, 446], "unlock": "Guild", "res": "eff_UI_Main_Guild", "touch": [0, -5], "radius": 150, "light": [0, 30, 500, 500]},
 	{"id": "mailbox", "title": "mainres.Mailbox", "pos": [1000, 466], "res": "eff_UI_Main_Mailbox", "gap": [2, 4, 0, 0, 0], "touch": [0, 40], "radius": 60, "light": [8, 45, 200, 200]},
 	{"id": "sshop", "title": "mainres.GoblinMerchant", "pos": [195, 336], "unlock": "sshop", "res": "eff_UI_Main_Shop2", "gap": [1.46, 1.46, 1.46, 1, 6], "touch": [0, 0], "radius": 68, "light": [0, 25, 317, 300]},
 	{"id": "ssshop", "title": "mainres.Godfather", "pos": [10, 316], "unlock": "ssshop", "res": "eff_UI_Main_Shop3", "gap": [2, 4, 0, 0, 0], "touch": [0, 0], "radius": 40, "light": [0, 45, 307, 200]},

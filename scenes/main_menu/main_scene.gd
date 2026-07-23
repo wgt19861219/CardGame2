@@ -371,7 +371,7 @@ func _open_daily_login() -> void:
 	panel.show_window(self)
 
 
-## 图鉴入口（源 guild 联机裁剪 → 图鉴面板，handbook_manager 已挂 PlayerData）。
+## 图鉴入口（第九轮 P1-B2 用户决策 B：title 已改「图鉴」对齐行为；源该按钮=公会联机，单机化自建图鉴入口，图标借公会建筑待补）。handbook_manager 已挂 PlayerData。
 func _open_handbook() -> void:
 	var panel := HandbookPanel.new("handbook", {})
 	panel.setup_panel(GameData.player)
@@ -435,7 +435,7 @@ func _on_entry_pressed(entry_id: String) -> void:
 		"mailbox":
 			_open_mailbox()                                # 源 :1458 mailbox.create
 		"handbook":
-			_open_handbook()                                # 源 :1413 guild 联机裁剪 → 图鉴面板
+			_open_handbook()                                # 第九轮 P1-B2：图鉴入口（源 :1413 guild 联机→自建图鉴面板）
 		"excavate":
 			_open_excavate()                                # 源 :1483 excavate.initialize
 		"pvp":
