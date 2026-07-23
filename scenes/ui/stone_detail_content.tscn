@@ -1,0 +1,133 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" uid="uid://d22pnaaje7gwc" path="res://assets/ui/alpha/HVGA/fragment_compose_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
+[ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="3_closep"]
+[ext_resource type="Texture2D" uid="uid://dnvf7mnrt2p2i" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="4_okn"]
+[ext_resource type="Texture2D" uid="uid://gy856ao3m0in" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="5_oknp"]
+[ext_resource type="Texture2D" uid="uid://cvyb6adggywt1" path="res://assets/ui/alpha/HVGA/equip_craft_getway_board.png" id="6_board"]
+
+[node name="StoneDetailContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 336.0
+offset_top = 126.0
+offset_right = 624.0
+offset_bottom = 511.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 602.0
+offset_top = 128.5
+offset_right = 653.0
+offset_bottom = 179.5
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
+ignore_texture_size = true
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 380.0
+offset_top = 151.0
+offset_right = 580.0
+offset_bottom = 173.0
+theme_override_colors/font_color = Color(0.721569, 0.0235294, 0.0235294, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="StoneIconHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="WayTitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 437.5
+offset_top = 201.0
+offset_right = 580.0
+offset_bottom = 223.0
+theme_override_colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
+theme_override_font_sizes/font_size = 20
+mouse_filter = 2
+
+[node name="AmountLParen" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 437.5
+offset_top = 226.0
+offset_right = 450.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(0.662745, 0.356863, 0.109804, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+text = "("
+
+[node name="AmountLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 450.0
+offset_top = 226.0
+offset_right = 510.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(0.662745, 0.356863, 0.109804, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="AmountNeedLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 510.0
+offset_top = 226.0
+offset_right = 580.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(0.662745, 0.356863, 0.109804, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="GetwayHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="EmptyPromptLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 359.5
+offset_top = 314.0
+offset_right = 599.5
+offset_bottom = 350.0
+theme_override_colors/font_color = Color(0.427451, 0.243137, 0, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="OkBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 379.5
+offset_top = 444.5
+offset_right = 579.5
+offset_bottom = 493.5
+mouse_filter = 0

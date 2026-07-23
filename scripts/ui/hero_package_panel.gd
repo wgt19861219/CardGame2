@@ -277,7 +277,7 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 			host.set_bars_visible(true))
 
 
-# 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足源弹 stonedetail（本项目未实现，降级）。
+# 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足弹 stonedetail（碎片详情）。
 func _on_miss_clicked(entry: Variant) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var miss_tid: int = ReadheroHandbook.entry_tid(entry)
@@ -285,6 +285,25 @@ func _on_miss_clicked(entry: Variant) -> void:
 		var result: Dictionary = _hero_mgr.hero_evolve(miss_tid)
 		if bool(result.get("ok", false)):
 			_refresh_after_change()
+	else:
+		_open_stone_detail(miss_tid)
+
+
+# 源 stonedetail.create({id=miss_tid}) — 碎片详情弹窗（碎片图标/名称/拥有数/获取途径）。
+func _open_stone_detail(tid: int) -> void:
+	var panel := StoneDetailPanel.new("stonedetail", {})
+	panel.setup_panel(tid, cm, pd, _hero_mgr)
+	# 照源 mainLayer z=120 + 不透明 bg 盖住 hero_package，目标 PopWindow shade 半透
+	# 盖不住 hero_package 全部内容 → 须整体隐藏 container（同 _on_hero_clicked 范式）。
+	container.visible = false
+	var host: Node = get_parent()
+	if host != null and host.has_method(&"set_bars_visible"):
+		host.set_bars_visible(false)
+	panel.show_window(host)
+	panel.tree_exiting.connect(func() -> void:
+		container.visible = true
+		if host != null and host.has_method(&"set_bars_visible"):
+			host.set_bars_visible(true))
 
 
 func _refresh_after_change() -> void:
