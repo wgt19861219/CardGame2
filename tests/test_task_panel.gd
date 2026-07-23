@@ -200,3 +200,38 @@ func test_complete_button_falls_back_when_asset_missing() -> void:
 	assert_true(btn_tex_nonempty, "completeTag 降级后 texture_normal 非空（task_get_reward_button.png 缺 → task_button.png）")
 	row.free()
 	panel.free()
+
+
+# 源 createFastButton fast_handler（task.lua:651-738）13 type 路由分派。
+# 9 个已移植 type → {"action":"call","method":main_scene._open_*}。
+func test_resolve_fast_target_supported_types() -> void:
+	var expected: Dictionary = {
+		"FarmPVEStage": "_open_stage_select",
+		"FarmElitePVEStage": "_open_stage_select",
+		"FarmChapter": "_open_exercise_panel",
+		"PVPBattle": "_open_ladder",
+		"PVPWin": "_open_ladder",
+		"SkillUpgradeSuccess": "_open_hero",
+		"MidasUse": "_open_midas",
+		"TavernGroupUse": "_open_tavern",
+		"CompleteCrusadeStage": "_open_crusade",
+	}
+	for ttype in expected:
+		var r: Dictionary = TaskPanel.resolve_fast_target(ttype)
+		assert_eq(String(r.get("action", "")), "call", "%s → action=call" % ttype)
+		assert_eq(String(r.get("method", "")), String(expected[ttype]), "%s → method=%s" % [ttype, expected[ttype]])
+
+
+# 4 个未移植 type → {"action":"toast","msg":非空}（源 handler 目标场景未实现，降级 Toast）。
+func test_resolve_fast_target_unsupported_types() -> void:
+	for ttype in ["EnhanceLevelUp", "MonthlyCardPeriod", "SendMercenary", "EnterRaid"]:
+		var r: Dictionary = TaskPanel.resolve_fast_target(ttype)
+		assert_eq(String(r.get("action", "")), "toast", "%s → action=toast（未移植）" % ttype)
+		assert_false(String(r.get("msg", "")).is_empty(), "%s → msg 非空" % ttype)
+
+
+# 未知 type → Toast 默认文案（fallback）。
+func test_resolve_fast_target_unknown_type_fallback() -> void:
+	var r: Dictionary = TaskPanel.resolve_fast_target("SomeUnknownType")
+	assert_eq(String(r.get("action", "")), "toast", "未知 type → action=toast")
+	assert_eq(String(r.get("msg", "")), "前往任务目标", "未知 type → 默认 Toast 文案")

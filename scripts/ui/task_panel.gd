@@ -78,6 +78,27 @@ const ROW_SEP: int = 8
 # PopWindow 默认 shade alpha=150/255（popwindow.lua），此处覆盖为源的 200/255。
 const SHADE_ALPHA: float = 200.0 / 255.0
 
+# ---- 源 createFastButton fast_handler（task.lua:651-738）13 个 task.type→场景路由表 ----
+# 已移植 type → main_scene 现有 _open_* 方法（GDScript 不强制 _ private，照 get_tree().current_scene 路由）。
+const FAST_ROUTE := {
+	"FarmPVEStage": "_open_stage_select",           # 源 :652 stageselect.create()
+	"FarmElitePVEStage": "_open_stage_select",      # 源 :656 stageselect.create(nil,"elite")
+	"FarmChapter": "_open_exercise_panel",          # 源 :660 exercise("em"/"equip")（progressid 102/103）
+	"PVPBattle": "_open_ladder",                    # 源 :671 ladder
+	"PVPWin": "_open_ladder",                       # 源 :677 ladder
+	"SkillUpgradeSuccess": "_open_hero",            # 源 :683 heropackage
+	"MidasUse": "_open_midas",                      # 源 :691 midas popup
+	"TavernGroupUse": "_open_tavern",               # 源 :701 tavern
+	"CompleteCrusadeStage": "_open_crusade",        # 源 :709 tbc/crusade
+}
+# 未移植 type → Toast 降级（源 handler 目标场景未实现：装备强化需选英雄 / 月卡充值联机 / 公会联机）。
+const FAST_UNSUPPORTED := {
+	"EnhanceLevelUp": "「装备强化」请从英雄详情进入（需选择英雄）",  # 源 :687 equipstrengthen
+	"MonthlyCardPeriod": "月卡充值入口未开放",                      # 源 :705 newrecharge
+	"SendMercenary": "公会功能未开放",                              # 源 :719 guild
+	"EnterRaid": "公会功能未开放",                                  # 源 :729 guild
+}
+
 var _player: PlayerData
 var _cm: ConfigManager
 var _tm: TaskManager
@@ -169,6 +190,10 @@ func _fill_daily_list() -> void:
 		var count: int = _tm.get_dailyjob_count(job_id)
 		var task: Dictionary = {
 			"kind": "dailyjob",
+			# 源 initTaskData@1514 type = row["Task Progress Type"]（fast_handler 路由 key）
+			"type": str(row.get("Task Progress Type", "")),
+			# 源 :1502-1504 pid = { row["Task Progress ID"] }（FarmChapter :660 遍历 v==102/103 选 em/equip）
+			"progressid": [row.get("Task Progress ID", 0)],
 			"name": _cm.get_lstr(str(row.get("Task Name", str(job_id)))),
 			"detail": _cm.get_lstr(str(row.get("Task Detail", ""))),
 			"target": target,
@@ -230,7 +255,7 @@ func _make_task_row(task: Dictionary, on_claim: Callable) -> Control:
 		# 源 :583 completeTag 是 task_get_reward_button.png 图（assets 缺 → 降级 task_button.png+"完成"文字）
 		_add_action_button(bg, "完成", on_claim, true)  # completeTag(领奖)
 	elif kind == "dailyjob":
-		_add_action_button(bg, _cm.get_lstr("TASK.HEAD_TO"), _on_fast.bind(), false)  # 源 :763 前往
+		_add_action_button(bg, _cm.get_lstr("TASK.HEAD_TO"), _on_fast.bind(task), false)  # 源 :763 前往
 	return bg
 
 
@@ -393,10 +418,27 @@ func _on_claim_daily(job_id: int) -> void:
 		Toast.show_message(_cm.get_lstr("TASK.THE_TASK_HAS_NOT_BEEN_COMPLETED"))
 
 
-# 源 createFastButton fast_handler:按 Task Progress Type 跳场景(stageselect/ladder/heropackage/midas/tavern)。
-# 单机化场景跳转未接，降级 Toast（Logic 待接场景路由；源无对应 LSTR，文案为降级产物）。
-func _on_fast() -> void:
-	Toast.show_message("前往任务目标")
+# 源 createFastButton fast_handler:按 Task Progress Type 跳场景(task.lua:651-738 共 13 type)。
+# 已移植 type → main_scene._open_*（GDScript 不强制 _ private，照源 pushScene 语义切场景）；
+# 未移植 type → Toast 提示（worktree 隔离避免改 main_scene.gd）。
+func _on_fast(task: Dictionary) -> void:
+	var r: Dictionary = resolve_fast_target(str(task.get("type", "")))
+	if String(r.get("action", "")) == "call":
+		var main_scene: Node = get_tree().current_scene
+		if main_scene != null and main_scene.has_method(String(r["method"])):
+			main_scene.call(String(r["method"]))
+			remove_window()  # 源 pushScene 切场景同时关闭当前 popup
+			return
+	Toast.show_message(String(r.get("msg", "前往任务目标")))
+
+
+# 路由分派（纯查询，便于单测）：返回 {"action":"call","method":...} 或 {"action":"toast","msg":...}。
+# 13 type 照源 fast_handler 映射：9 已移植 / 4 未移植；未知 type → Toast 默认文案。
+static func resolve_fast_target(ttype: String) -> Dictionary:
+	var method: String = FAST_ROUTE.get(ttype, "")
+	if not method.is_empty():
+		return {"action": "call", "method": method}
+	return {"action": "toast", "msg": FAST_UNSUPPORTED.get(ttype, "前往任务目标")}
 
 
 func _refresh_ui() -> void:
