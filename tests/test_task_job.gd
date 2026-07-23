@@ -38,6 +38,28 @@ func test_claim_job_reward_unknown_job() -> void:
 	assert_false(bool(r["ok"]), "未知 job → 失败")
 
 
+# Display Time 时间窗（照源 time.lua:383-405 checkTimeBetween 开区间 + task.lua:71-85 checkDailyjobDisplay）。
+func test_time_in_window_open_interval() -> void:
+	assert_true(TaskManager._time_in_window(780, "00:00-14:00"), "13:00 在 00:00-14:00 内")
+	assert_false(TaskManager._time_in_window(900, "00:00-14:00"), "15:00 不在 00:00-14:00")
+	assert_true(TaskManager._time_in_window(1390, "23:00-24:00"), "23:10 在 23:00-24:00 内")
+	assert_false(TaskManager._time_in_window(1380, "23:00-24:00"), "恰好起点 23:00 开区间不算")
+	assert_eq(TaskManager._hhmm_to_minutes("24:00"), 1440, "24:00 → 1440 分钟")
+	assert_eq(TaskManager._hhmm_to_minutes("14:30"), 870, "14:30 → 870 分钟")
+
+
+# Todolist[1] 午餐（23-24/0-14）：中午命中、下午不命中（源 checkDailyjobDisplay 读真实表）。
+func test_check_dailyjob_display_real_table() -> void:
+	var tm := TaskManager.new()
+	var row: Dictionary = cm.get_raw_table("Todolist").get("1", {})
+	if not row.has("Display Time"):
+		return   # 表结构变动则跳过
+	assert_true(tm.check_dailyjob_display(cm, 1, 780), "13:00 在午餐窗 00:00-14:00 → 显示")
+	assert_false(tm.check_dailyjob_display(cm, 1, 900), "15:00 不在午餐窗 → 不显示")
+	var visible_noon: Array[int] = tm.get_visible_daily_jobs(cm, 780)
+	assert_true(visible_noon.has(1), "中午可见列表含午餐 job 1")
+
+
 func test_record_dailyjob_progress_accumulates() -> void:
 	var tm := TaskManager.new()
 	assert_eq(tm.get_dailyjob_count(5), 0, "初始 0")

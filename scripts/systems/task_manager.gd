@@ -9,6 +9,8 @@ const TASK_REWARD_FIRST: int = 1   # Task Reward 槽位起始（源 :4086 Task R
 const TASK_REWARD_LAST: int = 2    # Task Reward 槽位上限（源 :4085 for 1..2）
 const SPLITBITS_MASK: int = 0xFFFF  # splitbits 16 位掩码（源 tools.lua:88）
 const SPLITBITS_SHIFT: int = 16     # splitbits 位移（源 tools.lua:88，chain 低16/id 次16）
+const MINUTES_PER_HOUR: int = 60   # 每小时分钟数（Display Time 解析）
+const TIME_RANGE_PARTS: int = 2    # 时间格式 split 段数（"HH:MM-HH:MM"/"HH:MM" 各 2 段）
 
 var completed: Dictionary = {}  # task_id(int) -> bool
 var claimed: Dictionary = {}    # task_id(int) -> bool
@@ -115,6 +117,56 @@ func record_by_type(cm: ConfigManager, type: String, amount: int = 1) -> void:
 		var row: Dictionary = todolist[job_id_str]
 		if String(row.get("Task Progress Type", "")) == type:
 			record_dailyjob_progress(int(job_id_str), amount)
+
+
+## 当前系统时间当天分钟数（View 调用便利；Logic 测试用 get_visible_daily_jobs/check_dailyjob_display 注入 now_minutes）。
+static func current_now_minutes() -> int:
+	var d: Dictionary = Time.get_time_dict_from_system()
+	return int(d["hour"]) * MINUTES_PER_HOUR + int(d["minute"])
+
+
+## 当前时段可见的日常 job_id 列表（源 task.lua:1489-1495 initTaskList 过滤）。
+## 源 :1495 = checkDailyjobDisplay(id) or checkdbTrigger(id)；checkdbTrigger 多为 VIPLevel（VIP 裁剪不接，单机只走时间窗）。
+func get_visible_daily_jobs(cm: ConfigManager, now_minutes: int) -> Array[int]:
+	var raw: Dictionary = cm.get_raw_table("Todolist")
+	var result: Array[int] = []
+	for job_id_str in raw:
+		if check_dailyjob_display(cm, int(job_id_str), now_minutes):
+			result.append(int(job_id_str))
+	return result
+
+
+## 源 task.lua:71-85 checkDailyjobDisplay：Todolist[job_id] Display Time 任一窗口命中当前时间。
+func check_dailyjob_display(cm: ConfigManager, job_id: int, now_minutes: int) -> bool:
+	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
+	if row.is_empty():
+		return false
+	var dts_raw: Variant = row.get("Display Time", {})
+	if not dts_raw is Dictionary:
+		return false
+	var dts: Dictionary = dts_raw   # JSON 存 Dictionary {"1":"HH:MM-HH:MM",...}（lua table→JSON）
+	if dts.is_empty():
+		return false
+	for range_str in dts.values():
+		if _time_in_window(now_minutes, str(range_str)):
+			return true
+	return false
+
+
+## 源 time.lua:383-405 checkTimeBetween：now 在 "HH:MM-HH:MM" 开区间 (start,end) 内。
+static func _time_in_window(now_minutes: int, range_str: String) -> bool:
+	var parts: PackedStringArray = range_str.split("-")
+	if parts.size() < TIME_RANGE_PARTS:
+		return false
+	return now_minutes > _hhmm_to_minutes(parts[0]) and now_minutes < _hhmm_to_minutes(parts[1])
+
+
+## "HH:MM" → 当天分钟数（照源 gfind "%d+:%d+" 解析 h/m；24:00=1440）。
+static func _hhmm_to_minutes(hhmm: String) -> int:
+	var hm: PackedStringArray = hhmm.split(":")
+	if hm.size() < TIME_RANGE_PARTS:
+		return 0
+	return int(hm[0]) * MINUTES_PER_HOUR + int(hm[1])
 
 
 ## 源 player:resetDailyjobTime：领奖后重置进度。

@@ -24,6 +24,7 @@ const DAY_KEY_MONTH_WEIGHT: int = 100
 const REASON_MAX_TIME: String = "max_time"
 const REASON_LACK_MONEY: String = "lack_money"
 const REASON_NO_CANDIDATE: String = "no_candidate"
+const WILD_DEFEND_TEAM_SIZE: int = 5   # 照源 generateWildTeam:3609 math.min(5,#playerHeroes) 野怪防守队上限
 
 var excavate_data: Array = []   # 矿点 dict 列表
 var search_times: int = 0
@@ -87,14 +88,14 @@ func search(player: Variant, rng: Variant, now: int) -> Dictionary:
 	search_times += 1
 	last_search_ts = now
 	_remove_searched()   # 清旧搜索点（源 removeSearchData:226）
-	var d: Dictionary = _new_monster_node(type_id, now)
+	var d: Dictionary = _new_monster_node(type_id, now, player, rng)
 	excavate_data.append(d)
 	search_id = int(d["_id"])
 	return {"ok": true, "type_id": type_id, "owner": OWNER_MONSTER, "reason": ""}
 
 
 ## 建搜索到的 monster 矿点（owner=monster, state=occupy, 配置驱动 produce_speed/storage）。
-func _new_monster_node(type_id: int, now: int) -> Dictionary:
+func _new_monster_node(type_id: int, now: int, player: Variant, rng: Variant) -> Dictionary:
 	var id: int = _next_id
 	_next_id += 1
 	return {
@@ -108,7 +109,7 @@ func _new_monster_node(type_id: int, now: int) -> Dictionary:
 		"_storage": ExcavateData.storage_amount(config, type_id),
 		"_res_got": 0.0,
 		"_wild_id": ExcavateData.get_wild_enemy_id(config, type_id),
-		"_team": [],   # 单机简化单 team（源 Max Player 多人协防裁剪）：monster 空，mine 玩家驻防
+		"_team": _generate_wild_team(player, rng),   # 照源 :3725 teams=generateWildTeam（玩家英雄镜像防守）
 	}
 
 
@@ -275,13 +276,59 @@ func set_defend_team(excavate_id: int, hero_tids: Array[int], now: int) -> void:
 	d["_team"] = [{"_team_id": 0, "_hero_bases": hero_tids.duplicate(), "_hero_dynas": dynas}]
 
 
-## monster 敌人英雄（照 getStageEnemyData:362，wild_id → ExcavateWildEnemy stage_id → Stage/Battle 表查）。
+## 野怪防守队（照源 local_server.lua:3558-3625 generateWildTeam）：玩家自己英雄池 shuffle 抽5镜像。
+## 源设计：挖矿遇野怪用"玩家英雄"防守（单机化 PVP 等价）。返 [{_team_id,_hero_bases,_hero_dynas}]（单 team）。
+## hero.get() 通用访问（真 HeroInstance Object.get + 测试 Dictionary.get 均可）。
+static func _generate_wild_team(player: Variant, rng: Variant) -> Array:
+	var pool: Array[Dictionary] = []
+	var heroes: Dictionary = player.hero_manager.heroes
+	for inst_id in heroes:
+		var hero: Variant = heroes.get(inst_id)
+		if hero == null:
+			continue
+		pool.append({
+			"_tid": int(hero.get("tid")),
+			"_level": int(hero.get("level")),
+			"_stars": int(hero.get("stars")),
+			"_rank": int(hero.get("rank")),
+		})
+	# Fisher-Yates shuffle（照源 :3604-3607 math_random swap）
+	var n: int = pool.size()
+	while n > 1:
+		n -= 1
+		var j: int = rng.randi_range(0, n)
+		var tmp: Dictionary = pool[n]
+		pool[n] = pool[j]
+		pool[j] = tmp
+	var count: int = mini(WILD_DEFEND_TEAM_SIZE, pool.size())   # 照源 :3609
+	var bases: Array = []
+	var dynas: Array = []
+	var i: int = 0
+	while i < count:
+		bases.append(pool[i])
+		dynas.append({"_hp_perc": ExcavateData.FULL_HP_PERC, "_mp_perc": 0})   # 照源 :3618-3621
+		i += 1
+	return [{"_team_id": 0, "_hero_bases": bases, "_hero_dynas": dynas}]
+
+
+## monster 敌人英雄（照源 generateWildTeam：搜索时存的玩家英雄镜像 _team）。
+## 返 [{base,dyna}]（兼容 assemble_excavate_battle/excavate_team_panel 调用方 e["base"] 格式）。
 func get_enemy_heroes(excavate_id: int) -> Array:
 	var d: Dictionary = get_data(excavate_id)
 	if d.is_empty() or String(d["_owner"]) != OWNER_MONSTER:
 		return []
-	var stage_id: int = ExcavateData.get_wild_stage_id(config, int(d["_wild_id"]))
-	return ExcavateData.get_stage_enemy_data(config, stage_id)
+	var teams: Array = d.get("_team", [])
+	if teams.is_empty():
+		return []
+	var bases: Array = teams[0].get("_hero_bases", [])
+	var dynas: Array = teams[0].get("_hero_dynas", [])
+	var result: Array = []
+	var i: int = 0
+	while i < bases.size():
+		var dyna: Dictionary = dynas[i] if i < dynas.size() else {"_hp_perc": ExcavateData.FULL_HP_PERC, "_mp_perc": 0}
+		result.append({"base": bases[i], "dyna": dyna})
+		i += 1
+	return result
 
 
 ## 战斗胜利占领（照 _excavate_end_battle victory:3839-3868）：占领(monster→mine, state=prepare) + 发 loot。

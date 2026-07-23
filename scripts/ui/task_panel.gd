@@ -156,15 +156,15 @@ func _get_main_progress(row: Dictionary) -> int:
 	return 0
 
 
-# 源 ed.ui.dailyTask:initTaskList@1542:遍历 Todolist + getDailyjobCount
+# 源 ed.ui.dailyTask:initTaskList@1542 + task.lua:1489-1495：只显示当前时段的日常任务（checkDailyjobDisplay 时间窗；checkdbTrigger VIP 单机化不接）。
 func _fill_daily_list() -> void:
-	var raw: Dictionary = _cm.get_raw_table("Todolist")
-	if raw.is_empty():
+	var jobs: Array[int] = _tm.get_visible_daily_jobs(_cm, _tm.current_now_minutes())
+	if jobs.is_empty():
 		_daily_list.add_child(_make_empty_prompt("dailyjob"))
 		return
-	for job_str in raw:
-		var job_id: int = int(job_str)
-		var row: Dictionary = raw[job_str]
+	var raw: Dictionary = _cm.get_raw_table("Todolist")
+	for job_id in jobs:
+		var row: Dictionary = raw.get(str(job_id), {})
 		var target: int = int(row.get("Task Target", 0))
 		var count: int = _tm.get_dailyjob_count(job_id)
 		var task: Dictionary = {

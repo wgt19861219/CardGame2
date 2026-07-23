@@ -71,6 +71,44 @@ func test_search_adds_monster_node() -> void:
 	assert_eq(String(d["_owner"]), "monster", "当前搜索点 owner=monster")
 
 
+# search 后 monster 矿点敌人 = 玩家英雄镜像（照源 generateWildTeam:3558-3625，player.heroes shuffle 抽5）。
+func test_search_enemy_is_player_mirror() -> void:
+	var mgr := ExcavateManager.new(cm)
+	var player := _MockPlayer.new(1000000)
+	player.add_hero(101, 10, 1, 1)
+	player.add_hero(102, 20, 2, 1)
+	player.add_hero(103, 30, 3, 2)
+	var r: Dictionary = mgr.search(player, BattleRng.new(7), 1000)
+	assert_true(bool(r["ok"]), "搜索成功")
+	var enemies: Array = mgr.get_enemy_heroes(mgr.search_id)
+	assert_eq(enemies.size(), 3, "敌人 = 玩家英雄数（3<5 全上）")
+	for e in enemies:
+		var tid: int = int(e["base"].get("_tid"))
+		assert_true(tid == 101 or tid == 102 or tid == 103, "敌人 tid 来自玩家英雄镜像")
+
+
+# search 野怪镜像确定性（同 seed+player → 同 enemy tid 集合）+ 7 英雄抽 5 上限。
+func test_search_enemy_deterministic_and_max_five() -> void:
+	var tids_a: Array = _search_enemy_tids(7)
+	var tids_b: Array = _search_enemy_tids(7)
+	assert_eq(tids_a, tids_b, "同 seed 同 player → 同 enemy tid 集合")
+	assert_eq(tids_a.size(), 5, "7 英雄抽 5（WILD_DEFEND_TEAM_SIZE）")
+
+
+# 辅助：7 英雄 + seed 搜索 → 排序后 enemy tid 列表。
+func _search_enemy_tids(seed: int) -> Array:
+	var mgr := ExcavateManager.new(cm)
+	var player := _MockPlayer.new(1000000)
+	for tid in range(1, 8):
+		player.add_hero(tid)
+	mgr.search(player, BattleRng.new(seed), 1000)
+	var tids: Array = []
+	for e in mgr.get_enemy_heroes(mgr.search_id):
+		tids.append(int(e["base"].get("_tid")))
+	tids.sort()
+	return tids
+
+
 # search 达上限被拒（照 checkSearchTimeMax:611，times>=38 → reason max_time）。
 func test_search_max_time_blocked() -> void:
 	var mgr := ExcavateManager.new(cm)
@@ -403,8 +441,15 @@ class _MockPlayer:
 		hero_manager = _MockHeroMgr.new(gold)
 
 
+	# 加英雄到 hero_manager.heroes（供 _generate_wild_team 生成野怪镜像）。
+	func add_hero(tid: int, level: int = 1, stars: int = 1, rank: int = 1) -> void:
+		var inst_id: int = hero_manager.heroes.size() + 1
+		hero_manager.heroes[inst_id] = {"tid": tid, "level": level, "stars": stars, "rank": rank}
+
+
 class _MockHeroMgr:
 	var gold: int
+	var heroes: Dictionary = {}   # inst_id → {tid,level,stars,rank}（供 _generate_wild_team 镜像）
 
 	func _init(g: int) -> void:
 		gold = g
