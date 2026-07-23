@@ -77,6 +77,9 @@ var tavern_record: Dictionary = {}
 # 源 ed.player.stage_limit（player.lua）：关卡每日已挑战次数（normalStage→count），checkEnabled 判剩余。
 # 日重置待 SaveManager 时间逻辑补全（当前累计不重置 → 剩余递减，降级）。
 var stage_limit: Dictionary = {}
+# 源 player.lua:64 stage_reset_times：精英关每日已重置购买次数（梯度计费 + VIP 上限 + 跨日清零）。
+# key=normalStageId（源 elite2NormalStage），value=今日已重置次数。
+var stage_reset_times: Dictionary = {}
 var cm: ConfigManager
 # EventBus 可选注入（check_unlocks 发 feature_unlocked 信号用；null 时仅 set record 不发信号，headless 可测）。
 var events: EventBus = null
