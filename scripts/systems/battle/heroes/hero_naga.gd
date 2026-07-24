@@ -41,8 +41,11 @@ func _on_hit_miss(hero: Variant, skill: Variant) -> void:
 	mirror.hero_hooks["update"] = Callable(self, "_mirror_update")
 	mirror.isDeathWithEffect = true
 	mirror.direction = int(hero.direction)
+	# 源 Naga.lua:34-59 位置随机无条件消耗 RNG（ed.rand），:60 if mobcd<=0 才 summonUnit。
+	# _random_loc 必须提到 if 外（mobcd>0 时也消耗 RNG 算位置），保确定性 RNG 序列与源一致。
+	var loc: Vector2 = _random_loc(hero, int(hero.direction))
 	if float(hero.custom_data.get("mobcd", 0.0)) <= 0.0:
-		hero.engine.summon_unit(mirror, _random_loc(hero, int(hero.direction)), caster)
+		hero.engine.summon_unit(mirror, loc, caster)
 		var nagalist: Array = hero.custom_data.get("nagalist", [])
 		nagalist.append(mirror)
 		hero.custom_data["nagalist"] = nagalist

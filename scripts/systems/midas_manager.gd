@@ -5,7 +5,8 @@ extends RefCounted
 ## 成本 GradientPrice[累计次数].Midas（梯度递增）+ 产出 floor(PlayerLevel[level].Midas Money × Midas[idx].Yield)。
 ## P0-忠实-7 修正：照源 :1868-1883 按 Prob 1..4 加权抽样暴击档位（×1/×2/×3/×10），非只用 Yield 1。
 ## 钻石不足 totalCost → {ok:false}（源 :1887 空 acquire）。源无每日次数限制（旧版 DAILY_LIMIT=5 是魔改，删）。
-## midas_times 累计决定 costIdx（梯度档位）；本项目 MidasManager 不由 GameData 持，会话内有效（持久化待集成）。
+## midas_times 累计决定 costIdx（梯度档位）；持久化：player_data_serde 已序列化 midas.to_dict()，
+## 但 GameData.save() 零调用致实际不持久化（项目级存档集成缺口，见 MEMORY project-save-game-not-integrated）。
 
 const DEFAULT_MIDAS_MONEY: int = 5000   # 源 :1876 PlayerLevel.Midas Money 缺失默认
 const DEFAULT_YIELD: float = 1.0        # 源 :1874 Midas."Yield 1" 缺失默认

@@ -3,7 +3,8 @@ extends RefCounted
 
 ## 任务/成就（Step 3.7）：完成标记 + 领取奖励 + 日常任务（Todolist）进度 + job_rewards。
 ## job_rewards 照源 local_server.lua:4071-4110 日常分支（活动 act_ 分支单机裁剪——SKIPPED activity 域）。
-## 注：本项目 TaskManager 不由 GameData 持久化（既有 stage_manager 同此限制），状态会话内有效。
+## 持久化：player_data_serde 已序列化 task_manager.to_dict()（存档结构支持），但 GameData.save() 全项目
+## 零调用致实际不持久化（项目级存档集成缺口，见 MEMORY project-save-game-not-integrated）。
 
 const TASK_REWARD_FIRST: int = 1   # Task Reward 槽位起始（源 :4086 Task Reward %d Type）
 const TASK_REWARD_LAST: int = 2    # Task Reward 槽位上限（源 :4085 for 1..2）
