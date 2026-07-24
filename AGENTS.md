@@ -1,1 +1,347 @@
-CLAUDE.md
+# CardGame2 AGENTS.md
+
+> **适用范围**：本目录及子目录。
+> **文件定位**：单一项目配置（Godot 卡牌手游复刻项目）。本文件自包含，不依赖 `@import`。
+
+---
+
+## TL;DR 速查表（agent 必读）
+
+| 维度 | 规则 |
+|------|------|
+| 🎯 核心模式 | **源码即设计**——读源 Lua → 翻译为 GDScript，禁设计/禁裁剪（见「项目铁律」） |
+| 🌐 语言 | 简体中文回复（代码/命令/标识符除外） |
+| 📁 路径 | 文件引用一律绝对路径 |
+| 🛑 红线 | 见 Non-Negotiables 节 |
+| ✅ 完成前 | 必须说验证方式（命令/输出/截图/实测值） |
+| 🧪 提交前 | 必须跑 `bash tools/ci/check.sh` 全绿 |
+| 🤔 不确定 | 跨模块改动/删非自己文件/连续失败 2 次 → 停下问 |
+| 📝 commit | Conventional Commits（见 Commit 规范节） |
+
+---
+
+## 项目铁律（最高优先级，凌驾所有流程之上）
+
+本项目 = `D:\workspace\projects\CardGameAxmol` 的 Godot **完全复刻**（单机化）。
+
+- **源码即设计**：原项目代码是唯一设计来源。**不做额外设计、不提 A/B/C 方案、不裁剪范围、不"优化"**——源里有什么就复刻什么，按源的结构/布局/逻辑/数值翻译为 Godot 等价代码。
+- **工作模式 = 读源 → 翻译**：每个功能先读源 Lua（`CardGameAxmol\Content\src\...`）搞清实现，再翻译成 GDScript。**禁用 brainstorming / writing-plans / blueprint 等"创造性设计"流程**（那是在发明源里没有的东西）。仅当遇到源无对应的纯 Godot 引擎适配（Cocos→Godot 节点映射、Spine 方案 C、cocos Studio→.tscn）时，做最小技术适配，目标仍是"等价复刻"。
+- **禁范围裁剪**：除非用户明确要分阶段，否则不搞"核心闭环 / 留迭代 / 最小可用"——源的完整表现（飘字 / 大招 / 结算 / 暂停 / HUD 全元素）都照搬。"先做核心再迭代"是违规信号。
+- **遇决策回头查源**：布局坐标、数值公式、UI 结构、流程分支全部从源代码读取，不猜测、不自行拍板。
+- **唯一允许的偏差 = 单机化**：去掉联机 / 服务端 / 登录依赖；玩法、表现、数值、流程全部照源。
+
+旧 Godot 版 `D:\workspace\projects\CardGame`（知识库 `CardGameGodot/`）因四大病根作废，**仅作反面教材 + 复用产物（data/tables JSON、美术音频、踩坑经验）**，不复用其代码。
+
+---
+
+## Non-Negotiables（不可妥协红线）
+
+**触发即停**：
+
+### 密钥
+
+- 禁止打印/粘贴 secret（token、API key、cookie、密码）到聊天、commit、日志。
+- CI env 变量**只照搬名字不照搬真值**；缺 secret 时停下问用户，不编造占位符。
+- 只认 `.env.example`，真凭证永不入库。
+- **密钥不入 config**：工具配置文件里**不要 inline 写 API Key**；改用环境变量或独立 secrets 文件。
+
+### 危险命令
+
+执行以下命令前**必须先向用户确认**：
+
+- `rm -rf /`、`rm -rf ~`、`rm -rf /*`、`rm -rf C:/*`（递归删根/家目录）
+- `git push --force *`、`git push -f *`（强推覆盖远端）
+- `mkfs*`（格式化）、`*dd*of=/dev/*`（块设备覆写）
+- `chmod -R 777 /`、`chmod -R 777 /etc*`、`chmod -R 777 /usr*`（系统目录权限放开）
+
+非上述清单的危险操作（删库、删大目录、跨盘移动）同样先确认。
+
+### 禁止编辑的文件类别
+
+agent 不得直接编辑（需改时改源文件并说明同步方式）：
+
+- **生成目录**：`.godot/`（Godot 生成）、`.import/`
+- **第三方代码**：`addons/` 下第三方插件源码
+- **锁文件**：只让对应包管理器改
+- **VCS 元数据**：`.git/`（尤其 `hooks/`、`config`）
+- **带 `DO NOT EDIT` banner 的文件**（codegen / 同步产物）
+- `.tscn` 只用编辑器或 godot-mcp 改，禁外部脚本 patch
+
+### 完成前必说验证方式
+
+声明任务"完成"前，**必须明确说出验证方式**（跑了什么命令 / 看了什么输出 / 截图编号 / `scroll_vertical` 实测值等）。只说"已完成"不说"怎么验证的"，视为未完成。
+
+> 项目特化：commit message 不是验收证据，数据才是（实证 print + 实测变化）。曾发生 d8afa50 commit message 写"用户实跑验收滚动能用了"但实际是误判。
+
+### 不确定就停
+
+满足任一条件，**停下问用户**而不是继续猜：
+
+- 改动会影响多个模块 / 多个子项目
+- 要删除/覆盖非自己创建的文件
+- 命令涉及网络下载 / 外部 API / 大额付费操作
+- 路径不在项目工作区内
+- 同一问题连续尝试 2 次失败（贴已试方法 + 报错，问用户）
+
+---
+
+## 语言
+
+- **必须简体中文回复**。
+- 代码、命令、标识符保持原样（英文不翻译）。
+- commit message 的 type 前缀英文，subject 可中文。
+
+---
+
+## 行为准则（Karpathy 编程四原则 + 验证优先）
+
+1. **先想后写** — 不确定就问，不瞎猜；发现更简单的方案主动说出来。
+2. **简约至上** — 不写没被要求的功能，不为单次使用建抽象层；能 50 行解决别写 200 行。
+3. **精确编辑** — 只动被要求的部分，匹配已有风格；不相关问题提一嘴别动手。
+4. **目标驱动** — 给验收标准而非步骤：写测试→让它通过；复杂任务列分步计划带验证点。
+5. **验证优先** — 写进文档的具体数字/commit SHA/行号，落盘前必须用代码命令（`grep`/`git show`）亲自验证；不验证就只写方法论 + 核查命令，不写具体数字。
+
+---
+
+## 路径规范
+
+- **所有文档与回复中引用文件，一律使用绝对路径**（如 `D:\workspace\projects\CardGame2\scripts\foo.gd`），禁止相对路径。
+- 适用范围：代码定位（`绝对路径:行号`）、日志/笔记里的文件清单、提交信息、报告。
+- **例外**：代码内 `import`/`require`/资源路径（`res://`）等代码本身所需的相对路径照常使用。
+
+---
+
+## 错误处理 / 失败时行为
+
+- 同一问题**连续尝试 2 次失败后停下汇报**：贴出已尝试的方法 + 报错输出，问用户而不是继续试第三种。
+- 不要悄悄吞错：命令报错时把 stderr 完整贴出来，不只说"失败了"。
+- 命令涉及网络下载 / 外部 API / 大额付费操作时，先确认再执行。
+
+---
+
+## Commit 规范
+
+> 本项目不在 ZCode workspace `C:\Users\wgt\ZCodeProject` 内，全局 AGENTS.md 不会被加载，故本节自包含。
+
+### 格式：Conventional Commits
+
+```
+<type>(<scope 可选>): <subject>
+
+<body 可选>
+
+<footer 可选>
+```
+
+### type 取值
+
+| type | 用途 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | 修 bug |
+| `docs` | 文档改动（AGENTS.md、README、开发日志等） |
+| `refactor` | 重构（不改行为） |
+| `perf` | 性能优化 |
+| `test` | 加测试 / 改测试 |
+| `chore` | 构建、依赖、脚本、配置（不改产品代码） |
+| `style` | 格式化（不改逻辑） |
+| `ci` | CI 配置 |
+| `build` | 构建系统 / 依赖 |
+
+### subject 规则
+
+- **祈使句**：写"add X"不写"added X"，写"fix Y"不写"fixes Y"
+- 不加句号结尾
+- Subject 长度 ≤ 72 字符（英文）或 ≤ 40 汉字
+- 中英文混合允许：type 前缀必须英文，subject 可中文
+
+### 示例
+
+```
+feat: 新增 hero_detail 技能 tab 静态化
+fix(scroll): 修复 hero_detail 详细属性 tab 滚轮失效
+docs(agents): 重组 AGENTS.md 对齐模板维度
+refactor(package): 用字典替代 switch-case 简化排列
+chore: 升级 Godot 到 4.7
+```
+
+### 何时提交 / 何时问
+
+- **提交前必跑 `bash tools/ci/check.sh`**，全绿才提交。
+- **不替用户提交**，除非用户明确说"提交吧"。
+- 默认分支（`main`）上**不开新 commit**，先开分支。
+- commit message 正文用中文；type 前缀用英文（语法约定，不变）。
+- PR 标题与 commit subject 同格式；描述里给出**改了什么** / **为什么** / **怎么验证**（贴命令或截图）。
+
+### 不做这些
+
+- 不 `--no-verify` 跳过 hook（除非用户明确要跳且知道后果）。
+- 不 amend / rebase 已 push 的 commit（等于改写历史，需先确认）。
+- **不 force push 到共享分支**（`main`/`develop`/`release/*`）——改写共享历史是高风险操作。
+- **不在 commit 里暴露敏感信息**——token、内部 URL、客户数据绝不进 commit（就算后续删了也会留在 git 历史里）。
+- **不提交大文件**——二进制资源（图片/视频/数据集）走 Git LFS 或外部存储。
+- 不写"fix typo"作为唯一信息的连环小提交超 3 次——攒一个 `style:` 或 `chore:` 合并。
+
+---
+
+## 项目概述
+
+- **项目类型**：游戏（Axmol/Lua 卡牌手游的 Godot 完全复刻，单机版）
+- **技术栈**：
+  - 引擎：Godot 4.7（`D:\godot\Godot_v4.7-stable_win64_console.exe`）—— 由 4.6.3 升级（GUT 9.6.0 兼容验证，`tests/` 下 187 个 `test_*.gd` 文件；核查命令 `ls tests/test_*.gd | wc -l`）
+  - 渲染器：gl_compatibility
+  - 分辨率：960×640 横屏 HVGA
+  - 语言：GDScript（strict 类型）
+  - 测试：GUT v9.6.0
+  - Spine：方案 C（JSON 解析器，复用旧版，无阻塞）
+- **源项目基线**：`D:\workspace\projects\CardGameAxmol @ bf79ee2a1484e479a24f7014f0808a9a543d06a5`
+- **施工蓝图**：`D:\workspace\Obsidian\CardGameGodot2\系统文档\施工蓝图-全局重制.md`
+- **知识库**：`D:\workspace\Obsidian\CardGameGodot2\`
+- **仓库结构**：
+  - `scenes/<feature>/` — View 层：纯 UI，只显示 + 发信号
+  - `scripts/systems/` — Logic 层：纯业务逻辑，不依赖 Node/Control，可 headless 单测
+  - `scripts/data/` — Data 层：PlayerData / SaveManager / ConfigManager
+  - `scripts/autoload/` — 自动加载单例
+  - `scripts/ui/` — UI 组件
+  - `tests/` — GUT 单测（`test_` 前缀）
+  - `resources/` — 数据/配置（`data/*.json`、`constants/*.tres`）
+  - `addons/` — 第三方插件（GUT、godot_mcp_server）
+  - `tools/ci/` — 本地门禁脚本
+
+---
+
+## 开发命令
+
+```bash
+# 本地门禁（三步串联：分层+lint → headless import → GUT 单测），提交前必跑
+bash tools/ci/check.sh
+
+# 手动跑 GUT 单测（必须先 import）
+"D:/godot/Godot_v4.7-stable_win64_console.exe" --headless --import
+"D:/godot/Godot_v4.7-stable_win64_console.exe" --headless -s res://addons/gut/gut_cmdln.gd -gexit
+
+# 启动编辑器
+"D:/godot/Godot_v4.7-stable_win64_console.exe" -e
+```
+
+---
+
+## 完成前强制检查（MANDATORY）
+
+改动代码后，**报告完成 / 提交 / 开 PR 前**必须依次跑：
+
+1. `bash tools/ci/check.sh` — 分层 + lint（Python/gdtoolkit）+ headless `--import` + GUT 单测三步串联
+
+任一失败：修复后重跑，直到全绿。**不允许跳过**。
+
+- 测试文件必须 `test_` 前缀（GUT 默认只发现此前缀）
+- 新增/改测试后 `check.sh` 会自动 import；手动单跑 gut 前必须先 `--import`
+
+---
+
+## 代码风格
+
+- **strict 类型**：所有 `.gd` 文件 `class_name` + 全参数/返回类型注解
+- **跨脚本引用**：`preload` + 鸭子类型/接口，避免 class_name 解析时序问题（class_name 跨脚本交叉引用是反模式）
+- **装饰节点**：`mouse_filter = IGNORE`（值 2），避免吞点击
+- **UID**：从 `.import` 文件读，不猜
+- **`.tscn`**：只用编辑器或 godot-mcp 改，禁外部 patch；`.tscn` 禁 `#` 注释（报 Parse Error），注释用 `;`
+- **零魔法数字**：lint 门禁禁止 Logic 层裸数字常量（白名单 0/1/-1）；数值/公式走 `resources/data/*.json` 或 `resources/constants/*.tres`
+
+---
+
+## 架构约束
+
+### 三层分离（治架构耦合，每个 PR 必须满足，CI 门禁强制）
+
+- `scenes/<feature>/` — **View 层**：纯 UI，只显示 + 发信号，禁含业务逻辑
+- `scripts/systems/` — Logic 层：纯业务逻辑，不依赖 Node/Control，可 headless 单测
+- `scripts/data/` — Data 层：PlayerData / SaveManager / ConfigManager
+- **铁律**：Logic 层禁止 import 任何 `scenes/` 或 `Control` 子类（AST 检查器拦截，CI fail）
+
+### 单文件 ≤ 300 行（场景脚本 ≤ 400）
+
+旧版 hero_scene.gd 1764 行是反面教材。超限 CI fail。
+
+### 反模式清单（全部来自旧版血泪，禁踩）
+
+| 反模式 | 预防 |
+|--------|------|
+| 场景脚本塞业务逻辑 | 三层分离 + AST 检查器 + 行数检查 |
+| class_name 跨脚本交叉引用 | 跨脚本用 `preload` + 接口，不依赖 class_name 强引用 |
+| 装饰节点 `mouse_filter=STOP` 吞点击 | 装饰节点强制 `mouse_filter=IGNORE` |
+| 外部脚本改 `.tscn` | `.tscn` 只在编辑器/MCP 内改，禁外部 patch |
+| sed 批量替换缩进代码 | GDScript 禁 sed，用 MCP `edit_script search_and_replace` |
+| 拼写错误潜伏（immoblilize） | buff/技能效果全枚举单测 |
+| JSON float→int | PlayerData 入口统一 int 校验 |
+| 非原子存档崩溃丢档 | SaveManager 临时文件 + rename |
+| 硬编码 TICK_STEP 等 | lint 禁魔法数字 |
+| UID 猜测 | UID 从 `.import` 读 |
+| headless class_name 不可见 | **CI 先 `--import`**（根因是没 import，非 class_name 本身） |
+| `ScrollContainer.gui_input` 接管滚轮 | **gui_input 信号对滚轮事件完全不触发**（内置 `_gui_input` 处理后 `accept_event`，既不 emit 信号也不冒泡）。改走 `_input` + `host.get_global_rect().has_point()` 鼠标位置命中检测。详见 `验收记录-hero_detail滚动根因-2026-07-21.md` |
+| 凭 commit message 假设验收通过 | commit message 不是验收证据，数据才是（实证 print + scroll_vertical 实测变化） |
+
+### Godot 引擎规范速查
+
+- headless 测试/运行前必须 `godot --headless --import`（首次/资源变动后）
+
+### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
+
+procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/size 静态化进 `.tscn` 子场景，Godot 编辑器 2D 视图可视化调：
+
+- **instantiate + fill**：panel `preload(.tscn).instantiate()` + `container.add_child` + `get_node("%...")` 取节点；builder `fill_*` 往节点填动态数据，**位置/size 留 .tscn 固化**。
+- **Scale9 按钮**：.tscn 普通 `Button`，builder 运行时套 `StyleBoxTexture` 补九宫格图保视觉等价。
+- **unique_name_in_owner**：被 `get_node("%Name")` 引用的节点必须开；**同名节点不能都开**（冲突致 engine warning → GUT 报失败）。静态背景节点不开。
+- **visible 切换**（多 tab）：tab view 常驻 .tscn，`_tab_views[k].visible = (k==key)` 切换，不再 free+重建。
+- **strict 类型**：`instantiate()`/`get_node()` 返回 Node，赋 Control/Label 字段必须 `as`。
+- **测试扫描深度**：.tscn instantiate 多一层 content，扫 base/tab 子树改递归；扫特定 view 用 `_tab_views[k]` 锚定。
+- **.tscn 禁 `#` 注释**：用 `;`。
+- **子组件保留 procedural 挂 host**：panel 层静态化进 .tscn，子组件保留 procedural 挂 `%XxxHost`（pos=0,0）。
+- **带 size rect 坐标照源翻译**：Cocos `CCRect(x,y,w,h)` 的 (x,y) 是**左下角**，转 Godot（左上原点）左上角 `offset_top = 560-(cy+h)`、底边 `560-cy`，**勿把底边当 offset_top**。
+
+---
+
+## 测试策略
+
+- **框架**：GUT v9.6.0
+- **测试先行**：每个 Logic 模块配 GUT 单测，不过禁合并
+- **测试文件**：必须 `test_` 前缀（GUT 默认只发现此前缀）
+- **headless 跑测试**：先 `godot --headless --import` 再 `-s res://addons/gut/gut_cmdln.gd -gexit`
+- **覆盖要求**：buff/技能效果全枚举单测（防拼写错误潜伏）
+
+---
+
+## 项目工作流
+
+### 开发协议（READ → CODE → WRITE）
+
+遵循 `D:\workspace\Obsidian\CLAUDE.md` 的 READ → CODE → WRITE 三阶段：**READ = 读源 Lua 搞清实现（不是想需求/做设计），CODE = 照源翻译为 GDScript**。本项目功能复刻**跳过 brainstorming / writing-plans / blueprint 等设计类 skill**（见「项目铁律」）。
+
+### 知识库三步硬检查点（本项目专属，防遗漏）
+
+触发：审查报告 / 验收记录 / 架构决策 / 调试结论 等产出可执行结论的操作。纯研究、闲聊、一次性问答不触发。
+
+**完成 = 三件事全做，缺任一算未完成：**
+
+1. **写文档**：报告落盘成项目文件（`D:\workspace\projects\CardGame2\审查报告-<主题>-<日期>.md` 或 `验收记录-`），含位置/问题/原因/修复/验证五要素
+2. **更看板**：发现进 `D:\workspace\Obsidian\CardGameGodot2\任务看板.md` 对应子区（按 P0/P1/P2/P3 分级 + `- [ ]` todo），frontmatter 计数实测核对后更新
+3. **同步索引**：`CardGameGodot2 首页.md` 的 `上次会话` 字段 + `wiki/MOC - 开发时间线.md` 表格顶部追加一行
+
+**执行机制**：
+
+- 这类任务开头建 TodoWrite 时，**最后一条 todo 固定为「知识库同步：报告+看板+首页+MOC」**
+- **写入前实测核对（强制）**：版本号读项目版本源（package.json/project.godot）、commit 数 `git rev-list --count`、defect 计数用 grep 实测，**不盲信看板已有记录**
+
+### 规划工作流（ecc:blueprint）
+
+> [!warning] 本项目是纯复刻，**功能开发不用 blueprint 做设计**（源即设计）。blueprint 仅用于组织大规模移植的工程路径与知识库回流。
+
+用 `ecc:blueprint` 规划任务时，**必须遵循**知识库集成规则 `D:\workspace\Obsidian\.claude\rules\blueprint-kb-integration.md`：Research 先读本项目知识库并交叉验证源码 → Draft 把蓝图写入知识库 `系统文档/` → Review 发现回流知识库 → Register 更新首页/任务看板/MOC 时间线。
+
+---
+
+## 变更日志
+
+| 日期 | 变更 |
+|------|------|
+| 2026-07-22 | 初版，基于通用模板 `C:\Users\wgt\ZCodeProject\templates\AGENTS-template.md` 重组；断开与 CLAUDE.md 的软链，AGENTS.md 独立自包含 |

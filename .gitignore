@@ -9,6 +9,9 @@ __pycache__/
 
 # 视觉验收临时截图
 screenshots/
+# 根目录散落调试截图（MCP/验收临时产物，不入库；项目资源在 assets/）
+/*.png
+/*.png.import
 
 # 会话临时产物
 *.tmp

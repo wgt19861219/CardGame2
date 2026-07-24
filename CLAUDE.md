@@ -58,6 +58,8 @@ Axmol/Lua 卡牌手游 `D:\workspace\projects\CardGameAxmol` 的 Godot **完全�
 | 硬编码 TICK_STEP 等 | lint 禁魔法数字 |
 | UID 猜测 | UID 从 `.import` 读 |
 | headless class_name 不可见 | **CI 先 `--import`**（根因是没 import，非 class_name 本身） |
+| `ScrollContainer.gui_input` 接管滚轮 | **gui_input 信号对滚轮事件完全不触发**（ScrollContainer 内置 `_gui_input` 处理后 `accept_event`，既不 emit 信号也不冒泡）。改走 `_input`（顶层钩子，所有事件先过）+ `host.get_global_rect().has_point(mb.global_position)` 鼠标位置命中检测。详见 `验收记录-hero_detail滚动根因-2026-07-21.md` |
+| 凭 commit message 假设验收通过 | d8afa50 commit message 写"用户实跑验收滚动能用了"但实际是误判（鼠标边缘偶然命中 / 测试不充分 / 把中键当滚轮）。**commit message 不是验收证据，数据才是**（实证 print + scroll_vertical 实测变化） |
 
 ## Godot 引擎规范速查
 
