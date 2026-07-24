@@ -378,7 +378,10 @@ func test_hero_detail_equip_click_opens_craft_panel() -> void:
 	var detail := HeroDetailPanel.new("herodetail", {})
 	detail.setup_panel(hero, cm, pd.hero_manager, pd)
 	detail.show_window(root)
-	detail._open_equip_craft(0)
+	# 装备槽入口外迁 HeroDetailEquipSlots（show_equips/open_equip_craft），直调 helper 验证集成。
+	HeroDetailEquipSlots.open_equip_craft(0, hero, cm, pd,
+		detail.get_parent(), detail.refresh_content,
+		func(_stage_id: int) -> void: HeroDetailEquipSlots.on_equip_craft_jump(_stage_id, detail))
 	var has_craft: bool = false
 	for c in root.get_children():
 		if c is EquipCraftPanel:

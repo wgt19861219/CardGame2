@@ -456,7 +456,7 @@ func _open_stage_select() -> void:
 
 
 ## 装备合成获取途径跳转（照源 doClickGetWay :77-89 → stageselect.createByStage(id)）。
-## 由 HeroDetailPanel._on_equip_craft_jump 经 get_tree().current_scene 调用（跳转链避究长 signal 转发）。
+## 由 HeroDetailEquipSlots.on_equip_craft_jump 经 get_tree().current_scene 调用（跳转链避究长 signal 转发）。
 func open_stage_select_by_stage(stage_id: int) -> void:
 	var mgr := GameData.player.stage_manager
 	var rng := BattleRng.new(randi())
