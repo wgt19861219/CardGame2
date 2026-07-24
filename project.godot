@@ -29,6 +29,7 @@ AudioPlayer="*res://scripts/autoload/audio_player.gd"
 window/size/viewport_width=960
 window/size/viewport_height=640
 window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [editor_plugins]
 
