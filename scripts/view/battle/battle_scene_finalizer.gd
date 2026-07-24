@@ -23,7 +23,7 @@ static func finalize_excavate(scene) -> void:
 	var enemy_list: Array[Dictionary] = []
 	enemy_list.assign(ctx["enemy_list"])
 	var now: int = int(Time.get_unix_time_from_system())
-	var r: Dictionary = ExcavateBattle.finalize_excavate_battle(mgr, scene.engine, excavate_id, hero_list, enemy_list, now)
+	var r: Dictionary = ExcavateBattle.finalize_excavate_battle(mgr, scene.engine, excavate_id, hero_list, enemy_list, now, GameData.player)
 	GameData.pending_excavate = {"id": excavate_id, "won": bool(r["won"])}
 	GameData.battle_context.clear()
 	SceneManager.change_scene(MAIN_SCENE_PATH)

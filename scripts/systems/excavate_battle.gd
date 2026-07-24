@@ -36,13 +36,17 @@ static func assemble_excavate_battle(mgr: Variant, excavate_id: int, player: Pla
 
 
 ## 结算挖掘战斗（View 接入用）：从 engine 终态算胜负 + 胜利占领（draw_battle_reward）+ 记历史。返 {ok, won}。
-static func finalize_excavate_battle(mgr: Variant, engine: Variant, excavate_id: int, hero_list: Array[Dictionary], enemy_list: Array[Dictionary], now: int) -> Dictionary:
+static func finalize_excavate_battle(mgr: Variant, engine: Variant, excavate_id: int, hero_list: Array[Dictionary], enemy_list: Array[Dictionary], now: int, player: PlayerData = null) -> Dictionary:
 	var d: Dictionary = mgr.get_data(excavate_id)
 	if d.is_empty():
 		return {"ok": false, "won": false}
 	var won: bool = engine.foreach_alive_unit(BattleEngine.CAMP_ENEMY).is_empty()
 	if won:
-		mgr.draw_battle_reward(excavate_id, now)
+		# 照源 _excavate_end_battle victory:3861 buildResourceReward + excavatenet:48-60 发放：
+		# draw_battle_reward 占领+算 loot+返 reward；grant_resource_reward 发给 player（原 bug 丢弃返值）。
+		var r: Dictionary = mgr.draw_battle_reward(excavate_id, now)
+		if bool(r.get("ok", false)):
+			ExcavateData.grant_resource_reward(player, r.get("reward", {}))
 	_record_history(mgr, mgr.config, d, hero_list, enemy_list, won, now)
 	return {"ok": true, "won": won}
 
@@ -57,7 +61,7 @@ static func run_excavate_battle(mgr: Variant, excavate_id: int, player: PlayerDa
 	while eng.running and not eng.stage_ended and ticks > 0:
 		eng.update(BattleEngine.TICK_INTERVAL)
 		ticks -= 1
-	return finalize_excavate_battle(mgr, eng, excavate_id, asm_r["hero_list"], asm_r["enemy_list"], now)
+	return finalize_excavate_battle(mgr, eng, excavate_id, asm_r["hero_list"], asm_r["enemy_list"], now, player)
 
 
 ## 玩家上场英雄 → hero_list（照 assemble 内联段抽出，run/assemble 共用）。{_tid,_level,_stars,_rank,_items}。

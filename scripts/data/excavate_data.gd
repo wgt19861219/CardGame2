@@ -195,6 +195,23 @@ static func build_resource_reward(cm: Variant, type_id: int, amount: int) -> Dic
 	return {"_type": reward_type, "_param1": amount}
 
 
+## 发放资源奖励给 player（照 excavatenet.lua:48-60 dealEndBattle：gold→addMoney/diamond→addrmb/item→addEquip）。
+## reward = build_resource_reward 返的 {_type, _param1[, _param2]}；player null 或 reward 空跳过。
+## 战斗胜利占领（finalize_excavate_battle）+ 放弃结算（ExcavateGiveupPanel）共用。
+static func grant_resource_reward(player: PlayerData, reward: Dictionary) -> void:
+	if player == null or reward.is_empty():
+		return
+	var rtype: String = String(reward.get("_type", ""))
+	var p1: int = int(reward.get("_param1", 0))
+	match rtype:
+		"gold":
+			player.add_point("gold", p1)
+		"diamond":
+			player.add_point("diamond", p1)
+		"item":
+			player.add_item(p1, int(reward.get("_param2", 0)))
+
+
 ## 矿点展示图（源 Picture 字段 excavate_{type}_{s/m/l}.jpg 资源全缺，降级 name 图，含矿点名文字）。
 static func picture_res(cm: Variant, type_id: int) -> String:
 	var pt: String = produce_type(cm, type_id)

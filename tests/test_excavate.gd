@@ -348,6 +348,41 @@ func test_finalize_loses_no_occupy() -> void:
 	assert_eq(String(mgr.get_data(1)["_owner"]), "monster", "未占领")
 
 
+# ---- grant_resource_reward（照 excavatenet.lua:48-60 发放；修第十轮 P1 占领奖励丢弃 bug）----
+
+func test_grant_gold_adds_money() -> void:
+	var pd := PlayerData.new(cm)
+	var before: int = pd.get_point("gold")
+	ExcavateData.grant_resource_reward(pd, {"_type": "gold", "_param1": 500})
+	assert_eq(pd.get_point("gold"), before + 500, "gold reward +500")
+
+
+func test_grant_diamond_adds_diamond() -> void:
+	var pd := PlayerData.new(cm)
+	var before: int = pd.diamond
+	ExcavateData.grant_resource_reward(pd, {"_type": "diamond", "_param1": 100})
+	assert_eq(pd.diamond, before + 100, "diamond reward +100")
+
+
+func test_grant_item_adds_item() -> void:
+	var pd := PlayerData.new(cm)
+	var before: int = int(pd.items.get(218, 0))
+	ExcavateData.grant_resource_reward(pd, {"_type": "item", "_param1": 218, "_param2": 3})
+	assert_eq(int(pd.items.get(218, 0)), before + 3, "item reward 218 ×3")
+
+
+func test_grant_empty_reward_skips() -> void:
+	var pd := PlayerData.new(cm)
+	var before_gold: int = pd.get_point("gold")
+	ExcavateData.grant_resource_reward(pd, {})
+	assert_eq(pd.get_point("gold"), before_gold, "空 reward(loot=0)不发")
+
+
+func test_grant_null_player_skips() -> void:
+	ExcavateData.grant_resource_reward(null, {"_type": "gold", "_param1": 500})
+	assert_true(true, "null player 守卫不崩")
+
+
 # ---- 6 态状态机 + 跨天重置 + 占领 loot（照 local_server.lua:3542-3555 / 3628 / 3839-3868）----
 
 # search 建矿点 state=searched + state_end_ts=now+300（照 :3723-3724）。

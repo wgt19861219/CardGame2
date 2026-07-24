@@ -78,7 +78,11 @@ func _build_content() -> void:
 
 func _on_confirm_pressed() -> void:
 	var now: int = int(Time.get_unix_time_from_system())
+	# drop 前取 type_id（drop 移除矿点 data），照源 _drop_excavate:3958 buildResourceReward(typeRow, produced) 发放弃结算。
+	var d: Dictionary = pd.excavate.get_data(_excavate_id)
+	var type_id: int = int(d.get("_type_id", 0))
 	var amount: int = pd.excavate.drop(_excavate_id, now)
+	ExcavateData.grant_resource_reward(pd, ExcavateData.build_resource_reward(pd.cm, type_id, amount))
 	if _on_confirmed.is_valid():
 		_on_confirmed.call(amount)
 	remove_window()
