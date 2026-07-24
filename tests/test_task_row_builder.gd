@@ -25,6 +25,24 @@ func test_make_task_row_completed_shows_complete_button() -> void:
 	assert_true(has_btn, "完成态显示领奖按钮")
 	row.free()
 
+func test_make_task_row_daily_wires_on_fast() -> void:
+	# 日常任务"前往"按钮应调用 on_fast 回调（非 Callable() 空回调）。
+	# 回归守护：Task 2 make_task_row 漏接 on_fast 致日常前往按钮变 Callable() 失效。
+	var fast_called: Array[bool] = [false]
+	var task: Dictionary = {
+		"kind": "dailyjob", "name": "T", "detail": "", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "", "reward": [],
+	}
+	var on_fast: Callable = func() -> void: fast_called[0] = true
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable(), "", "前往", on_fast)
+	# 找日常按钮（非完成态，TextureButton）并模拟点击
+	for c in row.get_children():
+		if c is TextureButton:
+			(c as TextureButton).emit_signal("pressed")
+	assert_true(fast_called[0], "日常前往按钮触发 on_fast 回调")
+	row.free()
+
+
 func test_make_empty_prompt() -> void:
 	var lbl: Label = TaskRowBuilder.make_empty_prompt("task")
 	assert_not_null(lbl)

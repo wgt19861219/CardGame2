@@ -86,7 +86,8 @@ const KIND_DAILY: String = "dailyjob"
 
 
 static func make_task_row(task: Dictionary, on_claim: Callable,
-		reward_title_text: String = "奖励:", fast_btn_text: String = "前往") -> Control:
+		reward_title_text: String = "奖励:", fast_btn_text: String = "前往",
+		on_fast: Callable = Callable()) -> Control:
 	var target: int = int(task.get("target", 1))
 	var progress: int = int(task.get("progress", 0))
 	var is_completed: bool = target <= progress
@@ -107,11 +108,11 @@ static func make_task_row(task: Dictionary, on_claim: Callable,
 	add_label(bg, str(task.get("detail", "")), C_DETAIL, &"TaskDetailLabel")
 	add_label(bg, reward_title_text, C_REWARD_TITLE, &"TaskRewardTitleLabel")
 	add_reward_icons(bg, task.get("reward", []))
-	# 完成态 → completeTag(领奖)；否则 dailyjob → createFastButton(前往)
+	# 完成态 → completeTag(领奖)；否则 dailyjob → createFastButton(前往，on_fast 跳场景)
 	if show_complete:
 		add_action_button(bg, "完成", on_claim, true)
 	elif kind == KIND_DAILY:
-		add_action_button(bg, fast_btn_text, Callable(), false)
+		add_action_button(bg, fast_btn_text, on_fast, false)
 	return bg
 
 

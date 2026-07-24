@@ -94,7 +94,7 @@ func _fill_daily_list() -> void:
 			"icon": str(row.get("Icon", "")),
 			"reward": TaskQuery.parse_rewards(row, true),
 		}
-		_daily_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_daily.bind(job_id), reward_title_text, fast_btn_text))
+		_daily_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_daily.bind(job_id), reward_title_text, fast_btn_text, _on_fast.bind(task)))
 
 
 # ---- 领奖 / 去往回调 ----
