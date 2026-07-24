@@ -26,3 +26,6 @@ screenshots/
 Thumbs.db
 .DS_Store
 .claude/worktrees/
+
+# 重构临时截图/工具产物（不入库）
+tools/refactor/
