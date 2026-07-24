@@ -23,6 +23,7 @@ SceneManager="*res://scripts/autoload/scene_manager.gd"
 Toast="*res://scripts/autoload/toast.gd"
 GameData="*res://scripts/autoload/game_data.gd"
 AudioPlayer="*res://scripts/autoload/audio_player.gd"
+ThemeManager="*res://scripts/autoload/theme_manager.gd"
 
 [display]
 
