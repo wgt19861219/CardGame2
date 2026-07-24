@@ -93,6 +93,13 @@ func get_node() -> Node2D:
 	return _node
 
 
+# RefCounted 析构时 free 持有的 _node（FcaAnimation 挂场景层，RefCounted 不级联 free → orphan/CanvasItem leak 根因）。
+# effect_list 移除 effect → 引用归零 → PREDELETE → free _node（1339 CanvasItem leaked 修复）。
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and _node != null and is_instance_valid(_node):
+		_node.queue_free()
+
+
 ## 降级占位特效（资源缺失时用，照源 createFcaNode CCNode stub 兜底）。
 class FallbackEffect:
 	var _node: Node2D; var _life: float
@@ -102,3 +109,7 @@ class FallbackEffect:
 		if _life <= 0.0 and is_instance_valid(_node): _node.queue_free()
 	func is_terminated() -> bool: return _life <= 0.0
 	func get_node() -> Node2D: return _node
+	# RefCounted 析构 free _node（update 内 _life<=0 已 free 时 is_instance_valid 守卫跳过）。
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_PREDELETE and _node != null and is_instance_valid(_node):
+			_node.queue_free()

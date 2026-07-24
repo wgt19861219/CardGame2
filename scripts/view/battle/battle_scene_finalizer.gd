@@ -11,6 +11,14 @@ extends RefCounted
 const STAGE_DONE_PATH: String = "res://scenes/battle/stage_done_scene.tscn"
 const STAGE_FAILED_PATH: String = "res://scenes/battle/stage_failed_scene.tscn"
 const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"
+const UnitSpriteScript = preload("res://scripts/view/battle/unit_sprite.gd")
+
+
+# 切场景前清战斗静态缓存：UnitSprite._atlas_cache/FcaAnimation._cache 持 atlas+Image+FCA 解析数据
+# 生产从不清理 → 111 resources leak；BattlePopup._record 持 BattleUnit 对象图 → 5018 ObjectDB。
+static func _clear_battle_resources() -> void:
+	UnitSpriteScript.clear_atlas_cache()
+	BattlePopup._record.clear()
 
 
 # excavate 战斗结算：finalize_excavate_battle 占领/记历史 → 存 pending_excavate → 回主菜单。
@@ -27,6 +35,7 @@ static func finalize_excavate(scene) -> void:
 	GameData.pending_excavate = {"id": excavate_id, "won": bool(r["won"])}
 	GameData.mark_save_dirty()  # 照源 local_server:858 关卡结算脏标（excavate 占领发奖完成，60s/退出刷）
 	GameData.battle_context.clear()
+	_clear_battle_resources()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
 
 
@@ -39,6 +48,7 @@ static func finalize_pvp(scene) -> void:
 	GameData.pending_pvp = {"won": bool(r["won"]), "reply": r["reply"]}
 	GameData.mark_save_dirty()  # 照源 local_server:3282 PVP 结算脏标（60s/退出刷）
 	GameData.battle_context.clear()
+	_clear_battle_resources()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
 
 
@@ -62,6 +72,8 @@ static func finalize_stage(scene) -> void:
 	}
 	GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
 	GameData.save()  # 照源 main.lua:2033 exitStageReply 后即时存（关卡结算发奖完成）
+	GameData.battle_context.clear()  # 释放 engine 引用链（5018 ObjectDB leak 根因；对比 excavate:28/pvp:40 都 clear）
+	_clear_battle_resources()
 	SceneManager.change_scene(STAGE_DONE_PATH if bool(r["won"]) else STAGE_FAILED_PATH)
 
 

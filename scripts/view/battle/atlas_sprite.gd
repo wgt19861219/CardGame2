@@ -8,6 +8,7 @@ extends RefCounted
 var _parts: Dictionary = {}
 var _sheet_image: Image = null
 var _loaded: bool = false
+var _part_texture_cache: Dictionary = {}  # part_name→ImageTexture 缓存（同 AtlasSprite 跨 FCA 实例复用，减重复 get_region+create_from_image）
 
 
 func load_atlas(plist_path: String) -> bool:
@@ -148,6 +149,8 @@ func _load_sheet_image_from_bytes(png_bytes: PackedByteArray) -> void:
 
 
 func get_part_texture(part_name: String) -> Texture2D:
+	if _part_texture_cache.has(part_name):
+		return _part_texture_cache[part_name]
 	if not _parts.has(part_name) or _sheet_image == null:
 		return null
 	var info: Dictionary = _parts[part_name]
@@ -162,7 +165,9 @@ func get_part_texture(part_name: String) -> Texture2D:
 		img.rotate_90(1)
 	else:
 		img = _sheet_image.get_region(region)
-	return ImageTexture.create_from_image(img)
+	var tex := ImageTexture.create_from_image(img)
+	_part_texture_cache[part_name] = tex  # 缓存（跨 FCA 实例共享同 AtlasSprite 时复用，546 DummyTexture/重复 ImageTexture leak 缓解）
+	return tex
 
 
 func get_part_source_size(part_name: String) -> Vector2:
@@ -195,5 +200,6 @@ func is_loaded() -> bool:
 
 func unload() -> void:
 	_parts.clear()
+	_part_texture_cache.clear()
 	_sheet_image = null
 	_loaded = false
