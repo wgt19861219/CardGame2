@@ -19,6 +19,9 @@ screenshots/
 # plan/worktree 工具临时产物
 .zcode/
 
+# brainstorming 视觉伴侣临时产物
+.superpowers/
+
 # OS
 Thumbs.db
 .DS_Store
