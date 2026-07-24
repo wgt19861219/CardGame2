@@ -69,23 +69,47 @@ var _frame: Control = null  # .tscn %Frame（base 容器，fill 动态数据的�
 
 # 源 create(param) :264-278。param={id, doSell, doUse, doCheck, doCompose}（package.lua 注入）。
 # 本项目 cell_data 含 {id, makeId, amount, category, type, needAmount}（EquipmentClassifier 输出）。
-func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData) -> void:
+func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData, p_modal: bool = false) -> void:
 	cm = p_cm
 	pd = p_pd
 	_update_cell_fields(p_cell_data)
 	setup()
-	# 非模态浮层（照源 equipboard.mainLayer 挂 package.mainLayer 无遮罩）：shade 透明 + IGNORE，
-	# 不拦底层 cell 点击——用户可点其他物品切换 equipboard 内容（源 doSelectEquip :197-198 refresh）。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# PopWindow 根 Control 默认 STOP（吞底层点击=模态弹窗）；非模态须根 IGNORE，
-	# 让 frame 外区域（cell 网格）点击穿透到下层 package（根 IGNORE 不影响子按钮 STOP 独立命中）。
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if p_modal:
+		# 模态浮层（handbook 等场景用）：shade 半透明 + STOP 吞点击，点 shade 关闭弹窗
+		if shade_layer != null:
+			shade_layer.color.a = 0.6
+			shade_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+			if not shade_layer.gui_input.is_connected(_on_shade_click_outside):
+				shade_layer.gui_input.connect(_on_shade_click_outside)
+	else:
+		# 非模态浮层（package 场景照源 equipboard.mainLayer 挂 package.mainLayer 无遮罩）：
+		# shade 透明 + IGNORE，不拦底层 cell 点击——用户可点其他物品切换 equipboard 内容
+		# （源 doSelectEquip :197-198 refresh）。
+		if shade_layer != null:
+			shade_layer.color.a = 0
+			shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# PopWindow 根 Control 默认 STOP（吞底层点击=模态弹窗）；非模态须根 IGNORE，
+		# 让 frame 外区域（cell 网格）点击穿透到下层 package（根 IGNORE 不影响子按钮 STOP 独立命中）。
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
+	# 模态弹窗 frame 居中（package 非模态用 .tscn 固定 offset 118,154.5 在右侧，
+	# handbook 模态需居中屏幕：(960-frame_w)/2, (640-frame_h)/2）
+	if p_modal and _frame != null:
+		var fw: float = _frame.offset_right - _frame.offset_left
+		var fh: float = _frame.offset_bottom - _frame.offset_top
+		_frame.offset_left = (960.0 - fw) * 0.5
+		_frame.offset_top = (640.0 - fh) * 0.5
+		_frame.offset_right = _frame.offset_left + fw
+		_frame.offset_bottom = _frame.offset_top + fh
 	register_on_enter(_play_slide_in)
 	register_on_enter(_relayout_att_bg)   # 首次入树后重算 att_bg（setup 时未入树 min 不可靠，致首次介绍/定价重叠）
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+
+
+# 模态 shade 点击外部关闭弹窗（handbook 等场景）
+func _on_shade_click_outside(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		remove_window()
 
 
 # 更新 cell 字段（setup_panel 首次 + refresh 切换共用，源 doSelectEquip self.selectid=id + refreshPropType）。
@@ -333,5 +357,5 @@ func _show_toast(text: String) -> void:
 	if Engine.is_editor_hint():
 		return
 	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_text"):
-		toast_node.show_text(text)
+	if toast_node != null and toast_node.has_method("show_message"):
+		toast_node.show_message(text)

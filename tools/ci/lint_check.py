@@ -36,7 +36,6 @@ MAGIC_WHITELIST: frozenset[float] = frozenset({-1.0, 0.0, 1.0})
 LOGIC_MAX_LINES = 300
 SCENE_MAX_LINES = 400
 # 这些引擎虚函数回调允许缺省返回类型（约定 -> void，但 body 可空）
-SCENE_DIR_HINT = "scenes/"
 # 行数检查扩展目录：scenes/scripts/ui/scripts/view 是 View 层（≤400），
 # scripts/autoload 是 Logic 层入口（≤300，含 player_data/game_data 等核心）。
 # LINT001-004（类型/魔法数）仍只扫 LOGIC_DIRS，仅堵场景/UI 脚本超长盲区。

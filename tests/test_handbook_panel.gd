@@ -158,16 +158,17 @@ func test_builder_title_text_all_12_indices() -> void:
 
 
 func test_open_cell_click_opens_equipcraft() -> void:
-	# #1 源 doSelectElement :105-109：点已解锁装备弹 EquipCraftPanel（context=handbook,hero=null）
+	# #1 源 doSelectElement :105-109 → equipcraft.createPanel :1277 equipLayer = equipboard.init("ofcraft")
+	# 装备详情面板（equipboard base，属性/描述/卖出）。本项目复用 EquipboardPanel（package 已实现）。
 	var panel: HandbookPanel = _make_panel()
 	var root: Node = panel.get_parent()
 	var before: int = root.get_child_count()
 	var eid: int = int((panel._list()[0] as Dictionary)["id"])
-	panel._handle_cell_click(true, eid)   # is_open=true → _open_equipcraft
-	assert_eq(root.get_child_count(), before + 1, "弹出 EquipCraftPanel 子节点")
-	var craft: Node = root.get_child(root.get_child_count() - 1)
-	assert_true(craft is EquipCraftPanel, "新节点是 EquipCraftPanel")
-	craft.queue_free()
+	panel._handle_cell_click(true, eid)   # is_open=true → _open_equipcraft → EquipboardPanel
+	assert_eq(root.get_child_count(), before + 1, "弹出 EquipboardPanel 子节点")
+	var board: Node = root.get_child(root.get_child_count() - 1)
+	assert_true(board is EquipboardPanel, "新节点是 EquipboardPanel")
+	board.queue_free()
 	panel.remove_window()
 	root.queue_free()
 

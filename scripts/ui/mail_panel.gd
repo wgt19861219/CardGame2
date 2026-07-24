@@ -22,6 +22,15 @@ const ROW_SIZE: Vector2 = Vector2(340.0, 90.0)   # 源 createMail:451 board setC
 const ICON_SIZE: Vector2 = Vector2(40.0, 40.0)
 const NAME_FONT: int = 20                # 源 createMail:495 size 20
 const SMALL_FONT: int = 18               # 源 createMail:510/538 size 18
+const ICON_BG_DEFAULT: String = "res://assets/ui/alpha/HVGA/task_icon_bg.png"   # 源 mailbox.lua:54
+const ICON_BG_SIZE: Vector2 = Vector2(50.0, 50.0)
+const ICON_BG_POS: Vector2 = Vector2(10.0, 15.0)
+const ICON_FRAME_TEX: String = "res://assets/ui/alpha/HVGA/gocha.png"   # 源 mailbox.lua:569 icon_frame
+const ICON_FRAME_SIZE: Vector2 = Vector2(50.0, 50.0)
+const ICON_FRAME_POS: Vector2 = Vector2(10.0, 15.0)
+const NAME_COLOR: Color = Color(67.0 / 255.0, 59.0 / 255.0, 56.0 / 255.0)   # 源 :502 ccc3(67,59,56)
+const FROM_COLOR: Color = Color(138.0 / 255.0, 56.0 / 255.0, 1.0 / 255.0)   # 源 :532 ccc3(138,56,1)
+const DATE_COLOR: Color = Color(157.0 / 255.0, 117.0 / 255.0, 89.0 / 255.0)   # 源 :547 ccc3(157,117,89)
 const MailDetailPanel = preload("res://scripts/ui/mail_detail_panel.gd")
 
 var pd: PlayerData
@@ -67,6 +76,14 @@ func _add_mail_row(mail: Dictionary) -> void:
 	row.add_theme_stylebox_override("normal", sb)
 	row.add_theme_stylebox_override("hover", sb)
 	row.add_theme_stylebox_override("pressed", sb)
+	# 源 createMail:482 icon_bg（task_icon_bg.png，icon 底框）
+	var icon_bg := TextureRect.new()
+	icon_bg.texture = load(String(mail.get("iconbg", ICON_BG_DEFAULT)))
+	icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_bg.size = ICON_BG_SIZE
+	icon_bg.position = ICON_BG_POS
+	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(icon_bg)
 	var iconid: int = int(mail.get("iconid", 0))
 	if iconid > 0:
 		# 源 :556 info.iconid → readequip.createIcon（装备图标）
@@ -75,7 +92,14 @@ func _add_mail_row(mail: Dictionary) -> void:
 		equip_icon.scale = Vector2(0.65, 0.65)
 		row.add_child(equip_icon)
 	elif mail.has("iconres") and String(mail["iconres"]).length() > 0:
-		# 源 :563 info.iconres → icon_frame(gocha) + icon(iconres)
+		# 源 :563-575 icon_frame gocha.png（icon 底框）+ icon(iconres)
+		var icon_frame := TextureRect.new()
+		icon_frame.texture = load(ICON_FRAME_TEX)
+		icon_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_frame.size = ICON_FRAME_SIZE
+		icon_frame.position = ICON_FRAME_POS
+		icon_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(icon_frame)
 		var icon := TextureRect.new()
 		icon.texture = load(String(mail["iconres"]))
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -88,6 +112,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	name_l.position = Vector2(70, 12)
 	name_l.size = Vector2(250, 24)
 	name_l.add_theme_font_size_override("font", NAME_FONT)
+	name_l.add_theme_color_override("font_color", NAME_COLOR)   # 源 :502 ccc3(67,59,56)
 	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(name_l)
 	var from_l := Label.new()
@@ -95,6 +120,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	from_l.position = Vector2(70, 38)
 	from_l.size = Vector2(250, 20)
 	from_l.add_theme_font_size_override("font", SMALL_FONT)
+	from_l.add_theme_color_override("font_color", FROM_COLOR)   # 源 :532 ccc3(138,56,1)
 	from_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(from_l)
 	var date_l := Label.new()
@@ -102,6 +128,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	date_l.position = Vector2(70, 60)
 	date_l.size = Vector2(250, 20)
 	date_l.add_theme_font_size_override("font", SMALL_FONT)
+	date_l.add_theme_color_override("font_color", DATE_COLOR)   # 源 :547 ccc3(157,117,89)
 	date_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(date_l)
 	row.pressed.connect(_on_mail_clicked.bind(int(mail["id"])))

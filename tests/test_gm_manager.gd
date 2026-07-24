@@ -132,3 +132,11 @@ func test_set_money_amount_zero_clears_diamond() -> void:
 	assert_eq(pd.diamond, 5000, "默认 diamond=5000（apply_default_data）")
 	GmManager.execute(pd, cm, {"_set_money": {"_type": "diamond", "_amount": 0}})
 	assert_eq(pd.diamond, 0, "amount=0 应清零 diamond")
+
+
+# 第九轮 P2-2：源 gm_cmd handler（local_server.lua:1912-2093）无 _set_fragments 命令；
+# 本项目原自创该命令违复刻铁律，已删。cmd 含 _set_fragments 应被忽略（不崩，GM 仍正常返 _reset）。
+func test_set_fragments_ignored() -> void:
+	var pd := _make_player()
+	var r: Dictionary = GmManager.execute(pd, cm, {"_set_fragments": [{"_id": 1001, "_count": 5}]})
+	assert_true(r.has("_reset"), "_set_fragments 已删（源无此命令），cmd 含之应被忽略，GM 仍正常返 _reset")

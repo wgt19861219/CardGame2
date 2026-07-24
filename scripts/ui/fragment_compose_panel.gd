@@ -200,5 +200,5 @@ func _show_toast(text: String) -> void:
 	if Engine.is_editor_hint():
 		return
 	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_text"):
-		toast_node.show_text(text)
+	if toast_node != null and toast_node.has_method("show_message"):
+		toast_node.show_message(text)

@@ -33,7 +33,9 @@ static func enhance_equip(pd: PlayerData, inst_id: int, slot: int, materials: Di
 		var need: int = int(materials[mat_id])
 		if need <= 0 or int(pd.items.get(int(mat_id), 0)) < need:
 			return false   # 材料不足
-		add_exp += float(equip_table.get(str(int(mat_id)), {}).get("Enhance Value", 0)) * need
+		var mat_equip: Dictionary = equip_table.get(str(int(mat_id)), {})
+		# 源 equipstrengthen.lua:614 (Enhance Value or Exp or 0) * amount — 材料无 Enhance Value 时回退 Exp
+		add_exp += float(mat_equip.get("Enhance Value", mat_equip.get("Exp", 0))) * need
 	if add_exp <= 0.0:
 		return false   # 源 :577 moneyCost<=0 doSpeak NO_MATERIAL_ADDED
 	var quality: int = int(equip_table.get(str(item_id), {}).get("Quality", 0))

@@ -239,9 +239,9 @@ func _on_cell_input(event: InputEvent, cell: Control, is_open: bool, eid: int) -
 		_press_pos = mb.position
 		_press_time = _now()
 		_is_changing_page = false
-		cell.scale = Vector2(PRESS_SCALE, PRESS_SCALE)   # 源 doEquipTouch :120
+		_set_icon_scale(cell, PRESS_SCALE)   # 源 doEquipTouch :120 只缩 icon（不缩 bg/cell）
 	else:
-		cell.scale = Vector2.ONE
+		_set_icon_scale(cell, 1.0)   # 源 :126 icon 还原 1.0
 		var dx: float = mb.position.x - _press_pos.x
 		var dy: float = mb.position.y - _press_pos.y
 		# 横向滑动翻页(源 doChangePageTouch :157-164:水平为主 + |dx|>100 + 时间<1s)
@@ -251,6 +251,17 @@ func _on_cell_input(event: InputEvent, cell: Control, is_open: bool, eid: int) -
 		elif not _is_changing_page:
 			_handle_cell_click(is_open, eid)   # 源 doEquipTouch :127-134
 		_press_pos = Vector2.ZERO
+
+
+# 源 doEquipTouch :120/126 icon setScale(0.95/1)。cell 子节点：[0]=bg [1]=icon (open) 或 icon_bg (lock) [2]=name。
+# 只缩 [1]（含 frame+equip+amount 或 icon_bg+lock），不缩 bg 和 name（源照搬）。
+func _set_icon_scale(cell: Control, scale_factor: float) -> void:
+	if cell.get_child_count() < 2:
+		return
+	var icon_node: CanvasItem = cell.get_child(1) as CanvasItem
+	if icon_node == null:
+		return
+	icon_node.scale = Vector2(scale_factor, scale_factor)
 
 
 # 源 doEquipTouch :127-134 + doSelectElement :105-109。isOpen → #1 弹 equipcraft / 否则 #2 Toast。
@@ -263,11 +274,20 @@ func _handle_cell_click(is_open: bool, eid: int) -> void:
 
 
 # #1 源 doSelectElement :105-109:equipcraft.create({context="handbook", eid=id})。
-# hero=null(handbook 无英雄上下文,只看合成树/获取途径),context="handbook"。
+# 源 doSelectElement :105-109 → equipcraft.create({context="handbook", eid=id}) → createPanel :1277
+# equipLayer = equipboard.init("ofcraft", {id, level})。equipboard base = 装备详情面板（属性/描述/卖出）。
+# 当前 EquipCraftPanel 直接显示合成树（craftTree）而非 equipboard 详情，跟源初始状态不符。
+# 修正：handbook 点装备先弹 EquipboardPanel（装备详情，照源 equipLayer ofcraft），复用 package 已实现的 EquipboardPanel。
 func _open_equipcraft(eid: int) -> void:
-	var panel := EquipCraftPanel.new("equipcraft", {})
-	panel.setup_panel(eid, _cm, _player, null, "handbook", 0)
+	var cell_data: Dictionary = {
+		"id": eid,
+		"amount": int(_player.items.get(eid, 0)),
+	}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell_data, _cm, _player, true)   # modal=true（handbook 模态弹窗，居中 + 点外关闭）
 	panel.show_window(get_parent())
+	# handbook 自身 z_index=100，弹窗必须 z>100 才能浮在 handbook 上方
+	panel.z_index = 101
 
 
 func _now() -> float:
@@ -278,5 +298,5 @@ func _show_toast(text: String) -> void:
 	if Engine.is_editor_hint():
 		return
 	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_text"):
-		toast_node.show_text(text)
+	if toast_node != null and toast_node.has_method("show_message"):
+		toast_node.show_message(text)

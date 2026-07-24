@@ -125,11 +125,17 @@ func _play_damage(pos: Vector2) -> void:
 	var base_s: float = DAMAGE_SCALE_BASE * mult
 	scale = Vector2(base_s, base_s)
 	var dist: float = DAMAGE_DIST_CRIT if _crit else DAMAGE_DIST
+	var dur1: float = LIFE * 0.2   # 源 popup.lua:32 duration = life*0.2
+	var dur2: float = LIFE * 0.8   # 源 popup.lua:37 duration = life*0.8
 	var t := create_tween()
+	# 段1（dur1）：MoveBy 上飘 dist + EaseExponentialOut + ScaleBy×2 并行（源 :34-36）
 	t.set_parallel(true)
-	t.tween_property(self, "position:y", base_y - dist - 60.0, LIFE).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "scale", Vector2(base_s * SCALE_BY, base_s * SCALE_BY), LIFE * 0.2)
-	t.tween_property(self, "modulate:a", 0.0, LIFE * 0.8).set_delay(LIFE * 0.2)
+	t.tween_property(self, "position:y", base_y - dist, dur1).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "scale", Vector2(base_s * SCALE_BY, base_s * SCALE_BY), dur1)
+	# 段2（dur2）：续上飘 60 + EaseIn(rate3) + FadeOut 并行（源 :38-40）
+	t.chain().set_parallel(true)
+	t.tween_property(self, "position:y", base_y - dist - 60.0, dur2).set_ease(Tween.EASE_IN)
+	t.tween_property(self, "modulate:a", 0.0, dur2)
 	t.chain().tween_callback(queue_free)
 
 

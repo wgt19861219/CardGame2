@@ -189,8 +189,15 @@ func _delete_secret_file() -> void:
 	if _persistent_secret:
 		return
 	if _secret_file != "" and FileAccess.file_exists(_secret_file):
-		DirAccess.remove_absolute(_secret_file)
-		print("[MCP] Auth secret file deleted")
+		var on_disk := FileAccess.get_file_as_string(_secret_file)
+		# 多 editor 实例共享同一固定路径 mcp_editor.key。本实例退出只删自己生成的 key,
+		# 避免误删仍存活实例的 key(实例 A _exit_tree 不应清掉实例 B 的 secret 文件)。
+		# on_disk 读失败(权限/IO)时 FileAccess 返 "" != _secret → 不删(安全侧:宁可暂留也不误删)。
+		if on_disk == _secret:
+			DirAccess.remove_absolute(_secret_file)
+			print("[MCP] Auth secret file deleted")
+		else:
+			push_warning("[MCP] Secret file content mismatch — belongs to another instance; not deleted: %s" % _secret_file)
 	_secret_file = ""
 	_secret = ""
 
