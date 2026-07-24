@@ -19,6 +19,7 @@ func _ready() -> void:
 	get_tree().root.set_theme(_theme)
 
 
-## 返回全局 Theme（autoload 就绪后非空）。
+## 返回全局 Theme。
+## 契约：_ready 成功后非空；若 default_theme.tres 加载失败（_ready 已 push_error），返回 null，调用方需 null 检查。
 func get_theme() -> Theme:
 	return _theme
