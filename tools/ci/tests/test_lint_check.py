@@ -149,5 +149,21 @@ class LintLineCountTest(unittest.TestCase):
             self.assertNotIn(lint_check.RULE_TOO_LONG, rules, "豁免清单中的 mcp_bridge.gd 不应报超长")
 
 
+class LintAutoloadScanTest(unittest.TestCase):
+    def test_autoload_scanned_for_magic_number(self) -> None:
+        # line 32：autoload 也扫 LINT001-004（Logic 入口核心，非 LOGIC_DIRS 但 lint 专用 LINT_TYPE_DIRS）
+        with tempfile.TemporaryDirectory() as root:
+            autoload_dir = os.path.join(root, "scripts", "autoload")
+            os.makedirs(autoload_dir)
+            with open(os.path.join(autoload_dir, "bad.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends Node\nvar x: int = 42\n")
+            rules = {v.rule for v in lint_check.run(root)}
+            self.assertIn(
+                lint_check.RULE_MAGIC,
+                rules,
+                "autoload 应被 LINT001 魔法数扫描（line 32 盲区已堵）",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

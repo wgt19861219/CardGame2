@@ -26,6 +26,11 @@ from _gdscript_utils import (  # type: ignore  # noqa: E402
 )
 from lark import Token, Tree  # noqa: E402
 
+# LINT001-004 扫描目录集：Logic 层 + autoload。autoload 是 Logic 入口（含 game_data/player_data
+# 等核心），应查类型/魔法数；但其 extends Node/CanvasLayer 是引擎单例，不能进 LOGIC_DIRS（否则
+# layer_check 会当 Logic 层误报禁 Node），故 lint 专用此集，layer_check 仍只扫 LOGIC_DIRS。
+LINT_TYPE_DIRS: tuple[str, ...] = LOGIC_DIRS + ("scripts/autoload",)
+
 RULE_MAGIC = "LINT001"
 RULE_UNTYPED_VAR = "LINT002"
 RULE_UNTYPED_FUNC_RET = "LINT003"
@@ -38,7 +43,7 @@ SCENE_MAX_LINES = 400
 # 这些引擎虚函数回调允许缺省返回类型（约定 -> void，但 body 可空）
 # 行数检查扩展目录：scenes/scripts/ui/scripts/view 是 View 层（≤400），
 # scripts/autoload 是 Logic 层入口（≤300，含 player_data/game_data 等核心）。
-# LINT001-004（类型/魔法数）仍只扫 LOGIC_DIRS，仅堵场景/UI 脚本超长盲区。
+# LINT001-004（类型/魔法数）扫 LINT_TYPE_DIRS（LOGIC_DIRS + autoload，autoload 是 Logic 入口核心，line 32 堵盲区）。
 LINE_COUNT_DIRS: tuple[str, ...] = (
     "scenes", "scripts/autoload", "scripts/ui", "scripts/view",
 )
@@ -197,7 +202,7 @@ def _find_root_level_gds(root: str) -> list[str]:
 
 def run(root: str) -> list[Violation]:
     """扫描 Logic 层全部 .gd，返回 lint 违规。"""
-    files = find_gd_files(root, LOGIC_DIRS)
+    files = find_gd_files(root, LINT_TYPE_DIRS)
     violations: list[Violation] = []
     for rel in files:
         tree = parse_file(root, rel)
