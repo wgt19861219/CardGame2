@@ -187,6 +187,7 @@ func do_eat_hero(inst_id: int) -> void:
 	if pd.remove_item(_item_id, 1) <= 0:
 		return
 	pd.hero_manager.add_hero_exp(inst_id, _exp_per_pill)
+	GameData.save()   # 照源 main.lua:1824 consume_item/eat_exp 后即时存（吃经验药扣物品+加英雄经验）
 	_play_bar_anim(inst_id, olevel, oexp, hero.level, hero.exp)
 	_show_eat_amount(inst_id)
 

@@ -176,6 +176,7 @@ func _on_vitality_plus() -> void:
 		Toast.show_message("今日购买体力次数已达上限")
 		return
 	if pd.buy_vitality():
+		GameData.mark_save_dirty()   # 照源 local_server:1832 买体力脏标（扣钻石+体力+120，60s/退出刷）
 		Toast.show_message("购买体力 +120")
 		_refresh_status()
 	else:

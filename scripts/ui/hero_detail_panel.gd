@@ -477,6 +477,7 @@ func perform_evolve() -> bool:
 	var ok: bool = hero_manager.evolve(hero.inst_id)
 	if ok:
 		AudioPlayer.play_sfx("common_hero_upgrade")   # 源 heroDetail.upgradeReply（升星回复成功，soundres.lua:223）
+		GameData.save()   # 照源 main.lua:1991 evolve 回调后即时存（升星扣碎片+金币）
 	else:
 		AudioPlayer.play_sfx("common_alert")          # 源 heroDetail.clickDisabledUpgrade（条件不满足拒，soundres.lua:216）
 	return ok
@@ -489,6 +490,7 @@ func perform_upgrade_rank() -> bool:
 	var ok: bool = hero_manager.upgrade_rank(hero.inst_id)
 	if ok:
 		AudioPlayer.play_sfx("common_hero_upgrade")
+		GameData.save()   # 照源即时存（进阶：6 槽穿齐 Hero_equip[rank] → rank+1 重置槽重算 gs）
 	else:
 		AudioPlayer.play_sfx("common_alert")
 	return ok
@@ -498,7 +500,10 @@ func perform_upgrade_rank() -> bool:
 func perform_upgrade_skill(idx: int) -> bool:
 	if pd == null or hero == null:
 		return false
-	return pd.upgrade_hero_skill(hero.inst_id, idx)
+	var ok: bool = pd.upgrade_hero_skill(hero.inst_id, idx)
+	if ok:
+		GameData.mark_save_dirty()   # 照源 local_server:1480 技能升级脏标（扣技能点+金币，60s/退出刷）
+	return ok
 
 
 # 觉醒（单机化新增）：AwakeHelper.awake_hero 扣 50 专属碎片 + hero.awake=true。
@@ -512,6 +517,7 @@ func perform_awake() -> bool:
 		AudioPlayer.play_sfx("common_alert")   # 碎片不足或其他校验失败
 		return false
 	AudioPlayer.play_sfx("common_hero_upgrade")   # 觉醒成功音效（复用升星音）
+	GameData.save()   # 觉醒即时存（扣50专属碎片+awake=true；本项目碎片觉醒方案，源 protoAwake 死代码）
 	_show_awake_popup()
 	return true
 

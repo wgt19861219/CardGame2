@@ -486,25 +486,22 @@ func _load_tex(res_path: String) -> Texture2D:
 
 
 # ---- 领奖 / 去往回调 ----
-func _on_claim_main(chain: int, tid: int) -> void:
-	var r: Dictionary = _tm.claim_task_reward(_player, chain, tid, _cm)
-	# 源 doClickTask :1024-1035 领奖成功走 announce 弹窗（title=TASK.COMPLETION_+name），单机降级 Toast；
-	# 失败源 :1037 TASK.TASK_SUBMISSION_FAILED。
+# 领奖公共尾巴（源 doClickTask :1024-1037 成功 announce 降级 Toast + 失败 TASK 文案）。
+func _claim_reward(r: Dictionary, fail_key: String) -> void:
 	if bool(r["ok"]):
-		Toast.show_message("领取成功")  # 降级文案（源 announce 走 TASK.COMPLETION_+name，无单句 LSTR）
+		Toast.show_message("领取成功")
+		GameData.mark_save_dirty()   # 照源 local_server:4480 领奖脏标（60s/退出刷）
 		_refresh_ui()
 	else:
-		Toast.show_message(_cm.get_lstr("TASK.TASK_SUBMISSION_FAILED"))
+		Toast.show_message(_cm.get_lstr(fail_key))
+
+
+func _on_claim_main(chain: int, tid: int) -> void:
+	_claim_reward(_tm.claim_task_reward(_player, chain, tid, _cm), "TASK.TASK_SUBMISSION_FAILED")
 
 
 func _on_claim_daily(job_id: int) -> void:
-	var r: Dictionary = _tm.claim_job_reward(_player, job_id, _cm)
-	# 源 doClickInTaskHandler :939 未完成→TASK.THE_TASK_HAS_NOT_BEEN_COMPLETED；成功走 announce（同 main）。
-	if bool(r["ok"]):
-		Toast.show_message("领取成功")  # 降级文案（源 announce，无单句 LSTR）
-		_refresh_ui()
-	else:
-		Toast.show_message(_cm.get_lstr("TASK.THE_TASK_HAS_NOT_BEEN_COMPLETED"))
+	_claim_reward(_tm.claim_job_reward(_player, job_id, _cm), "TASK.THE_TASK_HAS_NOT_BEEN_COMPLETED")
 
 
 # 源 createFastButton fast_handler:按 Task Progress Type 跳场景(task.lua:651-738 共 13 type)。

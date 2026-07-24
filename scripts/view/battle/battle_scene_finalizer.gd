@@ -25,6 +25,7 @@ static func finalize_excavate(scene) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var r: Dictionary = ExcavateBattle.finalize_excavate_battle(mgr, scene.engine, excavate_id, hero_list, enemy_list, now, GameData.player)
 	GameData.pending_excavate = {"id": excavate_id, "won": bool(r["won"])}
+	GameData.mark_save_dirty()  # 照源 local_server:858 关卡结算脏标（excavate 占领发奖完成，60s/退出刷）
 	GameData.battle_context.clear()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
 
@@ -36,6 +37,7 @@ static func finalize_pvp(scene) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var r: Dictionary = LadderBattle.finalize_pvp_battle(ladder, scene.engine, GameData.player, scene.cm, scene.engine.rng, now)
 	GameData.pending_pvp = {"won": bool(r["won"]), "reply": r["reply"]}
+	GameData.mark_save_dirty()  # 照源 local_server:3282 PVP 结算脏标（60s/退出刷）
 	GameData.battle_context.clear()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
 
@@ -59,6 +61,7 @@ static func finalize_stage(scene) -> void:
 		"unit_list": _snapshot_units(scene.engine),  # battleStatist 战斗统计弹窗用（源 ed.engine.unit_list，切场景销毁 engine 故快照）
 	}
 	GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
+	GameData.save()  # 照源 main.lua:2033 exitStageReply 后即时存（关卡结算发奖完成）
 	SceneManager.change_scene(STAGE_DONE_PATH if bool(r["won"]) else STAGE_FAILED_PATH)
 
 

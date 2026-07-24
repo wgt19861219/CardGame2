@@ -266,6 +266,7 @@ func _on_enhance_done(success: bool) -> void:
 	_show_hint(_T(TEXT_SUCCESS_KEY) if success else _T(TEXT_FAIL_KEY))
 	if not success:
 		return
+	GameData.save()   # 照源 equipstrengthen.lua:642 强化成功后即时存（装备经验+金币消耗+recalcHeroGs）
 	# Phase 8 EE→SU 连续（单机化）：强化成功 + EE done → switch SU（源独立 SkillUpgrade 解锁触发，无 playerlimit 故连续）
 	if pd != null and pd.tutorial_manager != null:
 		var tm: TutorialManager = pd.tutorial_manager

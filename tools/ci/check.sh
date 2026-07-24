@@ -17,7 +17,10 @@ echo "=== 2/3 Headless 导入（class_name 注册前提，首次/资源变动后
 "$GODOT" --headless --import --path "$ROOT"
 
 echo "=== 3/3 GUT 单测（headless）==="
-GUT_OUTPUT="$("$GODOT" --headless --path "$ROOT" -s res://addons/gut/gut_cmdln.gd -gexit 2>&1)" || {
+# GODOT_TEST_MODE=1：让 GameData autoload 走测试隔离分支（不 load 不写真实存档），
+# 避免 test_main_scene_entry 等 add main_scene 触发登录首存写盘污染下次门禁 _ready load
+# （[[gamedata-save-pollutes-user-save-test-isolation]]）。
+GUT_OUTPUT="$(GODOT_TEST_MODE=1 "$GODOT" --headless --path "$ROOT" -s res://addons/gut/gut_cmdln.gd -gexit 2>&1)" || {
 	echo "$GUT_OUTPUT"
 	echo "❌ GUT 单测失败（非零退出）"
 	exit 1

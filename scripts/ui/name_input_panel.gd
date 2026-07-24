@@ -68,5 +68,6 @@ func _on_confirm() -> void:
 		Toast.show_message("名称不能为空")
 		return
 	_pd.set_player_name(new_name)
+	GameData.mark_save_dirty()   # 照源 local_server:2182/2842 改名脏标（60s/退出刷）
 	Toast.show_message("名称已修改")
 	remove_window()

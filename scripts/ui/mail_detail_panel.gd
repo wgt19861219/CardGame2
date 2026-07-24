@@ -216,6 +216,7 @@ func _on_overfull_confirmed() -> void:
 
 func _claim_and_close() -> void:
 	pd.mailbox.claim_attach(_mail_id, pd)
+	GameData.mark_save_dirty()   # 照源 local_server:4327/4480 邮件领奖脏标（60s/退出刷）
 	_close()
 
 

@@ -81,6 +81,7 @@ func _on_ok() -> void:
 		else:
 			Toast.show_message("兑换失败")
 		return
+	GameData.mark_save_dirty()   # 星商店购买脏标（扣灵魂石+产出，照源商店脏标模式 local_server:1281，60s/退出刷）
 	var loots: Array = r["loots"]
 	var box: String = String(r.get("box", ""))
 	var popup := PopTavernLoot.new("poptavernloot", {})

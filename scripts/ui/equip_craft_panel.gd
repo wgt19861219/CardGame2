@@ -176,6 +176,7 @@ func _perform_craft() -> void:
 	_is_crafting = true
 	var ok: bool = EquipCraftManager.synthesize_equip(pd, _craft_id)
 	if ok:
+		GameData.mark_save_dirty()   # 照源 local_server:1093 装备合成脏标（扣材料+金币+产出，60s/退出刷）
 		_play_craft_effect()   # 源 craftReply :400 → playCraftEffect（材料飞行+refresh+重建+puton）
 	else:
 		AudioPlayer.play_sfx("common_alert")   # 源 equipcraftlsr craftFailed :51

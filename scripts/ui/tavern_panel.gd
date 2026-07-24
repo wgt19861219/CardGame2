@@ -307,6 +307,7 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 		TavernData.use_free_tavern(p_player, tavern_type, now)
 	# 源 network.lua:1295 服务端回复后 refreshFirstTavern 置首抽标记；单机化抽卡成功后直调。
 	TavernData.refresh_first_tavern(p_player, tavern_type, is_ten)
+	GameData.mark_save_dirty()   # 照源 local_server:986/1021 抽卡脏标（扣钻石+产出，60s/退出刷）
 	_result_label.text = "产出已展示"
 	var loot_popup := PopTavernLoot.new("poptavernloot", {})
 	# 源 doTavernReply :198 create({type, times, loots, addition={cost}})：cost 来自当前抽卡消耗。

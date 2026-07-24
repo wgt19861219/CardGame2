@@ -135,6 +135,7 @@ func _make_buy_confirm_handler(slot: int) -> Callable:
 	return func() -> void:
 		var ok: bool = shop_mgr.buy(shop_id, slot, pd, cm)
 		if ok:
+			GameData.mark_save_dirty()   # 照源 local_server:1281 商店购买脏标（扣货币+产出，60s/退出刷）
 			Toast.show_message("购买成功")   # 源 shop.lua:122 硬编码字面量（非 LSTR）
 			_show_talk("Purchase")   # 源 shop.lua:130 购买后对话
 		else:

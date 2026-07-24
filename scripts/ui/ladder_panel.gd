@@ -254,6 +254,7 @@ func _on_challenge(oppo_user_id: int) -> void:
 func _on_buy() -> void:
 	var reply: Dictionary = _ladder.handle({"_buy_battle_chance": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
 	if str(reply["_buy_battle_chance"]["result"]) == "success":
+		GameData.mark_save_dirty()   # 照源 local_server:3371 PVP 买次数脏标（扣钻石，60s/退出刷）
 		_fill_tab(_current_tab)
 	else:
 		Toast.show_message("钻石不足")

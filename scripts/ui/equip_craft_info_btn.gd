@@ -118,8 +118,9 @@ static func puton_equip(panel) -> void:
 		panel._show_toast(panel.cm.get_lstr(LSTR_REQUIRED_HERO_LEVEL) % int(judge[1]))   # 源 :529
 		return
 	if panel.pd != null and panel.pd.hero_manager != null and panel.hero != null:
-		panel.pd.hero_manager.wear_equip(panel._hid, panel._sid)   # 源 :538-541 send wear_equip
-		panel.equipped_changed.emit()                              # 通知调用方刷新（HeroDetailPanel refresh_content）
+		if panel.pd.hero_manager.wear_equip(panel._hid, panel._sid):   # 源 :538-541 send wear_equip
+			GameData.save()   # 照源 main.lua:2013 putonReply 后即时存（装备穿戴）
+			panel.equipped_changed.emit()                              # 通知调用方刷新（HeroDetailPanel refresh_content）
 	panel.remove_window()                                          # 源 putonReply :570 destroy
 
 
