@@ -1,7 +1,8 @@
 # CardGame2 AGENTS.md
 
 > **适用范围**：本目录及子目录。
-> **文件定位**：单一项目配置（Godot 卡牌手游复刻项目）。本文件自包含，不依赖 `@import`。
+> **文件定位**：单一项目配置（Godot 卡牌游戏，原 Axmol/Lua 手游的迁移已完成，现进入 Godot 原生适配与优化阶段）。本文件自包含，不依赖 `@import`。
+> **单一来源**：本文件是项目方向（阶段/工作流/红线）的**单一来源**；`CLAUDE.md` 为 Claude 专用镜像，二者必须同步，**改方向必须同步两处**。
 
 ---
 
@@ -9,7 +10,7 @@
 
 | 维度 | 规则 |
 |------|------|
-| 🎯 核心模式 | **源码即设计**——读源 Lua → 翻译为 GDScript，禁设计/禁裁剪（见「项目铁律」） |
+| 🎯 核心模式 | **迁移已完成，进入 Godot 原生适配/优化阶段**——源仅作参考，以设计者视角重构/优化（见「项目阶段」） |
 | 🌐 语言 | 简体中文回复（代码/命令/标识符除外） |
 | 📁 路径 | 文件引用一律绝对路径 |
 | 🛑 红线 | 见 Non-Negotiables 节 |
@@ -20,15 +21,16 @@
 
 ---
 
-## 项目铁律（最高优先级，凌驾所有流程之上）
+## 项目阶段（当前阶段：Godot 原生适配 / 优化）
 
-本项目 = `D:\workspace\projects\CardGameAxmol` 的 Godot **完全复刻**（单机化）。
+本项目源自 `D:\workspace\projects\CardGameAxmol`（Axmol/Lua 卡牌手游）的 Godot 迁移。**迁移阶段（读源 → 翻译为 GDScript）已基本完成，现进入 Godot 原生适配与优化阶段。**
 
-- **源码即设计**：原项目代码是唯一设计来源。**不做额外设计、不提 A/B/C 方案、不裁剪范围、不"优化"**——源里有什么就复刻什么，按源的结构/布局/逻辑/数值翻译为 Godot 等价代码。
-- **工作模式 = 读源 → 翻译**：每个功能先读源 Lua（`CardGameAxmol\Content\src\...`）搞清实现，再翻译成 GDScript。**禁用 brainstorming / writing-plans / blueprint 等"创造性设计"流程**（那是在发明源里没有的东西）。仅当遇到源无对应的纯 Godot 引擎适配（Cocos→Godot 节点映射、Spine 方案 C、cocos Studio→.tscn）时，做最小技术适配，目标仍是"等价复刻"。
-- **禁范围裁剪**：除非用户明确要分阶段，否则不搞"核心闭环 / 留迭代 / 最小可用"——源的完整表现（飘字 / 大招 / 结算 / 暂停 / HUD 全元素）都照搬。"先做核心再迭代"是违规信号。
-- **遇决策回头查源**：布局坐标、数值公式、UI 结构、流程分支全部从源代码读取，不猜测、不自行拍板。
-- **唯一允许的偏差 = 单机化**：去掉联机 / 服务端 / 登录依赖；玩法、表现、数值、流程全部照源。
+- **源代码地位 = 参考资料**：原 Axmol/Lua 源码（`CardGameAxmol\Content\src\...`）仅作行为参考与回归对照，**不再强制对齐**。允许基于 Godot 引擎特性、最佳实践、设计判断进行重构、优化、范围调整。
+- **工作模式 = 设计 → 实现**：以设计者视角评估现状，提出优化方案，**解禁** brainstorming / writing-plans / blueprint 等设计类 skill（见「项目工作流」）。遇到不确定的设计决策，主动与用户对齐。
+- **允许的改动**：架构重构、UI 重构（含 .tscn 重新设计、布局/视觉/交互优化）、性能优化、Godot 原生特性替代（如用 Theme/容器布局替代硬编码坐标）、范围裁剪与合并。
+- **参考边界**：数值/玩法/表现等核心行为可参考源以保持游戏完整性，但**不作硬约束**；优化时优先服务目标体验与工程质量。
+- **保留约束**：单机化（无联机/服务端/登录依赖）保持不变；三层分离、CI 门禁、测试覆盖等工程红线仍然有效（见下文各节）。
+- **受控偏离 vs 偷懒漏译（关键区分）**：迁移完成后的"有意识的设计裁剪/优化"（需记录决策依据）合规；迁移阶段的"偷懒漏译"（源有对应物而本项目缺）仍是债。判断时以**源是否有对应物**为准——源本就无集中 UI 主题/间距系统（ccc3 颜色调用散落 150 文件），故引入 Theme 系统属"受控偏离"非"漏译"；但影响玩法的 View 缺口仍需照源补全以保游戏完整性。
 
 旧 Godot 版 `D:\workspace\projects\CardGame`（知识库 `CardGameGodot/`）因四大病根作废，**仅作反面教材 + 复用产物（data/tables JSON、美术音频、踩坑经验）**，不复用其代码。
 
@@ -186,7 +188,7 @@ chore: 升级 Godot 到 4.7
 
 ## 项目概述
 
-- **项目类型**：游戏（Axmol/Lua 卡牌手游的 Godot 完全复刻，单机版）
+- **项目类型**：游戏（原 Axmol/Lua 卡牌手游的 Godot 版，单机，迁移已完成，当前为 Godot 原生适配/优化阶段）
 - **技术栈**：
   - 引擎：Godot 4.7（`D:\godot\Godot_v4.7-stable_win64_console.exe`）—— 由 4.6.3 升级（GUT 9.6.0 兼容验证，`tests/` 下 187 个 `test_*.gd` 文件；核查命令 `ls tests/test_*.gd | wc -l`）
   - 渲染器：gl_compatibility
@@ -313,9 +315,13 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/
 
 ## 项目工作流
 
-### 开发协议（READ → CODE → WRITE）
+### 开发协议（DESIGN → CODE → VERIFY）
 
-遵循 `D:\workspace\Obsidian\CLAUDE.md` 的 READ → CODE → WRITE 三阶段：**READ = 读源 Lua 搞清实现（不是想需求/做设计），CODE = 照源翻译为 GDScript**。本项目功能复刻**跳过 brainstorming / writing-plans / blueprint 等设计类 skill**（见「项目铁律」）。
+迁移阶段结束后，开发协议由原来的「READ 源 → 翻译」转为「**DESIGN → CODE → VERIFY**」：
+
+1. **DESIGN**：以设计者视角评估现状，用 brainstorming / writing-plans 等设计类 skill 与用户对齐目标与方案；源仅作参考。
+2. **CODE**：按对齐后的方案，以 Godot 原生方式实现（Theme、容器布局、.tscn 可视化设计等）。
+3. **VERIFY**：按「完成前强制检查」跑 CI 门禁，必要时附截图/实测值。
 
 ### 知识库三步硬检查点（本项目专属，防遗漏）
 
@@ -334,9 +340,9 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/
 
 ### 规划工作流（ecc:blueprint）
 
-> [!warning] 本项目是纯复刻，**功能开发不用 blueprint 做设计**（源即设计）。blueprint 仅用于组织大规模移植的工程路径与知识库回流。
+大规模重构/优化任务（如全量 UI 的 .tscn 重构）可用 `ecc:blueprint` 组织工程路径与知识库回流。
 
-用 `ecc:blueprint` 规划任务时，**必须遵循**知识库集成规则 `D:\workspace\Obsidian\.claude\rules\blueprint-kb-integration.md`：Research 先读本项目知识库并交叉验证源码 → Draft 把蓝图写入知识库 `系统文档/` → Review 发现回流知识库 → Register 更新首页/任务看板/MOC 时间线。
+用 `ecc:blueprint` 规划任务时，**必须遵循**知识库集成规则 `D:\workspace\Obsidian\.claude\rules\blueprint-kb-integration.md`：Research 先读本项目知识库 → Draft 把蓝图写入知识库 `系统文档/` → Review 发现回流知识库 → Register 更新首页/任务看板/MOC 时间线。
 
 ---
 
@@ -345,3 +351,4 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/
 | 日期 | 变更 |
 |------|------|
 | 2026-07-22 | 初版，基于通用模板 `C:\Users\wgt\ZCodeProject\templates\AGENTS-template.md` 重组；断开与 CLAUDE.md 的软链，AGENTS.md 独立自包含 |
+| 2026-07-24 | 迁移阶段结束，进入 Godot 原生适配/优化阶段：重写「项目阶段」（原「项目铁律」）解除源码强制对齐，解禁设计类 skill，开发协议改为 DESIGN → CODE → VERIFY；红线与工程规范保留不变 |

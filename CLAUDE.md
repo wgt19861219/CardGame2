@@ -1,6 +1,8 @@
 # CardGame2 — 项目规范手册
 
-Axmol/Lua 卡牌手游 `D:\workspace\projects\CardGameAxmol` 的 Godot **完全复刻**（单机版）——**源码即设计，照源翻译，不做额外设计**（详见「复刻铁律」）。旧 Godot 版 `D:\workspace\projects\CardGame`（知识库 `CardGameGodot/`）因四大病根作废，**仅作反面教材 + 复用产物（data/tables JSON、美术音频、踩坑经验）**，不复用其代码。
+> **方向性内容（项目阶段 / 工作流 / 红线）以 `AGENTS.md` 为单一来源；本文件为 Claude 专用镜像，二者保持同步，改方向必须同步两处。**
+
+原 Axmol/Lua 卡牌手游 `D:\workspace\projects\CardGameAxmol` 的 Godot 版（单机化）。**迁移阶段（读源 → 翻译为 GDScript）已基本完成，现进入 Godot 原生适配与优化阶段**（详见「项目阶段」）。旧 Godot 版 `D:\workspace\projects\CardGame`（知识库 `CardGameGodot/`）因四大病根作废，**仅作反面教材 + 复用产物（data/tables JSON、美术音频、踩坑经验）**，不复用其代码。
 
 ## 项目信息
 
@@ -14,15 +16,16 @@ Axmol/Lua 卡牌手游 `D:\workspace\projects\CardGameAxmol` 的 Godot **完全�
 - **施工蓝图**：`D:\workspace\Obsidian\CardGameGodot2\系统文档\施工蓝图-全局重制.md`
 - **知识库**：`D:\workspace\Obsidian\CardGameGodot2\`
 
-## 复刻铁律（最高优先级，凌驾所有流程之上）
+## 项目阶段（当前阶段：Godot 原生适配 / 优化）
 
-本项目 = `D:\workspace\projects\CardGameAxmol` 的 Godot **完全复刻**（单机化）。
+本项目源自 `D:\workspace\projects\CardGameAxmol`（Axmol/Lua 卡牌手游）的 Godot 迁移。**迁移阶段（读源 → 翻译为 GDScript）已基本完成，现进入 Godot 原生适配与优化阶段。**
 
-- **源码即设计**：原项目代码是唯一设计来源。**不做额外设计、不提 A/B/C 方案、不裁剪范围、不"优化"**——源里有什么就复刻什么，按源的结构/布局/逻辑/数值翻译为 Godot 等价代码。
-- **工作模式 = 读源 → 翻译**：每个功能先读源 Lua（`CardGameAxmol\Content\src\...`）搞清实现，再翻译成 GDScript。**禁用 brainstorming / writing-plans / blueprint 等"创造性设计"流程**（那是在发明源里没有的东西）。仅当遇到源无对应的纯 Godot 引擎适配（Cocos→Godot 节点映射、Spine 方案 C、cocos Studio→.tscn）时，做最小技术适配，目标仍是"等价复刻"。
-- **禁范围裁剪**：除非用户明确要分阶段，否则不搞"核心闭环 / 留迭代 / 最小可用"——源的完整表现（飘字 / 大招 / 结算 / 暂停 / HUD 全元素）都照搬。"先做核心再迭代"是违规信号。
-- **遇决策回头查源**：布局坐标、数值公式、UI 结构、流程分支全部从源代码读取，不猜测、不自行拍板。
-- **唯一允许的偏差 = 单机化**：去掉联机 / 服务端 / 登录依赖；玩法、表现、数值、流程全部照源。
+- **源代码地位 = 参考资料**：原 Axmol/Lua 源码（`CardGameAxmol\Content\src\...`）仅作行为参考与回归对照，**不再强制对齐**。允许基于 Godot 引擎特性、最佳实践、设计判断进行重构、优化、范围调整。
+- **工作模式 = 设计 → 实现**：以设计者视角评估现状，提出优化方案，**解禁** brainstorming / writing-plans / blueprint 等设计类 skill。遇到不确定的设计决策，主动与用户对齐。
+- **允许的改动**：架构重构、UI 重构（含 .tscn 重新设计、布局/视觉/交互优化）、性能优化、Godot 原生特性替代（如用 Theme/容器布局替代硬编码坐标）、范围裁剪与合并。
+- **参考边界**：数值/玩法/表现等核心行为可参考源以保持游戏完整性，但**不作硬约束**；优化时优先服务目标体验与工程质量。
+- **保留约束**：单机化（无联机/服务端/登录依赖）保持不变；三层分离、CI 门禁、测试覆盖等工程红线仍然有效（见下文各节）。
+- **受控偏离 vs 偷懒漏译（关键区分）**：迁移完成后的"有意识的设计裁剪/优化"（需记录决策依据）合规；迁移阶段的"偷懒漏译"（源有对应物而本项目缺）仍是债。判断时以**源是否有对应物**为准——源本就无集中 UI 主题/间距系统（ccc3 颜色调用散落 150 文件），故引入 Theme 系统属"受控偏离"非"漏译"；但影响玩法的 View 缺口仍需照源补全以保游戏完整性。
 
 ## 四大架构原则（每个 PR 必须满足，CI 门禁强制）
 
@@ -85,7 +88,7 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错（坐标试 4 �
 
 ## 开发协议
 
-遵循 `D:\workspace\Obsidian\CLAUDE.md` 的 READ → CODE → WRITE 三阶段：**READ = 读源 Lua 搞清实现（不是想需求/做设计），CODE = 照源翻译为 GDScript**。本项目功能复刻**跳过 brainstorming / writing-plans / blueprint 等设计类 skill**（见「复刻铁律」）。日志写 `D:\workspace\Obsidian\CardGameGodot2\开发日志\`，任务变动同步 `CardGameGodot2/任务看板.md`。
+遵循 DESIGN → CODE → VERIFY 三阶段：**DESIGN = 以设计者视角评估现状，用 brainstorming / writing-plans 等设计类 skill 与用户对齐目标与方案（源仅作参考）→ CODE = 按对齐后的方案以 Godot 原生方式实现 → VERIFY = 跑 CI 门禁，必要时附截图/实测值**。日志写 `D:\workspace\Obsidian\CardGameGodot2\开发日志\`，任务变动同步 `CardGameGodot2/任务看板.md`。
 
 ### 本地门禁（Step 0.2 立地基，不过禁合并）
 
@@ -112,6 +115,6 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错（坐标试 4 �
 
 ## 规划工作流（ecc:blueprint）
 
-> [!warning] 本项目是纯复刻，**功能开发不用 blueprint 做设计**（源即设计）。blueprint 仅用于组织大规模移植的工程路径与知识库回流，不发明源里没有的设计。
+> [!note] 大规模重构/优化任务（如全量 UI 的 .tscn 重构）可用 `ecc:blueprint` 组织工程路径与知识库回流。
 
 用 `ecc:blueprint` 规划任务时，**必须遵循**知识库集成规则 `D:\workspace\Obsidian\.claude\rules\blueprint-kb-integration.md`：Research 先读本项目知识库（首页/MOC 索引/差距分析/跨项目经验）并交叉验证源码 → Draft 把蓝图写入知识库 `系统文档/`（不写游离 plans/）→ Review 发现回流知识库 → Register 更新首页/任务看板/MOC 时间线。本项目知识库：`D:\workspace\Obsidian\CardGameGodot2\`。
