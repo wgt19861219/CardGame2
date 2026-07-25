@@ -12,12 +12,10 @@ const DPS_LOW_RATIO: float = 0.1
 const DPS_LOW_DIV: float = 2.0
 
 
-# 源 :1-10 atk3_ice takeEffectAt：basefunc + counter==1 特效（View 跳过）。
 func _atk3_ice_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	BattleSkillEffect.take_effect_at(skill, location, src)
 
 
-# 源 :13-26 atk2_ice/atk_ice createBuff：frozen → ice_mark takeEffectAt + CanFly removeAllBuffs + BuffCreate 5 / else basefunc。
 func _ice_create_buff(skill: Variant, target: Variant) -> Variant:
 	var caster: Variant = skill.caster
 	if bool(target.buff_effects.get("frozen", false)):
@@ -31,7 +29,6 @@ func _ice_create_buff(skill: Variant, target: Variant) -> Variant:
 	return skill._create_buff_default(target)
 
 
-# 源 :27-50 update：dyingTimer 倒计触发 frozen takeEffectAt + uncontroll Buff 152（首次）+ basefunc（View ice 跳过）。
 func _update(unit: Variant, dt: float) -> void:
 	if not unit.custom_data.has("dyingTimer"):
 		unit.custom_data["dyingTimer"] = DYING_TIMER
@@ -49,7 +46,6 @@ func _update(unit: Variant, dt: float) -> void:
 	unit._update_default(dt)
 
 
-# 源 :51-66 frozen takeEffectOn：非 Can Fly 时查 buff_list 无 151 则 addBuff 151 + basefunc。
 func _frozen_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	if not bool(target.info.get("Can Fly", false)):
 		var has_151: bool = false
@@ -63,7 +59,7 @@ func _frozen_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Ar
 
 
 func apply(hero: Variant) -> void:
-	hero.set_disapear_when_die(false)  # 源 :72
+	hero.set_disapear_when_die(false)
 	hero.hero_hooks["update"] = Callable(self, "_update")
 	var s1: Variant = hero.skills.get("ExSilverDragon_atk3_ice")
 	if s1:
@@ -77,7 +73,6 @@ func apply(hero: Variant) -> void:
 	var sf: Variant = hero.skills.get("ExSilverDragon_frozen")
 	if sf:
 		sf.hero_hooks["takeEffectOn"] = Callable(self, "_frozen_take_effect_on")
-	# 源 :78-81 低血 dps_mod/2
 	var ratio: float = float(hero.hp) / float(hero.attribs.get("HP", 1))
 	if ratio <= DPS_LOW_RATIO:
 		hero.config["dps_mod"] = float(hero.config.get("dps_mod", 0)) / DPS_LOW_DIV

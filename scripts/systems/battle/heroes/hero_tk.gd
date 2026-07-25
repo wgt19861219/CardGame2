@@ -6,11 +6,11 @@ extends RefCounted
 ## TK_ult/TK_atk3.createProjectile：basefunc + 注册 projectile.update hook（3D 追踪）。
 ## projectile.update 新 hook 点（BattleProjectile.hero_hooks.update，拆 _update_default 当 basefunc）。
 
-const TILE_MODE_PERIOD: int = 3  # 源 :18 counter % 3 周期
-const TILE_3D_MOD: int = 2       # 源 :18 counter%3 == 2 → 3D tile 模式
-const DV_SPEED: float = 600.0    # 源 :48 dv = 600*dt
-const TRACK_GAIN: float = 8.0    # 源 :76-78 velocity += targetV*dv*8
-const NORM_POWER: float = -0.5   # 源 :63 u = (dist²)^-0.5（向量长度倒数）
+const TILE_MODE_PERIOD: int = 3
+const TILE_3D_MOD: int = 2
+const DV_SPEED: float = 600.0
+const TRACK_GAIN: float = 8.0
+const NORM_POWER: float = -0.5
 
 
 func apply(hero: Variant) -> void:
@@ -23,7 +23,6 @@ func apply(hero: Variant) -> void:
 		skillatk3.hero_hooks["createProjectile"] = Callable(self, "_create_projectile")
 
 
-# 源 :2-44 skillult_onAttackFrame（完整重写：解冻 + random 选目标 + counter%3 切 tile + Track Type 分发 + Gain MP + Move Forward）。
 func _ult_on_attack_frame(skill: Variant) -> void:
 	var caster: Variant = skill.caster
 	if bool(caster.manually_casting):
@@ -37,7 +36,7 @@ func _ult_on_attack_frame(skill: Variant) -> void:
 	skill.attack_counter = int(skill.attack_counter) + 1
 	var counter: int = int(skill.attack_counter)
 	var ttype: String = String(info.get("Track Type", ""))
-	if counter % TILE_MODE_PERIOD != TILE_3D_MOD:  # 源 :18 counter%3 ~= 2（2D 模式）
+	if counter % TILE_MODE_PERIOD != TILE_3D_MOD:
 		info["Tile Art"] = "projectile/TK_atk2_tile.png"
 		info["Tile OTT Height"] = 0
 		info["Tile XY Speed"] = info.get("Script Arg2", 0)
@@ -51,7 +50,7 @@ func _ult_on_attack_frame(skill: Variant) -> void:
 		caster.engine.add_projectile(skill._create_projectile())
 	elif ttype == "chain":
 		caster.engine.add_chain(skill.create_chain())
-	elif ttype == "":  # 源 ttype == nil
+	elif ttype == "":
 		skill.take_effect_at(skill.target.position)
 	caster.set_mp(float(caster.mp) + float(info.get("Gain MP", 0.0)) * float(caster.engine.mp_bonus))
 	var fwd: float = float(info.get("Move Forward", 0.0))
@@ -59,14 +58,12 @@ func _ult_on_attack_frame(skill: Variant) -> void:
 		caster.position = Vector2(caster.position.x + fwd * float(caster.direction), caster.position.y)
 
 
-# 源 :80-84 skill_createProjectile：basefunc + 注册 projectile.update hook（3D 追踪）。
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = skill._create_projectile_default()  # basefunc
 	projectile.hero_hooks["update"] = Callable(self, "_projectile_update")
 	return projectile
 
 
-# 源 :45-79 projectile_update：basefunc + zSpeed 重力衰减 + 3D 追踪（targetV 单位向量 × dv×8 增益）。
 func _projectile_update(projectile: Variant, dt: float) -> void:
 	projectile._update_default(dt)  # basefunc
 	projectile.z_speed = float(projectile.z_speed) - float(projectile.skill.info.get("Tile Gravity", 0.0)) * dt

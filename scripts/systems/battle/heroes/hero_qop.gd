@@ -10,7 +10,6 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["start"] = Callable(self, "_start")
 
 
-# 源 :1-7 start（basefunc → 查 Buff → addBuff）。
 func _start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)  # basefunc（AV 确立的 start hook 模式：拆 _default 避递归）
 	var bid: int = int(skill.info.get("Script Arg1", 0))

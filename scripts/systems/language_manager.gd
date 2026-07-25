@@ -10,7 +10,6 @@ const DEFAULT_LANG: String = "zh-CN"
 const LANG_CFG_PATH: String = "user://lang.cfg"
 const LANG_CFG_SECTION: String = "language"
 const LANG_CFG_KEY: String = "current"
-# 源 LocalString.lua:26-43 实际语言包（7 个，其余 10 fallback en-US 不单独生成）。
 const LANGS: Array[String] = ["zh-CN", "en-US", "de-DE", "ko-KR", "pt-BR", "ru-RU", "tr-TR"]
 
 var _cm: ConfigManager
@@ -34,7 +33,6 @@ func get_language() -> String:
 	return _current_lang
 
 
-## 源 LocalString.lua:74 LSTR(key) = langs[currentLang][key]，找不到返 key 本身。
 func get_lstr(key: String) -> String:
 	var table: Dictionary = _cm.get_raw_table(StringName("LSTR_" + _current_lang))
 	var val: Variant = table.get(key, key)
@@ -45,7 +43,6 @@ func get_langs() -> Array[String]:
 	return LANGS.duplicate()
 
 
-## 源 hello.lua:33-56 按语言选字体（zh-CN→Arial / 其他→arial_unicode_ms.ttf）。
 ## 目标无 arial_unicode_ms.ttf，Godot 默认字体支持 Unicode（含中文/韩文/俄文等），统一返空（用默认）。
 ## 下轮补字体文件后可按语言返 FontResource 路径。
 func get_font_path() -> String:

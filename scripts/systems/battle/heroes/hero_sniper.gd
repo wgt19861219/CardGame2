@@ -5,7 +5,7 @@ extends RefCounted
 ##   Sniper.castManualSkill：basefunc 后 ult.target.unfreezeActor；
 ##   Sniper_atk3.createProjectile：抛物线 velocity（A=0.5g / B=zSpeed / C=height）。
 
-const SNIPER_BUFF_ID: int = 14  # 源 :11 start 后给 target 的 buff
+const SNIPER_BUFF_ID: int = 14
 # 抛物线公式系数（源 :20-24，照源重复，不抽 helper）
 const G_HALF: float = 0.5
 const DISC_K: float = 4.0
@@ -22,7 +22,6 @@ func apply(hero: Variant) -> void:
 		skillatk3.hero_hooks["createProjectile"] = Callable(self, "_create_projectile")
 
 
-# 源 :7-14 Sniper_ult.start：basefunc 后 skill.target.unfreezeActor + addBuff(Buff 14, caster)。
 func _ult_start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)
 	skill.target.unfreeze_actor()
@@ -30,14 +29,12 @@ func _ult_start(skill: Variant, target: Variant) -> void:
 	skill.target.add_buff(binfo, skill.caster)
 
 
-# 源 :2-6 castManualSkill：basefunc 后 Sniper_ult.target.unfreezeActor。
 func _cast_manual_skill(hero: Variant) -> void:
 	hero._cast_manual_skill_default()
 	var ult: Variant = hero.skills.get("Sniper_ult")
 	ult.target.unfreeze_actor()
 
 
-# 源 :15-29 Sniper_atk3.createProjectile：抛物线 velocity（A=0.5g, B=zSpeed, C=height, t=(-B-√Δ)/2A）。
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = BattleProjectile.new(skill)  # basefunc（源 ProjectileCreate）
 	var h: float = float(projectile.height)

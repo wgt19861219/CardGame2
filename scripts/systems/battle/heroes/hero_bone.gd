@@ -5,7 +5,7 @@ extends RefCounted
 ## Bone_awake.onAttackFrame：counter==1 选目标 + die（吞噬）/ else BuffCreate+addBuff。
 ## selectTarget 新 hook 点（_select_target 加分发）。onAttackFrame 完全重写（不调 _default）。
 
-const HUGE: float = INF  # 源 -math.huge（selector max 初始）
+const HUGE: float = INF
 
 
 func apply(hero: Variant) -> void:
@@ -15,7 +15,6 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["onAttackFrame"] = Callable(self, "_on_attack_frame")
 
 
-# 源 :1-25 skillawake_selectTarget（只选召唤物 + 随机 selector）。
 func _select_target(skill: Variant, _default_t: Variant) -> Variant:
 	var max_v: float = -HUGE
 	var chosen: Variant = null
@@ -23,7 +22,6 @@ func _select_target(skill: Variant, _default_t: Variant) -> Variant:
 	var cpos: Vector2 = caster.position
 	var enchanted: bool = bool(caster.buff_effects.get("enchanted", false))
 	for unit in caster.engine.foreach_alive_unit(int(skill._target_camp())):
-		# 源 :9-12 if not is_summoned then 空（skip 非召唤物）/ untargetable / enchanted&self
 		if not bool(unit.config.get("is_summoned", false)):
 			continue
 		if bool(unit.buff_effects.get("untargetable", false)):
@@ -32,7 +30,7 @@ func _select_target(skill: Variant, _default_t: Variant) -> Variant:
 			continue
 		var dist_sq: float = unit.position.distance_squared_to(cpos)
 		if dist_sq >= skill.min_range_sq and dist_sq <= skill.max_range_sq:
-			var v: float = caster.engine.rng.randf()  # 源 selector = ed.rand
+			var v: float = caster.engine.rng.randf()
 			if max_v < v:
 				max_v = v
 				chosen = unit
@@ -40,22 +38,19 @@ func _select_target(skill: Variant, _default_t: Variant) -> Variant:
 	return chosen
 
 
-# 源 :26-61 skillawake_onAttackFrame（counter==1 选+吞噬 / else buff）。
 func _on_attack_frame(skill: Variant) -> void:
 	var caster: Variant = skill.caster
 	skill.attack_counter = int(skill.attack_counter) + 1
 	if int(skill.attack_counter) == 1:
-		var target: Variant = skill._select_target(null)  # 源 skillawake_selectTarget（经 hook）
+		var target: Variant = skill._select_target(null)
 		if target != null:
-			# 源 :32-52 View 特效 + Popup（devour）
-			_show_devour_popup(skill.caster, target)  # 源 Bone.lua:49-51 devour 飘字
-			target.die(skill.caster)  # 源 target:die(caster)
+			_show_devour_popup(skill.caster, target)
+			target.die(skill.caster)
 	else:
 		var binfo: Variant = skill.info.get("buff_info", {})
-		caster.add_buff(binfo, caster)  # 源 BuffCreate(binfo,owner,owner) + addBuff
+		caster.add_buff(binfo, caster)
 
 
-# 源 Bone.lua:49-51 吞噬 devour 飘字（target actor，caster camp player→blue/else→red）。
 func _show_devour_popup(caster: Variant, target: Variant) -> void:
 	var actor: Variant = target.get("actor")
 	if actor == null or not actor.has_method("spawn_popup"):

@@ -11,7 +11,6 @@ const HMS_SEC_IDX: int = 2   # "H:M:S" split 后 sec 索引（hour/min 索引 0/
 
 
 ## 读 Shop 表 Refresh Times，返按数字 key 排序的 ["H:M:S"] 数组。
-## 源 ed.getDataTable("Shop")[id]["Refresh Times"]（Lua 数组按 1..N 序，JSON 转后按数字 key 排序复刻）。
 static func get_refresh_times(shop_id: int, cm: Variant) -> Array:
 	var row: Dictionary = cm.get_raw_table(SHOP_TABLE).get(str(shop_id), {})
 	var rt: Dictionary = row.get("Refresh Times", {})

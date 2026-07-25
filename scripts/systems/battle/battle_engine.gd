@@ -8,23 +8,21 @@ extends RefCounted
 ## 本轮核心：字段/reset/update/tick/单位容器/foreach/freeze/胜负骨架/pve_mode/battle_supply。
 ## 待 Phase 2.1续：模式入口(enter_stage/enter_arena/...)/能量球(Kael)/操作流回放/结算统计/downExit/相机震动。
 
-# 源 emCampPlayer=1 / emCampEnemy=-1 / emCampBoth=0（battle_engine.lua:234 campDesc + :1470 camp==1→"[+]"）
 const CAMP_BOTH: int = 0
 const CAMP_PLAYER: int = 1
 const CAMP_ENEMY: int = -1
 
-const TICK_INTERVAL: float = 0.033  # 源 ed.tick_interval = 0.033
-const TIME_LIMIT_DEFAULT: float = 90.0  # 源 resetBattle time_limit=90
-const STAGE_MIN_X: float = 0.0  # 源 stage_rect（battle_engine.lua:74-78）
+const TICK_INTERVAL: float = 0.033
+const TIME_LIMIT_DEFAULT: float = 90.0
+const STAGE_MIN_X: float = 0.0
 const STAGE_MAX_X: float = 800.0; const STAGE_MIN_Y: float = -120.0; const STAGE_MAX_Y: float = 120.0
-const KILL_MP_BONUS: int = 300  # 源 onUnitDie killer:setMP(mp+300)
-const STAR_BASE: int = 3  # 源 result_stars = max(1, 3-deathcount)
+const KILL_MP_BONUS: int = 300
+const STAR_BASE: int = 3
 const PERCENT_DENOM: float = 100.0  # 百分比字段（Mps Restraint）分母
-const RESULT_WIN: int = 0  # 源 exitStage result: 0=胜 1=败 2=切场景 3=超时
+const RESULT_WIN: int = 0
 const RESULT_LOSE: int = 1
 const RESULT_TIMEOUT: int = 3
-const LIST_NAMES: Array[String] = ["unit_list", "projectile_list", "npc_list"]  # 源 tick 三列表
-# 源 initial_position（玩家方左侧；敌方 X 镜像 maxX-x）。Phase 2.1续模式入口用
+const LIST_NAMES: Array[String] = ["unit_list", "projectile_list", "npc_list"]
 const INITIAL_POSITIONS: Array[Vector2] = [Vector2(0, 0), Vector2(-80, -40), Vector2(-160, 0), Vector2(-240, -40), Vector2(-320, 0)]
 
 # —— 状态字段（照源 resetStage/resetBattle）——
@@ -40,13 +38,13 @@ var supplied: bool = false
 var mp_bonus: float = 1.0
 var rng: BattleRng = null  # D2 确定性：本场战斗随机源（setupBattle 注入），skill 暴击/闪避/check_add_buff 走此（禁全局 rand，源 ed.rand）
 var result_stars: int = 0
-var wave_id: int = 1; var battle_lookup_id: int = 0; var monster_num: int = 0  # 源 nextBattle:628 跨关 lookup / setupBattle:189 本波怪物计数
+var wave_id: int = 1; var battle_lookup_id: int = 0; var monster_num: int = 0
 var stage_rect: Dictionary = {}
 var unit_list: Array = []  # duck-type 单位
 var projectile_list: Array = []
 var npc_list: Array = []
 var alive_units: Dictionary = {}  # camp(int) -> Array
-var alive_alliance_count: int = 0  # 源 alive_alliance_count（玩家方存活）
+var alive_alliance_count: int = 0
 var alive_enemy_count: int = 0
 var dead_alliance_count: int = 0
 var dead_enemy_count: int = 0
@@ -54,7 +52,7 @@ var loot_count: int = 0
 var gold_count: int = 0
 var death_count: int = 0
 var hero_id_list: Array[int] = []
-var arena_mode: bool = false  # 源 *_mode 标记
+var arena_mode: bool = false
 var crusade_mode: bool = false
 var excavate_mode: bool = false
 var replay_mode: bool = false
@@ -63,17 +61,16 @@ var gm_mode: bool = false
 var stage_info: Dictionary = {}
 var last_result: int = -1  # exit_stage 记录最终结果（供 View/结算读，Phase 2.1续）
 # —— Kael 能量球投放槽位（源 battle_engine.lua :108/:789-848，Kael apply 时填 player/enemy_kael_hero）——
-var used_delivered_ball_slots: Dictionary = {}  # 源 :108 usedDeliveredBallSlots（idx→true 占用）
-var player_kael_hero: Variant = null  # 源 playerKaelHero（Kael apply 设，manual_tap_ball 读）
-var enemy_kael_hero: Variant = null   # 源 enemyKaelHero
-var _global_ball_idx: int = 0         # 源 :788 globalBallIdx（increase_ball 递增，球唯一 idx）
+var used_delivered_ball_slots: Dictionary = {}
+var player_kael_hero: Variant = null
+var enemy_kael_hero: Variant = null
+var _global_ball_idx: int = 0
 
 
 func _init() -> void:
 	reset_stage()
 
 
-# 源 resetStage（battle_engine.lua:60-109）
 func reset_stage() -> void:
 	enabled = true
 	stage_ended = false
@@ -92,11 +89,10 @@ func reset_stage() -> void:
 	gold_count = 0
 	death_count = 0
 	last_result = -1
-	used_delivered_ball_slots = {}  # 源 :108
+	used_delivered_ball_slots = {}
 	reset_battle()
 
 
-# 源 resetBattle（battle_engine.lua:112-142）
 func reset_battle() -> void:
 	next_tick = 0.0
 	time_limit = TIME_LIMIT_DEFAULT
@@ -117,7 +113,6 @@ func reset_battle() -> void:
 			add_unit(unit)
 
 
-# 源 update（battle_engine.lua:671-680）：固定步长累加器（确定性，不依赖 wall-clock delta）
 func update(dt: float) -> void:
 	if not running:
 		return
@@ -127,10 +122,8 @@ func update(dt: float) -> void:
 		next_tick += tick_interval
 
 
-# 源 tick（battle_engine.lua:682-751）：推进三列表 + 胜负判定
 func tick() -> void:
 	time_limit -= tick_interval
-	# 源 operation_list 回放（手动大招 castManualSkill）Phase 2.1续补
 	for list_name in LIST_NAMES:
 		_advance_entity_list(list_name)
 	ticks += 1
@@ -148,12 +141,11 @@ func tick() -> void:
 	elif alive_alliance_count == 0:
 		result_stars = 0
 		unfreeze(true)
-		AudioPlayer.play_sfx("battle_lose")   # 源 doFailed（battle_engine.lua:1040 playEffect(lose=deo.battle_lose)）
+		AudioPlayer.play_sfx("battle_lose")
 		on_battle_end()
 		exit_stage(RESULT_LOSE)
 
 
-# 源 tick 三列表推进 + terminated 清理（battle_engine.lua:697-719）
 func _advance_entity_list(list_name: String) -> void:
 	var list: Array = get(list_name)
 	var list_len: int = list.size()
@@ -170,7 +162,6 @@ func _advance_entity_list(list_name: String) -> void:
 		list.resize(write)
 
 
-# 源 addUnit（battle_engine.lua:941-963）
 func add_unit(unit: Variant) -> void:
 	var alive: bool = bool(unit.is_alive())
 	unit.previous_position = Vector2(unit.position)
@@ -189,7 +180,6 @@ func add_unit(unit: Variant) -> void:
 	unit.actor = null
 
 
-# 源 summonUnit（battle_engine.lua:966-975）
 func summon_unit(unit: Variant, position: Vector2, summoner: Variant, born_action_name: String = "") -> void:
 	unit.config["is_summoned"] = true
 	unit.position = position
@@ -198,8 +188,6 @@ func summon_unit(unit: Variant, position: Vector2, summoner: Variant, born_actio
 	unit.config["summoner"] = summoner
 
 
-# 源 addProjectile（battle_engine.lua:1713-1727）/ addChain（:1741-1746，chain 同进 projectile_list）
-# 源 if projectile/addChain then 守卫（nil no-op）：英雄 createProjectile hook 可自行 add 后 return nil（Archer/DR/Gorilla），
 # 调用方 onAttackFrame 无条件 addProjectile(createProjectile()) 收到 nil 时需被忽略（源 :1714/:1742）。
 # previous_position 源在 add 时设，GDScript 已在 BattleProjectile._init 设（create→add 间 position 不变，等价）。
 func add_projectile(projectile: Variant) -> void:
@@ -212,10 +200,9 @@ func add_chain(chain: Variant) -> void:
 		projectile_list.append(chain)
 
 
-func add_npc(npc: Variant) -> void: npc_list.append(npc)  # 源 addNpc：append npc_list（tick 三列表之一）
+func add_npc(npc: Variant) -> void: npc_list.append(npc)
 
 
-# 源 createNpc（battle_engine.lua:1729-1738）：查 NPC 表 + NpcCreate + 加入 npc_list（TitanHead 装饰 npc_up/down）。
 func create_npc(npc_id: int, is_flip: bool, owner: Variant) -> Variant:
 	var npc_info: Dictionary = owner.cm.get_raw_table(&"NPC").get(str(npc_id), {})
 	if npc_info.is_empty():
@@ -226,7 +213,6 @@ func create_npc(npc_id: int, is_flip: bool, owner: Variant) -> Variant:
 	return npc
 
 
-# 源 onUnitDie/onNpcDie/onBattleEnd 委托 BattleEngineDie（控 ≤250）
 func on_unit_die(unit: Variant, killer: Variant) -> void:
 	BattleEngineDie.on_unit_die(self, unit, killer)
 
@@ -235,7 +221,6 @@ func on_npc_die(npc: Variant) -> void:
 	BattleEngineDie.on_npc_die(self, npc)
 
 
-# 源 foreachAliveUnit/findBoss/findHero/getUnitByIndex/getUnitNum 等查询委托 BattleEngineQuery（控 ≤250）
 const BattleEngineQuery = preload("res://scripts/systems/battle/battle_engine_query.gd")
 const BattleEngineDie = preload("res://scripts/systems/battle/battle_engine_die.gd")
 
@@ -271,7 +256,6 @@ func get_unit_num(camp: int) -> int:
 	return BattleEngineQuery.unit_num(self, camp)
 
 
-# 源 freeze（battle_engine.lua:899-915）
 func freeze() -> void:
 	if freeze_level == 0:
 		for unit in unit_list:
@@ -283,7 +267,6 @@ func freeze() -> void:
 	freeze_level += 1
 
 
-# 源 unfreeze（battle_engine.lua:918-938）
 func unfreeze(force: bool = false) -> void:
 	if force:
 		if freeze_level == 0:
@@ -295,12 +278,10 @@ func unfreeze(force: bool = false) -> void:
 			entity.unfreeze()
 
 
-# 源 onBattleEnd 委托 BattleEngineDie
 func on_battle_end() -> void:
 	BattleEngineDie.on_battle_end(self)
 
 
-# 源 battleSupply（battle_engine.lua:609-621）
 func battle_supply(supply_enemy: bool = false) -> void:
 	var camp: int = CAMP_ENEMY if supply_enemy else CAMP_PLAYER
 	for unit in foreach_alive_unit(camp):
@@ -314,34 +295,29 @@ func battle_supply(supply_enemy: bool = false) -> void:
 		supplied = true
 
 
-# 源 pveMode（battle_engine.lua:265-279）
 func pve_mode() -> bool:
 	return not arena_mode and not crusade_mode and not guild_instance_mode and not excavate_mode
 
 
-# 源 victory（battle_engine.lua:1591-1662）：本轮核心骨架（单波直接结算；多波 nextBattle Phase 2.1续）
 func victory(_skip: bool = false) -> void:
 	running = false
-	AudioPlayer.play_sfx("battle_win")   # 源 downExit/victory（battle_engine.lua:1103/1153 playEffect(win=deo.battle_win)，soundres:64 battle_win.mp3）
-	# 源：wave_id < Waves and not skip → 下一波（nextBattle/showNextButton）Phase 2.1续补
+	AudioPlayer.play_sfx("battle_win")
 	death_count = 0
 	for unit in unit_list:
 		if int(unit.camp) == CAMP_PLAYER and bool(unit.is_hero()) and not bool(unit.is_alive()):
 			death_count += 1
-	result_stars = max(1, STAR_BASE - death_count)  # 源 max(1, 3-deathcount)
+	result_stars = max(1, STAR_BASE - death_count)
 	if crusade_mode or excavate_mode:
 		battle_supply()
 	stage_ended = true
 	exit_stage(RESULT_WIN)
 
 
-# 源 exitStage（battle_engine.lua:1493-1583）：本轮核心骨架（置状态；结算/View/网络 Phase 2.1续）
 func exit_stage(result: int, _exit_flag: bool = false) -> void:
 	running = false
 	enabled = false
 	stage_ended = true
 	last_result = result
-	# 源：printStatistics/stopMusic/downExit/getExitMsg/send（View+结算+网络）Phase 2.1续补
 
 
 # 存活列表（按 camp 索引；懒建）

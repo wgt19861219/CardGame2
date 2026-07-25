@@ -12,7 +12,6 @@ const ICON_BG_DEFAULT: String = "res://assets/ui/alpha/HVGA/task_icon_bg.png"
 # 单机初始邮件配置（照源 local_server.lua:2683-2726 generateSystemMails；id + 奖励数值提常量避魔法数字）
 const MAIL_ID_WELCOME: int = 1
 const MAIL_ID_NEWBIE: int = 2
-# 源 :2689-2705：id=1 欢迎 _money=5000 _diamonds=200；源 :2707-2723：id=2 道具礼包 _money=10000 + item 371×10
 const WELCOME_MONEY: int = 5000
 const WELCOME_DIAMOND: int = 200
 const NEWBIE_MONEY: int = 10000
@@ -42,7 +41,6 @@ func _default_mails() -> Array:
 # 格式化 raw → 显示 dict（照 formatMailData:11-105）。返 null 表示过期（单机无过期，总返 dict）。
 func format_mail(raw: Dictionary) -> Dictionary:
 	var id: int = int(raw["_id"])
-	# 源 _status 可能是 "unread"/"read" 字符串或 0/1 数字；str() 统一转比较（避 Variant==int 编译错 + int("read")==0 误判）
 	var status_str: String = str(raw.get("_status", "unread"))
 	var status: String = "read"
 	if status_str == "unread" or status_str == "0":
@@ -103,7 +101,6 @@ func ordered_mails() -> Array:
 	return list
 
 
-# 源 :310-320：未读上浮；同 status 时 id 降序（源 c.id > pre.id）。
 func _compare_mail(a: Dictionary, b: Dictionary) -> bool:
 	var a_unread: bool = a["status"] == "unread"
 	var b_unread: bool = b["status"] == "unread"
@@ -136,7 +133,6 @@ func claim_attach(mail_id: int, player: Variant) -> void:
 	raw["_skill_point"] = 0
 	raw["_items"] = []
 	raw["_status"] = "read"
-	# 源 read_mail:2755-2760 领取后从 localdata.mails 移除该 raw（已领邮件不堆积，
 	# 客户端 _mail_list 仅返剩余）。单机照此从 _raw_mails 移除（raw 是列表内同一引用，erase 安全）。
 	_raw_mails.erase(raw)
 

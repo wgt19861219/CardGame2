@@ -10,12 +10,12 @@ extends RefCounted
 ##   skill{is_update, info{Manual}, can_cast_with_target(target)→{ok,reason}, will_cast()}。
 ## owner 侧行为方法（idle/walk_towards/cast_skill/cast_manual_skill）属 Phase 2.2续单位行为，本轮 duck-type 照源调用。
 
-const HUGE: float = INF  # 源 math.huge（searchTarget 初始最小距离平方）
+const HUGE: float = INF
 
-var owner: Variant = null               # 源 self.owner
-var destination: Variant = null         # 源 self.destination（移动目标坐标 Vector2）
-var target: Variant = null              # 源 self.target（当前攻击/治疗目标 unit）
-var will_cast_manual_skill: bool = true  # 源 self.will_cast_manual_skill
+var owner: Variant = null
+var destination: Variant = null
+var target: Variant = null
+var will_cast_manual_skill: bool = true
 var hero_hooks: Dictionary = {}  # 英雄 hook（源 override 等价）：walkTo（Troll 后排单位近战射程，Phase 2.7）
 
 
@@ -23,18 +23,14 @@ func _init(p_owner: Variant = null) -> void:
 	owner = p_owner
 
 
-# 源 ed.createAiForUnit / ed.AiCreate（ai.lua:3-5, 15-26）
 static func create(p_owner: Variant) -> BattleAi:
 	return BattleAi.new(p_owner)
 
 
-# 源 ed.AiHealerCreate（ai.lua:133-139）— 治疗 AI 工厂（治疗型英雄 lua hook 调）
 static func create_healer(p_owner: Variant) -> BattleAi:
 	return AiHealer.new(p_owner)
 
 
-# 源 update（ai.lua:28-67）。building buff 分支：仅 idle（不动）；普通分支：无技能则 walkTo。
-# 源两分支前半段（searchTarget→findSkillToCast→Manual/arena 判定）照源内联重复，不抽 helper（复刻铁律：照源结构）。
 func update(_dt: float) -> void:
 	var res: Array = search_target()
 	var found: Variant = res[0] if res.size() > 0 else null
@@ -68,7 +64,6 @@ func update(_dt: float) -> void:
 			owner.idle()
 
 
-# 源 searchTarget（ai.lua:69-88）→ 返回 [target, dist_sq]（双值；skill._select_target 读 res[0]/res[1] 比射程）
 func search_target() -> Array:
 	var min_dist_sq: float = HUGE
 	var found: Variant = null
@@ -88,7 +83,6 @@ func search_target() -> Array:
 	return [found, min_dist_sq]
 
 
-# 源 findSkillToCast（ai.lua:90-107）— 英雄 hook override 点（Marine atk2 限定 arena/right side）。hook 内调 _find_skill_to_cast_default 当 basefunc。
 func find_skill_to_cast() -> Variant:
 	var h: Callable = hero_hooks.get("findSkillToCast", Callable())
 	return h.call(self) if h.is_valid() else _find_skill_to_cast_default()
@@ -108,7 +102,6 @@ func _find_skill_to_cast_default() -> Variant:
 	return null
 
 
-# 源 walkTo（ai.lua:109-121）：英雄 hook override 点（Troll 后排单位近战射程）。hook 内调 _walk_to_default 当 basefunc。
 func walk_to(dest: Variant) -> void:
 	var h: Callable = hero_hooks.get("walkTo", Callable())
 	if h.is_valid():
@@ -124,7 +117,6 @@ func _walk_to_default(dest: Variant) -> void:
 		dest_pos = dest.position
 	var ar: float = float(owner.attack_range)
 	var dsq: float = _dist_sq(dest_pos, owner.position)
-	# 源 if not (dsq <= attack_range^2) or isOutOfStage() then 空（落 walk_towards）else idle return
 	if not (dsq <= ar * ar) or bool(owner.is_out_of_stage()):
 		pass
 	else:
@@ -140,7 +132,6 @@ func _dist_sq(a: Vector2, b: Vector2) -> float:
 
 
 # ─────────────────────────────────────────────────────────────
-# 源 ed.AiHealer（ai.lua:125-184）：治疗 AI，继承 ed.Ai，override update + 加 searchHealTarget。
 # 内部类（不带 class_name）规避跨脚本 class_name 交叉引用；外部经 BattleAi.create_healer 工厂构造。
 class AiHealer:
 	extends BattleAi
@@ -148,7 +139,6 @@ class AiHealer:
 	func _init(p_owner: Variant = null) -> void:
 		super(p_owner)
 
-	# 源 AiHealer update（ai.lua:141-169）：优先治疗最低血量友军，其次攻击，否则走向/待机。
 	func update(_dt: float) -> void:
 		var heal_target: Variant = search_heal_target()
 		if heal_target != null:
@@ -174,7 +164,6 @@ class AiHealer:
 		else:
 			owner.idle()
 
-	# 源 searchHealTarget（ai.lua:172-183）：遍历同营存活，取 hp/Max HP 比例最低（最虚弱）。
 	func search_heal_target() -> Variant:
 		var weakest: Variant = null
 		var lowest_hp_percent: float = 1.0

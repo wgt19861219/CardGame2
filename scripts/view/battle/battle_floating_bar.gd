@@ -33,14 +33,12 @@ var _value_max: float = 1.0      # proto GetValueMax
 var _hide_timer: float = 0.0
 
 
-# 源 FloatingBar.create（FloatingBarCreateSafe :385 + Full :404）
 static func create(unit: Variant, bar_type: String) -> BattleFloatingBar:
 	var bar := BattleFloatingBar.new()
 	bar._setup(unit, bar_type)
 	return bar
 
 
-# 源 FloatingBarGroup.create（:517-522）
 static func create_group() -> Group:
 	return Group.new()
 
@@ -63,7 +61,7 @@ func _setup(unit: Variant, bar_type: String) -> void:
 		if _foreground:
 			_foreground.centered = false
 			_background.add_child(_foreground)
-	_refresh_percent()   # 源 :426 InitValuePercent
+	_refresh_percent()
 	_fore_length = _percent
 	_mid_length = _percent
 	if _foreground:
@@ -72,7 +70,6 @@ func _setup(unit: Variant, bar_type: String) -> void:
 		_midlayer.scale.x = _percent
 
 
-# 源 FloatingBar:update（:452-499）。返 hide_timer（源 :498，Group 共享）。
 func update(dt: float) -> float:
 	if _foreground == null:
 		return 0.0
@@ -80,7 +77,6 @@ func update(dt: float) -> float:
 		_percent = 0.0
 	else:
 		_refresh_percent()
-	# 源 :468-489 fore/mid 平滑（同 HpBar）
 	if _fore_length < _percent - EPSILON:
 		_fore_length = _fore_length + _inc_speed * dt
 		if _percent < _fore_length:
@@ -99,7 +95,6 @@ func update(dt: float) -> float:
 		if _midlayer:
 			_midlayer.scale.x = _mid_length
 		_hide_timer = HIDE_DELAY
-	# 源 :490-498
 	if _percent == 0.0:
 		_hide_timer = 0.0
 		visible = false
@@ -109,12 +104,10 @@ func update(dt: float) -> float:
 	return _hide_timer
 
 
-# 源 FloatingBar:CanBeSeen（:500-502）
 func can_be_seen() -> bool:
 	return _percent != 0.0
 
 
-# 源 RefreshPercent（:503-514）+ proto GetValue/GetValueMax（:542-602）
 func _refresh_percent() -> void:
 	_value = _get_value()
 	_value_max = _get_value_max()
@@ -124,7 +117,6 @@ func _refresh_percent() -> void:
 	_percent = clampf(_value / _value_max, 0.0, 1.0)
 
 
-# 源 proto GetValue（:553 HP / :566 Shield / :591 ShieldBoss）
 func _get_value() -> float:
 	if _type == "HP":
 		return float(_unit.hp)
@@ -136,7 +128,6 @@ func _get_value() -> float:
 	return total
 
 
-# 源 proto GetValueMax（:556 HP / :575 Shield / :600 ShieldBoss）
 func _get_value_max() -> float:
 	if _type == "HP":
 		return float(_unit.attribs.get("HP", 1.0))
@@ -175,11 +166,9 @@ class Group:
 	static func create() -> Group:
 		return Group.new()
 
-	# 源 AddBar（:524-529）
 	func add_bar(name: String, bar: BattleFloatingBar) -> void:
 		bars[name] = bar
 
-	# 源 update（:530-541）：各 bar update 取 max hide_timer，再按 CanBeSeen + auto_hide 控显。
 	func update(dt: float) -> void:
 		var hide_timer: float = 0.0
 		for bar in bars.values():

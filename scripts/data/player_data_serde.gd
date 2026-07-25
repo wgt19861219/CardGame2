@@ -3,7 +3,6 @@ extends RefCounted
 
 ## PlayerData 存档序列化（Data 层 mixin）— 从 PlayerData 拆出控 ≤250 行。
 ## static 方法第一参 pd（PlayerData 实例），照 battle mixin 范式。
-## 源 local_server.lua DEFAULT_DATA + save/load 存档结构。
 ## 入口统一 int 校验（存档/外部数据可能含 float，强制 int）。
 
 

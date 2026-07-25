@@ -6,7 +6,6 @@ extends RefCounted
 ## OM_atk3 takeEffectOn 各目标命中。全用已有 hook 点（takeEffectOn/createProjectile）。
 ## View Popup（multicast_xN，run_with_scene）分层 Phase 4。
 
-# 源 :2-20 multicast_table（各技能 multicast 概率表，索引=次数，值为百分比；和=100）
 const MULTICAST_TABLE: Dictionary = {
 	"OM_ult": [0, 40, 35, 25],
 	"OM_atk2": [60, 32, 8],
@@ -16,7 +15,7 @@ const MULTICAST_TABLE: Dictionary = {
 const G_HALF: float = 0.5
 const DISC_K: float = 4.0
 const DEN_K: float = 2.0
-const RAND_PERCENT: float = 100.0  # 源 :23 rand*100 概率基数
+const RAND_PERCENT: float = 100.0
 
 
 func apply(hero: Variant) -> void:
@@ -31,7 +30,6 @@ func apply(hero: Variant) -> void:
 		skill_atk3.hero_hooks["takeEffectOn"] = Callable(self, "_atk3_take_effect_on")
 
 
-# 源 :21-45 OM_rand（按概率表随机 multicast 次数）。
 func _om_rand(skill: Variant) -> int:
 	var prob_table: Array = MULTICAST_TABLE.get(str(skill.info.get("Skill Name", "")), [])
 	var rand_val: float = skill.caster.engine.rng.randf() * RAND_PERCENT
@@ -46,7 +44,6 @@ func _om_rand(skill: Variant) -> int:
 	return times
 
 
-# 源 :46-64 OM_select_targets（rand 次数 + 随机排序选前 count 目标）。
 func _om_select_targets(skill: Variant) -> Array:
 	var times: int = _om_rand(skill)
 	var list: Array = []
@@ -60,20 +57,17 @@ func _om_select_targets(skill: Variant) -> Array:
 	return ret
 
 
-# 源 :55-57 sort 降序（rand 大的优先选）。
 func _sort_rand_desc(a: Array, b: Array) -> bool:
 	return float(a[1]) > float(b[1])
 
 
-# 源 :65-70 skillult_takeEffectOn（multicast 循环 basefunc times 次）。
 func _ult_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var times: int = _om_rand(skill)
 	for _i in range(times):
 		BattleSkillEffect.take_effect_on(skill, target, src)  # basefunc
-	return [true, 0.0]  # 源单返 true（循环内 dmg 未累计，latent）
+	return [true, 0.0]
 
 
-# 源 :71-89 skill2_createProjectile（选多目标各发抛物线弹）。
 func _atk2_create_projectile(skill: Variant) -> Variant:
 	var targets: Array = _om_select_targets(skill)
 	for unit in targets:
@@ -86,22 +80,19 @@ func _atk2_create_projectile(skill: Variant) -> Variant:
 		var qc: float = h
 		var delta: float = qb * qb - DISC_K * qa * qc
 		var t: float = (-qb - sqrt(delta)) / (DEN_K * qa)
-		# 源 :84 edpSub(target_pos, projectile.position)——注意用 projectile.position 非 caster
 		var distance: Vector2 = unit.position - projectile.position
 		projectile.velocity = distance * (1.0 / t)
 		skill.caster.engine.add_projectile(projectile)
 	return null
 
 
-# 源 :90-95 skill3_takeEffectOn（选多目标各 basefunc 命中）。
 func _atk3_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var targets: Array = _om_select_targets(skill)
 	for unit in targets:
 		BattleSkillEffect.take_effect_on(skill, unit, src)  # basefunc per target
-	return [true, 0.0]  # 源单返 true（latent）
+	return [true, 0.0]
 
 
-# 源 OM.lua:32-43 multicast_xN 飘字（caster actor，camp player→red/else→blue，text style；times≤1 不弹）。
 func _show_multicast_popup(skill: Variant, times: int) -> void:
 	var str_text: String = "multicast_x" + str(times)
 	var actor: Variant = skill.caster.get("actor")

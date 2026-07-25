@@ -9,8 +9,7 @@ extends RefCounted
 const G_HALF: float = 0.5
 const DISC_K: float = 4.0
 const DEN_K: float = 2.0
-const COUNT_DIVISOR: int = 5  # 源 :10 count = (Script Arg1 - attack_counter) / 5 + 1
-# 源 :2-8 多发目标偏移表（索引 1..5，[dx, dy]；dx 乘 camp 翻转）
+const COUNT_DIVISOR: int = 5
 const OFFSET_LIST: Array = [
 	[0, 0],
 	[-19, 5],
@@ -26,13 +25,12 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["createProjectile"] = Callable(self, "_create_projectile")
 
 
-# 源 :9-36 createProjectile（多发循环 + 偏移目标 + 抛物线）。
 func _create_projectile(skill: Variant) -> Variant:
 	var arg1: int = int(skill.info.get("Script Arg1", 0))
 	var count: int = (arg1 - int(skill.attack_counter)) / COUNT_DIVISOR + 1
 	var orig_target: Variant = skill.target
 	var caster_pos: Vector2 = skill.caster.position
-	for i in range(1, count + 1):  # 源 for i=1,count
+	for i in range(1, count + 1):
 		var projectile: Variant = BattleProjectile.new(skill)  # basefunc
 		var h: float = float(projectile.height)
 		var v: float = float(projectile.z_speed)
@@ -43,7 +41,7 @@ func _create_projectile(skill: Variant) -> Variant:
 		var delta: float = qb * qb - DISC_K * qa * qc
 		var t: float = (-qb - sqrt(delta)) / (DEN_K * qa)
 		if i > 1:
-			skill._select_target(null)  # 源 skill:selectTarget()
+			skill._select_target(null)
 		if i == 1 or skill.target != orig_target:
 			var off: Array = OFFSET_LIST[i - 1]  # Lua 1-indexed → Godot 0-indexed
 			var target_pos := Vector2(
@@ -53,4 +51,4 @@ func _create_projectile(skill: Variant) -> Variant:
 			var distance: Vector2 = target_pos - caster_pos  # edpSub
 			projectile.velocity = distance * (1.0 / t)  # edpMult
 			skill.caster.engine.add_projectile(projectile)  # ed.engine:addProjectile
-	return null  # 源 return nil
+	return null

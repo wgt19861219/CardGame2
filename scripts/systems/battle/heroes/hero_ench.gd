@@ -9,7 +9,6 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["takeEffectOn"] = Callable(self, "_take_effect_on")
 
 
-# 源 :2-6 takeEffectOn：basefunc 后 target.basic_skill.cd_remaining=0 + target.global_cd=0。
 func _take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var r: Array = BattleSkillEffect.take_effect_on(skill, target, src)  # basefunc [succ, dmg]
 	target.basic_skill.cd_remaining = 0.0

@@ -15,7 +15,6 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["createProjectile"] = Callable(self, "_create_projectile")
 
 
-# 源 :2-15 skillatk2_createProjectile（basefunc → 抛物线 velocity → addProjectile → 隐式 nil）。
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = BattleProjectile.new(skill)  # basefunc
 	var h: float = float(projectile.height)
@@ -29,4 +28,4 @@ func _create_projectile(skill: Variant) -> Variant:
 	var distance: Vector2 = skill.target.position - skill.caster.position  # edpSub
 	projectile.velocity = distance * (1.0 / t)  # edpMult
 	skill.caster.engine.add_projectile(projectile)  # ed.engine:addProjectile
-	return null  # 源函数末尾隐式 nil
+	return null

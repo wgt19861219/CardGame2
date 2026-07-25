@@ -15,13 +15,13 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_timer_content.tscn")
 
-const WARN_THRESHOLD: int = 20                        # 源 :1416 seconds<20 红闪
-const WARN_COLOR: Color = Color(1.0, 144.0 / 255.0, 144.0 / 255.0)  # 源 :1418 ccc3(255,144,144)
-const NORMAL_COLOR: Color = Color.WHITE               # 源 :1424 ccc3(255,255,255)
+const WARN_THRESHOLD: int = 20
+const WARN_COLOR: Color = Color(1.0, 144.0 / 255.0, 144.0 / 255.0)
+const NORMAL_COLOR: Color = Color.WHITE
 
 var _mask: Sprite2D = null
 var _text: Label = null
-var _value: int = -1   # 源 :1347 timer.value=-1（强制首帧更新）
+var _value: int = -1
 
 
 func setup() -> void:
@@ -31,17 +31,16 @@ func setup() -> void:
 	_text = content.get_node("%TimeText") as Label
 
 
-# 源 updateTimer（:1406-1427）：seconds=ceil(time_limit)，变化→更新 text+<20s 红+mask 显；!running→还原。
 func update(time_limit: float, running: bool) -> void:
 	var seconds: int = int(ceil(time_limit))
 	if seconds != _value:
 		_value = seconds
-		_text.text = "%02d:%02d" % [seconds / 60, seconds % 60]   # 源 :1414
+		_text.text = "%02d:%02d" % [seconds / 60, seconds % 60]
 		if seconds < WARN_THRESHOLD:
 			if _mask:
-				_mask.visible = true   # 源 :1417
-			_text.add_theme_color_override("font_color", WARN_COLOR)   # 源 :1418
+				_mask.visible = true
+			_text.add_theme_color_override("font_color", WARN_COLOR)
 	if not running:
 		if _mask:
-			_mask.visible = false   # 源 :1423
-		_text.add_theme_color_override("font_color", NORMAL_COLOR)   # 源 :1424
+			_mask.visible = false
+		_text.add_theme_color_override("font_color", NORMAL_COLOR)

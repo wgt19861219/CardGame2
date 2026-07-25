@@ -10,10 +10,10 @@ extends Control
 ## show/hide_button 摆动动画保留 procedural（position.x tween）。Control 组件 content 挂 panel 自身（坑 7）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_next_button_content.tscn")
-const BUTTON_POS: Vector2 = Vector2(670.0, 260.0)   # 源 :1202 ccp(670,260)
-const BUTTON_SCALE: float = 1.25                    # 源 :1200 nextScale
-const SWING_DIST: float = 30.0                      # 源 :1400 ccp(30,0)
-const SWING_DURATION: float = 0.65                  # 源 :1400 CCMoveBy(0.65)
+const BUTTON_POS: Vector2 = Vector2(670.0, 260.0)
+const BUTTON_SCALE: float = 1.25
+const SWING_DIST: float = 30.0
+const SWING_DURATION: float = 0.65
 
 signal pressed
 
@@ -32,13 +32,11 @@ func setup() -> void:
 	_btn.pressed.connect(_on_pressed)
 
 
-# 源 showNextButton（:1392-1404）：setVisible+setEnabled + 摆动动画。
 func show_button() -> void:
 	_btn.visible = true
 	_btn.disabled = false
 	if _swing_tween:
 		_swing_tween.kill()
-	# 源 :1400-1402 CCRepeatForever(MoveBy(30,0)+MoveBy(-30,0))
 	_swing_tween = create_tween().set_loops()
 	_swing_tween.tween_property(self, "position:x", _godot_pos.x + SWING_DIST, SWING_DURATION)
 	_swing_tween.tween_property(self, "position:x", _godot_pos.x, SWING_DURATION)

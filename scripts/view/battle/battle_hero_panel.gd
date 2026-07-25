@@ -19,11 +19,11 @@ const BattleEffect: Script = preload("res://scripts/view/battle/battle_effect.gd
 const FRAME_PATH_FMT: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_%d.png"
 
 # redmask FadeTo 闪烁 loop（源 :75-76）。位置/texture/初始 visible 在 .tscn。
-const REDMASK_FADE_LOW: float = 64.0 / 255.0            # 源 :75 FadeTo(0.8, 64)
-const DEAD_COLOR: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0)  # 源 :125 ccc3(100,100,100)
-const AUTO_CAST_INTERVAL: float = 0.5                   # 源 :129 skill_ready_timer > 0.5
-const MP_CAST_THRESHOLD: int = 1000                     # 源 :103 mp < 1000 → switch
-const TICK_INTERVAL: float = 0.033                      # 源 ed.tick_interval
+const REDMASK_FADE_LOW: float = 64.0 / 255.0
+const DEAD_COLOR: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0)
+const AUTO_CAST_INTERVAL: float = 0.5
+const MP_CAST_THRESHOLD: int = 1000
+const TICK_INTERVAL: float = 0.033
 
 const STATE_NONE: String = ""
 const STATE_CAST: String = "cast"
@@ -38,7 +38,7 @@ const FCA_TRIGGER: String = "effect/eff_UI_battle_skill_activate"
 
 var unit: Variant = null
 var cm: Variant = null
-var scene: Variant = null        # 源 ed.scene（auto_combat 访问）
+var scene: Variant = null
 var portrait: ReadheroIcon = null
 var hp_bar: BattleFloatingBar = null
 var mp_bar: BattleFloatingBar = null
@@ -47,10 +47,9 @@ var redmask: Sprite2D = null
 var _state: String = STATE_NONE
 var _ticks: int = -1
 var _skill_ready_timer: float = 0.0
-var _skill_ready_effect: Variant = null  # 源 :27 skill_ready FCA 节点
+var _skill_ready_effect: Variant = null
 
 
-# 源 HeroPanelCreate(unit, color)。Phase：静态节点从 .tscn instantiate（位置/size 可视化）+
 # 动态 portrait/hp_bar/mp_bar 挂 %Host（位置在 .tscn，子组件局部坐标系不变）。
 func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	unit = p_unit
@@ -63,90 +62,81 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	var portrait_host: Control = content.get_node("%PortraitHost") as Control
 	var hp_bar_host: Control = content.get_node("%HpBarHost") as Control
 	var mp_bar_host: Control = content.get_node("%MpBarHost") as Control
-	# 源 :38-44 frame = CCMenuItemImage(getIconFrameByRank(rank))。texture_normal 按 rank fill。
 	var rank: int = int(unit.rank)
 	var frame_id: int = ReadheroIcon._frame_id_by_rank(rank)
 	frame_btn.texture_normal = _load_tex(FRAME_PATH_FMT % frame_id)
 	frame_btn.pressed.connect(_on_frame_pressed)
-	# 源 :17-22 portrait = createIcon({id, stars, isHideFrame=true})。挂 %PortraitHost（位置 (0,70) 在 .tscn）。
 	portrait = ReadheroIcon.new()
 	portrait.setup({"id": int(unit.tid), "stars": int(unit.stars), "isHideFrame": true}, cm)
 	portrait_host.add_child(portrait)
 	portrait_host.move_child(portrait, 0)   # 让 portrait 在 FrameBtn 之下（视觉等价源 add 顺序）
-	# 源 :15-16 hp_bar = HpBarCreate(unit,"HP") / mp_bar = HpBarCreate(unit, MP Type)
 	hp_bar = BattleFloatingBar.create(unit, "HP")
-	hp_bar.auto_hide = false   # 源 :66
+	hp_bar.auto_hide = false
 	hp_bar_host.add_child(hp_bar)
 	var mp_type: String = str(unit.info.get("MP Type", "MP"))
 	mp_bar = BattleFloatingBar.create(unit, mp_type)
-	mp_bar.auto_hide = false   # 源 :69
+	mp_bar.auto_hide = false
 	mp_bar_host.add_child(mp_bar)
-	_start_redmask_flicker()   # 源 :72-76 redmask FadeTo 闪烁 loop（节点在 .tscn）
-	frame_btn.disabled = true   # 源 :62 setEnabled(false)
+	_start_redmask_flicker()
+	frame_btn.disabled = true
 
 
-# 源 :72-76 redmask = portraitredmask，setVisible(false) + FadeTo 闪烁 loop（节点在 .tscn）。
 func _start_redmask_flicker() -> void:
 	if redmask == null:
 		return
-	var t := create_tween().set_loops()   # 源 :75 CCRepeatForever FadeTo(0.8,64)+FadeTo(0.2,255)
+	var t := create_tween().set_loops()
 	t.tween_property(redmask, "modulate:a", REDMASK_FADE_LOW, 0.8)
 	t.tween_property(redmask, "modulate:a", 1.0, 0.2)
 
 
-# 源 :45-58 castHandler：engine.running → manuallyCastSkill(unit) + btn disabled + play_skill_cast_effect。
 func _on_frame_pressed() -> void:
 	if unit == null or unit.engine == null:
 		return
 	if not bool(unit.engine.running):
 		return
-	unit.cast_manual_skill()   # 源 ed.engine:manuallyCastSkill(unit)（本项目 unit 侧等价 :284）
-	frame_btn.disabled = true   # 源 :48 setEnabled(false)
+	unit.cast_manual_skill()
+	frame_btn.disabled = true
 	_play_skill_cast_effect()
 
 
-# 源 update :93-150。名 update（被 scene ui_list 推进调 ui.update(dt)）。
 func update(dt: float) -> void:
 	if unit == null or unit.engine == null:
 		return
 	var eng: Variant = unit.engine
-	# 源 :94 每逻辑 tick 检查（非 arena/replay 模式）
 	if _ticks != int(eng.ticks) and not bool(eng.arena_mode) and not bool(eng.replay_mode):
 		_ticks = int(eng.ticks)
 		var new_state: String = STATE_NONE
-		if bool(unit.can_cast_manual) and bool(eng.running):   # 源 :97-99
+		if bool(unit.can_cast_manual) and bool(eng.running):
 			new_state = STATE_CAST
 		var cs: Variant = unit.current_skill
-		if cs != null and cs.has_method("can_trigger") and bool(cs.can_trigger()):   # 源 :100-102
+		if cs != null and cs.has_method("can_trigger") and bool(cs.can_trigger()):
 			new_state = STATE_TRIGGER
-		if new_state == STATE_CAST and int(unit.mp) < MP_CAST_THRESHOLD:   # 源 :103-105
+		if new_state == STATE_CAST and int(unit.mp) < MP_CAST_THRESHOLD:
 			new_state = STATE_SWITCH
-		frame_btn.disabled = (new_state == STATE_NONE)   # 源 :106 setEnabled(newState!=nil)
+		frame_btn.disabled = (new_state == STATE_NONE)
 		if _state != new_state:
-			_play_skill_ready(new_state)   # 源 :108-119 FCA + teach
+			_play_skill_ready(new_state)
 			_state = new_state
-		redmask.visible = bool(unit.hp_low)   # 源 :122
-		if not bool(unit.is_alive()):   # 源 :123-126 死亡变灰
+		redmask.visible = bool(unit.hp_low)
+		if not bool(unit.is_alive()):
 			redmask.visible = false
 			_set_portrait_gray()
-		if (new_state == STATE_CAST or new_state == STATE_SWITCH) and _is_auto_combat():   # 源 :127-133
+		if (new_state == STATE_CAST or new_state == STATE_SWITCH) and _is_auto_combat():
 			_skill_ready_timer += TICK_INTERVAL
 			var ms: Variant = unit.manual_skill
 			if _skill_ready_timer > AUTO_CAST_INTERVAL and ms != null and bool(ms.will_cast()):
 				_on_frame_pressed()
 				_skill_ready_timer = 0.0
-	hp_bar.update(dt)   # 源 :148
-	mp_bar.update(dt)   # 源 :149
+	hp_bar.update(dt)
+	mp_bar.update(dt)
 
 
-# 源 play_skill_ready :152-166 — FCA 光圈（createFcaNode 挂 hero_panel）。
 func _play_skill_ready(state: String) -> void:
 	_skill_ready_timer = 0.0
 	if state == STATE_NONE:
 		return
 	if state == STATE_CAST:
-		AudioPlayer.play_sfx("battle_fury_full")   # 源 battle.cdOver
-	# 源 :153-160 清旧 skill_ready + createFcaNode(res) + addChild
+		AudioPlayer.play_sfx("battle_fury_full")
 	if _skill_ready_effect != null and is_instance_valid(_skill_ready_effect):
 		_skill_ready_effect.queue_free()
 	var res: String = FCA_READY if state == STATE_CAST else (FCA_TRIGGER if state == STATE_TRIGGER else FCA_SWITCH)
@@ -157,7 +147,6 @@ func _play_skill_ready(state: String) -> void:
 		add_child(_skill_ready_effect)
 
 
-# 源 play_skill_cast_effect :168-176 — FCA cast 特效（createFcaNode(fca_cast)）。
 func _play_skill_cast_effect() -> void:
 	var eff: Variant = BattleEffect.create(FCA_CAST)
 	if eff != null:
@@ -169,13 +158,11 @@ func _play_skill_cast_effect() -> void:
 			get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(n): n.queue_free())
 
 
-# 源 :125 portrait.ori_icon setColor(100,100,100) — 死亡变灰。
 func _set_portrait_gray() -> void:
 	if portrait != null and portrait.ori_icon != null:
 		portrait.ori_icon.modulate = DEAD_COLOR
 
 
-# 源 :127 ed.scene.auto_combat — 单机化 scene.auto_combat（默认 false）。
 func _is_auto_combat() -> bool:
 	if scene != null and scene.get("auto_combat") != null:
 		return bool(scene.auto_combat)

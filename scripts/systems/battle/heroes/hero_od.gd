@@ -9,15 +9,13 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["takeEffectOn"] = Callable(self, "_take_effect_on")
 
 
-# 源 :1-11 takeEffectOn（INT 主属性 → 免疫 false；否则 basefunc）。
 func _take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	if String(target.info.get("Main Attrib", "")) == "INT":
-		_show_immune_popup(target)  # 源 OD.lua:4-6 immune 飘字
+		_show_immune_popup(target)
 		return [false, 0.0]  # 免疫
 	return BattleSkillEffect.take_effect_on(skill, target, src)  # basefunc
 
 
-# 源 OD.lua:4-6 INT 免疫 immune 飘字（target actor，camp enemy→red/else→blue）。
 func _show_immune_popup(target: Variant) -> void:
 	var actor: Variant = target.get("actor")
 	if actor == null or not actor.has_method("spawn_popup"):

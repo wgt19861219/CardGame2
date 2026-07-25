@@ -6,7 +6,6 @@ extends RefCounted
 ## P2-4 核实：源 D:\workspace\projects\CardGameAxmol\Content\src\gametable\storytableconfig.lua 实际存在（926 条赋值），
 ## 含 Stage{N}Wave3 / WinBackToSelect{N} / OpeningMain 等约 40+ key，每条 Content 内含 monsterIndex/playIndex + position + LSTR text。
 ## 占位 3 条待用 lua_to_json 导入源数据替换（LSTR key → 中文映射），属纯翻译工作非设计。
-## 源 storylayer.lua 触发：EnterBattleStage(stage,wave) / WinBackToSelect(state) / EnterMainUI。
 
 # 占位数据框架（源 storytableconfig.lua key 结构：Content=[{monsterIndex/playIndex, position, text}] + ShowOnce）
 # 以下 3 条为占位，待 lua_to_json 从源导入实际数据替换
@@ -20,6 +19,5 @@ const _STORIES: Dictionary = {
 }
 
 
-## 源 EDTables.story[data] 查询。返 {content: Array, show_once: bool}，无则空 dict。
 static func get_story(story_name: String) -> Dictionary:
 	return _STORIES.get(story_name, {})

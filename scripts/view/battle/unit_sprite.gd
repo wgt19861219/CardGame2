@@ -101,7 +101,6 @@ func _get_or_load_atlas(plist_path: String) -> AtlasSprite:
 
 
 # FCA/puppet 加载失败降级显示。
-# 源 unit.lua:1582-1600 usePuppet pcall 失败 → CCLabelTTF:create(resourceName,"Arial",20)（不是 Sprite！），
 # camp>0 绿色 ccc3(0,220,0) / camp<=0 红色 ccc3(220,50,50)，setScale(getUnitScale()*0.8)。
 # 旧版 CardGameGodot 改用 Portrait 图片降级（不照源），本项目沿用旧版产物；本任务属 CS 审计范围
 # 仅触及 TextureRect contentScaleFactor 偏差，源 LabelTTF 不适用 CS 规则 → 本节点保留 + 注释说明，
@@ -137,7 +136,6 @@ func set_speed(s: float) -> void:
 		_fca.set_speed(s)
 
 
-# 源 puppet:tint（unit.lua:1918-1921）— 色相 multiplier，0.4 变暗/2.5 变亮。
 # 设 _fca.modulate（不设 self.modulate，避与 play_hit 闪红 Tween 冲突）。
 func tint(r: float, g: float, b: float) -> void:
 	if _using_fca and _fca:
@@ -323,7 +321,6 @@ func play_death() -> void:
 		_play_fall_down()
 
 
-# 源 puppet:setAction(name)+setLoop（npc.lua:183-184 通用）：非战斗动作（Birth/Idle2/特殊英雄）
 # 直接 FCA play。BattleActor.on_start_new_action 的 default 分支用。
 func play_action(action_name: String, loop: bool) -> void:
 	if _dead or not _using_fca or not _fca:

@@ -50,7 +50,6 @@ static func _split_chain_id(packed: int) -> Array[int]:
 	return [packed & SPLITBITS_MASK, (packed >> SPLITBITS_SHIFT) & SPLITBITS_MASK]
 
 
-## 源 trigger_task :1484-1505：遍历 packed 整数数组，拆 chain/id，
 ## 移除同链旧任务（倒序避索引错位），插入 {chain, id, "working", 0}。
 func trigger_task(packed_list: Array) -> void:
 	for packed in packed_list:
@@ -99,7 +98,6 @@ func claim_task_reward(player: PlayerData, chain: int, id: int, cm: ConfigManage
 
 
 
-## 源 player:getDailyjobCount：读 job 今日完成次数。
 func get_dailyjob_count(job_id: int) -> int:
 	return int(dailyjob_count.get(job_id, 0))
 
@@ -109,7 +107,6 @@ func record_dailyjob_progress(job_id: int, amount: int = 1) -> void:
 	dailyjob_count[job_id] = get_dailyjob_count(job_id) + amount
 
 
-## 源 record.lua increaseDailyjobCount({type, add})：按 Task Progress Type 查 Todolist 找匹配 job_id 计数。
 ## 调用方传 type（FarmPVEStage/PVPBattle/SkillUpgradeSuccess/EnhanceLevelUp/MidasUse/TavernGroupUse 等）。
 ## type 在源 record.lua 各行为点触发（successFarmStage/chaosFarmStage/refreshCommonRecord）。
 func record_by_type(cm: ConfigManager, type: String, amount: int = 1) -> void:
@@ -127,7 +124,6 @@ static func current_now_minutes() -> int:
 
 
 ## 当前时段可见的日常 job_id 列表（源 task.lua:1489-1495 initTaskList 过滤）。
-## 源 :1495 = checkDailyjobDisplay(id) or checkdbTrigger(id)；checkdbTrigger 多为 VIPLevel（VIP 裁剪不接，单机只走时间窗）。
 func get_visible_daily_jobs(cm: ConfigManager, now_minutes: int) -> Array[int]:
 	var raw: Dictionary = cm.get_raw_table("Todolist")
 	var result: Array[int] = []
@@ -137,7 +133,6 @@ func get_visible_daily_jobs(cm: ConfigManager, now_minutes: int) -> Array[int]:
 	return result
 
 
-## 源 task.lua:71-85 checkDailyjobDisplay：Todolist[job_id] Display Time 任一窗口命中当前时间。
 func check_dailyjob_display(cm: ConfigManager, job_id: int, now_minutes: int) -> bool:
 	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
 	if row.is_empty():
@@ -154,7 +149,6 @@ func check_dailyjob_display(cm: ConfigManager, job_id: int, now_minutes: int) ->
 	return false
 
 
-## 源 time.lua:383-405 checkTimeBetween：now 在 "HH:MM-HH:MM" 开区间 (start,end) 内。
 static func _time_in_window(now_minutes: int, range_str: String) -> bool:
 	var parts: PackedStringArray = range_str.split("-")
 	if parts.size() < TIME_RANGE_PARTS:
@@ -170,7 +164,6 @@ static func _hhmm_to_minutes(hhmm: String) -> int:
 	return int(hm[0]) * MINUTES_PER_HOUR + int(hm[1])
 
 
-## 源 player:resetDailyjobTime：领奖后重置进度。
 func reset_dailyjob(job_id: int) -> void:
 	dailyjob_count[job_id] = 0
 
@@ -196,7 +189,6 @@ static func from_dict(data: Dictionary) -> TaskManager:
 	return mgr
 
 
-## 源 job_rewards :4071-4110 日常分支：查 Todolist[job_id]，校验 count>=target，发 Task Reward 1/2，reset。
 ## 活动 act_ 分支单机裁剪（SKIPPED）。返 {ok}。
 func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager) -> Dictionary:
 	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
@@ -209,7 +201,7 @@ func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager) -> Dic
 		var rid: int = int(row.get("Task Reward %d ID" % i, 0))
 		var ramount: int = int(row.get("Task Reward %d Amount" % i, 0))
 		if ramount <= 0 and i == TASK_REWARD_FIRST:
-			ramount = int(row.get("Task Reward Amount", 0))  # 源 :4089 fallback Task Reward Amount
+			ramount = int(row.get("Task Reward Amount", 0))
 		if rtype == "" or ramount <= 0:
 			continue
 		_apply_reward(player, rtype, rid, ramount)
@@ -217,7 +209,6 @@ func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager) -> Dic
 	return {"ok": true}
 
 
-## 源 :4091-4101 Task Reward Type → 发奖（Coin→金币/Diamond→钻/Vitality→体力/PlayerEXP→战队经验/Item→道具）。
 func _apply_reward(player: PlayerData, rtype: String, rid: int, amount: int) -> void:
 	match rtype:
 		"Coin":

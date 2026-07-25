@@ -37,7 +37,6 @@ static func finalize_pvp_battle(ladder: LadderManager, engine: Variant, player: 
 	var won: bool = not engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER).is_empty() and engine.foreach_alive_unit(BattleEngine.CAMP_ENEMY).is_empty()
 	var result: String = "victory" if won else "defeat"
 	var reply: Dictionary = ladder.handle({"_end_battle": {"result": result}}, player, cm, rng, now)
-	# 源 record.lua chaosFarmStage :190 PVPBattle → 日常任务 PVPBattle
 	if player != null and player.task_manager != null:
 		player.task_manager.record_by_type(cm, "PVPBattle")
 	return {"ok": true, "won": won, "reply": reply.get("_end_battle", {})}

@@ -8,7 +8,6 @@ extends RefCounted
 const NUM_DECIMAL_PRECISION: float = 0.01   # 成长值小数精度（2 位，源 Lua number 默认）
 
 
-# 源 skillstren.lua:742 skill.description[i] = allSkillInfo[groupID][0].Description。
 static func get_skill_description(hero: HeroInstance, slot: int, cm: ConfigManager) -> String:
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {}).get(str(slot), {})
 	if sg.is_empty():
@@ -18,7 +17,6 @@ static func get_skill_description(hero: HeroInstance, slot: int, cm: ConfigManag
 	return String(skill.get("Description", ""))
 
 
-# 源 controller.lua:68-99 getSkillDesc — 技能成长值多行文本。
 # skill_add：升级预览加成（源 preSkillLevelAdd，默认 0）。level = 显示等级 + skill_add。
 # 遍历 Growth 1-N：field/value/multiplier/summary 任一缺或 growth/multiplier==0 则停（源 :83-84）。
 static func get_skill_desc(hero: HeroInstance, slot: int, cm: ConfigManager, skill_add: int = 0) -> String:
@@ -52,7 +50,6 @@ static func get_skill_desc(hero: HeroInstance, slot: int, cm: ConfigManager, ski
 	return text
 
 
-# 源 Lua number→string：整数取整，否则保留 2 位（GDScript float 显示优化）。
 static func _num_str(n: float) -> String:
 	if is_equal_approx(n, int(n)):
 		return str(int(n))

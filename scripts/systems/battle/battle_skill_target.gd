@@ -4,10 +4,8 @@ extends RefCounted
 ## 技能目标选择与施法判定（Logic 层 mixin）— 从 BattleSkill 拆出控 ≤250 行。
 ## static 方法第一参 skill，照 battle_engine_result mixin 范式。
 ## 操作 skill 实例状态（can_cast/target/target_selectors），skill 参数 duck-type。
-## 源 battle_skill.lua canCastWithTarget:254 / selectTarget:331 / target_selectors:78。
 
 
-# 源 target_selectors（:78-104）：Target Type → 排序 key callable（selectTarget 取 max）
 static func build_target_selectors(skill: Variant) -> void:
 	skill.target_selectors = {
 		"random": func(_u: Variant) -> float: return skill.caster.engine.rng.randf(),
@@ -22,7 +20,6 @@ static func build_target_selectors(skill: Variant) -> void:
 	}
 
 
-# 源 canCastWithTarget（:254-289）：MP/CD/buff/目标/射程/屏外全判定。同 tick 缓存（can_cast_tick）。
 static func can_cast_with_target(skill: Variant, p_target: Variant) -> Dictionary:
 	if skill.can_cast_tick == int(skill.caster.engine.ticks):
 		return {"ok": skill.can_cast, "reason": "same tick"}
@@ -58,7 +55,6 @@ static func can_cast_with_target(skill: Variant, p_target: Variant) -> Dictionar
 	return {"ok": true, "reason": ""}
 
 
-# 源 selectTarget（:331-372）default 实现：target/self/selector 三分支选目标。
 static func select_target_default(skill: Variant, default_t: Variant) -> Variant:
 	var ttype: String = str(skill.info.get("Target Type", ""))
 	var selector: Callable = skill._target_selector()

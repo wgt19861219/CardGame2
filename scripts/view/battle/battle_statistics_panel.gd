@@ -2,7 +2,6 @@ class_name BattleStatisticsPanel
 extends Control
 
 ## 战斗伤害统计弹窗（View 层）— 照源 ui/battleStatistics.lua 翻译。
-## 源 battleStatist.create(engineList) 装配：setImx 算 maxdmg → showPlayBar（条形图 scale 动画）
 ##   + setCount（numberJump 数字跳动 scheduler）+ getIcon（英雄头像）。
 ## 本实现：弹窗（全屏黑半透 + hurtBg 面板）+ 英雄行（头像+数字+条）+ Tween 动画。
 ## 单机化：pvp changeTitle 裁剪（源 :149-152，单机无 pvp）；cExit + 点遮罩关闭。
@@ -17,29 +16,26 @@ const COMMON_DIR: String = "res://assets/ui/alpha/HVGA/common/"
 const BAR_BG_TEX: String = "hp_black_small.png"
 const BAR_FRIEND_TEX: String = "stagedone_statistics_friend.png"
 const BAR_ENEMY_TEX: String = "stagedone_statistics_enemy.png"
-# 源 getIcon length=45（readhero.getIcon 缩放参数）→ ReadheroIcon container 104×104，scale=45/104。
 const ICON_SCALE: float = 45.0 / 104.0
-const HURT_BG_H: float = 360.0   # 源 hurtBg scaleSize height（局部 y 翻转基准）
-# 源 showPlayBar/setCount：每方最多 5 行，行间距 50（y=260/210/160/110/60）。
+const HURT_BG_H: float = 360.0
 const ROWS_Y: Array[float] = [260.0, 210.0, 160.0, 110.0, 60.0]
-const COUNT_Y_OFFSET: float = 20.0   # 源 mCount ccp(x, sprite_y+20)（260→280）
-const BAR_Y_OFFSET: float = -10.0    # 源 mBar ccp(x, sprite_y-10)（260→250）
+const COUNT_Y_OFFSET: float = 20.0
+const BAR_Y_OFFSET: float = -10.0
 # 我方列 x（源 mSprite=40, mCount=138, mBar=136）
 const M_SPRITE_X: float = 40.0
 const M_COUNT_X: float = 138.0
 const M_BAR_X: float = 136.0
-const M_BAR_W: float = 137.0   # 源 ui1 scaleSize width
+const M_BAR_W: float = 137.0
 # 敌方列 x（源 eSprite=380, eCount=282, eBar=284）
 const E_SPRITE_X: float = 380.0
 const E_COUNT_X: float = 282.0
 const E_BAR_X: float = 284.0
-const E_BAR_W: float = 136.0   # 源 eui1 scaleSize width
-const BAR_H: float = 15.0      # 源 ui/eui scaleSize height
+const E_BAR_W: float = 136.0
+const BAR_H: float = 15.0
 const LABEL_W: float = 60.0
 const LABEL_H: float = 16.0
-# 源 upBar final scale.x = 0.5 * len（len=dmg/maxdmg）。简化为 size 对齐底条后 ratio 直接用（详见验收点）。
-const BAR_SCALE_Y: float = 0.5   # 源 setScaleY(0.5) 固定
-const MAX_BAR_TIME: float = BattleStatisticsCalc.MAX_BAR_TIME   # 源 getBarTime 第三参 0.8
+const BAR_SCALE_Y: float = 0.5
+const MAX_BAR_TIME: float = BattleStatisticsCalc.MAX_BAR_TIME
 
 signal closed
 
@@ -120,7 +116,6 @@ func _create_row(is_player: bool, idx: int, unit: Dictionary, max_dmg: float, cm
 	_number_jump(count, dmg, speed_time)
 
 
-# 源 hurtBg 局部坐标转换：ccp(cx,cy) 相对 hurtBg 左下 → Godot 局部 (cx, HURT_BG_H - cy)。
 func _local(cx: float, cy: float) -> Vector2:
 	return Vector2(cx, HURT_BG_H - cy)
 
@@ -169,7 +164,6 @@ func _make_bar_fill(is_player: bool, bar_bg: Control, w: float) -> Control:
 	return node
 
 
-# 源 upBar(:96-108)：setScaleX(0) setScaleY(0.5) → CCScaleTo(barTime, 0.5*len, 0.5)。
 # 本实现 size 对齐底条，scale.x 0→ratio（ratio=dmg/maxdmg，源 0.5*len 简化，详见验收点）。
 func _up_bar(bar_fill: Control, is_player: bool, ratio: float, duration: float) -> void:
 	var target_x: float = clampf(ratio, 0.0, 1.0)
@@ -180,7 +174,6 @@ func _up_bar(bar_fill: Control, is_player: bool, ratio: float, duration: float) 
 	t.tween_property(bar_fill, "scale:x", target_x, duration).set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_OUT)
 
 
-# 源 numberJump(:42-76)：scheduler 每帧 count+=dt，ce=min(floor(speed*count),dmg)，setString(comma(floor(ce)))。
 # 本实现 Tween method 0→dmg（duration=speed_time，speed=dmg/speed_time 照源），每帧 floor+千分位。
 func _number_jump(label: Label, dmg: float, speed_time: float) -> void:
 	if dmg <= 0.0:
@@ -196,7 +189,6 @@ func _play_icon_fade(icon: Node2D) -> void:
 	t.tween_property(icon, "modulate:a", 1.0, 0.2)
 
 
-# 源 release/exit：点遮罩或 cExit 关闭（源 battleStatist.exit removeChild + release）。
 func _on_shelter_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		close()

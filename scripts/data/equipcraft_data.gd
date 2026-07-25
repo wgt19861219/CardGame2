@@ -6,7 +6,6 @@ extends RefCounted
 const COMPONENT_COUNT: int = 4  # Component1-4（源 Equipcraft 组件槽）
 
 
-# 源 Equipcraft[target_id] = {Component1-4 + Count, Category, ...}。
 static func get_recipe(target_id: int, cm: Variant) -> Dictionary:
 	return cm.get_raw_table("Equipcraft").get(str(target_id), {})
 

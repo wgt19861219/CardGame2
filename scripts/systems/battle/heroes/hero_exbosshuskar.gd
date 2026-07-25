@@ -7,18 +7,17 @@ extends RefCounted
 ## 注：源 skillult_finish 空透传（等价默认 _finish_default，不挂）；源 skillatk2_power 定义但 init_hero 未挂（死代码，跳过）。
 
 const HERO_NAME: String = "ExBossHuskar"
-const TIMEGAP: float = 0.25                 # 源 :2 冲撞时间
-const COLLIDE_DIS: float = 30.0             # 源 :3 collidedis
-const RESET_BUFF_ID: int = 152              # 源 :10 首次出场 buff
-const CHARGE_BUFF_ID: int = 98              # 源 :45 冲撞 buff
-const SELF_HURT_PERC: float = 24.3          # 源 :48 自残百分比
-const SELF_HURT_FLOOR_RATIO: float = 0.003  # 源 :49 HP*0.003 下限
-const SHORT_CD: float = 5.5                 # 源 :19 召唤物短 CD
-const LONG_CD: float = 10.0                 # 源 :23 普通长 CD
+const TIMEGAP: float = 0.25
+const COLLIDE_DIS: float = 30.0
+const RESET_BUFF_ID: int = 152
+const CHARGE_BUFF_ID: int = 98
+const SELF_HURT_PERC: float = 24.3
+const SELF_HURT_FLOOR_RATIO: float = 0.003
+const SHORT_CD: float = 5.5
+const LONG_CD: float = 10.0
 const PERC_DENOM: float = 100.0
 
 
-# 源 :5-15 reset：basefunc + has_resetted 守卫 → 首次加 Buff152（Boss 出场 buff，多波只加一次）。
 func _reset(hero: Variant) -> void:
 	hero._reset_default()
 	if not bool(hero.custom_data.get("has_resetted", false)):
@@ -27,7 +26,6 @@ func _reset(hero: Variant) -> void:
 		hero.add_buff(binfo, hero)
 
 
-# 源 :16-30 atk2 createProjectile：按 target 是否召唤物改 atk5 CD（wraptable originfo + cd_remaining 旧CD→新CD 比例缩放）+ basefunc + enableTrack。
 func _atk2_create_projectile(skill: Variant) -> Variant:
 	var caster: Variant = skill.caster
 	var skill5: Variant = caster.skills.get(HERO_NAME + "_atk5")
@@ -48,7 +46,6 @@ func _atk2_create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# 源 :31-63 atk3 takeEffectOn：counter==1 朝 target 冲撞 walk_v（同 BossHuskar）/ else Buff98 + perc24.3 自残 setHP + walk_v=0 + basefunc。
 func _atk3_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var caster: Variant = skill.caster
 	if int(skill.attack_counter) == 1:
@@ -63,14 +60,13 @@ func _atk3_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Arra
 	caster.add_buff(binfo, caster)
 	var full_hp: float = float(caster.attribs.get("HP", 0))
 	var left_hp: float = max(full_hp * SELF_HURT_FLOOR_RATIO, float(caster.hp) - full_hp * SELF_HURT_PERC / PERC_DENOM)
-	var hurt: float = float(caster.hp) - left_hp  # 源 :48 自残量（set_hp 前算）
+	var hurt: float = float(caster.hp) - left_hp
 	caster.set_hp(int(left_hp))
 	caster.walk_v = Vector2.ZERO
-	_show_self_hurt_popup(caster, hurt)  # 源 :54-57 自残飘字
+	_show_self_hurt_popup(caster, hurt)
 	return BattleSkillEffect.take_effect_on(skill, target, src)
 
 
-# 源 :73-83 init_hero：挂 reset（单位）/ atk2 createProjectile / atk3 takeEffectOn + skill5.originfo 存原始 info。
 func apply(hero: Variant) -> void:
 	hero.hero_hooks["reset"] = Callable(self, "_reset")
 	var skill2: Variant = hero.skills.get(HERO_NAME + "_atk2")
@@ -84,7 +80,6 @@ func apply(hero: Variant) -> void:
 		skill5.custom_data["originfo"] = skill5.info
 
 
-# 源 ExBossHuskar.lua:54-57 自残 -N 飘字（caster actor，orange，damage style；-0 不弹）。
 func _show_self_hurt_popup(unit: Variant, hurt: float) -> void:
 	var str_text: String = "-" + str(int(round(hurt)))
 	if str_text == "-0":

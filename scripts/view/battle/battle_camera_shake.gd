@@ -4,10 +4,8 @@ extends RefCounted
 ## 战斗场景相机震动（View helper）— 从 BattleScene 拆出控 ≤400。
 ## static 方法第一参 scene，照 equip_strengthen_anim.gd 静态拆分范式。
 ## 主类 start/stop_camera_shake_animation_x/y 转发本类（公开 API，被 BattleActor 调用）。
-## 源 battle_scene.lua startCameraShakeAnimationX/Y :1440/:1454 + stopCameraShakeAnimationX/Y :1447/:1461。
 
 
-# 源 startCameraShakeAnimationY :1440 — CCDirector:startCameraAnimationY → Camera2D.offset.y 震动。
 # shakeNum 次交替 ±max_height，shake_time 总时长（每次 interval = shake_time/shakeNum），末尾还原。
 static func shake_y(scene, max_height: float, shake_time: float, shake_num: int) -> void:
 	if scene._camera == null:
@@ -22,7 +20,6 @@ static func shake_y(scene, max_height: float, shake_time: float, shake_num: int)
 	scene._shake_tween_y.tween_property(scene._camera, "offset:y", 0.0, interval)
 
 
-# 源 stopCameraShakeAnimationY :1447 — 停止震动 + 还原 offset.y。
 static func stop_y(scene) -> void:
 	if scene._shake_tween_y != null:
 		scene._shake_tween_y.kill()
@@ -31,7 +28,6 @@ static func stop_y(scene) -> void:
 		scene._camera.offset.y = 0.0
 
 
-# 源 startCameraShakeAnimationX :1454 — 同 Y，offset.x 震动。
 static func shake_x(scene, max_height: float, shake_time: float, shake_num: int) -> void:
 	if scene._camera == null:
 		return
@@ -45,7 +41,6 @@ static func shake_x(scene, max_height: float, shake_time: float, shake_num: int)
 	scene._shake_tween_x.tween_property(scene._camera, "offset:x", 0.0, interval)
 
 
-# 源 stopCameraShakeAnimationX :1461 — 停止震动 + 还原 offset.x。
 static func stop_x(scene) -> void:
 	if scene._shake_tween_x != null:
 		scene._shake_tween_x.kill()

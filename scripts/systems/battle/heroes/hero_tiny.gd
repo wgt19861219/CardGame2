@@ -12,20 +12,18 @@ func apply(hero: Variant) -> void:
 		skillult.hero_hooks["update"] = Callable(self, "_update")
 
 
-# 源 :2-5 onAttackFrame：basefunc 后 skill.thrownUnit = skill.target。
 func _on_attack_frame(skill: Variant) -> void:
 	skill._on_attack_frame_default()
 	skill.custom_data["thrown_unit"] = skill.target
 
 
-# 源 :6-24 update：basefunc 后 thrownUnit 击退结束 → wraptable（AP/Basic Num=Script Arg1/Plus Ratio=Script Arg2/AOE target/无击退）→ takeEffectAt。
 func _update(skill: Variant, dt_action: float, dt_cd: float) -> void:
 	skill._update_default(dt_action, dt_cd)
 	var thrown: Variant = skill.custom_data.get("thrown_unit", null)
 	if thrown != null and float(thrown.knockup_time) <= 0.0:
 		skill.custom_data.erase("thrown_unit")
 		var info: Dictionary = skill.info
-		var wrapped: Dictionary = info.duplicate()  # 源 wraptable(originfo,{...})=代理+覆盖 ≈ duplicate+覆盖
+		var wrapped: Dictionary = info.duplicate()
 		wrapped["Damage Type"] = "AP"
 		wrapped["Basic Num"] = info.get("Script Arg1", 0)
 		wrapped["Plus Ratio"] = info.get("Script Arg2", 0)

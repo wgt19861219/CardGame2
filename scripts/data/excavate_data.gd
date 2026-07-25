@@ -16,11 +16,11 @@ const FIELD_PROB_WEIGHT: StringName = &"Prob Weight"
 const FIELD_LEVEL_REQ: StringName = &"Level Requirement"
 const FIELD_MAX_PLAYER: StringName = &"Max Player"
 const FIELD_PRODUCE_TYPE: StringName = &"Produce Type"
-const FIELD_PRODUCE_SPEED: StringName = &"Priduce Speed Per Minute"  # 源笔误照搬
+const FIELD_PRODUCE_SPEED: StringName = &"Priduce Speed Per Minute"
 const FIELD_STORAGE: StringName = &"Storage Amount"
 const FIELD_LOOT_RATIO: StringName = &"Loot Ratio"
 const FIELD_PREPARE_TIME: StringName = &"Prepare Time"
-const FIELD_SAFE_AMOUNT: StringName = &"Safe Amount"   # 源 :3846 lootAmount 下限保护（<Safe Amount→0）
+const FIELD_SAFE_AMOUNT: StringName = &"Safe Amount"
 const FIELD_DISPLAY_NAME: StringName = &"Display Name"
 const FIELD_PRODUCE_ID: StringName = &"Produce ID"
 const FIELD_WILD_STAGE: StringName = &"Stage ID"
@@ -185,7 +185,7 @@ static func build_resource_reward(cm: Variant, type_id: int, amount: int) -> Dic
 	if amount <= 0:
 		return {}
 	var pt: String = produce_type(cm, type_id)
-	var reward_type: String = "gold"   # 源 :3651 default
+	var reward_type: String = "gold"
 	if pt == PRODUCE_DIAMOND:
 		reward_type = "diamond"
 	elif pt == PRODUCE_ITEM:
@@ -223,12 +223,11 @@ static func picture_res(cm: Variant, type_id: int) -> String:
 const TABLE_STAGE: StringName = &"Stage"
 const TABLE_BATTLE: StringName = &"Battle"
 const FIELD_MONSTER_LEVEL: StringName = &"Monster Level"
-const RANK_DIVISOR: int = 10          # 源 heroLevel2Rank（tools.lua:1021-1026）ceil(level/10) 分母
-const RANK_MAX: int = 10              # 源 heroLevel2Rank min(r, 10)（旧误 5，照源修 10）
-const FULL_HP_PERC: int = 10000       # 源 downmsg.hero_dyna _hp_perc=10000（满血）
+const RANK_DIVISOR: int = 10
+const RANK_MAX: int = 10
+const FULL_HP_PERC: int = 10000
 const WAVE_ONE: String = "1"          # Battle 表 wave 1 key（excavate 单波）
 
-## 照源 heroLevel2Rank（tools.lua:1021-1026）：l=max(1,level)；r=ceil(l/10)；min(r,10)。
 ## level 1-10→1 / 11-20→2 / ... / 91-100→10。旧版整数除法（向下）+ max 5 偏离源（修）。
 static func hero_level_to_rank(level: int) -> int:
 	var lvl: int = maxi(1, level)

@@ -6,19 +6,18 @@ extends RefCounted
 ## 商品随机生成（Equip 抽 6 件 + priceMul + payType）+ 购买（扣货币+加物品+售罄）+ 手动刷新（扣钻）。
 ## 单机化：源 net 消息 shop_* → 直调本 Logic；自动刷新时刻（Shop.Refresh Times）暂不实现。
 
-const GOODS_COUNT: int = 6               # 源 :1185 math.min(6, #shuffled)
-const MIN_PRICE: int = 10                # 源 :1194 if price<10 then price=10
-const DEFAULT_PRICE: int = 100           # 源 :1186 price 默认 100
-const PRICE_RAND_MIN: int = 50           # 源 :1190 random(50,500) Price 缺失 fallback
+const GOODS_COUNT: int = 6
+const MIN_PRICE: int = 10
+const DEFAULT_PRICE: int = 100
+const PRICE_RAND_MIN: int = 50
 const PRICE_RAND_MAX: int = 500
 const REFRESH_COST_FALLBACK: int = 50    # GradientPrice 缺失 fallback
-const GOBLIN_SHOP_ID: int = 2            # 源 :1184 地精 priceMul 0.6
-const BLACK_MARKET_SHOP_ID: int = 3      # 源 :1184 黑市 priceMul 2.0
+const GOBLIN_SHOP_ID: int = 2
+const BLACK_MARKET_SHOP_ID: int = 3
 const PRICE_MUL_GOBLIN: float = 0.6
 const PRICE_MUL_BLACK_MARKET: float = 2.0
-const FALLBACK_EQUIP_IDS: Array[int] = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]  # 源 :1174
+const FALLBACK_EQUIP_IDS: Array[int] = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
 
-# 源 :1182 payTypeMap（id→货币类型；其他→gold）
 const PAY_TYPE_MAP: Dictionary = {
 	3: "diamond",
 	4: "crusadepoint",
@@ -40,7 +39,6 @@ func _init(p_cm: Variant = null) -> void:
 	cm = p_cm
 
 
-# 源 generateShopGoods(shopId) local_server:1159-1204：Equip 随机抽 6 件 + priceMul + payType。
 # 返 Array[{id,type,price,amount,is_sale}]（照源 goods[i]={_id,_type,_price,_amount,_is_sale}）。
 func generate_shop_goods(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
 	var equip_table: Dictionary = p_cm.get_raw_table(&"Equip")
@@ -54,7 +52,6 @@ func generate_shop_goods(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
 	var count: int = min(GOODS_COUNT, shuffled.size())
 	for i in count:
 		var row: Dictionary = equip_table.get(str(shuffled[i]), {})
-		# 源 :1190 读 "Price"；本项目 Equip.json 转换后购买价字段名 "Buy Price"（同义，转换差异），照读避 random fallback
 		var price: int = int(row.get("Buy Price", rng.randi_range(PRICE_RAND_MIN, PRICE_RAND_MAX)))
 		price = max(int(price * price_mul), MIN_PRICE)
 		goods.append({
@@ -62,12 +59,11 @@ func generate_shop_goods(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
 			"type": pay_type,
 			"price": price,
 			"amount": 1,
-			"is_sale": shop_id == GOBLIN_SHOP_ID,   # 源 :1200 地精打折标签
+			"is_sale": shop_id == GOBLIN_SHOP_ID,
 		})
 	return goods
 
 
-# 源 :1182-1184 priceMul：地精 0.6 / 黑市 2.0 / 其他 1.0。
 static func _price_mul(shop_id: int) -> float:
 	if shop_id == GOBLIN_SHOP_ID:
 		return PRICE_MUL_GOBLIN
@@ -76,7 +72,6 @@ static func _price_mul(shop_id: int) -> float:
 	return 1.0
 
 
-# 源 :1164-1175 收集 Equip 表数字 id。
 static func _collect_equip_ids(equip_table: Dictionary) -> Array[int]:
 	var ids: Array[int] = []
 	for eid in equip_table.keys():
@@ -86,7 +81,6 @@ static func _collect_equip_ids(equip_table: Dictionary) -> Array[int]:
 	return ids
 
 
-# 源 :1176-1181 Fisher-Yates 洗牌。
 static func _shuffle(ids: Array[int], rng: BattleRng) -> Array[int]:
 	var out: Array[int] = ids.duplicate()
 	for i in range(out.size() - 1, 0, -1):
@@ -97,14 +91,12 @@ static func _shuffle(ids: Array[int], rng: BattleRng) -> Array[int]:
 	return out
 
 
-# 源 open_shop(id) local_server:1301：生成 + 存 shop_data。返商品列表。
 func open_shop(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
 	var goods: Array = generate_shop_goods(shop_id, rng, p_cm)
 	shop_data[shop_id] = goods
 	return goods
 
 
-# 源 shop_refresh(id) local_server:1206 + shop.lua:302 doClickRefresh：重新生成（手动刷新扣 GradientPrice 钻石）。
 func refresh(shop_id: int, pd: PlayerData, rng: BattleRng, p_cm: Variant) -> bool:
 	var cost: int = get_refresh_cost(shop_id, p_cm)
 	if pd.diamond < cost:
@@ -115,14 +107,12 @@ func refresh(shop_id: int, pd: PlayerData, rng: BattleRng, p_cm: Variant) -> boo
 	return true
 
 
-# 源 Player.getShopRefreshCost：GradientPrice[today_times+1]["Shop {id} Refresh"]（钻石，随次数梯度）。
 func get_refresh_cost(shop_id: int, p_cm: Variant) -> int:
 	var today_times: int = int(refresh_times.get(shop_id, 0))
 	var row: Dictionary = p_cm.get_raw_table(&"GradientPrice").get(str(today_times + 1), {})
 	return int(row.get("Shop " + str(shop_id) + " Refresh", REFRESH_COST_FALLBACK))
 
 
-# 源 shop_consume:1229 + buyReply:138-154：校验余额 + 扣货币 + 加物品 + 标记售罄。返是否成功。
 func buy(shop_id: int, slot: int, pd: PlayerData, _p_cm: Variant) -> bool:
 	var goods: Array = shop_data.get(shop_id, [])
 	if slot < 0 or slot >= goods.size():
@@ -134,12 +124,11 @@ func buy(shop_id: int, slot: int, pd: PlayerData, _p_cm: Variant) -> bool:
 	var price: int = int(g.get("price", 0))
 	if not _spend(pay_type, price, pd):
 		return false
-	pd.add_item(int(g["id"]), int(g.get("amount", 1)))   # 源 buyReply addEquip
-	g["amount"] = 0   # 源 :1272 标记售罄
+	pd.add_item(int(g["id"]), int(g.get("amount", 1)))
+	g["amount"] = 0
 	return true
 
 
-# 源 shop_consume:1251-1266 余额校验 + buyReply:144 addPoint(-cost) 扣。
 # gold/diamond 特殊（addMoney/spend_diamond track），3 point 走统一 get_point/add_point（源 addPoint）。
 static func _spend(pay_type: String, amount: int, pd: PlayerData) -> bool:
 	if pay_type == PAY_GOLD:
@@ -168,7 +157,6 @@ func get_refresh_times(shop_id: int) -> int:
 # ---- 自动刷新时刻（照源 local_server.lua:1219 open_shop 设 ts + up.proto:260 客户端 auto_refresh 触发）----
 # _last_auto_refresh_time 持久化在 PlayerData.shop_auto_refresh（ShopManager 临时实例无状态）。
 
-## 源 local_server:1219 open_shop 时 _last_auto_refresh_time = getTimestamp()。
 ## 该店首次开（pd 无记录）且 Shop.Refresh Times 非空 → 设当前 ts 启用自动刷新。返是否初始化。
 func init_auto_refresh(shop_id: int, pd: PlayerData, now_ts: int) -> bool:
 	if pd.shop_auto_refresh.has(shop_id):
@@ -206,7 +194,6 @@ func get_time_type(shop_id: int, pd: PlayerData, now_ts: int) -> String:
 
 
 # ---- 停留到期（照源 Shop.Expire Time + shop.lua:686-694 到期分支）----
-# 源：地精(2)/黑市(3)/星际(6) Expire Time=3600（停留秒），普通=0（永不过期）。
 # 单机化方案 B：开店起计 expire_end=now+Expire Time，ShopPanel._process 每秒 check，到期 showTalk(Expire)+关面板+清记录（再点重计）。
 
 const EXPIRE_TIME_KEY: StringName = &"Expire Time"
@@ -277,15 +264,14 @@ static func _hms_str(secs: int) -> String:
 # 灵魂石货币（equip id 8/9/10，源 equip_qunty 容器；本项目合并 items 通用背包）。
 # 注：本项目 Equip.json 缺 8/9/10 条目（数据债），灵魂石 icon 降级默认；商品 icon 用 box_1/2/3 照源。
 
-const STAR_STONE_IDS: Array[int] = [8, 9, 10]              # 源 :354 stoneIds {0:8,1:9,2:10}
-const STAR_TYPES: Array[int] = [0, 0, 1, 1, 2]             # 源 :353 types（2绿2蓝1紫）
-const STAR_PRICES: Array[int] = [50, 100, 200]             # 源 :355 prices（index by type）
-const STAR_BOX_TYPES: Array[String] = ["stone_green", "stone_blue", "stone_purple"]  # 源 TavernBoxType
+const STAR_STONE_IDS: Array[int] = [8, 9, 10]
+const STAR_TYPES: Array[int] = [0, 0, 1, 1, 2]
+const STAR_PRICES: Array[int] = [50, 100, 200]
+const STAR_BOX_TYPES: Array[String] = ["stone_green", "stone_blue", "stone_purple"]
 const STARSHOP_KEY: String = "starshop"
-const STONE_DRAW_TYPE: String = "stone"                    # 源 tavern_draw drawType
+const STONE_DRAW_TYPE: String = "stone"
 
 
-# 源 generateStarGoods local_server:351-365：5 件灵魂石商品（types {0,0,1,1,2}）。
 static func generate_star_goods() -> Array:
 	var goods: Array = []
 	for i in STAR_TYPES.size():
@@ -307,7 +293,6 @@ func open_star_shop() -> Array:
 	return goods
 
 
-# 源 shop_star_consume:1286 + starshopbuywindow handler:5-27：扣灵魂石 + 产出 equip + 售罄。
 # 返 {ok, loots, box, soldout, no_resource}（loots:Array[{id,amount}]）。
 func buy_star(slot: int, pd: PlayerData, rng: BattleRng, p_cm: Variant) -> Dictionary:
 	var goods: Array = shop_data.get(STARSHOP_KEY, [])
@@ -320,12 +305,12 @@ func buy_star(slot: int, pd: PlayerData, rng: BattleRng, p_cm: Variant) -> Dicti
 	var stone_amount: int = int(g["stone_amount"])
 	if int(pd.items.get(stone_id, 0)) < stone_amount:
 		return {"ok": false, "no_resource": true}
-	pd.items[stone_id] = int(pd.items[stone_id]) - stone_amount   # 源 consumeEquip
+	pd.items[stone_id] = int(pd.items[stone_id]) - stone_amount
 	var box: String = String(g["box"])
-	var loots: Array = TavernData.roll_tavern_loot(STONE_DRAW_TYPE, box, rng, p_cm)   # 源 tavern_draw stone 分支
+	var loots: Array = TavernData.roll_tavern_loot(STONE_DRAW_TYPE, box, rng, p_cm)
 	for loot in loots:
 		pd.add_item(int(loot["id"]), int(loot["amount"]))
-	g["amount"] = 0   # 源 :1292 售罄
+	g["amount"] = 0
 	return {"ok": true, "loots": loots, "box": box}
 
 

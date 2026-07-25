@@ -6,14 +6,13 @@ extends RefCounted
 ## 不依赖 Node/Control（headless 可单测）。查 ConfigManager（Unit/Fragment/HeroStars）+ HeroManager（heroes/fragments）。
 ## 坐标/资源在 View 层 HeroPackageItem；本类纯数据查询。
 
-const FALLBACK_STONE_ID: int = 335            # 源 getStoneid :646 fid or 335
-const HERO_TYPE_ID_MAX: int = 100             # 源 player.lua:1472 unitType id<100="hero"
+const FALLBACK_STONE_ID: int = 335
+const HERO_TYPE_ID_MAX: int = 100
 # Position Type 实际值是 LSTR key（Unit.json "UNIT.FRONT_ROW"/"UNIT.MIDDLE_ROW"/"UNIT.REAR_ROW"），
 # find 匹配 key。旧值 "Front"/"Middle"/"Rear" 匹配不上 "FRONT_ROW" 全大写 → front/middle/back 全空（bug）。
 const POS_FRONT: String = "UNIT.FRONT_ROW"
 const POS_MIDDLE: String = "UNIT.MIDDLE_ROW"
 const POS_REAR: String = "UNIT.REAR_ROW"
-# 源 player.lua:2155-2178 hero_star / hero_max_star 表（rank 1-22 → 当前 star / 上限）。
 # 索引 0 占位，索引 = rank（Lua 1-based → GDScript 0-based 加占位对齐；表本身 22 元素 + 1 占位 = 23）。
 const HERO_STAR: Array[int] = [
 	0, 0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5
@@ -21,7 +20,6 @@ const HERO_STAR: Array[int] = [
 const HERO_MAX_STAR: Array[int] = [
 	0, 0, 1, 1, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5
 ]
-# 源 player.lua:2211-2235 name_color 6 段色（ccc3 0-255 → Godot Color 0-1）+ rank 分段边界。
 const NAME_COLOR_WHITE: Color = Color(254.0 / 255.0, 251.0 / 255.0, 241.0 / 255.0)       # rank 1
 const NAME_COLOR_YELLOW: Color = Color(248.0 / 255.0, 255.0 / 255.0, 62.0 / 255.0)       # rank 2-3
 const NAME_COLOR_BLUE: Color = Color(96.0 / 255.0, 172.0 / 255.0, 243.0 / 255.0)         # rank 4-6
@@ -35,7 +33,6 @@ const RANK_PURPLE_MAX: int = 11
 const RANK_ORANGE_MAX: int = 16
 
 
-# 源 getStoneid :642-648 — Fragment[tid]["Fragment Id"]，缺失 fallback 335。
 static func get_stone_id(tid: int, cm: Variant) -> int:
 	var fid: Variant = cm.get_raw_table(&"Fragment").get(str(tid), {}).get(&"Fragment ID")
 	if fid == null:
@@ -43,13 +40,11 @@ static func get_stone_id(tid: int, cm: Variant) -> int:
 	return int(fid)
 
 
-# 源 getStoneAmount :649-653 — player.equip_qunty[stone_id]；本项目 hero_mgr.fragments 容器。
 static func get_stone_amount(tid: int, cm: Variant, hero_mgr: HeroManager) -> int:
 	var sid: int = get_stone_id(tid, cm)
 	return int(hero_mgr.fragments.get(sid, 0))
 
 
-# 源 getStoneNeed :654-671 — 未拥有：HeroStars[Initial Stars]["Summon Fragments"]；
 # 已拥有：HeroStars[stars+1]["Upgrade Fragments"]（无上限行返 0，源 :664 return nil）。
 static func get_stone_need(tid: int, cm: Variant, hero_mgr: HeroManager) -> int:
 	var hero: HeroInstance = hero_mgr.find_hero_by_tid(tid)
@@ -62,18 +57,15 @@ static func get_stone_need(tid: int, cm: Variant, hero_mgr: HeroManager) -> int:
 	return int(row.get(&"Upgrade Fragments", 0))
 
 
-# 源 getSummonCost :678-683 — HeroStars[Initial Stars]["Summon Price"]。
 static func get_summon_cost(tid: int, cm: Variant) -> int:
 	var init_star: int = ReadheroData.get_hero_init_stars(tid, cm)
 	return int(cm.get_raw_table(&"HeroStars").get(str(init_star), {}).get(&"Summon Price", 0))
 
 
-# 源 checkStoneEnough :684-693 — amount >= need。
 static func check_stone_enough(tid: int, cm: Variant, hero_mgr: HeroManager) -> bool:
 	return get_stone_amount(tid, cm, hero_mgr) >= get_stone_need(tid, cm, hero_mgr)
 
 
-# 源 getMissList :694-715 — Unit 表遍历 unitType=="hero"(id<100) 且未拥有 且碎片>0，升序插入排序。
 # 返 Array[int] tid 升序（源 :704-712 冒泡插入排序）。
 static func get_miss_list(cm: Variant, hero_mgr: HeroManager) -> Array[int]:
 	var list: Array[int] = []
@@ -91,7 +83,6 @@ static func get_miss_list(cm: Variant, hero_mgr: HeroManager) -> Array[int]:
 	return list
 
 
-# 源 :704-712 插入排序升序（list[j] < list[j-1] 则向上交换）。
 static func _insert_sorted_asc(list: Array[int], v: int) -> void:
 	list.append(v)
 	var j: int = list.size() - 1
@@ -102,7 +93,6 @@ static func _insert_sorted_asc(list: Array[int], v: int) -> void:
 		j -= 1
 
 
-# 源 orderMissListByLack :716-731 — 按 amount/need 比例降序插入排序（比例高=越接近召唤，排前）。
 static func order_miss_list_by_lack(list: Array[int], cm: Variant, hero_mgr: HeroManager) -> void:
 	var i: int = 1
 	while i < list.size():
@@ -125,7 +115,6 @@ static func _lack_ratio(tid: int, cm: Variant, hero_mgr: HeroManager) -> float:
 	return float(get_stone_amount(tid, cm, hero_mgr)) / float(need)
 
 
-# 源 orderHeroFunction (tools.lua:819-847) — level desc → stars desc → rank desc 插入排序。
 # 元素 HeroInstance（已拥有，取真实值）或 miss dict（未拥有，level/stars/rank=0）。
 static func order_heroes(list: Array) -> Array:
 	var i: int = 1
@@ -159,7 +148,6 @@ static func _hero_sort_key(v: Variant) -> Dictionary:
 	return {"level": 0, "stars": 0, "rank": 0}
 
 
-# 源 getAllList :830-838 — orderHeroes() 拷贝（player.heroes → orderHeroFunction）。
 static func get_all_list(hero_mgr: HeroManager) -> Array:
 	var list: Array = []
 	for inst_id in hero_mgr.heroes:
@@ -167,7 +155,6 @@ static func get_all_list(hero_mgr: HeroManager) -> Array:
 	return order_heroes(list)
 
 
-# 源 getAllListWithMiss :839-856 — 已拥有排序 + 未拥有插序：
 # 碎片足够的未拥有插到前面（index 累进，源 :848-849），碎片不足的加到末尾（源 :850-851）。
 # 返 Array[Variant]（HeroInstance 或 {tid:int, miss:bool}）。
 static func get_all_list_with_miss(cm: Variant, hero_mgr: HeroManager) -> Array:
@@ -185,7 +172,6 @@ static func get_all_list_with_miss(cm: Variant, hero_mgr: HeroManager) -> Array:
 	return al
 
 
-# 源 classifyByPos :884-901 — Unit["Position Type"] 分前/中/后。
 # 入参 all 是 get_all_list_with_miss 结果（元素 HeroInstance 或 miss dict）。
 static func classify_by_pos(all: Array, cm: Variant) -> Dictionary:
 	var front: Array = []
@@ -204,7 +190,6 @@ static func classify_by_pos(all: Array, cm: Variant) -> Dictionary:
 	return {"all": all, "front": front, "middle": middle, "back": back}
 
 
-# 源 classify("handbook","position") :920-938 — getAllListWithMiss + classifyByPos。
 # heropackage 面板 tab 分类入口（源 getAllList :446 classify("handbook","position")）。
 static func classify_handbook(cm: Variant, hero_mgr: HeroManager) -> Dictionary:
 	var all: Array = get_all_list_with_miss(cm, hero_mgr)
@@ -227,7 +212,6 @@ static func entry_rank(v: Variant) -> int:
 	return 1
 
 
-# 源 player.lua:2203-2206 getHeroStarByRank — hero_star[rank]（名字后缀 "+N" 用 N，rank 1-22 → 0-5）。
 # 越界（rank<1 或 >22）返 0，等价源 Lua table[index] 的 nil 被 `or 0` 兜底（readhero.lua:961）。
 static func get_hero_star_by_rank(rank: int) -> int:
 	if rank < 1 or rank >= HERO_STAR.size():
@@ -235,14 +219,12 @@ static func get_hero_star_by_rank(rank: int) -> int:
 	return HERO_STAR[rank]
 
 
-# 源 player.lua:2207-2210 getHeroStar 第二返回值 hero_max_star[rank]（保留接口，背包名字后缀不直接用）。
 static func get_hero_max_star_by_rank(rank: int) -> int:
 	if rank < 1 or rank >= HERO_MAX_STAR.size():
 		return 0
 	return HERO_MAX_STAR[rank]
 
 
-# 源 player.lua:2219-2235 getHeroNameColorByRank — 按 rank 段返名字色（用于背包名字后缀着色）。
 # 分段递进判定（rank<1 兜底白；rank==1 白；其余按上限递进），避免函数体裸数字 2/4/7/12（Logic 层 LINT001）。
 static func get_hero_name_color_by_rank(rank: int) -> Color:
 	if rank < 1:

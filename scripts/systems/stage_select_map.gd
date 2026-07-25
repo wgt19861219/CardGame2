@@ -7,15 +7,15 @@ extends RefCounted
 
 const MAP_JSON: String = "res://resources/data/stageselect_map.json"
 const CHAPTER_MIN: int = 1
-const CHAPTER_MAX: int = 14   # 源 stageselect.lua:13 CHAPTER_MAX=13（GameConfig.MaxChapter）；res 含 14 章
-const RES_PREFIX_GODOT: String = "res://assets/ui/"   # 源 "UI/" → Godot "res://assets/ui/"
-const SKELETON_RES_FMT: String = "res://assets/ui/alpha/HVGA/stagecircle_skeleton%d.png"   # 源 stageRes.locked（% tag）
-const CIRCLE_CURRENT: String = "res://assets/ui/alpha/HVGA/stagecircle_current.png"        # 源 stageRes.current
-const CIRCLE_ELITE: String = "res://assets/ui/alpha/HVGA/stagecircle_elite.png"            # 源 stageRes.passed/elite
-const KEY_LOCKED_FMT: String = "res://assets/ui/alpha/HVGA/key_stages/stage-%d-locked.png"  # 源 keyStageRes.icon.locked
-const KEY_PASSED_FMT: String = "res://assets/ui/alpha/HVGA/key_stages/stage-%d.png"         # 源 keyStageRes.icon.passed/current
-const MASK_PASSED: String = "res://assets/ui/alpha/HVGA/key_stages/stage-passed.png"        # 源 keyStageRes.mask.passed
-const MASK_CURRENT: String = "res://assets/ui/alpha/HVGA/key_stages/stage-current.png"      # 源 keyStageRes.mask.current
+const CHAPTER_MAX: int = 14
+const RES_PREFIX_GODOT: String = "res://assets/ui/"
+const SKELETON_RES_FMT: String = "res://assets/ui/alpha/HVGA/stagecircle_skeleton%d.png"
+const CIRCLE_CURRENT: String = "res://assets/ui/alpha/HVGA/stagecircle_current.png"
+const CIRCLE_ELITE: String = "res://assets/ui/alpha/HVGA/stagecircle_elite.png"
+const KEY_LOCKED_FMT: String = "res://assets/ui/alpha/HVGA/key_stages/stage-%d-locked.png"
+const KEY_PASSED_FMT: String = "res://assets/ui/alpha/HVGA/key_stages/stage-%d.png"
+const MASK_PASSED: String = "res://assets/ui/alpha/HVGA/key_stages/stage-passed.png"
+const MASK_CURRENT: String = "res://assets/ui/alpha/HVGA/key_stages/stage-current.png"
 
 static var _cache: Dictionary = {}
 
@@ -60,11 +60,9 @@ static func get_route_res(chapter: int) -> String:
 static func _to_godot_res(ui_path: String) -> String:
 	if ui_path.is_empty():
 		return ""
-	# 源 "UI/alpha/HVGA/x.png" → "res://assets/ui/alpha/HVGA/x.png"
 	return RES_PREFIX_GODOT + ui_path.substr("UI/".length())
 
 
-# 源 stageselect.lua getStageRes(:992-1043) — stage icon 决策。
 # cm: ConfigManager（查 Stage 表 Key Stage 字段）；star_of: Callable(int)->int（玩家该关星数）。
 # 返回 {type, icon, mask}。type ∈ "locked"/"current"/"passed"；mask 可空（key_stage 闪烁遮罩）。
 static func decide_stage_icon(stage_info: Dictionary, tag: int, mode: String, cm: Variant, star_of: Callable) -> Dictionary:
@@ -81,7 +79,7 @@ static func decide_stage_icon(stage_info: Dictionary, tag: int, mode: String, cm
 			elif _star(star_of, eid) <= 0:
 				return _res_mask("current", KEY_PASSED_FMT % resid, MASK_CURRENT)
 			return _res_mask("passed", KEY_PASSED_FMT % resid, MASK_PASSED)
-		return _res("locked", CIRCLE_ELITE)   # 源 :1011 elite 非 key 一律 locked
+		return _res("locked", CIRCLE_ELITE)
 	elif mode == "normal":
 		if is_key:
 			if id > 1 and _star(star_of, id) <= 0 and _star(star_of, id - 1) <= 0:

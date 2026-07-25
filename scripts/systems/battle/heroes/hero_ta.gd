@@ -6,13 +6,13 @@ extends RefCounted
 ## TA_atk2.createBuff：refraction 折射护盾（onDamaged 抵伤+回 mp+次数递减；onRemoved 清零）。
 ## TA_atk4.power：target != skill.target 时 ×Script Arg2/100。
 
-const SKILL4_RATIO_DENOM: float = 100.0  # 源 :5 Script Arg2/100
-const ULT_BUFF_ID: int = 120              # 源 :129 start addBuff(120)
-const REMOVE_BUFF_ID: int = 106           # 源 :135 移除 buff ID 106
-const CHARGE_DISTANCE: float = 120.0       # 源 :99 冲撞 direction*120
-const SHIELD_ALL: String = "all"           # 源 :22 Shield Type="all" 通配
-const DMS_MULT: float = 2.0               # 源 :69 selectTarget damage×2
-const ULT_RETURN_COUNTER: int = 2         # 源 :104 takeEffectAt counter==2 回原 target 段
+const SKILL4_RATIO_DENOM: float = 100.0
+const ULT_BUFF_ID: int = 120
+const REMOVE_BUFF_ID: int = 106
+const CHARGE_DISTANCE: float = 120.0
+const SHIELD_ALL: String = "all"
+const DMS_MULT: float = 2.0
+const ULT_RETURN_COUNTER: int = 2
 
 
 func apply(hero: Variant) -> void:
@@ -31,7 +31,6 @@ func apply(hero: Variant) -> void:
 		skillatk4.hero_hooks["power"] = Callable(self, "_skill4_power")
 
 
-# 源 :144-152 handleUnitDieEvent：basefunc（空体 no-op 省略）+ 击杀者是自己 → TA_atk2 cd=0。
 func _handle_unit_die_event(hero: Variant, unit: Variant, killer: Variant) -> void:
 	if killer == hero:
 		var skillatk2: Variant = hero.skills.get("TA_atk2")
@@ -39,7 +38,6 @@ func _handle_unit_die_event(hero: Variant, unit: Variant, killer: Variant) -> vo
 			skillatk2.cd_remaining = 0.0
 
 
-# 源 :62-82 skillult_selectTarget：counter>1 复用 target；否则 basefunc + 找 maxHP 可杀目标（damage>targethp 时遍历敌方找血更多且能杀的）。
 func _ult_select_target(skill: Variant, default_t: Variant) -> Variant:
 	if skill.attack_counter > 1:
 		return skill.target
@@ -57,94 +55,87 @@ func _ult_select_target(skill: Variant, default_t: Variant) -> Variant:
 	return max_hp_target
 
 
-# 源 :83-90 skillult_power：恒返 (power,i)（target 分支与 else 同，源死代码），等价 basefunc。
 func _ult_power(skill: Variant, src: Variant, _target: Variant) -> Array:
 	return BattleSkillEffect.power(skill, src)
 
 
-# 源 :91-120 skillult_takeEffectAt：counter 1 冲到 target 身边（翻转 direction）/ 2 恢复 origtarget + basefunc / 3 wraptable AOE + basefunc + 回 origposition。
 func _ult_take_effect_at(skill: Variant, _location: Vector2, source: Variant) -> void:
 	var caster: Variant = skill.caster
 	var counter: int = skill.attack_counter
 	if counter == 1:
-		skill.custom_data["origtarget"] = skill.target  # 源 :96
+		skill.custom_data["origtarget"] = skill.target
 		var target: Variant = skill.target
 		if target != null:
 			caster.position = Vector2(float(target.position.x) + float(caster.direction) * CHARGE_DISTANCE, float(target.position.y))
-			caster.direction = -caster.direction  # 源 :102
+			caster.direction = -caster.direction
 	elif counter == ULT_RETURN_COUNTER:
-		skill.target = skill.custom_data.get("origtarget", null)  # 源 :105
+		skill.target = skill.custom_data.get("origtarget", null)
 		BattleSkillEffect.take_effect_at(skill, skill.target.position, source)  # basefunc
 	else:
 		var originfo: Dictionary = skill.info
-		var wrapped: Dictionary = originfo.duplicate()  # 源 wraptable(AOE Origin=target, Point Effect=false)
+		var wrapped: Dictionary = originfo.duplicate()
 		wrapped["AOE Origin"] = "target"
 		wrapped["Point Effect"] = false
 		skill.info = wrapped
 		BattleSkillEffect.take_effect_at(skill, skill.target.position, source)  # basefunc
 		skill.info = originfo
-		caster.position = caster.custom_data["origposition"]  # 源 :115-118 回原位
+		caster.position = caster.custom_data["origposition"]
 
 
-# 源 :121-143 skillult_start：basefunc + 记 origposition + addBuff 120 + 倒序移除所有 buff 106。
 func _ult_start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)  # basefunc
 	var caster: Variant = skill.caster
-	caster.custom_data["origposition"] = caster.position  # 源 :124-127
+	caster.custom_data["origposition"] = caster.position
 	var binfo: Variant = caster.cm.lookup(&"Buff", "", ULT_BUFF_ID)
 	caster.add_buff(binfo, caster)
 	var to_remove: Array = []
 	for tbuff in caster.buff_list:
 		if int(tbuff.info.get("ID", 0)) == REMOVE_BUFF_ID:
 			to_remove.append(tbuff)
-	var i: int = to_remove.size() - 1  # 源 :140-142 倒序移除
+	var i: int = to_remove.size() - 1
 	while i >= 0:
 		caster.remove_buff(to_remove[i])
 		i -= 1
 
 
-# 源 :54-61 skillatk2_createBuff：basefunc + 设 refraction=Script Arg2 + buff onRemoved/onDamaged hook。
 func _atk2_create_buff(skill: Variant, target: Variant) -> Variant:
 	var buff: Variant = skill._create_buff_default(target)  # basefunc
-	buff.custom_data["refraction"] = int(skill.info.get("Script Arg2", 0))  # 源 :57
+	buff.custom_data["refraction"] = int(skill.info.get("Script Arg2", 0))
 	buff.hero_hooks["onRemoved"] = Callable(self, "_skill2_buff_on_removed")
 	buff.hero_hooks["onDamaged"] = Callable(self, "_skill2_buff_on_damaged")
 	return buff
 
 
-# 源 :49-53 skill2_buffOnRemoved：refraction=0 + basefunc。
 func _skill2_buff_on_removed(buff: Variant) -> void:
 	buff.custom_data["refraction"] = 0
 	buff._on_removed_default()  # basefunc
 
 
-# 源 :10-48 skill2_buffOnDamaged：refraction 折射护盾（抵伤+次数递减+回 mp+抵尽移除）。
 func _skill2_buff_on_damaged(buff: Variant, damage: float, damage_type: String) -> float:
 	var owner: Variant = buff.owner
 	if damage <= 0.0:
-		if buff.custom_data.has("refraction") and int(buff.custom_data.get("refraction", 0)) <= 0:  # 源 :14-15
+		if buff.custom_data.has("refraction") and int(buff.custom_data.get("refraction", 0)) <= 0:
 			owner.remove_buff(buff)
 		return 0.0
-	if buff.has_shield:  # 源 buff.shield
+	if buff.has_shield:
 		var stype: String = String(buff.info.get("Shield Type", ""))
 		if stype == damage_type or stype == SHIELD_ALL:
-			buff.shield = buff.shield - damage  # 源 :23
-			var temp: float = buff.shield  # 源 :24 local temp（减后）
+			buff.shield = buff.shield - damage
+			var temp: float = buff.shield
 			var refr: int = int(buff.custom_data.get("refraction", 0)) - 1
-			buff.custom_data["refraction"] = refr  # 源 :25 次数递减
-			buff.shield = float(buff.info.get("Shield Value", 0.0))  # 源 :26 重置护盾
-			if refr <= 0:  # 源 :27-29 抵尽移除
+			buff.custom_data["refraction"] = refr
+			buff.shield = float(buff.info.get("Shield Value", 0.0))
+			if refr <= 0:
 				owner.remove_buff(buff)
 			var mppower: float = float(owner.skills.get("TA_atk2").info.get("Script Arg3", 0.0))
-			owner.take_heal(mppower, "mp", owner)  # 源 :31 回 mp
-			_show_refract_immune_popup(owner, stype)  # 源 :38-42 immune 飘字
-			if temp < 0.0:  # 源 :32-34 溢出伤害
+			owner.take_heal(mppower, "mp", owner)
+			_show_refract_immune_popup(owner, stype)
+			if temp < 0.0:
 				return -temp
-			return 0.0  # 源 :44（Popup immune View 跳过）
+			return 0.0
 	return damage
 
 
-# 源 :2-9 skill4_power：basefunc 解构双值；target != skill.target 时 power×Script Arg2/100。
 # 注：源 :3 basefunc(skill, target, source) 参数顺序颠倒（源 latent bug，target 当 source 传），
 # 但 power（源 skill.lua:531）忽略 source/target 仅用 skill.caster → 颠倒无害。
 # 目标 power(skill, src) 传规范 source（同 Luna-2 修正模式），行为与源等价。
@@ -155,7 +146,6 @@ func _skill4_power(skill: Variant, src: Variant, target: Variant) -> Array:
 	return [base[0], base[1]]
 
 
-# 源 TA.lua:38-42 refraction 抵伤 immune 飘字（owner actor，stype→文本键，camp player→blue/else→red）。
 func _show_refract_immune_popup(owner_unit: Variant, stype: String) -> void:
 	var actor: Variant = owner_unit.get("actor")
 	if actor == null or not actor.has_method("spawn_popup"):

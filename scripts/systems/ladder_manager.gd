@@ -46,18 +46,17 @@ const USER_ID_BASE: int = 10000
 const LEVEL_HERO_DELTA_MAX: int = 2
 const LEVEL_FALLBACK_DELTA_MAX: int = 3
 const RSEED_MAX: int = 999999
-const HERO_FIELD_COUNT: int = 5  # 源 :3033 Hero1-5
-const STARS_MAX: int = 5  # 源 :3040/3065 stars 上限
-const DEFEND_LINEUP_MAX: int = 5  # 源 :3196 防守阵容 5 英雄
-const AVATAR_MOD: int = 10  # 源 :3125 (i%10)+1
-const RANKLIST_LEVEL_BASE: int = 60  # 源 :3128 60-i*2
-const RANKLIST_LEVEL_STEP: int = 2  # 源 :3128 i*2
-const RANKLIST_LEVEL_MIN: int = 10  # 源 :3128 math.max(...,10)
+const HERO_FIELD_COUNT: int = 5
+const STARS_MAX: int = 5
+const DEFEND_LINEUP_MAX: int = 5
+const AVATAR_MOD: int = 10
+const RANKLIST_LEVEL_BASE: int = 60
+const RANKLIST_LEVEL_STEP: int = 2
+const RANKLIST_LEVEL_MIN: int = 10
 
 var pvp: Dictionary = {}
 
 
-# 源 :3013-3090 generateAiPlayer：AI 对手（PVPEmeny 查 Hero1-5，fallback Unit 表）+ gs。
 static func generate_ai_player(rank: int, player_level: int, cm: ConfigManager, rng: BattleRng) -> Dictionary:
 	var name_idx: int = rng.randi_range(1, PVP_NAMES.size())
 	var level: int = clampi(player_level + rng.randi_range(LEVEL_DELTA_MIN, LEVEL_DELTA_MAX), 1, player_level + LEVEL_CAP_OFFSET)
@@ -68,7 +67,6 @@ static func generate_ai_player(rank: int, player_level: int, cm: ConfigManager, 
 	return {"user_id": USER_ID_BASE + rank, "name": PVP_NAMES[name_idx - 1], "avatar": rng.randi_range(1, AVATAR_MAX), "level": level, "vip": rng.randi_range(0, mini(VIP_CAP, player_level / VIP_DIVISOR)), "gs": gs, "rank": rank, "heroes": heroes, "is_robot": 1}
 
 
-# 源 :3031-3070 英雄生成：PVPEmeny Hero1-5 优先（本项目 JSON 无 → 空 → fallback Unit Type!=Boss 随机 3-5）。
 static func _generate_heroes(rank: int, level: int, cm: ConfigManager, rng: BattleRng) -> Array:
 	var heroes: Array = []
 	var pvp_enemy: Dictionary = cm.get_raw_table(&"PVPEmeny")
@@ -93,7 +91,6 @@ static func _generate_heroes(rank: int, level: int, cm: ConfigManager, rng: Batt
 	return heroes
 
 
-# 源 :3092-3101 generateAiOpponents：count 对手（targetRank=playerRank-random(1,50*i)），按 rank 升序。
 static func generate_ai_opponents(player_rank: int, player_level: int, count: int, cm: ConfigManager, rng: BattleRng) -> Array:
 	var opponents: Array = []
 	for i in range(1, count + 1):
@@ -102,7 +99,6 @@ static func generate_ai_opponents(player_rank: int, player_level: int, count: in
 	return opponents
 
 
-# 源 :3103-3113 generateRankBoard：count 名（rank=i）。
 static func generate_rank_board(player_level: int, count: int, cm: ConfigManager, rng: BattleRng) -> Array:
 	var board: Array = []
 	for i in range(1, count + 1):
@@ -112,7 +108,6 @@ static func generate_rank_board(player_level: int, count: int, cm: ConfigManager
 	return board
 
 
-# 源 player.lua:522-528 getPvpGs：所有英雄 gs 和。
 static func get_pvp_gs(player: Variant) -> int:
 	var total: int = 0
 	var hm: Variant = player.get("hero_manager")
@@ -122,13 +117,11 @@ static func get_pvp_gs(player: Variant) -> int:
 	return total
 
 
-# 源 :3163-3176 pvp 初始化。
 func ensure_pvp() -> void:
 	if pvp.is_empty():
 		pvp = {"rank": RANK_INIT, "gs": 0, "left_count": LEFT_COUNT_DEFAULT, "buy_times": 0, "last_bt_time": 0, "highest_rank": RANK_INIT, "enemies": [], "records": [], "defend_lineup": [], "last_oppo_rank": RANK_INIT}
 
 
-# 源 :3116-3429 ladder handler 11 子命令分发。返 reply。
 func handle(obj: Dictionary, player: PlayerData, cm: ConfigManager, rng: BattleRng, now: int) -> Dictionary:
 	ensure_pvp()
 	pvp["gs"] = get_pvp_gs(player)
@@ -165,7 +158,6 @@ func handle(obj: Dictionary, player: PlayerData, cm: ConfigManager, rng: BattleR
 	return reply
 
 
-# 源 :3118-3155 _query_rankboard：20 NPC 假榜（AI_NAMES）+ self rank。
 func _cmd_query_rankboard(player: PlayerData) -> Dictionary:
 	var rank_list: Array = []
 	for i in range(1, BOARD_SIZE + 1):
@@ -174,7 +166,6 @@ func _cmd_query_rankboard(player: PlayerData) -> Dictionary:
 	return {"rank_list": rank_list, "pos": int(pvp["rank"]), "prev_pos": int(pvp["rank"]), "self_rank": {"avatar": player.avatar, "vip": 0, "name": player.player_name, "level": player.team_level}}
 
 
-# 源 :3191-3203 默认防守阵容=前 5 英雄 tid。
 func _default_defend_lineup(player: PlayerData) -> Array:
 	var lineup: Array = []
 	var hm: Variant = player.get("hero_manager")
@@ -186,7 +177,6 @@ func _default_defend_lineup(player: PlayerData) -> Array:
 	return lineup
 
 
-# 源 :3226-3284 _start_battle：找 enemy（fallback 反推 rank）+ 装配 self/enemy heroes + 扣 left_count + rseed。
 func _cmd_start_battle(cmd: Variant, player: PlayerData, cm: ConfigManager, rng: BattleRng, now: int) -> Dictionary:
 	var cmd_d: Dictionary = cmd if cmd is Dictionary else {}
 	var oppo_id: int = int(cmd_d.get("oppo_user_id", 0))
@@ -205,7 +195,6 @@ func _cmd_start_battle(cmd: Variant, player: PlayerData, cm: ConfigManager, rng:
 	return {"heroes": enemy["heroes"], "self_heroes": _assemble_self_heroes(cmd_d.get("attack_lineup", []), player), "is_robot": int(enemy.get("is_robot", 1)), "rseed": rng.randi_range(1, RSEED_MAX)}
 
 
-# 源 :3250-3270 装配玩家进攻阵容（attack_lineup tid → hero data；找不到 fallback level 1）。
 func _assemble_self_heroes(attack_lineup: Variant, player: PlayerData) -> Array:
 	var hm: Variant = player.get("hero_manager")
 	var result: Array = []
@@ -229,7 +218,6 @@ static func _find_hero_inst_by_tid(hm: Variant, tid: int) -> int:
 	return 0
 
 
-# 源 :3287-3330 _end_battle：记 record + victory 排名互换（rank=oppo_rank）+ highest + addPvpMoney 奖励。
 func _cmd_end_battle(cmd: Variant, player: PlayerData, now: int) -> Dictionary:
 	var result_str: String = str((cmd as Dictionary).get("result", "")) if cmd is Dictionary else str(cmd)
 	(pvp["records"] as Array).insert(0, {"result": result_str, "time": now, "rank": int(pvp["rank"])})
@@ -243,12 +231,11 @@ func _cmd_end_battle(cmd: Variant, player: PlayerData, now: int) -> Dictionary:
 		if int(pvp["rank"]) < int(pvp["highest_rank"]):
 			pvp["highest_rank"] = pvp["rank"]
 		var reward: int = maxi(REWARD_MIN, REWARD_BASE - int(pvp["rank"]))
-		player.add_point("arenapoint", reward)  # 源 addPvpMoney→addPoint（arenapoint 归 PlayerData）
+		player.add_point("arenapoint", reward)
 		return {"result": "victory", "rank": pvp["rank"], "prev_rank": old_rank, "reward": reward}
 	return {"result": "defeat", "rank": pvp["rank"], "prev_rank": pvp["rank"], "reward": 0}
 
 
-# 源 :3333-3355 _buy_battle_chance：GradientPrice["PVP Buy"][buy_times+1] 钻石购买 +1 left_count。
 func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:
 	var cost: int = BUY_COST_DEFAULT
 	var price_row: Dictionary = player.cm.get_raw_table(&"GradientPrice").get(str(int(pvp["buy_times"]) + 1), {})
@@ -261,7 +248,6 @@ func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:
 	return {"result": "fail"}
 
 
-# 源 :3358-3372 _clear_battle_cd：50 钻清 last_bt_time。
 func _cmd_clear_battle_cd(player: PlayerData) -> Dictionary:
 	if player.spend_diamond(CLEAR_CD_COST):
 		pvp["last_bt_time"] = 0
@@ -269,7 +255,6 @@ func _cmd_clear_battle_cd(player: PlayerData) -> Dictionary:
 	return {"result": "fail"}
 
 
-# 源 :3402-3414 _query_oppo：按 user_id 查 enemies。
 func _cmd_query_oppo(cmd: Variant) -> Dictionary:
 	var oppo_id: int = int((cmd as Dictionary).get("user_id", 0)) if cmd is Dictionary else 0
 	for e in (pvp["enemies"] as Array):
@@ -278,7 +263,6 @@ func _cmd_query_oppo(cmd: Variant) -> Dictionary:
 	return {}
 
 
-# 源 :3382-3399 _query_rankborad：generateRankBoard 20 + self。
 func _cmd_query_rankborad(player: PlayerData, cm: ConfigManager, rng: BattleRng) -> Array:
 	var board: Array = generate_rank_board(player.team_level, BOARD_SIZE, cm, rng)
 	board.append({"user_id": 0, "name": player.player_name, "avatar": player.avatar, "level": player.team_level, "vip": player.vip_level, "gs": pvp["gs"], "rank": pvp["rank"], "is_self": 1})

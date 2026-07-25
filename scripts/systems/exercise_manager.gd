@@ -9,19 +9,18 @@ extends RefCounted
 const HERO_TRIAL_GROUPS: Array[int] = [50005, 50006, 50007]
 const DAILY_LIMIT: int = 1
 
-# 源 exerciseres.entry_stage（key → ActStageGroup/ActStageGroupDungeon 组 id）
 const ENTRY_STAGE: Dictionary = {
 	"exp": 20001, "money": 20002, "int": 20003, "agi": 20004, "str": 20005,
 	"dg1": 50001, "dg2": 50002, "dg3": 50003, "dg4": 50004,
 	"dg5": 50005, "dg6": 50006, "dg7": 50007,
 }
-const STAGE_SLOTS: int = 8            # 源 Stages 字段数 s[1..8]
-const DIFFICULTY_COUNT: int = 4       # 源 diff 1..4（普通/精英/英雄/噩梦）
-const DIFF_ID_OFFSET: int = 1000      # 源 :772 newId = baseId + (diff-1)*1000
-const DEFAULT_VIT: int = 12           # 源 :94 baseVit 兜底
-const DEFAULT_UNLOCK: int = 1         # 源 :95 baseUnlock 兜底
-const VIT_SCALE: Array = [1.0, 1.3, 1.7, 2.0]       # 源 :96 兜底 vit 缩放
-const UNLOCK_OFFSET: Array = [0, 5, 10, 15]         # 源 :97 兜底 unlock 偏移
+const STAGE_SLOTS: int = 8
+const DIFFICULTY_COUNT: int = 4
+const DIFF_ID_OFFSET: int = 1000
+const DEFAULT_VIT: int = 12
+const DEFAULT_UNLOCK: int = 1
+const VIT_SCALE: Array = [1.0, 1.3, 1.7, 2.0]
+const UNLOCK_OFFSET: Array = [0, 5, 10, 15]
 
 enum Mode { HERO_TRIAL, TIME_CAVERN }
 
@@ -60,14 +59,12 @@ func mode_for_group(group_id: int) -> int:
 
 # ===== 查询方法（照源 exercise.lua，服务 ExercisePanel UI 装配）=====
 
-# 源 :1137 getasRow → ActStageGroup[entryStage[key]]
 func _act_row(key: String) -> Dictionary:
 	var sgid: int = int(ENTRY_STAGE.get(key, 0))
 	if sgid == 0 or cm == null:
 		return {}
 	return cm.get_entry(&"ActStageGroup", sgid)
 
-# 源 :1166 getExerciseInfo → {name, des, amountLimit, stage, advise, reward}
 func get_act_info(key: String) -> Dictionary:
 	var row: Dictionary = _act_row(key)
 	return {
@@ -79,20 +76,16 @@ func get_act_info(key: String) -> Dictionary:
 		"reward": [row.get(&"UI reward1", 0), row.get(&"UI reward2", 0), row.get(&"UI reward3", 0)],
 	}
 
-# 源 :1143 getDailyLimit
 func get_daily_limit(key: String) -> int:
 	return int(_act_row(key).get(&"DailyLimit", 0))
 
-# 源 :1147 getActcd
 func get_cd(key: String) -> int:
 	return int(_act_row(key).get(&"CD", 0))
 
-# 源 :1182 getHeroLimit → {type, detail}
 func get_hero_limit(key: String) -> Dictionary:
 	var row: Dictionary = _act_row(key)
 	return {"type": row.get(&"Limit Type", ""), "detail": row.get(&"Limit Detail", "")}
 
-# 源 :43 getStage → em/equip 难度列表 [{id, vit}]（Stages 过滤 >0 + 按 id 升序）
 func get_stages(key: String) -> Array:
 	if cm == null:
 		return []
@@ -105,7 +98,6 @@ func get_stages(key: String) -> Array:
 	stage.sort_custom(func(a, b): return int(a["id"]) < int(b["id"]))
 	return stage
 
-# 源 :70 getDungeonStages → boss×难度 [{baseId, name, difficulties:[{id,vit,keyCost,unlockLevel,diff}]}]
 # 难度变体优先查 StageDungeon 实际数据（已固化 84 关），缺则兜底公式（源 :96-97）
 func get_dungeon_stages(key: String) -> Array:
 	var group_key: int = int(ENTRY_STAGE.get(key, 0))
@@ -154,13 +146,12 @@ func get_dungeon_stages(key: String) -> Array:
 # 与 get_dungeon_stages(key) 差异：① 不经 ENTRY_STAGE ② base_data 多 Stage 表 fallback ③ name 多 "Group Name" fallback
 # ④ 缺失分支 unlock_level=base_unlock（不加 offset，照源 dungeon_map.lua:86-93，区别于 exercise.getDungeonStages）。
 
-## 源 dungeon_map.lua:49-99 getBossesForGroup → 按 group_id 直查 boss 列表（dungeon_map Panel 用）。
 func get_dungeon_bosses(group_id: int) -> Array:
 	if group_id == 0 or cm == null:
 		return []
 	var group_data: Dictionary = cm.get_raw_table(&"ActStageGroupDungeon").get(str(group_id), {})
 	if group_data.is_empty():
-		group_data = cm.get_raw_table(&"ActStageGroup").get(str(group_id), {})  # 源 :55-58 fallback
+		group_data = cm.get_raw_table(&"ActStageGroup").get(str(group_id), {})
 	if group_data.is_empty():
 		return []
 	var st_dungeon: Dictionary = cm.get_raw_table(&"StageDungeon")
@@ -172,10 +163,10 @@ func get_dungeon_bosses(group_id: int) -> Array:
 			continue
 		var base_data: Dictionary = st_dungeon.get(str(bid), {})
 		if base_data.is_empty():
-			base_data = stage_table.get(str(bid), {})  # 源 :64 stDungeon or stageTable
+			base_data = stage_table.get(str(bid), {})
 		var base_vit: int = int(base_data.get(&"Vitality Cost", base_data.get(&"Vit Cost", DEFAULT_VIT)))
 		var base_unlock: int = int(base_data.get(&"Unlock Level", DEFAULT_UNLOCK))
-		var boss_name: String = String(base_data.get(&"Stage Name", base_data.get(&"Group Name", "")))  # 源 :67
+		var boss_name: String = String(base_data.get(&"Stage Name", base_data.get(&"Group Name", "")))
 		var diffs: Array = []
 		for diff in range(1, DIFFICULTY_COUNT + 1):
 			var diff_id: int = bid + (diff - 1) * DIFF_ID_OFFSET
@@ -189,7 +180,6 @@ func get_dungeon_bosses(group_id: int) -> Array:
 					"diff": diff,
 				})
 			else:
-				# 源 dungeon_map.lua:86-93 缺失分支：unlock_level=base_unlock（不加 offset）
 				diffs.append({
 					"id": diff_id,
 					"vit": int(ceil(base_vit * float(VIT_SCALE[diff - 1]))),
@@ -200,11 +190,9 @@ func get_dungeon_bosses(group_id: int) -> Array:
 		bosses.append({"base_id": bid, "name": boss_name, "difficulties": diffs})
 	return bosses
 
-## 源 dungeon_map.lua:104-107 isBossCleared → progress[boss_id]>0（getStageStar 等价）。
 static func is_boss_cleared(progress: Dictionary, boss_id: int) -> bool:
 	return int(progress.get(boss_id, 0)) > 0
 
-## 源 dungeon_map.lua:110-114 isBossUnlocked → 首关恒解锁；后续需前置 boss 通关。boss_idx 1-based。
 static func is_boss_unlocked(bosses: Array, progress: Dictionary, boss_idx: int) -> bool:
 	if boss_idx <= 1:
 		return true
@@ -214,7 +202,6 @@ static func is_boss_unlocked(bosses: Array, progress: Dictionary, boss_idx: int)
 	var prev_zero_based: int = prev_boss_idx - 1  # 1-based → 0-based
 	return is_boss_cleared(progress, int(bosses[prev_zero_based]["base_id"]))
 
-## 源 dungeon_map.lua:116-125 isGroupCleared → 组内所有 boss 通关。group_idx 1-based。
 ## group_counts/group_offsets：源模块级 groupBossCounts/groupBossOffset（create() 填充，key=group_idx）。
 static func is_group_cleared(bosses: Array, group_counts: Dictionary, group_offsets: Dictionary, progress: Dictionary, group_idx: int) -> bool:
 	var count: int = int(group_counts.get(group_idx, 0))
@@ -227,12 +214,10 @@ static func is_group_cleared(bosses: Array, group_counts: Dictionary, group_offs
 			return false
 	return true
 
-# 源 :18 checkUnlockLevel → Stage[id].Unlock Level <= player_level
 func check_unlock(stage_id: int, player_level: int) -> bool:
 	if cm == null:
 		return true
 	return cm.get_int(&"Stage", stage_id, &"Unlock Level") <= player_level
 
-# 源 :1162 checkExerciseEnabled（恒 true，单机化无开放日限制）
 func is_enabled(_key: String) -> bool:
 	return true

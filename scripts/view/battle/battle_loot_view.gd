@@ -8,20 +8,20 @@ extends Node2D
 
 const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
 
-const BOUNCE_X: float = 785.0          # 源 :70 785-bound 反弹线
-const GRAVITY: float = -1000.0         # 源 :76 velocity[3] += -1000*dt
-const LIFE_DEFAULT: float = 0.6        # 源 :27 life
-const VEL_Y: float = -100.0            # 源 :24 velocity[2]=-100
-const VEL_Z_INIT: float = 300.0        # 源 :25 velocity[3]=300
-const VEL_X_BASE: float = 100.0        # 源 :23 velocity[1]=100*idx
-const BOUNCE_MULT: float = -1.5        # 源 :71 vx*-1.5
-const MARKER_POS: Vector2 = Vector2(157.0, 445.0)  # 源 :84 flyToMarker ccp(157,445)
+const BOUNCE_X: float = 785.0
+const GRAVITY: float = -1000.0
+const LIFE_DEFAULT: float = 0.6
+const VEL_Y: float = -100.0
+const VEL_Z_INIT: float = 300.0
+const VEL_X_BASE: float = 100.0
+const BOUNCE_MULT: float = -1.5
+const MARKER_POS: Vector2 = Vector2(157.0, 445.0)
 const CHEST_PATH: String = "res://assets/ui/alpha/HVGA/chest1.png"
 const CHEST_OPEN_PATH: String = "res://assets/ui/alpha/HVGA/chestopen1.png"
 const SHINE_PATH: String = "res://assets/ui/alpha/HVGA/shine.png"
 const HOLO_PATH: String = "res://assets/ui/alpha/HVGA/chest_holo.png"
-const SHINE_ROTATE_RATE: float = 60.0  # 源 :53 rotate = CCRotateBy(duration, duration*60)
-const SHINE_INIT_ROT: float = 30.0     # 源 :52
+const SHINE_ROTATE_RATE: float = 60.0
+const SHINE_INIT_ROT: float = 30.0
 
 signal loot_tapped(loot_id: int)
 # P2-GUT-2：飞抵 marker + add_loot_marker 完成（测试信号等待替代固定时长 await）
@@ -36,12 +36,11 @@ var _vel_x: float = 0.0
 var _vel_z: float = VEL_Z_INIT
 var _life: float = LIFE_DEFAULT
 var _terminated: bool = false
-var _bound: float = 0.0   # 源 visibleOrigin.x（Godot 屏幕原点 0）
+var _bound: float = 0.0
 var _chest: Sprite2D = null
-var scene: Variant = null     # 源 ed.scene 引用（_fly_to_marker 调 scene:addLootMarker）
+var scene: Variant = null
 
 
-# 源 LootCreate(icon, type, monster, idx, id)（loot.lua:8-61）。monster.position 是逻辑坐标。
 static func create(p_icon: Variant, p_type: Variant, monster: Variant, idx: int, p_loot_id: int, ui_layer: Node) -> BattleLootView:
 	var loot := BattleLootView.new()
 	loot._setup(p_icon, p_type, monster, idx, p_loot_id, ui_layer)
@@ -56,7 +55,7 @@ func _setup(p_icon: Variant, p_type: Variant, monster: Variant, idx: int, p_loot
 	_vel_x = VEL_X_BASE * float(idx)
 	ui_layer.add_child(self)
 	_create_visuals()
-	_update_physics_and_sync(0.0)   # 源 :39 self:update(0)
+	_update_physics_and_sync(0.0)
 
 
 func _create_visuals() -> void:
@@ -64,8 +63,8 @@ func _create_visuals() -> void:
 	var shine: Sprite2D = _load_sprite(SHINE_PATH)
 	if shine:
 		shine.z_index = -1
-		shine.modulate.a = 96.0 / 255.0   # 源 :50 setOpacity(96)
-		shine.rotation = deg_to_rad(SHINE_INIT_ROT)   # 源 :52 setRotation(30)
+		shine.modulate.a = 96.0 / 255.0
+		shine.rotation = deg_to_rad(SHINE_INIT_ROT)
 		add_child(shine)
 		_play_shine_anim(shine)
 	var holo: Sprite2D = _load_sprite(HOLO_PATH)
@@ -81,7 +80,6 @@ func _create_visuals() -> void:
 
 
 func _play_shine_anim(shine: Sprite2D) -> void:
-	# 源 :51-55 闪烁（FadeTo 255/0）+ 旋转（CCRotateBy duration*60）CCRepeatForever
 	var blink := create_tween().set_loops()
 	blink.tween_property(shine, "modulate:a", 1.0, LIFE_DEFAULT * 0.5)
 	blink.tween_property(shine, "modulate:a", 0.0, LIFE_DEFAULT * 0.5)
@@ -90,13 +88,11 @@ func _play_shine_anim(shine: Sprite2D) -> void:
 
 
 func _play_holo_anim(holo: Sprite2D) -> void:
-	# 源 :56-59 闪烁（FadeTo 255/96）CCRepeatForever
 	var blink := create_tween().set_loops()
 	blink.tween_property(holo, "modulate:a", 1.0, LIFE_DEFAULT * 0.5)
 	blink.tween_property(holo, "modulate:a", 96.0 / 255.0, LIFE_DEFAULT * 0.5)
 
 
-# 源 update（loot.lua:65-79）：life 递减 + 边界反弹 + 物理 + 同步 view 坐标。
 func update(dt: float) -> void:
 	if _life <= 0.0 or _terminated:
 		return
@@ -123,17 +119,15 @@ func set_scene(p_scene: Variant) -> void:
 	scene = p_scene
 
 
-# 源 onTapped（loot.lua:95-116）：玩家点击拾取。emit 信号（scene 处理 createIcon 装备图标）+ chestopen + fly。
 func on_tapped() -> void:
 	if _terminated:
 		return
-	AudioPlayer.play_sfx("battle_loot")   # 源 battle.clickLoot（loot.lua:96，点击拾取掉落）
+	AudioPlayer.play_sfx("battle_loot")
 	loot_tapped.emit(loot_id)
 	_show_chest_open()
 	_fly_to_marker_and_cleanup()
 
 
-# 源 onAutoCollect（loot.lua:118-127）：自动拾取（无 chestopen）。
 func on_auto_collect() -> void:
 	if _terminated:
 		return
@@ -142,7 +136,6 @@ func on_auto_collect() -> void:
 
 
 func _show_chest_open() -> void:
-	# 源 :97-104 chestopen 在 loot 位置 fade out 0.3
 	var chest_open: Sprite2D = _load_sprite(CHEST_OPEN_PATH)
 	if chest_open == null:
 		return
@@ -155,7 +148,6 @@ func _show_chest_open() -> void:
 	t.tween_callback(chest_open.queue_free)
 
 
-# 源 flyToMarkerAndCleanup（loot.lua:82-93）：飞向 marker(157,445) + fade + scale + addLootMarker + cleanup。
 func _fly_to_marker_and_cleanup() -> void:
 	_terminated = true
 	var t := create_tween()
@@ -163,7 +155,6 @@ func _fly_to_marker_and_cleanup() -> void:
 	t.tween_property(self, "position", BattleViewCoords.to_godot(MARKER_POS.x, MARKER_POS.y), 0.3)
 	t.tween_property(self, "modulate:a", 0.0, 0.3)
 	t.tween_property(self, "scale", Vector2(0.5, 0.5), 0.3)
-	# 源 loot.lua flyToMarkerAndCleanup 末尾 ed.scene:addLootMarker(1)（拾取计数 +1）+ cleanup
 	t.chain().tween_callback(func() -> void:
 		if scene != null and scene.has_method("add_loot_marker"):
 			scene.add_loot_marker(1)

@@ -5,13 +5,12 @@ extends RefCounted
 ##   ult/atk getDamage（Buff134 层数 +1 最多5 + timer=7 + power+=层数*Basic Num，无 Buff134 且 dmg>0 则加）。
 ## protoAwake 守卫，待 Phase5 激活。源 ult/atk takeEffectOn 空 wrapper（死代码）不挂。
 
-const BUFF_URSA_ID: int = 134          # 源 :3/:44 怒意 buff
-const PASV3_RATIO: float = 0.05        # 源 :14 pasv3 层数系数
-const ULT_MAX_STACK: int = 5           # 源 :45/:84 层数上限
-const BUFF_TIMER_RESET: float = 7.0    # 源 :38/:76 叠加重置 timer
+const BUFF_URSA_ID: int = 134
+const PASV3_RATIO: float = 0.05
+const ULT_MAX_STACK: int = 5
+const BUFF_TIMER_RESET: float = 7.0
 
 
-# 源 :1-27 pasv3 getDamage：target 无 Buff134 标记→加 + 读 buff134 层数 power+=层数*0.05。
 func _pasv3_get_damage(skill: Variant, target: Variant, power: float, dt: String, field: String, src: Variant, crit_mod: float) -> float:
 	if not bool(target.custom_data.get("isBuff134", false)):
 		var binfo: Variant = skill.caster.cm.lookup(&"Buff", "", BUFF_URSA_ID)
@@ -30,7 +29,6 @@ func _pasv3_get_damage(skill: Variant, target: Variant, power: float, dt: String
 	return float(target.take_damage({"amount": power134, "damage_type": dt, "field": field, "source": src, "crit_mod": crit_mod}))
 
 
-# 源 :28-64 ult getDamage：Buff134 层数 +1（最多5）+ timer=7 + power+=min(层数,5)*Basic Num，无 Buff134 且 dmg>0 则加。
 func _ult_get_damage(skill: Variant, target: Variant, power: float, dt: String, field: String, src: Variant, crit_mod: float) -> float:
 	var power134: float = power
 	var has_buff: bool = _stack_up(target, skill)
@@ -44,7 +42,6 @@ func _ult_get_damage(skill: Variant, target: Variant, power: float, dt: String, 
 	return dmg
 
 
-# 源 :66-104 atk getDamage：同 ult（break after first Buff134，但 GDScript for 找首个即够）。
 func _atk_get_damage(skill: Variant, target: Variant, power: float, dt: String, field: String, src: Variant, crit_mod: float) -> float:
 	return _ult_get_damage(skill, target, power, dt, field, src, crit_mod)
 
@@ -77,7 +74,6 @@ func _awake_rate(caster: Variant) -> float:
 	return 0.0
 
 
-# 源 :113-131 init_hero：protoAwake→pasv3/ult/atk getDamage（ult/atk takeEffectOn 空 wrapper 死代码不挂）。
 func apply(hero: Variant) -> void:
 	if BattleHeroRegistry.proto_awake(hero.proto):
 		var skillpasv3: Variant = hero.skills.get("Ursa_pasv3")

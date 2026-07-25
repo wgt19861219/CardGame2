@@ -42,7 +42,6 @@ func _try_show_next_announce() -> void:
 	var step: StringName = _announce_queue.pop_front()
 	var view := UnlockAnnounceViewScript.new()
 	view.show_step(step, _announce_overlay)
-	# 照源 announce.lua :59 每条公告约 3s 后自动消失；此处用定时器驱动队列推进
 	get_tree().create_timer(ANNOUNCE_AUTO_DISMISS).timeout.connect(_on_announce_dismissed)
 
 

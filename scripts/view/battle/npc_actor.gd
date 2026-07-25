@@ -15,7 +15,6 @@ var puppet: Variant = null   # UnitSprite（FCA 动画；Variant 避 preload :Sc
 var in_scene: bool = false   # 入场标记（源 :144，sync_actors 置 true）
 
 
-# 源 NpcActorCreate（:134-151）：建 puppet + addChild + usePuppet（首帧 setAction）。
 func setup(p_model: Variant, p_cm: Variant) -> void:
 	model = p_model
 	puppet = UnitSprite.new()
@@ -24,7 +23,6 @@ func setup(p_model: Variant, p_cm: Variant) -> void:
 	update_view()
 
 
-# 源 NpcActor.update（npc.lua:158-174）：position 同步 + setZOrder(-position.y)。无 interp（NPC 直同步）。
 # _dt 可选参兼容 _advance_actor_list 的 update_view(dt) 调用（NPC 不用 dt，无插值/无 walk）。
 func update_view(_dt: float = 0.0) -> void:
 	if model == null:
@@ -34,7 +32,6 @@ func update_view(_dt: float = 0.0) -> void:
 	z_index = -int(pos.y)
 
 
-# 源 onStartNewAction（npc.lua:177-186）：puppet:setAction(action_name)+setLoop → UnitSprite.play_action 通用。
 # NPC 无战斗动作分发（Birth/Idle/Idle2 全走通用）；Death 由 on_npc_death 单独淡出。
 func on_start_new_action() -> void:
 	if puppet == null or model == null:
@@ -42,13 +39,11 @@ func on_start_new_action() -> void:
 	puppet.play_action(String(model.action_name), bool(model.action_loop))
 
 
-# 源 onNpcDeath（npc.lua:225-239）：Duration delay + FadeOut + setVisible(false) → UnitSprite.play_death 淡出。
 func on_npc_death() -> void:
 	if puppet != null:
 		puppet.play_death()
 
 
-# 源 syncActors（battle_scene.lua:582-589）foreachNpc → NpcActorCreate：
 # 为无 actor 的 npc 建 NpcActor + 入 actor_list + 挂 main_layer。scene 各字段由 battle_scene 传。
 static func sync_actors(scene: Node) -> void:
 	var engine: Variant = scene.engine

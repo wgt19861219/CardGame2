@@ -15,7 +15,7 @@ var hero_cache: Dictionary = {}  # tid(int) -> {pre_exp,pre_level,exp_increment}
 const MAX_EQUIP_RANK: int = 22  # 玩家装备 rank 进阶上限（源 player.lua:2066 canUpgrade `_rank < 22`；Hero_equip 表 23 档是数据，rank 23 玩家不可达，照源）
 const EQUIP_SLOT_COUNT: int = 6  # 装备槽数（源 player._items 1-6，本项目 equip_slots 0-5）
 const GS_BASE: int = 5  # 战斗力基础值（源 addHero hero._gs=5，player.lua:1490）
-const GS_PER_SKILL_LEVEL: int = 10  # 源 local_server.lua:1343 技能每升 1 级 +10 战力（totalUpgrades*10）
+const GS_PER_SKILL_LEVEL: int = 10
 
 func _init(cm: ConfigManager) -> void:
 	config = cm
@@ -24,8 +24,8 @@ func _init(cm: ConfigManager) -> void:
 func add_hero(tid: int) -> int:
 	var data := HeroData.from_config(config, tid)
 	var hero := HeroInstance.new(tid, data.initial_stars, next_id)
-	_init_skill_levels(hero)   # 源 player.lua:1502-1506 SkillGroup Init Level
-	hero.gs = calc_gs(hero)    # 源 addHero _gs=5（初始无装备=GS_BASE）
+	_init_skill_levels(hero)
+	hero.gs = calc_gs(hero)
 	heroes[next_id] = hero
 	next_id += 1
 	return hero.inst_id
@@ -90,7 +90,6 @@ func hero_evolve(tid: int) -> Dictionary:
 	return {"ok": true, "inst_id": new_id}
 
 ## 分解预览（照源 split 返还碎片）：返 {fragment_id, count}，不执行。供 splitwindow 显示返还详情。
-## 源联机由 query_split_return 服务器算（local_server 空壳）；单机化本地查 HeroStars.Convert Fragments + Fragment ID。
 func preview_split(inst_id: int) -> Dictionary:
 	var hero := get_hero(inst_id)
 	if hero == null:
@@ -111,12 +110,11 @@ func split(inst_id: int) -> Dictionary:
 	return preview
 
 ## 碎片合成：消耗 Fragment 表配方的专属+通用碎片+金币，获得目标英雄。
-## 照源 fragmentcompose.lua doCompose :123-149：专属优先扣，不足用通用补（≤通用需求）。
 ## 校验 frag_have + min(uni_have, uni_need) >= frag_need；已有英雄拒绝（:138）；金币不足单机化降级（:132 不弹 useMidas 点金手）。
 func compose(target_tid: int) -> bool:
 	if not config.has_entry(&"Fragment", target_tid):
 		return false
-	for inst_id in heroes:   # 源 :138 已有同 tid 英雄拒绝
+	for inst_id in heroes:
 		if (heroes[inst_id] as HeroInstance).tid == target_tid:
 			return false
 	var frag_id := config.get_int(&"Fragment", target_tid, &"Fragment ID")
@@ -124,16 +122,15 @@ func compose(target_tid: int) -> bool:
 	var uni_id := config.get_int(&"Fragment", target_tid, &"Universal Fragment ID")
 	var uni_need := config.get_int(&"Fragment", target_tid, &"Universal Fragment Count")
 	var expense := config.get_int(&"Fragment", target_tid, &"Expense")
-	# 照源 :123-149 通用碎片补足分支
 	var frag_have := _fragment_count(frag_id)
 	var uni_have := _fragment_count(uni_id)
-	var uni_avail: int = min(uni_have, uni_need)   # 源 :124-127 ua=min(universalAmount, universalNeedAmount)
-	if frag_have + uni_avail < frag_need:   # 源 :128 专属持有+通用可用 < 专属需求 → 碎片不足
+	var uni_avail: int = min(uni_have, uni_need)
+	if frag_have + uni_avail < frag_need:
 		return false
-	if gold < expense:   # 源 :132 金币不足（单机化降级，不弹 useMidas 点金手）
+	if gold < expense:
 		return false
-	var frag_use: int = min(frag_have, frag_need)      # 源 :142-145 专属实际扣（≤需求）
-	var uni_use: int = max(0, frag_need - frag_have)   # 源 :146-149 通用实际扣（剩余补，≥0）
+	var frag_use: int = min(frag_have, frag_need)
+	var uni_use: int = max(0, frag_need - frag_have)
 	_add_fragment(frag_id, -frag_use)
 	_add_fragment(uni_id, -uni_use)
 	gold -= expense
@@ -141,7 +138,6 @@ func compose(target_tid: int) -> bool:
 	return true
 
 ## 进阶条件（照源 player.lua:2059 canUpgrade）：6 槽全穿齐 hero_equip[tid][rank] 要求装备 + rank<上限。
-## 源 self._rank < 22（玩家装备 rank 进阶上限 22；Hero_equip 表 23 档是数据，rank 23 玩家不可达，照源）。
 func can_upgrade_rank(inst_id: int) -> bool:
 	var hero := get_hero(inst_id)
 	if hero == null:
@@ -167,7 +163,7 @@ func upgrade_rank(inst_id: int) -> bool:
 	var rank_equip: Dictionary = config.get_raw_table(&"Hero_equip").get(str(hero.tid), {}).get(str(hero.rank), {})
 	for slot in range(EQUIP_SLOT_COUNT):
 		hero.equip_slots[slot] = int(rank_equip.get("Init" + str(slot + 1) + " ID", 0))
-		hero.equip_exp[slot] = 0.0   # 源 upgrade 重置 _exp=0
+		hero.equip_exp[slot] = 0.0
 	hero.gs = calc_gs(hero)
 	return true
 
@@ -183,7 +179,6 @@ func calc_gs(hero: HeroInstance) -> int:
 		var item_id: int = int(hero.equip_slots[slot])
 		if item_id > 0:
 			total += config.get_float(&"Equip", item_id, &"GS") * equip_level
-	# 源 :1343 技能升级 GS 增量（累计 (skill_level - InitLevel) × 10，等价 totalUpgrades*10）
 	var sg: Dictionary = config.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
 	for i in hero.skill_levels.size():
 		var init_lv: int = int(sg.get(str(i + 1), {}).get("Init Level", 1))
@@ -199,10 +194,9 @@ func add_hero_exp(inst_id: int, exp: int) -> bool:
 	var hero := get_hero(inst_id)
 	if hero == null or exp <= 0:
 		return false
-	var oexp: int = hero.exp       # 源 oexp（player.lua:1973）
-	var olevel: int = hero.level   # 源 olevel（:1974）
-	hero.exp += exp                # 源 self._exp = self._exp + exp（:1975）
-	# 源 heroCache 快照（player.lua:1977-1982）：tid→{preExp,preLevel,expIncrement}，结算 getHeroInfo 读
+	var oexp: int = hero.exp
+	var olevel: int = hero.level
+	hero.exp += exp
 	var hc: Dictionary = hero_cache.get(hero.tid, {})
 	hc["pre_exp"] = oexp
 	hc["pre_level"] = olevel
@@ -234,14 +228,14 @@ func upgrade_skill_level(inst_id: int, skill_idx: int) -> bool:
 	if hero == null or skill_idx < 0 or skill_idx >= hero.skill_levels.size():
 		return false
 	var cur_level: int = hero.skill_levels[skill_idx]
-	if cur_level >= hero.level:   # 源 :155 技能等级不可超英雄等级
+	if cur_level >= hero.level:
 		return false
 	var cost: int = _get_skill_upgrade_cost(cur_level)
 	if gold < cost:
 		return false
 	gold -= cost
 	hero.skill_levels[skill_idx] += 1
-	hero.gs = calc_gs(hero)   # 源 :1343 重算含技能升级 GS 增量（totalUpgrades*10）
+	hero.gs = calc_gs(hero)
 	return true
 
 
@@ -256,7 +250,6 @@ func _get_skill_upgrade_cost(cur_level: int) -> int:
 
 
 ## 装备穿戴（照源 main.lua:1750 wear_equip + player.lua:2061 canUpgrade requirement）：
-## 源语义——玩家点装备槽（equipcraft 合成面板触发）→ 服务端从 hero_equip[tid][rank]["Equip{slot} ID"]
 ## 查该 rank 该槽应穿装备 → 客户端 hero._items[slot]=newItemId 落地。**不传 item_id（目标由 hero_equip
 ## 表 rank 决定）、不扣背包（材料在 equipcraft 合成时消耗）、不校验 level/rank（合成时保证）**。
 ## slot 本项目 0-5 → 源 1-6（"Equip{slot+1} ID"）。
@@ -287,7 +280,7 @@ func is_fragment_composable(tid: int) -> bool:
 	var need: int = int(row.get(&"Fragment Count", 0))
 	for inst_id in heroes:
 		if (heroes[inst_id] as HeroInstance).tid == tid:
-			return false   # 源 :834 已拥有英雄不可合成（角标不亮）
+			return false
 	return _fragment_count(frag_id) >= need
 
 
@@ -296,7 +289,6 @@ func _add_fragment(frag_id: int, delta: int) -> void:
 
 
 ## 添加碎片（抽卡/副本奖励产出公开入口；包装 _add_fragment + 入口校验）。
-## 源 addEquip 进 equip_qunty 单一容器；本项目 fragments 容器独立，抽卡分流至此（player_data.draw_tavern_full）。
 func add_fragment(frag_id: int, count: int) -> void:
 	if frag_id <= 0 or count <= 0:
 		return
@@ -309,7 +301,6 @@ func fragment_count(frag_id: int) -> int:
 
 
 ## 扣碎片（单机化觉醒激活用；不足返 false，不部分扣）。
-## 源无此公开接口（源 equip_qunty 扣减在 consumeEquip 服务端）。
 func spend_fragment(frag_id: int, count: int) -> bool:
 	if frag_id <= 0 or count <= 0:
 		return false

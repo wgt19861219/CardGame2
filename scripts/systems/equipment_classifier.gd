@@ -23,7 +23,6 @@ const TYPE_FRAGMENT: int = 2
 const ITEM_TYPE_HERO_MAX: int = 100
 
 
-# 照源 classify（readequip.lua:416-480）：返 {prop, fragment} 两张分类表。
 # items 按 Equip[id].Category 分 prop；fragments 反查 Fragment 表得 makeId/needAmount/category 分 fragment。
 static func classify(pd: PlayerData, cm: Variant) -> Dictionary:
 	var prop: Dictionary = _empty_prop()
@@ -31,12 +30,12 @@ static func classify(pd: PlayerData, cm: Variant) -> Dictionary:
 	# type=1 prop：遍历 items（装备/物品）
 	for id in pd.items:
 		var amount: int = int(pd.items[id])
-		if amount <= 0:   # 源 :462 v.amount > 0 过滤
+		if amount <= 0:
 			continue
 		if not _is_equip_open(int(id), cm):
 			continue
 		var category: String = _value(int(id), &"Category", cm)
-		if category == CAT_FRAGMENT:   # 源 type=2；本项目 fragments 容器独立，items 不该有碎片（防御）
+		if category == CAT_FRAGMENT:
 			continue
 		var cell: Dictionary = {
 			"id": int(id), "makeId": int(id), "amount": amount,
@@ -77,18 +76,15 @@ static func _empty_fragment() -> Dictionary:
 	return {"all": [], "equip": [], "scroll": [], "hero": []}
 
 
-# 源 isEquipOpen（readequip.lua:11-18）：ban_item 黑名单查询。单机化无 global_config，恒 true（留接口）。
 static func _is_equip_open(_id: int, _cm: Variant) -> bool:
 	return true
 
 
-# 源 value(id, name)（readequip.lua:39-43）：Equip[id][name] 字段查询。
 static func _value(id: int, name: String, cm: Variant) -> String:
 	var row: Dictionary = cm.get_raw_table(&"Equip").get(str(id), {})
 	return String(row.get(name, ""))
 
 
-# 源 itemType(id)（player.lua:1206-1217）：id<100 hero / id<600 equip。
 static func _item_type(id: int) -> String:
 	if id < ITEM_TYPE_HERO_MAX:
 		return "hero"
@@ -147,7 +143,6 @@ const CAT_SYNTHETICS: String = "EQUIP.SYNTHETICS"
 const HANDBOOK_TAGS: Array[String] = ["STR", "AGI", "INT", "HP", "AD", "AP", "ARM", "CRIT", "HPS", "MPS", "HEAL"]
 
 
-# 照源 classifyEquip :481-537：返 {ALL,STR,AGI,INT,HP,AD,AP,ARM,CRIT,HPS,MPS,HEAL: [{id,name,lr}]}。
 # 装备按非零基础属性归入对应 tag（CRIT 兼并 MCRIT），Category∈{PARTS,SYNTHETICS} 且非 Hide，
 # Display Level≤满级（canDisplay :20-22）。每 tag 按 {lr,id} 升序（orderEquips :317）。
 # name 存 LSTR key（源 v.Name），View 层 get_lstr 转中文显示。
@@ -156,19 +151,19 @@ static func classify_equip(cm: Variant, team_level_max: int) -> Dictionary:
 	var raw: Dictionary = cm.get_raw_table(&"Equip")
 	for id_str in raw:
 		var key_str := String(id_str)
-		if not key_str.is_valid_int():   # 源 :497 type(k)=="number"；目标 raw key 全 String（含 name 反索引），仅数字 String 是 id
+		if not key_str.is_valid_int():
 			continue
 		var id: int = int(key_str)
 		if not _is_equip_open(id, cm):
 			continue
 		var row: Dictionary = raw[id_str]
 		var lr: int = int(row.get(&"Display Level", 1))
-		if lr > team_level_max:   # 源 canDisplay :20-22 (lv or 1) <= team_level_max
+		if lr > team_level_max:
 			continue
 		var category: String = String(row.get(&"Category", ""))
 		if category != CAT_PARTS and category != CAT_SYNTHETICS:
 			continue
-		if bool(row.get(&"Hide", false)):   # 源 :499 isHide
+		if bool(row.get(&"Hide", false)):
 			continue
 		var name_lstr: String = String(row.get(&"Name", ""))
 		var cell: Dictionary = {"id": id, "name": name_lstr, "lr": lr}
@@ -193,7 +188,6 @@ static func _empty_handbook_tabs() -> Dictionary:
 	return d
 
 
-# 源 orderEquips :317-345（多字段 {"lr","id"} 升序插入排序）。sort_custom + method ref 等价。
 static func _order_equips_lr_id(list: Array) -> void:
 	list.sort_custom(_less_lr_id)
 

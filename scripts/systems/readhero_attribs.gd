@@ -6,7 +6,6 @@ extends RefCounted
 ## attribs 主体计算不依赖 engine）取 attribs/orig_attribs，算 base/add/all。供 herodetail 属性面板消费。
 
 
-# 源 getHeroAttByHero :11-37 — 建 BattleUnit 取 attribs → base/add/all（v!=0 才入）。
 # base = round(orig_attribs)；all = round(attribs)；add = all - base。
 static func get_hero_att_by_hero(hero: HeroInstance, cm: ConfigManager) -> Dictionary:
 	if hero == null:

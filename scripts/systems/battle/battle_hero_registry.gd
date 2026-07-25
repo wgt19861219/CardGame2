@@ -2,7 +2,6 @@ class_name BattleHeroRegistry
 extends RefCounted
 
 ## 英雄 hook 注册表（Logic 层）— 照源 unit.lua:216 `require(info.Script)` 的 Godot 等价（Phase 2.7）。
-## 源：UnitCreate 后 pcall(require, info.Script) 拿 init_hero，pcall(init_hero, self) 注入 hook。
 ## Godot 等价：预 new 英雄 hook 实例缓存（避 74 class_name 解析时序），按 Script 路径分发 apply(hero)。
 ## 英雄脚本 extends RefCounted + apply(hero)，apply 内注册 hero_hooks（技能/单位/buff 分发 key → Callable）。
 ## View 表现（popup/effect/shader/音效）分层 Phase 4；本注册表仅 Logic hook。
@@ -83,7 +82,6 @@ static var _cache: Dictionary = {}
 static var _initialized: bool = false
 
 
-# 源 unit.lua:216-219 pcall(require, Script) → init_hero(self)；这里首次调用懒初始化缓存。
 static func _ensure_init() -> void:
 	if _initialized:
 		return
@@ -161,7 +159,6 @@ static func _ensure_init() -> void:
 	_initialized = true
 
 
-# 源 init_hero(hero)：分发到英雄 hook 脚本 apply（注册 hero_hooks）。
 static func apply(script_path: String, hero: Variant) -> void:
 	_ensure_init()
 	var inst: Variant = _cache.get(script_path, null)
@@ -169,7 +166,6 @@ static func apply(script_path: String, hero: Variant) -> void:
 		inst.apply(hero)
 
 
-# 源 ed.protoAwake(proto)（觉醒养成系统，C++ compiled 无 Lua 定义）。
 # 实现读 proto._awake（HeroInstance.awake 养成控制，stage_manager 构建 proto 时注入）。
 # 召唤物/怪物 proto 无 _awake 键 → 默认 false（不觉醒）。
 static func proto_awake(proto: Dictionary) -> bool:

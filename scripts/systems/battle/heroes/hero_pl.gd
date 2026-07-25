@@ -6,29 +6,28 @@ extends RefCounted
 ## Lancer_ult power 第2击 0 + onAttackFrame attack_counter 2-6 切 Shape Arg1。die 6 幻象同死。
 ## 复用续8 createMirrorClone（TB/Naga 幻象模式）+ 续6 power 双值 + 续3 start hook + 新 onPhaseFinished hook。
 
-const MIRROR_TIME: float = 12.0          # 源 :3 幻象持续
-const MIRROR_TID: int = 147              # 源 :23 幻象 tid
-const MIRROR_BUFF_ID: int = 89           # 源 :35 幻象 buff
-const ATK2_OFFSET_X: float = 40.0        # 源 :71 atk2 幻象 x 偏移
-const ATK2_OFFSET_Y: float = 30.0        # 源 :72 atk2 幻象 y 偏移
-const ATK3_OFFSET_X: float = 70.0        # 源 :59 atk3 幻象 x 偏移
-const STAGE_MAX_X: int = 799             # 源 :62 幻象 x 上限
-const STAGE_MIN_X: int = 1               # 源 :62 幻象 x 下限
-const ATK_COUNTER_SECOND: int = 2        # 源 :85/182 第2击
-const ULT_ATK_LOW: int = 2               # 源 :169 attack_counter 2-6
-const ULT_ATK_HIGH: int = 6              # 源 :169
-const SHAPE_FAR_ARG1: int = 231          # 源 :128/171 远/中段 Shape Arg1
-const SHAPE_NEAR_ARG1: int = 140         # 源 :134 近 Shape Arg1
-const SHAPE_ULT_FAR_ARG1: int = 300      # 源 :177 ult 首尾 Shape Arg1
-const SHAPE_RECT_H: int = 150            # 源 :129 rectangle Shape Arg2
-const START_PHASE_FAR: int = 1           # 源 :139 startPhase(1) 远距离
-const START_PHASE_NEAR: int = 2          # 源 :141 startPhase(2) 近距离
-const SKILL_MIN_SQ: float = 18225.0      # 源 :111 远近判定距离平方
-const CDR_DENOM: float = 100.0           # 源 :146 CDR/100
-const DEFAULT_MOD: float = 1.0           # 源 hp_mod/dps_mod 缺省
+const MIRROR_TIME: float = 12.0
+const MIRROR_TID: int = 147
+const MIRROR_BUFF_ID: int = 89
+const ATK2_OFFSET_X: float = 40.0
+const ATK2_OFFSET_Y: float = 30.0
+const ATK3_OFFSET_X: float = 70.0
+const STAGE_MAX_X: int = 799
+const STAGE_MIN_X: int = 1
+const ATK_COUNTER_SECOND: int = 2
+const ULT_ATK_LOW: int = 2
+const ULT_ATK_HIGH: int = 6
+const SHAPE_FAR_ARG1: int = 231
+const SHAPE_NEAR_ARG1: int = 140
+const SHAPE_ULT_FAR_ARG1: int = 300
+const SHAPE_RECT_H: int = 150
+const START_PHASE_FAR: int = 1
+const START_PHASE_NEAR: int = 2
+const SKILL_MIN_SQ: float = 18225.0
+const CDR_DENOM: float = 100.0
+const DEFAULT_MOD: float = 1.0
 
 
-# 源 :21-48 createMirrorClone：UnitCreate tid=147 + Buff 89 + mDuration + update + setDeathWithEffect + summonUnit。
 func _create_mirror_clone(caster: Variant, position: Vector2) -> Variant:
 	var proto: Dictionary = {"_tid": MIRROR_TID, "_level": int(caster.level), "_stars": int(caster.stars), "_rank": int(caster.rank)}
 	var config: Dictionary = {"is_monster": true, "estimate_rank": true, "hp_mod": float(caster.config.get("hp_mod", DEFAULT_MOD)), "dps_mod": float(caster.config.get("dps_mod", DEFAULT_MOD))}
@@ -43,7 +42,6 @@ func _create_mirror_clone(caster: Variant, position: Vector2) -> Variant:
 	return mirror
 
 
-# 源 :5-20 mirror update：mDuration 倒计 ≤0 die；else basefunc。
 func _mirror_update(unit: Variant, dt: float) -> void:
 	var dur: float = float(unit.custom_data.get("mDuration", MIRROR_TIME)) - dt
 	unit.custom_data["mDuration"] = dur
@@ -53,7 +51,6 @@ func _mirror_update(unit: Variant, dt: float) -> void:
 		unit._update_default(dt)
 
 
-# 源 :90-110 hero_die：6 幻象同死（Mirror1/21/22/3/4/ult，1/4 恒 nil 安全）+ basefunc。
 func _die(hero: Variant, killer: Variant) -> void:
 	for key in ["LancerMirror1", "LancerMirror21", "LancerMirror22", "LancerMirror3", "LancerMirror4", "LancerMirrorult"]:
 		var m: Variant = hero.custom_data.get(key, null)
@@ -62,12 +59,10 @@ func _die(hero: Variant, killer: Variant) -> void:
 	hero._die_default(killer)
 
 
-# 源 :49-51 ult takeEffectAt：basefunc only（空包装）。
 func _ult_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	BattleSkillEffect.take_effect_at(skill, location, src)
 
 
-# 源 :82-89 ult power：basefunc 双值，attack_counter==2 → power=0（第2击无伤）。
 func _ult_power(skill: Variant, src: Variant, target: Variant) -> Array:
 	var r: Array = BattleSkillEffect.power(skill, src, target)
 	if int(skill.attack_counter) == ATK_COUNTER_SECOND:
@@ -75,7 +70,6 @@ func _ult_power(skill: Variant, src: Variant, target: Variant) -> Array:
 	return r
 
 
-# 源 :166-190 ult onAttackFrame：attack_counter 2-6 切 Shape Arg1=231 / else 300 + basefunc + counter==2 召唤 Mirrorult。
 func _ult_on_attack_frame(skill: Variant) -> void:
 	var originfo: Dictionary = skill.info
 	var counter: int = int(skill.attack_counter)
@@ -90,7 +84,6 @@ func _ult_on_attack_frame(skill: Variant) -> void:
 		caster.custom_data["LancerMirrorult"] = _create_mirror_clone(caster, Vector2(caster.position.x, caster.position.y))
 
 
-# 源 :67-81 atk2 takeEffectAt：basefunc + 召唤 2 幻象（Mirror21/22）+ caster.x-40。
 func _atk2_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	BattleSkillEffect.take_effect_at(skill, location, src)
 	var caster: Variant = skill.caster
@@ -101,7 +94,6 @@ func _atk2_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> vo
 	caster.custom_data["LancerMirror22"] = m22
 
 
-# 源 :52-66 atk3 takeEffectOn：basefunc + caster alive 召唤 Mirror3（target.x+70，越界反向）。
 func _atk3_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var r: Array = BattleSkillEffect.take_effect_on(skill, target, src)
 	var caster: Variant = skill.caster
@@ -114,7 +106,6 @@ func _atk3_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Arra
 	return r
 
 
-# 源 :157-165 atk3 createProjectile：basefunc + enableTrack。
 func _atk3_create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = skill._create_projectile_default()
 	var target: Variant = projectile.skill.target
@@ -124,7 +115,6 @@ func _atk3_create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# 源 :112-153 atk start：完全重写（target/selectTarget/cd/casting/attack_counter + 距离切 AOE Shape + startPhase 1远/2近 + global_cd/setMP）。
 func _atk_start(skill: Variant, target: Variant) -> void:
 	var info: Dictionary = skill.info
 	skill.target = target
@@ -154,15 +144,12 @@ func _atk_start(skill: Variant, target: Variant) -> void:
 	caster.global_cd = float(info.get("Global CD", 0))
 	var cdr: float = float(caster.attribs.get("CDR", 0)) / CDR_DENOM
 	caster.set_mp(float(caster.mp) - float(info.get("Cost MP", 0)) * (1.0 - cdr))
-	# 源 :147-152 caster.actor addEffect View 跳过
 
 
-# 源 :154-156 atk onPhaseFinished：finish（不推进下一 phase，override 默认推进逻辑）。
 func _atk_on_phase_finished(skill: Variant) -> void:
 	skill.finish()
 
 
-# 源 :191-194 atk finish：originfo 备份 + basefunc。
 func _atk_finish(skill: Variant) -> void:
 	skill.custom_data["originfo"] = skill.info
 	skill._finish_default()

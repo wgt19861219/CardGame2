@@ -6,25 +6,23 @@ extends RefCounted
 ## 敌人字段：Monster N ID / Level N / Stars N / Monster HP%·DPS% / Boss Position·HP%·DPS%·SIZE% / Money Reward N / MP N。
 ## 单机化：源 enterStage lookupDataTable("Battle", nil, stageId, wave) → cm.get_raw_table 两级取。
 
-const MONSTER_SLOT_COUNT: int = 5      # 源 for i = 1, 5
-const PERC_DENOM: float = 100.0        # 源 modify 分母
-const MOD_DEFAULT: float = 100.0       # 源 modify default（nil/0 时取此）
-const BOSS_SIZE_DEFAULT: float = 120.0  # 源 :216 modify(..., "BOSS SIZE%", 120)
+const MONSTER_SLOT_COUNT: int = 5
+const PERC_DENOM: float = 100.0
+const MOD_DEFAULT: float = 100.0
+const BOSS_SIZE_DEFAULT: float = 120.0
 const DEFAULT_WAVE: int = 1
-const DEFAULT_STARS: int = 1            # 源 :199 battle_info["Stars "..i] or 1
+const DEFAULT_STARS: int = 1
 
 var stage_id: int = 0
 var wave_id: int = DEFAULT_WAVE
 var battle_info: Dictionary = {}  # 原始 Battle[stage_id][wave] 字段字典
 
 
-## 源 modify（battle_engine.lua:179-186）：modifier 为 0/nil 取 default，否则 old×modifier/100。
 static func _modify(old: float, modifier: float, default: float = MOD_DEFAULT) -> float:
 	var mod_val: float = modifier if modifier != 0.0 else default
 	return old * mod_val / PERC_DENOM
 
 
-## 源 enterStage（:362-364）：battle = lookupDataTable("Battle", nil, lookupId, startWaveId)。
 static func from_config(cm: ConfigManager, sid: int, wave: int = DEFAULT_WAVE) -> BattleData:
 	var data := BattleData.new()
 	data.stage_id = sid
@@ -39,7 +37,6 @@ func has_monsters() -> bool:
 	return not battle_info.is_empty()
 
 
-## 源 setupBattle（:190-240）：循环 5 槽，Monster N ID > 0 装配。
 ## 返回 Array[{tid, level, stars, hp_mod, dps_mod, is_boss, size_mod, money, mp}]。
 func get_monsters() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []

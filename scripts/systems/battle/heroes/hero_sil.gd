@@ -9,7 +9,6 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["takeEffectOn"] = Callable(self, "_take_effect_on")
 
 
-# 源 :2-8 takeEffectOn（succ = basefunc → takeDamage Holy mp）。
 func _take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var r: Array = BattleSkillEffect.take_effect_on(skill, target, src)  # basefunc [succ, dmg]
 	var succ: bool = bool(r[0])

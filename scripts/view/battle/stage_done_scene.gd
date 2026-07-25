@@ -15,36 +15,35 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_done_content.tscn")
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
-const SOURCE_UI_PREFIX: String = "UI/alpha/HVGA/"  # 源 getBattleBgRes 返路径前缀
+const SOURCE_UI_PREFIX: String = "UI/alpha/HVGA/"
 const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"
 
-# 源 stagedone.lua 坐标常量（960×640 设计坐标系）。
 # 静态节点（bg/shelter/light/star×3/info_bg 父/replay/next）坐标已固化进 stage_done_content.tscn，
 # 这里仅保留动态节点（hero/loot icon）+ InfoBg 内 icon texture fill + battleStatist 子（Button + Label）所需常量。
-const HERO_ORI_X: float = 195.0                     # 源 :21 hero_ori_x
-const HERO_ORI_Y: float = 243.0                     # 源 :22
-const HERO_GAP_X: float = 92.0                      # 源 :23
-const LOOT_ORI_X: float = 200.0                     # 源 :16 loot_ori_x
-const LOOT_ORI_Y: float = 100.0                     # 源 :17
-const LOOT_GAP_X: float = 70.0                      # 源 :18
-const BAR_OFFSET: Vector2 = Vector2(0.0, -8.0)      # 源 :368 bar @ccp(0,-8)（相对 hero icon）
-const EXP_LABEL_OFFSET: Vector2 = Vector2(38.0, -30.0)  # 源 :373
+const HERO_ORI_X: float = 195.0
+const HERO_ORI_Y: float = 243.0
+const HERO_GAP_X: float = 92.0
+const LOOT_ORI_X: float = 200.0
+const LOOT_ORI_Y: float = 100.0
+const LOOT_GAP_X: float = 70.0
+const BAR_OFFSET: Vector2 = Vector2(0.0, -8.0)
+const EXP_LABEL_OFFSET: Vector2 = Vector2(38.0, -30.0)
 const MAX_STARS: int = 3
 # battleStatistNode 子（Button + BattleCount Label）procedural fill 挂 BattleStatistNode
-const BATTLE_STATIST_TEX: String = "herodetail-upgrade.png"            # 源 :1575 battleStatist
-const BATTLE_STATIST_PRESS_TEX: String = "herodetail-upgrade-mask.png" # 源 :1592 battleStatist_press
-const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)       # 源 :1576 capInsets CCRectMake(20,20,20,20)
-const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)              # 源 :1584
-const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 0.0)       # 源 :1616 battleCount (35,0)
+const BATTLE_STATIST_TEX: String = "herodetail-upgrade.png"
+const BATTLE_STATIST_PRESS_TEX: String = "herodetail-upgrade-mask.png"
+const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)
+const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)
+const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 0.0)
 # InfoBg 内 icon texture（tscn texture 留空，运行时 fill；xpicon 缺图 _load 容错 null 不报错）
-const GOLD_ICON_TEX: String = "goldicon_small.png"  # 源 :1535 gold_icon
-const EXP_ICON_TEX: String = "xpicon.png"           # 源 :1716 exp_title
-const HERO_BAR_TEX: String = "heroxp-progress.png"  # 源 :367 bar
+const GOLD_ICON_TEX: String = "goldicon_small.png"
+const EXP_ICON_TEX: String = "xpicon.png"
+const HERO_BAR_TEX: String = "heroxp-progress.png"
 
 var _param: Dictionary = {}
 var _cm: ConfigManager = null
 var _animator: StageDoneAnimator = null
-var _anim_playing: bool = false    # 源 animPlaying（skipAnim 守卫 + animator 设 false 收尾）
+var _anim_playing: bool = false
 var _content: Control = null       # stage_done_content.tscn 实例（静态结构容器）
 
 # 装配节点（animator 操作，从 _content get_node as 取）
@@ -56,10 +55,10 @@ var _hero_bars: Array = []          # Sprite2D[]（经验条，bar scaleX 动画
 var _loot_icon_nodes: Array = []    # Control[]
 var _replay_btn: TextureButton = null
 var _next_btn: TextureButton = null
-var _exp_label: Label = null        # 源 ui.exp_label（玩家经验跳动）
-var _gold_label: Label = null       # 源 ui.gold_label
-var _lv_label: Label = null         # 源 ui.lv（玩家等级，playLevelAnim 更新）
-var _battle_statist_node: Sprite2D = null  # 源 :1560 battleStatistNode（"数据"按钮）
+var _exp_label: Label = null
+var _gold_label: Label = null
+var _lv_label: Label = null
+var _battle_statist_node: Sprite2D = null
 
 
 func _ready() -> void:
@@ -108,7 +107,7 @@ func _fill_static_nodes() -> void:
 	var player_info: Dictionary = _param.get("player_info", {})
 	_lv_label.text = "LV " + str(int(player_info.get("ori_level", 1)))
 	var is_key: bool = bool(_param.get("is_key_stage", false))
-	_replay_btn.visible = is_key   # 源 playButtonAnim :574 setVisible(isKeyStage)
+	_replay_btn.visible = is_key
 	_replay_btn.pressed.connect(_on_replay_pressed)
 	_next_btn.pressed.connect(_on_next_pressed)
 
@@ -119,7 +118,6 @@ func _fill_info_bg_icons() -> void:
 	(_info_bg.get_node("ExpIcon") as Sprite2D).texture = _load(ALPHA_HVGA_DIR + EXP_ICON_TEX)
 
 
-# 源 :1560-1618 battleStatistNode（Scale9Sprite 按钮图 + battleCount "数据" Label，照源 capInsets 20,20,20,20）。
 # 父 Sprite2D 在 .tscn（pos + modulate.a=0 独立 fade），Button + Label procedural fill 挂父（Scale9 复杂构造）。
 func _fill_battle_statist() -> void:
 	var btn: Button = UiScale9Button.make_centered(
@@ -138,13 +136,11 @@ func _fill_battle_statist() -> void:
 
 
 func _statist_label_text() -> String:
-	# 源 T(LSTR("STAGEDONE.DATA"))
 	if _cm != null:
 		return str(_cm.get_lstr("STAGEDONE.DATA"))
 	return "数据"
 
 
-# 源 doClickStatist → ed.ui.battleStatist.create(ed.engine.unit_list)。finalizer 快照 unit_list 存入 last_result。
 # panel 全屏模态挂 scene 根（Control），setup 后自管理（cExit/遮罩关闭 queue_free）。
 func _on_battle_statist_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
@@ -153,26 +149,23 @@ func _on_battle_statist_pressed() -> void:
 	panel.setup(Array(GameData.last_result.get("unit_list", [])), _cm)
 
 
-# 源 :349-387 createHeroIcon（readhero.createIcon + 经验条 bar + exp Label）。
 # 初始 icon modulate.a=0（playHeroAnim fade in）；bar scaleX=pre_exp/pre_max（playHeroBarAnim 动画到 tExp/tMaxExp）。
 func _create_hero_icons() -> void:
 	var heroes: Array = _param.get("heroes", [])
 	for i in heroes.size():
 		var hinfo: Dictionary = heroes[i]
 		var ri := ReadheroIcon.new()
-		# 源 :355-363 createIcon level=hero.level（pre 等级，动画到 t_level）
 		ri.setup({
 			"id": int(hinfo.get("id", 0)),
 			"rank": int(hinfo.get("rank", 1)),
 			"stars": 0,
 			"level": int(hinfo.get("level", 1)),
-			"hp": int(hinfo.get("hp", 0)),   # 源 :360 传 readhero.createIcon → _add_hp_info 画血条
-			"mp": int(hinfo.get("mp", 0)),   # 源 :361
+			"hp": int(hinfo.get("hp", 0)),
+			"mp": int(hinfo.get("mp", 0)),
 		}, _cm)
 		ri.position = Vector2(HERO_ORI_X + HERO_GAP_X * i, HERO_ORI_Y)
-		ri.icon.modulate.a = 0.0   # 源 playHeroAnim :466 setOpacity(0)
+		ri.icon.modulate.a = 0.0
 		_content.add_child(ri)   # setup 内部已 add icon 到 self（照 battle_hero_panel:55）
-		# 源 :367-371 bar heroxp-progress.png scaleX(hero.exp/hero.maxExp)（pre 经验）
 		var bar := Sprite2D.new()
 		bar.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_TEX)
 		bar.centered = false
@@ -182,16 +175,13 @@ func _create_hero_icons() -> void:
 		bar.scale.x = clampf(float(pre_exp) / float(maxi(pre_max, 1)), 0.0, 1.0)
 		ri.icon.add_child(bar)
 		_hero_bars.append(bar)
-		# 源 :372-374 exp Label "EXP +addHeroExp"（随 icon modulate 显示，静态）
 		var exp_lbl := Label.new()
 		exp_lbl.text = "EXP +" + str(int(hinfo.get("add_hero_exp", 0)))
 		exp_lbl.position = EXP_LABEL_OFFSET
 		ri.icon.add_child(exp_lbl)
-		# 源 :360-361 hp/mp 传 readhero.createIcon → ReadheroIcon._add_hp_info 画血条（icon 内部，无需外部 Label）
 		_hero_icon_nodes.append(ri)
 
 
-# 源 :491-511 createLootIcon（readequip.createStagedoneLootIcon）。初始 scale=0（playLootAnim 弹出）。
 func _create_loot_icons() -> void:
 	var loot_list: Dictionary = _param.get("loot_list", {})
 	var i: int = 0
@@ -200,28 +190,24 @@ func _create_loot_icons() -> void:
 		var amount: int = int(info.get("amount", 1))
 		var icon: Control = ReadequipIcon.create_icon(int(id), amount, _cm)
 		icon.position = Vector2(LOOT_ORI_X + LOOT_GAP_X * i, LOOT_ORI_Y)
-		icon.scale = Vector2.ZERO   # 源 playLootAnim :527 setScale(0)
+		icon.scale = Vector2.ZERO
 		_content.add_child(icon)
 		_loot_icon_nodes.append(icon)
 		i += 1
 
 
-# 源 skipAnim（:869-908）：kill tween + 跳到终态 + playButtonAnim。
 func skip_anim() -> void:
 	if not _anim_playing:
 		return
 	_anim_playing = false
 	if _animator != null:
 		_animator.kill()
-	# 源 :873-878 label 终值
 	_exp_label.text = "+" + str(int(_param.get("exp", 0)))
 	_gold_label.text = "+" + str(int(_param.get("gold", 0)))
-	# 源 :879-882 star 终态（scale=1）
 	var stars: int = int(_param.get("stars", 0))
 	for i in range(stars):
 		if i < _star_nodes.size():
 			(_star_nodes[i] as Sprite2D).scale = Vector2.ONE
-	# 源 :883-892 hero 终态（opacity=255 + bar scaleX=tExp/tMaxExp + refreshLevel(tLevel)）
 	var heroes: Array = _param.get("heroes", [])
 	for i in range(_hero_icon_nodes.size()):
 		var ri: ReadheroIcon = _hero_icon_nodes[i]
@@ -232,28 +218,23 @@ func skip_anim() -> void:
 		if i < _hero_bars.size():
 			(_hero_bars[i] as Sprite2D).scale.x = clampf(float(t_exp) / float(max(t_max, 1)), 0.0, 1.0)
 		ri.refresh_level(int(hinfo.get("t_level", 1)))
-	# 源 :893-897 loot 终态（scale=1）
 	for icon in _loot_icon_nodes:
 		(icon as Control).scale = Vector2.ONE
-	# 源 :907 playButtonAnim（button fade in）
 	if _animator != null:
 		_animator.play_button()
 
 
-# 源 registerTouchHandler（:1279-1286）：点击空白 → skipAnim。
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		skip_anim()
 
 
-# 源 doClickReplay（:93-110）：replaceScene(stagedetail)。单机化：回 main_scene。
 # 音效：stagedonelsr clickReply → stageDone.replay = common_click_feedback（soundres:168）。
 func _on_replay_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	SceneManager.change_scene(MAIN_SCENE_PATH)
 
 
-# 源 doClickNext（:111-132）：popScene。单机化：回 main_scene。
 func _on_next_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	SceneManager.change_scene(MAIN_SCENE_PATH)

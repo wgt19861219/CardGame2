@@ -2,13 +2,11 @@ class_name FcaAnimation
 extends Node2D
 
 ## FCA 散件动画播放器（View 层）— 解析 .key 二进制，驱动 Sprite2D 散件帧动画。
-## 照旧版 CardGameGodot/scripts/battle/fca_animation.gd 复用（原项目 C++ LegendAnimation 的 GDScript 复刻）。
 ## 配套 res://assets/anim_frames/<resource>.ani（zip，含 sheet.key）+ AtlasSprite（sheet.plist/png）。
 
 signal action_finished(action_name: String)
 
 # 坐标转换系数 — 源 ed.cha_scale（战斗 0.09）/ ed.cha_ui_scale（UI eff_UI_ 前缀 0.39）。
-# 源 resource_manager.lua:5 + createFcaNode 检 resource 前缀 eff_UI → LegendSetAniScaleFactor(ui_scale)。
 # 当前 FCA 用 _coord_scale（load_from_ani 检 UI 前缀定，默认战斗 0.09）。
 const BATTLE_SCALE: float = 0.09
 const UI_SCALE: float = 0.39
@@ -339,7 +337,6 @@ func _apply_frame(frame: Dictionary) -> void:
 		var tx: float = fe.get("tx", 0.0)
 		var ty: float = fe.get("ty", 0.0)
 
-		# 源 LegendAnimationFileInfo.cpp:516 factor=1/scale 反向 a/b/c/d（Node2D scale 缩回原始效果）；
 		# origin 用原始 tx/ty（Node2D scale 整体缩，等价源 batchNode setScale）。
 		var factor: float = 1.0 / _coord_scale
 		sprite.transform = Transform2D(

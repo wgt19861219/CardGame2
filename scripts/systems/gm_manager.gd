@@ -13,17 +13,16 @@ extends RefCounted
 ## 用法：GmManager.execute(player, cm, cmd, stage_mgr) — cmd key 为命令名（下划线前缀）。
 ## stage_mgr 可选（unlock_all_stages 用，可为 null）。返回 _reset（完整 user 数据，照源）。
 
-const MAX_UNLOCK_LEVEL: int = 80   # 源 unlock_all_stages 设 player.level = 80
-const HERO_INIT_GS: int = 100      # 源 get_all_heroes gs = 100
-const CHAPTER_MAX: int = 14        # 源 :1935 章节范围上限（Chapter ID 1-14）
-const MAX_NORMAL_STAGES: int = 9999  # 源 stage.max_normal = 9999
-const BITS_ID_LOW: int = 0         # 源 ed.bits(itemBits, 0, 10) — id 占低 10 位
+const MAX_UNLOCK_LEVEL: int = 80
+const HERO_INIT_GS: int = 100
+const CHAPTER_MAX: int = 14
+const MAX_NORMAL_STAGES: int = 9999
+const BITS_ID_LOW: int = 0
 const BITS_ID_COUNT: int = 10
-const BITS_AMOUNT_LOW: int = 10    # 源 ed.bits(itemBits, 10, 11) — amount 占 11 位
+const BITS_AMOUNT_LOW: int = 10
 const BITS_AMOUNT_COUNT: int = 11
 
 
-## 源 gm_cmd handler 主入口：逐项检查 obj 字段执行对应 GM 命令。
 static func execute(
 	player: PlayerData, cm: ConfigManager, cmd: Dictionary, stage_mgr: Variant = null
 ) -> Dictionary:
@@ -53,15 +52,11 @@ static func execute(
 	# 机制差异；重置扫荡券需统一评估（关联 P1-三轮-4 sweep 机制复核）
 	# _set_dailylogin_days：DailyLoginManager.frequency = days（GM 设连续登录天数，不影响领奖状态）
 	if cmd.has("_set_dailylogin_days"):
-		# 源 :2063-2066 daily_login.frequency = days（GM 设连续登录天数）
 		player.daily_login.frequency = int(cmd["_set_dailylogin_days"])
-	# 源 :2068-2081 清理非 Hero 英雄（旧存档混入怪物/召唤物）
 	_cleanup_non_hero(player, cm)
-	# 源 GM 返回 _reset（完整 user 数据）
 	return {"_reset": {"_user": _build_user(player)}}
 
 
-# 源 :1924-1945 unlock_all_stages：遍历 Stage 表，normal/elite 关设 3 星 + max_normal=9999。
 static func _unlock_all_stages(cm: ConfigManager, stage_mgr: Variant) -> void:
 	if stage_mgr == null:
 		return   # 无 StageManager 实例则跳过（stage 进度无持久化目标）
@@ -71,14 +66,13 @@ static func _unlock_all_stages(cm: ConfigManager, stage_mgr: Variant) -> void:
 		if sid > 0:
 			var row: Dictionary = stage_table[sid_key]
 			var ch: int = int(row.get("Chapter ID", 0))
-			if ch >= 1 and ch <= CHAPTER_MAX:   # 源 :1935 章节范围
+			if ch >= 1 and ch <= CHAPTER_MAX:
 				var s_type: String = StageAccount.stage_type(sid)
 				if s_type == "normal" or s_type == "elite":
-					stage_mgr.progress[sid] = StageManager.STARS_FULL   # 源设 3 星
-	stage_mgr.max_normal = MAX_NORMAL_STAGES   # 源 stage.max_normal = 9999
+					stage_mgr.progress[sid] = StageManager.STARS_FULL
+	stage_mgr.max_normal = MAX_NORMAL_STAGES
 
 
-# 源 :1947-1969 get_all_heroes：遍历 Unit 表，Hero 类型 + 有 Portrait 的加入玩家英雄列表。
 static func _get_all_heroes(player: PlayerData, cm: ConfigManager) -> void:
 	var unit_table: Dictionary = cm.get_raw_table("Unit")
 	var existing: Dictionary = {}
@@ -93,7 +87,6 @@ static func _get_all_heroes(player: PlayerData, cm: ConfigManager) -> void:
 				player.hero_manager.add_hero(tid)   # rank/level/stars 默认 1，照源初始值
 
 
-# 源 :1971-1986 set_hero_info：批量设置英雄 rank/level/stars/exp/gs。
 static func _set_hero_info(player: PlayerData, hero_list: Array) -> void:
 	for hero_msg in hero_list:
 		var tid: int = int(hero_msg.get("_tid", 0))
@@ -121,11 +114,9 @@ static func _find_hero_by_tid(player: PlayerData, tid: int) -> HeroInstance:
 	return null
 
 
-# 源 :1997-2021 set_money：按 _type 设置 gold/diamond/crusadepoint/arenapoint + 兼容旧 _money/_rmb。
 static func _set_money(player: PlayerData, sm: Dictionary) -> void:
 	var money_type: String = String(sm.get("_type", ""))
 	var amount: int = int(sm.get("_amount", 0))
-	# 源 local_server.lua:2001 `if moneyType and amount then`（Lua 0 truthy，amount=0 进入设金币=0）。
 	# 勿加 amount!=0 守卫（Lua truthy vs GDScript falsy 翻译盲点，关联 memory lua-truthy-falsy-gdscript-pitfall）。
 	if money_type != "":
 		match money_type:
@@ -136,15 +127,13 @@ static func _set_money(player: PlayerData, sm: Dictionary) -> void:
 			"crusadepoint":
 				player.crusade_point = amount
 			"arenapoint":
-				player.arena_point = amount  # 源 set_money arenapoint（arena_point 统一归 PlayerData）
-	# 源 :2017-2020 兼容旧格式 _money（金）/ _rmb（钻）
+				player.arena_point = amount
 	if sm.has("_money"):
 		player.hero_manager.gold = int(sm["_money"])
 	if sm.has("_rmb"):
 		player.diamond = int(sm["_rmb"])
 
 
-# 源 :2038-2044 set_items：bits 解码（低 10 位 id，11-21 位 amount）。
 static func _set_items(player: PlayerData, item_bits_list: Array) -> void:
 	for item_bits in item_bits_list:
 		var packed: int = int(item_bits)
@@ -153,13 +142,10 @@ static func _set_items(player: PlayerData, item_bits_list: Array) -> void:
 		player.items[item_id] = amount
 
 
-# 源 tools.lua:66 bits(num, low, count) = (num >> low) & ((1 << count) - 1)。
 static func _bits(num: int, low: int, count: int) -> int:
 	return (num >> low) & ((1 << count) - 1)
 
 
-# 源 :2046-2049 reset_device：删号重练（重置 PlayerData 到 DEFAULT_DATA 初始状态）。
-# 源 LocalData.reset() = deepCopy(DEFAULT_DATA)，全字段重置。
 # apply_default_data 仅设 diamond/gold/heroes/items，不重置 level/exp/vitality，故手动补齐。
 static func _reset_device(player: PlayerData, cm: ConfigManager) -> void:
 	player.team_level = 1
@@ -170,7 +156,6 @@ static func _reset_device(player: PlayerData, cm: ConfigManager) -> void:
 	player.apply_default_data()
 
 
-# 源 :2068-2081 清理非 Hero 英雄（旧存档混入怪物/召唤物：Unit 类型 != Hero 或无 Portrait）。
 static func _cleanup_non_hero(player: PlayerData, cm: ConfigManager) -> void:
 	var unit_table: Dictionary = cm.get_raw_table("Unit")
 	var to_remove: Array[int] = []
@@ -183,7 +168,6 @@ static func _cleanup_non_hero(player: PlayerData, cm: ConfigManager) -> void:
 		player.hero_manager.heroes.erase(inst_id)
 
 
-# 源 :2083-2094 buildUser：构造完整 user 数据快照（GM 返回用）。
 static func _build_user(player: PlayerData) -> Dictionary:
 	return {
 		"_money": player.hero_manager.gold,

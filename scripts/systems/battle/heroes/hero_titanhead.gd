@@ -35,15 +35,14 @@ const RANDOM_HERO_RANGE: int = 49
 const RANDOM_HERO_EXCLUDE: int = 33
 const BUFF_MIRROR: int = 89
 const BUFF_111: int = 111
-const ATK3_SUMMON_COUNTER: int = 2  # 源 :95 attack_counter==2 召唤随机英雄
-const HEROINDEX_STEP: int = 2  # 源 :118 heroindex 步进 +2
+const ATK3_SUMMON_COUNTER: int = 2
+const HEROINDEX_STEP: int = 2
 const NPC_UP_ID: int = 1
 const NPC_DOWN_ID: int = 2
 
-var _random_heros: Array[int] = []  # 源 :5 randomHeros（init 随机填 10 英雄 tid）
+var _random_heros: Array[int] = []
 
 
-# 源 :189-195 takeDamage：basefunc dmg + skill4damage 累计（atk4 期间）。
 func _take_damage(unit: Variant, params: Dictionary) -> float:
 	var dmg: float = unit._take_damage_default(params)
 	if unit.custom_data.get("skill4damage", null) != null:
@@ -51,13 +50,11 @@ func _take_damage(unit: Variant, params: Dictionary) -> float:
 	return dmg
 
 
-# 源 :6-9 atk2 power：返 [target.HP × caster.atk2damage, 1]（百分比生命伤害）。
 func _atk2_power(skill: Variant, _src: Variant, target: Variant) -> Array:
 	var caster: Variant = skill.caster
 	return [float(target.attribs.get("HP", 0)) * float(caster.custom_data.get("atk2damage", 0)), SKILL2_CRIT]
 
 
-# 源 :167-188 atk/atk4 createProjectile：basefunc + enableTrack + 3D 追踪速度增益 +800。
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = skill._create_projectile_default()
 	var target: Variant = projectile.skill.target
@@ -75,7 +72,6 @@ func _create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# 源 :66-73 atk3 start：basefunc + npc_up/down setAction atk2。
 func _atk3_start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)
 	var caster: Variant = skill.caster
@@ -87,7 +83,6 @@ func _atk3_start(skill: Variant, target: Variant) -> void:
 		npc_down.set_action("atk2", false, false)
 
 
-# 源 :91-165 atk3 takeEffectAt：counter==1 basefunc / counter==2 召唤随机英雄×2（tid 取 randomHeros，mDuration 15，Buff 89+111，mp=900）。
 func _atk3_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	var counter: int = int(skill.attack_counter)
 	if counter == 1:
@@ -97,9 +92,9 @@ func _atk3_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> vo
 		return
 	var caster: Variant = skill.caster
 	var heroindex: int = int(caster.custom_data.get("heroindex", INIT_HERO_INDEX))
-	var idx1: int = (heroindex + 1) % RANDOM_HERO_COUNT  # 源 :98 (heroindex+1)%10+1 → GD 0-based
-	var idx2: int = (heroindex + HEROINDEX_STEP) % RANDOM_HERO_COUNT  # 源 :116
-	caster.custom_data["heroindex"] = heroindex + HEROINDEX_STEP  # 源 :118
+	var idx1: int = (heroindex + 1) % RANDOM_HERO_COUNT
+	var idx2: int = (heroindex + HEROINDEX_STEP) % RANDOM_HERO_COUNT
+	caster.custom_data["heroindex"] = heroindex + HEROINDEX_STEP
 	var skill_levels: Dictionary = {"1": int(caster.level), "2": int(caster.level), "3": int(caster.level), "4": int(caster.level)}
 	var proto1: Dictionary = {"_tid": int(_random_heros[idx1]), "_level": ATK3_LEVEL, "_stars": int(caster.stars), "_skill_levels": skill_levels, "_rank": int(caster.rank)}
 	var proto2: Dictionary = {"_tid": int(_random_heros[idx2]), "_level": ATK3_LEVEL, "_stars": int(caster.stars), "_skill_levels": skill_levels, "_rank": int(caster.rank)}
@@ -130,13 +125,11 @@ func _atk3_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> vo
 	caster.custom_data["newHero2"] = h2
 
 
-# 源 :56-60 atk4 start：basefunc + skill4damage=1（累计标记）。
 func _atk4_start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)
 	skill.caster.custom_data["skill4damage"] = 1
 
 
-# 源 :74-82 atk4 update：basefunc + skill4damage>maxDamage → finish+hurt+清标记。
 func _atk4_update(skill: Variant, dt_action: float, dt_cd: float) -> void:
 	skill._update_default(dt_action, dt_cd)
 	var caster: Variant = skill.caster
@@ -148,13 +141,11 @@ func _atk4_update(skill: Variant, dt_action: float, dt_cd: float) -> void:
 		caster.custom_data["skill4damage"] = null
 
 
-# 源 :61-65 atk4 finish：basefunc + skill4damage=nil。
 func _skill4_finish(skill: Variant) -> void:
 	skill._finish_default()
 	skill.caster.custom_data["skill4damage"] = null
 
 
-# 源 :49-55 atk5 createBuff：buff.shield=40000 + onRemoved/update hook。
 func _atk5_create_buff(skill: Variant, target: Variant) -> Variant:
 	var buff: Variant = skill._create_buff_default(target)
 	buff.custom_data["shield"] = SHIELD_VALUE
@@ -163,12 +154,10 @@ func _atk5_create_buff(skill: Variant, target: Variant) -> Variant:
 	return buff
 
 
-# 源 :15-17 buff update：basefunc only（空包装）。
 func _buff_update(buff: Variant, dt: float) -> void:
 	buff._update_default(dt)
 
 
-# 源 :18-44 atk5 onRemoved：shield<=0 破盾（敌方 buff123+takeHeal mp500/hp99999 + maxDamage=150000）+ enterActionStage(2) + basefunc。
 func _skill5_buff_on_removed(buff: Variant) -> void:
 	var caster: Variant = buff.owner
 	if float(buff.custom_data.get("shield", 0)) <= 0:
@@ -182,8 +171,6 @@ func _skill5_buff_on_removed(buff: Variant) -> void:
 	buff._on_removed_default()
 
 
-# 源 :196-206 atk6 start：useskill6=true + npc_up/down setAction Idle1change2 + onActionFinished hook + basefunc。
-# 源 :205 basefunc(skill) 不传 target（Boss 阶段大招无目标，AncientTreant/BossCoco/Huskar/KOTL/Sil 同模式）。
 func _atk6_start(skill: Variant, _target: Variant) -> void:
 	var caster: Variant = skill.caster
 	caster.custom_data["useskill6"] = true
@@ -195,16 +182,14 @@ func _atk6_start(skill: Variant, _target: Variant) -> void:
 	if npc_down:
 		npc_down.set_action("Idle1change2", false, false)
 		npc_down.hero_hooks["onActionFinished"] = Callable(self, "_npc_on_action_finished")
-	skill._start_default(null)  # 源 :205 basefunc(skill) 不传 target（Boss 阶段大招无目标）
+	skill._start_default(null)
 
 
-# 源 :10-14 npc onActionFinished：Idle1change2/atk2 → setAction Idle2。
 func _npc_on_action_finished(npc: Variant) -> void:
 	if String(npc.action_name) == "Idle1change2" or String(npc.action_name) == "atk2":
 		npc.set_action("Idle2", true, false)
 
 
-# 源 :207-215 atk6 finish：basefunc + dps_mod×1.5 + atk2damage=0.16 + enterActionStageFromOneStage(5)。
 func _atk6_finish(skill: Variant) -> void:
 	skill._finish_default()
 	var caster: Variant = skill.caster
@@ -215,7 +200,6 @@ func _atk6_finish(skill: Variant) -> void:
 	caster.enter_action_stage_from_one_stage(STAGE_FINAL)
 
 
-# 源 :83-90 newHero update：mDuration 倒计 ≤0 die；else basefunc。
 func _new_hero_update(unit: Variant, dt: float) -> void:
 	var dur: float = float(unit.custom_data.get("mDuration", NEW_HERO_DURATION)) - dt
 	unit.custom_data["mDuration"] = dur
@@ -227,13 +211,13 @@ func _new_hero_update(unit: Variant, dt: float) -> void:
 
 func apply(hero: Variant) -> void:
 	hero.hero_hooks["takeDamage"] = Callable(self, "_take_damage")
-	hero.is_boss_create_with_effect = false  # 源 :218
-	hero.set_disapear_when_die(false)  # 源 :219
+	hero.is_boss_create_with_effect = false
+	hero.set_disapear_when_die(false)
 	hero.custom_data["npc_up"] = hero.engine.create_npc(NPC_UP_ID, true, hero)
 	hero.custom_data["npc_down"] = hero.engine.create_npc(NPC_DOWN_ID, true, hero)
 	_random_heros = []
 	var i: int = 0
-	while i < RANDOM_HERO_COUNT:  # 源 :256-263 随机 10 英雄 tid 排除 33
+	while i < RANDOM_HERO_COUNT:
 		var heroid: int = int(hero.engine.rng.randf() * RANDOM_HERO_RANGE) + 1
 		while heroid == RANDOM_HERO_EXCLUDE:
 			heroid = int(hero.engine.rng.randf() * RANDOM_HERO_RANGE) + 1
@@ -265,4 +249,3 @@ func apply(hero: Variant) -> void:
 	hero.custom_data["atk2damage"] = INIT_ATK2_RATIO
 	hero.custom_data["maxDamage"] = INIT_MAX_DAMAGE
 	hero.custom_data["heroindex"] = INIT_HERO_INDEX
-	# 源 :262 PreloadPuppetRcsByUnitId View 跳过

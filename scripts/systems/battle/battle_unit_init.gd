@@ -3,10 +3,8 @@ extends RefCounted
 
 ## 战斗单位初始化辅助（Logic 层 mixin）— 从 BattleUnit 拆出控 ≤250 行。
 ## static 方法第一参 unit（BattleUnit 实例）/ cm，照 battle_unit_rebuild/equip mixin 范式。
-## 源 unit.lua getUnitInfo:23 / getMaxRankLevel:527 / initHpMpInfo:54。
 
 
-# 源 getUnitInfo（unit.lua:23-37）：Unit 表 + hero_equip/UnitRank rank 信息
 static func get_unit_info(cm: ConfigManager, unit_id: int, unit_rank: int) -> Dictionary:
 	var uinfo: Dictionary = cm.get_raw_table(&"Unit").get(str(unit_id), {})
 	var info: Dictionary = {}
@@ -19,7 +17,6 @@ static func get_unit_info(cm: ConfigManager, unit_id: int, unit_rank: int) -> Di
 	return info
 
 
-# 源 getMaxRankLevel（unit.lua:527-542）：遍历 hero_equip LvReq 找最高 rank
 static func get_max_rank_level(unit: Variant, cm: ConfigManager) -> int:
 	var max_rank: int = BattleUnit.RANK_MAX
 	var result: int = 0
@@ -32,7 +29,6 @@ static func get_max_rank_level(unit: Variant, cm: ConfigManager) -> int:
 	return result
 
 
-# 源 initHpMpInfo（unit.lua:54-73）
 static func init_hp_mp(unit: Variant) -> void:
 	var hp_perc: float = 1.0
 	var mp_perc: float = 0.0
@@ -45,7 +41,6 @@ static func init_hp_mp(unit: Variant) -> void:
 		unit.mp = int(unit.attribs.get("MP", 0) * mp_perc)
 
 
-# 源 _init config 处理段（unit.lua:86-100）：hp_mod/dps_mod/size_mod/money 规范化
 static func normalize_config(cfg: Dictionary) -> Dictionary:
 	cfg["hp_mod"] = float(cfg.get("hp_mod", BattleUnit.DEFAULT_HP_MOD))
 	cfg["dps_mod"] = float(cfg.get("dps_mod", BattleUnit.DEFAULT_HP_MOD))
@@ -54,7 +49,6 @@ static func normalize_config(cfg: Dictionary) -> Dictionary:
 	return cfg
 
 
-# 源 _init info 字段提取段（unit.lua:205-207）：name/hp_layer/boss_icon/radius/focamp/equips
 static func apply_info_fields(unit: Variant) -> void:
 	unit.name = String(unit.info.get("Name", ""))
 	unit.hp_layer = int(unit.info.get("HP Layers", 0))
@@ -64,7 +58,6 @@ static func apply_info_fields(unit: Variant) -> void:
 	unit.equips = []
 
 
-# 源 _init rank 计算段（unit.lua:127-140）：estimate_rank/estimate_max_rank/直接取 + RANK_MAX 截断
 static func calc_rank(unit: Variant, cm: ConfigManager) -> void:
 	var cfg: Dictionary = unit.config
 	if bool(cfg.get("estimate_rank", false)):

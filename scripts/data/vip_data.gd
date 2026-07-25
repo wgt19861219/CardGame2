@@ -4,7 +4,6 @@ extends RefCounted
 ## VIP 数据查询（Data 层）— 照源 VIP 表翻译（Phase 5.4 续，2026-07-02）。
 ## 含 area unlock/show vip 查询（照源 playerlimit.lua:88-105，P1-C5 magic 门控）。
 
-# 源 playerlimit.lua:102 getAreaShowvip：unlock_vip - 2（show 比 unlock 早 2 级显示）
 const SHOW_VIP_OFFSET: int = 2
 
 
@@ -16,7 +15,6 @@ static func get_vip_field(level: int, field: String, cm: Variant) -> Variant:
 	return get_vip_info(level, cm).get(field, null)
 
 
-# 源 playerlimit.lua:88-99 getAreaUnlockvip：从 VIP 0 起查首个 vt[index][key]==true 的等级。
 # 找不到返回 index（=max+1），调用方按 ulv > vip 判未解锁。
 static func get_area_unlock_vip(key: String, cm: Variant) -> int:
 	var vip_table: Dictionary = cm.get_raw_table("VIP")
@@ -28,7 +26,6 @@ static func get_area_unlock_vip(key: String, cm: Variant) -> int:
 	return index
 
 
-# 源 playerlimit.lua:100-105 getAreaShowvip：max(unlock_vip - 2, 0)。
 # 未达 unlock-2 → 隐藏；达 unlock-2 → 显示（灰显）；达 unlock → 可用。
 static func get_area_show_vip(key: String, cm: Variant) -> int:
 	return maxi(get_area_unlock_vip(key, cm) - SHOW_VIP_OFFSET, 0)

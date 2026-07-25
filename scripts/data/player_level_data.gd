@@ -4,7 +4,6 @@ extends RefCounted
 ## 战队等级数据查询（Data 层）— 照源 PlayerLevel 表翻译（Phase 5.4 起步，2026-07-02）。
 
 
-# 源 PlayerLevel[level] = {Chapter, Exp, Vitality Reward, ...}。
 static func get_level_info(level: int, cm: Variant) -> Dictionary:
 	return cm.get_raw_table("PlayerLevel").get(str(level), {})
 

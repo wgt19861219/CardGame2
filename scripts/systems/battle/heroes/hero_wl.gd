@@ -6,25 +6,24 @@ extends RefCounted
 ## + basefunc（原 AOE 伤害）。WL_atk2 友军治疗/敌人中毒 createBuff 分支。die 联动地狱火同死。
 ## 复用续7 TK 3D 追踪 + DP 周期 buff + 续8 Necromancersr UnitCreate + 续3 createBuff 友敌 + 续4 die 模式。
 
-const TRACK_SPEED: float = 900.0        # 源 :6 v=900
-const PROJECTILE_HEIGHT: float = 300.0  # 源 :13 height=300
-const TARGET_OFFSET: float = 60.0       # 源 :19 target.x - 60*direction
-const NORM_POWER: float = -0.5          # 源 :24 (dist²)^-0.5
-const INFERNAL_TID: int = 128           # 源 :54 地狱火 tid
-const BUFF_INTERVAL: float = 1.0        # 源 :2 周期伤害间隔
-const HEAL_DENOM: float = 100.0         # 源 :112 heal/100
-const ENEMY_GUILD_HP_MOD: float = 2.0   # 源 :65 guildInstance_mode hp_mod=2
-const DEFAULT_HP_MOD: float = 1.0       # 源 config.hp_mod 缺省
+const TRACK_SPEED: float = 900.0
+const PROJECTILE_HEIGHT: float = 300.0
+const TARGET_OFFSET: float = 60.0
+const NORM_POWER: float = -0.5
+const INFERNAL_TID: int = 128
+const BUFF_INTERVAL: float = 1.0
+const HEAL_DENOM: float = 100.0
+const ENEMY_GUILD_HP_MOD: float = 2.0
+const DEFAULT_HP_MOD: float = 1.0
 
 var _target_pos: Vector2 = Vector2.ZERO  # 跨 hook 共享（源文件 local targetpos：createProjectile 设，takeEffectAt summonUnit 用）
 
 
-# 源 :4-34 createProjectile：3D 追踪抛物线弹道（enableTrack + height + 单位向量×v 速度）
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = skill._create_projectile_default()
 	var target: Variant = projectile.skill.target
 	if target == null:
-		return null  # 源 :9-11 not target → return nil
+		return null
 	var caster: Variant = skill.caster
 	projectile.enable_track(target)
 	projectile.height = PROJECTILE_HEIGHT
@@ -38,7 +37,6 @@ func _create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# 源 :44-82 takeEffectAt：旧地狱火先 die + 召唤新地狱火 + 周期 Infernal_atk3 buff + basefunc（原 AOE 伤害）
 func _take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	var caster: Variant = skill.caster
 	var s_atk3: Variant = caster.skills.get("WL_atk3")
@@ -71,18 +69,16 @@ func _take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	BattleSkillEffect.take_effect_at(skill, location, src)  # basefunc（源 :81，原 AOE 伤害）
 
 
-# 源 :35-43 infernal_atk3_buff_update：attack_timer 倒计每 interval 触发 Infernal_atk3.takeEffectAt（源无参，aoe self）
 func _infernal_buff_update(buff: Variant, dt: float) -> void:
 	var timer: float = float(buff.custom_data.get("attack_timer", BUFF_INTERVAL)) - dt
 	while timer <= 0.0:
 		timer += BUFF_INTERVAL
 		var infernal_atk3: Variant = buff.owner.skills.get("Infernal_atk3")
 		if infernal_atk3 != null:
-			infernal_atk3.take_effect_at(buff.owner.position)  # 源无参（aoe self 覆盖 location）
+			infernal_atk3.take_effect_at(buff.owner.position)
 	buff.custom_data["attack_timer"] = timer
 
 
-# 源 :83-92 createBuff：友军原 buff（治疗）/ 敌人 Script Arg2 bid 查表 HPR=-Script Arg1（中毒）
 func _create_buff(skill: Variant, target: Variant) -> Variant:
 	var caster: Variant = skill.caster
 	if int(caster.camp) == int(target.camp):
@@ -93,7 +89,6 @@ func _create_buff(skill: Variant, target: Variant) -> Variant:
 	return BattleBuff.new(binfo, target, caster)
 
 
-# 源 :94-99 hero_die：地狱火同死 + basefunc
 func _die(hero: Variant, killer: Variant) -> void:
 	var infernal: Variant = hero.custom_data.get("infernal", null)
 	if infernal != null and bool(infernal.is_alive()):
@@ -110,11 +105,9 @@ func apply(hero: Variant) -> void:
 		skillult.hero_hooks["takeEffectAt"] = Callable(self, "_take_effect_at")
 	if skillatk2:
 		skillatk2.hero_hooks["createBuff"] = Callable(self, "_create_buff")
-		# 源 :108-113 WL_atk2 buff_info HPR ×(1+heal/100)（apply 时改 info，wraptable=duplicate+覆盖）
 		var heal: float = float(hero.attribs.get("HEAL", 0))
 		var origininfo: Dictionary = skillatk2.info.get("buff_info", {})
 		var hpr: float = float(origininfo.get("HPR", 0))
 		var wrapped: Dictionary = origininfo.duplicate()
 		wrapped["HPR"] = hpr * (1.0 + heal / HEAL_DENOM)
 		skillatk2.info["buff_info"] = wrapped
-	# 源 :115 ed.PreloadPuppetRcs("Infernal") — View 预加载，Logic 跳过（Phase 4）

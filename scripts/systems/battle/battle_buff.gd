@@ -8,7 +8,6 @@ extends RefCounted
 ## owner/caster duck-type（单位，Phase 2.2 续完整对接）。
 ## View 副作用（onAddedClient 的 effect/shader/Popup）桩，Phase 4 接 Actor。
 
-# 源 effect_inclusions（buff.lua:52-78）：控制效果蕴含关系（含源拼写 immoblilize/disableAI）
 const EFFECT_INCLUSIONS: Dictionary = {
 	"frozen": ["stun"],
 	"stun": ["immoblilize", "silence", "disarm", "disableAI"],
@@ -27,27 +26,26 @@ const EFFECT_INCLUSIONS: Dictionary = {
 	"unheal": [],
 	"noHPR": [],
 }
-# 源 negative_effects（buff.lua:80-88）：负面效果集（与 uncontrollable 互斥）
 const NEGATIVE_EFFECTS: Dictionary = {
 	"frozen": true, "stun": true, "immoblilize": true, "silence": true,
 	"disarm": true, "imprisonment": true, "enchanted": true,
 }
-const RESIST_DENOM: float = 100.0  # 源 checkResistAttribute attribs[name]/100
-const LEVEL_INSTANT_PASS_RATE: float = 0.3  # 源 checkLevel ed.rand()<0.3 直接通过
-const LEVEL_NORM_THRESHOLD: int = 30  # 源 skillLevel<30 归一化
+const RESIST_DENOM: float = 100.0
+const LEVEL_INSTANT_PASS_RATE: float = 0.3
+const LEVEL_NORM_THRESHOLD: int = 30
 const LEVEL_NORM_BASE: int = 10
 const LEVEL_NORM_SCALE: int = 20
-const SHIELD_TYPE_ALL: String = "all"  # 源 Shield Type="all" 匹配任意
+const SHIELD_TYPE_ALL: String = "all"
 
 var name: String = ""
 var info: Dictionary = {}
 var timer: float = 0.0
-var has_timer: bool = false  # 源 timer = info.Time>0 ? Time : nil
+var has_timer: bool = false
 var owner: Variant = null  # duck-type 单位
 var caster: Variant = null
 var caster_attribs: Dictionary = {}
 var shield: float = 0.0
-var has_shield: bool = false  # 源 shield = Shield Value>0 ? : nil
+var has_shield: bool = false
 var clear_on_death: bool = false
 var impact_effect: Variant = null
 var impact_effect_zorder: int = 0
@@ -58,7 +56,6 @@ var hero_hooks: Dictionary = {}  # 英雄 hook（源 override 等价）：onRemo
 var custom_data: Dictionary = {}  # 运行时自定义（源 Lua 动态加 buff.XXX；英雄 hook 用，如 Spider timeTag / DP attack_timer）
 
 
-# 源 BuffCreate（buff.lua:8-28）
 func _init(buff_info: Dictionary, buff_owner: Variant, buff_caster: Variant = null) -> void:
 	info = buff_info
 	owner = buff_owner
@@ -79,7 +76,6 @@ func _init(buff_info: Dictionary, buff_owner: Variant, buff_caster: Variant = nu
 	impact_effect_zorder = int(buff_info.get("Impact Effect Zorder", 0))
 
 
-# 源 BuffCreate shield 修饰（buff.lua:22-25）：公会副本敌方护盾不缩放，否则 ×hp_mod
 func _apply_shield_mod() -> void:
 	if owner == null or not (owner.config is Dictionary) or not (owner.config as Dictionary).has("hp_mod"):
 		return
@@ -92,7 +88,6 @@ func _apply_shield_mod() -> void:
 	shield *= shield_mod
 
 
-# 源 update（buff.lua:34-49）：英雄 hook override 点（Spider/DP）。hook 内调 _update_default 当 basefunc。
 func update(dt: float) -> void:
 	var h: Callable = hero_hooks.get("update", Callable())
 	if h.is_valid():
@@ -104,16 +99,15 @@ func _update_default(dt: float) -> void:
 	var hpr: float = float(info.get("HPR", 0)) * dt
 	if hpr < 0:
 		var damage: float = min(-hpr, float(owner.hp))
-		damage *= float(owner.dPSStatisticsRatio)  # 源 buff.lua:38 直接属性访问（驼峰；蛇形 get() 大小写敏感返 null→1.0 失效）
+		damage *= float(owner.dPSStatisticsRatio)
 		if caster != null:
-			caster.dmg_statistics = float(caster.dmg_statistics) + damage  # 源 :40 浮点累加（非 int 截断）
+			caster.dmg_statistics = float(caster.dmg_statistics) + damage
 	if has_timer:
 		timer -= dt
 		if timer < 0:
 			owner.remove_buff(self)
 
 
-# 源 apply（buff.lua:90-108）：属性加成（遍历 attrib_names，info[name] + .x/.a 引用）+ 控制效果
 func apply() -> void:
 	var owner_attribs: Dictionary = owner.attribs
 	for attr_name in BattleUnit.ATTRIB_NAMES:
@@ -128,7 +122,6 @@ func apply() -> void:
 		apply_effect(String(effect))
 
 
-# 源 applyEffect（buff.lua:137-154）：设 buff_effects[effect]=true + 蕴含递归；uncontrollable 清负面
 func apply_effect(effect: String) -> void:
 	var buff_effects: Dictionary = owner.buff_effects
 	if bool(buff_effects.get("uncontrollable", false)) and NEGATIVE_EFFECTS.has(effect):
@@ -143,7 +136,6 @@ func apply_effect(effect: String) -> void:
 			buff_effects.erase(neg)
 
 
-# 源 isCrlEftConflictWithUncontrollable（buff.lua:111-121）
 func is_negative_conflict_uncontrollable() -> bool:
 	for effect in info.get("Control Effects", []):
 		if NEGATIVE_EFFECTS.has(String(effect)):
@@ -151,7 +143,6 @@ func is_negative_conflict_uncontrollable() -> bool:
 	return false
 
 
-# 源 isHasUnControllableEffect（buff.lua:124-134）
 func has_uncontrollable_effect() -> bool:
 	for effect in info.get("Control Effects", []):
 		if String(effect) == "uncontrollable":
@@ -159,14 +150,12 @@ func has_uncontrollable_effect() -> bool:
 	return false
 
 
-# 源 onAddedServer（buff.lua:157-166）：puppet pushPuppet（Phase 4 桩，owner.push_puppet 待单位）
 func on_added_server() -> void:
 	var puppet: String = str(info.get("Puppet", ""))
 	if puppet != "" and owner != null and owner.has_method("push_puppet"):
 		puppet_id = owner.push_puppet(puppet)
 
 
-# 源 onAddedClient（buff.lua:169-211）：Effect/addEffect + Shader/pushShader + 飘字。
 func on_added_client() -> void:
 	if owner == null or owner.actor == null:
 		return
@@ -209,7 +198,6 @@ func on_added_client() -> void:
 		actor.spawn_popup(str_text, color, false, "text")
 
 
-# 源 onRemoved（buff.lua:213-231）：puppet/effect/shader 清理（Phase 4 桩）
 func on_removed() -> void:
 	var h: Callable = hero_hooks.get("onRemoved", Callable())
 	if h.is_valid():
@@ -234,7 +222,6 @@ func _on_removed_default() -> void:
 		actor.remove_shader(shader_id); shader_id = 0
 
 
-# 源 onDamaged（buff.lua:250-275）：shield 抵伤（Shield Type 匹配 damage_type 或 all）
 func on_damaged(damage: float, damage_type: String) -> float:
 	var h: Callable = hero_hooks.get("onDamaged", Callable())
 	if h.is_valid():
@@ -250,12 +237,11 @@ func _on_damaged_default(damage: float, damage_type: String) -> float:
 				if owner != null and owner.has_method("remove_buff"):
 					owner.remove_buff(self)
 				return -shield
-			_show_shield_immune_popup(owner, stype)  # 源 :262-269 shield 抵伤 immune 文本
+			_show_shield_immune_popup(owner, stype)
 			return 0.0
 	return damage
 
 
-# 源 onDamaged :262-269 shield 抵伤（未破）immune 文本（camp player→blue/enemy→red；stype→文本键）。
 func _show_shield_immune_popup(owner_unit: Variant, stype: String) -> void:
 	if owner_unit == null:
 		return
@@ -267,7 +253,6 @@ func _show_shield_immune_popup(owner_unit: Variant, stype: String) -> void:
 	actor.spawn_popup(str(str_map.get(stype, "immune")), color, false, "text")
 
 
-# 源 checkLevel（buff.lua:292-306）：等级骰（30% 直接通过 + Level Check Dice）
 static func _check_level(buff_info: Dictionary, skill_level: float, target_level: float, rng: BattleRng) -> bool:
 	if rng.randf() < LEVEL_INSTANT_PASS_RATE:
 		return true
@@ -281,7 +266,6 @@ static func _check_level(buff_info: Dictionary, skill_level: float, target_level
 	return target_level <= sl + dice
 
 
-# 源 checkResistAttribute（buff.lua:278-289）：抗性骰，返 [pass, reason]（抵抗时 reason="resist"，照源 :286 多返回值）
 static func _check_resist_attribute(buff_info: Dictionary, attribs: Dictionary, rng: BattleRng) -> Array:
 	if attribs.is_empty():
 		return [true, ""]
@@ -292,7 +276,6 @@ static func _check_resist_attribute(buff_info: Dictionary, attribs: Dictionary, 
 	return [true, ""]
 
 
-# 源 checkAddBuff（buff.lua:308-314）：命中判定（等级 + 抗性），返 [pass, reason]
 # P1-2：reason="resist" 抗性抵抗 / "" 等级不足=miss（照源多返回值，供 take_effect_on 区分 popup）
 static func check_add_buff(buff_info: Dictionary, skill_level: float, target_level: float, attribs: Dictionary, rng: BattleRng) -> Array:
 	if not _check_level(buff_info, skill_level, target_level, rng):

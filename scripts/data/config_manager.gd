@@ -111,14 +111,12 @@ func init_language() -> void:
 	_lang.init(self)
 
 
-## 源 LocalString.lua:74 LSTR(key) = langs[currentLang][key]，委托 LanguageManager 路由当前语言。
 ## _lang 未 init（测试直接 new ConfigManager 未 load_all） fallback LSTR（zh-CN，向后兼容）。
 func get_lstr(key: String) -> String:
 	if _lang != null:
 		return _lang.get_lstr(key)
 	return String(_tables.get(&"LSTR", {}).get(key, key))
 
-## 源 ed.lookupDataTable(table_name, column_name, key)（datatable.lua:163-177）：
 ## 按 key 取行——数字 id 直接命中 JSON key（str(key)）；否则按 row["Name"] 字段查
 ## （源 Buff 表经 dataTableMetaTables metatable __index 支持 name 查询，JSON 数字 key 需遍历等价）。
 ## column 空（""）返整行 Dictionary，非空返该字段 Variant；查不到返空字典（column 空）/ null（column 非空）。

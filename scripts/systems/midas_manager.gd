@@ -8,10 +8,10 @@ extends RefCounted
 ## midas_times 累计决定 costIdx（梯度档位）；持久化：player_data_serde 已序列化 midas.to_dict()，
 ## 但 GameData.save() 零调用致实际不持久化（项目级存档集成缺口，见 MEMORY project-save-game-not-integrated）。
 
-const DEFAULT_MIDAS_MONEY: int = 5000   # 源 :1876 PlayerLevel.Midas Money 缺失默认
-const DEFAULT_YIELD: float = 1.0        # 源 :1874 Midas."Yield 1" 缺失默认
-const REWARD_TYPE_MONEY: int = 1        # 源 :1880 _type=1（金币）
-const RATIO_COUNT: int = 4              # 源 Midas 表 Prob/Yield 1..4（4 档暴击）
+const DEFAULT_MIDAS_MONEY: int = 5000
+const DEFAULT_YIELD: float = 1.0
+const REWARD_TYPE_MONEY: int = 1
+const RATIO_COUNT: int = 4
 
 var config: ConfigManager
 var midas_times: int = 0   # 累计兑换次数（源 player.getMidasTimes，决定 GradientPrice/Midas costIdx）
@@ -21,7 +21,6 @@ func _init(cm: ConfigManager) -> void:
 	config = cm
 
 
-## 源 :1868-1898 批量兑换 times 次：返 {ok, acquired:[{type,money,ratio}], cost}。
 ## 暴击：照源 :1880-1882 按 Midas.Prob 1..4 加权抽样 type（1/2/3/4），money = base × Yield[type]。
 ## ratio 字段供 View 播放暴击动画（源 _type 1=无/2=crip2/3=crip3/4=crip10）。
 func exchange(player: PlayerData, times: int) -> Dictionary:
@@ -33,7 +32,7 @@ func exchange(player: PlayerData, times: int) -> Dictionary:
 		var cost_idx: int = midas_times + i
 		total_cost += int(config.get_raw_table(&"GradientPrice").get(str(cost_idx), {}).get(&"Midas", 0))
 		var midas_row: Dictionary = config.get_raw_table(&"Midas").get(str(cost_idx), {})
-		var ratio: int = _roll_ratio(midas_row)  # 源 :1880 按 Prob 1..4 抽样
+		var ratio: int = _roll_ratio(midas_row)
 		var yield_rate: float = float(midas_row.get(&"Yield %d" % ratio, midas_row.get(&"Yield 1", DEFAULT_YIELD)))
 		var base_money: int = int(config.get_raw_table(&"PlayerLevel").get(str(player_level), {}).get(&"Midas Money", DEFAULT_MIDAS_MONEY))
 		acquired.append({"type": REWARD_TYPE_MONEY, "money": int(float(base_money) * yield_rate), "ratio": ratio})
@@ -42,11 +41,9 @@ func exchange(player: PlayerData, times: int) -> Dictionary:
 		return {"ok": false, "acquired": [], "cost": total_cost}
 	player.diamond -= total_cost
 	midas_times += times
-	# 源 :1893 trackDiamondSpent（活动消费追踪）—— 活动系统单机裁剪（SKIPPED），不接
 	return {"ok": true, "acquired": acquired, "cost": total_cost}
 
 
-## 源 :1880 按 Prob 1..4 加权抽样暴击档位（返回 1/2/3/4）。
 ## Prob 1=×1(75%)/Prob 2=×2(20%)/Prob 3=×3(4%)/Prob 4=×10(1%)，概率和应=1.0。
 func _roll_ratio(midas_row: Dictionary) -> int:
 	var rng_val: float = randf()

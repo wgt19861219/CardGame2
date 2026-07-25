@@ -2,28 +2,27 @@ class_name BattlePopup
 extends Node2D
 
 ## 战斗飘字（View 层）— 照源 popup.lua(104) PopupCreate 翻译（Phase 4 子件，2026-07-02）。
-## 源用 ed.createNumbers 数字精灵图 + CCSprite + CCMoveBy/FadeOut/ScaleBy 动作；
 ## 本项目 battletext/numbers 图片缺失 → Label + 主题字体适配（Cocos→Godot 引擎适配）。
 ## 四 style：damage（上飘+放大+淡出，crit 加成）/heal（上飘+淡出 绿）/gold（fade in+上飘 黄）/text（上飘+放大+淡出）。
 ## 挂 ui_layer（battle_scene 调）。依赖 BattleViewCoords.to_view_position。record[actor] 排队去重（同帧飘字延后 2 tick 入场，源 :81-100）。
 
 const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
 
-const LIFE: float = 0.8                  # 源 :17 life
-const DAMAGE_OFFSET_H: float = 75.0      # 源 :30 toViewPosition height 偏移
-const HEAL_OFFSET_H: float = 100.0       # 源 :43
-const GOLD_OFFSET_H: float = 30.0        # 源 :49
-const TEXT_OFFSET_H_BASE: float = 100.0  # 源 :65 actor.height + 100
-const DAMAGE_DIST_CRIT: float = 70.0     # 源 :34 crit 上飘
-const DAMAGE_DIST: float = 45.0          # 源 :34 普通
-const HEAL_DIST: float = 100.0           # 源 :46
-const GOLD_DIST: float = 80.0            # 源 :54
-const TEXT_DIST: float = 50.0            # 源 :68
-const GOLD_FADE_DURATION: float = 0.625  # 源 :52
-const DAMAGE_SCALE_BASE: float = 0.5     # 源 :31 setScale(0.5*(crit?1.2:0.75))
+const LIFE: float = 0.8
+const DAMAGE_OFFSET_H: float = 75.0
+const HEAL_OFFSET_H: float = 100.0
+const GOLD_OFFSET_H: float = 30.0
+const TEXT_OFFSET_H_BASE: float = 100.0
+const DAMAGE_DIST_CRIT: float = 70.0
+const DAMAGE_DIST: float = 45.0
+const HEAL_DIST: float = 100.0
+const GOLD_DIST: float = 80.0
+const TEXT_DIST: float = 50.0
+const GOLD_FADE_DURATION: float = 0.625
+const DAMAGE_SCALE_BASE: float = 0.5
 const CRIT_SCALE_MULT: float = 1.2
 const NORMAL_SCALE_MULT: float = 0.75
-const SCALE_BY: float = 2.0              # 源 :36/70 CCScaleBy(duration, 2)
+const SCALE_BY: float = 2.0
 
 var _label: Label = null
 var _text: String = ""
@@ -33,10 +32,8 @@ var _color: String = "white"
 var _unit: Variant = null
 
 
-# 源 PopupCreate(str, color, actor, crit, style)（popup.lua:9-102）。color 是数字图片色键（源
 # battletext_<str>_<color>.png 图集），本项目 battletext 图缺 → Label + Color 适配（色键→RGB 映射）。
 # unit = BattleUnit（Logic，position 是 Logic 坐标，_play 内 toViewPosition 转）；unit null 返 null。
-# 源 record[actor]=tick（popup.lua:81-100 同帧飘字延后 2 tick 入场，避免同帧叠加）
 static var _record: Dictionary = {}
 
 static func create(text: String, unit: Variant, crit: bool, style: String, color: String, ui_layer: Node) -> Variant:
@@ -44,7 +41,6 @@ static func create(text: String, unit: Variant, crit: bool, style: String, color
 		return null
 	var popup := BattlePopup.new()
 	popup._setup(text, unit, crit, style, color)
-	# 源 :81-89 同 actor 同 tick 飘字延后 2 tick 入场（delay = old+2-tick）
 	var eng: Variant = unit.get("engine")
 	var tick: int = int(eng.ticks) if eng != null else 0
 	var old_tick: int = int(_record.get(unit, -1))
@@ -56,7 +52,6 @@ static func create(text: String, unit: Variant, crit: bool, style: String, color
 	if delay_ticks == 0:
 		ui_layer.add_child(popup)   # 触发 _ready → _play（tween 自动跑）
 	else:
-		# 源 :93-99 延后 add_child；目标 SceneTreeTimer 延后（popup 未入树，timer 触发 add）
 		var delay_sec: float = delay_ticks * BattleEngine.TICK_INTERVAL
 		if ui_layer.is_inside_tree():
 			ui_layer.get_tree().create_timer(delay_sec).timeout.connect(ui_layer.add_child.bind(popup))
@@ -76,7 +71,6 @@ func _setup(text: String, unit: Variant, crit: bool, style: String, color: Strin
 	add_child(_label)
 
 
-# 源 color 色键（数字图片后缀）→ Label Color。键集：blue/red/yellow/green/orange/golden/white
 #（照源各调用点 camp/field 语义：mp=yellow、player 受伤=red、enemy 受伤=orange、heal=green、
 # 金币=golden、文本类按 camp player→blue/enemy→red）。源 color 决定颜色，style 决定动作，互独立。
 func _resolve_color() -> Color:
@@ -101,7 +95,6 @@ func _ready() -> void:
 	_play()
 
 
-# 源 damage/heal/gold/text 四段动作（popup.lua:28-73）→ Godot Tween（parallel + chain）。
 func _play() -> void:
 	var pos: Vector2 = Vector2(float(_unit.position.x), float(_unit.position.y))
 	match _style:
@@ -117,7 +110,6 @@ func _play() -> void:
 			_play_damage(pos)
 
 
-# 源 :28-41 damage：setScale(0.5*(crit?1.2:0.75)) + Spawn(MoveBy 上飘, ScaleBy×2) + Spawn(MoveBy, FadeOut)
 func _play_damage(pos: Vector2) -> void:
 	position = BattleViewCoords.to_view_position(pos.x, pos.y, DAMAGE_OFFSET_H)
 	var base_y: float = position.y
@@ -125,8 +117,8 @@ func _play_damage(pos: Vector2) -> void:
 	var base_s: float = DAMAGE_SCALE_BASE * mult
 	scale = Vector2(base_s, base_s)
 	var dist: float = DAMAGE_DIST_CRIT if _crit else DAMAGE_DIST
-	var dur1: float = LIFE * 0.2   # 源 popup.lua:32 duration = life*0.2
-	var dur2: float = LIFE * 0.8   # 源 popup.lua:37 duration = life*0.8
+	var dur1: float = LIFE * 0.2
+	var dur2: float = LIFE * 0.8
 	var t := create_tween()
 	# 段1（dur1）：MoveBy 上飘 dist + EaseExponentialOut + ScaleBy×2 并行（源 :34-36）
 	t.set_parallel(true)
@@ -139,7 +131,6 @@ func _play_damage(pos: Vector2) -> void:
 	t.chain().tween_callback(queue_free)
 
 
-# 源 :42-47 heal：setScale(0.75) + Spawn(MoveBy 100, FadeOut)
 func _play_heal(pos: Vector2) -> void:
 	position = BattleViewCoords.to_view_position(pos.x, pos.y, HEAL_OFFSET_H)
 	var base_y: float = position.y
@@ -151,7 +142,6 @@ func _play_heal(pos: Vector2) -> void:
 	t.chain().tween_callback(queue_free)
 
 
-# 源 :48-63 gold：setOpacity(0) + Delay 0.3 + Spawn(MoveBy 80, FadeTo 255) + Delay 0.15 + FadeOut 0.1
 func _play_gold(pos: Vector2) -> void:
 	position = BattleViewCoords.to_view_position(pos.x, pos.y, GOLD_OFFSET_H)
 	var base_y: float = position.y
@@ -168,7 +158,6 @@ func _play_gold(pos: Vector2) -> void:
 	t.tween_callback(queue_free)
 
 
-# 源 :64-73 text：setScale(0.5) + Spawn(MoveBy 50, ScaleBy×2) + Delay + FadeOut
 func _play_text(pos: Vector2) -> void:
 	var height_val: Variant = _unit.get("height")
 	var h: float = TEXT_OFFSET_H_BASE

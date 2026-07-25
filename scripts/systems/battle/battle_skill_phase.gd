@@ -6,7 +6,6 @@ extends RefCounted
 ## rebuild_phase_list 查 Puppet/AnimDuration/AnimAtkFrame 表填真实 phase_list（2026-07-05 验证：Coco atk phase_list 含 Time=0.275 Attack 帧，双 Coco 对打 1792 帧分胜负）。
 ## goto_event_idx 的 idx 为 1-based（对齐源 Lua event_list 索引）；actor setActionElapsed 属 View，桩。
 
-# 源 rebuildPhaseList（skill.lua:115-144）：info["Action(s)"] 遍历 → Puppet.Resource → AnimDuration[Duration]
 # + AnimAtkFrame events 排序 by Time → phase{action_name, duration, event_list}。
 # 静态接 skill + puppet；cm 经 caster.cm（ConfigManager，BattleUnit 字段）。
 static func rebuild_phase_list(skill: BattleSkill, puppet: String) -> void:
@@ -17,7 +16,6 @@ static func rebuild_phase_list(skill: BattleSkill, puppet: String) -> void:
 	if caster == null or caster.get("cm") == null:
 		return
 	var cm: Variant = caster.cm
-	# 源 info["Action(s)"]：lua array table，JSON 转 Dictionary {1:name,...}；按序号排序取 values
 	var raw_actions: Variant = skill.info.get(&"Action(s)", {})
 	var anim_names: Array = []
 	if raw_actions is Dictionary:
@@ -31,7 +29,6 @@ static func rebuild_phase_list(skill: BattleSkill, puppet: String) -> void:
 		anim_names = raw_actions
 	if anim_names.is_empty():
 		return
-	# 源 :120 resourceName = lookupTable("Puppet","Resource",puppet)；:124 + ".cha"
 	var puppet_row: Dictionary = cm.get_raw_table(&"Puppet").get(puppet, {})
 	var resource_short: Variant = puppet_row.get(&"Resource", null)
 	if resource_short == null:
@@ -41,16 +38,16 @@ static func rebuild_phase_list(skill: BattleSkill, puppet: String) -> void:
 	var anim_atk: Dictionary = cm.get_raw_table(&"AnimAtkFrame").get(resource_name, {})
 	for anim_name in anim_names:
 		var an: String = str(anim_name)
-		var events: Dictionary = anim_atk.get(an, {})  # 源 :126 events = lookupTable("AnimAtkFrame", nil, resourceName, anim)
+		var events: Dictionary = anim_atk.get(an, {})
 		if events.is_empty():
-			continue  # 源 :127 if events then（无事件不建 phase）
-		var duration: float = float(anim_dur.get(an, {}).get(&"Duration", 0.0))  # 源 :125
+			continue
+		var duration: float = float(anim_dur.get(an, {}).get(&"Duration", 0.0))
 		var event_list: Array = []
 		for k in events:
 			var ev: Dictionary = events[k]
-			ev[&"Type"] = &"Attack"  # 源 :131 v.Type = "Attack"
+			ev[&"Type"] = &"Attack"
 			event_list.append(ev)
-		event_list.sort_custom(func(a, b): return float(a.get(&"Time", 0.0)) < float(b.get(&"Time", 0.0)))  # 源 :133
+		event_list.sort_custom(func(a, b): return float(a.get(&"Time", 0.0)) < float(b.get(&"Time", 0.0)))
 		skill.phase_list.append({
 			"action_name": an,
 			"duration": duration,
@@ -58,7 +55,6 @@ static func rebuild_phase_list(skill: BattleSkill, puppet: String) -> void:
 		})
 
 
-# 源 startPhase：进 phase idx，设 current_phase/elapsed/next_event + caster.set_action。
 static func start_phase(skill: BattleSkill, idx: int) -> void:
 	var i: int = idx - 1  # 1-based → 0-based
 	if i < 0 or i >= skill.phase_list.size():
@@ -73,7 +69,6 @@ static func start_phase(skill: BattleSkill, idx: int) -> void:
 	skill.caster.set_action(str(phase.get("action_name", "")), false, true)
 
 
-# 源 onPhaseFinished（:464-472）：phase 完成回调，推进下一 phase 或 finish。
 static func on_phase_finished(skill: BattleSkill) -> void:
 	if skill.current_phase_idx >= skill.phase_list.size():
 		skill.finish()
@@ -81,11 +76,10 @@ static func on_phase_finished(skill: BattleSkill) -> void:
 		skill._start_phase(skill.current_phase_idx + 1)
 
 
-# 源 gotoEventIdx（:235-244）：跳 phase event_list 指定 idx（1-based 对齐源）；actor setActionElapsed View 桩。
 static func goto_event_idx(skill: BattleSkill, p_idx: int) -> void:
 	var evs: Array = skill.current_phase.get("event_list", [])
 	if p_idx < 1 or p_idx - 1 >= evs.size():
 		return
-	skill.next_event_idx = p_idx  # 源 :237 idx+1（Lua next idx，0-based 等价 = 源 idx）
-	skill.next_event = evs[p_idx] if p_idx < evs.size() else {}  # 源 :238 event_list[idx+1]
+	skill.next_event_idx = p_idx
+	skill.next_event = evs[p_idx] if p_idx < evs.size() else {}
 	skill.current_phase_elapsed = float(evs[p_idx - 1].get("Time", 0.0))

@@ -6,10 +6,10 @@ extends RefCounted
 ## 单机化简化：源 hero_list 过滤依赖 equip_qunty[getStoneid]+display_equipale_hero_rank（拥有魂石+rank 限），
 ## 本项目查 HeroManager.heroes（已召唤英雄）中能装备的，更严但无 rank 表依赖。差异注释。
 
-const DROP_SLOTS: int = 3   # 源 Drop 1-3 固定 3 字段（createDetail :235 `for i = 1, 3`）
-const COMPONENT_SLOTS: int = 4   # 源 Component1-4（getEquipData :89 `for i = 1, 4`）
-const EQUIP_SLOTS: int = 6   # 源 Equip1-6 ID（getEquipData :110 `for j = 1, 6`）
-const DEFAULT_MAX_CHAPTER: int = 13   # 源 ed.GameConfig.MaxChapter fallback（GameConfig 表无值时）
+const DROP_SLOTS: int = 3
+const COMPONENT_SLOTS: int = 4
+const EQUIP_SLOTS: int = 6
+const DEFAULT_MAX_CHAPTER: int = 13
 
 
 # 查装备的可合成列表 + 可装备英雄 + 获取途径（源 getEquipData + createDetail getWay 段）。
@@ -22,7 +22,6 @@ static func query(equip_id: int, cm: Variant, pd: PlayerData) -> Dictionary:
 	}
 
 
-# 源 getEquipData :87-101：Equipcraft 中 Component1-4==equip_id 的产物装备（合成该装备的上级装备）。
 static func _equip_compose_list(equip_id: int, cm: Variant) -> Array:
 	var result: Array = []
 	var craft: Dictionary = cm.get_raw_table(&"Equipcraft")
@@ -41,12 +40,11 @@ static func _equip_compose_list(equip_id: int, cm: Variant) -> Array:
 			continue
 		var product_row: Dictionary = equip.get(str(product_id), {})
 		if bool(product_row.get("Hide", false)):
-			continue   # 源 :90 not getDataTable("equip")[k].Hide
+			continue
 		result.append({"id": product_id, "name": String(product_row.get("Name", str(product_id)))})
 	return result
 
 
-# 源 getEquipData :102-133：Hero_equip 中 Equip1-6 ID==equip_id 的英雄。
 # 单机化：源过滤 equip_qunty[getStoneid(k)]>0 + index<=display_equipale_hero_rank（拥有魂石+rank 限）；
 # 本项目简化为已召唤英雄（HeroManager.heroes），无 rank 表依赖。源含拥有魂石可召唤的，本项目仅已召唤。
 static func _hero_equip_list(equip_id: int, cm: Variant, pd: PlayerData) -> Array:
@@ -68,12 +66,11 @@ static func _hero_equip_list(equip_id: int, cm: Variant, pd: PlayerData) -> Arra
 					break
 			if matched:
 				result.append({"id": tid, "rank": index, "name": String(unit.get(str(tid), {}).get("Display Name", str(tid)))})
-				break   # 源 :126 break（每英雄只取首个匹配 rank）
+				break
 			index += 1
 	return result
 
 
-# 源 createDetail :234-268：Equip.Drop 1-3 → Stage 名（普通/精英），过滤 Chapter>MaxChapter（Hide Stage）。
 static func _get_way_list(equip_id: int, cm: Variant) -> Array:
 	var result: Array = []
 	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(equip_id), {})
@@ -86,7 +83,7 @@ static func _get_way_list(equip_id: int, cm: Variant) -> Array:
 		var stage_row: Dictionary = stage.get(str(drop_id), {})
 		var chapter: int = int(stage_row.get("Chapter ID", 0))
 		if chapter > max_chapter:
-			continue   # 源 :239 Hide Stage > MaxChapter
+			continue
 		var name: String = String(stage_row.get("Stage Name", str(drop_id)))
 		# P1-12：照源 :250-252 elite 加"精英"前缀 + :245 getStageIcon 关卡图标（StageRes 移植）
 		var is_elite: bool = StageAccount.stage_type(drop_id) == "elite"
@@ -96,12 +93,10 @@ static func _get_way_list(equip_id: int, cm: Variant) -> Array:
 	return result
 
 
-# 源 createDetail :270-288：Equip["How To Get"] 文本（金色阴影标签）。
 static func _how_to_get_text(equip_id: int, cm: Variant) -> String:
 	return String(cm.get_raw_table(&"Equip").get(str(equip_id), {}).get("How To Get", ""))
 
 
-# 源 ed.GameConfig.MaxChapter（Drop 过滤阈值）。
 static func _max_chapter(cm: Variant) -> int:
 	var gc: Dictionary = cm.get_raw_table(&"GameConfig")
 	if gc.has("MaxChapter"):
@@ -112,7 +107,6 @@ static func _max_chapter(cm: Variant) -> int:
 # === 英雄背包 plusSign/canDealTag 查询（源 ui/heroitem.lua:218-248）===
 # 服务 HeroPackageItem._create_equips 的空槽 + 号显示判定。
 
-# 源 heroitem.lua:219-223 — 空 slot 该 rank 应穿装备 id：hero_equip[tid][rank]["Equip{slot} ID"]。
 # slot 1-6（源 Lua i=1..6）；无配置或越界返 0（视为无 + 号提示）。
 static func get_slot_expected_equip(hero: HeroInstance, slot: int, cm: Variant) -> int:
 	if hero == null or slot < 1 or slot > EQUIP_SLOTS:
@@ -121,7 +115,6 @@ static func get_slot_expected_equip(hero: HeroInstance, slot: int, cm: Variant) 
 	return int(rank_row.get("Equip" + str(slot) + " ID", 0))
 
 
-# 源 tools.lua:573-595 isEquipCraftable（简化版，与 equip_craft_panel._is_craftable 对齐）：
 # 已持有 (pd.items[eid]>0) → true（源 :576 has 优先，直接可穿）；
 # 否则配方 Components>0 → true（源递归判材料，本项目简化仅判配方存在，差异注释）。
 # pd=null 时跳过持有检查（View 未持 PlayerData 引用时降级）。
@@ -133,7 +126,6 @@ static func is_equip_craftable(eid: int, cm: Variant, pd: PlayerData) -> bool:
 	return int(EquipcraftData.get_recipe(eid, cm).get("Components", 0)) > 0
 
 
-# 源 tools.lua:805-809 canWearEquip — hero.level >= Equip[eid]["Level Requirement"]。
 # 返 {can, hlv, elv}（源 Lua 多返回值，本项目 Dictionary）。
 static func can_wear_equip(hero: HeroInstance, eid: int, cm: Variant) -> Dictionary:
 	if hero == null or eid <= 0:

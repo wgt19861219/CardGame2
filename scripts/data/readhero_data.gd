@@ -6,14 +6,11 @@ extends RefCounted
 ## createIcon 在 ReadheroIcon（View 层）；属性查询 getHeroAtt（依赖 UnitCreate）留后续。
 
 
-# 源 readhero.lua:44-48 getHeroInitStars — Unit 表 "Initial Stars"。
 static func get_hero_init_stars(tid: int, cm: Variant) -> int:
 	var v: Variant = cm.lookup("Unit", "Initial Stars", tid)
 	return int(v) if v != null else 0
 
 
-# 源 readhero.lua:116-143 getGrowthByHero — Unit 表 "+STR"+star / "+AGI"+star / "+INT"+star。
-# 源 keys = {STR="+STR", AGI="+AGI", INT="+INT"}，列名 = key .. star。
 static func get_growth(tid: int, star: int, cm: Variant) -> Dictionary:
 	if star <= 0:
 		return {}

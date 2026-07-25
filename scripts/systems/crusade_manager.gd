@@ -8,19 +8,18 @@ const MAX_STAGE: int = 15
 const FULL_HP_MP: float = 1.0
 const CRUSADE_MAX_TICKS: int = 300  # 战斗最大 tick（防死循环，同 StageManager.BATTLE_MAX_TICKS）
 const DEFAULT_WAVE: int = 1         # Crusade 单波（源每关 wave=1）
-const PERC_DENOM: int = 10000       # 源 hp/mp _perc 分母（万分之一，同 BattleUnit.PERC_DENOM）
-const TEAM_SIZE: int = 5            # 源 initCrusade:2432 每关 5 敌人
-const FORMATION_MAX_PER_LINE: int = 3  # 源 :2433-2434 每线最多 3
+const PERC_DENOM: int = 10000
+const TEAM_SIZE: int = 5
+const FORMATION_MAX_PER_LINE: int = 3
 const LINE_REAR: int = 2           # 阵型数组后列索引（lint 禁裸 2）
-const VIP_MAX: int = 3              # 源 :2464
+const VIP_MAX: int = 3
 const VIP_STAGE_DIVISOR: int = 5
-const PICK_OFFSET_SCALE: int = 3   # 源 :2441 stage*3+i
-const REWARD_CRUSADE_POINT := "CrusadePoint"  # 源 CrusadeRewards Type
-const REWARD_CHEST_BOX := "ChestBox"          # 源宝箱（按 coinMap 转 crusadepoint，源 :2562-2565）
-const REWARD_ITEM := "Item"                    # 源道具（背包累加）
-const CRUSADE_POINT_MULTIPLIER: int = 10       # 源 :2561/2565 amount*10 / coins*10
-const CHEST_BOX_COIN_DEFAULT: int = 50         # 源 :2564 coinMap[id] or 50
-# 源 :2563 chestbox id → coin 映射
+const PICK_OFFSET_SCALE: int = 3
+const REWARD_CRUSADE_POINT := "CrusadePoint"
+const REWARD_CHEST_BOX := "ChestBox"
+const REWARD_ITEM := "Item"
+const CRUSADE_POINT_MULTIPLIER: int = 10
+const CHEST_BOX_COIN_DEFAULT: int = 50
 const CHEST_BOX_COIN_MAP: Dictionary = {1: 50, 2: 100, 3: 200, 4: 100, 5: 200, 6: 400}
 const AI_NAMES: Array[String] = [
 	"暗影猎手", "龙骑士", "风暴法师", "圣光骑士", "血魔领主",
@@ -45,18 +44,15 @@ func _init(cm: ConfigManager = null) -> void:
 func fight(won: bool, hp_perc_map: Dictionary, mp_perc_map: Dictionary, stage: int = -1) -> bool:
 	hero_hp_perc = hp_perc_map
 	hero_mp_perc = mp_perc_map
-	# 源 :2613 stageId = _end_bat._stage_id or cur_stage（-1 哨兵=用 cur_stage；源 :2614 负数编码 -stageId-2 联机重打机制单机不出现裁剪）
 	var battle_stage: int = cur_stage if stage < 0 else stage
 	if won:
 		cleared_stages[battle_stage] = true
-		# 源 :2620-2621 仅 stageId>=cur_stage 才推进 cur_stage=stageId+1（防重打旧关跳关）
 		if battle_stage >= cur_stage:
 			cur_stage = mini(battle_stage + 1, MAX_STAGE)
 		return true
 	return false
 
-## 源 crusade.lua:538 leftTime = totalTime(10) - _reset_times。每日重置剩余次数。
-const RESET_MAX_PER_DAY: int = 10  # 源 crusade.lua:537 totalTime = 10
+const RESET_MAX_PER_DAY: int = 10
 func get_reset_left() -> int:
 	return RESET_MAX_PER_DAY - reset_times
 
@@ -100,7 +96,6 @@ func is_stage_rewarded(stage: int) -> bool:
 	return bool(rewarded_stages.get(stage, false))
 
 
-## 源 initCrusade(:2402-2484)：程序生成 MAX_STAGE 关敌人（CrusadeData 池+难度曲线+随机阵型+AI_NAMES）。
 ## 已生成则跳过（:2404-2406）。单机化：math_random→rng 注入（确定性）。
 func init_crusade(rng: BattleRng) -> void:
 	if not enemies.is_empty() or config == null or rng == null:
@@ -130,7 +125,6 @@ func init_crusade(rng: BattleRng) -> void:
 		s += 1
 
 
-## 源 :2432-2437 随机阵型 [nFront, nMid, nRear]（5 总，前/中 1-3）。
 static func _random_formation(rng: BattleRng) -> Array[int]:
 	var n_front: int = int(rng.randi_range(1, FORMATION_MAX_PER_LINE))
 	var n_mid: int = int(rng.randi_range(1, mini(FORMATION_MAX_PER_LINE, TEAM_SIZE - n_front)))
@@ -144,7 +138,6 @@ static func _random_formation(rng: BattleRng) -> Array[int]:
 	return [n_front, n_mid, n_rear]
 
 
-## 源 :2439-2456 pickFromPool 循环（offset = stage*3 + i）。
 static func _pick_line(pool: Array, stage: int, count: int, lvl: int, stars: int, rank: int) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	if pool.is_empty():
@@ -165,14 +158,11 @@ func apply_rewards(slots: Array, player: PlayerData, rng: BattleRng) -> void:
 		var stype: String = String(s.get("type", ""))
 		var amount: int = int(s.get("amount", 0))
 		if stype == REWARD_CRUSADE_POINT:
-			# 源 :2561 crusadepoint = amount*10
 			player.crusade_point += amount * CRUSADE_POINT_MULTIPLIER
 		elif stype == REWARD_CHEST_BOX:
-			# 源 :2562-2565 chestbox 按 coinMap[id] 转 crusadepoint（×10），非开箱产英雄
 			var coins: int = int(CHEST_BOX_COIN_MAP.get(int(s.get("id", 0)), CHEST_BOX_COIN_DEFAULT))
 			player.crusade_point += coins * CRUSADE_POINT_MULTIPLIER
 		elif stype == REWARD_ITEM:
-			# 源 :2567 item = id/amount
 			player.add_item(int(s.get("id", 0)), amount)
 
 
@@ -192,7 +182,6 @@ func run_crusade_battle(stage: int, player: PlayerData, player_tids: Array[int],
 		return {"ok": false}
 	var eng := BattleEngine.new()
 	eng.rng = rng
-	# 照源 enterCrusade:555-569：玩家 proto（真实等级/stars/rank/items）+ self_crusade 跨关 HP/MP（{tid:{_hp_perc,_mp_perc}}）
 	var hero_list: Array[Dictionary] = []
 	var self_crusade: Dictionary = {}
 	for tid in player_tids:

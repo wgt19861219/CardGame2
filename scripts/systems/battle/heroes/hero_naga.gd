@@ -6,19 +6,18 @@ extends RefCounted
 ## onHitMiss 调用点：battle_skill_effect.gd dodge miss 分支（源 C++ compiled，目标补 hook 调用）。
 ## 复用续8/续13 TB 幻象召唤模式（mDuration die + setDeathWithEffect + summonUnit）。
 
-const MIRROR_TIME: float = 12.0           # 源 :2 幻象持续
-const MIRROR_TID: int = 145               # 源 :15 幻象 tid
-const MIRROR_BUFF_ID: int = 89            # 源 :27 幻象 buff
-const MOBCD_RESET: float = 12.0           # 源 :66 召唤 cd
-const MIRROR_X: float = 60.0              # 源 :38/:44/:50/:56 幻象 x 偏移
-const MIRROR_Y: float = 30.0             # 源 :39/:45/:51 幻象 y 偏移
-const RAND_0_75: float = 0.75             # 源 :36 4 分位
+const MIRROR_TIME: float = 12.0
+const MIRROR_TID: int = 145
+const MIRROR_BUFF_ID: int = 89
+const MOBCD_RESET: float = 12.0
+const MIRROR_X: float = 60.0
+const MIRROR_Y: float = 30.0
+const RAND_0_75: float = 0.75
 const RAND_0_5: float = 0.5
 const RAND_0_25: float = 0.25
-const DEFAULT_MOD: float = 1.0            # 源 hp_mod/dps_mod 缺省
+const DEFAULT_MOD: float = 1.0
 
 
-# 源 :3-10 mirror update：mDuration 倒计 ≤0 die；else basefunc。
 func _mirror_update(unit: Variant, dt: float) -> void:
 	var dur: float = float(unit.custom_data.get("mDuration", MIRROR_TIME)) - dt
 	unit.custom_data["mDuration"] = dur
@@ -28,7 +27,6 @@ func _mirror_update(unit: Variant, dt: float) -> void:
 		unit._update_default(dt)
 
 
-# 源 :11-68 onHitMiss（miss 时召唤幻象）：tid=145 + Buff89 + mDuration + update + 4 位置随机 + mobcd<=0→summonUnit+nagalist+mobcd=12。
 func _on_hit_miss(hero: Variant, skill: Variant) -> void:
 	var skillawake: Variant = hero.skills.get("Naga_awake")
 	var caster: Variant = skill.caster
@@ -41,7 +39,6 @@ func _on_hit_miss(hero: Variant, skill: Variant) -> void:
 	mirror.hero_hooks["update"] = Callable(self, "_mirror_update")
 	mirror.isDeathWithEffect = true
 	mirror.direction = int(hero.direction)
-	# 源 Naga.lua:34-59 位置随机无条件消耗 RNG（ed.rand），:60 if mobcd<=0 才 summonUnit。
 	# _random_loc 必须提到 if 外（mobcd>0 时也消耗 RNG 算位置），保确定性 RNG 序列与源一致。
 	var loc: Vector2 = _random_loc(hero, int(hero.direction))
 	if float(hero.custom_data.get("mobcd", 0.0)) <= 0.0:
@@ -52,7 +49,6 @@ func _on_hit_miss(hero: Variant, skill: Variant) -> void:
 		hero.custom_data["mobcd"] = MOBCD_RESET
 
 
-# 源 :34-59 位置随机（4 分位，engine.rng D2 确定性替代 ed.rand）。
 func _random_loc(hero: Variant, dir: int) -> Vector2:
 	var r: float = float(hero.engine.rng.randf())
 	var p: Vector2 = hero.position
@@ -65,7 +61,6 @@ func _random_loc(hero: Variant, dir: int) -> Vector2:
 	return Vector2(p.x + float(dir) * MIRROR_X, p.y)
 
 
-# 源 :75-84 die：nagalist 幻象同死 + basefunc。
 func _die(hero: Variant, killer: Variant) -> void:
 	var nagalist: Array = hero.custom_data.get("nagalist", [])
 	for naga in nagalist:
@@ -74,17 +69,15 @@ func _die(hero: Variant, killer: Variant) -> void:
 	hero._die_default(killer)
 
 
-# 源 :69-74 update：mobcd 倒计 + basefunc。
 func _hero_update(hero: Variant, dt: float) -> void:
 	hero._update_default(dt)
 	if hero.custom_data.has("mobcd"):
 		hero.custom_data["mobcd"] = float(hero.custom_data.get("mobcd", 0.0)) - dt
 
 
-# 源 :85-94 init_hero：mobcd=0 + orderedIdx + protoAwake→die/onHitMiss/update。
 func apply(hero: Variant) -> void:
 	hero.custom_data["mobcd"] = 0.0
-	hero.ordered_idx = []  # 源 :87 orderedIdx（续10 BattleUnit.ordered_idx）
+	hero.ordered_idx = []
 	if BattleHeroRegistry.proto_awake(hero.proto):
 		hero.hero_hooks["die"] = Callable(self, "_die")
 		hero.hero_hooks["onHitMiss"] = Callable(self, "_on_hit_miss")  # dodge miss 时 battle_skill_effect 调用

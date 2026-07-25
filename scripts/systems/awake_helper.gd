@@ -2,7 +2,6 @@ class_name AwakeHelper
 extends RefCounted
 
 ## 觉醒养成辅助（Logic 层）— 用户授权的单机化新增设计（源 Lua 无觉醒养成激活）。
-## 源仅含觉醒展示弹窗 popheroawake.lua + 战斗 awake 守卫（stage_manager.protoAwake hook），
 ## 玩家不可主动激活觉醒。本项目碎片觉醒方案：消耗该英雄专属碎片 N 个 → HeroInstance.awake=true。
 ## 战斗 hook 已就位（stage_manager._init_self_hero:231 proto["_awake"]=hero.awake），
 ## awake=true 自动激活觉醒技能（Lina_awake 等），本模块只管养成激活。

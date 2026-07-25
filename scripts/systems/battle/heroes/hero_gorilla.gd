@@ -8,7 +8,7 @@ extends RefCounted
 const G_HALF: float = 0.5
 const DISC_K: float = 4.0
 const DEN_K: float = 2.0
-const TARGET_X_OFFSET: float = 60.0  # 源 :14 目标 X 偏移量
+const TARGET_X_OFFSET: float = 60.0
 
 
 func apply(hero: Variant) -> void:
@@ -17,7 +17,6 @@ func apply(hero: Variant) -> void:
 		skill.hero_hooks["createProjectile"] = Callable(self, "_create_projectile")
 
 
-# 源 :2-21 skill_createProjectile（basefunc → 偏移目标 → velocity → addProjectile → return nil）。
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = BattleProjectile.new(skill)  # basefunc
 	var h: float = float(projectile.height)
@@ -34,4 +33,4 @@ func _create_projectile(skill: Variant) -> Variant:
 	var distance: Vector2 = target_pos - skill.caster.position  # edpSub
 	projectile.velocity = distance * (1.0 / t)  # edpMult
 	skill.caster.engine.add_projectile(projectile)  # ed.engine:addProjectile
-	return null  # 源 return nil（调用方 add 被守卫忽略）
+	return null

@@ -18,7 +18,6 @@ var _loop: bool = false
 ## effect_name 可能带 .cha 后缀（源 string.gsub 剥除）；返回 BattleEffect 或 null。
 static func create(effect_name: String) -> BattleEffect:
 	var name := effect_name.substr(0, effect_name.length() - 4) if effect_name.ends_with(".cha") else effect_name
-	# 照源 createFcaNode：先建 AtlasSprite + FcaAnimation 加载 .abc
 	# 注意：.abc/.ani 是 zip 非 Godot 资源，用 FileAccess.file_exists 而非 ResourceLoader.exists
 	var atlas := AtlasSprite.new()
 	var zip_path := "res://assets/anim_frames/" + name + ".abc"
@@ -45,7 +44,6 @@ func play(action: String = "Start", loop: bool = false) -> void:
 	_loop = loop
 	if _fca == null:
 		return
-	# 照源 LegendAnimationEffect（effect.lua 路径 A .cha → 直接返 LegendAminationEffect，
 	# Start/Loop 切换在 C++ 内部，不经 effect.lua:30/48）：enter → setStartAction（默认 "Start"）；
 	# onAnimFinished → 有 Loop 切 Loop 循环，否则 terminate。
 	# ⚠️ 原默认 "Play" 系误用 effect.lua 路径 B（XML）的 effect_group.start or "Play"——
@@ -67,7 +65,6 @@ func play(action: String = "Start", loop: bool = false) -> void:
 		_fca.action_finished.connect(_on_action_finished)
 
 
-# 照源 onAnimFinished :48-52：Start→Loop 切换中（Start emit）不 terminate，
 # Loop 无限循环靠外部 remove_effect 终止；其余 action 播完 terminate。
 func _on_action_finished(action_name: String) -> void:
 	if action_name == "Start" and _fca != null and _fca.has_action("Loop"):

@@ -55,7 +55,6 @@ func _extract_growth(slot_fields: Dictionary) -> Array:
 func has_skill(group_id: int) -> bool:
 	return _by_group.has(group_id)
 
-## 照源 getSkillInfo：构建技能信息字典（含 buff_info + Growth 成长）。
 ## 返回 info：Skill 基础字段 + group 槽继承 + Growth patch + buff_info（Buff 表关联）。
 func get_skill_info(group_id: int, level: int = LEVEL_ONE) -> Dictionary:
 	var cache_key: String = "%d:%d" % [group_id, level]
@@ -63,16 +62,13 @@ func get_skill_info(group_id: int, level: int = LEVEL_ONE) -> Dictionary:
 		return cache[cache_key]
 	var info: Dictionary = _by_group.get(group_id, {}).duplicate()
 	info["groupId"] = group_id
-	# 源 :13 setmetatable(skill_info, {__index=group})：info 继承 group 槽字段（info 优先）
 	var slot: Dictionary = _group_slot.get(group_id, {})
 	for k in slot:
 		if not info.has(k):
 			info[k] = slot[k]
-	# 源 :15-17 Buff ID > 0 → 查 Buff 表
 	var buff_info: Dictionary = {}
 	if int(info.get("Buff ID", 0)) > 0:
 		buff_info = _lookup_buff(int(info["Buff ID"])).duplicate()
-	# 源 :18-34 Growth 成长：skill 字段 / buff 字段分别 patch
 	var growth: Array = _growth.get(group_id, [])
 	for g in growth:
 		var field: String = str(g["field"])

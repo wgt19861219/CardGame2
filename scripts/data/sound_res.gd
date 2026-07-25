@@ -6,7 +6,6 @@ extends RefCounted
 ## music：chapter→bgm path（源 :3-25）。register_all 注册 deo 到 AudioManager.sfx_map。
 
 
-# 源 soundres.lua:26-68 ed.sound.deo（基础音效，common_exp_up=nil 不注册）。
 const DEO_MAP: Dictionary = {
 	"common_click_feedback": "sound_menu/common_click_feedback.mp3",
 	"common_back": "sound_menu/common_back.mp3",
@@ -51,7 +50,6 @@ const DEO_MAP: Dictionary = {
 }
 
 
-# 源 soundres.lua:3-25 ed.music（chapter→bgm）。
 const MUSIC_MAP: Dictionary = {
 	"map": "installer/stage_select_bgm.mp3",
 	"chapter1": "sound_menu/battle_bgm.mp3",
@@ -83,6 +81,5 @@ static func register_all(am: AudioManager) -> void:
 		am.register_sfx(StringName(key), String(DEO_MAP[key]))
 
 
-# 源 ed.music[chapter] 查询。
 static func get_music(chapter: String) -> String:
 	return String(MUSIC_MAP.get(chapter, ""))

@@ -4,7 +4,6 @@ extends RefCounted
 ## 战斗场景结算分支（View helper）— 从 BattleScene 拆出控 ≤400。
 ## static 方法第一参 scene，照 equip_strengthen_anim.gd 静态拆分范式。
 ## 主类 _finalize_battle 直接调本类（私有，不需转发桩）。
-## 源 battle_scene.lua downExit → stageaccount 分支。
 ##
 ## 三种模式：excavate（回主菜单重弹 map）/ pvp（排名互换回 ladder_panel）/ stage（切结算场景）。
 
@@ -33,7 +32,7 @@ static func finalize_excavate(scene) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var r: Dictionary = ExcavateBattle.finalize_excavate_battle(mgr, scene.engine, excavate_id, hero_list, enemy_list, now, GameData.player)
 	GameData.pending_excavate = {"id": excavate_id, "won": bool(r["won"])}
-	GameData.mark_save_dirty()  # 照源 local_server:858 关卡结算脏标（excavate 占领发奖完成，60s/退出刷）
+	GameData.mark_save_dirty()
 	GameData.battle_context.clear()
 	_clear_battle_resources()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
@@ -46,7 +45,7 @@ static func finalize_pvp(scene) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var r: Dictionary = LadderBattle.finalize_pvp_battle(ladder, scene.engine, GameData.player, scene.cm, scene.engine.rng, now)
 	GameData.pending_pvp = {"won": bool(r["won"]), "reply": r["reply"]}
-	GameData.mark_save_dirty()  # 照源 local_server:3282 PVP 结算脏标（60s/退出刷）
+	GameData.mark_save_dirty()
 	GameData.battle_context.clear()
 	_clear_battle_resources()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
@@ -62,22 +61,20 @@ static func finalize_stage(scene) -> void:
 	loots.assign(ctx["loots"])
 	var mgr: Variant = ctx["mgr"]
 	var r: Dictionary = mgr.finalize_stage_battle(scene.engine, sid, GameData.player, tids, loots)
-	# 照源 downExit → stageaccount.initialize → replaceScene(stagedone/stagefailed)。
 	var result_param: Dictionary = {
 		"stage_id": sid, "victory": bool(r["won"]), "heroes": tids,
 		"stars": int(r["stars"]), "loots": loots, "excavate_mode": false, "isPveMode": true,
-		"hero_hp_mp": r.get("hero_hp_mp", {}),  # 源 stageaccount:138-139 hp/mp（BattleUnit 快照）
-		"lose_type": String(r.get("lose_type", "fail")),  # 源 doFailed.loseType（timeout/fail）→ stage_failed 标题
+		"hero_hp_mp": r.get("hero_hp_mp", {}),
+		"lose_type": String(r.get("lose_type", "fail")),
 		"unit_list": _snapshot_units(scene.engine),  # battleStatist 战斗统计弹窗用（源 ed.engine.unit_list，切场景销毁 engine 故快照）
 	}
 	GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
-	GameData.save()  # 照源 main.lua:2033 exitStageReply 后即时存（关卡结算发奖完成）
+	GameData.save()
 	GameData.battle_context.clear()  # 释放 engine 引用链（5018 ObjectDB leak 根因；对比 excavate:28/pvp:40 都 clear）
 	_clear_battle_resources()
 	SceneManager.change_scene(STAGE_DONE_PATH if bool(r["won"]) else STAGE_FAILED_PATH)
 
 
-# 源 stagedone/stagefailed doClickStatist → battleStatist.create(ed.engine.unit_list)。结算切场景销毁
 # engine，故快照 unit_list 轻量 Dictionary（tid/camp/dmg_statistics/rank/stars/level，battleStatistics 需要的字段）。
 static func _snapshot_units(engine: Variant) -> Array:
 	var out: Array = []

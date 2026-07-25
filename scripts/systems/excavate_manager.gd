@@ -15,8 +15,8 @@ const STATE_PREPARE: String = "prepare"
 const STATE_PROTECT: String = "protect"
 const STATE_OCCUPY: String = "occupy"
 const STATE_EMPTY: String = "empty"
-const SEARCH_EXPIRE_SEC: int = 300        # 源 :3724 搜索点 searched 态有效期 now+300（5min）
-const SECONDS_PER_MINUTE: int = 60        # 源 speed_time_unit
+const SEARCH_EXPIRE_SEC: int = 300
+const SECONDS_PER_MINUTE: int = 60
 const ID_START: int = 1                   # 矿点 _id 起始
 const ROUND_HALF: float = 0.5
 const DAY_KEY_YEAR_WEIGHT: int = 10000    # 本地自然日序号 year 权重（照 tavern_data._local_day_key）
@@ -24,7 +24,7 @@ const DAY_KEY_MONTH_WEIGHT: int = 100
 const REASON_MAX_TIME: String = "max_time"
 const REASON_LACK_MONEY: String = "lack_money"
 const REASON_NO_CANDIDATE: String = "no_candidate"
-const WILD_DEFEND_TEAM_SIZE: int = 5   # 照源 generateWildTeam:3609 math.min(5,#playerHeroes) 野怪防守队上限
+const WILD_DEFEND_TEAM_SIZE: int = 5
 
 var excavate_data: Array = []   # 矿点 dict 列表
 var search_times: int = 0
@@ -74,7 +74,7 @@ func can_search(player: Variant, now: int) -> Dictionary:
 ## 搜索矿点（照 doSearchExcavateReply:291-323 + search:324）：扣金 + roll + 加 monster 矿点。
 ## 单机化：源联机 ed.send → 本地 roll_search_type_id + 直接加 data。返 {ok, type_id, owner, reason}。
 func search(player: Variant, rng: Variant, now: int) -> Dictionary:
-	refresh(now)   # 照源 query handler :3671-3675：先 updateMineState all + checkSearchDayReset 再 search
+	refresh(now)
 	var check: Dictionary = can_search(player, now)
 	if not bool(check["ok"]):
 		return {"ok": false, "type_id": 0, "owner": "", "reason": String(check["reason"])}
@@ -109,7 +109,7 @@ func _new_monster_node(type_id: int, now: int, player: Variant, rng: Variant) ->
 		"_storage": ExcavateData.storage_amount(config, type_id),
 		"_res_got": 0.0,
 		"_wild_id": ExcavateData.get_wild_enemy_id(config, type_id),
-		"_team": _generate_wild_team(player, rng),   # 照源 :3725 teams=generateWildTeam（玩家英雄镜像防守）
+		"_team": _generate_wild_team(player, rng),
 	}
 
 
@@ -170,7 +170,6 @@ func check_search_day_reset(now: int) -> void:
 		last_search_ts = now
 
 
-# 源 checkTwoDateod（time.lua:323）单机化简化：本地时区自然日序号比较（照 tavern_data._crossed_day）。
 static func _crossed_day(last_ts: int, now: int) -> bool:
 	if last_ts <= 0:
 		return true
@@ -277,7 +276,6 @@ func set_defend_team(excavate_id: int, hero_tids: Array[int], now: int) -> void:
 
 
 ## 野怪防守队（照源 local_server.lua:3558-3625 generateWildTeam）：玩家自己英雄池 shuffle 抽5镜像。
-## 源设计：挖矿遇野怪用"玩家英雄"防守（单机化 PVP 等价）。返 [{_team_id,_hero_bases,_hero_dynas}]（单 team）。
 ## hero.get() 通用访问（真 HeroInstance Object.get + 测试 Dictionary.get 均可）。
 static func _generate_wild_team(player: Variant, rng: Variant) -> Array:
 	var pool: Array[Dictionary] = []
@@ -300,13 +298,13 @@ static func _generate_wild_team(player: Variant, rng: Variant) -> Array:
 		var tmp: Dictionary = pool[n]
 		pool[n] = pool[j]
 		pool[j] = tmp
-	var count: int = mini(WILD_DEFEND_TEAM_SIZE, pool.size())   # 照源 :3609
+	var count: int = mini(WILD_DEFEND_TEAM_SIZE, pool.size())
 	var bases: Array = []
 	var dynas: Array = []
 	var i: int = 0
 	while i < count:
 		bases.append(pool[i])
-		dynas.append({"_hp_perc": ExcavateData.FULL_HP_PERC, "_mp_perc": 0})   # 照源 :3618-3621
+		dynas.append({"_hp_perc": ExcavateData.FULL_HP_PERC, "_mp_perc": 0})
 		i += 1
 	return [{"_team_id": 0, "_hero_bases": bases, "_hero_dynas": dynas}]
 

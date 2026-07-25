@@ -11,7 +11,6 @@ extends Node
 const PlayerDataScript = preload("res://scripts/data/player_data.gd")
 const SaveManagerScript = preload("res://scripts/data/save_manager.gd")
 const AUTO_SLOT: String = "auto"
-# 照源 main.lua:761 startAutoSave 每 60 秒轮询脏标刷盘
 const AUTOSAVE_INTERVAL: float = 60.0
 
 var config: ConfigManager
@@ -34,9 +33,8 @@ func _ready() -> void:
 	skills = SkillLibrary.new(config)
 	skill_groups = SkillGroupData.new(config)
 	_start_autosave_timer()
-	save()  # 照源 main.lua:1120 登录首存（玩家就绪后落盘；test_mode no-op）
+	save()
 
-# 照源 main.lua:761 startAutoSave：每 60s 检查脏标，脏则 save 并清零。
 func _start_autosave_timer() -> void:
 	var timer := Timer.new()
 	timer.name = "AutosaveTimer"
@@ -65,7 +63,7 @@ func _load_or_new_player() -> PlayerData:
 	var data: Dictionary = sm.load_slot(AUTO_SLOT)
 	if data.is_empty():
 		var new_pd := PlayerDataScript.new(config)
-		new_pd.apply_default_data()   # 源 local_server.lua:44 DEFAULT_DATA 新玩家初始英雄/经济/物品
+		new_pd.apply_default_data()
 		return new_pd
 	return PlayerDataScript.from_dict(data, config)
 

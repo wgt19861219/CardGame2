@@ -6,19 +6,18 @@ extends RefCounted
 ## buff update/onRemoved hook 复用续4/5 基础设施（buff.hero_hooks["update"]/["onRemoved"]，basefunc = _update_default/_on_removed_default）。
 
 const HERO_NAME: String = "ExBossSpider"
-const PERCENT_PER_SEC: float = 0.213          # 源 :1 needMakeupPercent 系数
-const RESET_BUFF_ID: int = 152                # 源 :8 首次出场 uncontrollable buff
-const ATK2_BUFF_ID: int = 159                 # 源 :29 周期回血 buff
-const MAKEUP_CAP: float = 0.618               # 源 :35 min 上限
-const MAKEUP_DECAY: float = 0.9               # 源 :48 每秒衰减
-const TIME_TAG_INIT: float = 0.5              # 源 :81/:98 buff timeTag 初值
-const TIME_TAG_PERIOD: float = 1.0            # 源 :42/:90 周期阈值
-const GLOBAL_CD_ON_REMOVE: float = 1.5        # 源 :53
-const CRIT_MOD_DISABLED: float = 0.0          # 源 :92 takeDamage 第 6 参 crit_mod=0（禁暴击；第 5 参 coefficient=1 目标无对应字段不传）
-const INVULNERABLE_BUFF_NAME: String = "ExBossSpider_Invulnerable"  # 源 :22/:56/:66
+const PERCENT_PER_SEC: float = 0.213
+const RESET_BUFF_ID: int = 152
+const ATK2_BUFF_ID: int = 159
+const MAKEUP_CAP: float = 0.618
+const MAKEUP_DECAY: float = 0.9
+const TIME_TAG_INIT: float = 0.5
+const TIME_TAG_PERIOD: float = 1.0
+const GLOBAL_CD_ON_REMOVE: float = 1.5
+const CRIT_MOD_DISABLED: float = 0.0
+const INVULNERABLE_BUFF_NAME: String = "ExBossSpider_Invulnerable"
 
 
-# 源 :3-14 reset：basefunc + has_resetted 守卫 → 首次加 Buff152 + 存 uncon_buff 引用（atk2 onAttackFrame/buffonRemoved 用）。
 func _reset(hero: Variant) -> void:
 	hero._reset_default()
 	if not bool(hero.custom_data.get("has_resetted", false)):
@@ -29,7 +28,6 @@ func _reset(hero: Variant) -> void:
 		hero.add_buff(buff, hero)
 
 
-# 源 :15-37 atk2 start：清负面 debuff（caster 空/异营/无敌）+ 加 Buff159 + needMakeupPercent + basefunc。
 func _atk2_start(skill: Variant, target: Variant) -> void:
 	var caster: Variant = skill.caster
 	var my_camp: int = int(caster.camp)
@@ -50,7 +48,6 @@ func _atk2_start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)
 
 
-# 源 :38-50 atk2 buff update：basefunc + timeTag 倒计 1s 周期回血（needMakeupPercent*HP）+ needMakeupPercent×0.9 衰减。
 func _atk2_buff_update(buff: Variant, dt: float) -> void:
 	buff._update_default(dt)
 	var owner: Variant = buff.owner
@@ -65,10 +62,9 @@ func _atk2_buff_update(buff: Variant, dt: float) -> void:
 	buff.custom_data["timeTag"] = time_tag
 
 
-# 源 :51-62 atk2 buff onRemoved：basefunc + global_cd=1.5 + 移除无敌 buff + addBuff(uncon_buff)。
 func _atk2_buff_on_removed(buff: Variant) -> void:
 	buff._on_removed_default()
-	var owner: Variant = buff.caster  # 源 skill=buff（Lua self），buff.caster=施法者 hero
+	var owner: Variant = buff.caster
 	owner.global_cd = GLOBAL_CD_ON_REMOVE
 	for buf in owner.buff_list:
 		if String(buf.name) == INVULNERABLE_BUFF_NAME:
@@ -79,7 +75,6 @@ func _atk2_buff_on_removed(buff: Variant) -> void:
 		owner.add_buff(uncon, owner)
 
 
-# 源 :63-78 atk2 onAttackFrame：移除无敌 buff + 移除 uncon_buff 同名 buff + basefunc。
 func _atk2_on_attack_frame(skill: Variant) -> void:
 	var owner: Variant = skill.caster
 	for buf in owner.buff_list:
@@ -96,7 +91,6 @@ func _atk2_on_attack_frame(skill: Variant) -> void:
 	skill._on_attack_frame_default()
 
 
-# 源 :79-85 atk2 createBuff：basefunc 建 buff → timeTag=0.5 + update/onRemoved hook。
 func _atk2_create_buff(skill: Variant, target: Variant) -> Variant:
 	var buff: Variant = skill._create_buff_default(target)
 	buff.custom_data["timeTag"] = TIME_TAG_INIT
@@ -105,7 +99,6 @@ func _atk2_create_buff(skill: Variant, target: Variant) -> Variant:
 	return buff
 
 
-# 源 :86-94 atk4 buff update：basefunc + timeTag 倒计 1s 周期 AP 伤害（damagePerSec）。
 func _atk4_buff_update(buff: Variant, dt: float) -> void:
 	buff._update_default(dt)
 	var time_tag: float = float(buff.custom_data.get("timeTag", 0.0)) - dt
@@ -115,7 +108,6 @@ func _atk4_buff_update(buff: Variant, dt: float) -> void:
 	buff.custom_data["timeTag"] = time_tag
 
 
-# 源 :95-101 atk4 createBuff：basefunc 建 buff → damagePerSec=Script Arg1 + timeTag=0.5 + update hook。
 func _atk4_create_buff(skill: Variant, target: Variant) -> Variant:
 	var buff: Variant = skill._create_buff_default(target)
 	buff.custom_data["damagePerSec"] = float(skill.info.get("Script Arg1", 0))
@@ -124,7 +116,6 @@ func _atk4_create_buff(skill: Variant, target: Variant) -> Variant:
 	return buff
 
 
-# 源 :102-115 init_hero：挂 reset（单位）/ atk2（start/onAttackFrame/createBuff）/ atk4（createBuff）。
 func apply(hero: Variant) -> void:
 	hero.hero_hooks["reset"] = Callable(self, "_reset")
 	var skill_atk2: Variant = hero.skills.get(HERO_NAME + "_atk2")

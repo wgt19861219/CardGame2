@@ -42,7 +42,6 @@ static func finalize_excavate_battle(mgr: Variant, engine: Variant, excavate_id:
 		return {"ok": false, "won": false}
 	var won: bool = engine.foreach_alive_unit(BattleEngine.CAMP_ENEMY).is_empty()
 	if won:
-		# 照源 _excavate_end_battle victory:3861 buildResourceReward + excavatenet:48-60 发放：
 		# draw_battle_reward 占领+算 loot+返 reward；grant_resource_reward 发给 player（原 bug 丢弃返值）。
 		var r: Dictionary = mgr.draw_battle_reward(excavate_id, now)
 		if bool(r.get("ok", false)):

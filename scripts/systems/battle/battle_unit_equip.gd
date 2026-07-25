@@ -8,15 +8,14 @@ extends RefCounted
 ##   B) not estimate_rank → proto._items 玩家真实装备。怪物 estimate_rank → equips=[]。
 ## equips 每项 = Equip 整行 + {level}（源 wraptable），rebuild:452-460 消费 equip[attr]/["+attr"]/["level"]。
 
-const HERO_EQUIP_SLOT_COUNT: int = 6   # 源 for index = 1, 6
-const DEFAULT_EQUIP_EXP: float = 2000.0  # 源 :157 路径 A 默认 exp
+const HERO_EQUIP_SLOT_COUNT: int = 6
+const DEFAULT_EQUIP_EXP: float = 2000.0
 const EQUIP_TABLE := &"Equip"
 const HERO_EQUIP_TABLE := &"Hero_equip"
 const LEVEL_REQ_FIELD := &"Level Requirement"
 const EQUIP_ID_SUFFIX := " ID"
 
 
-# 源 unit.lua:147-175 equips 加载（UnitCreate 内，rebuild 前）。
 static func load_equips(u: Variant, cm: ConfigManager) -> void:
 	u.equips = []
 	if bool(u.config.get("estimate_max_rank", false)):
@@ -26,7 +25,6 @@ static func load_equips(u: Variant, cm: ConfigManager) -> void:
 	# else（estimate_rank 怪物）：equips=[] 不加载
 
 
-# 源 :148-162 路径 A：hero_equip[unit_id][rank] 查 6 槽默认装备，过滤 Level Requirement ≤ level。
 static func _load_default_equips(u: Variant, cm: ConfigManager) -> void:
 	var unit_id: int = int(u.info.get("ID", u.tid))
 	var items: Dictionary = _lookup_hero_equip(cm, unit_id, int(u.rank))
@@ -44,7 +42,6 @@ static func _load_default_equips(u: Variant, cm: ConfigManager) -> void:
 		i += 1
 
 
-# 源 :163-174 路径 B：proto._items 玩家装备（{_item_id, _exp}）。
 static func _load_player_equips(u: Variant, cm: ConfigManager) -> void:
 	var items: Array = u.proto.get("_items", [])
 	for item in items:
@@ -56,14 +53,12 @@ static func _load_player_equips(u: Variant, cm: ConfigManager) -> void:
 			u.equips.append(_wrap_equip(equip_info, elv))
 
 
-# 源 ed.wraptable(info, {level=level})：合并 Equip 整行 + level。
 static func _wrap_equip(equip_info: Dictionary, level: int) -> Dictionary:
 	var wrapped: Dictionary = equip_info.duplicate()
 	wrapped["level"] = level
 	return wrapped
 
 
-# 源 lookupDataTable("hero_equip", nil, unit_id, rank) 两级下钻。
 static func _lookup_hero_equip(cm: ConfigManager, unit_id: int, rank: int) -> Dictionary:
 	var raw: Dictionary = cm.get_raw_table(HERO_EQUIP_TABLE)
 	var unit_rows: Dictionary = raw.get(str(unit_id), {})

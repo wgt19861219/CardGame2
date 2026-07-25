@@ -16,7 +16,6 @@ func _create_buff(skill: Variant, target: Variant) -> Variant:
 	return buff
 
 
-# 源 :1-21 onDamaged：damage<=hp-1 全承；超出部分 shield 吸收，shield 竭则 removeBuff。
 func _on_damaged(buff: Variant, damage: float, _damage_type: String) -> float:
 	var max_dmg: float = float(buff.owner.hp) - 1.0
 	if damage <= max_dmg:
@@ -24,7 +23,7 @@ func _on_damaged(buff: Variant, damage: float, _damage_type: String) -> float:
 	var absorption: float = damage - max_dmg
 	if absorption < float(buff.shield):
 		buff.shield = float(buff.shield) - absorption
-		_show_funeral_popup(buff.owner)  # 源 SP.lua:10-12 funeral 飘字
+		_show_funeral_popup(buff.owner)
 	else:
 		absorption = float(buff.shield)
 		buff.shield = 0.0
@@ -32,7 +31,6 @@ func _on_damaged(buff: Variant, damage: float, _damage_type: String) -> float:
 	return damage - absorption
 
 
-# 源 SP.lua:10-12 保 1 血护盾吸收 funeral 飘字（owner actor，camp player→blue/else→red）。
 func _show_funeral_popup(owner_unit: Variant) -> void:
 	var actor: Variant = owner_unit.get("actor")
 	if actor == null or not actor.has_method("spawn_popup"):

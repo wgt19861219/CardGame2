@@ -6,29 +6,28 @@ extends RefCounted
 ##   atk（start 完全重写 medBuff→startPhase(2) / power 0.5^(counter-1) 衰减 / onPhaseFinished→finish）+ 单位 update/castManualSkill（atk2 mp<1000 自动）+ ai.findSkillToCast（atk2 限定 arena/enemy）。
 ## getInitDir/getSide（源 compiled）= camp 判断；getSide=="right" 用 camp==CAMP_ENEMY 替代（enemy=right）。
 
-const RANGE_INTERVAL: float = 150.0          # 源 :1 atk2 射程间隔
-const ATK2_COST_HP: int = 20                 # 源 :2 atk2 Cost HP（apply 设 info）
-const ULT_POS_OFFSET: float = 40.0           # 源 :16 ult onPhaseFinished x-40
-const ULT_AOE_ARG1: float = 140.0            # 源 :24 ult AOE halfcircle 半径
-const ULT_KNOCK_BACK: float = 70.0           # 源 :26
-const ULT_KNOCK_UP: float = 0.2              # 源 :27
-const ULT_BASIC_NUM: float = 10.0            # 源 :28
-const ULT_PLUS_RATIO: float = 0.3            # 源 :29
-const ULT_BUFF_ID: int = 92                  # 源 :39
-const ATK2_GAIN_MP: float = 30.0             # 源 :54
-const POWER_DECAY_BASE: float = 0.5          # 源 :92 power 衰减底
-const POWER_DECAY_OFFSET: int = 1            # 源 :92 counter-1
-const MP_THRESHOLD: int = 1000               # 源 :119 castManualSkill mp<1000
-const CDR_DENOM: float = 100.0               # 源 :78 CDR/100
-const COST_HP_DENOM: float = 100.0           # 源 :46/96 HP*CostHP*0.01
-const ATK_COUNTER_FIRST: int = 1             # 源 :21/:38
-const ATK_COUNTER_SECOND: int = 2            # 源 :33
-const ATK_PHASE_NORMAL: int = 1              # 源 :74 startPhase(1)
-const ATK_PHASE_BUFFED: int = 2              # 源 :72 startPhase(2) medBuff
-const CD_RESET: float = 0.0                  # 源 :57 cd_remaining=0
+const RANGE_INTERVAL: float = 150.0
+const ATK2_COST_HP: int = 20
+const ULT_POS_OFFSET: float = 40.0
+const ULT_AOE_ARG1: float = 140.0
+const ULT_KNOCK_BACK: float = 70.0
+const ULT_KNOCK_UP: float = 0.2
+const ULT_BASIC_NUM: float = 10.0
+const ULT_PLUS_RATIO: float = 0.3
+const ULT_BUFF_ID: int = 92
+const ATK2_GAIN_MP: float = 30.0
+const POWER_DECAY_BASE: float = 0.5
+const POWER_DECAY_OFFSET: int = 1
+const MP_THRESHOLD: int = 1000
+const CDR_DENOM: float = 100.0
+const COST_HP_DENOM: float = 100.0
+const ATK_COUNTER_FIRST: int = 1
+const ATK_COUNTER_SECOND: int = 2
+const ATK_PHASE_NORMAL: int = 1
+const ATK_PHASE_BUFFED: int = 2
+const CD_RESET: float = 0.0
 
 
-# 源 :4-12 atk2 buff onRemoved：还原 Marine_atk info/range + attack_range + medBuff=nil + basefunc。
 func _skill2_buff_on_removed(buff: Variant) -> void:
 	var owner: Variant = buff.owner
 	var skillatk: Variant = owner.skills.get("Marine_atk")
@@ -41,14 +40,12 @@ func _skill2_buff_on_removed(buff: Variant) -> void:
 	buff._on_removed_default()
 
 
-# 源 :13-17 ult onPhaseFinished：basefunc + caster.position x-40。
 func _ult_on_phase_finished(skill: Variant) -> void:
 	BattleSkillPhase.on_phase_finished(skill)
 	var p: Vector2 = skill.caster.position
 	skill.caster.position = Vector2(p.x - ULT_POS_OFFSET, p.y)
 
 
-# 源 :18-36 ult takeEffectAt：counter==1 wraptable AOE halfcircle+KnockBack/Up + basefunc + 还原 / counter==2 basefunc。
 func _ult_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	var originfo: Dictionary = skill.info
 	if int(skill.attack_counter) == ATK_COUNTER_FIRST:
@@ -67,7 +64,6 @@ func _ult_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> voi
 		BattleSkillEffect.take_effect_at(skill, location, src)
 
 
-# 源 :37-44 ult takeEffectOn：counter==1 加 Buff92 + basefunc（返 Array）。
 func _ult_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	if int(skill.attack_counter) == ATK_COUNTER_FIRST:
 		var binfo: Variant = skill.caster.cm.lookup(&"Buff", "", ULT_BUFF_ID)
@@ -75,7 +71,6 @@ func _ult_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array
 	return BattleSkillEffect.take_effect_on(skill, target, src)
 
 
-# 源 :45-62 atk2 createBuff：hpcost takeDamage Holy + basefunc + 改 Marine_atk info（Max Range-/Gain MP）+ cd=0 + attack_range- + medBuff=true + onRemoved hook。
 func _atk2_create_buff(skill: Variant, target: Variant) -> Variant:
 	var hpcost: float = float(target.attribs.get("HP", 0)) * float(skill.info.get("Cost HP", 0)) / COST_HP_DENOM
 	target.take_damage({"amount": hpcost, "damage_type": "Holy", "field": "hp", "source": skill.caster})
@@ -97,7 +92,6 @@ func _atk2_create_buff(skill: Variant, target: Variant) -> Variant:
 	return buff
 
 
-# 源 :63-85 atk start（完全重写，不调 basefunc）：selectTarget/cd/casting/counter + startPhase(medBuff?2:1) + global_cd + setMP(CDR)。
 func _atk_start(skill: Variant, target: Variant) -> void:
 	var info: Dictionary = skill.info
 	var caster: Variant = skill.caster
@@ -112,19 +106,16 @@ func _atk_start(skill: Variant, target: Variant) -> void:
 	caster.set_mp(int(float(caster.mp) - float(info.get("Cost MP", 0.0)) * (1.0 - float(caster.attribs.get("CDR", 0.0)) / CDR_DENOM)))
 
 
-# 源 :86-88 atk onPhaseFinished：直接 finish（不推进下一 phase）。
 func _atk_on_phase_finished(skill: Variant) -> void:
 	skill.finish()
 
 
-# 源 :89-93 atk power：basefunc 双值 + power·0.5^(counter-1) 衰减。
 func _atk_power(skill: Variant, src: Variant, target: Variant) -> Array:
 	var base: Array = BattleSkillEffect.power(skill, src, target)
 	var power: float = float(base[0]) * pow(POWER_DECAY_BASE, int(skill.attack_counter) - POWER_DECAY_OFFSET)
 	return [power, base[1]]
 
 
-# 源 :94-111 atk2 canCastWithTarget：basefunc + hp cost 检查 + ult 互斥 + medBuff 互斥。
 func _atk2_can_cast_with_target(skill: Variant, target: Variant) -> Dictionary:
 	var caster: Variant = skill.caster
 	var hpcost: float = float(caster.attribs.get("HP", 0)) * float(skill.info.get("Cost HP", 0)) / COST_HP_DENOM
@@ -141,7 +132,6 @@ func _atk2_can_cast_with_target(skill: Variant, target: Variant) -> Dictionary:
 	return base
 
 
-# 源 :112-116 单位 update：basefunc + can_cast_manual |= atk2 canCastWithTarget(target)。
 func _hero_update(hero: Variant, dt: float) -> void:
 	hero._update_default(dt)
 	var skill2: Variant = hero.skills.get("Marine_atk2")
@@ -150,7 +140,6 @@ func _hero_update(hero: Variant, dt: float) -> void:
 		hero.can_cast_manual = bool(hero.can_cast_manual) or bool(r.get("ok", false))
 
 
-# 源 :117-124 castManualSkill：mp<1000 + atk2 canCast → castSkill(atk2, hero) / else basefunc。
 func _hero_cast_manual_skill(hero: Variant) -> void:
 	var skill2: Variant = hero.skills.get("Marine_atk2")
 	if skill2 != null and int(hero.mp) < MP_THRESHOLD and hero.ai != null and bool(skill2.can_cast_with_target(hero.ai.target).get("ok", false)):
@@ -159,7 +148,6 @@ func _hero_cast_manual_skill(hero: Variant) -> void:
 		hero._cast_manual_skill_default()
 
 
-# 源 :125-135 ai findSkillToCast：basefunc + atk2 限定 arena_mode 或 enemy side（getSide=="right"→camp==ENEMY）才放。
 func _ai_find_skill_to_cast(ai: Variant) -> Variant:
 	var skill: Variant = ai._find_skill_to_cast_default()
 	if skill != null and String(skill.info.get("Skill Name", "")) == "Marine_atk2":
@@ -170,7 +158,6 @@ func _ai_find_skill_to_cast(ai: Variant) -> Variant:
 	return skill
 
 
-# 源 :136-155 init_hero：ult（onPhaseFinished/takeEffectAt/takeEffectOn）+ atk2（createBuff/canCastWithTarget+Cost HP20）+ atk（start/power/onPhaseFinished）+ 单位 update/castManualSkill + ai.findSkillToCast。
 func apply(hero: Variant) -> void:
 	var skillult: Variant = hero.skills.get("Marine_ult")
 	if skillult:

@@ -12,11 +12,10 @@ const ATK2_CD: float = 1.0
 const ATK2_SHAPE_ARG1: int = 500
 const DPS_MULT: float = 1.5
 const NEXT_STAGE: int = 2
-const SCALE_VALUE: float = 1.2  # 源 :13 startScalingAction(1.2, 1)
-const SCALE_DURATION: float = 1.0  # 源 :13 duration=1
+const SCALE_VALUE: float = 1.2
+const SCALE_DURATION: float = 1.0
 
 
-# 源 :15-28 atk4 launchPoint：basefunc [pos,height] → x 偏移 -400·direction（反向）+ Y=0 + height=10。
 func _atk4_launch_point(skill: Variant) -> Array:
 	var r: Array = skill._launch_point_default()
 	var position: Vector2 = r[0]
@@ -27,29 +26,24 @@ func _atk4_launch_point(skill: Variant) -> Array:
 	return [position, LAUNCH_HEIGHT]
 
 
-# 源 :42-55 atk5 takeEffectOn：basefunc（eff_point_Coco_atk3 特效 View 跳过）。
 func _atk5_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	return BattleSkillEffect.take_effect_on(skill, target, src)
 
 
-# 源 :2-8 skill6 start：加 Buff 56 + basefunc。
 func _skill6_start(skill: Variant, target: Variant) -> void:
 	var binfo: Variant = skill.caster.cm.lookup(&"Buff", "", ULT_BUFF_ID)
 	skill.caster.add_buff(binfo, skill.caster)
-	skill._start_default(null)  # 源 :7 basefunc(skill) 不传 target（AncientTreant 同模式）
+	skill._start_default(null)
 
 
-# 源 :9-14 skill6 onAttackFrame：basefunc + startScalingAction(1.2, 1)（Logic 层缩放标志）。
 func _skill6_on_attack_frame(skill: Variant) -> void:
 	skill._on_attack_frame_default()
 	skill.caster.start_scaling_action(SCALE_VALUE, SCALE_DURATION)
 
 
-# 源 :29-41 skill6 finish：basefunc + dps×1.5 + enterActionStageFromOneStage(2) + atk2 info CD=1/Shape Arg1=500 + endScalingAction（Logic 层标志）。
 func _skill6_finish(skill: Variant) -> void:
 	skill._finish_default()
 	var caster: Variant = skill.caster
-	# 源 :32 Lua truthy：dps_mod and dps_mod*1.5（nil 不改，0/负也×MULT；勿 >0 守卫，[[lua-truthy-falsy-gdscript-pitfall]]）
 	var dps_raw: Variant = caster.config.get("dps_mod", null)
 	if dps_raw != null:
 		caster.config["dps_mod"] = float(dps_raw) * DPS_MULT
@@ -61,7 +55,7 @@ func _skill6_finish(skill: Variant) -> void:
 		wrapped["CD"] = ATK2_CD
 		wrapped["Shape Arg1"] = ATK2_SHAPE_ARG1
 		skill2.info = wrapped
-	caster.end_scaling_action()  # 源 :40 endScalingAction
+	caster.end_scaling_action()
 
 
 func apply(hero: Variant) -> void:

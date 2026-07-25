@@ -2,7 +2,6 @@ class_name AtlasSprite
 extends RefCounted
 
 ## plist 散件加载器（View 层）— 解析 Axmol plist 精灵图集，提取散件纹理。
-## 照旧版 CardGameGodot/scripts/battle/atlas_sprite.gd 复用（Phase 3.3 FCA 序列帧前置）。
 ## 配套 res://assets/anim_frames/<resource>/sheet.plist + sheet.png（.ani zip 解压产物）。
 
 var _parts: Dictionary = {}

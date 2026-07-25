@@ -20,10 +20,10 @@ static func enhance_equip(pd: PlayerData, inst_id: int, slot: int, materials: Di
 	var le_info: Dictionary = ReadequipData.get_equip_level_exp(item_id, pd.cm)
 	var ml: int = int(le_info["ml"])
 	if ml <= 0:
-		return false   # 源 quality 1 Max Level=0 不可强化
+		return false
 	var max_exp: float = 0.0
 	for v in le_info["le"]:
-		max_exp += float(v)   # 源 local_server:1429-1432 maxExp=Σ Price_i
+		max_exp += float(v)
 	var cur_exp: float = float(hero.equip_exp[slot])
 	if cur_exp >= max_exp:
 		return false   # 已满级
@@ -34,13 +34,11 @@ static func enhance_equip(pd: PlayerData, inst_id: int, slot: int, materials: Di
 		if need <= 0 or int(pd.items.get(int(mat_id), 0)) < need:
 			return false   # 材料不足
 		var mat_equip: Dictionary = equip_table.get(str(int(mat_id)), {})
-		# 源 equipstrengthen.lua:614 (Enhance Value or Exp or 0) * amount — 材料无 Enhance Value 时回退 Exp
 		add_exp += float(mat_equip.get("Enhance Value", mat_equip.get("Exp", 0))) * need
 	if add_exp <= 0.0:
-		return false   # 源 :577 moneyCost<=0 doSpeak NO_MATERIAL_ADDED
+		return false
 	var quality: int = int(equip_table.get(str(item_id), {}).get("Quality", 0))
 	var unit_price: float = float(pd.cm.get_raw_table(&"Enhancement").get(str(quality), {}).get("Unit Price", 0))
-	# 源 ui/equipstrengthen.lua:512-514：target=min(材料累计经验, 满级上限-cur_exp)，cost=单价×(target-ori)。
 	# 玩家放超量材料时 cost 必须按截断后经验算，否则多扣金币（满级前 add_exp > max_exp-cur_exp 的情况）。
 	var eff_exp: float = min(add_exp, max_exp - cur_exp)
 	var cost: int = int(unit_price * eff_exp)
@@ -52,7 +50,6 @@ static func enhance_equip(pd: PlayerData, inst_id: int, slot: int, materials: Di
 		if need > 0:
 			pd.items[int(mat_id)] = int(pd.items[int(mat_id)]) - need
 	hero.equip_exp[slot] = min(cur_exp + add_exp, max_exp)
-	# 源 record.lua refreshCommonRecord("enhanceLevelup") → 日常任务 EnhanceLevelUp
 	if pd.task_manager != null:
 		pd.task_manager.record_by_type(pd.cm, "EnhanceLevelUp")
 	return true
@@ -71,7 +68,7 @@ static func enhance_equip_to_max(pd: PlayerData, inst_id: int, slot: int) -> boo
 	var le_info: Dictionary = ReadequipData.get_equip_level_exp(item_id, pd.cm)
 	var ml: int = int(le_info["ml"])
 	if ml <= 0:
-		return false   # 源 quality 1 Max Level=0 不可强化
+		return false
 	var max_exp: float = 0.0
 	for v in le_info["le"]:
 		max_exp += float(v)   # 满级总经验（Σ le）

@@ -8,20 +8,19 @@ extends BattleEntity
 ##   →update（jump_timer 到点 → findNextTarget → jump / terminate）。
 ## chain 不移动（不调 base.update），仅 jump_timer 推进 + 跳跃结算；进 engine.projectile_list（源 addChain）。
 
-const JUMP_GAP_SQ: int = 6400  # 源 chain.lua:57 jump_gap（理想跳跃距离平方，findNext 取最接近者）
-const MIN_TIMES_HUGE: int = 100000  # 源 math.huge（affect_times 比较初始）
-const MIN_DIST_HUGE: float = INF  # 源 math.huge（距离比较初始）
-const CHAIN_EFFECT_HEIGHT: float = 48.0  # 源 chain.lua:104 48*target:getUnitScale()*sy（链特效目标高度）
+const JUMP_GAP_SQ: int = 6400
+const MIN_TIMES_HUGE: int = 100000
+const MIN_DIST_HUGE: float = INF
+const CHAIN_EFFECT_HEIGHT: float = 48.0
 
 var skill: Variant = null
-var source: Variant = null  # 源 :14 self.source（上一跳目标，下跳起点）
-var target: Variant = null  # 源 :15 self.target（当前跳目标）
+var source: Variant = null
+var target: Variant = null
 var jumps_remaining: int = 0
 var jump_timer: float = 0.0
-var affect_times: Dictionary = {}  # 源 :18 单位→已影响次数（优先选次数少者）
+var affect_times: Dictionary = {}
 
 
-# 源 ChainCreate（chain.lua:10-22）
 func _init(p_skill: Variant) -> void:
 	var info: Dictionary = p_skill.info
 	skill = p_skill
@@ -31,16 +30,14 @@ func _init(p_skill: Variant) -> void:
 	jump_timer = 0.0
 	affect_times = {}
 	engine = p_skill.caster.engine
-	jump()  # 源 :20 首跳（构造即影响首目标）
+	jump()
 
 
-# 源 jump（chain.lua:26-37）：jumps_remaining-- + jump_timer+=Chain Gap + takeEffectOn + affect_times++
 func jump() -> void:
 	jumps_remaining -= 1
 	jump_timer += float(skill.info.get("Chain Gap", 0.0))
 	affect_times[target] = int(affect_times.get(target, 0)) + 1
 	skill.take_effect_on(target, source)
-	# 源 :31-36 ChainEffect（View）— 降级：在目标位置播 Chain Effect FCA 特效（非完整链式拉伸，仅视觉反馈）
 	var chain_eff: String = str(skill.info.get("Chain Effect", ""))
 	if chain_eff != "" and source != null and source.actor != null:
 		var actor: Variant = source.actor
@@ -48,7 +45,6 @@ func jump() -> void:
 			actor.play_effect(chain_eff, target.position, 1.0, CHAIN_EFFECT_HEIGHT, 1)
 
 
-# 源 update（chain.lua:40-54）：jump_timer 到点 → 继续跳或 terminate
 func update(dt: float) -> void:
 	jump_timer -= dt
 	if jump_timer <= 0.0:
@@ -61,7 +57,6 @@ func update(dt: float) -> void:
 		terminate()
 
 
-# 源 findNextTaeget（chain.lua:60-83）：affect_times 最少优先 + 距离最接近 jump_gap + 在 min/max range 内
 func find_next_target() -> Variant:
 	var min_times: int = MIN_TIMES_HUGE
 	var min_dist: float = MIN_DIST_HUGE

@@ -10,13 +10,13 @@ const AudioManagerScript = preload("res://scripts/systems/audio_manager.gd")
 const SoundResScript = preload("res://scripts/data/sound_res.gd")
 
 const RES_PREFIX: String = "res://assets/"
-const SFX_VOLUME: float = 1.0   # 源 audioParam.effectVolume = 1
-const BGM_VOLUME: float = 1.0   # 源 audioParam.musicVolume = 1
+const SFX_VOLUME: float = 1.0
+const BGM_VOLUME: float = 1.0
 
 var am: AudioManager = null
 var sfx_player: AudioStreamPlayer = null
 var bgm_player: AudioStreamPlayer = null
-var sound_switch: bool = true   # 源 ed.soundSwitch（CCUserDefault 读取，默认 true）
+var sound_switch: bool = true
 var _sfx_path_cache: Dictionary = {}  # play_sfx_by_path 缓存（rel_path→AudioStream，避重复 load）
 
 
@@ -34,13 +34,11 @@ func _ready() -> void:
 	add_child(bgm_player)
 
 
-## 源 battle_scene.lua:215 setMusicVolume(ratio)：暂停时降音到 25%。
 func set_bgm_volume(ratio: float) -> void:
 	if bgm_player != null:
 		bgm_player.volume_db = linear_to_db(ratio)
 
 
-## 源 battle_scene.lua:298 resetMusicVolume：恢复音乐音量。
 func restore_bgm_volume() -> void:
 	set_bgm_volume(BGM_VOLUME)
 
@@ -59,7 +57,6 @@ func play_sfx(key: String) -> void:
 	sfx_player.play()
 
 
-# 源 sound.lua:46 playEffect(name) — 按文件路径播英雄/怪物音效（源 unit.lua:1113/1158
 # "sound/<NAME>_ULT|_DEATH.mp3"）。与 play_sfx(key) 区别：key 走 SoundRes 注册表，本方法按相对
 # 路径直载（res://assets/<rel_path>）。资源缺失静默跳过（照源文件不存在 + ResourceLoader 守卫）。
 # 缓存 AudioStream 避重复 load（缺失资源缓存 null，只查一次）。

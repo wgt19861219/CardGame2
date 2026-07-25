@@ -7,12 +7,12 @@ extends RefCounted
 ## WD_ult: start（basefunc + addBuff Buff 150）。
 ## atk3.takeEffectOn 源 :20-22 仅 return basefunc 无改（Logic 等价默认），照源跳过注册。
 
-const JUMPS: int = 5  # 源 :4 enableJump(5)
-const POWER_PERCENTS: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0]  # 源 :8-14（当前全 1，hook 等价默认；照源结构留数据驱动位）
-const SUMMON_DOUBLE_MULT: float = 2.0  # 源 :25 is_summoned power×2
-const SUMMON_BUFF_ID: int = 7   # 源 :93 is_summoned BuffCreate(7)
-const ULT_BUFF_ID: int = 150    # 源 :85 start addBuff(150)
-const HUGE: float = INF  # 源 math.huge（selector 最大值初始）
+const JUMPS: int = 5
+const POWER_PERCENTS: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0]
+const SUMMON_DOUBLE_MULT: float = 2.0
+const SUMMON_BUFF_ID: int = 7
+const ULT_BUFF_ID: int = 150
+const HUGE: float = INF
 
 
 func apply(hero: Variant) -> void:
@@ -30,7 +30,6 @@ func apply(hero: Variant) -> void:
 		ult.hero_hooks["start"] = Callable(self, "_start")
 
 
-# 源 :2-7 skill_atk3_createProjectile（basefunc + enableJump + enableTrack）。
 func _create_projectile(skill: Variant) -> Variant:
 	var projectile: Variant = BattleProjectile.new(skill)  # basefunc
 	projectile.enable_jump(JUMPS)
@@ -38,8 +37,6 @@ func _create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# 源 :15-19 skill_atk3_power（basefunc × percents[jumps]，返 [power×percent, crit_mod]）。
-# 源 :16 local ret = basefunc(skill) 只取首返回值（crit_mod 丢失），GDScript 保留 base[1] 修正（源 latent bug）。
 func _power(skill: Variant, src: Variant, _target: Variant) -> Array:
 	var base: Array = BattleSkillEffect.power(skill, src)  # basefunc
 	var jumps: int = int(src.jumps)
@@ -48,12 +45,11 @@ func _power(skill: Variant, src: Variant, _target: Variant) -> Array:
 	return [base[0], base[1]]
 
 
-# 源 :23-35 skillatk3_getDamage（is_summoned power×2 + takeDamage table，源 unit.lua:1252 解包）。
 func _get_damage(skill: Variant, target: Variant, power: float, dt: String, field: String, src: Variant, crit_mod: float) -> float:
 	var p_power: float = power
-	if bool(target.config.get("is_summoned", false)):  # 源 :24
+	if bool(target.config.get("is_summoned", false)):
 		p_power = p_power * SUMMON_DOUBLE_MULT
-	return float(target.take_damage({  # 源 :27-34 takeDamage(table)
+	return float(target.take_damage({
 		"amount": p_power,
 		"damage_type": dt,
 		"field": field,
@@ -62,18 +58,16 @@ func _get_damage(skill: Variant, target: Variant, power: float, dt: String, fiel
 	}))
 
 
-# 源 :89-98 skillatk3_createBuff（is_summoned→BuffCreate(7) else basefunc）。
 func _create_buff(skill: Variant, target: Variant) -> Variant:
-	if bool(target.config.get("is_summoned", false)):  # 源 :91
+	if bool(target.config.get("is_summoned", false)):
 		var binfo: Variant = skill.caster.cm.lookup(&"Buff", "", SUMMON_BUFF_ID)
 		return BattleBuff.new(binfo, target, skill.caster)
 	return skill._create_buff_default(target)
 
 
-# 源 :36-80 skillatk4_selectTarget（target/self/selector 三分支；selector 分支召唤物优先）。
 func _select_target(skill: Variant, default_t: Variant) -> Variant:
 	var ttype: String = str(skill.info.get("Target Type", ""))
-	if ttype == "target":  # 源 :39-49
+	if ttype == "target":
 		if default_t != null:
 			skill.target = default_t
 		else:
@@ -82,9 +76,9 @@ func _select_target(skill: Variant, default_t: Variant) -> Variant:
 				skill.target = res[0]
 			else:
 				skill.target = null
-	elif ttype == "self":  # 源 :50-51
+	elif ttype == "self":
 		skill.target = skill.caster
-	else:  # 源 :52-75 selector 分支
+	else:
 		var selector: Callable = skill._target_selector()
 		if selector.is_valid():
 			var max_v: float = -HUGE
@@ -99,7 +93,6 @@ func _select_target(skill: Variant, default_t: Variant) -> Variant:
 				var dsq: float = unit.position.distance_squared_to(caster.position)
 				if dsq >= skill.min_range_sq and dsq <= skill.max_range_sq:
 					var v: float = float(selector.call(unit))
-					# 源 :65-71：chosen 召唤物 + 新 unit 非召唤物 → 强制覆盖（非召唤物优先于召唤物）
 					if not bool(unit.config.get("is_summoned", false)) and chosen != null and bool(chosen.config.get("is_summoned", false)):
 						max_v = v
 						chosen = unit
@@ -110,7 +103,6 @@ func _select_target(skill: Variant, default_t: Variant) -> Variant:
 	return skill.target
 
 
-# 源 :81-88 skillult_start（basefunc + addBuff Buff 150）。
 func _start(skill: Variant, target: Variant) -> void:
 	skill._start_default(target)  # basefunc
 	var owner: Variant = skill.caster

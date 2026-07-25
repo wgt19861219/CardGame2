@@ -9,7 +9,6 @@ const SLOT_COUNT: int = 5  # 奖励槽 Amount/ID/Type 1-5
 const TABLE_NAME := &"CrusadeRewards"
 
 
-## 源多级查表 CrusadeRewards[stage][wave][vip_valid(0/1)]。
 static func get_reward_info(cm: ConfigManager, stage: int, wave: int, vip_valid: bool) -> Dictionary:
 	var raw: Dictionary = cm.get_raw_table(TABLE_NAME)
 	var vip_key: String = "1" if vip_valid else "0"
