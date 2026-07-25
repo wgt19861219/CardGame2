@@ -6,7 +6,6 @@ extends RefCounted
 ## 所有二级面板共用：close（backbtn）/ 抽卡（tavern_button）/ tab（classbtn）/ 动作（herodetail-detail）。
 ## center_pos 为按钮中心（源 anchor 0.5,0.5），自动按纹理尺寸左上对齐。
 
-const OUTLINE_COLOR: Color = Color.BLACK
 # UiButton 制造的按钮（close/抽卡/tab/动作）源都是纯 Sprite 无 fix_size → 照源 /CS。
 const CONTENT_SCALE: float = 1.28125
 
@@ -28,9 +27,9 @@ static func make(res_normal: String, res_pressed: String, center_pos: Vector2, l
 		lbl.position = Vector2.ZERO
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_color_override("font_color", label_color)
-		lbl.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
-		lbl.add_theme_constant_override("outline_size", 2)
+		lbl.theme_type_variation = &"BtnLabel"
+		if label_color != Color.WHITE:
+			lbl.add_theme_color_override("font_color", label_color)
 		btn.add_child(lbl)
 	return btn
 
@@ -52,9 +51,9 @@ static func make_at(res_normal: String, res_pressed: String, top_left: Vector2, 
 		lbl.position = Vector2.ZERO
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_color_override("font_color", label_color)
-		lbl.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
-		lbl.add_theme_constant_override("outline_size", 2)
+		lbl.theme_type_variation = &"BtnLabel"
+		if label_color != Color.WHITE:
+			lbl.add_theme_color_override("font_color", label_color)
 		btn.add_child(lbl)
 	return btn
 
