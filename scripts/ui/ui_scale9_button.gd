@@ -7,8 +7,6 @@ extends RefCounted
 ## Button 自带 pressed 信号 + 文字居中（照源 ok_label）。配套 UiButton（TextureButton 整图 close/动作）。
 ## 适用：合成/领取/确认/重置等 Scale9 功能按钮（herodetail-upgrade 系列）。capInsets 各按钮不同须照源传。
 
-const OUTLINE_COLOR: Color = Color.BLACK
-
 
 # Scale9 功能按钮（左上定位）。cap_insets = Rect2(x,y,w,h) 对应源 CCRectMake(x,y,w,h)。
 static func make(res_normal: String, res_pressed: String, top_left: Vector2, size: Vector2, cap_insets: Rect2, label_text: String = "", label_color: Color = Color.WHITE) -> Button:
@@ -17,10 +15,16 @@ static func make(res_normal: String, res_pressed: String, top_left: Vector2, siz
 	btn.size = size
 	_apply_style(btn, res_normal, res_pressed, cap_insets)
 	if not label_text.is_empty():
-		btn.text = label_text
-		btn.add_theme_color_override("font_color", label_color)
-		btn.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
-		btn.add_theme_constant_override("outline_size", 2)
+		var lbl := Label.new()
+		lbl.text = label_text
+		lbl.size = btn.size
+		lbl.position = Vector2.ZERO
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.theme_type_variation = &"BtnLabel"
+		if label_color != Color.WHITE:
+			lbl.add_theme_color_override("font_color", label_color)
+		btn.add_child(lbl)
 	return btn
 
 
@@ -36,10 +40,18 @@ static func make_centered(res_normal: String, res_pressed: String, center_pos: V
 static func apply_with_label(btn: Button, res_normal: String, res_pressed: String, cap_insets: Rect2, label_text: String = "", label_color: Color = Color.WHITE) -> void:
 	_apply_style(btn, res_normal, res_pressed, cap_insets)
 	if not label_text.is_empty():
-		btn.text = label_text
-		btn.add_theme_color_override("font_color", label_color)
-		btn.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
-		btn.add_theme_constant_override("outline_size", 2)
+		var lbl := Label.new()
+		lbl.text = label_text
+		lbl.size = btn.size
+		lbl.position = Vector2.ZERO
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.theme_type_variation = &"BtnLabel"
+		if label_color != Color.WHITE:
+			lbl.add_theme_color_override("font_color", label_color)
+		btn.add_child(lbl)
+	else:
+		btn.text = ""   # 清空 btn.text 避免双重显示（显式 Label + btn.text）
 
 
 static func _apply_style(btn: Button, res_normal: String, res_pressed: String, cap_insets: Rect2) -> void:

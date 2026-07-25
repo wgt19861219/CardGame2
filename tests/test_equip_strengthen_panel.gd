@@ -479,8 +479,14 @@ func test_stren_button_labels_use_lstr() -> void:
 	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
-	var enchant_text := panel._stren_btn.text
-	var oneclick_text := panel._faststren_btn.text
+	# apply_with_label 套 Scale9 + 加 Label 子节点（BtnLabel 变体），文字在子 Label 而非 btn.text
+	# （参照 equip_craft_tree.gd:300 btn.get_child(0) as Label 范式）。
+	var enchant_lbl: Label = panel._stren_btn.get_child(0) as Label
+	var oneclick_lbl: Label = panel._faststren_btn.get_child(0) as Label
+	assert_not_null(enchant_lbl, "_stren_btn 第一子节点是 Label")
+	assert_not_null(oneclick_lbl, "_faststren_btn 第一子节点是 Label")
+	var enchant_text := enchant_lbl.text if enchant_lbl != null else ""
+	var oneclick_text := oneclick_lbl.text if oneclick_lbl != null else ""
 	assert_eq(enchant_text, String(cm.get_lstr("EQUIPSTRENGTHEN.ENCHANTING")), "普通强化按钮标签照源 LSTR")
 	assert_eq(oneclick_text, String(cm.get_lstr("EQUIPSTRENGTHEN.ONECLICK_ENCHANTING")), "一键强化按钮标签照源 LSTR")
 	panel.remove_window()

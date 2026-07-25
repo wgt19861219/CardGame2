@@ -111,8 +111,12 @@ func test_ok_button_uses_return_label_and_scale9() -> void:
 	var panel := _make_panel(int(recipe["tid"]), pd)
 	panel.show_window(root)
 	var ok_btn: Button = panel._content.get_node("%OkBtn")
-	# apply_with_label 设 btn.text = LSTR(RETURN)="返回"（非子 Label）
-	assert_eq(ok_btn.text, "返回", "OkBtn.text = EQUIPCRAFT.RETURN")
+	# apply_with_label 套 Scale9 stylebox + 加 Label 子节点（theme_type_variation=BtnLabel）
+	# 文字在子 Label 而非 btn.text（参照 equip_craft_tree.gd:300 btn.get_child(0) as Label 范式）。
+	assert_eq(ok_btn.text, "", "OkBtn.text 清空（文字迁移到 Label 子节点）")
+	var ok_lbl: Label = ok_btn.get_child(0) as Label
+	assert_not_null(ok_lbl, "OkBtn 第一子节点是 Label")
+	assert_eq(ok_lbl.text, "返回", "OkBtn Label.text = EQUIPCRAFT.RETURN")
 	# 验证套了 normal StyleBoxTexture（apply_with_label 副作用）
 	var normal_sb: StyleBox = ok_btn.get_theme_stylebox("normal")
 	assert_true(normal_sb is StyleBoxTexture, "OkBtn normal 为 StyleBoxTexture（Scale9）")

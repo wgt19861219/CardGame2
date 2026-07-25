@@ -38,14 +38,6 @@ func _collect_label_texts(node: Node, out: Array) -> void:
 		_collect_label_texts(c, out)
 
 
-# 收集 panel.container 下所有非空 Button text（递归子节点）。
-func _collect_button_texts(node: Node, out: Array) -> void:
-	if node is Button and (node as Button).text != "":
-		out.append((node as Button).text)
-	for c in node.get_children():
-		_collect_button_texts(c, out)
-
-
 # ── LSTR 化精修验证（源 :273/:369/:459 + JSON 值核对）──
 
 func test_lstr_keys_resolve_to_chinese_not_fallback() -> void:
@@ -89,9 +81,10 @@ func test_setup_panel_renders_lstr_ok_button_label() -> void:
 	var panel := _make_panel(int(recipe["tid"]), pd)
 	panel.show_window(root)
 	# ok 按钮 = UiScale9Button.apply_with_label(.tscn %OkBtn, ..., cm.get_lstr("FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS"))
-	# （源 :459，旧硬编码 "确认合成"）。.tscn instantiate 后 ok 在 content 子树，递归扫 Button 文字。
+	# （源 :459，旧硬编码 "确认合成"）。apply_with_label 加 Label 子节点（BtnLabel 变体），
+	# 文字在子 Label 而非 btn.text → 用 _collect_label_texts 递归扫（参照 equip_craft_tree.gd:300 范式）。
 	var ok_texts: Array = []
-	_collect_button_texts(panel.container, ok_texts)
+	_collect_label_texts(panel.container, ok_texts)
 	assert_true(ok_texts.has(cm.get_lstr("FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS")), "ok 按钮文字 = cm.get_lstr(CONFIRM_SYNTHESIS)")
 	panel.remove_window()
 	root.queue_free()
