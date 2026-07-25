@@ -32,6 +32,11 @@ const ENEMY_ICON_SCALE: float = 0.65
 const ENEMY_ICON_GAP: int = 5
 const ENEMY_HP_FULL: int = 10000
 const CRUSADE_HERO_MIN_LEVEL: int = 20
+# ruleLayer 规则页按钮（照源 crusadeconfig.lua:965-987 showrule Scale9Button）
+const RULE_SHOWRULE_BTN_POS: Vector2 = Vector2(560.0, 50.0)
+const RULE_SHOWRULE_BTN_SIZE: Vector2 = Vector2(120.0, 48.0)
+const RULE_LABEL_FONT_SIZE: int = 18
+const LSTR_SHOW_RULE: String = "CRUSADECONFIG.REVIEW_RULES"
 
 var player: PlayerData = null
 var rng: BattleRng = null
@@ -45,6 +50,7 @@ var start_btn: TextureButton = null
 var _shake_timer: Timer = null
 var _hint_anchor: Control = null
 var stage_hint: Label = null
+var _rule_layer: Control = null   # 规则页层（null=未建，visible 切换 show/close）
 
 
 func setup_panel(p_player: PlayerData, p_rng: BattleRng) -> void:
@@ -88,6 +94,8 @@ func _build_content() -> void:
 	# HBox 内 15 VBox ×（stage btn + box btn）。
 	var hbox: HBoxContainer = content.get_node("%StageHBox") as HBoxContainer
 	_create_stage_list(hbox)
+	# 规则页按钮（照源 crusadeconfig.lua:976 showrule Scale9Button handleName=showRuleInfo）
+	_create_rule_button(content)
 
 
 func _create_stage_list(hbox: HBoxContainer) -> void:
@@ -397,3 +405,37 @@ func _is_stage_locked(i: int) -> bool:
 	if i == cur and i > 1 and not player.crusade_manager.is_stage_rewarded(i - 1):
 		return true
 	return false
+
+
+# ==================== 规则页（照源 crusade.lua:425-610 ruleLayer）====================
+
+# 规则按钮（照源 crusadeconfig.lua:965-987 showrule Scale9Button）。
+func _create_rule_button(content: Node) -> void:
+	var btn := Button.new()
+	btn.add_theme_stylebox_override("normal", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", _make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.position = RULE_SHOWRULE_BTN_POS
+	btn.size = RULE_SHOWRULE_BTN_SIZE
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	var lbl := Label.new()
+	lbl.text = player.cm.get_lstr(LSTR_SHOW_RULE)
+	lbl.add_theme_font_size_override("font_size", RULE_LABEL_FONT_SIZE)
+	lbl.anchors_preset = Control.PRESET_CENTER
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(lbl)
+	btn.pressed.connect(_show_rule_info)
+	content.add_child(btn)
+
+
+func _show_rule_info() -> void:
+	if _rule_layer == null:
+		_rule_layer = CrusadeRuleRenderer.build_rule_layer(container, player.cm, _close_rule_info)
+	_rule_layer.visible = true
+
+
+func _close_rule_info() -> void:
+	if _rule_layer != null:
+		_rule_layer.visible = false
+

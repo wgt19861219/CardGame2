@@ -18,11 +18,11 @@ func test_panel_assembles() -> void:
 	panel.setup_panel(pd, BattleRng.new(12345))
 	panel.show_window(root)
 	# 2026-07-17 .tscn 重构（hero_detail 范式）：container → content（.tscn 根，1 子节点）。
-	# content 9 静态直接子：FrameworkBg/CloseBtn/ResetBtn/FogLayer/StageScroll/
-	# EnemyPreviewHost/StartBtn/ResultLabel/HintAnchor（位置/size .tscn 固化）。
+	# content 10 静态直接子：FrameworkBg/CloseBtn/ResetBtn/FogLayer/StageScroll/
+	# EnemyPreviewHost/StartBtn/ResultLabel/HintAnchor + RuleButton（procedural 规则按钮）。
 	assert_eq(panel.container.get_child_count(), 1, "container 仅挂 content（.tscn 根）")
 	var content: Node = panel.container.get_child(0)
-	assert_eq(content.get_child_count(), 9, "content 9 静态子节点（bg/close/reset/fogLayer/scroll/preview/start/result/hint）")
+	assert_eq(content.get_child_count(), 10, "content 10 静态子节点（bg/close/reset/fogLayer/scroll/preview/start/result/hint/ruleBtn）")
 	assert_eq(panel.fog_rects.size(), 4, "4 fog（.tscn 静态，instantiate 后收集）")
 	assert_eq(panel.stage_buttons.size(), CrusadeData.MAX_STAGE, "15 stage 按钮")
 	# box 改 TextureButton 可点（源 :311 boxButton{i}）
@@ -269,5 +269,43 @@ func test_box_pressed_unpassed_locked_no_claim() -> void:
 	# 超进度：既非 rewarded 也非 passed，且 _is_stage_locked=true → 不走预览分支，无文案更新
 	# result_label 保留初始 "远征：第 1 关"
 	assert_true(panel.result_label.text.contains("远征") or panel.result_label.text.contains("第 1 关"), "超进度 box 不可点领奖（源 :411-422 段检查）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 规则页补全测试（照源 crusade.lua:543-610 initRuleLayer，17 条规则文本 + show/close）。
+func test_rule_layer_show_close() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	# 初始 ruleLayer 未建（null）
+	assert_null(panel._rule_layer, "初始 ruleLayer 未建")
+	# show → 建 ruleLayer + visible
+	panel._show_rule_info()
+	assert_not_null(panel._rule_layer, "show 后 ruleLayer 已建")
+	assert_true(panel._rule_layer.visible, "ruleLayer visible")
+	# close → 隐藏（不 free，保留复用）
+	panel._close_rule_info()
+	assert_false(panel._rule_layer.visible, "close 后 ruleLayer 隐藏")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_rule_layer_has_17_items() -> void:
+	# ruleLayer 17 条规则（6 叙事 + 1 间隔 + 标题 + 7 规则 + 2 间隔 = ScrollContainer 内 VBox 17 子节点）
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	panel._show_rule_info()
+	# ruleLayer → shade + frame + scroll → scroll 内 vbox
+	var scroll: ScrollContainer = panel._rule_layer.get_child(2) as ScrollContainer
+	var vbox: VBoxContainer = scroll.get_child(0) as VBoxContainer
+	assert_eq(vbox.get_child_count(), 17, "17 条规则项（照源 initRuleLayer）")
 	panel.remove_window()
 	root.queue_free()
