@@ -10,13 +10,14 @@ func before_all() -> void:
 	cm.load_all()
 
 
-# 源 cocos(800×480,y向上) → Godot(960×640 offset 80,80)：_to_godot(cx+80, 560-cy)
+# 源 cocos(800×480,y向上) → Godot(960×640 offset 80,80)：to_godot(cx+80, 560-cy)
+# 渲染 helper 外迁后（2026-07-25 批次 1 第 3 拆分），坐标转换走 MidasRenderer
 func test_to_godot_coord_transform() -> void:
-	assert_eq(MidasPanel._to_godot(Vector2(400.0, 305.0)), Vector2(480.0, 255.0), "frame cocos(400,305)→Godot(480,255)")
-	# _center（中心 anchor 减 size/2）
-	assert_eq(MidasPanel._center(Vector2(400.0, 305.0), Vector2(425.0, 245.0)), Vector2(267.5, 132.5), "center 左上")
-	# _left_mid（左中 anchor）
-	assert_eq(MidasPanel._left_mid(Vector2(155.0, 225.0), 24.0), Vector2(235.0, 323.0), "left_mid 左上")
+	assert_eq(MidasRenderer.to_godot(Vector2(400.0, 305.0)), Vector2(480.0, 255.0), "frame cocos(400,305)→Godot(480,255)")
+	# center（中心 anchor 减 size/2）
+	assert_eq(MidasRenderer.center(Vector2(400.0, 305.0), Vector2(425.0, 245.0)), Vector2(267.5, 132.5), "center 左上")
+	# left_mid（左中 anchor）
+	assert_eq(MidasRenderer.left_mid(Vector2(155.0, 225.0), 24.0), Vector2(235.0, 323.0), "left_mid 左上")
 
 
 func _make_panel() -> MidasPanel:
@@ -122,10 +123,11 @@ func test_view_vip_when_maxed() -> void:
 
 # 源每行 6 节点（USE label + cost + shop_token icon + GET label + goldicon + acquire）+ ratio 图。
 # 修复前每行 1 Label（"USE cost GET acquire ×N"）；照源补 6 节点 HBoxContainer。
+# 渲染外迁后（2026-07-25）改调 MidasRenderer.rebuild_history（lstr_resolver Callable 注入）
 func test_history_row_has_six_nodes() -> void:
 	var panel := _make_panel()
 	panel._history = [{"cost": 10, "acquire": 5000, "ratio": 1}]   # ratio=1 无 ratio 图
-	panel._rebuild_history()
+	MidasRenderer.rebuild_history(panel._history_host, panel._history, func(k: String) -> String: return panel._T(k))
 	# HBoxContainer + 6 子节点（USE label / cost label / token icon / GET label / gold icon / acquire label）
 	var rows: Array = panel._history_host.get_children()
 	assert_eq(rows.size(), 1, "1 行历史")
@@ -143,21 +145,21 @@ func test_history_row_has_six_nodes() -> void:
 func test_history_row_ratio_appends_label_when_image_missing() -> void:
 	var panel := _make_panel()
 	panel._history = [{"cost": 10, "acquire": 10000, "ratio": 4}]   # ratio=4 → midas_crip10.png 缺 → Label
-	panel._rebuild_history()
+	MidasRenderer.rebuild_history(panel._history_host, panel._history, func(k: String) -> String: return panel._T(k))
 	var row: HBoxContainer = panel._history_host.get_child(0) as HBoxContainer
 	# 源 6 节点 + ratio 降级 Label = 7 子节点（midas_crip10.png 缺）
 	assert_gte(row.get_child_count(), 7, "ratio=4 追加 ratio 图/Label（源 :532-544）")
-	# 末子是 ratio 降级 Label，text="×10!!"（RATIO_TEXT[4]）
+	# 末子是 ratio 降级 Label，text="×10!!"（RATIO_TEXT[4]，搬至 MidasRenderer）
 	var last: Label = row.get_child(row.get_child_count() - 1) as Label
-	assert_eq(last.text, String(MidasPanel.RATIO_TEXT[4]), "ratio=4 降级 Label ×10!!（源 ratio_res 缺）")
+	assert_eq(last.text, String(MidasRenderer.RATIO_TEXT[4]), "ratio=4 降级 Label ×10!!（源 ratio_res 缺）")
 	panel.free()
 
 
-# 空历史 → 不建行（_rebuild_history early return）
+# 空历史 → 不建行（rebuild_history early return）
 func test_history_empty_no_rows() -> void:
 	var panel := _make_panel()
 	panel._history = []
-	panel._rebuild_history()
+	MidasRenderer.rebuild_history(panel._history_host, panel._history, func(k: String) -> String: return panel._T(k))
 	assert_eq(panel._history_host.get_child_count(), 0, "空历史 0 行")
 	panel.free()
 
@@ -170,7 +172,7 @@ func test_history_multiple_rows() -> void:
 		{"cost": 20, "acquire": 10000, "ratio": 2},
 		{"cost": 30, "acquire": 30000, "ratio": 3},
 	]
-	panel._rebuild_history()
+	MidasRenderer.rebuild_history(panel._history_host, panel._history, func(k: String) -> String: return panel._T(k))
 	assert_eq(panel._history_host.get_child_count(), 3, "3 行历史")
 	for i in range(3):
 		var row: HBoxContainer = panel._history_host.get_child(i) as HBoxContainer
