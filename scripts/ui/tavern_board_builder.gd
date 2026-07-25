@@ -192,9 +192,7 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.size = Vector2(CLIP_W, 20.0)
 	prompt.position = _scroll_pos(108.0, -180.0, prompt.size)
-	prompt.add_theme_color_override("font_color", Color.WHITE)
-	prompt.add_theme_color_override("font_outline_color", Color.BLACK)
-	prompt.add_theme_constant_override("outline_size", 1)
+	prompt.theme_type_variation = &"BodyLabelThin"
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(prompt)
 	var ten_buy := _button(TEN_BUY_RES, TEN_BUY_PRESS_RES, cx, -260.0)
@@ -232,9 +230,7 @@ static func _drop_title(scroll: Control, text: String, cx: float, cy: float) -> 
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.size = Vector2(CLIP_W, 20.0)
 	lbl.position = _scroll_pos(cx, cy, lbl.size)
-	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	lbl.add_theme_constant_override("outline_size", 1)
+	lbl.theme_type_variation = &"BodyLabelThin"
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(lbl)
 
@@ -257,9 +253,7 @@ static func _cost_row(scroll: Control, cx: float, cy: float, pay: String, cost_v
 	lbl.size = Vector2(40.0, 20.0)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	lbl.position = _scroll_pos(144.0, cy, lbl.size)
-	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	lbl.add_theme_constant_override("outline_size", 1)
+	lbl.theme_type_variation = &"BodyLabelThin"
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(lbl)
 	return lbl
@@ -311,9 +305,7 @@ static func _center_label(text: String, btn: TextureButton) -> Label:
 	lbl.position = Vector2.ZERO
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	lbl.add_theme_constant_override("outline_size", 2)
+	lbl.theme_type_variation = &"BodyLabel"
 	btn.add_child(lbl)
 	return lbl
 
