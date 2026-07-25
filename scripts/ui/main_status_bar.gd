@@ -1,6 +1,8 @@
 class_name MainStatusBar
 extends RefCounted
 
+const UIConstants := preload("res://resources/constants/ui_constants.gd")
+
 ## 主菜单状态栏（View helper）— 照源 ui/statusbar.lua createHead:554 + createTitle:706。
 ## 从 main_scene 拆出重建：头像（银/金框切换 + 昵称 + VIP 角标）+ 3 货币条（图标 + 数字 + 加号按钮）。
 ## 替代旧裸文字 Label 占位。main_scene._build_status_bar 委托本类 + _refresh_status 更新 label。
@@ -75,7 +77,9 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	var level_lbl := Label.new()
 	level_lbl.text = "Lv.1"
 	level_lbl.position = Vector2(12.0, 55.0)
-	level_lbl.add_theme_font_size_override("font_size", 16)
+	# 走 BodyLabel 变体（default_theme.tres：font_size=16 继承 Label 默认 + 白字 + outline_size=2 黑描边）
+	# outline 是行为变化但视觉更清晰（status bar HUD 层加描边改进，非回归）。
+	level_lbl.theme_type_variation = &"BodyLabel"
 	head.add_child(level_lbl)
 	refs["level"] = level_lbl
 	# VIP 角标（VIP>0 显示）
@@ -130,7 +134,8 @@ static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler
 	_add_texture_rect(bar, icon_res, Vector2(142.0, 8.0), Vector2(32.0, 32.0), "icon")
 	var lbl := Label.new()
 	lbl.position = Vector2(50.0, 16.0)
-	lbl.add_theme_font_size_override("font_size", 14)
+	# 不引入 BodyLabel 变体（货币条数值可能有色，仅替换裸数字 14 为常量）
+	lbl.add_theme_font_size_override("font_size", UIConstants.FONT_SIZE_SMALL)
 	bar.add_child(lbl)
 	if plus_handler.is_valid():
 		# 加号 Button（flat + StyleBoxEmpty 去默认样式，icon=PLUS_ICON_RES；照源圆形点击区 radius=30）
@@ -140,10 +145,8 @@ static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler
 		plus_btn.icon = load(PLUS_ICON_RES)
 		plus_btn.flat = true
 		plus_btn.focus_mode = Control.FOCUS_NONE
-		plus_btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-		plus_btn.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-		plus_btn.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-		plus_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		# 走 GhostButton 变体（default_theme.tres：normal/hover/pressed/focus 全 StyleBoxEmpty）
+		plus_btn.theme_type_variation = &"GhostButton"
 		plus_btn.pressed.connect(plus_handler)
 		bar.add_child(plus_btn)
 	else:
