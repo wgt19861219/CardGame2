@@ -30,11 +30,23 @@ func test_theme_has_default_font_size() -> void:
 
 # ── 轮 0：8 个新增变体的语义断言（预期全红，变体未建）──
 # 轮 1 T1 建变体后，这些断言转绿。
+# Color 断言用 assert_color_approx 容差 0.001：.tres 小数形式（如 0.608）与
+# ui_constants.gd 的 /255 表达式（155/255=0.60784316）在 Godot Color 严格 ==
+# 比较 bit-level 不等，但视觉上数学等价。int 断言保持 assert_eq。
+# 注：GUT assert_almost_eq 不支持 Color（仅 Vector2/3/4），故自写 helper。
+
+# 比较 Color 4 通道，每通道 |got - expected| <= 0.001。
+func assert_color_approx(got: Color, expected: Color, label: String) -> void:
+	var tol: float = 0.001
+	assert_true(absf(got.r - expected.r) <= tol, "%s: R %.6f ≈ %.6f ± %.4f" % [label, got.r, expected.r, tol])
+	assert_true(absf(got.g - expected.g) <= tol, "%s: G %.6f ≈ %.6f ± %.4f" % [label, got.g, expected.g, tol])
+	assert_true(absf(got.b - expected.b) <= tol, "%s: B %.6f ≈ %.6f ± %.4f" % [label, got.b, expected.b, tol])
+	assert_true(absf(got.a - expected.a) <= tol, "%s: A %.6f ≈ %.6f ± %.4f" % [label, got.a, expected.a, tol])
 
 func test_title_label_has_gold_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "TitleLabel")
-	assert_eq(color, UIConstants.COLOR_TITLE_GOLD, "TitleLabel font_color = COLOR_TITLE_GOLD")
+	assert_color_approx(color, UIConstants.COLOR_TITLE_GOLD, "TitleLabel font_color ≈ COLOR_TITLE_GOLD")
 
 func test_title_label_has_title_size() -> void:
 	var theme: Theme = ThemeManager.get_theme()
@@ -45,7 +57,7 @@ func test_title_label_has_title_size() -> void:
 func test_body_label_has_white_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "BodyLabel")
-	assert_eq(color, UIConstants.COLOR_TEXT_DEFAULT, "BodyLabel font_color = COLOR_TEXT_DEFAULT (白)")
+	assert_color_approx(color, UIConstants.COLOR_TEXT_DEFAULT, "BodyLabel font_color ≈ COLOR_TEXT_DEFAULT (白)")
 
 func test_body_label_has_btn_outline_size() -> void:
 	var theme: Theme = ThemeManager.get_theme()
@@ -60,13 +72,13 @@ func test_body_label_thin_has_thin_outline() -> void:
 func test_body_label_thin_has_white_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "BodyLabelThin")
-	assert_eq(color, UIConstants.COLOR_TEXT_DEFAULT, "BodyLabelThin font_color = 白")
+	assert_color_approx(color, UIConstants.COLOR_TEXT_DEFAULT, "BodyLabelThin font_color ≈ 白")
 
 
 func test_shadowed_label_has_shadow_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_shadow_color", "ShadowedLabel")
-	assert_eq(color, UIConstants.COLOR_TEXT_SHADOW, "ShadowedLabel font_shadow_color = COLOR_TEXT_SHADOW (黑)")
+	assert_color_approx(color, UIConstants.COLOR_TEXT_SHADOW, "ShadowedLabel font_shadow_color ≈ COLOR_TEXT_SHADOW (黑)")
 
 func test_shadowed_label_has_shadow_offset_y() -> void:
 	var theme: Theme = ThemeManager.get_theme()
@@ -82,7 +94,7 @@ func test_shadowed_label_has_shadow_offset_x() -> void:
 func test_amount_label_has_amount_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "AmountLabel")
-	assert_eq(color, UIConstants.COLOR_AMOUNT, "AmountLabel font_color = COLOR_AMOUNT")
+	assert_color_approx(color, UIConstants.COLOR_AMOUNT, "AmountLabel font_color ≈ COLOR_AMOUNT")
 
 func test_amount_label_has_amount_size() -> void:
 	var theme: Theme = ThemeManager.get_theme()
@@ -92,7 +104,7 @@ func test_amount_label_has_amount_size() -> void:
 func test_btn_label_has_btn_label_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "BtnLabel")
-	assert_eq(color, UIConstants.COLOR_BTN_LABEL, "BtnLabel font_color = COLOR_BTN_LABEL")
+	assert_color_approx(color, UIConstants.COLOR_BTN_LABEL, "BtnLabel font_color ≈ COLOR_BTN_LABEL")
 
 func test_btn_label_has_btn_outline_size() -> void:
 	var theme: Theme = ThemeManager.get_theme()
@@ -103,7 +115,7 @@ func test_btn_label_has_btn_outline_size() -> void:
 func test_dialog_label_has_white_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "DialogLabel")
-	assert_eq(color, UIConstants.COLOR_TEXT_DEFAULT, "DialogLabel font_color = 白")
+	assert_color_approx(color, UIConstants.COLOR_TEXT_DEFAULT, "DialogLabel font_color ≈ 白")
 
 func test_dialog_label_has_default_outline() -> void:
 	var theme: Theme = ThemeManager.get_theme()
