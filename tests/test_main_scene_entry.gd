@@ -44,10 +44,11 @@ func test_unknown_entry_no_crash() -> void:
 
 # B4 入口接线（第九轮 P1-B4）：estren → EquipStrengthenPanel 打开
 # （照源 ui/main.lua:1424-1434 pushScene equipstrengthen.create 独立场景可达）。
-# 直接测 _open_equip_strengthen（unlock 检查由 _on_entry_pressed 上游负责，此处聚焦入口可达性）。
+# estren 入口已外迁到 MainSceneEntryRouter.open_equip_strengthen（批次1 拆分2/3），
+# _open_equip_strengthen 已从 main_scene 删除；本测试改调 helper 验可达性（unlock 检查由 _on_entry_pressed 上游负责）。
 func test_estren_entry_opens_panel() -> void:
 	assert_true(is_instance_valid(_scene), "main_scene 实例有效")
 	var before: int = _scene.get_child_count()
-	_scene._open_equip_strengthen()
+	MainSceneEntryRouter.open_equip_strengthen(_scene)
 	var after: int = _scene.get_child_count()
-	assert_true(after > before, "estren → EquipStrengthenPanel 打开（源 pushScene equipstrengthen.create）（before=%d after=%d）" % [before, after])
+	assert_true(after > before, "estren → EquipStrengthenPanel 打开（before=%d after=%d）" % [before, after])

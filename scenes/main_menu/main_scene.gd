@@ -6,11 +6,7 @@ extends "res://scenes/base_ui.gd"
 
 const MAP_H: float = 640.0   # grass + 按钮 + mountain/cloud/side/lightning 整体下移 104（grass 放屏底 56~536→160~640，图标 godot_y=MAP_H-cocos_y 跟着下移）
 const BAR_H: float = 52.0
-const BG_INIT_OFFSET: float = -300.0   # 源 main.lua:21 bgOffset（create:1067 setbgOffset 初始视角）
-# 源 exercise.lua:1506/1509 em→英雄副本 50005-7 / equip→装备副本 50001-4
-const EM_GROUPS: Array[int] = [50005, 50006, 50007]
-const EQUIP_GROUPS: Array[int] = [50001, 50002, 50003, 50004]
-const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
+const BG_INIT_OFFSET: float = -300.0   # 初始视角偏移
 const TutorialGuideView = preload("res://scripts/ui/tutorial_guide_view.gd")
 const MainButtonFactory = preload("res://scripts/ui/main_button_factory.gd")
 const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
@@ -18,44 +14,24 @@ const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
 const GapLoopAnimator = preload("res://scripts/ui/gap_loop_animator.gd")
 const MainMapBuilder = preload("res://scripts/ui/main_map_builder.gd")
 const MainParallax = preload("res://scripts/ui/main_parallax.gd")
-const MailPanel = preload("res://scripts/ui/mail_panel.gd")
-const ExcavateSearchPanel = preload("res://scripts/ui/excavate_search_panel.gd")
 const ExcavateMapPanel = preload("res://scripts/ui/excavate_map_panel.gd")
-const AvatarPanel = preload("res://scripts/ui/avatar_panel.gd")
-const NameInputPanel = preload("res://scripts/ui/name_input_panel.gd")
-const TaskPanel = preload("res://scripts/ui/task_panel.gd")
-const RanklistPanel = preload("res://scripts/ui/ranklist_panel.gd")
 const MainStatusBar = preload("res://scripts/ui/main_status_bar.gd")
-const MidasPanel = preload("res://scripts/ui/midas_panel.gd")
-const EquipStrengthenPanel = preload("res://scripts/ui/equip_strengthen_panel.gd")
-const DailyLoginPanel = preload("res://scripts/ui/daily_login_panel.gd")
-const HandbookPanel = preload("res://scripts/ui/handbook_panel.gd")
-const LadderPanel = preload("res://scripts/ui/ladder_panel.gd")
 # P1-2026-07-10：补全未 preload 的 class_name 类（消除跨脚本强引用）
 const BattleRng = preload("res://scripts/systems/battle/battle_rng.gd")
-const CrusadePanel = preload("res://scripts/ui/crusade_panel.gd")
-const DungeonMapPanel = preload("res://scripts/ui/dungeon_map_panel.gd")
 const FeatureLimit = preload("res://scripts/systems/feature_limit.gd")
-const PackagePanel = preload("res://scripts/ui/package_panel.gd")
 const PlayerData = preload("res://scripts/data/player_data.gd")
-const RanklistManager = preload("res://scripts/systems/ranklist_manager.gd")
-const ShopManager = preload("res://scripts/systems/shop_manager.gd")
-const ShopPanel = preload("res://scripts/ui/shop_panel.gd")
 const ShortcutPanel = preload("res://scripts/ui/shortcut_panel.gd")
 const StageSelectPanel = preload("res://scripts/ui/stage_select_panel.gd")
-const StarShopPanel = preload("res://scripts/ui/star_shop_panel.gd")
-const TaskManager = preload("res://scripts/systems/task_manager.gd")
 const ConfigurePanel = preload("res://scripts/ui/configure_panel.gd")
-const TavernPanel = preload("res://scripts/ui/tavern_panel.gd")
 const TutorialManager = preload("res://scripts/systems/tutorial_manager.gd")
-# lightning 背景装饰 FCA（照源 mainres.lightning:56-65，button_key 无 → 非按钮纯装饰；createMainFca 加 topContainer）
+# lightning 背景装饰 FCA（非按钮纯装饰；挂 topContainer）
 const FCA_LIGHTNING_RES: String = "effect/eff_UI_Main_Lightning"
 const FCA_LIGHTNING_ANI: String = "res://assets/anim_frames/effect/eff_UI_Main_Lightning.ani"
-const LIGHTNING_POS: Array = [205, 310]       # 源 ccp(205,330) → Godot(205, MAP_H-330=310)
-const LIGHTNING_GAP: Array = [1.71, 1.71, 1.71, 3, 10]  # 源 mainres:60-64 gap/loop
+const LIGHTNING_POS: Array = [205, 310]       # Godot(205, MAP_H-330=310)
+const LIGHTNING_GAP: Array = [1.71, 1.71, 1.71, 3, 10]  # gap/loop 序列
 const EXCAVATE_WIN_TEXT: String = "占领成功！矿点开始产出资源"     # excavate 战斗胜利 Toast（_maybe_resume_excavate）
 const EXCAVATE_LOSE_TEXT: String = "战斗失败，再接再厉"          # excavate 战斗失败 Toast
-# 每日签到入口按钮（照源 statusbar.lua:373-411 createTitleButton；源 uires.lua:53 dailylogin_pos=ori_pos=ccp(220,392)，head ccp(70,434)→项目 HEAD_POS(70,52)，delta(150,42)→项目(220,94)）。
+# 每日签到入口按钮（dailylogin_pos，head→项目 HEAD_POS(70,52)，delta(150,42)→项目(220,94)）。
 const DAILY_BTN_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_1.png"
 const DAILY_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_2.png"
 const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 94.0)
@@ -66,7 +42,7 @@ var _status_refs: Dictionary = {}   # MainStatusBar 节点引用（label/head/vi
 var _tutorial_view: TutorialGuideView = null   # 持引用供 EE/unlock/SU 跨阶段刷新
 var _containers: Dictionary                    # MainMapBuilder 建的 4 容器（top/middle/bottom/verytop/sub）
 var _parallax: MainParallax
-var _drag_active: bool = false                 # 拖拽状态（照源 doDragMapTouch dragMode）
+var _drag_active: bool = false                 # 拖拽状态
 var _drag_last_x: float = 0.0
 var _drag_last_time: int = 0
 var _drag_velocity: float = 0.0
@@ -132,11 +108,9 @@ func _maybe_resume_pvp() -> void:
 	_open_ladder()
 
 
-## 天梯/PVP 入口（照源 ladder handler :3116 单机 NPC PVP，完整 ladder handler 非联机裁剪）。
+# 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
 func _open_ladder() -> void:
-	var panel := LadderPanel.new("ladder", {})
-	panel.setup_panel(GameData.player, GameData.player.cm, BattleRng.new(randi()))
-	panel.show_window(self)
+	MainSceneEntryRouter.open_ladder(self)
 
 
 # EE/unlock/SU 跨阶段切换（条件触发调）：switch steps + 刷新 GuideView 显示新 phase 当前 step。
@@ -159,13 +133,13 @@ func tutorial_try_complete(step: StringName) -> void:
 	if pd.tutorial_manager.try_complete(step):
 		_tutorial_view._refresh()
 
-# 4 层视差地图（照源 create:1048-1055 createBottom/Middle/Top/VeryTopMap + doDragMapTouch:116 自定义拖拽）。
+# 4 层视差地图（createBottom/Middle/Top/VeryTopMap + 自定义拖拽）。
 # map = clip Control（960×MAP_H 区），4 容器由 MainMapBuilder 建，MainParallax 按系数横向位移。
 # 拖拽：_gui_input 接空地点击（按钮 STOP 吞自己区域），改 top.x → parallax refresh 让 middle/bottom/verytop 跟。
 func _build_map() -> void:
 	var map := Control.new()
 	map.set_anchors_preset(Control.PRESET_FULL_RECT)
-	map.offset_top = 0.0   # map 延伸到顶（statusbar 透明叠加，露 mountain 天；源 mainLayer 满 design statusbar 叠加，非独立占区）
+	map.offset_top = 0.0   # map 延伸到顶（statusbar 透明叠加，露 mountain 天；满 design statusbar 叠加，非独立占区）
 	map.offset_bottom = 0.0   # map 满高 640（statusbar 透明叠加，grass 放屏底不被裁）
 	map.clip_contents = true
 	map.mouse_filter = Control.MOUSE_FILTER_STOP   # 接收空地拖拽（按钮 STOP 吞自己区域）
@@ -174,13 +148,13 @@ func _build_map() -> void:
 	_containers = MainMapBuilder.new().build(map)
 	_parallax = MainParallax.new()
 	_parallax.setup(_containers.top, _containers.middle, _containers.bottom, _containers.verytop, float(_containers.get("map_width", 0.0)))
-	_parallax.scroll_to(BG_INIT_OFFSET, 0.0)   # 源 create:1067 setbgOffset(bgOffset=-300) → refreshMapPos clamp 到 [_map_min_x, 212]
+	_parallax.scroll_to(BG_INIT_OFFSET, 0.0)   # refreshMapPos clamp 到 [_map_min_x, 212]
 	for e in MainSceneEntries.ENTRIES:
 		_entry_host(int(e.get("parent", 1))).add_child(_make_entry(e))
-	_add_lightning(_containers.top)   # 照源 createMainFca lightning 加 topContainer
+	_add_lightning(_containers.top)   # lightning 装饰加 topContainer
 
 
-# 按钮挂载容器（照源 main.lua:62-68 p_container = [top, middle, bottom, sub]，parent_index 1-4）。
+# 按钮挂载容器（p_container = [top, middle, bottom, sub]，parent_index 1-4）。
 func _entry_host(parent_index: int) -> Control:
 	match parent_index:
 		2:
@@ -193,7 +167,7 @@ func _entry_host(parent_index: int) -> Control:
 			return _containers.top
 
 
-# 拖拽输入（照源 doDragMapTouch:116-178）。press→begin+记速基准 / move→top.x+=delta+速度 / release→惯性 end。
+# 拖拽输入（doDragMapTouch）。press→begin+记速基准 / move→top.x+=delta+速度 / release→惯性 end。
 func _on_map_gui_input(event: InputEvent) -> void:
 	if _parallax == null:
 		return
@@ -213,7 +187,7 @@ func _on_map_gui_input(event: InputEvent) -> void:
 		var dt: float = (now - _drag_last_time) / 1000000.0
 		var dx: float = cur_x - _drag_last_x
 		if dt > 0.0:
-			_drag_velocity = dx / dt   # 源 speed = mdx/dt（像素/秒）
+			_drag_velocity = dx / dt   # 像素/秒
 		_parallax.on_drag_moved(dx)
 		_drag_last_x = cur_x
 		_drag_last_time = now
@@ -242,7 +216,7 @@ func _make_entry(e: Dictionary) -> Button:
 	return MainButtonFactory.make_entry(e_resolved, _on_entry_pressed.bind(String(e["id"])), is_locked)
 
 
-# 源 playerlimit.checkAreaUnlock：功能是否已解锁（team_level 达 PlayerLevel.Unlock 阈值）。
+# 功能是否已解锁（team_level 达 PlayerLevel.Unlock 阈值）。
 func _is_unlocked(key: StringName) -> bool:
 	if GameData.config == null:
 		return true   # 测试/未就绪默认解锁（避阻塞）
@@ -262,40 +236,40 @@ func _build_status_bar() -> void:
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	bar.custom_minimum_size = Vector2(0, BAR_H)
 	bar.mouse_filter = Control.MOUSE_FILTER_PASS
-	# 源 statusbar 透明叠加 mainLayer（无整体背景图，只 number_bg 局部），露 grass/mountain。
+	# statusbar 透明叠加（无整体背景图，只 number_bg 局部），露 grass/mountain。
 	# Panel 默认 StyleBox 灰底 → 改透明（map 已延伸到顶，露 mountain 天）。
 	bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(bar)
 	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self), _open_midas, GameData.player, GameData.config)
-	# 每日签到入口按钮（照源 statusbar.lua:403-410 dailylogin 按钮 clickHandler→showDailyLogin）。
+	# 每日签到入口按钮（dailylogin 按钮 clickHandler→showDailyLogin）。
 	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
-	dl_btn.pressed.connect(_open_daily_login)
+	dl_btn.pressed.connect(func() -> void: MainSceneEntryRouter.open_daily_login(self))
 	add_child(dl_btn)
 
 
-## 右侧 shortcut 快捷栏抽屉（照源 ui/shortcut.lua + framework.lua scCreateBoard/scCreateButtons）。
+## 右侧 shortcut 快捷栏抽屉（scCreateBoard/scCreateButtons）。
 ## 常驻 UI：5 按钮（heroPackage/package/fragment/task/todoList）竖排 + 切换按钮 + 展开收起动画。
 func _build_shortcut() -> void:
 	var shortcut := ShortcutPanel.new()
-	shortcut.setup_panel(true)   # 照源 isShortcutOpen = identity=="main"（主界面默认展开）
+	shortcut.setup_panel(true)   # 主界面默认展开
 	shortcut.open_requested.connect(_on_shortcut_open)
 	add_child(shortcut)
 
 
-## shortcut 按钮路由（照源 framework.lua:556-658 getSCButtonTouchHandler）。
-## package/fragment→PackagePanel / heroPackage→hero_scene / task·todoList 桩（源场景未复刻）。
+## shortcut 按钮路由（getSCButtonTouchHandler）。
+## package/fragment→PackagePanel / heroPackage→hero_scene / task·todoList 桩。
 func _on_shortcut_open(key: String) -> void:
 	match key:
 		"package":
-			_open_package("package")
+			MainSceneEntryRouter.open_package(self, "package")
 		"fragment":
-			_open_package("fragment")
+			MainSceneEntryRouter.open_package(self, "fragment")
 		"heroPackage":
 			_open_hero()
 		"task":
-			_open_task()
+			MainSceneEntryRouter.open_task(self)
 		"todoList":
-			Toast.show_message("「每日任务」待实现（源 dailyjob）")
+			Toast.show_message("「每日任务」待实现")
 		_:
 			pass
 
@@ -306,10 +280,9 @@ func _refresh_status() -> void:
 	MainStatusBar.refresh(_status_refs, p.team_level, p.hero_manager.gold, p.diamond, p.vitality, p.vitality_max, p.player_name, p.vip_level, p.avatar)
 
 
-## 体力加号（照源 statusbar.lua:59-68 vitality_add_icon→showHandyDialog("buyVitality")）。
-## 源弹 HandyDialog 确认框，单机化降级为直接买 + Toast（同项目 showHandyDialog→Toast 先例）。
-## 先 can_buy_vitality 查 VIP 当日上限（源 dialog.lua:498 canBuyVitality→needHighervip 分支），
-## 再 buy_vitality 扣 50 钻 +120 体力（源 handler :1794，钻石不足返 false）。
+## 体力加号（vitality_add_icon→showHandyDialog("buyVitality")）。
+## 单机化降级为直接买 + Toast（同项目 showHandyDialog→Toast 先例）。
+## 先 can_buy_vitality 查 VIP 当日上限，再 buy_vitality 扣 50 钻 +120 体力（钻石不足返 false）。
 func _on_vitality_plus() -> void:
 	var p: PlayerData = GameData.player
 	if not p.can_buy_vitality():
@@ -321,142 +294,65 @@ func _on_vitality_plus() -> void:
 	else:
 		Toast.show_message("钻石不足")
 
+# 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
 func _open_hero() -> void:
-	SceneManager.change_scene("res://scenes/hero/hero_scene.tscn")
+	MainSceneEntryRouter.open_hero(self)
 
 
-## 头像设置入口（照源 set_avatar handler :1837-1845 配套 UI）。
-func _open_avatar() -> void:
-	var panel := AvatarPanel.new("avatar", {})
-	panel.setup_panel(GameData.player, GameData.config)
-	panel.show_window(self)
-
-
-## 改名入口（照源 set_name handler :1819-1833 配套 UI）。
-func _open_name() -> void:
-	var panel := NameInputPanel.new("name_input", {})
-	panel.setup_panel(GameData.player)
-	panel.show_window(self)
-
-
-## 点石成金入口（照源 statusbar 金币+按钮 doClickMidas → midas 面板）。
+# 薄包装：保 task_query.FAST_ROUTE 反射链 + MainStatusBar.build Callable 不断。
 func _open_midas() -> void:
-	var panel := MidasPanel.new("midas", {})
-	panel.setup_panel(GameData.player)
-	panel.show_window(self)
-
-
-## 装备强化入口（照源 ui/main.lua:1424-1434 estren → pushScene equipstrengthen.create）。
-## 源面板自带英雄选择流程（select_hero 按钮触发 doChangeHero:1720 → selectwindow 基建），
-## 本项目单机化裁剪该流程（selectwindow 缺失），从 player team 第一个英雄作默认 hero 进面板
-## （恢复源"入口直接可达"语义，不依赖 HeroDetail 进）。hero_manager.get_hero 照 player_data.team 阵容。
-func _open_equip_strengthen() -> void:
-	var p: PlayerData = GameData.player
-	if p.team.is_empty():
-		Toast.show_message("阵容为空，无法进入装备强化")
-		return
-	var hero: HeroInstance = p.hero_manager.get_hero(p.team[0])
-	if hero == null:
-		Toast.show_message("英雄不存在")
-		return
-	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
-	panel.setup_panel(hero, GameData.config, p)
-	panel.show_window(self)
-
-
-## 每日登录奖励入口（照源 ask_daily_login :2096 + login 后自动弹，本项目按钮入口）。
-func _open_daily_login() -> void:
-	var panel := DailyLoginPanel.new("daily_login", {})
-	panel.setup_panel(GameData.player)
-	panel.show_window(self)
-
-
-## 图鉴入口（第九轮 P1-B2 用户决策 B：title 已改「图鉴」对齐行为；源该按钮=公会联机，单机化自建图鉴入口，图标借公会建筑待补）。handbook_manager 已挂 PlayerData。
-func _open_handbook() -> void:
-	var panel := HandbookPanel.new("handbook", {})
-	panel.setup_panel(GameData.player)
-	panel.show_window(self)
-
-
-## 日常任务入口（照源 job_rewards handler :4071-4110 配套 UI）。
-func _open_task() -> void:
-	var tm := TaskManager.new()
-	var panel := TaskPanel.new("task", {})
-	panel.setup_panel(GameData.player, GameData.config, tm)
-	panel.show_window(self)
-
-
-## 排行榜入口（照源 query_ranklist/top_arena :2227-2368 单机 NPC 假榜，P1-2 修正非联机裁剪）。
-## ladder 完整 PVP 战斗（:3116-3666）留专项；当前展示 NPC 假榜 + 玩家 rank。
-func _open_ranklist(rank_type: String) -> void:
-	var rm := RanklistManager.new()
-	var panel := RanklistPanel.new("ranklist", {})
-	panel.setup_panel(GameData.player, rm, rank_type)
-	panel.show_window(self)
-
-
-## 背包入口（照源 framework shortcut package/fragment 按钮 → ed.ui.package.create(identity)）。
-## 第 25 段起由 ShortcutPanel.open_requested 路由调用。
-func _open_package(panel_identity: String) -> void:
-	var panel := PackagePanel.new(panel_identity, {})
-	panel.setup_panel(GameData.config, GameData.player)
-	panel.show_window(self)
+	MainSceneEntryRouter.open_midas(self)
 
 func _on_entry_pressed(entry_id: String) -> void:
-	# 源 main.lua:1306 getAreaUnlockPrompt：未解锁入口点击提示文案，不进功能。
+	# 未解锁入口点击提示文案，不进功能。
 	var entry: Dictionary = _find_entry(entry_id)
 	if entry.has("unlock") and not _is_unlocked(StringName(entry["unlock"])):
 		var fl := FeatureLimit.new(GameData.config)
 		var prompt: String = fl.get_area_unlock_prompt(StringName(entry["unlock"]), GameData.player.team_level)
 		Toast.show_message(prompt if prompt != "" else "功能未解锁")
 		return
-	# 路由照源 getMainButtonHandler（main.lua:1328-1514）。联机玩法（pvp/handbook/volcano/ranklist）单机裁剪。
+	# 入口路由（联机玩法 pvp/handbook/volcano/ranklist 单机裁剪）。
 	match entry_id:
 		"pve":
-			_open_stage_select()              # 源 :1340 stageselect.create
+			_open_stage_select()
 		"tavern":
-			_open_tavern()                    # 源 :1435 tavern.create
+			_open_tavern()
 		"volcano":
-			_open_crusade()                   # 源 :1469 tbc/crusade 联机 → 单机 CrusadePanel
+			_open_crusade()
 		"shop":
-			_open_shop(1)                     # 源 :1366 shop.create()
+			MainSceneEntryRouter.open_shop(self, 1)
 		"sshop":
-			_open_shop(2)                     # 源 :1382 shop.create(2) 地精商人
+			MainSceneEntryRouter.open_shop(self, 2)
 		"ssshop":
-			_open_shop(3)                     # 源 :1394 shop.create(3) 黑市商人
+			MainSceneEntryRouter.open_shop(self, 3)
 		"starshop":
-			_open_star_shop()                 # 源 :1406 shop.create("starshop")
+			MainSceneEntryRouter.open_star_shop(self)
 		"defence":
-			_open_exercise_panel()            # 源 :1329 exercise.create("em") → 弹试炼入口选择
+			_open_exercise_panel()
 		"exercise":
-			_open_exercise_panel()            # 源 :1447 exercise.create("equip") → 弹试炼入口选择
+			_open_exercise_panel()
 		"estren":
-			_open_equip_strengthen()                   # 源 ui/main.lua:1424-1434 pushScene equipstrengthen.create
+			MainSceneEntryRouter.open_equip_strengthen(self)
 		"mailbox":
-			_open_mailbox()                                # 源 :1458 mailbox.create
+			MainSceneEntryRouter.open_mailbox(self)
 		"handbook":
-			_open_handbook()                                # 第九轮 P1-B2：图鉴入口（源 :1413 guild 联机→自建图鉴面板）
+			MainSceneEntryRouter.open_handbook(self)   # 第九轮 P1-B2：图鉴入口（自建图鉴面板）
 		"excavate":
-			_open_excavate()                                # 源 :1483 excavate.initialize
+			MainSceneEntryRouter.open_excavate(self)
 		"pvp":
-			_open_ladder()                        # 源 :1354 ladder → 单机 NPC PVP（完整 ladder handler）
+			_open_ladder()
 		"ranklist":
-			_open_ranklist("top_gs")              # 源 :1492 ranklist → 单机 NPC 假榜
+			MainSceneEntryRouter.open_ranklist(self, "top_gs")
 		_:
 			Toast.show_message("「%s」入口待补" % entry_id)
 
 
-## 战役入口（照源 pve → stageselect.create）：选关 → battle_scene → 结算。
+# 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
 func _open_stage_select() -> void:
-	var mgr := GameData.player.stage_manager
-	var rng := BattleRng.new(randi())
-	var panel := StageSelectPanel.new("stageselect", {})
-	panel.setup_panel(mgr, GameData.player, rng)
-	panel.show_window(self)
+	MainSceneEntryRouter.open_stage_select(self)
 
 
-## 装备合成获取途径跳转（照源 doClickGetWay :77-89 → stageselect.createByStage(id)）。
-## 由 HeroDetailEquipSlots.on_equip_craft_jump 经 get_tree().current_scene 调用（跳转链避究长 signal 转发）。
+# 装备合成获取途径跳转：由 HeroDetailEquipSlots.on_equip_craft_jump 经 get_tree().current_scene 反射调（名字不可改）。
 func open_stage_select_by_stage(stage_id: int) -> void:
 	var mgr := GameData.player.stage_manager
 	var rng := BattleRng.new(randi())
@@ -465,66 +361,21 @@ func open_stage_select_by_stage(stage_id: int) -> void:
 	panel.show_window(self)
 
 
-## 酒馆入口（照源 tavern → tavern.create）：抽卡面板。
+# 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
 func _open_tavern() -> void:
-	var panel := TavernPanel.new("tavern", {})
-	panel.setup_panel(GameData.player, BattleRng.new(randi()))
-	panel.show_window(self)
+	MainSceneEntryRouter.open_tavern(self)
 
 
-## 远征入口（照源 volcano → crusade；单机化无 tbc 网络，CrusadeManager 程序生成数据）。
+# 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
 func _open_crusade() -> void:
-	var panel := CrusadePanel.new("crusade", {})
-	panel.setup_panel(GameData.player, BattleRng.new(randi()))
-	panel.show_window(self)
+	MainSceneEntryRouter.open_crusade(self)
 
 
-## 商店入口（照源 main.lua:1366/1382 shop.create(id)；shop→id=1 普通商人 / goblin→id=2 地精商人）。
-## ShopManager 持商品状态，ShopPanel 持 mgr 引用随面板生命周期存活。
-func _open_shop(shop_id: int) -> void:
-	var mgr := ShopManager.new(GameData.config)
-	var panel := ShopPanel.new("shop", {})
-	panel.setup_panel(shop_id, mgr, GameData.player, BattleRng.new(randi()))
-	panel.show_window(self)
-
-
-## 星际商店入口（照源 main.lua:1406 shop.create("starshop")；灵魂石货币 8/9/10 + box 产出 equip）。
-func _open_star_shop() -> void:
-	var mgr := ShopManager.new(GameData.config)
-	var panel := StarShopPanel.new("starshop", {})
-	panel.setup_panel(mgr, GameData.player, BattleRng.new(randi()))
-	panel.show_window(self)
-
-
-func _open_exercise_panel() -> void:  # 源 exercise.lua createExerciseButton 7 入口
-	var panel := ExercisePanel.new()
-	panel.set_entry_callback(_open_dungeon_groups)
-	add_child(panel)
-
-func _open_dungeon_groups(mode: String, groups: Array) -> void:
-	var gi: Array[int] = []
-	for g in groups: gi.append(int(g))
-	var panel := DungeonMapPanel.new("dungeonMap", {})
-	panel.setup_panel(GameData.player, GameData.player.stage_manager, BattleRng.new(randi()), mode, gi); panel.show_window(self)
-
-## 信箱入口（照源 main.lua:1458 mailbox.create → MailPanel 列表）。
-func _open_mailbox() -> void:
-	var panel := MailPanel.new("mailbox", {})
-	panel.setup_panel(GameData.player)
-	panel.show_window(self)
-
-
-## 藏宝地穴入口（照源 main.lua:1483 excavate.initialize + entry:284）。
-## excavate_data 空 → ExcavateSearchPanel；非空 → ExcavateMapPanel。
-func _open_excavate() -> void:
-	if GameData.player.excavate.get_data_list().is_empty():
-		var sp := ExcavateSearchPanel.new("excavate", {})
-		sp.setup_panel(GameData.player, BattleRng.new(randi()))
-		sp.show_window(self)
-	else:
-		var mp := ExcavateMapPanel.new("excavate_map", {})
-		mp.setup_panel(GameData.player, BattleRng.new(randi()))
-		mp.show_window(self)
+# 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
+# _open_dungeon_groups 由 ExercisePanel entry_callback 反射调，转给 helper。
+func _open_exercise_panel() -> void:
+	MainSceneEntryRouter.open_exercise_panel(self, func(m: String, g: Array) -> void:
+		MainSceneEntryRouter.open_dungeon_groups(self, m, g))
 
 
 func _on_data_changed(_scope: StringName) -> void:
