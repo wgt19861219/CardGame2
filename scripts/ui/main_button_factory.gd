@@ -34,9 +34,8 @@ static func make_entry(e: Dictionary, on_pressed: Callable, is_locked: bool) -> 
 	var touch: Array = e.get("touch", [0, 0])
 	btn.touch_center = Vector2(float(touch[0]), float(touch[1]))
 	# flat 透明底（照源 main_scene 无按钮底纹，icon=Spine，title=独立 TextureRect）
-	btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	btn.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	btn.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	# 走 GhostButton 变体（default_theme.tres：normal/hover/pressed/focus 全 StyleBoxEmpty）
+	btn.theme_type_variation = &"GhostButton"
 	if is_locked:
 		btn.modulate.a = LOCKED_ALPHA
 	btn.pressed.connect(on_pressed)
