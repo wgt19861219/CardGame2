@@ -13,26 +13,24 @@ extends Control
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_overfull_popup_content.tscn")
 # 测试用：frame 贴图路径（_has_tex 递归扫 TextureRect.resource_path 比对）。
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/common/common_alert_bg.png"
-# 源 overfull.lua:68-70 4 列 / createIconWithAmount(id, 60) ≈ 60/72。
 const GRID_COLS: int = 4
 const ICON_SCALE: float = 0.85
-# 源 uieditor/mailoverfull.lua:16/21/41/47 sell_number_button capInsets 15.63,15.63,19.53,15.63 + 浅金 ccc3(239,230,209)。
 const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
 const BTN_LABEL_COLOR: Color = Color(239.0 / 255.0, 230.0 / 255.0, 209.0 / 255.0)
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
-const LSTR_TITLE_KEY: String = "mailoverfull.1.10.1.003"   # 源 uieditor/mailoverfull.lua:106
+const LSTR_TITLE_KEY: String = "mailoverfull.1.10.1.003"
 const TITLE_FALLBACK: String = "超额提醒"
-const LSTR_DESC1_KEY: String = "overfull.1.10.1.001"       # 源 overfull.lua:43
+const LSTR_DESC1_KEY: String = "overfull.1.10.1.001"
 const DESC1_FALLBACK: String = "部分道具将超出可携带上限(999个)。如果强行领取，将损失超出的道具。"
-const LSTR_DESC2_KEY: String = "overfull.1.10.1.002"       # 源 overfull.lua:58
+const LSTR_DESC2_KEY: String = "overfull.1.10.1.002"
 const DESC2_FALLBACK: String = "超出："
-const LSTR_DESC3_KEY: String = "overfull.1.10.1.003"       # 源 overfull.lua:91
+const LSTR_DESC3_KEY: String = "overfull.1.10.1.003"
 const DESC3_FALLBACK: String = "是否继续领取？"
-const LSTR_LEFT_KEY: String = "mailoverfull.1.10.1.001"    # 源 uieditor:20
+const LSTR_LEFT_KEY: String = "mailoverfull.1.10.1.001"
 const LEFT_FALLBACK: String = "强行领取"
-const LSTR_RIGHT_KEY: String = "mailoverfull.1.10.1.002"   # 源 uieditor:46
+const LSTR_RIGHT_KEY: String = "mailoverfull.1.10.1.002"
 const RIGHT_FALLBACK: String = "稍后领取"
 
 signal confirmed
@@ -41,7 +39,6 @@ var _items: Array = []
 var _cm: Variant
 
 
-# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = GameData.config
 	if cfg != null:
@@ -81,7 +78,6 @@ func _build_content() -> void:
 	right_btn.pressed.connect(_close)
 
 
-# 源 overfull.lua:67-84 溢出物品 4 列网格（createIconWithAmount(id, 60, amount)）。
 # grid 创建后插到 vbox 的 desc2(idx=1) 和 desc3(idx=2) 之间（move_child 到 idx=2，保持源 ChaosNode 垂直顺序）。
 func _build_grid(vbox: VBoxContainer) -> void:
 	var grid: GridContainer = GridContainer.new()
@@ -101,7 +97,6 @@ func _build_grid(vbox: VBoxContainer) -> void:
 	vbox.move_child(grid, 2)   # 插到 desc2(1) 和 desc3(2) 之间
 
 
-# 源 overfull.lua:10-16 left_button clickHandler → leftCallback（继续领取）+ destroy。
 func _on_left() -> void:
 	emit_signal("confirmed")
 	_close()

@@ -8,7 +8,6 @@ extends PopWindow
 ## 重构（2026-07-18，hero_detail 范式）：chrome（frame/title_bg/title/body/from/split/ok）静态化进
 ## scenes/ui/mail_detail_content.tscn（位置/size 编辑器可视化调）；附件区（attach_bg/currency/items）
 ## 数量随邮件变，保留 procedural 挂 %AttachHost（pos=0,0 保持 frame 局部坐标系不变）。
-## 源 cocos(800×480 左下) → Godot(960×640 左上)：纹理显示=纹理/CS（源 hello.lua:311
 ## setContentScaleFactor(615/480)=1.28125，无 fix 时），frame size/位置已预计算固化进 .tscn。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_detail_content.tscn")
@@ -23,25 +22,25 @@ const CURRENCY_ICONS: Dictionary = {
 	"SkillPoint": "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png",
 }
 const GOLD_ICON: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
-const ITEM_ICON_COLS: int = 4   # 源 createItemAttach :140 4 列网格
-const ITEM_ICON_SIZE: float = 65.0  # 源 :137 icon_len=65
+const ITEM_ICON_COLS: int = 4
+const ITEM_ICON_SIZE: float = 65.0
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
-const LSTR_ATTACH_KEY: String = "MAILBOX.ATTACHMENTS_"   # 源 content.lua:239
+const LSTR_ATTACH_KEY: String = "MAILBOX.ATTACHMENTS_"
 const ATTACH_FALLBACK: String = "附件"
-const LSTR_CLAIM_KEY: String = "MAILBOX.CLAIM"           # 源 content.lua:463
+const LSTR_CLAIM_KEY: String = "MAILBOX.CLAIM"
 const CLAIM_FALLBACK: String = "领取"
-const LSTR_CLOSE_KEY: String = "MAILBOX.CLOSE"           # 源 content.lua:463
+const LSTR_CLOSE_KEY: String = "MAILBOX.CLOSE"
 const CLOSE_FALLBACK: String = "关闭"
-const BODY_FONT: int = 16               # 源 createBody:56 / createFrom:106 / attach head
+const BODY_FONT: int = 16
 # P1-4：照源 content.lua 装饰背景 + 文字颜色（ccc3→from_rgba8 忠实 0-255 色值）
-const ATTACH_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_addon_bg.png"  # 源 createAttach:226
+const ATTACH_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_addon_bg.png"
 # title_bg 装饰背景路径（测试引用）；纹理已静态化进 .tscn TitleBg。
 const TITLE_BG_TEX: String = "res://assets/ui/alpha/HVGA/equip_craft_money_bg.png"
-const ATTACH_TITLE_COLOR: Color = Color(152.0 / 255.0, 98.0 / 255.0, 34.0 / 255.0)  # 源 createAttach:247
-const AMOUNT_COLOR: Color = Color(129.0 / 255.0, 61.0 / 255.0, 22.0 / 255.0)      # 源 createCommonAttach:206
-const CURRENCY_ICON_H: float = 25.0  # 源 createCommonAttach:188 fix_height=25
-const AMOUNT_FONT: int = 18               # 源 createCommonAttach:195 amount size=18
-const ATTACH_BG_W: float = 300.0     # 源 createAttach:273 setContentSize width=300
+const ATTACH_TITLE_COLOR: Color = Color(152.0 / 255.0, 98.0 / 255.0, 34.0 / 255.0)
+const AMOUNT_COLOR: Color = Color(129.0 / 255.0, 61.0 / 255.0, 22.0 / 255.0)
+const CURRENCY_ICON_H: float = 25.0
+const AMOUNT_FONT: int = 18
+const ATTACH_BG_W: float = 300.0
 # 附件区起始 y（源 _add_content 计算：from y=150 + 30 + split 后 24 = 204，frame 局部）。
 const ATTACH_TOP_Y: float = 204.0
 
@@ -52,7 +51,6 @@ var _on_closed: Callable
 var _attach_host: Control = null   # .tscn %AttachHost（附件区动态挂）
 
 
-# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = GameData.config
 	if cfg != null:
@@ -112,7 +110,7 @@ func _add_attach() -> void:
 	head.add_theme_color_override("font_color", ATTACH_TITLE_COLOR)
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_attach_host.add_child(head)
-	var cy: float = y + 30.0   # 源 :252 y=y-30
+	var cy: float = y + 30.0
 	# 货币附件（源 createCommonAttach :162-214，遍历 attach_common 按 type 查 CURRENCY_ICONS）
 	for entry in _mail.get("attach_common", []):
 		var ctype: String = str(entry.get("type", ""))
@@ -125,10 +123,9 @@ func _add_attach() -> void:
 	var items: Array = _mail.get("items", [])
 	if not items.is_empty():
 		cy = _add_item_attach(cy, items)
-	attach_bg.size = Vector2(ATTACH_BG_W, cy - top_y)   # 源 :273 bh=oy-y
+	attach_bg.size = Vector2(ATTACH_BG_W, cy - top_y)
 
 
-# 源 createItemAttach :135-160：4 列装备网格（readequip.createIconWithAmount）。
 func _add_item_attach(y: float, items: Array) -> float:
 	for i in range(items.size()):
 		var item: Dictionary = items[i]
@@ -139,7 +136,7 @@ func _add_item_attach(y: float, items: Array) -> float:
 		var col: int = i % ITEM_ICON_COLS
 		var row: int = int(i / ITEM_ICON_COLS)
 		var icon: Control = ReadequipIcon.create_icon(item_id, amount, pd.cm)
-		icon.scale = Vector2(0.85, 0.85)  # 源 :150 createIcon(id, 60) 缩放到 60/72≈0.85
+		icon.scale = Vector2(0.85, 0.85)
 		icon.position = Vector2(34.0 + float(col) * ITEM_ICON_SIZE, y + float(row) * ITEM_ICON_SIZE)
 		_attach_host.add_child(icon)
 	var rows: int = ceili(float(items.size()) / float(ITEM_ICON_COLS))
@@ -150,20 +147,20 @@ func _add_currency(y: float, icon_path: String, amount: int) -> float:
 	var icon := TextureRect.new()
 	icon.texture = load(icon_path)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.size = Vector2(CURRENCY_ICON_H, CURRENCY_ICON_H)   # 源 :188 fix_height=25
-	icon.position = Vector2(40, y)   # 源 :186 ccp(40, y)
+	icon.size = Vector2(CURRENCY_ICON_H, CURRENCY_ICON_H)
+	icon.position = Vector2(40, y)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_attach_host.add_child(icon)
 	var lbl := Label.new()
 	lbl.text = "x%d" % amount
-	lbl.position = Vector2(40.0 + CURRENCY_ICON_H + 8.0, y)   # 源 right2 icon offset 20
+	lbl.position = Vector2(40.0 + CURRENCY_ICON_H + 8.0, y)
 	lbl.size = Vector2(100, CURRENCY_ICON_H)
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font", AMOUNT_FONT)   # 源 :195 size=18
-	lbl.add_theme_color_override("font_color", AMOUNT_COLOR)   # 源 :206 ccc3(129,61,22)
+	lbl.add_theme_font_size_override("font", AMOUNT_FONT)
+	lbl.add_theme_color_override("font_color", AMOUNT_COLOR)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_attach_host.add_child(lbl)
-	return y + 30.0   # 源 :211 y=y-30
+	return y + 30.0
 
 
 # ok（照 doClickRead:483 + doReadMail:494-531）：未读+附件 → claim（+overfull 检查）；未读无附件 → mark_read+erase；已读 → 关闭。
@@ -176,7 +173,6 @@ func _on_ok() -> void:
 	if is_unread and has_attach:
 		var overfull: Array = _check_overfull()
 		if not overfull.is_empty():
-			# 源 :525-531 ed.ui.mailoverfull.pop（leftCallback → doRead 领取）
 			var popup := MailOverfullPopup.new()
 			popup.setup(overfull, pd.cm)
 			popup.confirmed.connect(_on_overfull_confirmed)
@@ -184,7 +180,6 @@ func _on_ok() -> void:
 			return
 		_claim_and_close()
 	elif is_unread:
-		# 源 read_mail handler :2755-2760 未读邮件点 ok 后从 mails 移除（不论有无附件）。
 		# claim_attach 内已 erase（未读+附件分支），此处未读无附件分支照源补 erase。
 		pd.mailbox.mark_read(_mail_id)
 		pd.mailbox.erase_mail(_mail_id)
@@ -203,7 +198,7 @@ func _check_overfull() -> Array:
 		if item_id == 0:
 			continue
 		var cur: int = int(pd.items.get(item_id, 0))
-		var da: int = cur + amount - PlayerData.MAX_ITEMS_PER_SLOT   # 源 :517 da=ca+amount-max
+		var da: int = cur + amount - PlayerData.MAX_ITEMS_PER_SLOT
 		if da > 0:
 			overfull.append({"id": item_id, "amount": da})
 	return overfull
@@ -216,7 +211,7 @@ func _on_overfull_confirmed() -> void:
 
 func _claim_and_close() -> void:
 	pd.mailbox.claim_attach(_mail_id, pd)
-	GameData.mark_save_dirty()   # 照源 local_server:4327/4480 邮件领奖脏标（60s/退出刷）
+	GameData.mark_save_dirty()
 	_close()
 
 

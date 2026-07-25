@@ -13,29 +13,24 @@ extends Control
 ##   "crusade"（源 crusade.lua:434-438 start() 传 mode=crusade + heroLimit level=20）=
 ##     同步跑 mgr.run_crusade_battle + emit crusade_battle_finished（crusade_panel 接回刷新）。
 
-# 源 :7 min_crusade_level = 20（crusade 模式 heroLimit detail）。crusade 战斗结束（同步）回调上层刷新。
 signal crusade_battle_finished(won: bool, stage: int)
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/battle_prepare_content.tscn")
 const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
-const TEAM_MAX: int = 5  # 源 :171 addTeamMember 上限校验
+const TEAM_MAX: int = 5
 
 const TAB_ALL: String = "all"
 const TAB_FRONT: String = "front"
 const TAB_MIDDLE: String = "middle"
 const TAB_BACK: String = "back"
 
-# 源 classbtn/classbtnselected 双态图（battleprepare.lua:1844/1857）。整图非 Scale9，Godot 用
 # StyleBoxTexture content_margin=0 让 Button 直接贴图（视觉等价纯 Sprite，源 doChangeListTouch :1216 切 visible）。
 const TAB_N_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
-# 源 goButton/goPressButton（:1786-1787）普通模式 prepare_go_battle（pvp defend 才用 pvp_button_confirm）。
 const GO_N_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle.png"
 const GO_P_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle_press.png"
-# 源 doChangeListTouch:1200-1229 选中态切色：选中 ccc3(230,190,76) 金黄 / 未选 ccc3(196,187,170) 浅灰棕。
 const TAB_FONT_COLOR_SELECTED: Color = Color(0.902, 0.745, 0.298)
 const TAB_FONT_COLOR_UNSELECTED: Color = Color(0.769, 0.733, 0.667)
-# 源 fontconfigs.lua:23-31 ui_normal_button override：shadow ccc3(42,31,22) 深棕（非默认 63,5,0 深红）/ offset (0,2) / size 20。
 const TAB_SHADOW_COLOR: Color = Color(0.165, 0.122, 0.086)
 const TAB_SHADOW_OFFSET_Y: int = 2
 const TAB_FONT_SIZE: int = 20
@@ -53,18 +48,18 @@ const LSTR_TAB_ALL: String = "BATTLEPREPARE.WHOLE"
 const LSTR_TAB_FRONT: String = "UNIT.FRONT_ROW"
 const LSTR_TAB_MIDDLE: String = "UNIT.MIDDLE_ROW"
 const LSTR_TAB_BACK: String = "UNIT.REAR_ROW"
-const LSTR_COMBAT: String = "BATTLEPREPARE.COMBAT"     # 源 gs_title「战斗力」标题
-const LSTR_CONFIRM: String = "CHATCONFIG.CONFIRM"       # 源 conform 开始战斗按钮
-const LSTR_NOTENOUGH: String = "BATTLEPREPARE.PLEASE_SELECT_BATTLE_HERO"  # 源 :279 toast
-const LSTR_SAME_NAME: String = "BATTLEPREPARE.HEROES_OF_THE_SAME_NAME_CAN_NOT_BE_USED_IN_ONE_FIGHT"  # 源 :743
+const LSTR_COMBAT: String = "BATTLEPREPARE.COMBAT"
+const LSTR_CONFIRM: String = "CHATCONFIG.CONFIRM"
+const LSTR_NOTENOUGH: String = "BATTLEPREPARE.PLEASE_SELECT_BATTLE_HERO"
+const LSTR_SAME_NAME: String = "BATTLEPREPARE.HEROES_OF_THE_SAME_NAME_CAN_NOT_BE_USED_IN_ONE_FIGHT"
 
 var stage_id: int = 0
 var player: Variant = null
 var mgr: Variant = null
 var rng: Variant = null
 var cm: Variant = null
-var mode: String = "stage"      # 源 :1746 self.mode = info.mode（"stage" 默认 / "crusade"）
-var min_level: int = 0          # 源 :7 min_crusade_level=20 + :1737 heroLimit（crusade 模式等级过滤）
+var mode: String = "stage"
+var min_level: int = 0
 var _heroes_all: Array = []      # 全部可选英雄 [{inst_id, tid, pos_type, max_range}]
 var _heroes_filtered: Array = [] # 当前 tab 过滤后
 var _team: Array = []            # 已上阵 [{inst_id, tid, max_range}]（按 maxRange 降序）
@@ -77,7 +72,6 @@ var _tab_buttons: Dictionary = {}   # tab_key → Button（源 listButton/listBu
 var _tab_labels: Dictionary = {}    # tab_key → Label（独立 Label 子节点，Button.text 内嵌 label 受 stylebox 干扰）
 
 
-# 源 battleprepare.lua:1730-1756 create(info)：info.mode/info.heroLimit 透传面板。
 # p_mode/p_min_level 可选（默认 "stage" + 0 = 不限等级），向后兼容 stage_detail_panel 5 参数调用。
 func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant, p_mode: String = "stage", p_min_level: int = 0) -> void:
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
@@ -94,7 +88,6 @@ func _build_content() -> void:
 	var content := CONTENT_SCENE.instantiate()
 	add_child(content)
 	_list_grid = content.get_node("%ListGrid") as GridContainer
-	# 源 :1843-2065 4 classbtn（all/front/middle/back）+ classbtnselected 双态 + Label。
 	_tab_buttons = {
 		TAB_ALL: content.get_node("%TabAllBtn") as Button,
 		TAB_FRONT: content.get_node("%TabFrontBtn") as Button,
@@ -110,19 +103,15 @@ func _build_content() -> void:
 		_tab_labels[key] = lbl
 		_apply_tab_style(btn, key == _current_tab)
 		btn.pressed.connect(_on_tab_pressed.bind(key))
-	# 源 :2091-2153 5 member_bg（herobucket.png）槽位。
 	_team_slots.clear()
 	for i in range(TEAM_MAX):
 		_team_slots.append(content.get_node("%MemberBg" + str(i + 1)) as TextureRect)
-	# 源 :2253-2279 gs_title + gs（合并单 label，text="战斗力: N"，行为等价原 panel）。
 	_gs_label = content.get_node("%GsLabel") as Label
 	_gs_label.text = "%s: 0" % cm.get_lstr(LSTR_COMBAT)
-	# 源 :2217-2236 go sprite + go_press。本项目 Button + StyleBox（prepare_go_battle 双态纹理）。
 	_go_button = content.get_node("%GoBtn") as Button
 	_go_button.text = cm.get_lstr(LSTR_CONFIRM)
 	_apply_go_style(_go_button)
 	_go_button.pressed.connect(_on_go_pressed)
-	# 源 :1807-1828 back sprite + back_press。.tscn %BackBtn TextureButton 双态纹理。
 	var back_btn: TextureButton = content.get_node("%BackBtn") as TextureButton
 	back_btn.pressed.connect(_on_back_pressed)
 	_refresh_list()
@@ -131,7 +120,6 @@ func _build_content() -> void:
 
 
 # Button 套 StyleBoxTexture（classbtn/classbtnselected 整图，content_margin=0 视觉等价纯贴图）。
-# 源 doChangeListTouch :1216-1237 切 listButtonSelect[k] visible + listLabel color。
 # 选中色 ccc3(230,190,76) 金黄 / 未选 ccc3(196,187,170) 浅灰棕（源 :1200-1229）。
 func _apply_tab_style(btn: Button, selected: bool) -> void:
 	var res_path: String = TAB_A_RES if selected else TAB_N_RES
@@ -165,8 +153,6 @@ static func _make_stylebox(res_path: String) -> StyleBoxTexture:
 	return sb
 
 
-# 源 getInformation L1697-1721 — 读 player.heroes + Unit 表 Position Type + Skill 表 Max Range 分类。
-# 源 :1701-1702 classify("exercise","position",{limit=heroLimit})：crusade 模式 heroLimit level=20
 # 过滤掉 <20 级英雄（:7 min_crusade_level + :962 上阵校验双保险，列表源 :1154 getAllListWithLimit）。
 func _load_hero_list() -> void:
 	_heroes_all.clear()
@@ -177,7 +163,7 @@ func _load_hero_list() -> void:
 	for inst_id in player.hero_manager.heroes:
 		var hero = player.hero_manager.heroes[inst_id]
 		if mode == "crusade" and int(hero.level) < min_level:
-			continue   # 源 :1154 getAllListWithLimit + :962 crusade 等级 <min_crusade_level 不入列表
+			continue
 		var tid: int = int(hero.tid)
 		var unit: Dictionary = unit_table.get(str(tid), {})
 		var pos_raw: String = String(unit.get("Position Type", ""))
@@ -205,7 +191,6 @@ func _refresh_list() -> void:
 		_list_grid.add_child(btn)
 
 
-# 源 doClickInList L999 — 点击列表英雄→上阵/下阵切换。
 func _on_hero_clicked(inst_id: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if _team.any(func(t): return t.inst_id == inst_id):
@@ -214,22 +199,19 @@ func _on_hero_clicked(inst_id: int) -> void:
 		_add_team_member(inst_id)
 
 
-# 源 addTeamMember L731 — 上阵（校验 ≤5 + 同名禁用）。
 func _add_team_member(inst_id: int) -> void:
 	if _team.size() >= TEAM_MAX:
 		return
 	var h: Dictionary = _heroes_all.filter(func(x): return x.inst_id == inst_id)[0]
 	if _team.any(func(t): return t.tid == h.tid):
-		_show_toast(cm.get_lstr(LSTR_SAME_NAME))   # 源 :743 同名禁用 toast
+		_show_toast(cm.get_lstr(LSTR_SAME_NAME))
 		return  # 同名英雄禁用
 	_order_team(h)  # 按 maxRange 插入正确位置
 	_refresh_list(); _refresh_team_display(); _refresh_gs()
 
 
-# 源 orderTeam L667-729 — 按 maxRange 降序插入（maxRange 大的排后面）。
 func _order_team(h: Dictionary) -> void:
 	var entry := {inst_id = h.inst_id, tid = h.tid, max_range = h.max_range}
-	# 源：maxRange > 队尾→append；maxRange <= 队首→insert(0)；否则找到位置插入
 	if _team.size() == 0 or h.max_range > _team[-1].max_range:
 		_team.append(entry); return
 	if h.max_range <= _team[0].max_range:
@@ -240,7 +222,6 @@ func _order_team(h: Dictionary) -> void:
 	_team.append(entry)  # fallback
 
 
-# 源 destroyTeamMember L800 — 下阵。
 func _remove_team_member(inst_id: int) -> void:
 	for i in range(_team.size()):
 		if _team[i].inst_id == inst_id:
@@ -259,7 +240,6 @@ func _refresh_team_display() -> void:
 			slot.add_child(icon)
 
 
-# 源 refreshgs L154 — 总战斗力。
 func _refresh_gs() -> void:
 	var total: int = 0
 	for t in _team:
@@ -268,7 +248,6 @@ func _refresh_gs() -> void:
 	_gs_label.text = "%s: %d" % [cm.get_lstr(LSTR_COMBAT), total]
 
 
-# 源 tab 标签照源 LSTR（:1870 全部 / :1915 前排 / :1960 中排 / :2005 后排）。
 func _tab_label(tab: String) -> String:
 	match tab:
 		TAB_FRONT: return cm.get_lstr(LSTR_TAB_FRONT)
@@ -280,13 +259,11 @@ func _tab_label(tab: String) -> String:
 func _on_tab_pressed(tab: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_current_tab = tab
-	# 源 doChangeList :1198-1201 切 listButtonSelect[preList] invisible / listButtonSelect[id] visible。
 	for key in _tab_buttons:
 		_apply_tab_style(_tab_buttons[key] as Button, key == _current_tab)
 	_refresh_list()
 
 
-# 源 loadTeam L1467 — 读上次阵容自动上阵。
 func _load_default_team() -> void:
 	var loaded: Array[int] = []
 	for inst_id in player.team:
@@ -305,25 +282,21 @@ func _load_default_team() -> void:
 	_refresh_list(); _refresh_team_display(); _refresh_gs()
 
 
-# 源 doClickBack L1239 — 返回。
 func _on_back_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	queue_free()
 
 
-# 源 doGo → requestBattle → doGo L306 — 读阵容→assemble_stage_battle→进 battle_scene。
-# 源 :231-233 crusade 分支：engine:enterCrusade(...)。目标 crusade 模式 mgr.run_crusade_battle
 # 同步跑（不进 battle_scene，照 crusade_panel 既有实现），emit crusade_battle_finished 给 crusade_panel。
 func _on_go_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if _team.size() < TEAM_MAX:
-		# 源 lackHeroConfirm L444 — 不足 5 人确认（降级 OS.confirm 非阻塞式，单机直接继续）
 		pass  # 照源允许不足 5 人开战（确认框降级跳过）
 	var tids: Array[int] = []
 	for t in _team:
 		tids.append(int(t.tid))
 	if tids.is_empty():
-		_show_toast(cm.get_lstr(LSTR_NOTENOUGH))   # 源 :279 请选择出战英雄
+		_show_toast(cm.get_lstr(LSTR_NOTENOUGH))
 		return
 	if mode == "crusade":
 		_run_crusade_go(tids)
@@ -339,10 +312,9 @@ func _on_go_pressed() -> void:
 	SceneManager.change_scene("res://scenes/battle/battle_scene.tscn")
 
 
-# 源 crusade.lua:432 stageId = -2 - currentStage：crusade 标识负数。BattlePreparePanel 收到的是
 # stage_id 负值，run_crusade_battle 需还原 stage 号（1-15）= -stage_id - 2。同步跑 + emit + queue_free。
 func _run_crusade_go(tids: Array[int]) -> void:
-	var stage: int = -stage_id - 2   # 源 crusade.lua:432 stageId = -2 - currentStage 反推
+	var stage: int = -stage_id - 2
 	var r: Dictionary = mgr.run_crusade_battle(stage, player, tids, rng)
 	var won: bool = bool(r.get("won", false))
 	queue_free()

@@ -3,10 +3,9 @@ extends Control
 
 ## 弹窗 MVC 基类（View 层）— 照源 ui/popwindow/popwindow.lua 翻译（Phase 7 起步，2026-07-02）。
 ## Control 全屏 + shade ColorRect（黑半透遮罩）+ container（内容层）+ show/remove + 生命周期回调。
-## 源 ed.ui.popwindow：identity 管理 + window_stack + mainLayer(shade)+registerScriptTouchHandler(swallow) +
 ## onEnterHandlers/onExitHandlers。Godot：shade mouse_filter STOP(swallow)/IGNORE + _enter_tree/_exit_tree。
 
-const DEFAULT_SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)  # 源 ccc4(0,0,0,150)
+const DEFAULT_SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)
 
 var identity: String = ""
 var param: Dictionary = {}
@@ -35,7 +34,6 @@ func setup() -> void:
 	shade_layer.add_child(container)
 
 
-# 源 create + scene:addChild。show_window 挂 parent + 触发 enter handlers。
 func show_window(parent: Node) -> void:
 	if parent == null:
 		return
@@ -46,7 +44,6 @@ func show_window(parent: Node) -> void:
 		h.call()
 
 
-# 源 class.remove（removeFromParentAndCleanup）+ exit handlers。
 func remove_window() -> void:
 	for h in _on_exit_handlers:
 		h.call()
@@ -61,7 +58,6 @@ func register_on_exit(handler: Callable) -> void:
 	_on_exit_handlers.append(handler)
 
 
-# 源 swallow（吞没下层触摸）。shade mouse_filter STOP 吞 / IGNORE 透。
 func set_swallow(swallow: bool) -> void:
 	_swallow = swallow
 	if shade_layer != null:

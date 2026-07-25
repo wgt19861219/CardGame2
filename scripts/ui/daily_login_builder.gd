@@ -7,27 +7,23 @@ extends RefCounted
 ## 重构（2026-07-18，hero_detail 范式）：chrome（frame/title_bg/act_bg/close/title/explain/subhead 3 label/
 ## grid ScrollContainer）静态化进 daily_login_content.tscn，panel 用 preload + get_node("%..")；
 ## 本 builder 仅保留 fill_grid（content + 单格 procedural 挂 %GridScroll）+ 数据查表。
-## 源坐标 cocos(800×480 左下) → godot(960×640 左上)：(cx+80, 560-cy)（在 .tscn 固化，运行时不算）。
 ## 单机化：源 status common/vip（VIP 双倍选项）→ 仅 common（领后 received）；VIP 角标保留装饰。
 
-# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
 const CONTENT_SCALE: float = 1.28125
 const FALLBACK_YEAR: int = 2018
-const COLS: int = 5   # 源 :241 wa=5 五列
-# 源 createRewardItem :231-243 网格（content 内坐标，godot 左上原点）
-const CELL_OX: float = 58.0    # 源 ox=140+58，相对 reward_bg 左上
-const CELL_OY: float = 56.0    # 源 oy=372-56，y 翻转后 56
-const CELL_DX: float = 103.0   # 源 :233 dx
-const CELL_DY: float = 101.0   # 源 :233 dy
-const GRID_PAD_X: float = 12.0   # 源 :393 w=103*5+12
-const GRID_PAD_Y: float = 14.0   # 源 :394 h=101*ha+14
-# 源 createRewardItem board 内偏移（cocos (51,52) 等 → godot board 内左上原点，y 翻转）。
+const COLS: int = 5
+const CELL_OX: float = 58.0
+const CELL_OY: float = 56.0
+const CELL_DX: float = 103.0
+const CELL_DY: float = 101.0
+const GRID_PAD_X: float = 12.0
+const GRID_PAD_Y: float = 14.0
 # board 显示高 101.5 = raw 130 / CONTENT_SCALE 1.28125；y 翻转用 101.5 - cocos_y（非 raw 130）。
-const ICON_CENTER_LOCAL: Vector2 = Vector2(51.0, 49.5)    # 源 icon ccp(51,52), y=101.5-52
-const AMOUNT_LOCAL: Vector2 = Vector2(92.0, 79.5)         # 源 amount ccp(92,22), y=101.5-22
-const VIP_BG_TOPLEFT_LOCAL: Vector2 = Vector2(0.0, -0.5)  # 源 vip_bg ccp(0,102), y=101.5-102
-const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 21.5)        # 源 vipTag ccp(24,80), y=101.5-80
-const LIGHT_CENTER_LOCAL: Vector2 = Vector2(51.0, 51.5)   # 源 light ccp(51,50), y=101.5-50
+const ICON_CENTER_LOCAL: Vector2 = Vector2(51.0, 49.5)
+const AMOUNT_LOCAL: Vector2 = Vector2(92.0, 79.5)
+const VIP_BG_TOPLEFT_LOCAL: Vector2 = Vector2(0.0, -0.5)
+const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 21.5)
+const LIGHT_CENTER_LOCAL: Vector2 = Vector2(51.0, 51.5)
 # 颜色（源 ccc3）
 const AMOUNT_STROKE_COLOR: Color = Color(95.0 / 255.0, 64.0 / 255.0, 43.0 / 255.0)
 const VIP_NUM_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
@@ -44,11 +40,9 @@ const VIP_BG_RES: String = "res://assets/ui/alpha/HVGA/dailylogin/dailylogin_vip
 const LIGHT_RES: String = "res://assets/ui/alpha/HVGA/tavern_get_item_bg_light_orange.png"
 const ICON_DIAMOND_RES: String = "res://assets/ui/alpha/HVGA/task_rmb_icon.png"
 const ICON_GOLD_RES: String = "res://assets/ui/alpha/HVGA/task_gold_icon.png"
-# 源 getRewardData :148-152 icon_res 映射（PlayerEXP 缺 task_exp_icon → 降级 Label）
 const STATIC_ICON_MAP: Dictionary = {"Diamond": ICON_DIAMOND_RES, "Gold": ICON_GOLD_RES}
 
 
-# 源 createList :380-420 + createListLayer :634-652。返 {content, cells}。
 # scroll 由 .tscn 静态化（位置/size 固化），content + cells 动态挂 scroll。
 static func fill_grid(scroll: ScrollContainer, data_list: Array, cell_statuses: Array, cm: Variant) -> Dictionary:
 	var da: int = data_list.size()
@@ -70,14 +64,12 @@ static func fill_grid(scroll: ScrollContainer, data_list: Array, cell_statuses: 
 	return {"content": content, "cells": cells}
 
 
-# 源 createRewardItem :222-378。返 {button, data, day, status}（status 供 panel/测试）。
 static func create_reward_cell(content: Control, day: int, data: Dictionary, status: String, cm: Variant) -> Dictionary:
 	var x: int = (day - 1) % COLS
 	var y: int = int((day - 1) / COLS)
 	var center: Vector2 = Vector2(CELL_OX + CELL_DX * float(x), CELL_OY + CELL_DY * float(y))
 	var board_res: String = MATRIX_YELLOW_RES if status == "common" else MATRIX_RES
 	var board_tex: Texture2D = load(board_res) as Texture2D
-	# 源 dailylogin :254-262 board config={}（纯 Sprite）→ 显示=纹理/CS。
 	var bsz: Vector2 = TexDisplaySize.display_size(board_res) if board_tex != null else Vector2(133.0, 130.0) / CONTENT_SCALE
 	var board := TextureButton.new()
 	board.texture_normal = board_tex
@@ -100,17 +92,16 @@ static func create_reward_cell(content: Control, day: int, data: Dictionary, sta
 	amt_lbl.position = AMOUNT_LOCAL - Vector2(amt_lbl.get_minimum_size().x, amt_lbl.get_minimum_size().y * 0.5)
 	amt_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(amt_lbl)
-	if status == "past":   # 源 :277-294 已领勾
+	if status == "past":
 		_add_image_to_board(board, CHECKED_RES, bsz * 0.5, 10, false)
 	var vip: int = int(data.get("vip", 0))
-	if vip > 0:   # 源 :335-355 VIP 角标
+	if vip > 0:
 		_add_vip_tag(board, vip)
-	if String(data.get("type", "")) == "Hero" and (status == "future" or status == "common"):   # 源 :297-316 光效
+	if String(data.get("type", "")) == "Hero" and (status == "future" or status == "common"):
 		_add_light(board)
 	return {"button": board, "data": data, "day": day, "status": status}
 
 
-# 源 getRewardData :147-181 + getRewardAt :37-54。查 DailyLoginReward 当月 1..N 天。
 static func build_reward_data(cm: Variant) -> Array:
 	var table: Dictionary = cm.get_raw_table(&"DailyLoginReward")
 	var now_dict: Dictionary = Time.get_datetime_dict_from_system()
@@ -140,7 +131,6 @@ static func build_reward_data(cm: Variant) -> Array:
 	return out
 
 
-# 源 getMonthDayAmount :96-108。
 static func month_day_amount(month_data: Dictionary) -> int:
 	var i: int = 1
 	while month_data.has(str(i)) and not String(month_data[str(i)].get("Reward Type", "")).is_empty():
@@ -148,7 +138,6 @@ static func month_day_amount(month_data: Dictionary) -> int:
 	return i - 1
 
 
-# 源 createRewardItem :317-334 icon（Item/Hero→readequip.createIcon；else→静态图）。
 static func _make_reward_icon(data: Dictionary, cm: Variant) -> Control:
 	var type: String = String(data.get("type", ""))
 	var id: int = int(data.get("id", 0))
@@ -170,12 +159,10 @@ static func _make_reward_icon(data: Dictionary, cm: Variant) -> Control:
 	var rect := TextureRect.new()
 	rect.texture = tex
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 createRewardItem :327 ed.createSprite(ires)（task_rmb/gold_icon 无 fix）→ 显示=纹理/CS。
 	rect.size = TexDisplaySize.display_size(res_path)
 	return rect
 
 
-# 源 createvipTag :202-221 + vip_bg。dailylogin_vip_<n>.png 缺 → 降级 vip_bg + Label。
 static func _add_vip_tag(board: TextureButton, vip: int) -> void:
 	_add_image_to_board(board, VIP_BG_RES, VIP_BG_TOPLEFT_LOCAL, 0, true)
 	var num := Label.new()
@@ -190,7 +177,6 @@ static func _add_vip_tag(board: TextureButton, vip: int) -> void:
 	board.add_child(num)
 
 
-# 源 :297-316 Hero 光效 CCRotateBy(5,360) RepeatForever。
 static func _add_light(board: TextureButton) -> void:
 	var tex: Texture2D = load(LIGHT_RES) as Texture2D
 	if tex == null:
@@ -198,7 +184,6 @@ static func _add_light(board: TextureButton) -> void:
 	var light := TextureRect.new()
 	light.texture = tex
 	light.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 :297-311 light config={}（纯 Sprite）→ 显示=纹理/CS。
 	light.size = TexDisplaySize.display_size(LIGHT_RES)
 	light.pivot_offset = light.size * 0.5
 	light.position = LIGHT_CENTER_LOCAL - light.pivot_offset
@@ -233,7 +218,6 @@ static func _add_image_to_board(board: TextureButton, res_path: String, local_po
 	var s := TextureRect.new()
 	s.texture = tex
 	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 checked/vip_bg config={}（:284/:342 纯 Sprite）→ 显示=纹理/CS。
 	var sz: Vector2 = TexDisplaySize.display_size(res_path)
 	s.size = sz
 	s.position = local_pos if is_topleft else (local_pos - sz * 0.5)

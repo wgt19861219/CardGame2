@@ -22,11 +22,9 @@ const TAB_NAMES: Dictionary = {
 }
 # .tscn 5 tab 满集（fragment 隐藏 stone/consume）。
 const TAB_ALL_KEYS: Array[String] = ["all", "equip", "scroll", "stone", "consume"]
-# 源 packageres.list_key name LSTR keys（照源 ui/parameter/packageres.lua:11-30）。
 const TAB_LSTR_KEYS: Array[String] = [
 	"BATTLEPREPARE.WHOLE", "EQUIPCRAFT.GEAR", "EQUIP.REEL", "EQUIP.SOUL_STONE", "EQUIP.CONSUMABLES",
 ]
-# 源 package.lua:378-462 createListButton classbtn/classbtnselected 纹理（同 hero_package tab）。
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 
@@ -34,12 +32,11 @@ const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.pn
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/package_content.tscn")
 
 # ── Scale9 handbook button 样式（.tscn 普通 Button 运行时套 StyleBoxTexture）──
-# 源 createHandbookButton :463-538 sell_number_button Scale9Sprite cap 15,22,15,25。
 const HANDBOOK_BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)
 const HANDBOOK_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const HANDBOOK_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const HANDBOOK_ICON_RES: String = "res://assets/ui/alpha/HVGA/package_handbook_icon.png"
-const HANDBOOK_LABEL_KEY: String = "HERODETAIL.BOOK"   # 源 :514 T(LSTR("HERODETAIL.BOOK"))
+const HANDBOOK_LABEL_KEY: String = "HERODETAIL.BOOK"
 
 signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
 
@@ -57,7 +54,6 @@ var _content: Control = null        # .tscn instantiate 根节点（cleanup 引�
 var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipLayer，点 cell refresh 非重建）
 
 
-# 源 create(identity) + getListData :370-377。identity 从 PopWindow.identity（构造传入）取，
 # 决定 tab 集 + classify 输出取 prop/fragment。调用：PackagePanel.new("package"/"fragment", {}).setup_panel(cm, pd)。
 func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	_identity = identity
@@ -72,14 +68,13 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
-	_create_status_bar()   # 源 framework.create :755 sbCreateTitle common 3 货币条（所有非 main 场景建）
+	_create_status_bar()
 	_select_tab("all")
 	cell_clicked.connect(_on_cell_clicked)
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
 # panel 层从 .tscn instantiate（位置/size 可视化）+ fill 动态数据 + 绑定信号。
-# 源 create :597-685：equipbg Sprite + handbook button + list button + listLayer（draglist）。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
@@ -89,19 +84,16 @@ func _build_content() -> void:
 	_grid = _content.get_node("%Grid") as GridContainer
 
 
-# 源 createHandbookButton :463-538：仅 identity=="package" 建图鉴按钮（fragment 不建）。
 # .tscn %HandbookBtn 常驻，fragment 时 visible=false；package 时套 Scale9 style + fill icon/label。
 func _setup_handbook_button() -> void:
 	var btn: Button = _content.get_node("%HandbookBtn") as Button
 	if _identity != IDENTITY_PACKAGE:
 		btn.visible = false
-		return   # 源 :526 仅 package 建（fragment 不建）
+		return
 	_apply_handbook_style(btn)
-	# 源 :498-509 Sprite package_handbook_icon（parent="handbook"，anchor 0.5,0.5，显示=纹理/CS）。
 	var icon_rect: TextureRect = btn.get_node("HandbookIcon") as TextureRect
 	if ResourceLoader.exists(HANDBOOK_ICON_RES):
 		icon_rect.texture = load(HANDBOOK_ICON_RES) as Texture2D
-	# 源 :510-524 Label T(LSTR("HERODETAIL.BOOK")) fontinfo="ui_normal_button"(17 号白字) + ccc3(255,255,255)。
 	var lbl: Label = btn.get_node("HandbookLabel") as Label
 	lbl.text = String(cm.get_lstr(HANDBOOK_LABEL_KEY))
 	btn.pressed.connect(_on_handbook_pressed)
@@ -127,7 +119,6 @@ static func _make_stylebox(res_path: String, cap: Rect2) -> StyleBoxTexture:
 	return sb
 
 
-# 源 createListButton :378-462：右侧竖排 tab 按钮，第 1 个默认选中。
 # .tscn 5 tab 常驻（位置可视化），按 identity 隐藏不用的（fragment 隐 stone/consume）。
 func _setup_tab_buttons() -> void:
 	for i in range(TAB_ALL_KEYS.size()):
@@ -140,7 +131,7 @@ func _setup_tab_buttons() -> void:
 			btn.pressed.connect(_select_tab.bind(key))
 			_tab_buttons[key] = btn
 			lbl.text = str(cm.get_lstr(TAB_LSTR_KEYS[i])) if cm != null else String(TAB_NAMES.get(key, key))
-			lbl.z_index = 24   # 源 createListButton label z=24（classbtn normal z=1/3, press z=20, label 最上）
+			lbl.z_index = 24
 			# label 框运行时对齐 button（.tscn offset 仅预览），上移 3px 视觉居中（同 hero_package）。
 			lbl.position = Vector2(btn.offset_left, btn.offset_top - 3.0)
 			lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
@@ -151,7 +142,6 @@ func _setup_tab_buttons() -> void:
 	_update_tab_visual()
 
 
-# 源 framework.lua:755 sbCreateTitle（所有非 main 场景建 3 货币条 money/rmb/vit，common 模式）。
 # package/fragment 源是 pushScene 独立场景，framework 在新场景顶层建货币条；
 # 本项目单机化改 PopWindow 弹窗（避 pushScene），但 bg.jpg 全屏遮 main_scene 货币条，
 # 故在 .tscn %StatusHost 自建（照 hero_scene.gd:41 范式，统一 MainStatusBar 常量）。
@@ -176,14 +166,13 @@ func _on_vitality_plus() -> void:
 		Toast.show_message("今日购买体力次数已达上限")
 		return
 	if pd.buy_vitality():
-		GameData.mark_save_dirty()   # 照源 local_server:1832 买体力脏标（扣钻石+体力+120，60s/退出刷）
+		GameData.mark_save_dirty()
 		Toast.show_message("购买体力 +120")
 		_refresh_status()
 	else:
 		Toast.show_message("钻石不足")
 
 
-# 源 doClickHandbook :230-238：ed.ui.handbook.create + pushScene。
 func _on_handbook_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var panel := HandbookPanel.new("handbook", {})
@@ -191,7 +180,6 @@ func _on_handbook_pressed() -> void:
 	panel.show_window(get_parent())
 
 
-# 源 doChangeList :202-229：切 tab toggle 可见 + createList(bothList[identity][name])。
 func _select_tab(key: String) -> void:
 	_cur_tab = key
 	AudioPlayer.play_sfx("common_click_feedback")
@@ -199,7 +187,6 @@ func _select_tab(key: String) -> void:
 	_fill_grid()
 
 
-# 源 doChangeList（package.lua:202-229）+ createListButton normal/press 切换：
 # 选中 tab texture_normal=classbtnselected z=3 凸出；未选中 classbtn z=1（同 hero_package _update_tab_visual）。
 func _update_tab_visual() -> void:
 	for key in _tab_buttons:
@@ -221,7 +208,6 @@ func _fill_grid() -> void:
 
 # cell 点击 → 弹 EquipboardPanel（第 24 段，照源 doSelectEquip → equipboard ofpackage）。
 func _on_cell_clicked(cell_data: Dictionary) -> void:
-	# 源 doSelectEquip :185-200：首次 create+popin，已有 → refresh(id) 切换内容（非模态浮层，不阻塞 cell 点击）。
 	# _equipboard 卖出/close 后自 remove_window → is_instance_valid 失效 → 下次点 cell 新建。
 	if _equipboard != null and is_instance_valid(_equipboard):
 		_equipboard.refresh(cell_data)
@@ -240,7 +226,6 @@ func _on_sold(_item_id: int) -> void:
 	_refresh_status()
 
 
-# 源 loadEquip :278-318：package createIconWithAmount(id) / fragment createIconWithTag(makeId)。
 # package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
 func _make_cell(cell_data: Dictionary) -> Control:
 	var amount: int = int(cell_data["amount"])
@@ -254,7 +239,6 @@ func _make_cell(cell_data: Dictionary) -> Control:
 	return cell
 
 
-# 源 doClickInList :162-177 → doSelectEquip(id) → equipboard。第 24 段接 equipboard 浮层。
 func _on_cell_gui_input(event: InputEvent, cell_data: Dictionary) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		AudioPlayer.play_sfx("common_click_feedback")

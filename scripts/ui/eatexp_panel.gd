@@ -14,11 +14,11 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/eatexp_content.tscn"
 
 # ── cell 内坐标（源 createHero cocos 值，cell 局部）──
 const CELL_MIN_SIZE: Vector2 = Vector2(255.0, 110.0)
-const HEAD_POS: Vector2 = Vector2(8.0, 3.0)         # 源 createHero headPos ccp(7,9)
-const LEVEL_POS: Vector2 = Vector2(115.0, 70.0)     # 源 level ccp(96,40) 调整
-const NAME_POS: Vector2 = Vector2(115.0, 8.0)       # 源 nameLabel ccp(178-w/2,72) 调整
-const EXP_BAR_POS: Vector2 = Vector2(110.0, 92.0)   # 源 expBarBg ccp(162,20) 调整
-const EAT_LBL_POS: Vector2 = Vector2(180.0, 50.0)   # 源 amountLabel ccp(210,42)
+const HEAD_POS: Vector2 = Vector2(8.0, 3.0)
+const LEVEL_POS: Vector2 = Vector2(115.0, 70.0)
+const NAME_POS: Vector2 = Vector2(115.0, 8.0)
+const EXP_BAR_POS: Vector2 = Vector2(110.0, 92.0)
+const EAT_LBL_POS: Vector2 = Vector2(180.0, 50.0)
 
 # ── 动画/长按时序（源 getBarAction animDuration=0.5 + keepeatHandler delay=0.5）──
 const ANIM_DUR: float = 0.4
@@ -28,13 +28,11 @@ const KEEPEAT_DELAY: float = 0.5
 const KEEPEAT_INTERVAL: float = 0.08
 const EAT_LIFETIME: float = 0.3
 const EAT_FADE: float = 0.2
-# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
 # Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28；经验条普通态源 eatexplist.lua:287 纯 sprite
 # scalexy 进度（无 fix_size）→ 显示=texture/CS；满级态 :403 fix_size=CCSizeMake(145,20) 保留。
 const CONTENT_SCALE: float = 1.28125
 
 const EXP_BAR_SIZE: Vector2 = Vector2(140.0, 14.0)   # 经验条尺寸（保留布局参考，实际 bar 用动态 tex/CS）
-# 源 eatexplist.lua:403 heroxp-progress-full.png fix_size=CCSizeMake(145,20)（满级条，源指定尺寸非 tex/CS）。
 const FULL_BAR_FIX_SIZE: Vector2 = Vector2(145.0, 20.0)
 
 # ── cell 资源（cell 仍 procedural）──
@@ -44,17 +42,17 @@ const EXP_BAR_PATH: String = "res://assets/ui/alpha/HVGA/package_exp_bar.png"
 const EXP_FULL_PATH: String = "res://assets/ui/alpha/HVGA/heroxp-progress-full.png"
 
 # ── 文本（源 LSTR key，运行时 cm.get_lstr 解析；2026-07-16 精修 LSTR 化）──
-const LSTR_TITLE := "EATEXPLIST.CHOOSE_A_HERO"             # 源 create title
-const LSTR_EXP_FULL := "EATEXPLIST.EXPERIENCE_FULL"        # 源 setExpMax shade label "经验已满"
-const LSTR_HERO_EXP_FULL := "EATEXPLIST.HERO_EXPERIENCE_FULL"  # 源 doEat 满级 toast "英雄经验已满"
-const LSTR_ALL_USED := "EATEXPLIST.ALL_COMSUMED"           # 源 useProp 全消耗 toast 后缀
+const LSTR_TITLE := "EATEXPLIST.CHOOSE_A_HERO"
+const LSTR_EXP_FULL := "EATEXPLIST.EXPERIENCE_FULL"
+const LSTR_HERO_EXP_FULL := "EATEXPLIST.HERO_EXPERIENCE_FULL"
+const LSTR_ALL_USED := "EATEXPLIST.ALL_COMSUMED"
 
-const EAT_LBL_COLOR: Color = Color(1.0, 200.0 / 255.0, 0.0)   # 源 light_orange
+const EAT_LBL_COLOR: Color = Color(1.0, 200.0 / 255.0, 0.0)
 
 var cm: Variant = null
 var pd: PlayerData = null
 var _item_id: int = 0          # 经验药物品 id（源 self.id）
-var _exp_per_pill: int = 0     # 源 self.exp = Equip[id].Exp
+var _exp_per_pill: int = 0
 var _cells: Dictionary = {}    # inst_id → {cell, level_label, exp_bar, display_level}
 var _keepeat_inst: int = -1    # 长按目标 inst_id（-1=空闲）
 
@@ -72,7 +70,6 @@ func _equip_name() -> String:
 	return _T(name_key)
 
 
-# 源 create(id, amount, param) :25-126。item_id=经验药物品 id；amount 从 pd.items 实时读。
 func setup_panel(item_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	_item_id = item_id
 	cm = p_cm
@@ -85,7 +82,6 @@ func setup_panel(item_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 
 # 建 UI 内容。panel 层（frame/bg/title/close/scroll）从 .tscn instantiate（位置/size 可视化）。
 # 英雄 cell 仍 procedural 挂 %Grid（数据驱动，每个英雄一个 cell）。
-# 源 create + createListLayer + createList :25-201。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
@@ -99,7 +95,6 @@ func _build_content() -> void:
 		grid.add_child(_create_hero_cell(int(inst_id), hero))
 
 
-# 源 createHero :204-302：bg + head + level + name + 类型mark + exp bar。
 # 单机化简化：类型 mark（icon_str/agi/int 缺图）跳过；满级特效（playEatEffect/playLevelupEffect）跳过。
 func _create_hero_cell(inst_id: int, hero: HeroInstance) -> Control:
 	var cell := Control.new()
@@ -148,7 +143,6 @@ func _create_exp_bar(parent: Control, hero: HeroInstance) -> TextureRect:
 	var is_max: bool = _is_hero_max_level(hero)
 	var bar := TextureRect.new()
 	bar.texture = full_tex if is_max else bar_tex
-	# 源 eatexplist.lua:287 普通 bar 纯 sprite scalexy 进度（无 fix_size）→ 显示=texture/CS；
 	# :403 满 bar fix_size=CCSizeMake(145,20) 保留。原 EXPAND_KEEP_SIZE 是 CS 遗漏（偏大 1.28），改 IGNORE_SIZE。
 	bar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bar.position = EXP_BAR_POS
@@ -158,7 +152,6 @@ func _create_exp_bar(parent: Control, hero: HeroInstance) -> TextureRect:
 	if bg_tex != null:
 		var bar_bg := TextureRect.new()
 		bar_bg.texture = bg_tex
-		# 源 :264 expBarBg createSprite 无 fix_size → 显示=texture/CS（原 EXP_BAR_SIZE 估算 140×14 近似 178/CS=139）
 		bar_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bar_bg.custom_minimum_size = Vector2.ZERO
 		bar_bg.position = EXP_BAR_POS
@@ -169,7 +162,6 @@ func _create_exp_bar(parent: Control, hero: HeroInstance) -> TextureRect:
 	return bar
 
 
-# 源 doEat :659-681 + useProp + refreshExp。单机化：去 eatLocked/doSendConsume 网络，即时扣物品+加经验。
 func do_eat_hero(inst_id: int) -> void:
 	if not is_instance_valid(self):
 		return
@@ -177,22 +169,21 @@ func do_eat_hero(inst_id: int) -> void:
 	if hero == null:
 		return
 	if _is_hero_max_level(hero):
-		_show_toast(_T(LSTR_HERO_EXP_FULL))   # 源 doEat :666 单条 toast（不含英雄名）
+		_show_toast(_T(LSTR_HERO_EXP_FULL))
 		return
 	if int(pd.items.get(_item_id, 0)) <= 0:
-		_show_toast("%s %s" % [_equip_name(), _T(LSTR_ALL_USED)])   # 源 useProp :8 物品名 + ALL_COMSUMED
+		_show_toast("%s %s" % [_equip_name(), _T(LSTR_ALL_USED)])
 		return
 	var olevel: int = hero.level
 	var oexp: int = hero.exp
 	if pd.remove_item(_item_id, 1) <= 0:
 		return
 	pd.hero_manager.add_hero_exp(inst_id, _exp_per_pill)
-	GameData.save()   # 照源 main.lua:1824 consume_item/eat_exp 后即时存（吃经验药扣物品+加英雄经验）
+	GameData.save()
 	_play_bar_anim(inst_id, olevel, oexp, hero.level, hero.exp)
 	_show_eat_amount(inst_id)
 
 
-# 源 refreshExp + getBarAction :347-517：bar 多段动画（升级时填满→重置→lv+1→末段）。
 # 简化：单段或升级两段 Tween（保留升级视觉，简化加速曲线）。
 func _play_bar_anim(inst_id: int, olevel: int, oexp: int, nlevel: int, nexp: int) -> void:
 	var cd: Dictionary = _cells.get(inst_id, {})
@@ -234,7 +225,6 @@ func _bar_scale(hero: HeroInstance) -> float:
 	return _scale_for(int(hero.exp), int(hero.level))
 
 
-# 源 showEatAmount :519-556：飘字 x N（源累计 ea，本项目单次 +exp_per_pill）。
 func _show_eat_amount(inst_id: int) -> void:
 	var cd: Dictionary = _cells.get(inst_id, {})
 	if cd.is_empty():
@@ -251,7 +241,6 @@ func _show_eat_amount(inst_id: int) -> void:
 	tw.tween_callback(lbl.queue_free)
 
 
-# 源 doPressList + endPressList :615-704：点击喂药 + 长按连续。
 func _on_cell_gui_input(event: InputEvent, inst_id: int) -> void:
 	if not (event is InputEventMouseButton):
 		return
@@ -265,7 +254,6 @@ func _on_cell_gui_input(event: InputEvent, inst_id: int) -> void:
 		_stop_keepeat()
 
 
-# 源 keepeatHandler :558-589：delay 0.5s 后 repeat（源 accAcc 加速曲线 → 简化固定间隔）。
 func _start_keepeat(inst_id: int) -> void:
 	_keepeat_inst = inst_id
 	var target: int = inst_id
@@ -279,7 +267,6 @@ func _stop_keepeat() -> void:
 	_keepeat_inst = -1
 
 
-# 源 setExpMax 满级判定：info._level == heroLevelLimit && maxExp <= exp。
 # 单机化：无 playerlimit，靠 Levels 表末位（levelup_exp<=0）判满级。
 func _is_hero_max_level(hero: HeroInstance) -> bool:
 	return _levelup_exp(int(hero.level)) <= 0

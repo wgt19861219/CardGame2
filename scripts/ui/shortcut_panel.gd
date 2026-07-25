@@ -13,23 +13,21 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tscn")
 
-const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
+const CONTENT_SCALE: float = 1.28125
 const SCREEN_H: float = 640.0
-const BOARD_CENTER_X: float = 900.0             # 源 shortcut_pos_x
+const BOARD_CENTER_X: float = 900.0
 # 用户视觉偏好(2026-07-14):快捷栏"更上一点贴近顶部"。整个抽屉上移 100px(板顶 180→80 / toggle 200→100,底部留 100px 空白)。
-# 源 uires.lua shortcut_board_pos.y=460 / shortcut_pos_y=440(Cocos 960×640,源贴屏底)→ 偏离源,同 backbtn (113,88)→(20,15) 用户偏好先例。
 const BOARD_UP_OFFSET: float = -100.0           # 整个抽屉上移量(负=上,用户偏好;BUTTON_CENTER_Y 已含同 offset)
 const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶 180 + 上移 100 → 80
-const BOARD_WIDTH: float = 82.0                 # 源 shortcut_board_width
-const BOARD_H_MIN: float = 40.0                 # 源 shortcut_board_height_min（收起）
-const BOARD_H_MAX: float = 460.0                # 源 shortcut_board_height_max（展开）
-const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # 源 (900,200) + 上移 100 → (900,100)
-# 源 shortcutBoardButtonPosY（已 +s_b_offset_y=-20）[362,287,217,142,63] → Godot [278,353,423,498,577] + BOARD_UP_OFFSET(上移100) → [178,253,323,398,477]
+const BOARD_WIDTH: float = 82.0
+const BOARD_H_MIN: float = 40.0
+const BOARD_H_MAX: float = 460.0
+const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)
 const BUTTON_CENTER_Y: Array[float] = [178.0, 268.0, 358.0, 448.0, 538.0]   # 间距 90（源 70~79 太挤，用户要加大；顶部 178 不变）
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
-const ANIM_DUR: float = 0.12                    # 源 shortcut_board_pop_time
+const ANIM_DUR: float = 0.12
 const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）
-const TOUCH_WIDTH: float = 100.0                # 源 shortcut_board_touch_width（out_board 检测宽）
+const TOUCH_WIDTH: float = 100.0
 
 # ── 按钮 key + .tscn 节点名映射（源 button_info :11-49）──
 const BUTTON_KEYS: Array[String] = ["heroPackage", "package", "fragment", "task", "todoList"]
@@ -52,14 +50,13 @@ var _buttons: Dictionary = {}    # key(String) -> TextureButton
 var _tween: Tween = null
 
 
-# 源 createBoard（framework.lua scCreateBoard:256-332）+ createButtons（shortcut.lua:180-254）。
 # 初始收起（源 isShortcutOpen = identity=="main"；本项目独立面板默认收起）。
 func setup_panel(open_initial: bool = false) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE   # 自身不吞，子节点（shade/board/button）各自 STOP 吞
 	_build_content()
 	if open_initial:
-		_apply_open_instant()   # 照源 isShortcutOpen = identity=="main"（主界面默认展开）
+		_apply_open_instant()
 	else:
 		_apply_closed_instant()
 
@@ -83,7 +80,6 @@ func _build_content() -> void:
 		_buttons[key] = btn
 
 
-# 源 doShortcut（framework.lua:42-65）：toggle isShortcutOpen → open/close board。
 func _toggle_open() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if _is_open:
@@ -92,10 +88,9 @@ func _toggle_open() -> void:
 		_open()
 
 
-# 源 openShortcutBoard（framework.lua:532-545）+ popBoard（:440-483）：板高 min→max，按钮 staggered fadeIn+moveTo。
 func _open() -> void:
 	_is_open = true
-	Events.bus.emit_tutorial_step(&"SUopenShortcut")   # 源 framework.lua:595（展开 shortcut）
+	Events.bus.emit_tutorial_step(&"SUopenShortcut")
 	_shade.visible = true
 	_toggle_down.visible = false
 	_toggle_up.visible = true
@@ -113,7 +108,6 @@ func _open() -> void:
 		_tween.parallel().tween_property(btn, "modulate:a", 1.0, ANIM_DUR * 0.5).set_delay(delay)
 
 
-# 源 closeShortcutBoard（framework.lua:547-554）+ pushBoard（:393-423）：板高 max→min，按钮 fadeOut+叠回。
 func _close() -> void:
 	_is_open = false
 	_toggle_down.visible = true
@@ -165,11 +159,10 @@ func _apply_closed_instant() -> void:
 	_shade.visible = false
 
 
-# 源 getSCButtonTouchHandler（framework.lua:556-658）：点按钮跳场景。本项目 emit key，main_scene 路由。
 func _on_button_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if key == "heroPackage":
-		Events.bus.emit_tutorial_step(&"SUclickHeroPackage")   # 源 framework.lua:596（点英雄包按钮）
+		Events.bus.emit_tutorial_step(&"SUclickHeroPackage")
 	open_requested.emit(key)
 	_close()   # 选完收起抽屉（源点按钮跳转场景，本项目弹窗后收起）
 
@@ -184,7 +177,6 @@ func _center_to_topleft(center: Vector2, btn: TextureButton) -> Vector2:
 
 
 func _button_size(btn: TextureButton) -> Vector2:
-	# 源 shortcut.lua:196-231 5 按钮 t="Sprite" config={isCascadeOpacity} 无 fix；
 	# :284-309 down/up toggle t="Sprite" config={} 无 fix → 显示=纹理/CS
 	if btn.texture_normal != null:
 		return TexDisplaySize.display_size(btn.texture_normal.resource_path)

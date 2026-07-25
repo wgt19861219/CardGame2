@@ -3,7 +3,6 @@ extends Node2D
 
 ## Spine 2.1.07 简化骨骼动画播放器（View 层）— region-only（无 mesh/权重/IK/约束/事件/变形）。
 ## 骨骼层级 Node2D + region Sprite2D 附件 + 每帧贝塞尔插值 bone rotate/translate/scale + slot color。
-## 照源 createFcaNode（resource_manager.lua:573 Spine 分支）+ setAction + addFca 翻译，纯 Godot 适配。
 ## 配套 assets/spine/<name>/<name>.json + .atlas + .png。Spine y 上 → Godot y 下：整体 scale.y=-1 翻转。
 
 const SpineAtlas = preload("res://scripts/ui/spine_atlas.gd")

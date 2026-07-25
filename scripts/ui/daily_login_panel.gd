@@ -10,7 +10,6 @@ extends PopWindow
 ## 重构（2026-07-18，hero_detail 范式）：chrome（frame/title_bg/act_bg/close/title/explain/subhead 3 label/
 ## grid ScrollContainer）静态化进 scenes/ui/daily_login_content.tscn（位置/size 编辑器可视化调）；
 ## 网格 content + 单格（按当月天数动态变）保留 procedural 挂 %GridScroll（builder.fill_grid）。
-## 源 cocos(800×480 左下) → godot(960×640 左上)：(cx+80, 560-cy)，CS=1.28125（.tscn offset 已固化）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/daily_login_content.tscn")
 
@@ -19,7 +18,6 @@ const EXPLAIN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.p
 const EXPLAIN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
 const EXPLAIN_CAP: Rect2 = Rect2(20.0, 15.0, 88.0, 19.0)
 const EXPLAIN_LABEL_COLOR: Color = Color(225.0 / 255.0, 209.0 / 255.0, 186.0 / 255.0)
-# 源 subhead right2 链式布局 offset=5（label 间距，:695/:712）。
 const SUBHEAD_GAP: float = 5.0
 
 var _player: PlayerData
@@ -60,14 +58,13 @@ func _build_content() -> void:
 	_refresh_view()
 
 
-# 源 create + syncDate + createList + createSubhead 组合（刷新即重建网格，源 createRewardItem 重建单格）。
 # chrome 静态节点不动，只刷新 title/subhead text + 重建网格。
 func _refresh_view() -> void:
 	_data_list = DailyLoginBuilder.build_reward_data(_cm)
 	var now: int = int(Time.get_unix_time_from_system())
 	var freq: int = _mgr.get_login_frequency(now)
 	var status: String = _mgr.get_reward_status(now)
-	var checkin_num: int = freq if status != "common" else freq - 1   # 源 getCheckinNumber :137-146
+	var checkin_num: int = freq if status != "common" else freq - 1
 	# title LSTR（源 syncDate :893 DAILYLOGIN._D_MONTHLY_ATTENDANCE_AWARDS）
 	var title_text: String = _cm.get_lstr("DAILYLOGIN._D_MONTHLY_ATTENDANCE_AWARDS") % _current_month() if _cm != null else "%d月签到奖励" % _current_month()
 	(_content.get_node("%TitleLabel") as Label).text = title_text
@@ -88,7 +85,6 @@ func _refresh_view() -> void:
 		(c["button"] as TextureButton).pressed.connect(_on_cell_pressed.bind(int(c["day"])))
 
 
-# 源 getRewardStatus :119-136（单机：vip 态省略，received→past）。
 func _cell_status(day: int, freq: int, status: String) -> String:
 	if day < freq:
 		return "past"
@@ -97,7 +93,6 @@ func _cell_status(day: int, freq: int, status: String) -> String:
 	return "future"
 
 
-# 源 doClickIn :603-623（past/future→详情；common→领奖）。
 func _on_cell_pressed(day: int) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var st: String = _cell_status(day, _mgr.get_login_frequency(now), _mgr.get_reward_status(now))
@@ -107,7 +102,6 @@ func _on_cell_pressed(day: int) -> void:
 		_show_detail(day)
 
 
-# 源 askCommonReward + doDailyReward + askRewardReply（单机：mgr.claim_reward 一步发奖）。
 func _claim(day: int) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var r: Dictionary = _mgr.claim_reward(_player, _cm, now)
@@ -119,8 +113,6 @@ func _claim(day: int) -> void:
 		Toast.show_message(fail_text)
 
 
-# 源 createRewardDetail :422-460（弹详情卡）→ 降级 Toast（单机化，readequip.getDetailCard 依赖重）。
-# 源 :448 LSTR DAILYLOGIN.RECEIVE_THIS_AWARD_AT__D_ATTENDANCE_THIS_MONTH = "本月第%d次签到可领取此奖励"。
 func _show_detail(day: int) -> void:
 	if day < 1 or day > _data_list.size():
 		return
@@ -128,8 +120,6 @@ func _show_detail(day: int) -> void:
 	Toast.show_message(detail_text)
 
 
-# 源 createExplain :967-1028（continuechargedialog 弹窗）→ 降级 Toast。
-# 源 explain_text LSTR key（:7 顶部）不在 LSTR_zh-CN.json → 保留硬编码中文（照源语义 5:00 重置/VIP 双倍）。
 func _on_explain() -> void:
 	Toast.show_message("每日5:00重置，过期不可补领。达VIP等级当日可领双倍。")
 

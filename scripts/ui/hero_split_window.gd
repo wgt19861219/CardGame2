@@ -2,7 +2,6 @@ class_name HeroSplitWindow
 extends PopWindow
 
 ## 英雄分解主窗口（View 层）— 务实方案（2026-07-19）。
-## 照源 ui/herosplit/window.lua，单机化简化：
 ## ① 选英雄不弹通用 selectwindow（目标侧缺失基建），改 HeroScroll 内联可分解英雄网格（Control cell 包 ReadheroIcon）
 ## ② 选碎片环节跳过（源联机 split_return 在 local_server 空壳；hero_manager.split 固定返还 Convert Fragments 专属碎片）
 ## ③ 联机 split_data/split_return/split_hero → 本地 hero_manager.preview_split/split
@@ -19,7 +18,6 @@ const SPLIT_BTN_RES: String = "res://assets/ui/alpha/HVGA/task_button.png"
 const SPLIT_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/task_button_press.png"
 const SPLIT_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 39.06, 15.63)
 const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
-# 源 LSTR key（uieditor/herosplit + window.lua）。
 const DETAIL_TITLE_KEY: String = "herosplit.1.10.1.003"
 const GAIN_KEY: String = "herosplit.1.10.1.005"
 const EXPLAIN_BTN_KEY: String = "herosplit.1.10.1.001"
@@ -73,7 +71,6 @@ func _build_content() -> void:
 	(content.get_node("%GainLabel") as Label).text = _lstr(GAIN_KEY, GAIN_FALLBACK)
 
 
-# 源 getSplitableHeroes（单机化：所有已拥有英雄可分解；源联机 split_data 在 local_server 空壳）。
 func _fill_hero_grid() -> void:
 	for c in _grid.get_children():
 		c.free()
@@ -104,7 +101,6 @@ func _select_hero(hero: HeroInstance) -> void:
 	_split_btn.disabled = false
 
 
-# 源 setSplitStone 返还详情（单机化：preview_split 算 fragment_id/count，ReadequipIcon 显示碎片 icon）。
 func _refresh_return_preview() -> void:
 	for c in _return_host.get_children():
 		c.free()
@@ -116,7 +112,6 @@ func _refresh_return_preview() -> void:
 	_return_host.add_child(ReadequipIcon.create_hero_stone_icon(frag_id, count, cm))
 
 
-# 源 firstConfirm（window.lua:88-103）：校验已选 → popConfirmDialog "确认分解 {name}？"。
 func _on_split_pressed() -> void:
 	if _selected == null:
 		Toast.show_message(_lstr(PLEASE_HERO_KEY, PLEASE_HERO_FALLBACK))
@@ -128,7 +123,6 @@ func _on_split_pressed() -> void:
 	get_parent().add_child(confirm)   # HeroSplitConfirm 是 Control（自带 shade），挂同 parent
 
 
-# 源 secondConfirm → doSplit（单机化：hero_manager.split 本地执行，源联机 split_hero）。
 func _perform_split() -> void:
 	if _selected == null:
 		return

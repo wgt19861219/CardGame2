@@ -11,14 +11,14 @@ extends PopWindow
 ## circle/finger 高亮位置随步骤变，保留 procedural 挂 %HighlightHost（源 tutorialmaker getFinger）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/tutorial_guide_view_content.tscn")
-const FADE_DURATION: float = 0.3                    # 源 tutorialmaker fadeIn/Out 动画时长
+const FADE_DURATION: float = 0.3
 const FINGER_TEX := "res://assets/ui/alpha/HVGA/tutorial_finger.png"
 
 var tutorial: TutorialManager = null
 var step_label: Label = null
 var _host: Control = null           # .tscn %HighlightHost（circle/finger 动态挂）
-var _circle: Sprite2D = null       # 源 tutorial_circle（高亮圆环）
-var _finger: Sprite2D = null       # 源 tutorial_finger（指向手）
+var _circle: Sprite2D = null
+var _finger: Sprite2D = null
 var _circle_tween: Tween = null
 
 signal step_advanced
@@ -31,7 +31,7 @@ func setup_panel(p_tutorial: TutorialManager) -> void:
 	_build_content()
 	_refresh()
 	modulate.a = 0.0
-	register_on_enter(func() -> void:   # 源 fadeIn（enter 时触发，Panel 在树内 Tween 才运行）
+	register_on_enter(func() -> void:
 		var tw := create_tween()
 		tw.tween_property(self, "modulate:a", 1.0, FADE_DURATION))
 
@@ -69,21 +69,19 @@ func _refresh() -> void:
 	var step: StringName = tutorial.current_step()
 	if step == &"":
 		step_label.text = "引导完成"
-		_fade_out_and_remove()   # 源 tutorial 完成自动 destroy
+		_fade_out_and_remove()
 		return
 	var desc: String = TutorialData.get_description(step)
 	step_label.text = "当前步骤：" + String(step) + "\n" + desc if desc != "" else "当前步骤：" + String(step)
-	_update_highlight(step)   # 源 tutorialmaker getFinger：finger type 步骤显示 circle + finger 高亮
+	_update_highlight(step)
 
 
-# 源 tutorialmaker fadeOut 动画（close 时 modulate:a → 0 + remove）。
 func _fade_out_and_remove() -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, FADE_DURATION)
 	tw.tween_callback(remove_window)
 
 
-# 源 tutorialmaker getFinger（:151-178）：finger type 步骤在 circle_center 显示 circle（缩放脉冲）
 # + finger（指向手 at pos+(-4,4)）。circle png 直径缩放到 circle_radius×2。
 func _update_highlight(step: StringName) -> void:
 	if _circle != null:
@@ -109,12 +107,11 @@ func _update_highlight(step: StringName) -> void:
 		var base_scale: float = radius * 2.0 / maxf(tex_size.x, 1.0)   # 直径→radius
 		_circle.scale = Vector2(base_scale, base_scale)
 		_host.add_child(_circle)
-		# 源 :155-158 circle 缩放脉冲动画（CCScaleBy 循环）
 		_circle_tween = create_tween().set_loops()
 		_circle_tween.tween_property(_circle, "scale", Vector2(base_scale * 1.1, base_scale * 1.1), 0.6).set_trans(Tween.TRANS_SINE)
 		_circle_tween.tween_property(_circle, "scale", Vector2(base_scale, base_scale), 0.6).set_trans(Tween.TRANS_SINE)
 	if ResourceLoader.exists(FINGER_TEX):
 		_finger = Sprite2D.new()
 		_finger.texture = load(FINGER_TEX)
-		_finger.position = pos + Vector2(-4.0, 4.0)   # 源 :161 ccp(x-4, y+4)
+		_finger.position = pos + Vector2(-4.0, 4.0)
 		_host.add_child(_finger)

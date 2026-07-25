@@ -2,13 +2,11 @@ class_name UiButton
 extends RefCounted
 
 ## 通用图按钮工厂（替项目普遍的 Button.new()+text 降级）。
-## 源 Sprite + press 双层切 visible（如 herodetail-detail-close/close_press、tavern_button_1/2、
 ## classbtn/classbtnselected）→ Godot TextureButton texture_normal/texture_pressed 等价。
 ## 所有二级面板共用：close（backbtn）/ 抽卡（tavern_button）/ tab（classbtn）/ 动作（herodetail-detail）。
 ## center_pos 为按钮中心（源 anchor 0.5,0.5），自动按纹理尺寸左上对齐。
 
 const OUTLINE_COLOR: Color = Color.BLACK
-# 源 hello.lua:311 setContentScaleFactor=1.28125（iPhone 档）：cocos sprite 显示=纹理/CS。
 # UiButton 制造的按钮（close/抽卡/tab/动作）源都是纯 Sprite 无 fix_size → 照源 /CS。
 const CONTENT_SCALE: float = 1.28125
 

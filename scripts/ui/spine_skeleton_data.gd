@@ -2,7 +2,6 @@ class_name SpineSkeletonData
 extends RefCounted
 
 ## Spine 2.1.07 .json 解析（View 层）— bones/slots/skins.default/animations。
-## 照源 SpineContainer:create + spine runtime 简化（region-only，无 mesh/权重/IK/约束/事件/变形）。
 ## 配套 assets/spine/<name>/<name>.json。timeline curve：缺省线性 / "stepped" / [c1,c2,c3,c4] 贝塞尔。
 
 var bones: Dictionary = {}       # name -> {parent, x, y, rotation, scaleX, scaleY, length}

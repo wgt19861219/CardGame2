@@ -12,9 +12,8 @@ extends PopWindow
 ## via (cx+80, 560-cy)；CS=1.28125，纹理显示=纹理/CS。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/star_shop_content.tscn")
-const CONTENT_SCALE: float = 1.28125   # 源 hello.lua:311 setContentScaleFactor(1.28125)，cocos sprite 显示=纹理/CS（无 fix 时）
+const CONTENT_SCALE: float = 1.28125
 const LIST_AREA_SIZE: Vector2 = Vector2(740.0, 350.0)
-# 源 createStarList :514-518 ox=90 oy=35 dx=212；item_bg fix_wh 207×286（itemstarshop）
 const ITEM_W: float = 207.0
 const ITEM_H: float = 287.0
 const ITEM_DX: float = 212.0
@@ -22,9 +21,7 @@ const ITEM_OX: float = 40.0
 const ITEM_OY: float = 30.0
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const STAR_BOX_RES: Array[String] = ["shop_star_box_1.png", "shop_star_box_2.png", "shop_star_box_3.png"]
-# 源 getStarGoodsName → parameter.lua:36-38 LSTR key（type 0/1/2 → stone_green/blue/purple）
 const GOODS_NAME_LSTR: Array[String] = ["PARAMETER.SMALL_PLANET_DEBRIS_BOX", "PARAMETER.MEDIUM_STELLAR_SUITCASE", "PARAMETER.LARGE_INTERSTELLAR_GALLERY"]
-# 源 itemstarshop 节点坐标（cocos anchor→Godot 左上，item 207×287）
 const ITEM_NAME_POS: Vector2 = Vector2(32.0, 29.0)
 const ITEM_NAME_SIZE: Vector2 = Vector2(140.0, 22.0)
 const ICON_CONTAINER_POS: Vector2 = Vector2(35.0, 18.0)
@@ -59,7 +56,6 @@ func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void
 	cm = pd.cm
 	setup()
 	shop_mgr.open_star_shop()
-	# 源 shop.lua create("starshop") pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉（同 PackagePanel 范式）。
 	if shade_layer != null:
 		shade_layer.color.a = 0
@@ -78,7 +74,6 @@ func _build_content() -> void:
 		remove_window())
 	_stone_label = _panel_layer.get_node("%StoneLabel") as Label
 	_item_layer = _panel_layer.get_node("%ItemLayer") as Control
-	# 源 draglist 横滚（createStarList :519-531 getListWidth dx*len+40）
 	_item_layer.custom_minimum_size = Vector2(ITEM_OX * 2.0 + ITEM_DX * 5.0, LIST_AREA_SIZE.y)
 	_refresh_stone()
 	_build_goods()
@@ -96,7 +91,6 @@ func _add_texture(parent: Control, path: String, pos: Vector2, sz: Vector2) -> v
 	parent.add_child(tr)
 
 
-# 源 createStarList :535-594：5 件商品，每件 container 定位 getItemPos + 填充 8 节点。
 func _build_goods() -> void:
 	_item_presses.clear()
 	var goods: Array = shop_mgr.get_star_goods()
@@ -106,7 +100,6 @@ func _build_goods() -> void:
 		_item_layer.add_child(_create_item(g, i, pos))
 
 
-# 源 itemstarshop 8 节点模板 + createStarList 填充（item_name/getStarGoodsRes/stone_name/noneTag）。
 func _create_item(g: Dictionary, slot: int, pos: Vector2) -> Control:
 	var item := Control.new()
 	item.position = pos
@@ -182,7 +175,7 @@ func _add_none_tag(parent: Control) -> void:
 	var tag_tex: Texture2D = load(UI_DIR + "shop_star_none_tag.png")
 	none_tag.texture = tag_tex
 	none_tag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	none_tag.size = TexDisplaySize.display_size(UI_DIR + "shop_star_none_tag.png")   # 源 shop.lua:577-588 noneTag t="Sprite" 无 fix
+	none_tag.size = TexDisplaySize.display_size(UI_DIR + "shop_star_none_tag.png")
 	none_tag.position = NONE_TAG_POS
 	none_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(none_tag)
@@ -191,13 +184,11 @@ func _add_none_tag(parent: Control) -> void:
 func _make_click_handler(slot: int) -> Callable:
 	return func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
-			# 源 :204 item_press:setVisible(true) 按压高亮
 			if slot < _item_presses.size() and is_instance_valid(_item_presses[slot]):
 				(_item_presses[slot] as TextureRect).visible = true
 			_open_buy_window(slot)
 
 
-# 源 doClickInProduct stone 分支(:258-273) → 弹 starshopbuywindow。
 func _open_buy_window(slot: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var goods: Array = shop_mgr.get_star_goods()

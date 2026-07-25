@@ -26,15 +26,12 @@ const BOARD_CENTER_X: float = 240.0
 const BOARD_DX: float = 240.0
 const BOARD_CENTER_Y: float = 355.0
 const REFRESH_INTERVAL_SEC: float = 1.0
-# 源 tavern.lua:58 / playerlimit.lua:282 Magic Soul Box VIP 解锁 key
 const MAGIC_VIP_KEY: String = "Magic Soul Box"
-# 源 LSTR key（照源 tavern.lua + tavernres.lua）。cm 缺失时 fallback 中文（_lstr 内返 key，
 # 由 panel 判 key==lstr 走 fallback）。
-const LSTR_CHECK: StringName = &"RECHARGE.VIEW"                # 源 :737 check_label
-const LSTR_BUY_D: StringName = &"TAVERN.BUY__D"                # 源 :824/:910 once/ten_buy_label
-const LSTR_DAY_TITLE: StringName = &"TAVERN.TODAYS_HIGHLIGHT"  # 源 :1113 drop_day_title
-const LSTR_MONTH_TITLE: StringName = &"TAVERN.HOT_IN_THIS_WEEK" # 源 :1139 drop_month_title
-# 源 tavernres.ten_prompt（:49-54）TAVERNRES.* per box key
+const LSTR_CHECK: StringName = &"RECHARGE.VIEW"
+const LSTR_BUY_D: StringName = &"TAVERN.BUY__D"
+const LSTR_DAY_TITLE: StringName = &"TAVERN.TODAYS_HIGHLIGHT"
+const LSTR_MONTH_TITLE: StringName = &"TAVERN.HOT_IN_THIS_WEEK"
 const LSTR_TEN_PROMPT: Dictionary = {
 	"bronze": &"TAVERNRES.ONE_BLUE_ITEM_IS_DOOMED_TO_BE_GOT_IF_YOU_DRAW_10TIMES_AT_ONE_TIME",
 	"gold": &"TAVERNRES.HERO_IS_DOOMED_TO_BE_GOT_IF_YOU_DRAW_10TIMES_AT_ONE_TIME",
@@ -88,7 +85,6 @@ func _build_content() -> void:
 	_refresh_countdown_label()
 
 
-# 源 createItemLayer:1371 — 3 卡池 board（bronze/gold/magic），每 board = createBaseBoard +
 # createCommonLayer/createMagicLayer（scroll_board 13 节点 + 滑动 + magic drop_bg）。per-board check/arrow/one_buy/ten_buy。
 # 末尾 playLightAnim（源 :1397）gold/magic light 旋转。
 func _create_boards() -> void:
@@ -107,12 +103,10 @@ func _create_boards() -> void:
 		var board: Dictionary = TavernBoardBuilder.create_board(src_key, center, cost_info, handlers, texts)
 		_board_host.add_child(board["container"])
 		_boards[key] = board
-		TavernBoardBuilder.play_light_anim(board)   # 源 :1397 createItemLayer 末尾调 playLightAnim
-	# 源 refreshItemLayer:1402-1418 magic board VIP 显隐（showvip > vip → magicLayer 隐藏）。
+		TavernBoardBuilder.play_light_anim(board)
 	_refresh_magic_board_visibility()
 
 
-# 源 tavern.lua:1402-1418 refreshItemLayer：magic board 显隐按 getAreaShowvip（unlock-2）门控。
 # showvip > vip → magicLayer.setVisible(false)（源同时重排 bronze/gold 居中；本项目简化保 3 board 横排孔位）。
 # showvip <= vip → magicLayer.setVisible(true)（达 unlock-2 起显示；达 unlock 可抽，_on_draw 内门控）。
 func _refresh_magic_board_visibility() -> void:
@@ -127,7 +121,6 @@ func _refresh_magic_board_visibility() -> void:
 		container.visible = showvip <= _player.vip_level
 
 
-# 源 LSTR 文案准备（cm.get_lstr 缺失走 fallback 中文）。texts 注入 builder（builder 不查 LSTR）。
 func _build_board_texts(src_key: String) -> Dictionary:
 	return {
 		"check_label": _lstr_or(LSTR_CHECK, FALLBACK_CHECK),
@@ -139,7 +132,6 @@ func _build_board_texts(src_key: String) -> Dictionary:
 	}
 
 
-# 源 tavernres.ten_prompt（:49-54）TAVERNRES.* per box key。
 func _ten_prompt_text(src_key: String) -> String:
 	var lstr_key: StringName = LSTR_TEN_PROMPT.get(src_key, &"")
 	if lstr_key == &"":
@@ -163,7 +155,6 @@ func _src_key(pool_key: String) -> String:
 		_: return "bronze"
 
 
-# 源 getCost:219 — 读表 Cost + Cost Type（Bronze Gold / Gold·MagicSoul Diamond）。
 func _read_cost_info(key: String) -> Dictionary:
 	var once_row: Dictionary = TavernData.get_tavern_info(key, false, false, 0, _cm)
 	var ten_row: Dictionary = TavernData.get_tavern_info(key, true, false, 0, _cm)
@@ -184,20 +175,17 @@ func _select_pool(key: String) -> void:
 	_refresh_magicsoul_preview(key)
 
 
-# 源 doCheckTouch:1589 → doClickCheck:1576 — 点 check 切当前 pool + 上滑展开该 board。
 func _on_check_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_select_pool(key)
 	TavernBoardBuilder.expand((_boards[key] as Dictionary)["scroll_board"])
 
 
-# 源 doArrowTouch:1690 → doClickArrow:1584 — 点 arrow 滑回该 board。
 func _on_arrow_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	TavernBoardBuilder.collapse((_boards[key] as Dictionary)["scroll_board"])
 
 
-# 源 doOneTouch:1621 → doTavern(key,"one") / doTenTouch:1659 → doTavern(key,"ten")。
 func _on_once_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_on_draw(_player, _rng, key, false)
@@ -208,7 +196,6 @@ func _on_ten_pressed(key: String) -> void:
 	_on_draw(_player, _rng, key, true)
 
 
-# 源 doRefrehMagicHeroIcon:1290 + refreshMagicHeroIcon:1355 — Magic 魂匣预览。
 # magic scroll_board drop_bg heroIcons 4 组（照源 left3+right1+day3+month1）+
 # 面板级 _preview_container 单行（兼容 test_tavern_magic，前 4 hero）。
 func _refresh_magicsoul_preview(key: String) -> void:
@@ -232,7 +219,6 @@ func _refresh_magicsoul_preview(key: String) -> void:
 		_preview_container.visible = false
 
 
-# 源 doRefrehMagicHeroIcon:1290 — magic scroll_board 4 组 heroIcons（left3+right1+day3+month1）。
 # ids[0]=extra(hids[1]→right/month) ids[1,2,3]=hero(hids[2,3,4]→left/day)，照源 hids[5,6] 未用。
 func _fill_magic_heroicons(ids: Array[int]) -> void:
 	var magic: Dictionary = _boards.get("MagicSoul", {})
@@ -261,7 +247,6 @@ func _fill_magic_heroicons(ids: Array[int]) -> void:
 	_add_magic_icon(scroll, extra_id, 107.0, -63.0)
 
 
-# 源 readhero.createIcon({id,length=38}) — 建预览英雄 icon（降级 Label 38×38，centered at cocos (cx,cy)）。
 func _add_magic_icon(scroll: Control, tid: int, cx: float, cy: float) -> void:
 	var icon := _make_hero_preview_icon(tid)
 	if icon == null:
@@ -269,12 +254,10 @@ func _add_magic_icon(scroll: Control, tid: int, cx: float, cy: float) -> void:
 	icon.set_meta("magic_icon", true)
 	icon.custom_minimum_size = Vector2(38.0, 38.0)
 	icon.size = Vector2(38.0, 38.0)
-	# 源 scroll_board (cx,cy) 中心 → Godot 局部 position（y=CLIP_H-cy）
 	icon.position = Vector2(cx, TavernBoardBuilder.CLIP_H - cy) - icon.size * 0.5
 	scroll.add_child(icon)
 
 
-# 源 readhero.createIcon({id,length=38}) — 建预览英雄 icon（降级 Label）。
 func _make_hero_preview_icon(tid: int) -> Control:
 	var unit: Variant = _cm.get_raw_table(&"Unit").get(str(tid), {})
 	var hero_name: String = str(unit.get("Name", str(tid))) if unit is Dictionary else str(tid)
@@ -286,7 +269,6 @@ func _make_hero_preview_icon(tid: int) -> Control:
 
 
 func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten: bool) -> void:
-	# 源 doTavern:57-64 magic VIP 门控：getAreaUnlockvip > vip → toRecharge dialog 拒绝。
 	# 项目单机化用 Toast（源 toRecharge dialog 的 explaination 文案）。
 	if tavern_type == "MagicSoul":
 		var ulv: int = VipData.get_area_unlock_vip(MAGIC_VIP_KEY, _cm)
@@ -296,7 +278,6 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 				tpl = "VIP等级达到%d级解锁该功能，是否充值？"
 			_result_label.text = tpl % ulv
 			return
-	# 源 doTavern isFree（tavern.lua:67-70）：单抽且 isShowFree；magic 例外十连也判 isShowFree。
 	var now: int = int(Time.get_unix_time_from_system())
 	var is_free: bool = TavernData.is_show_free(p_player, tavern_type, now) and (tavern_type == "MagicSoul" or not is_ten)
 	var r: Dictionary = p_player.draw_tavern_full(tavern_type, is_ten, is_free, 0, rng)
@@ -305,12 +286,10 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 		return
 	if is_free:
 		TavernData.use_free_tavern(p_player, tavern_type, now)
-	# 源 network.lua:1295 服务端回复后 refreshFirstTavern 置首抽标记；单机化抽卡成功后直调。
 	TavernData.refresh_first_tavern(p_player, tavern_type, is_ten)
-	GameData.mark_save_dirty()   # 照源 local_server:986/1021 抽卡脏标（扣钻石+产出，60s/退出刷）
+	GameData.mark_save_dirty()
 	_result_label.text = "产出已展示"
 	var loot_popup := PopTavernLoot.new("poptavernloot", {})
-	# 源 doTavernReply :198 create({type, times, loots, addition={cost}})：cost 来自当前抽卡消耗。
 	var popup_cost: Dictionary = {"pay": "Diamond", "number": 0}
 	if not is_free:
 		var row: Dictionary = TavernData.get_tavern_info(tavern_type, is_ten, false, 0, _cm)
@@ -329,7 +308,6 @@ func _refresh_countdown_label() -> void:
 	_status_label.text = String(TavernData.get_countdown_text(_player, _current_pool, now)["text"])
 
 
-# 源 refreshCountdownHandler:387 — 每秒刷新倒计时。
 func _process(delta: float) -> void:
 	_refresh_timer += delta
 	if _refresh_timer >= REFRESH_INTERVAL_SEC:

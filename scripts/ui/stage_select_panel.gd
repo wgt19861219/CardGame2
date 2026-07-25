@@ -5,7 +5,6 @@ extends PopWindow
 ## 重构（2026-07-17）：base 静态元素（bg/close/mode toggle/箭头）从 stage_select_content.tscn
 ## instantiate（位置/size 编辑器可视化调）。动态层（map_layer 章节 bg+route+stage 圆点、frame/title、
 ## chapter dots）procedural 由 StageSelectBuilder 建并挂 %MapLayerHost/%FrameLayer/%DotContainer。
-## 源 stageselect.lua create(:1573)/createMap(:1359)/createStage(:1212)/doChangeMode(:319)/
 ## doChangeChapter(:423)/createDot(:676)/createModeButton(:725)/setChapterButtonState(:643)。
 ## 切换动画（2026-07-20 补全）：章节切 map slide±720/title fade（frame 章节不重建，照源 createFrame
 ## 仅 create/mode 调，行 325/1618）；mode 切 map fadeOut 0.5 + frame/title/dots fade 0.2；
@@ -15,7 +14,6 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_select_content
 const StageSelectBuilder = preload("res://scripts/ui/stage_select_builder.gd")
 const StageDetailPanel = preload("res://scripts/ui/stage_detail_panel.gd")
 
-# 源切换动画参数（stageselect.lua:17 change_chapter_gap=0.5 / createMap:1421 changeMode CCFadeOut 0.5 /
 # createFrame:976/createTitle:908/refreshDot:671 CCFadeIn/Out 0.2 / createChapterButton:714 CCMoveTo 1s /
 # currentTag:1308 CCMoveTo 0.5s）。
 const MAP_SLIDE_TIME: float = 0.5
@@ -36,7 +34,7 @@ var player: PlayerData = null
 var rng: BattleRng = null
 var _current_chapter: int = 1
 var _pre_chapter: int = 1   # 切换前章节，算 map slide 方向（源 self.preChapter）
-var _mode: String = "normal"  # 源 stageselect.lua:319 doChangeMode — normal/elite/guild
+var _mode: String = "normal"
 var _stage_buttons: Dictionary = {}   # sid -> TextureButton（_refresh_view 重建）
 var _content: Control = null
 var _map_host: Control = null
@@ -56,7 +54,6 @@ func setup_panel(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) ->
 	_build_content()
 
 
-# 源 createByStage(id)（equipcraft doClickGetWay :83 跳转）：按 stage_id 定位章再 setup。
 func setup_by_stage(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng, stage_id: int) -> void:
 	mgr = p_mgr
 	player = p_player
@@ -67,7 +64,6 @@ func setup_by_stage(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng,
 	_build_content()
 
 
-# 源 createByStage(:1642-1663) — stage_id → Chapter ID（elite/raid 经 Stage Group 反查）。
 func _chapter_of_stage(stage_id: int) -> int:
 	var st: Dictionary = player.cm.get_raw_table(&"Stage")
 	var sid: int = stage_id
@@ -77,7 +73,6 @@ func _chapter_of_stage(stage_id: int) -> int:
 
 
 # 建 UI 内容：base 从 .tscn instantiate（位置/size 固化）+ bind signals + fill mode toggle 文本。
-# 源 framework.lua:749-751 pushScene 场景全屏 bg.jpg（stageselect 源是独立场景），
 # 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
@@ -115,7 +110,6 @@ func _enter_tree() -> void:
 	_bob_all_pointers()
 
 
-# 源 create(:1617-1622) 顺序：map → frame/title → mode → arrows → dots。
 # op="init"（首次，无动画）/ "chapter"（map slide + title fade；frame 章节不重建，照源 createFrame 不随章节）/ "mode"（map fadeOut + frame/title/dots fade）。
 func _refresh_view(op: String = "init") -> void:
 	var cm: Variant = player.cm if player != null else null
@@ -186,12 +180,10 @@ func _crossfade_diff(old: Array, all_nodes: Array, time: float) -> void:
 			tw.tween_property(c, "modulate:a", 1.0, time)
 
 
-# 源 createMap:1397-1442 — 章节 slide（新±720 滑入 CCEaseSineOut 0.5s，旧∓720 滑出后移除）/ mode fadeOut 0.5s。
 func _play_map_transition(old_maps: Array, new_map: Control, op: String) -> void:
 	if op == "init" or old_maps.is_empty() or new_map == null:
 		return
 	if op == "chapter":
-		# 源 :1405-1413 preChapter<current 新从右(+720)滑入旧(-720)滑出；preChapter>current 反向。
 		var dir: float = 1.0 if _current_chapter > _pre_chapter else -1.0
 		var base_x: float = StageSelectBuilder.CLIP_RECT.position.x
 		new_map.position.x = base_x + dir * MAP_SLIDE_DIST
@@ -211,7 +203,6 @@ func _play_map_transition(old_maps: Array, new_map: Control, op: String) -> void
 				tw.tween_callback((old as Node).free)
 
 
-# 源 createChapterButton:714-721 — 左箭头 base 78↔68（-10），右箭头 720↔730（+10），1s CCRepeatForever。
 func _start_arrow_bob() -> void:
 	if _arrows_bobbing or _content == null or not is_instance_valid(_content):
 		return
@@ -229,7 +220,6 @@ func _bob_x(node: CanvasItem, dx: float) -> void:
 	tw.tween_property(node, "position:x", base_x, ARROW_BOB_TIME)
 
 
-# 源 currentTag:1308-1311 CCMoveTo 0.5 ↔ cpos.y+10（cocos 向上 = godot y-10），CCRepeatForever。
 func _bob_all_pointers() -> void:
 	if _map_host == null:
 		return
@@ -257,7 +247,6 @@ func _get_stage_stars(sid: int) -> int:
 	return mgr.stage_stars(sid)
 
 
-# 源 doChangeMode(:319) — 三 mode toggle（normal/elite/guild）。
 func _on_mode_pressed(mode: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_mode = mode
@@ -265,7 +254,6 @@ func _on_mode_pressed(mode: String) -> void:
 	_refresh_view("mode")
 
 
-# 源 doChangeChapter(:423)/setChapterButtonState(:643) — 章节切换（边界隐藏箭头，:452 章节未变不重建）。
 func _on_prev_chapter() -> void:
 	_change_chapter(-1)
 
@@ -283,7 +271,6 @@ func _change_chapter(delta: int) -> void:
 		_refresh_view("chapter")
 
 
-# 源 gotoDetailScene(:214) — 点击 stage 圆点弹关卡详情（照源 stageselect→stagedetail→battle）。
 func _on_stage_clicked(sid: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if mgr == null or player == null or rng == null:

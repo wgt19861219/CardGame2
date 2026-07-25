@@ -11,15 +11,12 @@ extends Control
 ## Control 非 PopWindow：content 挂 panel 自身（无 container 字段，参考 shortcut/battle_prepare 范式）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/crusade_reset_confirm_content.tscn")
-# 源 :668 LSTR CRUSADE.END_THIS_EXPEDITION_AND_START_OVER
 const LSTR_MSG_KEY: String = "CRUSADE.END_THIS_EXPEDITION_AND_START_OVER"
 const MSG_TEXT_FALLBACK: String = "结束本次远征并重新开始？"
-# 源 :669/670 LSTR CHATCONFIG.CANCEL/CONFIRM
 const LSTR_CANCEL_KEY: String = "CHATCONFIG.CANCEL"
 const LSTR_CONFIRM_KEY: String = "CHATCONFIG.CONFIRM"
 const CANCEL_TEXT_FALLBACK: String = "取消"
 const OK_TEXT_FALLBACK: String = "确认"
-# 源 dialog.lua:273/292 showConfirmDialog（crusade.lua:679）herodetail-upgrade Scale9 capInsets 20,20,40,29。
 const UPGRADE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 const UPGRADE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
 const UPGRADE_CAP: Rect2 = Rect2(20.0, 20.0, 40.0, 29.0)
@@ -35,7 +32,6 @@ func _ready() -> void:
 	_fill_content(content)
 
 
-# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = GameData.config
 	if cfg != null:
@@ -59,7 +55,6 @@ func _close() -> void:
 	queue_free()
 
 
-# 源 :671-677 rightHandler → emit confirmed（调用方接信号执行 reset）。
 func _on_ok() -> void:
 	emit_signal("confirmed")
 	queue_free()

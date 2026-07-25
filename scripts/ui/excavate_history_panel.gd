@@ -17,18 +17,15 @@ const FONT_BODY: int = 14
 const COLOR_WIN: Color = Color(0.2, 0.8, 0.2)
 const COLOR_LOSE: Color = Color(0.9, 0.2, 0.2)
 const COLOR_BODY: Color = Color(65.0 / 255.0, 57.0 / 255.0, 54.0 / 255.0)
-# 源 excavatehistory.lua:65-69 tag_win/tag_lose（图，无 LSTR 文本）；单机用文字 "胜/败" 兜底
 const WIN_TEXT: String = "胜"
 const LOSE_TEXT: String = "败"
-const CHECK_TEXT: String = "战报"   # 源 check_button 图标（无 LSTR）
-# 源 excavatehistory.lua:100 EXCAVATEHISTORY.ATTACK_YOUR__S（"偷袭了你的%s"）
+const CHECK_TEXT: String = "战报"
 const LSTR_ATTACK_KEY: String = "EXCAVATEHISTORY.ATTACK_YOUR__S"
 const ATTACK_FALLBACK_FMT: String = "偷袭了你的%s"
 const EMPTY_TEXT: String = "暂无战斗记录"   # 源空状态无文本（自创中文兜底）
 const SECONDS_PER_DAY: int = 86400
 const SECONDS_PER_HOUR: int = 3600
 const SECONDS_PER_MINUTE: int = 60
-# 源 :78-84 时间相对格式（4 个 LSTR key，dd/dh/dm/dt 分档）
 const LSTR_DAY_KEY: String = "EXCAVATEHISTORY._D_DAYS_AGO"
 const DAY_FALLBACK_FMT: String = "%d天前"
 const LSTR_HOUR_KEY: String = "PVP._D_HOURS_AGO"
@@ -94,7 +91,6 @@ func _build_item(record: Dictionary) -> Control:
 	name_lbl.add_theme_color_override("font_color", COLOR_BODY)
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info.add_child(name_lbl)
-	# 源 excavatehistory.lua:100 ATTACK_YOUR__S = "偷袭了你的%s"（disName = ExcavateTreasure Display Name）
 	var mine_lbl := Label.new()
 	var dis_name: String = ExcavateData.display_name(pd.cm, type_id)
 	mine_lbl.text = _lstr(LSTR_ATTACK_KEY, ATTACK_FALLBACK_FMT) % dis_name
@@ -117,7 +113,6 @@ func _build_item(record: Dictionary) -> Control:
 	return row
 
 
-# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = pd.cm
 	if cfg != null:

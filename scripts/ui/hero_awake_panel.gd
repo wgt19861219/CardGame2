@@ -8,7 +8,6 @@ extends PopWindow
 ##   3. cardui CCDelayTime(0.4) → CCFadeIn(0.2) + add bubble FCA（:21-36）
 ##   4. add card_<color> FCA at z=10 scale=1.5（:38-44）
 ##   5. registerTouchHandler + 点击任意处关闭（:45-46 + doClickLayer :49-72）
-## 源坐标 cocos(800×480 左下) → Godot(960×640 左上)：cx+80, 560-cy。
 ## FCA 资源 eff_UI_tavern_bubble / eff_UI_tavern_card_<color> 在 assets/anim_frames/effect/。
 
 signal awake_shown   # 展示动画启动（点击关闭前的视觉完成节点）
@@ -17,19 +16,17 @@ signal closed        # 用户点击关闭
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_awake_content.tscn")
 const CARD_SCENE: PackedScene = preload("res://scenes/ui/hero_detail_card_tab.tscn")
 
-# 源坐标
 const CENTER_COCOS: Vector2 = Vector2(400.0, 240.0)   # bg/cardui center
 const LIGHT_COCOS: Vector2 = Vector2(400.0, 550.0)    # light
-const LIGHT_SCALE: float = 6.0                        # 源 :130 scale 6
-const LIGHT_ROTATE_SEC: float = 5.0                   # 源 :14 CCRotateBy(5,360)
-const LIGHT_REPEAT: int = 3                           # 源 :15 CCRepeat ×3
-const FADE_IN_SEC: float = 0.4                        # 源 :11/147 CCFadeIn(0.4)
-const CARD_FADE_SEC: float = 0.2                      # 源 :24 CCFadeIn(0.2)
-const CARD_FADE_DELAY: float = 0.4                    # 源 :21 CCDelayTime(0.4)
-const FCA_SCALE: float = 1.5                          # 源 :42/30 setScale(1.5)
+const LIGHT_SCALE: float = 6.0
+const LIGHT_ROTATE_SEC: float = 5.0
+const LIGHT_REPEAT: int = 3
+const FADE_IN_SEC: float = 0.4
+const CARD_FADE_SEC: float = 0.2
+const CARD_FADE_DELAY: float = 0.4
+const FCA_SCALE: float = 1.5
 const CARD_HOST_SHIFT_X: float = 200.0                # card_tab 原居左，右移 200 让 CardFrame center 落屏幕 (480,320)
 
-# 源 bg_res 映射（:103-107）
 const BG_RES_MAP: Dictionary = {
 	"red": "res://assets/ui/alpha/HVGA/tavern_get_hero_bg_red.jpg",
 	"green": "res://assets/ui/alpha/HVGA/tavern_get_hero_bg_green.jpg",
@@ -58,13 +55,12 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + 80.0, 560.0 - cy)
 
 
-# 源 create :88-162：noShade + readnode bg/light/cardui + ed.announce HeroAwaken → showCardui。
 # 本项目单机化直接调 _build_content + show_window 后开动画（无 announce 中介）。
 func setup_awake(hero: HeroInstance, cm: Variant) -> void:
 	_hero = hero
 	_cm = cm
 	_color = _resolve_color(cm, hero)
-	set_swallow(false)   # 源 noShade=true：shade 透明不吞底层，点击关闭走 _unhandled_input
+	set_swallow(false)
 	setup()
 	# shade 透明（源 noShade=true 等价：不可见但仍占全屏接收点击）
 	shade_layer.color = Color(0.0, 0.0, 0.0, 0.0)
@@ -118,7 +114,7 @@ func _build_hero_card() -> void:
 	card.visible = true   # .tscn 默认 visible=false，强制显示
 	card.offset_left = CARD_HOST_SHIFT_X
 	card.offset_right = CARD_HOST_SHIFT_X
-	card.modulate.a = 0.0   # 源 :142 opacity=0，由动画 fade in
+	card.modulate.a = 0.0
 	_card_host.add_child(card)
 	HeroDetailTabs.fill_card_view(card, _hero, _cm)
 
@@ -128,14 +124,12 @@ func show_window(parent: Node) -> void:
 	_play_show_anim()
 
 
-# 源 create :147 bg CCFadeIn(0.4) + ed.announce HeroAwaken → showCardui。
 func _play_show_anim() -> void:
 	var tw: Tween = create_tween()
 	tw.tween_property(_bg, "modulate:a", 1.0, FADE_IN_SEC)
 	tw.tween_callback(_show_card_ui)
 
 
-# 源 showCardui :9-47：light fade+rotate / cardui delay+fade+ubble / card_<color> FCA。
 func _show_card_ui() -> void:
 	if not is_inside_tree():
 		return
@@ -145,7 +139,6 @@ func _show_card_ui() -> void:
 	awake_shown.emit()
 
 
-# 源 :11-18 light: CCFadeIn(0.4) → CCRotateBy(5,360) × CCRepeat ×3。
 func _play_light_anim() -> void:
 	if _light == null:
 		return
@@ -155,7 +148,6 @@ func _play_light_anim() -> void:
 	tw.tween_property(_light, "rotation", deg_to_rad(360.0 * float(LIGHT_REPEAT)), total_sec)
 
 
-# 源 :21-36 cardui: CCDelayTime(0.4) → CCFadeIn(0.2) + CCCallFunc(add bubble FCA)。
 func _play_card_fade() -> void:
 	if _card_host == null or _card_host.get_child_count() == 0:
 		return
@@ -166,12 +158,10 @@ func _play_card_fade() -> void:
 	tw.tween_callback(_add_bubble_fca)
 
 
-# 源 :26-32 ed.createFcaNode("eff_UI_tavern_bubble") at ccp(400,240) scale 1.5。
 func _add_bubble_fca() -> void:
 	_add_fca(BUBBLE_RES)
 
 
-# 源 :38-44 ed.createFcaNode("eff_UI_tavern_card_<color>") at ccp(400,240) z=10 scale 1.5。
 func _add_card_fca() -> void:
 	_add_fca(CARD_FCA_PREFIX + _color)
 
@@ -190,7 +180,6 @@ func _add_fca(resource: String) -> void:
 	var fca := FcaAnimation.new()
 	if not fca.load_from_ani(resource, atlas):
 		return
-	# 照 pop_tavern_loot._play_box_anim 范式：外层 Node2D（scale=FCA_SCALE）+ FCA（自带 _coord_scale）
 	var parts := Node2D.new()
 	parts.position = to_godot(CENTER_COCOS.x, CENTER_COCOS.y)
 	parts.scale = Vector2(FCA_SCALE, FCA_SCALE)
@@ -201,7 +190,6 @@ func _add_fca(resource: String) -> void:
 		fca.play(actions[0], true)
 
 
-# 源 registerTouchHandler :74-86 + doClickLayer :49-72：点击任意处关闭（amount<=1 分支）。
 # 走 _unhandled_input（事件未被 GUI 内按钮消费才触发，本弹窗无按钮，等价全屏点击关闭）。
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_inside_tree():

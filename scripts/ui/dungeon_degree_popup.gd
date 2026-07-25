@@ -3,7 +3,6 @@ extends PopWindow
 
 ## 副本难度选择弹窗 — 照源 ui/dungeon_map.lua:316-580 showDegreePopup + popupTouchHandler。
 ## 单 boss 4 难度（diff 1 普通/2 精英/3 英雄/4 噩梦），点难度 → degree_selected；close/outLayer 关闭。
-## 源 Scale9Sprite frame + 多 Sprite 重建 → Panel frame + TextureButton(含 icon/vit 子节点)。
 ## 2026-07-18 重构：panel 层（Frame/TitleLabel/CloseBtn/DegreeHost）静态化进
 ## scenes/ui/dungeon_degree_popup_content.tscn（位置/size 编辑器可视化，照 hero_detail 范式）。
 ## 难度按钮（数量随 difficulties 变）保留 procedural 挂 %DegreeHost（HBox 容器）。
@@ -13,17 +12,16 @@ const FRAME_POS := Vector2(130.0, 170.0)
 const FRAME_SIZE := Vector2(700.0, 300.0)
 const BTN_SIZE := Vector2(130.0, 120.0)
 const ICON_SIZE := Vector2(55.0, 55.0)
-const GRAY_MODULATE := Color(0.4, 0.4, 0.4)                # 源 :467-469 setSpriteGray 近似
+const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
 
 const BTN_BG := "res://assets/ui/alpha/HVGA/act/act_select_bg.png"
 const BTN_BG_CHOSEN := "res://assets/ui/alpha/HVGA/act/act_select_bg_chosen.png"
 const ICON_DIR := "res://assets/ui/alpha/HVGA/act/act_icon_difficulty_"
-# 源 dungeon_map.lua:427-460 vit 行（vit_bg + vit_number + vit_icon）
-const VIT_BG_RES := "res://assets/ui/alpha/HVGA/act/act_comment_bg.png"  # 源 :431
-const VIT_ICON_RES := "res://assets/ui/alpha/HVGA/vitalityicon.png"   # 源 :453
+const VIT_BG_RES := "res://assets/ui/alpha/HVGA/act/act_comment_bg.png"
+const VIT_ICON_RES := "res://assets/ui/alpha/HVGA/vitalityicon.png"
 const VIT_BG_SIZE := Vector2(60.0, 30.0)
-const VIT_ICON_SIZE := Vector2(30.0, 35.0)   # 源 :459 fix_height=35
-const VIT_NUM_COLOR := Color(0.91, 0.84, 0.71)  # 源 :447 ccc3(233,214,181)
+const VIT_ICON_SIZE := Vector2(30.0, 35.0)
+const VIT_NUM_COLOR := Color(0.91, 0.84, 0.71)
 
 var boss_idx: int = 0
 var _content: Control = null              # .tscn 根（%Frame/TitleLabel/CloseBtn/DegreeHost 持有者）
@@ -38,11 +36,10 @@ func setup_popup(p_boss_idx: int, p_boss_name: String, p_difficulties: Array, p_
 	setup()
 	_build_content(p_boss_name)
 	_create_degree_buttons(p_difficulties, p_player_level)
-	_play_entrance_scale()  # 源 :486-489 container setScale(0)→CCScaleTo(0.2,1)+CCEaseBackOut
+	_play_entrance_scale()
 
 
 # panel 层从 .tscn instantiate（位置/size .tscn 固化）+ fill title + connect close。
-# 源 :376-382 text = boss.name or ""（无 fallback；boss_name 由 StageDungeon["Stage Name"] 提供）。
 func _build_content(boss_name: String) -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
@@ -51,7 +48,6 @@ func _build_content(boss_name: String) -> void:
 	_degree_host = _content.get_node("%DegreeHost") as HBoxContainer
 
 
-## 源 dungeon_map.lua:388-477 4 难度按钮（act_select_bg + icon + vit 子节点叠加）。
 func _create_degree_buttons(difficulties: Array, player_level: int) -> void:
 	for di in range(difficulties.size()):
 		var diff: Dictionary = difficulties[di]
@@ -60,8 +56,6 @@ func _create_degree_buttons(difficulties: Array, player_level: int) -> void:
 		_degree_host.add_child(_make_degree_button(diff, diff_num, unlocked))
 
 
-## 源 :388-477 难度按钮（act_select_bg + icon）+ vit 行（vit_number+vit_bg+vit_icon）。
-## 源按钮无难度名 Label（仅 icon + vit），难度区分由 icon 图标承担；setSpriteGray 锁定。
 func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBoxContainer:
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -73,7 +67,7 @@ func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBo
 	btn.custom_minimum_size = BTN_SIZE
 	btn.ignore_texture_size = true
 	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	btn.modulate = GRAY_MODULATE if not unlocked else Color(1, 1, 1)  # 源 :467-469 setSpriteGray
+	btn.modulate = GRAY_MODULATE if not unlocked else Color(1, 1, 1)
 	btn.disabled = not unlocked
 	btn.pressed.connect(Callable(self, "_on_degree_pressed").bind(diff))
 	var icon := TextureRect.new()
@@ -85,12 +79,10 @@ func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBo
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(icon)
 	vbox.add_child(btn)
-	# 源 :427-460 vit 行（vit_number + vit_bg + vit_icon）
 	vbox.add_child(_make_vit_row(diff, unlocked))
 	return vbox
 
 
-## 源 dungeon_map.lua:427-460 vit_number(体力数) + vit_bg(act_comment_bg) + vit_icon(vitalityicon)。
 ## 锁定态颜色由父 btn.modulate=GRAY_MODULATE 统一处理（源 :467-469 setSpriteGray 整 button）。
 func _make_vit_row(diff: Dictionary, _unlocked: bool) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -98,7 +90,7 @@ func _make_vit_row(diff: Dictionary, _unlocked: bool) -> HBoxContainer:
 	row.add_theme_constant_override("separation", 2)
 	var vit_num := Label.new()
 	vit_num.text = str(int(diff["vit"]))
-	vit_num.add_theme_color_override("font_color", VIT_NUM_COLOR)  # 源 :447 ccc3(233,214,181)
+	vit_num.add_theme_color_override("font_color", VIT_NUM_COLOR)
 	vit_num.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(vit_num)
 	var vit_bg := TextureRect.new()
@@ -118,7 +110,6 @@ func _make_vit_row(diff: Dictionary, _unlocked: bool) -> HBoxContainer:
 	return row
 
 
-## 源 :486-489 container setScale(0)→CCScaleTo(0.2,1)+CCEaseBackOut；不在树内跳过（单测路径）。
 func _play_entrance_scale() -> void:
 	if not is_inside_tree():
 		return
@@ -131,7 +122,7 @@ func _play_entrance_scale() -> void:
 
 
 func _on_degree_pressed(diff: Dictionary) -> void:
-	AudioPlayer.play_sfx("common_click_feedback")  # 源 exerciselsr.clickDegree（sound_res 无 exercise 段，common_* 适配）
+	AudioPlayer.play_sfx("common_click_feedback")
 	emit_signal("degree_selected", boss_idx, diff)
 	_on_close()
 

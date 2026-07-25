@@ -10,7 +10,6 @@ extends PopWindow
 ## （Button + 运行时 cycle texture StyleBox）。Scale9 按钮用 .tscn 普通 Button + apply_with_label。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_map_content.tscn")
-# 源 :256/283 explain/histroy_button Scale9 sell_number_button capInsets 15.63,15.63,18.75,18.75
 const SCALE9_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const SCALE9_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const SCALE9_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 18.75, 18.75)
@@ -38,10 +37,8 @@ const LSTR_GOLD_KEY: String = "TASK.GOLD"
 const NAME_GOLD_FALLBACK: String = "金币"
 const LSTR_ITEM_KEY: String = "EQUIP.EXPERIENCE_CREAMS"
 const NAME_ITEM_FALLBACK: String = "经验药膏"
-# 源 :464 EXCAVATEHISTORY.DEFENSIVE_RECORD = "防守记录"（histroy_button_label）
 const LSTR_HISTORY_KEY: String = "EXCAVATEHISTORY.DEFENSIVE_RECORD"
 const HISTORY_FALLBACK: String = "防守记录"
-# 源 :488 EXCAVATEMAP.RULES = "规则"（explain_button_label）
 const LSTR_EXPLAIN_KEY: String = "EXCAVATEMAP.RULES"
 const EXPLAIN_FALLBACK: String = "规则"
 const ExcavateTeamPanel = preload("res://scripts/ui/excavate_team_panel.gd")
@@ -66,7 +63,6 @@ func setup_panel(p_pd: PlayerData, p_rng: BattleRng) -> void:
 	_refresh_node()
 
 
-# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = pd.cm
 	if cfg != null:

@@ -10,11 +10,9 @@ extends PopWindow
 ## 内容动态，保留 procedural 挂 %StoryList（autowrap + 颜色 + 字号运行时设）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_explain_content.tscn")
-# 源 ccc3(255,255,221) 故事段（excavateexplain.lua:45）
 const COLOR_STORY: Color = Color(1.0, 1.0, 221.0 / 255.0)
-# 源 ccc3(238,204,119) 规则段（:61）
 const COLOR_RULE: Color = Color(238.0 / 255.0, 204.0 / 255.0, 119.0 / 255.0)
-const FONT_SIZE: int = 16    # 源 ed.createttf(v, 16)
+const FONT_SIZE: int = 16
 const CONTENT_W: float = 500.0
 
 # 故事段 4 行（照 text_list_1 :8-13，4 个 LSTR key 顺序）
@@ -86,7 +84,6 @@ func setup_panel() -> void:
 	_build_content()
 
 
-# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = GameData.config
 	if cfg != null:

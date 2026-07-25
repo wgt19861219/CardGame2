@@ -13,31 +13,27 @@ const DEFAULT_ICON: String = "res://assets/ui/alpha/HVGA/gocha.png"
 const FRAGMENT_BG_PATH: String = "res://assets/ui/alpha/HVGA/fragment_bg.png"
 const SOULSTONE_TAG_PATH: String = "res://assets/ui/alpha/HVGA/equip_soulstone_tag.png"
 const TICK_PATH: String = "res://assets/ui/alpha/HVGA/fragment_tick.png"
-# 源 frame_res：quality 1-5 → white/green/blue/purple/orange
 const FRAME_COLORS: Array[String] = ["white", "green", "blue", "purple", "orange"]
-const HERO_DEFAULT_QUALITY: int = 1   # 源 createIcon hero 分支 quality 默认 1
+const HERO_DEFAULT_QUALITY: int = 1
 const ICON_SIZE: float = 72.0
 const ICON_OFFSET: Vector2 = Vector2(9.0, 9.0)
 const AMOUNT_POS: Vector2 = Vector2(40.0, 50.0)
-const STONE_ICON_POS: Vector2 = Vector2(36.0, 38.0)     # 源 createHeroStone stone ccp(36,38.5)
-const SOULSTONE_TAG_POS: Vector2 = Vector2(15.0, 60.0)  # 源 :593 tag ccp(15,60)
-const TICK_TAG_POS: Vector2 = Vector2(4.0, 4.0)         # 源 createIconWithTag :871 tag ccp(4,4)
+const STONE_ICON_POS: Vector2 = Vector2(36.0, 38.0)
+const SOULSTONE_TAG_POS: Vector2 = Vector2(15.0, 60.0)
+const TICK_TAG_POS: Vector2 = Vector2(4.0, 4.0)
 # 装备强化星级（源 createIconWithLevel:1202-1231）：垂直单列 blue(level 颗)/grey(show_gray 到 ml)。
 # star_bg（equipupgrade_equip_bg.png）本项目缺 → 降级不画底图。
 const STAR_BLUE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_star_blue.png"
 const STAR_GREY_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_star_grey.png"
-const STAR_OX: float = 58.0          # 源 ox（星 x，cocos 相对 bg）
-const STAR_OY_COCOS: float = 18.0    # 源 oy（i=1 星 y，cocos 左下原点）
-const STAR_DY: float = 10.0          # 源 dy 行间距（垂直单列 dx=0）
-const STAR_SCALE: float = 0.9        # 源 :1216/1224 setScale(0.9)
+const STAR_OX: float = 58.0
+const STAR_OY_COCOS: float = 18.0
+const STAR_DY: float = 10.0
+const STAR_SCALE: float = 0.9
 const HALF: float = 0.5              # 星中心定位偏移
-# 源 hello.lua:311 setContentScaleFactor(1.28125)：cocos sprite 显示=纹理/CS（无 fix_size 时）。
-# 源 :1215/1223 setScale(0.9) 在 /CS 基础上叠加 → 最终 = (纹理/CS) × 0.9
 const CONTENT_SCALE: float = 1.28125
 
 
 # 创建图标节点（品质边框 + 内 Icon + 数量 Label + 可选星级）。id 为 equip id 或 hero tid。
-# 源 createIcon（基础）+ createIconWithLevel（+星级）。level=强化等级（蓝星数），show_gray=补灰星占位到 ml。
 static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_gray: bool = false) -> Control:
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
@@ -64,7 +60,6 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 	return container
 
 
-# 源 createIconWithLevel:1214-1229：垂直单列蓝星（level 颗）+ show_gray 灰星占位到 ml。
 # stars 存 container meta（供 playEnhanceAnim 操作 setVisible，源 stars[i].icon 等价）。
 static func _add_stars(container: Control, id: int, level: int, show_gray: bool, cm: Variant) -> void:
 	var ml: int = int(ReadequipData.get_equip_level_exp(id, cm).get("ml", 0))
@@ -83,8 +78,6 @@ static func _add_stars(container: Control, id: int, level: int, show_gray: bool,
 	container.set_meta("stars", stars)
 
 
-# 源 createIconWithLevel:1215-1218：星 @ (ox, oy+dy*(i-1)) scale 0.9，cocos 锚点 0.5/0.5 中心。
-# 源 sprite 显示=纹理/CS（引擎级），setScale(0.9) 在此基础上叠加 → size=纹理/CS 再 scale 0.9。
 static func _make_star(res_path: String, i: int) -> TextureRect:
 	var t: TextureRect = TextureRect.new()
 	var tex: Texture2D = load(res_path)
@@ -96,7 +89,6 @@ static func _make_star(res_path: String, i: int) -> TextureRect:
 	t.scale = Vector2(STAR_SCALE, STAR_SCALE)
 	var actual_size: Vector2 = base_size * STAR_SCALE
 	var cocos_y: float = STAR_OY_COCOS + STAR_DY * (i - 1)
-	# 源 cocos (ox, cocos_y) 中心 → Godot 左上 = (ox, ICON_SIZE - cocos_y) - actual_size/2
 	t.position = Vector2(STAR_OX, ICON_SIZE - cocos_y) - actual_size * HALF
 	return t
 
@@ -107,7 +99,6 @@ static func get_stars(container: Control) -> Array:
 	return v if v is Array else []
 
 
-## 源 readequip.lua refreshHeroItemStar:1243-1256：stars[1..new_level] 中灰星（type=n）上层加蓝星覆盖
 ## （同 position/scale，照源 parent:addChild 不删灰）+ stars[i].icon 指向蓝，type=y。
 ## 强化后点亮前重建（playEnhanceAnim 前调，initHeroEquip:1508）。0-based：stars[0..new_level-1]。
 ## 蓝星 visible=false（合并源 refresh 默认显 + playEnhanceAnim:1561 立即隐，同帧等价）→ playStarAnim 逐颗点亮。

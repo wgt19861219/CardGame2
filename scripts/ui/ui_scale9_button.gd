@@ -2,7 +2,6 @@ class_name UiScale9Button
 extends RefCounted
 
 ## 通用 Scale9 功能按钮工厂（照源 Scale9Sprite + press mask + Label）。
-## 源 ed.createScale9Sprite(res, CCRectMake) + scaleSize + ok_down mask 切 visible + Label 居中 →
 ## Godot Button + StyleBoxTexture（texture_margin 九宫格）+ pressed 切 mask stylebox。
 ## capInsets CCRectMake(x,y,w,h) → StyleBoxTexture texture_margin（自动按纹理尺寸算 right/bottom）。
 ## Button 自带 pressed 信号 + 文字居中（照源 ok_label）。配套 UiButton（TextureButton 整图 close/动作）。
@@ -52,7 +51,6 @@ static func _apply_style(btn: Button, res_normal: String, res_pressed: String, c
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
-# 源 Scale9Sprite capInsets CCRectMake(x,y,w,h)：中心区域 = (x,y,w,h)。
 # Godot StyleBoxTexture texture_margin 四边：left=x, top=y, right=tex.w-x-w, bottom=tex.h-y-h。
 static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()

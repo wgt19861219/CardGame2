@@ -3,7 +3,6 @@ extends RefCounted
 
 ## Spine .atlas 解析器（View 层）— Spine 2.1.07 region 纹理提取。
 ## 配套 assets/spine/<name>/<name>.atlas + <name>.png。region xy 左下原点 → Godot 左上翻转。
-## 照源 createFcaNode（resource_manager.lua:573）Spine 分支的图集加载，纯 Godot 适配。
 
 var _regions: Dictionary = {}    # region_name -> {xy: Vector2i, size: Vector2i, rotate: bool, orig, offset}
 var _region_cache: Dictionary = {}   # region_name -> ImageTexture（get_region_texture 缓存，避免每帧重建）

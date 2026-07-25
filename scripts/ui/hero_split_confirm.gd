@@ -9,14 +9,13 @@ extends Control
 ## Control 非 PopWindow，无 container → content 直接挂自身（同 shortcut/battle_prepare 范式）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_split_confirm_content.tscn")
-# 源 confirmdialog.lua popConfirmDialog（herosplit:98 调）sell_number_button capInsets 15.63,15.63,19.53,15.63 + 浅金。
 const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
 const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
 const CANCEL_TEXT: String = "取消"
 const OK_TEXT: String = "确认"
-const DEFAULT_MSG: String = "确认分解该英雄？"   # 源 :99 window.1.10.1.003 含 name（下轮补 Unit Display Name）
+const DEFAULT_MSG: String = "确认分解该英雄？"
 
 signal confirmed
 
@@ -55,7 +54,6 @@ func _close() -> void:
 	queue_free()
 
 
-# 源 :100-102 rightHandler → emit confirmed（调用方接信号执行 secondConfirm split）。
 func _on_ok() -> void:
 	emit_signal("confirmed")
 	queue_free()

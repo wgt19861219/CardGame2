@@ -38,7 +38,6 @@ func _process(delta: float) -> void:
 		_reset_gap()
 	_timer -= delta
 	if _timer <= 0.0:
-		# 源 :465 setAction("Start")；play 内部 action 不存在安全返（Spine/FCA 共有）
 		_anim.play(START_ACTION, false)
 		_reset_gap()
 
@@ -49,7 +48,6 @@ func _on_action_finished(action: String) -> void:
 		_anim.play(LOOP_ACTION, true)
 
 
-# 源 resetGap（main.lua:455-460）：fcaGap = (gmax-gmin)*random(0, gmax-gmin) + gmin + loop_gap*random(lmin,lmax)。
 func _reset_gap() -> void:
 	var gg: float = _gap_max - _gap_min
 	var gt: int = randi_range(0, int(gg)) if gg > 0.0 else 0

@@ -11,8 +11,7 @@ extends PopWindow
 ## 原 procedural 9 节点位置/size/颜色/字号固化为 .tscn；panel 仅填动态 LSTR 文字 + 连信号。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/star_shop_buy_window_content.tscn")
-const SHOW_SEC: float = 0.2   # 源 :116 CCScaleTo 0.2
-# 源 getStarGoodsName → parameter.lua:36-38 LSTR key（type 0/1/2 → stone_green/blue/purple）
+const SHOW_SEC: float = 0.2
 const GOODS_NAME_LSTR: Array[String] = ["PARAMETER.SMALL_PLANET_DEBRIS_BOX", "PARAMETER.MEDIUM_STELLAR_SUITCASE", "PARAMETER.LARGE_INTERSTELLAR_GALLERY"]
 
 var shop_mgr: ShopManager
@@ -33,7 +32,6 @@ func setup_buy(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng, p_slot: i
 	_build_ui()
 
 
-# 源 starshopbuywindow.lua:99-110 节点装配：chrome 从 .tscn instantiate（位置/size 固化），fill 动态文字 + 连信号。
 func _build_ui() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
@@ -60,7 +58,6 @@ func _build_ui() -> void:
 	ok.pressed.connect(_on_ok)
 
 
-# 源 :112-119 show frame setScale(0)→CCScaleTo 0.2 EASEBackOut
 func show_window(parent: Node) -> void:
 	super.show_window(parent)
 	_frame.scale = Vector2.ZERO
@@ -68,7 +65,6 @@ func show_window(parent: Node) -> void:
 	tw.tween_property(_frame, "scale", Vector2.ONE, SHOW_SEC).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-# 源 starshopbuywindow.lua:39-78 确认购买流程。
 func _on_ok() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var r: Dictionary = shop_mgr.buy_star(slot, pd, rng, pd.cm)

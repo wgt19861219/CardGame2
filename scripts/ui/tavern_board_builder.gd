@@ -15,13 +15,12 @@ extends RefCounted
 
 const CLIP_W: float = 206.0
 const CLIP_H: float = 320.0
-const SCROLL_CX: float = 109.0          # 源 scroll_board 子节点 x=109（common）/110（magic）
-const SLIDE_OFFSET: float = 320.0       # 源 CCMoveTo(0,320)
-const SLIDE_DURATION: float = 0.2       # 源 CCMoveTo 0.2 秒
+const SCROLL_CX: float = 109.0
+const SLIDE_OFFSET: float = 320.0
+const SLIDE_DURATION: float = 0.2
 const RES_DIR: String = "res://assets/ui/alpha/HVGA/"
-const LIGHT_ROTATE_SEC: float = 5.0          # 源 playLightAnim CCRotateBy(5,360) :584
-const FULL_CIRCLE_DEG: float = 360.0         # 源 :584 旋转一圈度数
-# 源 hello.lua:311 setContentScaleFactor=1.28125：cocos sprite 显示=纹理/CS。
+const LIGHT_ROTATE_SEC: float = 5.0
+const FULL_CIRCLE_DEG: float = 360.0
 # board 的 _tex/_button 工厂（纯 Sprite 无 fix_size）照源 /CS；_scale9 用源 scaleSize（1:1）不动。
 const CONTENT_SCALE: float = 1.28125
 
@@ -30,29 +29,29 @@ const BOARD_BG: Dictionary = {"bronze": "tavern_bg_1.png", "gold": "tavern_bg_3.
 const BOX_RES: Dictionary = {"bronze": "tavern_bg_chest_1.png", "gold": "tavern_bg_chest_3.png", "magic": "tavern_bg_chest_4.png"}
 const LIGHT_RES: Dictionary = {"gold": "tavern_light_rotate_3.png", "magic": "tavern_light_rotate_2.png"}
 const IS_LIGHT_VISIBLE: Dictionary = {"bronze": false, "gold": true, "magic": true}
-const MAGIC_BOX_BG_RES: String = "tavern_magicsoul_mark1.png"   # 源 magic box_bg :979
-const COST_BG_RES: String = "tavern_cost_bg.png"                # 源 cost_bg :702
-const COST_FRAME_RES: String = "tavern_cost_frame.png"          # 源 one_bg/ten_bg Scale9
-const COST_FRAME_CAP: Rect2 = Rect2(40.0, 0.0, 57.0, 32.0)      # 源 capInsets CCRectMake(40,0,57,32)
-const COST_FRAME_SIZE: Vector2 = Vector2(100.0, 32.0)           # 源 scaleSize
-const CHECK_RES: String = "tavern_button_1.png"                 # 源 check :713
-const CHECK_PRESS_RES: String = "tavern_button_2.png"           # 源 check_press :724
-const ARROW_RES: String = "tavern_up.png"                       # 源 arrow :751
-const ONE_BUY_RES: String = "tavern_button_normal_1.png"        # 源 one_buy :801
-const ONE_BUY_PRESS_RES: String = "tavern_button_normal_2.png"  # 源 one_buy_press :811
-const TEN_BUY_RES: String = "tavern_button_1.png"               # 源 ten_buy :887
-const TEN_BUY_PRESS_RES: String = "tavern_button_2.png"         # 源 ten_buy_press :897
-const GOLD_ICON_RES: String = "task_gold_icon_2.png"            # 源 one_Icon/ten_Icon pay==Gold
-const RMB_ICON_RES: String = "task_rmb_icon_2.png"              # 源 else（钻石）
+const MAGIC_BOX_BG_RES: String = "tavern_magicsoul_mark1.png"
+const COST_BG_RES: String = "tavern_cost_bg.png"
+const COST_FRAME_RES: String = "tavern_cost_frame.png"
+const COST_FRAME_CAP: Rect2 = Rect2(40.0, 0.0, 57.0, 32.0)
+const COST_FRAME_SIZE: Vector2 = Vector2(100.0, 32.0)
+const CHECK_RES: String = "tavern_button_1.png"
+const CHECK_PRESS_RES: String = "tavern_button_2.png"
+const ARROW_RES: String = "tavern_up.png"
+const ONE_BUY_RES: String = "tavern_button_normal_1.png"
+const ONE_BUY_PRESS_RES: String = "tavern_button_normal_2.png"
+const TEN_BUY_RES: String = "tavern_button_1.png"
+const TEN_BUY_PRESS_RES: String = "tavern_button_2.png"
+const GOLD_ICON_RES: String = "task_gold_icon_2.png"
+const RMB_ICON_RES: String = "task_rmb_icon_2.png"
 const TITLE_COLOR: Color = Color(1.0, 0.81, 0.07)
-const COST_FRAME_CAP_MAGIC: Rect2 = Rect2(10.0, 10.0, 20.0, 20.0)  # 源 magic drop_bg capInsets（预留）
+const COST_FRAME_CAP_MAGIC: Rect2 = Rect2(10.0, 10.0, 20.0, 20.0)
 # magic drop_bg 4 组（源 createMagicLayer:1068-1147 tavern_magicsoul_hero_bg Scale9 cap 10,10,20,20）
 const MAGIC_HERO_BG_RES: String = "tavern_magicsoul_hero_bg.png"
 const DROP_BG_CAP: Rect2 = Rect2(10.0, 10.0, 20.0, 20.0)
-const DROP_BG_LEFT_SIZE: Vector2 = Vector2(130.0, 50.0)   # 源 drop_bg_left
-const DROP_BG_RIGHT_SIZE: Vector2 = Vector2(50.0, 50.0)   # 源 drop_bg_right
-const DROP_BG_DAY_SIZE: Vector2 = Vector2(150.0, 75.0)    # 源 drop_bg_day
-const DROP_BG_MONTH_SIZE: Vector2 = Vector2(150.0, 75.0)  # 源 drop_bg_month
+const DROP_BG_LEFT_SIZE: Vector2 = Vector2(130.0, 50.0)
+const DROP_BG_RIGHT_SIZE: Vector2 = Vector2(50.0, 50.0)
+const DROP_BG_DAY_SIZE: Vector2 = Vector2(150.0, 75.0)
+const DROP_BG_MONTH_SIZE: Vector2 = Vector2(150.0, 75.0)
 
 
 # 建 board（container 中心 = godot_center）。
@@ -71,12 +70,10 @@ static func create_board(key: String, godot_center: Vector2, cost_info: Dictiona
 	board_bg.position = (Vector2(CLIP_W, CLIP_H) - board_bg.size) * 0.5
 	container.add_child(board_bg)
 	# board_title_bg（源 :619 tavern_title_bg.png，所有卡池共用，board_title 衬底）。
-	# 源 ccp(160,340) 以 board_bg 中心(103,160↔源 ccp 160,205)为锚 → godot 中心 (103, 25)。
 	var title_bg := _tex(RES_DIR + "tavern_title_bg.png")
 	title_bg.position = Vector2(CLIP_W * 0.5, 25.0) - title_bg.size * 0.5
 	container.add_child(title_bg)
 	# board_title 缺图降级 Label（源 :630 tavern_title_N.png 源缺，降级卡池名）。
-	# 源 ccp(160,355) → godot 中心 (103, 10)（title_bg 上方 15px 照源）→ position (0, -2)。
 	var title_lbl := Label.new()
 	title_lbl.text = _display_name(key)
 	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -112,21 +109,18 @@ static func create_board(key: String, godot_center: Vector2, cost_info: Dictiona
 	}
 
 
-# 源 doClickCheck:1576 — scroll_board CCMoveTo(0.2, ccp(0,320)) EaseSineIn 上滑展开露底部按钮。
 static func expand(scroll: Control) -> void:
 	var tw: Tween = scroll.create_tween()
 	tw.tween_property(scroll, "position:y", -SLIDE_OFFSET, SLIDE_DURATION) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 
-# 源 doClickArrow:1584 — scroll_board CCMoveTo(0.2, ccp(0,0)) EaseSineOut 滑回。
 static func collapse(scroll: Control) -> void:
 	var tw: Tween = scroll.create_tween()
 	tw.tween_property(scroll, "position:y", 0.0, SLIDE_DURATION) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
-# 源 playLightAnim :577-590 — gold/magic light CCRotateBy(5,360) RepeatForever（bronze 无 light）。
 # TextureRect rotation 绕 pivot_offset，照源 Sprite anchor(0.5,0.5) 中心 → 设 pivot_offset=size/2。
 static func play_light_anim(board: Dictionary) -> void:
 	var light: TextureRect = board.get("light", null)
@@ -139,7 +133,6 @@ static func play_light_anim(board: Dictionary) -> void:
 
 # ---- 内部 ----
 
-# 源 createCommonLayer:653 / createMagicLayer:949 ui_info 13 节点。
 # texts 由 panel 用 cm.get_lstr 准备后注入（builder 不查 LSTR，保持纯结构）。
 static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Dictionary, handlers: Dictionary, is_magic: bool, texts: Dictionary) -> Dictionary:
 	var nodes: Dictionary = {}
@@ -212,7 +205,6 @@ static func _build_scroll_nodes(key: String, scroll: Control, cost_info: Diction
 	return nodes
 
 
-# 源 createMagicLayer:1068-1147 magic drop_bg 4 组背景框 + 2 title（heroIcons 由 panel 填）。
 static func _build_magic_dropbg(scroll: Control, texts: Dictionary) -> void:
 	var left_bg := _scale9(RES_DIR + MAGIC_HERO_BG_RES, DROP_BG_LEFT_SIZE, DROP_BG_CAP)
 	left_bg.name = "drop_bg_left"
@@ -234,7 +226,6 @@ static func _build_magic_dropbg(scroll: Control, texts: Dictionary) -> void:
 	_drop_title(scroll, String(texts.get("month_title", "本周热点")), 107.0, -30.0)
 
 
-# 源 drop_day_title/drop_month_title Label（:1113 "今日主打" / :1139 "本周热门"）。
 static func _drop_title(scroll: Control, text: String, cx: float, cy: float) -> void:
 	var lbl := Label.new()
 	lbl.text = text
@@ -248,7 +239,6 @@ static func _drop_title(scroll: Control, text: String, cx: float, cy: float) -> 
 	scroll.add_child(lbl)
 
 
-# 源 one_bg/ten_bg Scale9 + one_Icon/ten_Icon + one_cost/ten_cost Label。
 # ccp(109,-87/-212) bg + ccp(64,-87/-213) icon + ccp(144,-87/-212) cost anchor(1,0.5)。
 # 返回 cost Label（供刷新）。
 static func _cost_row(scroll: Control, cx: float, cy: float, pay: String, cost_val: int) -> Label:
@@ -258,7 +248,7 @@ static func _cost_row(scroll: Control, cx: float, cy: float, pay: String, cost_v
 	var icon_res: String = RES_DIR + (GOLD_ICON_RES if pay == "Gold" else RMB_ICON_RES)
 	var icon := _tex(icon_res)
 	if pay != "Gold":
-		icon.scale = Vector2(1.2, 1.2)   # 源 :782/:857 钻石 icon scale 1.2
+		icon.scale = Vector2(1.2, 1.2)
 	icon.position = _scroll_pos(64.0, cy, icon.size)
 	scroll.add_child(icon)
 	# cost Label（源 anchor ccp(1,0.5) ccp(144,cy)，右对齐到 x=144）
@@ -275,7 +265,6 @@ static func _cost_row(scroll: Control, cx: float, cy: float, pay: String, cost_v
 	return lbl
 
 
-# 源 Cocos scroll_board (cx, cy) 中心 → Godot 局部 position（左上）。
 static func _scroll_pos(cx: float, cy: float, tex_size: Vector2) -> Vector2:
 	return Vector2(cx, CLIP_H - cy) - tex_size * 0.5
 
@@ -290,7 +279,6 @@ static func _tex(res_path: String) -> TextureRect:
 	return t
 
 
-# 源 Scale9Sprite（capInsets + scaleSize）→ Godot NinePatchRect（patch_margin 四边）。
 static func _scale9(res_path: String, size: Vector2, cap: Rect2) -> NinePatchRect:
 	var n := NinePatchRect.new()
 	n.texture = load(res_path) as Texture2D
@@ -305,7 +293,6 @@ static func _scale9(res_path: String, size: Vector2, cap: Rect2) -> NinePatchRec
 	return n
 
 
-# 源 Sprite 按钮（anchor 0.5,0.5 中心）→ TextureButton（texture_pressed 自动切 press 态）。
 static func _button(normal: String, pressed: String, cx: float, cy: float) -> TextureButton:
 	var btn := TextureButton.new()
 	btn.texture_normal = load(RES_DIR + normal) as Texture2D
@@ -317,7 +304,6 @@ static func _button(normal: String, pressed: String, cx: float, cy: float) -> Te
 	return btn
 
 
-# 源 check_label/one_buy_label/ten_buy_label（parent button, 居中）。
 static func _center_label(text: String, btn: TextureButton) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
@@ -332,7 +318,6 @@ static func _center_label(text: String, btn: TextureButton) -> Label:
 	return lbl
 
 
-# 源 board_title tavern_title_N.png 缺图降级卡池名。
 static func _display_name(key: String) -> String:
 	match key:
 		"bronze": return "青铜酒馆"

@@ -11,9 +11,7 @@ extends PopWindow
 ## scenes/ui/unlock_announce_view_content.tscn（位置/size 编辑器可视化调，offsets 照源公式算）；
 ## icon/fca 保留 procedural（不同 step 资源/降级路径不同，互斥二选一）。
 
-# 源 announce.lua:130/172 CCScaleTo(0.2, 1/0) + CCEaseBackOut/In
 const ANIM_DURATION: float = 0.2
-# 源 tutorialmaker.lua:104 CCRotateBy:create(5, 360) 光晕旋转
 const LIGHT_ROTATE_TIME: float = 5.0
 # 静态节点子场景（%Bg/%Light/%Label 位置/size 固化；icon/fca 留 procedural 挂 _panel）
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/unlock_announce_view_content.tscn")
@@ -25,8 +23,6 @@ const SPINE_DIR: String = "res://assets/spine"
 const HALF: float = 0.5
 # label 字号（源 createTTF res.label_size）
 const FONT_SIZE: int = 20
-# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
-# 源 tutorialmaker.lua:84/96/100 createSprite（unlock_bg/icon_res/lettherebelight）全无 fix_size → sprite 显示=tex/CS。
 # Godot TextureRect 默认 KEEP_SIZE 用纹理原始尺寸偏大 1.28，/CS 等价源显示。
 const CONTENT_SCALE: float = 1.28125
 
@@ -35,7 +31,6 @@ var _light: TextureRect = null
 var _light_tween: Tween = null
 
 
-## 源 announce.show + createExhibitionLayer：按 step 配置建 panel + 弹出动画。
 func show_step(step: StringName, parent: Node) -> void:
 	var cfg: Dictionary = TutorialData.get_unlock_config(step)
 	if cfg.is_empty():
@@ -52,7 +47,6 @@ func show_step(step: StringName, parent: Node) -> void:
 	_start_light_rotate()
 
 
-# 源 createExhibitionLayer :80-113：panel(unlock_bg + light + icon + label)。
 # bg/light/label 从 .tscn instantiate（位置/size 可视化），icon/fca 保留 procedural。
 func _setup_panel(cfg: Dictionary) -> void:
 	setup()  # PopWindow 建 shade + container
@@ -90,7 +84,6 @@ func _make_texture(res_path: String) -> TextureRect:
 	var tex: Texture2D = load(res_path)
 	if tex != null:
 		rect.texture = tex
-		# 源 createSprite 无 fix_size → sprite 显示=texture/CS
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.size = TexDisplaySize.display_size(res_path)
 	return rect
@@ -111,7 +104,6 @@ func _make_static_from_atlas(res_name: String) -> TextureRect:
 		return null
 	var rect: TextureRect = TextureRect.new()
 	rect.texture = tex
-	# 源 createFcaNode 不传 aniType → else LegendAminationEffect → createStaticSpriteFromSpineAtlas
 	# 取最大 region 静态显示（无 fix_size），等价 sprite 显示=texture/CS。
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# atlas region 保留 tex.get_size()/CS：helper _base_size 会 load(resource_path) 得整图 ≠ region 尺寸
@@ -121,13 +113,11 @@ func _make_static_from_atlas(res_name: String) -> TextureRect:
 	return rect
 
 
-# 源 announce.lua:104 doMainLayerTouch ended → destroy。
 func _on_shade_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_destroy()
 
 
-# 源 announce.lua:152-189 destroy：scale→0 EASE_BACK_IN + removeFromParent。
 func _destroy() -> void:
 	if _light_tween != null and _light_tween.is_valid():
 		_light_tween.kill()
@@ -139,7 +129,6 @@ func _destroy() -> void:
 		remove_window()
 
 
-# 源 tutorialmaker.lua:104-106 CCRotateBy 360°/5s 循环。
 func _start_light_rotate() -> void:
 	if _light == null:
 		return

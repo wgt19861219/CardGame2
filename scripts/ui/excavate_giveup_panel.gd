@@ -10,20 +10,16 @@ extends PopWindow
 
 # 静态 panel 层子场景（位置/size 在 .tscn 可视化）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_giveup_content.tscn")
-# 源 :114 popConfirmDialog 右按钮（ed.popConfirmDialog 通用确认/取消）
 const LSTR_CONFIRM_KEY: String = "CHATCONFIG.CONFIRM"
 const CONFIRM_FALLBACK: String = "确认"
 const LSTR_CANCEL_KEY: String = "CHATCONFIG.CANCEL"
 const CANCEL_FALLBACK: String = "取消"
-# 源 :132-136 popConfirmDialog（giveup.lua:132）sell_number_button Scale9 capInsets 15.63,15.63,19.53,15.63 + 浅金 ccc3(234,225,205)。
 const SELL_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const SELL_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const SELL_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
 const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
-# 源 :114 giveup.1.10.1.005 "是否确认从这座宝藏撤退？"
 const LSTR_BODY_KEY: String = "giveup.1.10.1.005"
 const BODY_FALLBACK: String = "是否确认从这座宝藏撤退？"
-# 源 giveup.lua:13-19 icon_res 映射：Diamond→shop_token_icon / Gold→goldicon_small / Item→excavate_exp_icon
 const ICON_DIAMOND_RES: String = "res://assets/ui/alpha/HVGA/shop_token_icon.png"
 const ICON_GOLD_RES: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const ICON_ITEM_RES: String = "res://assets/ui/alpha/HVGA/excavate/excavate_exp_icon.png"
@@ -48,7 +44,6 @@ func setup_panel(p_pd: PlayerData, excavate_id: int, on_confirmed: Callable) -> 
 	_build_content()
 
 
-# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = pd.cm
 	if cfg != null:
@@ -60,11 +55,9 @@ func _lstr(key: String, fallback: String) -> String:
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
-	# 源 :12-14 累计产出 + 抢夺比例（单机裁 rr=0 实得=全额）
 	var now: int = int(Time.get_unix_time_from_system())
 	var amount: int = pd.excavate.produce_amount(_excavate_id, now)
 	var type_id: int = int(pd.excavate.get_data(_excavate_id).get("_type_id", 0))
-	# 源 :114 单一文本行 giveup.1.10.1.005（rr=0 时源走 row_ui_1 单行确认问句）
 	var body_lbl: Label = content.get_node("%BodyLabel") as Label
 	body_lbl.text = _lstr(LSTR_BODY_KEY, BODY_FALLBACK) + "\n" + str(amount) + " " + _type_name(type_id)
 	# 取消/确认按钮（源 :132-136 sell_number_button Scale9 cap 15.63,15.63,19.53,15.63 + 浅金 ccc3）

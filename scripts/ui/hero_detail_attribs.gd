@@ -7,9 +7,7 @@ extends RefCounted
 ## 本项目 ScrollContainer+%AttribVBox 替代 draglist（cliprect 249×415 照源）。
 ## 不含 panel 状态，全 static + 参数化（hero/cm/vbox）。Logic 层不依赖 Control 子类可 headless 单测。
 
-# 源 baseres.lua:5 att_name 全集 21 个（照源 attributes.lua 循环 #att_name，禁裁剪）。
 const DISPLAY_ATTRIBS: Array[String] = ["STR", "INT", "AGI", "HP", "AD", "AP", "ARM", "MR", "CRIT", "MCRIT", "HPS", "MPS", "DODG", "ARMP", "MRI", "LFS", "CDR", "HEAL", "HIT", "SKL", "SILR"]
-# 源 baseres.lua:80 att_pre（属性显示前缀 LSTR key）。SILR 源 T("") 空 → 用 key 本身 fallback。
 const ATTR_PRE_LSTR: Dictionary = {
 	"STR": "BASERES.STRENGTH_", "INT": "BASERES.INTELLIGENCE_", "AGI": "BASERES.AGILITY_",
 	"HP": "BASERES.MAXIMUM_HP_", "AD": "BASERES.PHYSICAL_ATTACK_", "AP": "BASERES.MAGIC_STRENGTH_",
@@ -21,20 +19,17 @@ const ATTR_PRE_LSTR: Dictionary = {
 	"HEAL": "BASERES.IMPROVE_THERAPEUTIC_SKILL_EFFECT",
 	"HIT": "baseres.1.10.1.004", "SKL": "baseres.1.10.1.005",
 }
-# 源 baseres.lua:105 att_suffix（属性后缀，大多空）。
 const ATTR_SUFFIX: Dictionary = {"CDR": "%", "HEAL": "%", "SKL": " "}
-# 源 attributes.lua att 颜色（toccc3 int→RGB）：name/旁白 15843697、base/growth值 16771782、add 10543386。
-const ATT_PRE_COLOR: Color = Color(0.945, 0.757, 0.443)   # 源 toccc3(15843697)
-const ATT_BASE_COLOR: Color = Color(1.0, 0.918, 0.776)  # 源 toccc3(16771782)
-const ATT_ADD_COLOR: Color = Color(0.627, 0.882, 0.102) # 源 toccc3(10543386)
-const ATT_TITLE_COLOR: Color = Color(0.984, 0.808, 0.063)  # 源 ccc3(251,206,16)
-const ATT_GROWTH_NAME_COLOR: Color = Color(1.0, 0.302, 0.0) # 源 ccc3(255,77,0)
-const ATT_DESC_COLOR: Color = Color.WHITE              # 源 des 默认色（config 无 color）
-const ATT_TEXT_WIDTH: float = 235.0   # 源 des dimension CCSizeMake(235,0)
+const ATT_PRE_COLOR: Color = Color(0.945, 0.757, 0.443)
+const ATT_BASE_COLOR: Color = Color(1.0, 0.918, 0.776)
+const ATT_ADD_COLOR: Color = Color(0.627, 0.882, 0.102)
+const ATT_TITLE_COLOR: Color = Color(0.984, 0.808, 0.063)
+const ATT_GROWTH_NAME_COLOR: Color = Color(1.0, 0.302, 0.0)
+const ATT_DESC_COLOR: Color = Color.WHITE
+const ATT_TEXT_WIDTH: float = 235.0
 const ATT_TITLE_MARK_RES: String = "res://assets/ui/alpha/HVGA/herodetail-title-mark.png"
 
 
-# 源 attributes.lua createAttList（:455-563）draglist 竖排：简介标题+Description+Narrative+
 # 属性标题+成长值（createGrowth）+ 21 属性（createAttDetail）。本项目 ScrollContainer+%AttribVBox 替代 draglist。
 static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant) -> void:
 	if hero == null or cm == null:
@@ -57,7 +52,7 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 	var att: Dictionary = ReadheroAttribs.get_hero_att_by_hero(hero, cm)
 	for key in DISPLAY_ATTRIBS:
 		if not att.has(key):
-			continue   # 源 refreshAttPos base<=0 且 add<=0 隐藏（setScaleY(0)）
+			continue
 		var row: Dictionary = att[key]
 		var pre: String = get_lstr_fallback(String(ATTR_PRE_LSTR.get(key, "")), key, cm)
 		var suffix: String = String(ATTR_SUFFIX.get(key, ""))
@@ -80,8 +75,6 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 		vbox.add_child(row_box)
 
 
-# 源 createAttList title-mark + des_title（20 size 黄 ccc3(251,206,16)，HERO_INTROUDUCEMENT/HERO_ATTRIBUTES）。
-# 源 setPosition(list_center, ...) anchor(0.5,1) 居中——title-mark + title label 都在 list 中心 x=142。
 # 项目用 VBox 默认左对齐，需给 title-mark + title label 设 size_flags_horizontal=SIZE_SHRINK_CENTER 居中。
 static func _add_section_title(vbox: VBoxContainer, lstr_key: StringName, fallback: String, cm: Variant) -> void:
 	var tex: Texture2D = _load_texture(ATT_TITLE_MARK_RES)
@@ -91,20 +84,19 @@ static func _add_section_title(vbox: VBoxContainer, lstr_key: StringName, fallba
 		mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		mark.stretch_mode = TextureRect.STRETCH_SCALE
 		mark.custom_minimum_size = Vector2(80.0, 12.0)
-		mark.size_flags_horizontal = Control.SIZE_SHRINK_CENTER   # 源 list_center 居中
+		mark.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vbox.add_child(mark)
 	var lbl := Label.new()
 	lbl.text = String(cm.get_lstr(lstr_key)) if cm != null else fallback
 	lbl.modulate = ATT_TITLE_COLOR
 	lbl.add_theme_font_size_override("font_size", 20)
-	lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER   # 源 list_center 居中
+	lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(lbl)
 
 
-# 源 createAttList des/narrative（dimension 235×0 自动换行，18/16 size）。
 static func _add_text(vbox: VBoxContainer, text: String, size: int, color: Color) -> void:
 	if text.is_empty():
 		return
@@ -119,7 +111,6 @@ static func _add_text(vbox: VBoxContainer, text: String, size: int, color: Color
 	vbox.add_child(lbl)
 
 
-# 源 createGrowth（:296-401）：STR/INT/AGI 名（红 ccc3(255,77,0)）+ 值（toccc3(16771782)），16 size。
 static func _add_growth(vbox: VBoxContainer, hero: HeroInstance, cm: Variant) -> void:
 	if hero == null or cm == null:
 		return

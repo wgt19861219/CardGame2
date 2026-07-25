@@ -12,32 +12,31 @@ extends PopWindow
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_content.tscn")
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
-const LSTR_TITLE_KEY: String = "MAILBOX.MAILBOX"   # 源 mailbox.lua:662
+const LSTR_TITLE_KEY: String = "MAILBOX.MAILBOX"
 const TITLE_FALLBACK: String = "信箱"
-const LSTR_FROM_KEY: String = "MAILBOX.FROM_"      # 源 mailbox.lua:509 T(LSTR).." "（照源加空格）
+const LSTR_FROM_KEY: String = "MAILBOX.FROM_"
 const FROM_FALLBACK: String = "发件人："
 const READ_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_read_bg.png"
 const UNREAD_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_unread_bg.png"
-const ROW_SIZE: Vector2 = Vector2(340.0, 90.0)   # 源 createMail:451 board setContentSize(340, 90)
+const ROW_SIZE: Vector2 = Vector2(340.0, 90.0)
 const ICON_SIZE: Vector2 = Vector2(40.0, 40.0)
-const NAME_FONT: int = 20                # 源 createMail:495 size 20
-const SMALL_FONT: int = 18               # 源 createMail:510/538 size 18
-const ICON_BG_DEFAULT: String = "res://assets/ui/alpha/HVGA/task_icon_bg.png"   # 源 mailbox.lua:54
+const NAME_FONT: int = 20
+const SMALL_FONT: int = 18
+const ICON_BG_DEFAULT: String = "res://assets/ui/alpha/HVGA/task_icon_bg.png"
 const ICON_BG_SIZE: Vector2 = Vector2(50.0, 50.0)
 const ICON_BG_POS: Vector2 = Vector2(10.0, 15.0)
-const ICON_FRAME_TEX: String = "res://assets/ui/alpha/HVGA/gocha.png"   # 源 mailbox.lua:569 icon_frame
+const ICON_FRAME_TEX: String = "res://assets/ui/alpha/HVGA/gocha.png"
 const ICON_FRAME_SIZE: Vector2 = Vector2(50.0, 50.0)
 const ICON_FRAME_POS: Vector2 = Vector2(10.0, 15.0)
-const NAME_COLOR: Color = Color(67.0 / 255.0, 59.0 / 255.0, 56.0 / 255.0)   # 源 :502 ccc3(67,59,56)
-const FROM_COLOR: Color = Color(138.0 / 255.0, 56.0 / 255.0, 1.0 / 255.0)   # 源 :532 ccc3(138,56,1)
-const DATE_COLOR: Color = Color(157.0 / 255.0, 117.0 / 255.0, 89.0 / 255.0)   # 源 :547 ccc3(157,117,89)
+const NAME_COLOR: Color = Color(67.0 / 255.0, 59.0 / 255.0, 56.0 / 255.0)
+const FROM_COLOR: Color = Color(138.0 / 255.0, 56.0 / 255.0, 1.0 / 255.0)
+const DATE_COLOR: Color = Color(157.0 / 255.0, 117.0 / 255.0, 89.0 / 255.0)
 const MailDetailPanel = preload("res://scripts/ui/mail_detail_panel.gd")
 
 var pd: PlayerData
 var _mail_list: VBoxContainer = null   # .tscn %MailList（邮件行容器）
 
 
-# 源 LSTR 走 GameData.config（autoload）；未初始化（headless 测试）fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = GameData.config
 	if cfg != null:
@@ -52,7 +51,6 @@ func setup_panel(p_pd: PlayerData) -> void:
 
 
 # 建 UI 内容：chrome 静态节点从 .tscn instantiate（位置/size 可视化），邮件行 procedural 挂 %MailList。
-# 源 create:594 + createListLayer:251。
 func _build_content() -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
@@ -63,7 +61,6 @@ func _build_content() -> void:
 		_add_mail_row(mail)
 
 
-# 源 createMail:445：单封邮件行（Button + StyleBoxTexture bg + icon + name/from/date Label）。
 # bg 源 :460-469 Sprite mediate（行居中）；本项目用 Button+StyleBoxTexture（点击区+九宫格视觉等价）。
 # icon 三分支（:556 iconid 装备 / :563 iconres+frame / 无 icon）。
 func _add_mail_row(mail: Dictionary) -> void:
@@ -76,7 +73,6 @@ func _add_mail_row(mail: Dictionary) -> void:
 	row.add_theme_stylebox_override("normal", sb)
 	row.add_theme_stylebox_override("hover", sb)
 	row.add_theme_stylebox_override("pressed", sb)
-	# 源 createMail:482 icon_bg（task_icon_bg.png，icon 底框）
 	var icon_bg := TextureRect.new()
 	icon_bg.texture = load(String(mail.get("iconbg", ICON_BG_DEFAULT)))
 	icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -86,13 +82,11 @@ func _add_mail_row(mail: Dictionary) -> void:
 	row.add_child(icon_bg)
 	var iconid: int = int(mail.get("iconid", 0))
 	if iconid > 0:
-		# 源 :556 info.iconid → readequip.createIcon（装备图标）
 		var equip_icon: Control = ReadequipIcon.create_icon(iconid, 1, pd.cm)
 		equip_icon.position = Vector2(15, 20)
 		equip_icon.scale = Vector2(0.65, 0.65)
 		row.add_child(equip_icon)
 	elif mail.has("iconres") and String(mail["iconres"]).length() > 0:
-		# 源 :563-575 icon_frame gocha.png（icon 底框）+ icon(iconres)
 		var icon_frame := TextureRect.new()
 		icon_frame.texture = load(ICON_FRAME_TEX)
 		icon_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -112,7 +106,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	name_l.position = Vector2(70, 12)
 	name_l.size = Vector2(250, 24)
 	name_l.add_theme_font_size_override("font", NAME_FONT)
-	name_l.add_theme_color_override("font_color", NAME_COLOR)   # 源 :502 ccc3(67,59,56)
+	name_l.add_theme_color_override("font_color", NAME_COLOR)
 	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(name_l)
 	var from_l := Label.new()
@@ -120,7 +114,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	from_l.position = Vector2(70, 38)
 	from_l.size = Vector2(250, 20)
 	from_l.add_theme_font_size_override("font", SMALL_FONT)
-	from_l.add_theme_color_override("font_color", FROM_COLOR)   # 源 :532 ccc3(138,56,1)
+	from_l.add_theme_color_override("font_color", FROM_COLOR)
 	from_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(from_l)
 	var date_l := Label.new()
@@ -128,7 +122,7 @@ func _add_mail_row(mail: Dictionary) -> void:
 	date_l.position = Vector2(70, 60)
 	date_l.size = Vector2(250, 20)
 	date_l.add_theme_font_size_override("font", SMALL_FONT)
-	date_l.add_theme_color_override("font_color", DATE_COLOR)   # 源 :547 ccc3(157,117,89)
+	date_l.add_theme_color_override("font_color", DATE_COLOR)
 	date_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(date_l)
 	row.pressed.connect(_on_mail_clicked.bind(int(mail["id"])))

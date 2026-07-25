@@ -8,12 +8,10 @@ extends Control
 ## Phase A 静态化：shade/frame/msg/cancel/ok 从 stage_reset_confirm_content.tscn instantiate。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_reset_confirm_content.tscn")
-# 源 :669/670（dialog.lua 通用）LSTR CHATCONFIG.CANCEL/CONFIRM
 const LSTR_CANCEL_KEY: String = "CHATCONFIG.CANCEL"
 const LSTR_CONFIRM_KEY: String = "CHATCONFIG.CONFIRM"
 const CANCEL_TEXT_FALLBACK: String = "取消"
 const OK_TEXT_FALLBACK: String = "确认"
-# 源 dialog.lua:273/292 showConfirmDialog（stagedetail.lua:532）herodetail-upgrade Scale9 capInsets 20,20,40,29。
 const UPGRADE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 const UPGRADE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
 const UPGRADE_CAP: Rect2 = Rect2(20.0, 20.0, 40.0, 29.0)
@@ -70,7 +68,6 @@ func _close() -> void:
 	queue_free()
 
 
-# 源 :526-530 rightHandler → emit confirmed（调用方接信号执行 doResetElite 扣钻+清次数）。
 func _on_ok() -> void:
 	emit_signal("confirmed")
 	queue_free()

@@ -10,15 +10,13 @@ extends Control
 ## content 挂 panel 自身（同 shortcut_panel 范式）。cancel/ok 普通 Button 运行时套 Scale9 样式。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_refresh_confirm_content.tscn")
-# 源 dialog.lua:273/292 showConfirmDialog（shop.lua:311）herodetail-upgrade Scale9 capInsets 20,20,40,29。
 const UPGRADE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 const UPGRADE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
 const UPGRADE_CAP: Rect2 = Rect2(20.0, 20.0, 40.0, 29.0)
-# 源 dialog 按钮 leftText/rightText 默认（pvp.lua:1875-1876）= CHATCONFIG.CANCEL/CONFIRM。
 const CANCEL_LSTR: String = "CHATCONFIG.CANCEL"
 const CONFIRM_LSTR: String = "CHATCONFIG.CONFIRM"
 const CANCEL_FALLBACK: String = "取消"   # cm 未注入降级（源同样中文）
-const CONFIRM_FALLBACK: String = "确定"   # 源 CHATCONFIG.CONFIRM = "确定"
+const CONFIRM_FALLBACK: String = "确定"
 
 signal confirmed
 
@@ -33,7 +31,6 @@ func _ready() -> void:
 	_build_content()
 
 
-# 源 :308 LSTR SHOP.SPEND_XXX_TO_REFRESH（cost/coinname/times）→ 调用方设消息。
 # p_cm 注入 ConfigManager 供按钮文字 LSTR 化（CHATCONFIG.CANCEL/CONFIRM）；null 则降级字面量。
 func set_message(text: String, p_cm: Variant = null) -> void:
 	_msg_text = text
@@ -66,7 +63,6 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
-# 源 :309 rightHandler → emit confirmed（调用方接信号执行 refresh）。
 func _on_ok() -> void:
 	confirmed.emit()
 	queue_free()

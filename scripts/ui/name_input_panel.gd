@@ -9,12 +9,12 @@ extends PopWindow
 ## ok/cancel 套 UiScale9Button.apply_with_label 补九宫格（cap 15,22,15,25 照源 bename）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/name_input_content.tscn")
-const TITLE_TEXT: String = "请为您的战队命名"  # 源 :151 BENAME.A_NAME_FOR_YOUR_TEAM_
+const TITLE_TEXT: String = "请为您的战队命名"
 # Scale9 按钮样式（源 bename.lua :204/:251 sell_number_button，capInsets 15,22,15,25）。
 const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)
-const BTN_LABEL_COLOR: Color = Color(235.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)  # 源 ccc3(235,225,205)
+const BTN_LABEL_COLOR: Color = Color(235.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
 # roll 随机名照源 affixcount 词库（bename.lua:9-16 rollName，affixcount.lua 5356 英文名转 AffixCount.json）。
 const AFFIXCOUNT_PATH: String = "res://resources/data/AffixCount.json"
 
@@ -46,7 +46,6 @@ func _build_content() -> void:
 	ok.pressed.connect(_on_confirm)
 
 
-# 源 bename.lua:9-16 rollName（affixcount 随机取名）。AffixCount.json = affixcount.lua 5356 英文名转。
 func _load_affixcount() -> void:
 	var f := FileAccess.open(AFFIXCOUNT_PATH, FileAccess.READ)
 	if f == null:
@@ -61,13 +60,12 @@ func _on_roll() -> void:
 	_input.text = String(_affixcount[randi_range(0, _affixcount.size() - 1)])
 
 
-# 源 :383 doSetName 校验非空 + dirtyword → set_name。目标简化 set_player_name（第十三批简化沿用）。
 func _on_confirm() -> void:
 	var new_name: String = _input.text.strip_edges()
 	if new_name == "":
 		Toast.show_message("名称不能为空")
 		return
 	_pd.set_player_name(new_name)
-	GameData.mark_save_dirty()   # 照源 local_server:2182/2842 改名脏标（60s/退出刷）
+	GameData.mark_save_dirty()
 	Toast.show_message("名称已修改")
 	remove_window()

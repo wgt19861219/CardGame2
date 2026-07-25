@@ -8,7 +8,6 @@ extends PopWindow
 ## 本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装（测试引用 + panel 状态）。
 ## 批次1第2拆分（2026-07-24）：装备槽 5 函数外迁 HeroDetailEquipSlots（show_equips/open_equip_craft/on_equip_craft_jump）。
 ## 信号由调用方接 hero_manager.evolve/split + pd.enhance_equip（单机化省 net 层）。
-## 照源 heropackage.lua / equipstrengthen.lua 交互简化。
 
 signal evolve_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
@@ -425,7 +424,6 @@ func perform_upgrade_skill(idx: int) -> bool:
 
 # 觉醒（单机化新增）：AwakeHelper.awake_hero 扣 50 专属碎片 + hero.awake=true。
 # 成功后弹 HeroAwakePanel（B）展示觉醒动画，关闭后 refresh_content 隐藏按钮。
-# 源无觉醒养成激活逻辑（源 awake 由服务器 protoAwake 注入）；本项目用户授权碎片觉醒方案。
 func perform_awake() -> bool:
 	if pd == null or hero == null:
 		return false

@@ -11,7 +11,7 @@ extends PopWindow
 ## 查 Avatar.Picture）保留 procedural 挂 %AvatarHost（pos=0,0 保持子组件局部坐标系不变）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ranklist_summary_content.tscn")
-const HEAD_SIZE: Vector2 = Vector2(65.0, 65.0)  # 源 :57 fix_size
+const HEAD_SIZE: Vector2 = Vector2(65.0, 65.0)
 
 var _cm: Variant
 
@@ -52,7 +52,6 @@ func _fill_avatar(content: Node, avatar: int) -> void:
 	host.add_child(head)
 
 
-# 源 :7-15 btRegisterOutClick：点框外 destroy。
 func _on_shade_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		remove_window()

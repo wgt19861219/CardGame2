@@ -2,7 +2,6 @@ class_name ConfigurePanel
 extends PopWindow
 
 ## 设置面板（View 层）— 照源 popwindow/configure.lua createWindow:1062-1316 + createSWButton:719-1061。
-## 源 statusbar.lua:313-322 headIcon 点击 → ed.ui.configure.create()。main_vit_tips frame + 头像区 +
 ## 名字 + 玩家信息 + change_name/change_head/save_manager + setup_button 系统设置 + language_button 语言。
 ## 单机化裁剪（联机）：createSociety 公会 / createLogoffButton 登出 / createGoogleConnectButton /
 ## create360Buttons / createSWButton 换服 select_server+Facebook support/web / 玩家信息账号 ID getUserid。
@@ -19,14 +18,13 @@ const HEAD_FRAME_RES: Array = [
 	"res://assets/ui/alpha/HVGA/main_head_frame_silver.png",
 	"res://assets/ui/alpha/HVGA/main_head_frame_gold.png",
 ]
-const HEAD_ICON_SIZE: Vector2 = Vector2(70.0, 70.0)   # 源 getHeadIcon length=70（resource_manager.lua:1009）
-const HEAD_MASK_RES: String = "res://assets/ui/alpha/HVGA/main_head_mask.png"   # 源 createClippingNode stencil（configure.lua:80）
+const HEAD_ICON_SIZE: Vector2 = Vector2(70.0, 70.0)
+const HEAD_MASK_RES: String = "res://assets/ui/alpha/HVGA/main_head_mask.png"
 const PortraitMaskShader: Shader = preload("res://shaders/portrait_mask.gdshader")
 const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)
-# 源 sell_number_button label 色 (235,223,207) 浅米已搬进 .tscn 4 Label 子节点的 theme_override_colors/font_color（范式同 hero_detail）。
-const LANG_ICON_DIR: String = "res://assets/ui/alpha/HVGA/lang/"   # 源 getLanguagePng :71
+const LANG_ICON_DIR: String = "res://assets/ui/alpha/HVGA/lang/"
 const DEFAULT_LANG_KEY: String = "zh-CN"
 
 var _pd: PlayerData
@@ -77,7 +75,6 @@ func _build_content() -> void:
 	(content.get_node("%LangLabel") as Label).text = _lbl("CONFIGURE.LANGUAGE")
 
 
-# 源 createHeadIcon（configure.lua:79-86）+ getHeadIcon（resource_manager.lua:996-1015）：
 # avatar id（0→默认 1，player.lua:378）→ Avatar[id].Picture → load 头像图 + portrait_mask shader 裁剪
 # （源 createClippingNode(res, main_head_mask.png) 圆形 mask）→ addChild z=3。host 已在 HEAD_ICON_POS，
 # icon 局部 pos=0,0（范式「子组件挂 host pos=0,0」）。ranklist 路径转换范式复用。
@@ -94,9 +91,9 @@ func _add_head_icon(host: Control) -> void:
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = HEAD_ICON_SIZE
 	icon.position = Vector2.ZERO   # host 已在 HEAD_ICON_POS，icon 局部原点
-	icon.z_index = 3   # 源 createHeadIcon addChild z=3（configure.lua:83）
+	icon.z_index = 3
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()   # 源 createClippingNode mask 裁剪（resource_manager.lua:650）
+	var mat := ShaderMaterial.new()
 	mat.shader = PortraitMaskShader
 	mat.set_shader_parameter("mask_tex", load(HEAD_MASK_RES))
 	icon.material = mat
@@ -153,12 +150,10 @@ func _on_save_manager() -> void:
 	Toast.show_message("存档导出/导入（换机迁移）单机版暂缓")
 
 
-# 源 doClickSetupButton:1399 → notification.create()（通知/系统设置面板）。目标单机化无 → Toast 占位。
 func _on_setup() -> void:
 	Toast.show_message("系统通知（联机推送）单机版暂缓")
 
 
-# 源 language_button → :1522 languagechange.create()。目标 LanguageChangePanel（i18n 闭环）。
 func _on_language() -> void:
 	var lm: LanguageManager = _get_lang()
 	if lm == null:

@@ -7,10 +7,8 @@ extends RefCounted
 ## 不含 panel 状态，全 static + 参数化，panel 传 host + on_click Callable。
 ## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback + HeroDetailBuilder.to_godot（避 class_name 循环）。
 
-# 源 card.lua:135 ui.container ccp(400,240) 相对 cardLayer；cardLayer 挂 container，pop endPos(-200,0)（window.lua:513）。
 # 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
 const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center 世界 cocos（container center = frame center）
-# 源 readhero.lua:1053 container CCSizeMake(242, 420)；frame card_bg_*.png 315×545（实测 PNG IHDR）；
 # Art setScale(420/ArtH) 显示高=container 高 420（readhero.lua:1134）。frame 镂空区 PIL 实测 294×372 居中偏上 77px。
 # 项目 CardFrame .tscn offset (122.5,47.5)→(437.5,592.5) size 315×545 照源原尺寸（不放大，旧 369×570 偏大用户反馈）。
 const CONTAINER_ORIGIN: Vector2 = Vector2(138.5, 539.5)   # container 左下角 Godot（保留兼容旧调用，Art fill 不再用）
@@ -22,13 +20,12 @@ const CARD_FRAME_SIZE: Vector2 = Vector2(315.0, 545.0)   # CardFrame 阶级框 s
 # 内缩 8px 后 Art 4 角在 frame 圆角装饰内圈，0 凸出（牺牲少量边缘 Art 内容换边角整齐）。
 const CARD_FRAME_INSET: float = 8.0
 # card_bg 镂空区 PIL alpha<128 flood fill 实测 bbox (10,10)~(303,476) center png (156.5, 243.0)。
-# 源 frame png 315×545，镂空 294×467 居中偏上 29.5px（png y_center 243 vs frame center 272.5）。
 # Art 纹理实测 card_bg_big_*.jpg 536×928 ratio 0.5776，CardFrame 315×545 ratio 0.5780，**两者几乎同比例**。
 # 用户要"按比例铺满框"= Art 铺满整个 CardFrame 315×545（不是镂空 294×467），Art 315×545 完全覆盖 frame，
 # frame 边框装饰 + name 条从 Art 之上盖下来（源效果）。
 const CARD_HOLE_SIZE: Vector2 = Vector2(294.0, 467.0)   # 保留（PIL alpha<128 实测，作参考）
-const COORD_SX: float = 1.0   # 照源 1:1（旧 1.169=369/315 是错放大）
-const COORD_SY: float = 1.0   # 照源 1:1（旧 1.045=570/545 是错放大）
+const COORD_SX: float = 1.0
+const COORD_SY: float = 1.0
 # Art center 对齐 CardFrame center (280,320)，让 Art 相对 frame 上下对称铺满。
 # （先前对齐镂空 center (279, 290.5) 致 Art 偏上：顶超出 frame 11px + 底距 frame 47px，用户反馈"顶超出底留白"）
 const ART_CENTER: Vector2 = Vector2(280.0, 320.0)   # Art 显示中心 = CardFrame center
@@ -41,20 +38,17 @@ const CARD_TYPE_ICON_RES: Dictionary = {
 	"INT": "res://assets/ui/alpha/HVGA/card/card_att_int_big.png",
 }
 const CARD_STAR_RES: String = "res://assets/ui/alpha/HVGA/card/card_star_big.png"
-const CARD_STAR_SIZE: Vector2 = Vector2(23.0, 24.0)   # 源 46×48 scale 0.5（readhero.lua:1153-1156）
-# 源 skillstren.lua 技能图标边框 + 灰显 + 可点击区。
+const CARD_STAR_SIZE: Vector2 = Vector2(23.0, 24.0)
 const EQUIP_FRAME_WHITE_PATH: String = "res://assets/ui/alpha/HVGA/equip_frame_white.png"
-const SKILL_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)   # 源 setSpriteGray 灰显近似
+const SKILL_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)
 const SKILL_ICON_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)   # 技能图标可点击区
 const SKILL_BTN_SIZE: Vector2 = Vector2(80.0, 28.0)
 const SKILL_DESC_POS: Vector2 = Vector2(400.0, 100.0)      # 描述弹板位置
-const SKILL_GROWTH_COLOR: Color = Color(1.0, 0.81, 0.07)   # 源 ccc3(231,206,19) 成长值黄
+const SKILL_GROWTH_COLOR: Color = Color(1.0, 0.81, 0.07)
 const SKILL_TIP_RES: String = "res://assets/ui/alpha/HVGA/herodetail-skill-tip.png"
-# 源 skillstren.lua:345 升级按钮（Sprite herodetail_skill_upgrade_button_1.png 无文字 + button_press _2.png）。
 const SKILL_UP_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png"
 const SKILL_UP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_2.png"
 const SKILL_UP_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)
-# 源 UI 路径前缀映射（仿 readhero_icon.gd:81 Portrait）。
 const UI_PATH_PREFIX: String = "UI/"
 const UI_PATH_REPLACE: String = "res://assets/ui/"
 
@@ -140,7 +134,6 @@ static func _make_card_art(art_res: String, rank: int) -> TextureRect:
 	sp.size = Vector2(disp_w, disp_h)
 	sp.stretch_mode = TextureRect.STRETCH_SCALE
 	sp.modulate = ART_MODULATE
-	# 源 art_mask.png 裁剪（保留作 Art 圆角效果，Art 内缩后 4 角已在 frame 圆角内不再凸出）。
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://shaders/art_mask.gdshader")
 	mat.set_shader_parameter("mask_tex", load(ART_MASK_RES) as Texture2D)
@@ -150,7 +143,6 @@ static func _make_card_art(art_res: String, rank: int) -> TextureRect:
 	return sp
 
 
-# 源 getHeroCard type icon（readhero.lua:1069-1082）：card_att_X_big at ccp(32,67) fix_size 47×42。
 static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant) -> void:
 	if cm == null or hero == null:
 		return
@@ -165,7 +157,6 @@ static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant)
 	icon.texture = tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = Vector2(47.0, 42.0)
-	# 源 type ccp(32,67) 相对 container 左下角（cocos 左下 y 向上）→ Godot: origin + (cx*SX, -cy*SY)
 	icon.position = CONTAINER_ORIGIN + Vector2(32.0 * COORD_SX, -67.0 * COORD_SY) - icon.size * 0.5
 	icon.z_index = 3   # 在 Art(z=2) 之上
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -173,7 +164,6 @@ static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant)
 	icon.set_meta(&"tab_content", true)
 
 
-# 源 getHeroCard skillIcon（readhero.lua:1122-1130）：4 个 SkillGroup.Icon at ccp(130.5+27.2*(i-1),28) scale 22。
 static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Variant) -> void:
 	if cm == null or hero == null:
 		return
@@ -190,7 +180,6 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 		icon.texture = tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.size = Vector2(22.0, 22.0)
-		# 源 skillIcon ccp(130.5+27.2*(i-1),28) 相对 container 左下角 → Godot: origin + (cx*SX, -cy*SY)
 		icon.position = CONTAINER_ORIGIN + Vector2((130.5 + 27.2 * float(i)) * COORD_SX, -28.0 * COORD_SY) - icon.size * 0.5
 		icon.z_index = 3   # 在 Art(z=2) 之上
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -198,7 +187,6 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 		icon.set_meta(&"tab_content", true)
 
 
-# 源 getHeroCard stars（readhero.lua:1149-1158）：card_star_big at ccp(25+14*(i-1),27) scale 0.5 z=6-i。
 static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 	if hero == null:
 		return
@@ -210,7 +198,6 @@ static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 		star.texture = tex
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		star.size = CARD_STAR_SIZE
-		# 源 star ccp(25+14*(i-1),27) 相对 container 左下角 → Godot: origin + (cx*SX, -cy*SY)
 		star.position = CONTAINER_ORIGIN + Vector2((25.0 + 14.0 * float(i)) * COORD_SX, -27.0 * COORD_SY) - star.size * 0.5
 		star.z_index = 3   # 在 CardFrame(z=1) / CardNameLabel(z=2) 上
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -226,7 +213,6 @@ static func load_skill_icon(icon_res: String) -> Texture2D:
 	return _load_ui_texture(icon_res)
 
 
-# 源 readhero.lua:1011 createSkillIcon + skillstren.lua:758 board_i pressHandler。
 # 边框 Sprite2D（equip_frame_white centered）+ 图标 TextureButton（可点击 → 描述弹板）。
 # locked=true 灰显（源 skillstren.lua:434 setSpriteGray）。icon_pos/on_click 由 panel 传入。
 static func create_skill_icon(skill_host: Control, icon_res: String, icon_pos: Vector2, locked: bool, slot: int, on_click: Callable) -> void:
@@ -254,7 +240,6 @@ static func create_skill_icon(skill_host: Control, icon_res: String, icon_pos: V
 	skill_host.add_child(btn)
 
 
-# 源 skillstren.lua:345 createSkillLevelBoard 升级按钮（herodetail_skill_upgrade_button_1.png 无文字）。
 # pos = 按钮 godot 左上基准（panel 算好传入，center = pos + SKILL_BTN_SIZE/2）。
 # on_click = 升级回调（panel 传 Callable(self,"_on_skill_upgrade_clicked").bind(idx)）。
 static func create_skill_upgrade_button(skill_host: Control, pos: Vector2, on_click: Callable) -> void:
@@ -283,7 +268,7 @@ static func build_skill_desc(hero: HeroInstance, slot: int, cm: Variant) -> Cont
 	bg.patch_margin_left = 20
 	bg.patch_margin_top = 52
 	bg.patch_margin_right = 200
-	bg.patch_margin_bottom = 5   # 源 capInsets(20,52,200,5)
+	bg.patch_margin_bottom = 5
 	bg.position = SKILL_DESC_POS
 	bg.size = Vector2(280.0, 100.0)
 	var lbl := Label.new()
@@ -299,7 +284,6 @@ static func build_skill_desc(hero: HeroInstance, slot: int, cm: Variant) -> Cont
 
 # ==================== load 工具（readhero 范式）====================
 
-# 源 UI 路径 "UI/ITEM/s10.jpg" → res://assets/ui/ITEM/s10.jpg。
 static func _load_ui_texture(ui_path: String) -> Texture2D:
 	if ui_path.is_empty():
 		return null

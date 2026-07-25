@@ -17,36 +17,34 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_package_item_co
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 资源档）：cocos sprite contentSize=纹理/CS，position 不变。
 # → bg 313 纹理显示 313/CS≈244，getpos 列距 260/行距 100 不重叠（间隙 16/4）。Godot 在 _build 整体 scale=1/CS 等价。
 const CONTENT_SCALE: float = 1.28125
-const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 行高 100（卡片中心间距）
+const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
 const BG_OFFSET: Vector2 = Vector2(-26.5, -11.5)   # bg 中心对齐 cell 中心；scale 1/CS 后 bg 244 居中 cell
 const BG_H: float = 123.0
 const EQUIP_SLOT_COUNT: int = 6
 const EQUIP_BG_SIZE: float = 28.0                       # ⚠️偏离源 22（源 scale 22/w gocha 94）→ 28 放大易辨识（用户决策 2026-07-18）
 const EQUIP_ICON_SIZE: float = 20.0                     # ⚠️偏离源 16，按源比例 16/22×28≈20 同步放大
-const EQUIP_EMPTY_ALPHA: float = 100.0 / 255.0          # 源 :236 setOpacity(100)
+const EQUIP_EMPTY_ALPHA: float = 100.0 / 255.0
 const BAR_BG_W: float = 204.0 * 0.93                    # progress_bg 204×34 × scale 0.93（源 :143）
 const BAR_BG_H: float = 34.0                            # progress_bg 纹理高（源 :142 204×34）
-const BAR_FILL_H: float = 26.0                          # 源 :149 setTextureRect h=26
+const BAR_FILL_H: float = 26.0
 const BAR_FILL_OFFSET: Vector2 = Vector2(63.5, 80.5)    # _place 烘焙（= bar_bg_pos + (0, BAR_BG_H-BAR_FILL_H)）
-const BAR_LABEL_POS: Vector2 = Vector2(80.0, 13.0)      # 源 :152 anchor(0.5,0.5) 相对 barBg
+const BAR_LABEL_POS: Vector2 = Vector2(80.0, 13.0)
 const BAR_BG_POS: Vector2 = Vector2(63.5, 72.5)         # _place 烘焙（bar_bg_pos）
-const AVAILABLE_ALPHA: float = 150.0 / 255.0            # 源 :160 setOpacity(150)
+const AVAILABLE_ALPHA: float = 150.0 / 255.0
 # 源 heroitem.lua:225/227 plusSign sr + :244 canDealTag tag 资源。
-const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"          # 源 :225 可穿戴蓝+
-const PLUS_CRAFT_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png" # 源 :227 仅可合成黄+
-const DEAL_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"                 # 源 :244 canDealTag
+const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"
+const PLUS_CRAFT_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png"
+const DEAL_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"
 const PLUS_SIGN_TARGET: float = 30.0   # ⚠️偏离源 24，按源比例 24/22×28≈30 同步放大（用户决策 2026-07-18）
-const DEAL_TAG_TARGET: float = 24.0    # 源 :244 tag setScale(24/w)（独立尺寸不跟槽放大）
-# 源 baseheroitem :29-37 name：ow<w 时 setScale(ow/w)，setPosition(177-min(w,ow)/2, 72) anchor(0,0.5)。
-const NAME_CENTER_X: float = 177.0                      # 源 :36 x=177-min(w,ow)/2
-const NAME_POS_Y: float = 72.0                          # 源 :36 y=72 anchor(0,0.5)
-const NAME_MAX_W: float = 100.0                         # 源 :29 ow=100
+const DEAL_TAG_TARGET: float = 24.0
+const NAME_CENTER_X: float = 177.0
+const NAME_POS_Y: float = 72.0
+const NAME_MAX_W: float = 100.0
 const NAME_FALLBACK: String = "?"
-const NAME_COLOR_DEFAULT: Color = Color(1.0, 1.0, 1.0, 1.0)   # 源 baseheroitem :32 未传 nameColor 默认色
-const GRAY_MODULATE: Color = Color(0.5, 0.5, 0.5, 1.0)  # 源 setSpriteGray 近似
+const NAME_COLOR_DEFAULT: Color = Color(1.0, 1.0, 1.0, 1.0)
+const GRAY_MODULATE: Color = Color(0.5, 0.5, 0.5, 1.0)
 const CLIP_PREFIX: String = "UI/"
 const CLIP_REPLACE: String = "res://assets/ui/"
-# 源 heroitem.lua:1-5 hero_mark_res — 力/敏/智属性图标（icon_str/agi/int.png 59×59，scale 0.8→47×47；2026-07-18 从 ECCHC 英文版补齐）。
 const MARK_RES: Dictionary = {
 	"STR": "res://assets/ui/alpha/HVGA/icon_str.png",
 	"AGI": "res://assets/ui/alpha/HVGA/icon_agi.png",
@@ -92,7 +90,6 @@ func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: Player
 	tid = ReadheroHandbook.entry_tid(entry)
 	custom_minimum_size = CELL_SIZE
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# 源 contentScaleFactor 1.28（见 CONTENT_SCALE）：item 整体 scale=1/CS 补偿（bg/头像/装备槽纹理都偏大 1.28），
 	# pivot=cell 中心使缩放后内容（bg 244×96）居中 cell 260×100，与源 bg 显示尺寸一致、不重叠。
 	pivot_offset = CELL_SIZE * 0.5
 	scale = Vector2.ONE / CONTENT_SCALE
@@ -132,7 +129,6 @@ func _cache_nodes() -> void:
 		_equip_slots.append(_content.get_node("%EquipSlot" + str(i + 1)) as TextureRect)
 
 
-# 源 baseheroitem :20-28 — miss 用 createIcon{id,rank=1}（无 level/stars）；拥有用 createIconByHero。
 # HeadHost 已在 _place(HEAD_POS) 烘焙位置，head position=0 挂 host。
 func _fill_head() -> void:
 	if is_miss:
@@ -144,7 +140,6 @@ func _fill_head() -> void:
 	(_content.get_node("%HeadHost") as Control).add_child(head)
 
 
-# 源 baseheroitem :29-37 + readhero.lua:939-985 createHeroNameByInfo — name + "+N" 后缀（hero_star[rank]>0 时）。
 # name 与 suffix 两 Label 横向拼接；suffix 按 rank 段着色。名字本身默认色，阴影 ccc3(0,0,2)（.tscn 已固化）。
 func _fill_name() -> void:
 	var disp_name: String = cm.get_lstr(_unit_str(&"Display Name", NAME_FALLBACK))
@@ -165,7 +160,6 @@ func _fill_name() -> void:
 		_suffix_lbl.visible = false
 	# NameHost 位置/尺寸 .tscn 固化（用户决策，不按源动态算法）。name+suffix 拼接整体在 NameHost 内部居中：
 	# fill 算整体宽 total_w，左起点 = (NameHost 宽 - total_w×scale) / 2，suffix 紧贴 name 右侧。
-	# 源超宽缩放保留：scale_val 防超长名字溢出 NameHost。
 	# host_w 用 offset（.tscn 固化值），不读 size（_build 阶段未布局 size 可能为 0）。
 	var scale_val: float = min(1.0, NAME_MAX_W / total_w) if total_w > 0.0 else 1.0
 	var host_w: float = _name_host.offset_right - _name_host.offset_left
@@ -178,7 +172,6 @@ func _fill_name() -> void:
 		_suffix_lbl.position = Vector2(start_x + name_size.x * scale_val, 0.0)
 
 
-# 源 baseheroitem :38-42 markIcon = hero_mark_res[Main Attrib]（icon_str/agi/int.png，setScale(0.8) @ (110,72) anchor(0.5,0.5)）。
 # 2026-07-18 从 ECCHC 补齐资源（此前缺图降级 ColorRect 色块，现恢复 TextureRect 图标）。
 func _fill_mark() -> void:
 	var attrib: String = _unit_str(&"Main Attrib", "")
@@ -194,7 +187,6 @@ func _fill_mark() -> void:
 	_mark_rect.visible = true
 
 
-# 源 packageheroitem createHeroEquips :202-249 — 6 槽 gocha.png 背景 + 装备图标（有）/ 半透明（空 + plusSign）。
 # plusSign：空槽查 hero_equip[tid][rank]["Equip{slot} ID"]，可合成则加 + 号（黄+仅可合成 / 蓝+可穿戴）。
 # canDealTag：任一槽可穿戴时在 (240,90) 加 main_deal_tag（源 :243-248 isShowTag，DealTag position 已烘焙）。
 func _fill_equips() -> void:
@@ -203,7 +195,7 @@ func _fill_equips() -> void:
 	var slot_size := Vector2(EQUIP_BG_SIZE, EQUIP_BG_SIZE)
 	for i in range(EQUIP_SLOT_COUNT):
 		var slot_bg: TextureRect = _equip_slots[i]
-		var slot: int = i + 1   # 源 Lua i=1..6（GDScript 0-based +1）
+		var slot: int = i + 1
 		var item_id: int = int(hero.equip_slots[i])
 		if item_id > 0:
 			slot_bg.modulate = Color(1.0, 1.0, 1.0, 1.0)
@@ -220,7 +212,6 @@ func _fill_equips() -> void:
 		_fill_deal_tag()
 
 
-# 源 heroitem.lua:231-234 plusSign — setScale(24/w) 居中 slot（同 equipBg anchor(0.5,0.5)）。
 func _fill_plus_sign(res_path: String, slot_bg: TextureRect, slot_size: Vector2) -> void:
 	var tex: Texture2D = _load_tex(res_path)
 	if tex == null:
@@ -237,7 +228,6 @@ func _fill_plus_sign(res_path: String, slot_bg: TextureRect, slot_size: Vector2)
 	slot_bg.add_child(icon)
 
 
-# 源 heroitem.lua:243-248 canDealTag — main_deal_tag.png setScale(24/w) at (240, 90)（TipHost position 已烘焙，DealTag 挂其下）。
 # 位置由 %TipHost 在编辑器可视化调（DealTag 本地 (0,0)，size fill）。
 func _fill_deal_tag() -> void:
 	var tex: Texture2D = _load_tex(DEAL_TAG_RES)
@@ -263,13 +253,11 @@ func _fill_equip_icon(item_id: int, slot_bg: TextureRect, slot_size: Vector2) ->
 	icon.texture = tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = icon_size
-	# 源 :214 equip 与 equipBg 同位 anchor(0.5,0.5) → 中心对齐 slot（挂 slot_bg 下）
 	icon.position = (slot_size - icon_size) * 0.5
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot_bg.add_child(icon)
 
 
-# 源 packageheroitem createHeroStone :126-178 — 进度条 + 文字 + 可召唤光效 + 头像灰化。
 func _fill_stone() -> void:
 	var sa: int = ReadheroHandbook.get_stone_amount(tid, cm, hero_mgr)
 	var sn: int = ReadheroHandbook.get_stone_need(tid, cm, hero_mgr)
@@ -281,9 +269,7 @@ func _fill_stone() -> void:
 	_bar_fill.offset_right = BAR_FILL_OFFSET.x + fill_w
 	_bar_fill.offset_bottom = BAR_FILL_OFFSET.y + BAR_FILL_H
 	_fill_stone_label(sa, sn)
-	# 源 :154-167 summonLight heropackage_available.png 居中 + opacity 150（SummonLight 已烘焙 modulate）；单机化静态。
 	_summon_light.visible = sa >= sn
-	# 源 :120 setSpriteGray(head.ori_icon) — 未拥有头像灰化
 	if head != null and head.ori_icon != null:
 		head.ori_icon.modulate = GRAY_MODULATE
 
@@ -292,11 +278,9 @@ func _fill_stone_label(sa: int, sn: int) -> void:
 	var text: String = "可召唤" if sa >= sn else "%d/%d" % [sa, sn]
 	_stone_label.text = text
 	var ls: Vector2 = _stone_label.get_minimum_size()
-	# 源 :152 label anchor(0.5,0.5) at barBg(80,13)（相对 barBg 中心坐标系，y 翻转：barBg 底=BAR_BG_H）
 	_stone_label.position = BAR_BG_POS + Vector2(BAR_LABEL_POS.x, BAR_BG_H - BAR_LABEL_POS.y) - ls * 0.5
 
 
-# 源 baseheroitem :31 rank = miss and 1 or player.heroes[tid]._rank（miss 默认 1 = 无后缀）。
 func _rank() -> int:
 	if is_miss:
 		return 1

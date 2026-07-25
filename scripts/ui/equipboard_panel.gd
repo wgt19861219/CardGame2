@@ -32,14 +32,12 @@ const ICON_SCALE: float = 0.8   # 用户视觉偏好缩小（源 createIcon 无 
 const ATT_TOP: float = 98.0
 
 # ── Scale9 按钮（源 ofpackage.lua:108-119 left_button / :154-165 right_button）──
-# 源 Scale9Sprite package_button.png + package_button_down.png，capInsets CCRectMake(10,10,236,29)。
 # .tscn 普通 Button 套 StyleBoxTexture 补九宫格（normal/hover=package_button，pressed=package_button_down）。
 const BTN_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/package_button.png"
 const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_down.png"
 const BTN_CAP: Rect2 = Rect2(10.0, 10.0, 236.0, 29.0)
 
 # ── 侧滑动画（源 ofpackage.lua:292-298 popin：起始 ccp(-142,213) 屏幕左外 → CCMoveTo 0.2 CCEaseOut → ccp(182,213)）──
-# 源 frame 中心 ccp(182,213) anchor(0.5,0.5) → Godot frame 左上 (118,154.5)（.tscn offset 已固化，避开 package equipbg 重叠）。
 # 起始 ccp(-142,213) 中心 → Godot frame 左上 x=-206（屏幕左外），y 不变。
 const SLIDE_START_X: float = -206.0
 const SLIDE_TIME: float = 0.2
@@ -67,7 +65,6 @@ var _prop_type: String = PROPTYPE_PROP
 var _frame: Control = null  # .tscn %Frame（base 容器，fill 动态数据的锚点）
 
 
-# 源 create(param) :264-278。param={id, doSell, doUse, doCheck, doCompose}（package.lua 注入）。
 # 本项目 cell_data 含 {id, makeId, amount, category, type, needAmount}（EquipmentClassifier 输出）。
 func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData, p_modal: bool = false) -> void:
 	cm = p_cm
@@ -120,13 +117,11 @@ func _update_cell_fields(p_cell_data: Dictionary) -> void:
 	_prop_type = _judge_prop_type()
 
 
-# 源 doSelectEquip :197-198 已有 equipLayer → refresh(id) 切换内容（不重建浮层，保留侧滑位置）。
 func refresh(p_cell_data: Dictionary) -> void:
 	_update_cell_fields(p_cell_data)
 	_refresh_content()
 
 
-# 源 refreshPropType :233-253 查 Category==FRAGMENT（源单一 equip_qunty，碎片=Category FRAGMENT 物品）。
 # 本项目双容器：fragment cell 来自 HeroManager.fragments（**魂石**，Category=SOUL_STONE，Fragment 表映射召唤英雄），
 # 故用 cell_data.type==2 判 fragment（适配本项目数据模型，魂石有配方 makeId!=id → 可合成）。
 # items 的 EXPERIENCE_PILL → consume；其他 → prop。
@@ -141,23 +136,22 @@ func _judge_prop_type() -> String:
 	return PROPTYPE_PROP
 
 
-# 源 initFrame + initTitle + initAmount + initWindow。Phase A：从 .tscn instantiate + fill 动态数据。
 # 位置/size .tscn 已固化（编辑器可视化调），fill 只填 texture/text/visible/stylebox。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	_frame = content.get_node("%Frame") as Control
-	var sell_btn: Button = _frame.get_node("%SellBtn") as Button   # 源 left_button :109
+	var sell_btn: Button = _frame.get_node("%SellBtn") as Button
 	_apply_button_style(sell_btn)
 	# fill 独立 Label 子节点 %SellLabel（Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，
 	# 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_detail）。
 	(_frame.get_node("%SellLabel") as Label).text = cm.get_lstr(LSTR_SELL)
 	sell_btn.pressed.connect(_on_sell_pressed)
-	var right_btn: Button = _frame.get_node("%RightBtn") as Button   # 源 right_button :154
+	var right_btn: Button = _frame.get_node("%RightBtn") as Button
 	_apply_button_style(right_btn)
 	right_btn.pressed.connect(_on_right_pressed)
 	var close_btn: TextureButton = _frame.get_node("%CloseBtn") as TextureButton
-	close_btn.visible = false   # 源 ofpackage create:272 setCloseVisible(false)（ofpackage 无 close，靠切 cell/卖出/退出场景）
+	close_btn.visible = false
 	close_btn.pressed.connect(_on_close_pressed)   # 连接保留（visible=false 不触发，无害）
 	_refresh_content()
 
@@ -168,8 +162,8 @@ func _refresh_content() -> void:
 	for c in host.get_children():
 		c.free()
 	_fill_icon()
-	(_frame.get_node("%NameLabel") as Label).text = _equip_name()   # 源 initTitle :328
-	var amt: int = int(_cell_data.get("amount", 0))   # 源 board.lua:60 text=HAVE..amount..ITEM
+	(_frame.get_node("%NameLabel") as Label).text = _equip_name()
+	var amt: int = int(_cell_data.get("amount", 0))
 	(_frame.get_node("%AmountLabel") as Label).text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
 	_fill_sell_price()
 	_fill_att()
@@ -177,7 +171,6 @@ func _refresh_content() -> void:
 	(_frame.get_node("%RightLabel") as Label).text = _right_button_label()
 
 
-# 源 board.lua initAtt :106-282：属性 labels（getDescription 组合 "力量 +100" + 强化加成）+ 碎片合成信息。
 func _fill_att() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	for c in host.get_children():
@@ -188,7 +181,7 @@ func _fill_att() -> void:
 		var lbl := Label.new()
 		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
 		lbl.add_theme_font_size_override("font_size", 18)
-		lbl.add_theme_color_override("font_color", Color(0.251, 0.247, 0.247, 1))   # 源 att color ccc3(64,63,63)
+		lbl.add_theme_color_override("font_color", Color(0.251, 0.247, 0.247, 1))
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(lbl)
 	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title + fragment_amount "X/Y"）
@@ -196,7 +189,7 @@ func _fill_att() -> void:
 		var frag_lbl := Label.new()
 		frag_lbl.text = "合成所需碎片 %d/%d" % [int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
 		frag_lbl.add_theme_font_size_override("font_size", 18)
-		frag_lbl.add_theme_color_override("font_color", Color(0.259, 0.176, 0.11, 1))   # 源 fragment ccc3(66,45,28)
+		frag_lbl.add_theme_color_override("font_color", Color(0.259, 0.176, 0.11, 1))
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
 	_relayout_att_bg()
@@ -217,7 +210,6 @@ func _relayout_att_bg() -> void:
 	host.size.y = host_min.y
 
 
-# 源 ofpackage.lua:292-298 popin：frame 从屏幕左外侧滑入目标位置（.tscn offset），0.2s EaseOut。
 func _play_slide_in() -> void:
 	var target_pos: Vector2 = _frame.position   # .tscn offset 目标 (118, 154.5)
 	_frame.position = Vector2(SLIDE_START_X, target_pos.y)   # 起始屏幕左外
@@ -225,7 +217,6 @@ func _play_slide_in() -> void:
 	tw.tween_property(_frame, "position", target_pos, SLIDE_TIME).set_ease(Tween.EASE_OUT)
 
 
-# 源 initTitle :320 createIcon — 挂 %IconHost，position=ICON_POS（frame 内 _gl 后）。
 func _fill_icon() -> void:
 	var host: Control = _frame.get_node("%IconHost") as Control
 	var icon: Control = ReadequipIcon.create_icon(_item_id, 0, cm)
@@ -234,7 +225,6 @@ func _fill_icon() -> void:
 	host.add_child(icon)
 
 
-# 源 refreshPrice :207-217：price<=0 隐藏 money_board（本 项目用 %SellPriceLabel visible 切换）。
 func _fill_sell_price() -> void:
 	var price: int = _sell_price()
 	var board: TextureRect = _frame.get_node("%MoneyBoard") as TextureRect
@@ -246,7 +236,6 @@ func _fill_sell_price() -> void:
 		board.visible = false
 
 
-# 源 Scale9Sprite package_button/package_button_down → .tscn Button 套 StyleBoxTexture（九宫格）。
 func _apply_button_style(btn: Button) -> void:
 	btn.add_theme_stylebox_override("normal", _make_button_stylebox(BTN_NORMAL_RES))
 	btn.add_theme_stylebox_override("hover", _make_button_stylebox(BTN_NORMAL_RES))
@@ -257,7 +246,6 @@ static func _make_button_stylebox(res_path: String) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
 	var tex: Texture2D = load(res_path) as Texture2D
 	sb.texture = tex
-	# 源 capInsets CCRectMake(x,y,w,h) Cocos 左下原点（y=cap 底边距图底）。Godot 左上原点 top/bottom 翻转：
 	# Godot top = Cocos 顶 margin = tex.h-(y+h)；bottom = Cocos 底 margin = y。
 	# package_button 335×67 cap(10,10,236,29) → texture_margin(left10, top28, right89, bottom10)。
 	sb.texture_margin_left = BTN_CAP.position.x
@@ -273,7 +261,6 @@ static func _make_button_stylebox(res_path: String) -> StyleBoxTexture:
 	return sb
 
 
-# 源 refreshButton :219-232：prop=详情/consume=使用/fragment=合成。
 func _right_button_label() -> String:
 	match _prop_type:
 		PROPTYPE_CONSUME:
@@ -284,7 +271,6 @@ func _right_button_label() -> String:
 			return cm.get_lstr(LSTR_DETAIL)
 
 
-# 源 refreshPrice :207-217：Equip[id]["Sell Price"]。
 func _sell_price() -> int:
 	return int(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Sell Price", 0))
 
@@ -318,15 +304,13 @@ func _on_right_pressed() -> void:
 
 
 # 合成（源 param.doCompose → package.getComposeHandler :113-129 → fragmentcompose.create(id)）。
-# 源传 param.id（碎片物品 id），fragmentcompose 内部反查得 makeId；本项目 FragmentComposePanel 接产物 tid（第 21 段接口），传 _make_id。
 func _open_compose() -> void:
 	var panel := FragmentComposePanel.new("fragmentcompose", {})
 	panel.setup_panel(_make_id, cm, pd)
-	panel.composed.connect(_on_frag_composed)   # 源 downFragmentCompose :21-46 合成成功回调
+	panel.composed.connect(_on_frag_composed)
 	panel.show_window(get_parent())
 
 
-# 源 downFragmentCompose :21-46 合成成功 → consumeAmount 刷新 list + tag 可见性。
 # 本项目 emit composed 通知 PackagePanel 重 classify（碎片 cell 数量/角标变化），并关闭浮层
 # （合成后碎片 cell 数据失效，照源 consumeAmount :55 amount<=0 equipLayer:popout 等价）。
 func _on_frag_composed() -> void:

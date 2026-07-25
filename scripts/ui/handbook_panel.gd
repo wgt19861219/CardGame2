@@ -2,7 +2,6 @@ class_name HandbookPanel
 extends PopWindow
 
 ## 图鉴面板(View 层)— 照源 ui/handbook.lua(719 行)重建装备图鉴。
-## 源核心:12 属性 tag(ALL/STR/AGI/INT/HP/AD/AP/ARM/CRIT/HPS/MPS/HEAL)分类装备 +
 ## 左右双列网格 12 格/页 + 装备图标(已解锁/锁定态)+ 翻页箭头 + book 背景三层 +
 ## 页面分类标题 + 翻页/切tag 淡入淡出动画 + 横向滑动翻页 + 点击缩放反馈。
 ## 数据源 EquipmentClassifier.classify_equip(照源 readequip.classifyEquip :481-537)。
@@ -21,7 +20,7 @@ extends PopWindow
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/handbook_content.tscn")
 # tag 按钮 index(1-12) → list key。1=ALL(源 tagTextIndex :26-39)。
 const TAG_KEYS: Array[String] = ["ALL", "STR", "AGI", "INT", "HP", "AD", "AP", "ARM", "CRIT", "HPS", "MPS", "HEAL"]
-const PER_PAGE: int = 12   # 源 createList :455 ceil(eAmount/12)
+const PER_PAGE: int = 12
 # 网格整体上移让 slot1 bg 顶贴近 PageTitle"全部"标题底(.tscn y=84)。correct(=0) 间距 9px
 # (源布局),用户要求上移:LIFT=9 → slot1 bg 顶 y=84(贴标题底,间距 0,最大不重叠上移)。
 # 偏离源(源间距 9)。>0 往上,每 +1 网格顶上移 1px;>9 网格与标题重叠。
@@ -95,7 +94,6 @@ func _build_content() -> void:
 	_refresh_grid()
 
 
-# 源 doSelectTag :78-104:切 tag → 选中态切换 + 回第 1 页 + 重建网格。
 func _switch_tag(index: int) -> void:
 	if index == _current_tag:
 		return
@@ -106,7 +104,6 @@ func _switch_tag(index: int) -> void:
 	_refresh_grid()
 
 
-# 源 doSelectTag :90-100:选中 tag 切 select 纹理 + label 白色;未选中 normal 纹理 + 灰色。
 func _update_tag_visual() -> void:
 	for i in range(1, 13):
 		var btn: TextureButton = _tag_ui[i]["button"]
@@ -116,12 +113,11 @@ func _update_tag_visual() -> void:
 		var sel: String = HandbookBuilder.TAG_RIGHT_SEL if is_right else HandbookBuilder.TAG_LEFT_SEL
 		var norm: String = HandbookBuilder.TAG_RIGHT if is_right else HandbookBuilder.TAG_LEFT
 		btn.texture_normal = load(sel if selected else norm) as Texture2D
-		btn.z_index = 9 if selected else 4   # 源 :393 选中 z=9
+		btn.z_index = 9 if selected else 4
 		lbl.add_theme_color_override("font_color", HandbookBuilder.TAG_SELECT_COLOR if selected else HandbookBuilder.TAG_NORMAL_COLOR)
 		lbl.z_index = 9 if selected else 4
 
 
-# 源 createPage :555-598 + setPage :538-553 + setPageTitle :472-536。
 # #3 翻页/切 tag:旧 cell FadeOut 0.2 → queue_free → 建 new cell FadeIn 0.2(照源 pageLayer 交叉淡入淡出)。
 # #4 切 tag 更新 pageTitle 文字(源 setPageTitle :475 tagText.title)。 EquipGridHost 常驻只动画其子 cell。
 func _refresh_grid() -> void:
@@ -130,7 +126,7 @@ func _refresh_grid() -> void:
 	_page_amount = maxi(ceili(float(_list().size()) / float(PER_PAGE)), 1)
 	_page = clampi(_page, 1, _page_amount)
 	if _page_label != null:
-		_page_label.text = "· %d / %d ·" % [_page, _page_amount]   # 源 :509/547
+		_page_label.text = "· %d / %d ·" % [_page, _page_amount]
 	var old_cells: Array = _grid_layer.get_children()
 	if old_cells.is_empty():
 		_build_grid_cells()   # 首屏:建 cell + FadeIn(_build_grid_cells 内部管 _is_fading)
@@ -143,7 +139,6 @@ func _list() -> Array:
 	return _tabs_data.get(TAG_KEYS[_current_tag - 1], [])
 
 
-# 源 createList :453-470 + createIcon :423-452。建当页 12 cell 挂 _grid_layer。
 # #5 每 cell 连 gui_input(_on_cell_input)统一处理 click + 横向滑动翻页(照源 doEquipTouch+doChangePageTouch)。
 func _build_grid_cells() -> void:
 	var list: Array = _list()
@@ -152,9 +147,9 @@ func _build_grid_cells() -> void:
 	var new_cells: Array = []
 	for i in range(start, end):
 		var info: Dictionary = list[i]
-		var slot: int = i - start + 1   # 源 :460 getIconPosition(i - 12*(page-1))
+		var slot: int = i - start + 1
 		var cell: Control = HandbookBuilder.create_equip_cell(info, _player.team_level, _cm)
-		cell.position = HandbookBuilder.icon_position(slot) - cell.custom_minimum_size * 0.5 - Vector2(0, GRID_LIFT_Y)   # 源 bg 中心对齐 icon_position - GRID_LIFT_Y(网格顶贴 PageTitle 下,用户要求上移偏离源)
+		cell.position = HandbookBuilder.icon_position(slot) - cell.custom_minimum_size * 0.5 - Vector2(0, GRID_LIFT_Y)
 		var is_open: bool = bool(cell.get_meta(&"is_open", false))
 		var eid: int = int(cell.get_meta(&"id", 0))
 		cell.gui_input.connect(_on_cell_input.bind(cell, is_open, eid))
@@ -239,9 +234,9 @@ func _on_cell_input(event: InputEvent, cell: Control, is_open: bool, eid: int) -
 		_press_pos = mb.position
 		_press_time = _now()
 		_is_changing_page = false
-		_set_icon_scale(cell, PRESS_SCALE)   # 源 doEquipTouch :120 只缩 icon（不缩 bg/cell）
+		_set_icon_scale(cell, PRESS_SCALE)
 	else:
-		_set_icon_scale(cell, 1.0)   # 源 :126 icon 还原 1.0
+		_set_icon_scale(cell, 1.0)
 		var dx: float = mb.position.x - _press_pos.x
 		var dy: float = mb.position.y - _press_pos.y
 		# 横向滑动翻页(源 doChangePageTouch :157-164:水平为主 + |dx|>100 + 时间<1s)
@@ -249,11 +244,10 @@ func _on_cell_input(event: InputEvent, cell: Control, is_open: bool, eid: int) -
 			_turn_page(1 if dx < 0.0 else -1)   # 左滑下一页 / 右滑上一页
 			_is_changing_page = true
 		elif not _is_changing_page:
-			_handle_cell_click(is_open, eid)   # 源 doEquipTouch :127-134
+			_handle_cell_click(is_open, eid)
 		_press_pos = Vector2.ZERO
 
 
-# 源 doEquipTouch :120/126 icon setScale(0.95/1)。cell 子节点：[0]=bg [1]=icon (open) 或 icon_bg (lock) [2]=name。
 # 只缩 [1]（含 frame+equip+amount 或 icon_bg+lock），不缩 bg 和 name（源照搬）。
 func _set_icon_scale(cell: Control, scale_factor: float) -> void:
 	if cell.get_child_count() < 2:
@@ -264,17 +258,15 @@ func _set_icon_scale(cell: Control, scale_factor: float) -> void:
 	icon_node.scale = Vector2(scale_factor, scale_factor)
 
 
-# 源 doEquipTouch :127-134 + doSelectElement :105-109。isOpen → #1 弹 equipcraft / 否则 #2 Toast。
 func _handle_cell_click(is_open: bool, eid: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if is_open:
 		_open_equipcraft(eid)
 	else:
-		_show_toast(_cm.get_lstr(LSTR_NOT_UNLOCKED))   # 源 :132
+		_show_toast(_cm.get_lstr(LSTR_NOT_UNLOCKED))
 
 
 # #1 源 doSelectElement :105-109:equipcraft.create({context="handbook", eid=id})。
-# 源 doSelectElement :105-109 → equipcraft.create({context="handbook", eid=id}) → createPanel :1277
 # equipLayer = equipboard.init("ofcraft", {id, level})。equipboard base = 装备详情面板（属性/描述/卖出）。
 # 当前 EquipCraftPanel 直接显示合成树（craftTree）而非 equipboard 详情，跟源初始状态不符。
 # 修正：handbook 点装备先弹 EquipboardPanel（装备详情，照源 equipLayer ofcraft），复用 package 已实现的 EquipboardPanel。

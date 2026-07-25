@@ -24,10 +24,10 @@ const STAR_BG: String = "res://assets/ui/alpha/HVGA/stageselect_star_bg.png"
 const STAR: String = "res://assets/ui/alpha/HVGA/stageselect_star.png"
 # 用户偏好（2026-07-20）：标题栏移到 frame 上边框附近（跨边框稍下，源 titleBg 在 frame top 下方 65）。
 const TITLE_POS: Vector2 = Vector2(477.0, 117.0)
-const DOT_CENTER_X: float = 480.0                      # 源 getDotPos x=400+dx*(cur-center)，dx=20
+const DOT_CENTER_X: float = 480.0
 const DOT_GAP_X: float = 20.0
-const DOT_NORMAL_Y: float = 520.0                      # 源 normal_chapter_dot_y=40 → 560-40
-const DOT_ELITE_Y: float = 515.0                       # 源 elite_chapter_dot_y=45
+const DOT_NORMAL_Y: float = 520.0
+const DOT_ELITE_Y: float = 515.0
 # 星级布局（源 createStage spos :1242-1255，相对 star_bg 局部）
 const STAR_POS_1: Array = [Vector2(37.0, 15.0)]
 const STAR_POS_2: Array = [Vector2(26.0, 18.0), Vector2(48.0, 18.0)]
@@ -35,7 +35,6 @@ const STAR_POS_3: Array = [Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.
 
 # frame png 936×507 实测（PIL alpha + ascii）：简单**细线矩形框**，边框线 16-19px + 四角加粗，
 # 中间镂空透明区 903×471 @ godot (28,120.5)，**无任何内部装饰**。
-# 源 stageselect.lua:1610-1612 clipStencil 712×372 @ cocos(44,20) 是 stage 圆点活动区，致 bg display
 # 936×508（cs=2）只显示中间 712×372、周围 ~95px 大片空白（用户反馈"非常小"）。
 # bg clip 改 frame 边框线内沿镂空区（用户偏好 2026-07-20"按 frame 宽拉伸"+"不盖边框"）：
 # bg display 936×508 铺满镂空区 903×471 + frame 16-19px 细边框围绕。偏离源 clipStencil 712，
@@ -46,7 +45,7 @@ const CLIP_OFFSET: Vector2 = Vector2(28.0, 120.5)   # layer 局部坐标系偏�
 # bg/route display 936（cs=2）已铺满 clip 903 不动；圆点放大 1.268 about clipStencil center cocos(400,206)
 # 后到 clip 903 边缘，仍在 route 路径线上（路径铺满 route 图，放大后对应路径其他段）。
 const STRETCH_SCALE: float = 1.268   # 903/712（bg clip 拉伸比）
-const STRETCH_CENTER: Vector2 = Vector2(400.0, 206.0)   # 源 clipStencil center cocos（放大中心）
+const STRETCH_CENTER: Vector2 = Vector2(400.0, 206.0)
 # panel/builder 共享 meta key（stage_select_panel 切换动画识别 frame/title/pointer 节点用）。
 const META_FRAME: StringName = &"ss_frame"
 const META_TITLE: StringName = &"ss_title"
@@ -58,10 +57,8 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 
 
 # fill .tscn %ModeNormalBtn/EliteBtn/GuildBtn 纹理（selected=elitetoggle-s 否则 ns）+ Label LSTR 文本。
-# 源 createModeButton(:725) 建节点 + refreshModeButtonPosition(:233) 调位置 + updateModeButtonState(:292)
 # 切 _press visible + label color。本项目位置/size .tscn 固化，此处只切纹理 + 填文本（TextureButton
 # normal 双态简化，源 Sprite+press 切 visible 等价）。
-# 源 label：normal=LSTR("STAGESELECT.NORMAL")="普通"、elite=LSTR("EQUIPCRAFT.ELITE")="精英"、
 # guild=LSTR("STAGESELECT.RAID")="团队"。fontinfo "ui_normal_button" size=18（:773,:809,:845）。
 static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Variant) -> void:
 	var lstr_keys: Dictionary = {
@@ -88,9 +85,7 @@ static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Vari
 			lbl.text = String(cm.get_lstr(key)) if cm != null else key
 
 
-# 源 createMap + createStage — 地图层（章节 bg + route + stage 圆点 + 星 + 指针）。
 # 返回 {node, stage_buttons(sid->TextureButton)}。
-# 源 stageselect.lua:1608-1615 create — clipLayer = ClippingNode(stencil=712×372 @ cocos(44,20))，
 # mapContainer 挂 clipLayer 下，剪掉章节 bg 超出 frame 边框的部分。
 # Godot 等价：layer 自身设 clip_contents=true + rect=(124,168,712,372)，子节点 position 减 CLIP_OFFSET。
 # cocos clipStencil(44,20) → godot (44+80, 560-(20+372)) = (124,168)；712×372 不变（to_godot 不缩放）。
@@ -117,14 +112,14 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		var btn := TextureButton.new()
 		btn.texture_normal = load(icon_res) as Texture2D
 		btn.ignore_texture_size = true
-		btn.size = TexDisplaySize.display_size(icon_res)   # 源 createSprite ContentScale 已含；修 ignore_texture_size 不设 size → 0×0 不可点（同 [[texture-button-ignore-texture-size-zero]]）
+		btn.size = TexDisplaySize.display_size(icon_res)
 		var _cx: float = STRETCH_CENTER.x + (float(pos[0]) - STRETCH_CENTER.x) * STRETCH_SCALE
 		var _cy: float = STRETCH_CENTER.y + (float(pos[1]) - STRETCH_CENTER.y) * STRETCH_SCALE
 		btn.position = to_godot(_cx, _cy) - btn.size * 0.5 - CLIP_OFFSET
 		btn.set_meta(&"stage_info", info)
 		var dec_type := String(dec["type"])
 		if dec_type == "locked":
-			btn.disabled = true   # 源 doStageTouch :125 locked 不响应点击
+			btn.disabled = true
 		else:
 			_add_stars(btn, info, mode, star_of)
 		layer.add_child(btn)
@@ -146,7 +141,6 @@ static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant, 
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 createSprite = CCSprite + setScale(ContentScale)，显示=纹理 × ContentScale / CS（_display_size 已含）。
 	# 修 bug：原 tex.get_size()/CS 漏乘 ContentScale，致章节 bg 显示 365×198 偏小（应 730×396 铺满）。
 	var display_size: Vector2 = TexDisplaySize.display_size(res)
 	node.size = display_size
@@ -160,7 +154,7 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	if mode == "guild":
 		return
 	var id: int = int(info.get("eid", 0)) if mode == "elite" else int(info.get("id", 0))
-	if id <= 0 or not info.has("eid"):   # 源 :1261 仅 key 关（有 eid）显示星
+	if id <= 0 or not info.has("eid"):
 		return
 	var sn: int = int(star_of.call(id))
 	if sn <= 0 or sn > 3:
@@ -168,9 +162,8 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	var bg := TextureRect.new()
 	bg.texture = load(STAR_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 :1262 starBg = ed.createSprite（含 ContentScale，本项目 STAR_BG 无 TextureConfig 条目 → CS=1 等价）。
 	bg.size = TexDisplaySize.display_size(STAR_BG)
-	bg.position = Vector2(82.0, 38.0) - bg.size * 0.5   # 源 star_bg ccp(82,38) 局部（icon 左上原点）
+	bg.position = Vector2(82.0, 38.0) - bg.size * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(bg)
 	var spos: Array = STAR_POS_3 if sn == 3 else (STAR_POS_2 if sn == 2 else STAR_POS_1)
@@ -178,15 +171,12 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 		var star := TextureRect.new()
 		star.texture = load(STAR) as Texture2D
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 源 :1268 star = ed.createSprite（含 ContentScale，STAR 无条目 → CS=1 等价）。
 		star.size = TexDisplaySize.display_size(STAR)
 		star.position = spos[i] - star.size * 0.5
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.add_child(star)
 
 
-# 源 currentTag stagepointer（:1299-1312 上下浮动，简化静态）。
-# 源 :1301-1305 — key 关（info.eid）ccp(pos.x, pos.y+60)；非 key 关 ccp(pos.x-1, pos.y+30)。
 static func _add_pointer(layer: Control, info: Dictionary, offset: Vector2 = Vector2.ZERO) -> void:
 	if not ResourceLoader.exists(POINTER):
 		return
@@ -199,7 +189,6 @@ static func _add_pointer(layer: Control, info: Dictionary, offset: Vector2 = Vec
 	var p := TextureRect.new()
 	p.texture = load(POINTER) as Texture2D
 	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 源 :1299 currentTag = ed.createSprite（含 ContentScale，POINTER 无条目 → CS=1 等价）。
 	p.size = TexDisplaySize.display_size(POINTER)
 	var _pcx: float = STRETCH_CENTER.x + (cx + dx - STRETCH_CENTER.x) * STRETCH_SCALE
 	var _pcy: float = STRETCH_CENTER.y + (cy + dy - STRETCH_CENTER.y) * STRETCH_SCALE
@@ -219,11 +208,9 @@ static func _current_sid(info: Dictionary, mode: String) -> int:
 
 
 
-# 源 createFrame(:944)+createTitleBg(:926) — frame 边框 + title_bg（随 mode 变，章节切换不重建）。
 # 节点 set_meta(META_FRAME) 供 panel 章节 op 时识别跳过（源 createFrame 仅 create/mode 调，:325/:1618）。
 # z order：frame 先建（z 下）、title_bg 后建（z 上压 frame 上边框，照源 titleBg z=21 压 frame z=5）。
 static func create_frame(container: Control, mode: String) -> void:
-	# 源 createFrame :967-970 — mode != normal ccp(400,207)→godot(480,353)；normal ccp(400,205)→godot(480,355)
 	var frame_y: float = 355.0 if mode == "normal" else 353.0
 	var frame: CanvasItem = _make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
 	if frame != null:
@@ -237,15 +224,12 @@ static func create_frame(container: Control, mode: String) -> void:
 		title_bg.z_as_relative = false
 
 
-# 源 createTitle(:885) — 章节名 Label（章节/mode 变都重建 fade）。set_meta(META_TITLE) 供 panel crossfade 识别。
 static func create_title(container: Control, chapter: int, cm: Variant) -> void:
 	var chapter_table: Dictionary = cm.get_raw_table(&"Chapter")
 	var ch_row: Dictionary = chapter_table.get(str(chapter), {})
 	var pre: String = String(ch_row.get("Pre Chapter Name", ""))
 	var name: String = String(ch_row.get("Chapter Name", ""))
 	var lbl := Label.new()
-	# 源 :862-863 直接索引 chapterTable[chapter]（无 fallback，假定存在）。防御性 fallback 保留 + 注释。
-	# 源 :863 拼接 "Pre Chapter Name" .. "   " .. "Chapter Name"（3 空格）。
 	lbl.text = pre + "   " + name if not name.is_empty() else ("第 " + str(chapter) + " 章")
 	lbl.add_theme_color_override("font_color", Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0))
 	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -284,7 +268,6 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 	return node
 
 
-# 源 createDot（:676）+ getDotPos（:76）— 章节导航点（max 章横排，current 用 cursor）。
 # panel 持有 %DotContainer，每次 _refresh_view 清空再 procedural 建挂入（数量随 max_chapter 动态）。
 static func create_chapter_dots(container: Control, max_chapter: int, current: int, mode: String) -> void:
 	var y: float = DOT_ELITE_Y if mode == "elite" else DOT_NORMAL_Y
@@ -296,7 +279,6 @@ static func create_chapter_dots(container: Control, max_chapter: int, current: i
 		var dot := TextureRect.new()
 		dot.texture = load(res) as Texture2D
 		dot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		# 源 :688-693 createSprite（含 ContentScale，dot 纹理无条目 → CS=1 等价）。
 		dot.size = TexDisplaySize.display_size(res)
 		dot.position = Vector2(DOT_CENTER_X + DOT_GAP_X * (float(i) - center), y) - dot.size * 0.5
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE

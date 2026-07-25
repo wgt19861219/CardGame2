@@ -15,9 +15,9 @@ const GROUPBTN_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_bu
 const GROUPBTN_CURRENT: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_button_current_1.png"
 const SUBBTN_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_normal_1.png"
 const SUBBTN_CURRENT: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_current_1.png"
-const ME_BG_RES: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_me_bg.png"  # 源 :583/:938 自己行 board
-const OTHER_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"  # 源 :583/:938 他人行 board
-const ROW_W: float = 400.0  # 源 board scaleSize 650×95 → 目标行宽（Scale9 视觉近似）
+const ME_BG_RES: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_me_bg.png"
+const OTHER_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
+const ROW_W: float = 400.0
 const ROW_H: float = 56.0
 const SELF_COLOR: Color = Color(1.0, 1.0, 0.0)
 # 单机化裁剪：源 ranklisttree 3 分组（ARENA/FIGHTVALUE/GUILD），裁 pvp_r 实时联机 + guildliveness 公会未接 → 2 分组 4 子项。
@@ -31,7 +31,7 @@ var _player: PlayerData
 var _rank_type: String
 var _tab_layer: Control
 var _list_layer: ScrollContainer
-var _collapsed: Dictionary  # 源 ranklisttree collapsed：分组展开/收起状态（true=折叠）
+var _collapsed: Dictionary
 
 
 func setup_panel(p_player: PlayerData, p_rm: RanklistManager, rank_type: String) -> void:
@@ -44,9 +44,7 @@ func setup_panel(p_player: PlayerData, p_rm: RanklistManager, rank_type: String)
 
 # 建 UI：窗口框架从 .tscn instantiate（位置/size 可视化）+ 绑定 close + 取 TabHost/ScrollLayer 引用，
 # 动态 tab + 列表行仍 procedural（源 createRankBtn + initListLayer 行为）。
-# 源 create :1941 editorui(ranklistwindow) 建窗口框架 + createRankBtn/initListLayer 动态填。
 func _build_content() -> void:
-	# 源 ranklisttree collapsed：[1]ARENA collapsed=false 展开 / [2]FIGHTVALUE collapsed=true 折叠。
 	_collapsed = {"竞技": false, "战力": true}
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
@@ -57,7 +55,6 @@ func _build_content() -> void:
 	_refresh_list()
 
 
-# 源 ranklisttree 折叠树：分组标题（ranklist_button）点击切 collapsed + 子项（ranklist_subbutton）按 collapsed 显示/隐藏。
 func _build_tabs() -> void:
 	for c in _tab_layer.get_children():
 		c.queue_free()
@@ -148,7 +145,6 @@ func _refresh_list() -> void:
 		vbox.add_child(_make_row(i + 1, String(item["name"]), int(item["level"]), int(item["param"]), int(item.get("avatar", 0))))
 
 
-# 源 initpvpItemHandler/initCommonItemHandler Scale9 行（board 650×95 + 排名/头像/等级/名）。
 # 目标简化：board TextureRect（ranklist_me_bg 自己/pvp_rank_bg_high 他人）+ 排名数字（1st/2nd/3rd 图标缺降级）+ name + param。
 # 残留：头像/等级图标（NPC avatar 数据缺 + getTeamHead/getLevelIcon）+ 点击弹 summary → 下轮。
 func _make_row(rank: int, row_name: String, level: int, param: int, avatar: int, is_self: bool = false) -> Control:

@@ -10,18 +10,15 @@ extends PopWindow
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ladder_content.tscn")
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
-# 源 pvp.lua:1986/2503 tab/挑战按钮 tavern_button_normal_1 + cap(14,20,60,23) scaleSize 90×48。
 const BTN_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
 const BTN_NORMAL_PRESS: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
-# 源 pvp.lua:2215 changeEnemy 换一批 tavern_button_1 + cap(50,20,66,23)。
 const BTN_CHANGE_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_1.png"
 const BTN_CHANGE_PRESS: String = "res://assets/ui/alpha/HVGA/tavern_button_2.png"
-const CAP_NORMAL: Rect2 = Rect2(14.0, 20.0, 60.0, 23.0)   # 源 CCRectMake(14,20,60,23)
-const CAP_CHANGE: Rect2 = Rect2(50.0, 20.0, 66.0, 23.0)   # 源 CCRectMake(50,20,66,23)
+const CAP_NORMAL: Rect2 = Rect2(14.0, 20.0, 60.0, 23.0)
+const CAP_CHANGE: Rect2 = Rect2(50.0, 20.0, 66.0, 23.0)
 const CHALLENGE_BTN_SIZE: Vector2 = Vector2(90.0, 48.0)
 const ROW_H: float = 40.0
-const RANKBOARD_SELF_ROW: float = 22.0  # 源 self_rank 显示在第 22 行位置（20 NPC + 间隔）
-# 源对手卡行布局：每行 60 高，第 0 行 y=40（CONTENT_POS.y + OPPONENT_OFFSET_Y）。
+const RANKBOARD_SELF_ROW: float = 22.0
 const OPPONENT_OFFSET_Y: float = 40.0
 const OPPONENT_ROW_H: float = 60.0
 const OPPONENT_ROW_SIZE: Vector2 = Vector2(700.0, 50.0)
@@ -29,11 +26,8 @@ const OPPONENT_LABEL_Y: float = 15.0
 const OPPONENT_BTN_POS: Vector2 = Vector2(550.0, 10.0)
 const LINEUP_ROW_OFFSET_Y: float = 40.0
 const CONTENT_POS: Vector2 = Vector2(80.0, 90.0)
-# 源 ccc3(234,225,205) tab/挑战 label / ccc3(251,206,16) 换一批 label。
 const LABEL_COLOR_NORMAL: Color = Color(0.918, 0.882, 0.804)
 const LABEL_COLOR_CHANGE: Color = Color(0.984, 0.808, 0.063)
-# 源 pvp.lua:7 三 panel layer 可见性切换 → tab view visible 切换。
-# 源 tab LSTR：L1654 PVP.ARMORY(英雄榜/挑战) / L2018 PVP.RANKING_(排行榜) /
 # L1727 PVP.COMBAT_RECORD(战斗记录) / L2969 PVP.ADJUSTMENT(防守阵容调整)。
 const TAB_LSTR: Array[String] = ["PVP.ARMORY", "PVP.RANKING_", "PVP.COMBAT_RECORD", "PVP.ADJUSTMENT"]
 
@@ -58,7 +52,6 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_rng: BattleRng) ->
 	_rng = p_rng
 	_ladder = _player.ladder
 	setup()
-	# 源 pvp.lua:3214/3250 pushScene 独立场景（framework.lua:749 自动建全屏 bg.jpg），
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补全屏 bg.jpg 还原源视觉。
 	if shade_layer != null:
 		shade_layer.color.a = 0
@@ -141,7 +134,6 @@ func _fill_challenge_tab() -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, now)
 	var info: Dictionary = reply["_open_panel"]
-	# 源 mainPanelLayer：L880 PVP.RANK_(排名:)/L912 PVP.TOTAL_POWER_(总战力:) 独立 Label。
 	# 挑战次数/竞技场币源为图+数字字段（无单 LSTR），此处保留降级字面量。
 	_info_label.text = "%s%d  %s%d  挑战次数 %d  竞技场币 %d" % [_cm.get_lstr("PVP.RANK_"), int(info["rank"]), _cm.get_lstr("PVP.TOTAL_POWER_"), int(info["gs"]), int(info["left_count"]), _player.arena_point]
 	for i in (info["oppos"] as Array).size():
@@ -153,12 +145,10 @@ func _make_opponent_row(oppo: Dictionary, idx: int) -> Control:
 	row.position = Vector2(0, OPPONENT_OFFSET_Y + idx * OPPONENT_ROW_H)
 	row.custom_minimum_size = OPPONENT_ROW_SIZE
 	var lbl := Label.new()
-	# 源对手卡：图+数字字段（无文字 label），此处降级聚合文字。排名/战力照源 PVP.RANK_/PVP.TOTAL_POWER_。
 	lbl.text = "%s  Lv%d  %s%d  %s%d" % [String(oppo["name"]), int(oppo["level"]), _cm.get_lstr("PVP.RANK_"), int(oppo["rank"]), _cm.get_lstr("PVP.TOTAL_POWER_"), int(oppo["gs"])]
 	lbl.position = Vector2(0, OPPONENT_LABEL_Y)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(lbl)
-	# 源 pvp.lua:2541 challengeEnemy1/2/3 tavern_button_normal_1 + cap(14,20,60,23) + PVP.CHALLENGE Label。
 	var btn: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_NORMAL_PRESS, OPPONENT_BTN_POS, CHALLENGE_BTN_SIZE, CAP_NORMAL, _cm.get_lstr("PVP.CHALLENGE"), LABEL_COLOR_NORMAL)
 	btn.pressed.connect(_on_challenge.bind(int(oppo["user_id"])))
 	row.add_child(btn)
@@ -214,7 +204,6 @@ func _fill_lineup_tab() -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, now)
 	var lineup: Array = reply["_open_panel"]["lineup"]
-	# 源 L2984 PVP.DEFENSIVE_TEAM_(防守阵容:)。括号补充英雄数为降级（源为图标阵容非文字）。
 	_lineup_title_label.text = "%s（%d 英雄）" % [_cm.get_lstr("PVP.DEFENSIVE_TEAM_"), lineup.size()]
 	for i in lineup.size():
 		var tid: int = int(lineup[i])
@@ -236,7 +225,6 @@ func _on_set_lineup() -> void:
 	_fill_tab(_current_tab)
 
 
-# 源 _start_battle：检查 left_count → LadderBattle.assemble（AI 敌方）→ battle_context mode=pvp → battle_scene。
 func _on_challenge(oppo_user_id: int) -> void:
 	if int(_ladder.pvp["left_count"]) <= 0:
 		Toast.show_message("挑战次数不足，请购买")
@@ -254,7 +242,7 @@ func _on_challenge(oppo_user_id: int) -> void:
 func _on_buy() -> void:
 	var reply: Dictionary = _ladder.handle({"_buy_battle_chance": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
 	if str(reply["_buy_battle_chance"]["result"]) == "success":
-		GameData.mark_save_dirty()   # 照源 local_server:3371 PVP 买次数脏标（扣钻石，60s/退出刷）
+		GameData.mark_save_dirty()
 		_fill_tab(_current_tab)
 	else:
 		Toast.show_message("钻石不足")

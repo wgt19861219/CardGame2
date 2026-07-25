@@ -17,17 +17,15 @@ const OFFSET_X: float = -20.0
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const TAB_KEYS: Array[String] = ["all", "front", "middle", "back"]
-# 源 4 tab buttonPress（classbtnselected）+ buttonLabel LSTR。const 不能调运行时 cm.get_lstr → _build_content 运行时填。
 const TAB_LSTR_KEYS: Array[String] = [
 	"BATTLEPREPARE.WHOLE", "UNIT.FRONT_ROW", "UNIT.MIDDLE_ROW", "UNIT.REAR_ROW"
 ]
 const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # cm=null fallback（与源 LSTR 值同步）
 const TAB_BTN_NAMES: Array[String] = ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn"]
 const TAB_LBL_NAMES: Array[String] = ["TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]
-# 源 draglist 卡片网格 getpos :315-323：第一张中心 cocos(255+offsetx=235, 335)，列间距 260（:321）/ 行高 100（:322）。
-const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)   # 源 getpos 列间距 260 / 行高 100（卡片中心间距）
-const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"   # 源 prepareLoad :403
-const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"   # 源 :407
+const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
+const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"
+const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"
 const LIST_LINE_FALLBACK: String = "以下英雄尚未召唤"   # cm=null fallback（= 源 LSTR_zh-CN 值）
 
 var cm: Variant = null
@@ -83,7 +81,6 @@ func _build_content() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	_scroll = content.get_node("%HeroScroll") as ScrollContainer
 	_grid = content.get_node("%GridHost") as Control
-	# 源 heropackage.lua z-order：list_bg z=2(:497) / buttonLabel z=4(:542 等) / draglist zorder=10(:762)。
 	# tab z 动态切在 _update_tab_visual（选中 3 / 未选中 1）。照源运行时 setZOrder（源即运行时设）。
 	(content.get_node("ListBg") as TextureRect).z_index = 2
 	_scroll.z_index = 10
@@ -98,24 +95,21 @@ func _build_content() -> void:
 		lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
 	_update_tab_visual()
 	# 分解按钮（2026-07-19 接线完成）：HeroSplitWindow 务实方案——内联英雄网格 + 返还预览 + 二次确认。
-	# 源 herosplit 联机系统（selectwindow/split_return local_server 空壳）单机化简化，详见 hero_split_window.gd。
 	_add_herosplit_button(content)
 
 
-# 源 heropackage.lua:682-747 herosplit ui_info：Scale9 classbtn 120×75 at ccp(695,60) + label。
 func _add_herosplit_button(content: Control) -> void:
-	var btn_pos: Vector2 = _to_godot(Vector2(695.0, 60.0))   # 源 :687
+	var btn_pos: Vector2 = _to_godot(Vector2(695.0, 60.0))
 	var btn := UiScale9Button.make(
 		CLASSBTN_RES, CLASSBTN_RES,
 		btn_pos, Vector2(120.0, 75.0),
-		Rect2(40.0, 25.0, 40.0, 25.0),   # 源 :684 capInsets
+		Rect2(40.0, 25.0, 40.0, 25.0),
 		cm.get_lstr(&"heropackage.1.10.1.001") if cm != null else "分解",
 		Color.WHITE)
 	btn.pressed.connect(_on_herosplit_pressed)
 	content.add_child(btn)
 
 
-# 源 heropackage.lua herosplit 按钮 → split.popMain（单机化：弹 HeroSplitWindow）。
 func _on_herosplit_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var window := HeroSplitWindow.new("herosplit", {})
@@ -125,7 +119,6 @@ func _on_herosplit_pressed() -> void:
 
 
 func _update_tab_visual() -> void:
-	# 源 doChangeList（heropackage.lua:16-23）：选中 tab setZOrder(3) 凸出 list_bg(z=2)；
 	# 未选中 setZOrder(1) 被背景框挡（重叠区左缘约 30px）；texture_normal 切 classbtn/selected。
 	for key in _tabs:
 		var btn: TextureButton = _tabs[key]
@@ -141,12 +134,10 @@ func _on_tab_pressed(key: String) -> void:
 	_refresh_list()
 
 
-# 源 getAllList :446 classify("handbook","position")：委托 ReadheroHandbook（含未召唤英雄 + 按位置分）。
 func _classify_heroes() -> void:
 	_hero_by_class = ReadheroHandbook.classify_handbook(cm, _hero_mgr)
 
 
-# 源 refreshHeroList + loadHero：每条目 packageItem.create(tid) → HeroPackageItem 整行卡片。
 # 已拥有→未拥有分界处插 listLine 分隔线（源 prepareLoad listLine + refreshHeroList setVisible 分界）。
 # _grid 为 .tscn %GridHost（Control，非 GridContainer 避免子节点 scale reset，2026-07-16 实测）。
 func _refresh_list() -> void:
@@ -189,7 +180,6 @@ func _is_handbook_boundary(list: Array, i: int) -> bool:
 	return list[i] is HeroInstance and not (list[i + 1] is HeroInstance)
 
 
-# 源 prepareLoad :398-411 listLine：equip_detail_title_bg 300×16 + "尚未召唤" 文字。
 # GridContainer 不支持跨列，分隔线 + 空 cell 占位凑一行（2 列补齐）。
 func _add_list_line_at(col: int, row: int) -> void:
 	var line := Control.new()
@@ -222,17 +212,14 @@ func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 		_on_entry_clicked(entry)
 
 
-# 源 framework.lua statusbar backbtn：hero_scene 独立场景（change_scene 切入），backbtn change_scene 回主界面 = 1 次返回。
 func _on_close_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	SceneManager.change_scene("res://scenes/main_menu/main_scene.tscn")
 
 
 # 碎片合成入口源 heropackage.lua 无（grep 确认只有 herosplit 分解 + classbtn tab，无 fragment），
-# 照源去掉占位按钮（2026-07-14 用户验收反馈）。碎片列表从装备板 equipboard ofpackage 进。
 
 
-# 源 doClickInHeroLayer（:144-247）：clickHero 已拥有→detail；clickMissHero 未拥有→召唤/碎片详情。
 func _on_entry_clicked(entry: Variant) -> void:
 	if entry is HeroInstance:
 		_on_hero_clicked(entry as HeroInstance)
@@ -240,10 +227,9 @@ func _on_entry_clicked(entry: Variant) -> void:
 		_on_miss_clicked(entry)
 
 
-# 源 clickHero（:191-233）：已拥有 → HeroDetailPanel（card 模式）。
 func _on_hero_clicked(hero: HeroInstance) -> void:
-	AudioPlayer.play_sfx("common_popup_window")   # 源 heroPackage.clickHero（soundres.lua:185）
-	Events.bus.emit_tutorial_step(&"SUclickHero")   # 源 heropackage.lua:201 ed.endTeach "SUclickHero"
+	AudioPlayer.play_sfx("common_popup_window")
+	Events.bus.emit_tutorial_step(&"SUclickHero")
 	var detail := HeroDetailPanel.new("herodetail", {})
 	detail.setup_panel(hero, cm, _hero_mgr, pd)
 	detail.evolve_requested.connect(func() -> void:
@@ -261,7 +247,6 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	# 这里仅挂占位保持信号注册对称（实际刷新由 awake panel.closed 触发，避免双刷新）。
 	detail.awake_requested.connect(func() -> void:
 		detail.perform_awake())
-	# 源 heropackage.lua:228 clickHero → draglist.listLayer:setVisible(false) 隐藏列表，
 	# 避卡片星透过 hero_detail 弹窗半透 shade（0.588）。
 	# 治本：整个 hero_package container 隐藏。源 herodetail 靠 mainLayer z=120 + 不透明 bg 盖住 hero_package，
 	# 目标 hero_detail 是 PopWindow（shade 半透 0.588），盖不住 hero_package 全部内容（tab/close/list_bg/卡片全透，
@@ -274,14 +259,12 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	if host != null and host.has_method(&"set_bars_visible"):
 		host.set_bars_visible(false)
 	detail.show_window(host)
-	# 源 :156 destroyHandler → listLayer:setVisible(true) 关详情后恢复。
 	detail.tree_exiting.connect(func() -> void:
 		container.visible = true
 		if host != null and host.has_method(&"set_bars_visible"):
 			host.set_bars_visible(true))
 
 
-# 源 clickMissHero（:163-190）：未拥有 → 碎片足够则 hero_evolve 召唤；不足弹 stonedetail（碎片详情）。
 func _on_miss_clicked(entry: Variant) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var miss_tid: int = ReadheroHandbook.entry_tid(entry)
@@ -293,11 +276,9 @@ func _on_miss_clicked(entry: Variant) -> void:
 		_open_stone_detail(miss_tid)
 
 
-# 源 stonedetail.create({id=miss_tid}) — 碎片详情弹窗（碎片图标/名称/拥有数/获取途径）。
 func _open_stone_detail(tid: int) -> void:
 	var panel := StoneDetailPanel.new("stonedetail", {})
 	panel.setup_panel(tid, cm, pd, _hero_mgr)
-	# 照源 mainLayer z=120 + 不透明 bg 盖住 hero_package，目标 PopWindow shade 半透
 	# 盖不住 hero_package 全部内容 → 须整体隐藏 container（同 _on_hero_clicked 范式）。
 	container.visible = false
 	var host: Node = get_parent()

@@ -34,7 +34,6 @@ const REWARD_OY: float = 50.0
 const TITLE_BG_COCOS: Vector2 = Vector2(400.0, 355.0)
 
 
-# 源 getResInformation :623-678。resInfo（frame/title_bg/title_bg_size/star_gap/go_btn_pos/frame_pos）。
 static func get_res_info(stage_type: String) -> Dictionary:
 	match stage_type:
 		"normal":
@@ -54,7 +53,6 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + OFFSET_X, BASE_Y - cy)
 
 
-# 源 create:1585-1883 ui_info ~20 节点。.tscn 已建静态节点（位置/size 固化），本函数 fill 动态字段。
 # cm: ConfigManager，用于 LSTR 化硬编码中文（源 stagedetail.lua :1686/:1730/:1807/:1834/:1848）。
 # 返 ui 引用 dict（panel 后处理显隐/色用，同旧 build 返回兼容）。
 static func setup_content(content: Control, info: Dictionary, res_info: Dictionary, cm: Variant) -> Dictionary:
@@ -109,14 +107,12 @@ static func setup_content(content: Control, info: Dictionary, res_info: Dictiona
 	(ui["power_number"] as Label).text = str(info.get("power", 0))
 	(ui["total_number"] as Label).text = "/ " + str(info.get("count_limit", "??"))
 	(ui["count_number"] as Label).text = str(left)
-	# 源 LSTR key（STAGEDETAIL.* / EXERCISE.* / EQUIPINFO.*）。
-	var lstr_power: String = String(cm.get_lstr("STAGEDETAIL.PHYSICAL_EXERTION")) if cm != null else ""   # 源 :1686
-	var lstr_left: String = String(cm.get_lstr("EXERCISE.REMAINING_TIMES_FOR_TODAY_")) if cm != null else ""   # 源 :1730
-	var lstr_buy: String = String(cm.get_lstr("EQUIPINFO.PURCHASE")) if cm != null else ""   # 源 :1807
-	var lstr_enemy: String = String(cm.get_lstr("STAGEDETAIL.ENEMY_LINEUP")) if cm != null else ""   # 源 :1834
-	var lstr_award: String = String(cm.get_lstr("STAGEDETAIL.MAY_BE_OBTAINED")) if cm != null else ""   # 源 :1848
+	var lstr_power: String = String(cm.get_lstr("STAGEDETAIL.PHYSICAL_EXERTION")) if cm != null else ""
+	var lstr_left: String = String(cm.get_lstr("EXERCISE.REMAINING_TIMES_FOR_TODAY_")) if cm != null else ""
+	var lstr_buy: String = String(cm.get_lstr("EQUIPINFO.PURCHASE")) if cm != null else ""
+	var lstr_enemy: String = String(cm.get_lstr("STAGEDETAIL.ENEMY_LINEUP")) if cm != null else ""
+	var lstr_award: String = String(cm.get_lstr("STAGEDETAIL.MAY_BE_OBTAINED")) if cm != null else ""
 	(ui["power_title"] as Label).text = lstr_power
-	# 源 :1730 T(LSTR("EXERCISE.REMAINING_TIMES_FOR_TODAY_"), count) — key="今日剩余次数:"，%d 拼接（项目 LSTR 值冒号结尾）。
 	(ui["count_title"] as Label).text = lstr_left + str(left)
 	(ui["reset_label"] as Label).text = lstr_buy
 	(ui["enemy_title"] as Label).text = lstr_enemy
@@ -132,7 +128,6 @@ static func _set_texture(rect: TextureRect, res_path: String) -> void:
 	rect.texture = load(res_path) as Texture2D
 
 
-# 源 createEnemy :1142-1192。enemies: [{tid, level, stars, is_boss}]。
 static func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
 	var idx: int = 0
 	for e in enemies:
@@ -141,7 +136,7 @@ static func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
 			continue
 		var is_boss: bool = bool(e.get("is_boss", false))
 		var icon := ReadheroIcon.new()
-		var rank: int = mini(ExcavateData.hero_level_to_rank(int(e.get("level", 1))), 8)  # 源 :1153-1157 >8 截 8
+		var rank: int = mini(ExcavateData.hero_level_to_rank(int(e.get("level", 1))), 8)
 		icon.setup({"id": tid, "rank": rank, "stars": int(e.get("stars", 0))}, cm)
 		var length: float = 80.0 if is_boss else 70.0
 		var s: float = length / ENEMY_CONTAINER
@@ -150,14 +145,13 @@ static func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
 		icon.scale = Vector2(s, s)
 		icon.position = to_godot(bx, by) - Vector2(ENEMY_CONTAINER * s, ENEMY_CONTAINER * s) * 0.5
 		if icon.ori_icon is Sprite2D:
-			(icon.ori_icon as Sprite2D).flip_h = true  # 源 :1165 setFlipX(true)
+			(icon.ori_icon as Sprite2D).flip_h = true
 		parent.add_child(icon)
 		if is_boss:
 			_add_boss_tag(icon)
 		idx += 1
 
 
-# 源 :1179 stagedetail_boss_tag.png（本项目缺）→ 图缺降级 "BOSS" 红字。
 static func _add_boss_tag(icon: ReadheroIcon) -> void:
 	var host: Node = icon.icon if icon.icon != null else icon
 	if ResourceLoader.exists(BOSS_TAG_RES):
@@ -178,7 +172,6 @@ static func _add_boss_tag(icon: ReadheroIcon) -> void:
 		host.add_child(lbl)
 
 
-# 源 createReward :1193-1211。drops: [{item_id}]（hero/equip create_icon 自动判）。
 static func create_reward(parent: Node, drops: Array, cm: Variant) -> void:
 	var idx: int = 0
 	for d in drops:
@@ -193,7 +186,6 @@ static func create_reward(parent: Node, drops: Array, cm: Variant) -> void:
 		idx += 1
 
 
-# 源 createStars :1212-1260。pos ccp(320+gap*i,336) scale0.8；i<star_count 亮 / else 灰。
 static func create_stars(parent: Node, star_count: int, star_gap: int) -> void:
 	for i in range(3):
 		var res_path: String = STAR_RES if i < star_count else STAR_GREY_RES

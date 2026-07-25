@@ -8,15 +8,14 @@ extends RefCounted
 ## 从 main_scene.gd 抽出避超 400 行。坐标：源 ccp(左下) 已转 Godot(左上)，ENTRIES pos = 源中心点（CCSprite anchor 0.5）。
 
 const SPINE_DIR: String = "res://assets/spine"
-const LOOP_ACTION: String = "Loop"   # 源 SpineContainer default Start→Loop，主界面按钮 Loop 循环
-const TITLE_BG: String = "res://assets/ui/alpha/HVGA/main_title_a.png"   # 源 mainres.titleres
-# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
+const LOOP_ACTION: String = "Loop"
+const TITLE_BG: String = "res://assets/ui/alpha/HVGA/main_title_a.png"
 const CONTENT_SCALE: float = 1.28125
-const PRESS_TEX: String = "res://assets/ui/alpha/HVGA/main_button_press.png"   # 源 createMainButton:560 pressres
-const LOCKED_ALPHA: float = 0.5       # 源 main.lua 未解锁按钮灰显 alpha
-const TITLE_FONT_SIZE: int = 17       # 源 createMainButton:622 ui_main_button_normal 17
-const TITLE_MAX_WIDTH: float = 100.0  # 源 :625 label 超 100 宽缩放
-const TITLE_OFFSET_Y: float = 25.0    # 源 createMainFca:443 pos.y - 25（title 在图标下方，Godot y 下 → +25）
+const PRESS_TEX: String = "res://assets/ui/alpha/HVGA/main_button_press.png"
+const LOCKED_ALPHA: float = 0.5
+const TITLE_FONT_SIZE: int = 17
+const TITLE_MAX_WIDTH: float = 100.0
+const TITLE_OFFSET_Y: float = 25.0
 const DEFAULT_RADIUS: float = 56.0    # 无 radius 字段的默认触摸半径
 const GapLoopAnimator = preload("res://scripts/ui/gap_loop_animator.gd")
 const RoundButton = preload("res://scripts/ui/round_button.gd")
@@ -51,7 +50,6 @@ static func make_entry(e: Dictionary, on_pressed: Callable, is_locked: bool) -> 
 # press 光效（照源 createMainButton:592-604）。e["light"] = [lightPos_x, lightPos_y, lightSize_w, lightSize_h]（源 mainres.lightPos + lightSize）。
 # 中心 = 按钮中心 + lightPos（源 y 上 → Godot y 下，翻 Y），尺寸 = lightSize × scale（源 setScale = lightSize*scale/size）。
 # 默认隐藏，button_down 显示 / button_up 隐藏（源 btRegisterClick 按下 ui[key.."_press"]:setVisible(true)）。
-# 源 :594-596 ssshop/estren tposition.y-30 是死代码（:598 setPos 仍用 br.lightPos），照源实际行为不修正。
 static func _add_press(btn: Button, e: Dictionary) -> void:
 	if not e.has("light"):
 		return
@@ -81,7 +79,6 @@ static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
 		return null
 	var sk_scale: float = float(e.get("scale", 1.0))
 	var sk := SpineSkeleton.new()
-	# 源 createMainFca:418 setScale(v.scale)。createAnimation 是 C++ SpineRuntime，不受 LegendSetAniScaleFactor 影响
 	# （0.39 仅 LegendAminationEffect/.abc 自家系统用；createFcaNode:581 Type_Spine 走 createAnimation，:589 FCA 走 LegendAminationEffect）。
 	sk.scale = Vector2(sk_scale, sk_scale)   # load_skeleton:37 自动翻 y（Spine y 上 → Godot y 下）
 	btn.add_child(sk)
@@ -104,7 +101,6 @@ static func _add_fca(btn: Button, res: String, sk_scale: float) -> Node2D:
 	if not fca.load_from_ani("effect/" + res, atlas):
 		fca.queue_free()
 		return null
-	# 源 setScale(v.scale) 叠加在 cha_ui_scale 上（LegendAminationEffect 内部 base=cha_ui_scale × extra=v.scale，
 	# 非 CC 标准覆盖）。_create_sprites 已设 fca.scale=_coord_scale(0.39)，此处 ×v.scale 叠加。
 	# net a/b/c/d = (0.39×v.scale)/0.39 × 原始 = v.scale×原始（正常缩放，避反向 ×1/0.39 放大 2.05× 致 starshop 超大）。
 	fca.scale = fca.scale * sk_scale
@@ -147,6 +143,6 @@ static func _add_title(btn: Button, title_text: String) -> void:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font", TITLE_FONT_SIZE)
-	label.clip_text = true   # 源 :625-627 超 100 宽缩放（Label clip 避溢出 title 背景）
+	label.clip_text = true
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_child(label)

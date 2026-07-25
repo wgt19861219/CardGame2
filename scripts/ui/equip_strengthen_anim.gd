@@ -4,36 +4,34 @@ extends RefCounted
 ## equipstrengthen NPC 对话 + 强化成功动画（View helper）— 从 EquipStrengthenPanel 拆出控 ≤300。
 ## static 方法第一参 panel，照 battle_unit_combat.gd 静态拆分。
 ## 主类 _do_speak/_do_talk/_hide_talk/_set_talk_text 转发本类（单测 panel._do_speak 不变）。
-## 源 ui/equipstrengthen.lua createnpcTalk:11 + doSpeak:51 + doTalk:44 + hideTalk:62
 ## + initHeroEquip:1505 + playEnhanceAnim:1544 + playStarAnim:1512。
 
 # NPC 对话系统（源 :11-67 createnpcTalk/doTalk/doSpeak/hideTalk + :2148-2157 NPC 头像装配）
 const NPC_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_npc_head.png"
 const TALK_FRAME_RES: String = "res://assets/ui/alpha/HVGA/skill_talk_bg_down.png"
 const PANEL_HEIGHT: float = 560.0                          # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（480+80，照 battle_view_coords.gd BASE_Y）
-const NPC_POS: Vector2 = Vector2(638.0, 378.0)             # 源 cocos anchor(0,0) 左下
-const TALK_FRAME_TOP: Vector2 = Vector2(645.0, 305.0)      # 源 cocos anchor(0.5,1) 顶部中心
-const TALK_LABEL_TOP: Vector2 = Vector2(645.0, 282.0)      # 源 cocos anchor(0.5,1) 顶部中心
-const TALK_FRAME_SIZE: Vector2 = Vector2(224.0, 76.0)      # 源 :21 setContentSize
-const TALK_LABEL_WIDTH: float = 200.0                      # 源 :31 setLabelDimensions 200
-const TALK_FRAME_MIN_H: float = 60.0                       # 源 :40 max(60, h)
-const TALK_FRAME_LABEL_PAD: float = 42.0                   # 源 :39 label.height + 42
-const TALK_CAP_LEFT: int = 30                              # 源 :20 capInsets CCRectMake(30,30,145,20)
+const NPC_POS: Vector2 = Vector2(638.0, 378.0)
+const TALK_FRAME_TOP: Vector2 = Vector2(645.0, 305.0)
+const TALK_LABEL_TOP: Vector2 = Vector2(645.0, 282.0)
+const TALK_FRAME_SIZE: Vector2 = Vector2(224.0, 76.0)
+const TALK_LABEL_WIDTH: float = 200.0
+const TALK_FRAME_MIN_H: float = 60.0
+const TALK_FRAME_LABEL_PAD: float = 42.0
+const TALK_CAP_LEFT: int = 30
 const TALK_CAP_TOP: int = 30
 const TALK_CAP_CENTER_W: int = 145
 const TALK_CAP_CENTER_H: int = 20
-const SPEAK_DELAY: float = 1.0                             # 源 :56 CCDelayTime 1
-const SPEAK_FADE: float = 0.2                              # 源 :57 CCFadeOut 0.2
+const SPEAK_DELAY: float = 1.0
+const SPEAK_FADE: float = 0.2
 # 强化成功动画（源 playEnhanceAnim:1544 + playStarAnim:1512；FCA eff_UI_enhance_success Spine 未落地→Tween 降级）
-const STAR_ANIM_DELAY: float = 0.5           # 源 :1520 CCDelayTime 0.5（首颗 isdelay）
-const STAR_ANIM_SHOW_SCALE: float = 2.0      # 源 :1524 setScale(2) 显形峰值
-const STAR_ANIM_DUR: float = 0.2             # 源 :1527 CCScaleTo 0.2 EaseBackIn 缩回 osc
+const STAR_ANIM_DELAY: float = 0.5
+const STAR_ANIM_SHOW_SCALE: float = 2.0
+const STAR_ANIM_DUR: float = 0.2
 const ENHANCE_FX_DUR: float = 0.4            # FCA 降级脉冲淡出时长（源 FCA 时长未知，合理估）
 const ENHANCE_FX_PEAK_SCALE: float = 3.0     # FCA 降级中心金星放大峰值
 const HALF: float = 0.5
 
 
-# 源 createnpcTalk：首次建 NPC 头像 + Scale9 气泡 + Label 容器；后续仅更新文字与气泡高度。
 # cocos→Godot 坐标转换：源 y 向上、anchor 多样；Godot Control y 向下、position=左上角。
 static func ensure_talk_container(panel) -> void:
 	if panel._talk_container != null and is_instance_valid(panel._talk_container):
@@ -74,7 +72,6 @@ static func ensure_talk_container(panel) -> void:
 	panel._talk_container.add_child(panel._talk_label)
 
 
-# 源 createnpcTalk :38-41：setLabel + 重算气泡高度 max(60, label.height+42)。
 static func set_talk_text(panel, text: String) -> void:
 	ensure_talk_container(panel)
 	panel._talk_label.text = text
@@ -89,7 +86,6 @@ static func stop_speak_tween(panel) -> void:
 	panel._speak_tween = null
 
 
-# 源 doSpeak :51-61：createnpcTalk + 不透明 + 1s 后淡出 0.2。
 # 守卫：setup_panel 在 show_window 前调用（面板未入树），create_tween 需在树内 → 未入树时仅常驻显示。
 static func do_speak(panel, text: String) -> void:
 	set_talk_text(panel, text)
@@ -101,14 +97,12 @@ static func do_speak(panel, text: String) -> void:
 		panel._speak_tween.tween_property(panel._talk_container, "modulate:a", 0.0, SPEAK_FADE)
 
 
-# 源 doTalk :44-49：createnpcTalk + 不透明 + 常驻（停止淡出序列）。
 static func do_talk(panel, text: String) -> void:
 	set_talk_text(panel, text)
 	stop_speak_tween(panel)
 	panel._talk_container.modulate.a = 1.0
 
 
-# 源 hideTalk :62-66：停止序列 + 透明。
 static func hide_talk(panel) -> void:
 	if panel._talk_container == null or not is_instance_valid(panel._talk_container):
 		return
@@ -116,7 +110,6 @@ static func hide_talk(panel) -> void:
 	panel._talk_container.modulate.a = 0.0
 
 
-# 源 initHeroEquip:1505-1510：refreshHeroItemStar（refresh_stars 重建星态）+ playEnhanceAnim。
 # _pre_enhance_level<new_level（升级）才播（失败/无升级时 playStarAnim 立即 return，等价源 level<nl 守卫）。
 static func play_upgrade_anim(panel) -> void:
 	if panel._selected_slot < 0 or panel._selected_slot >= panel._equip_icons.size():
@@ -125,52 +118,48 @@ static func play_upgrade_anim(panel) -> void:
 		return
 	var new_level: int = EquipStrengthenAtt.get_slot_level(panel, panel._selected_slot)
 	if panel._pre_enhance_level >= new_level:
-		return   # 源 level<nl 守卫（无升级不播）
+		return
 	var icon: Control = panel._equip_icons[panel._selected_slot]
-	ReadequipIcon.refresh_stars(icon, new_level)   # 源 :1508 refreshHeroItemStar
-	play_enhance_anim(panel, icon, panel._pre_enhance_level, new_level)   # 源 :1509
+	ReadequipIcon.refresh_stars(icon, new_level)
+	play_enhance_anim(panel, icon, panel._pre_enhance_level, new_level)
 	panel._pre_enhance_level = -1   # 复位（一次性）
 
 
-# 源 playEnhanceAnim:1544-1564：old_level<new_level → FCA 成功特效（icon 中心，降级 Tween）+ 隐藏新星 + playStarAnim。
 static func play_enhance_anim(panel, icon: Control, old_level: int, new_level: int) -> void:
 	var stars: Array = ReadequipIcon.get_stars(icon)
 	if stars.is_empty():
 		return
-	play_enhance_effect(panel, icon)   # 源 :1554-1557 FCA eff_UI_enhance_success（降级）
-	# 源 :1559-1562 隐藏新星（0-based old_level..new_level-1）
+	play_enhance_effect(panel, icon)
 	for i in range(old_level, new_level):
 		if i < stars.size():
 			var s = stars[i].get("icon", null)
 			if s != null and is_instance_valid(s):
 				(s as CanvasItem).visible = false
-	play_star_anim(panel, stars, old_level, new_level, true)   # 源 :1563（0-based 从 old_level 到 new_level）
+	play_star_anim(panel, stars, old_level, new_level, true)
 
 
-# 源 playStarAnim:1512-1542：递归逐颗点亮（delay 0.5 首颗→scale 2 显形→0.2s EaseBackIn 缩回 osc→下一颗）。
 # 0-based index 从 start 到 eof（不含）；index>=eof 终止（源 eof<index return 的 0-based 等价）。
 static func play_star_anim(panel, stars: Array, index: int, eof: int, isdelay: bool) -> void:
-	if index >= eof:   # 源 :1513 eof<index return
+	if index >= eof:
 		return
 	if index >= stars.size():
 		return
 	var star: CanvasItem = stars[index].get("icon", null)
 	if star == null or not is_instance_valid(star):
 		return
-	var osc: float = ReadequipIcon.STAR_SCALE   # 源 :1518 getScale（0.9）
+	var osc: float = ReadequipIcon.STAR_SCALE
 	var tw: Tween = panel.create_tween()
 	if isdelay:
-		tw.tween_interval(STAR_ANIM_DELAY)   # 源 :1520（首颗 isdelay）
-	tw.tween_callback(func() -> void:   # 源 :1521-1526 f1 setVisible(true)+setScale(2)
+		tw.tween_interval(STAR_ANIM_DELAY)
+	tw.tween_callback(func() -> void:
 		if is_instance_valid(star):
 			star.visible = true
 			star.scale = Vector2(STAR_ANIM_SHOW_SCALE, STAR_ANIM_SHOW_SCALE))
-	tw.tween_property(star, "scale", Vector2(osc, osc), STAR_ANIM_DUR).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)   # 源 :1527-1528 EaseBackIn
-	tw.tween_callback(func() -> void:   # 源 :1529-1533 f2 递归
+	tw.tween_property(star, "scale", Vector2(osc, osc), STAR_ANIM_DUR).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func() -> void:
 		EquipStrengthenAnim.play_star_anim(panel, stars, index + 1, eof, false))
 
 
-# 源 playEnhanceAnim:1554-1557 FCA eff_UI_enhance_success（icon 中心 addFca 注册播放）。
 # Spine 方案 C 未落地 → Tween 降级：icon 中心金星放大淡出（成功爆裂感，复刻铁律允许纯 Godot 适配）。
 static func play_enhance_effect(panel, icon: Control) -> void:
 	var tex: Texture2D = load(ReadequipIcon.STAR_BLUE_RES)

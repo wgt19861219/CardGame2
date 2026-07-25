@@ -22,7 +22,7 @@ var _config: Dictionary = {}
 var _panel_layer: Control
 var _item_layer: Control
 var _money_label: Label
-var _refresh_cost_label: Label       # 源 shop_refresh_cost_bg + 价格（按钮上方）
+var _refresh_cost_label: Label
 var _talk_label: Label             # NPC 对话气泡（照源 shop.lua:19 showTalk）
 var _next_refresh_label: Label     # 下次自动刷新时刻（照源 getShopNextAutoRefreshPointDesc）
 var _head_touch: Control           # NPC 头像触摸层（点头像→Touch，源 shop.lua:940 head_button）
@@ -44,13 +44,13 @@ func setup_panel(p_shop_id: int, p_mgr: ShopManager, p_pd: PlayerData, p_rng: Ba
 		shade_layer.color.a = 0
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shop_mgr.open_shop(shop_id, rng, cm)
-	shop_mgr.init_auto_refresh(shop_id, pd, _now())         # 源 local_server:1219 open_shop 设 _last_auto_refresh_time
-	shop_mgr.init_expire(shop_id, pd, _now())               # 源 local_server:1316 open_shop 设 _expire_time
-	shop_mgr.check_auto_refresh(shop_id, pd, _now(), rng)   # 源 up.proto:260 到点 auto_refresh 触发
+	shop_mgr.init_auto_refresh(shop_id, pd, _now())
+	shop_mgr.init_expire(shop_id, pd, _now())
+	shop_mgr.check_auto_refresh(shop_id, pd, _now(), rng)
 	_build_content()
 	register_on_enter(func() -> void:
 		AudioPlayer.play_sfx("common_popup_window")
-		_show_talk("Welcome"))   # 源 shop.lua:920 进店 Welcome（进场后触发，已入树）
+		_show_talk("Welcome"))
 
 
 # 建 UI 内容。Phase base 层从 .tscn instantiate + fill 动态数据；商品列表 procedural 挂 %ItemLayer。
@@ -61,10 +61,9 @@ func _build_content() -> void:
 	ShopBuilder.setup_panel_layer(_panel_layer, _config)
 	# 绑定 .tscn 静态按钮/区域
 	(_panel_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
-		AudioPlayer.play_sfx("common_close_popup_window")   # 源 closeWindow
+		AudioPlayer.play_sfx("common_close_popup_window")
 		remove_window())
 	(_panel_layer.get_node("%RefreshBtn") as BaseButton).pressed.connect(_on_refresh)
-	# 源 shop.lua:940 head_button（点头像→Touch）。
 	_head_touch = _panel_layer.get_node("%HeadTouch") as Control
 	_head_touch.gui_input.connect(func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
@@ -82,7 +81,6 @@ func _build_content() -> void:
 	_update_next_refresh_label()
 
 
-# 源 createCommon：两行商品列表（getItemPos :371-382）。先 free 老 item 再建（_rebuild 用）。
 func _build_goods() -> void:
 	for c in _item_layer.get_children():
 		c.free()
@@ -100,7 +98,6 @@ func _make_buy_handler(slot: int) -> Callable:
 			_on_buy(slot)
 
 
-# 源 doClickInProduct:239-279 + openBuyPanel:314-322 + doBuy:167-188。
 # C6（2026-07-23）：照源补 equipboard ofbuy 确认面板（源 openBuyPanel → equipboard.init("ofbuy", data)），
 # 确认后触发 confirmed → _do_buy 实际 shop_mgr.buy（源 param.doBuy 闭包 → confirmed 信号）。
 # 售罄商品照源 showTalk("Soldout") 不弹确认面板。
@@ -111,13 +108,12 @@ func _on_buy(slot: int) -> void:
 		return
 	var g: Dictionary = goods[slot]
 	if int(g.get("amount", 0)) <= 0:
-		_show_talk("Soldout")   # 源 shop.lua:246 点售罄商品
+		_show_talk("Soldout")
 		Toast.show_message("已售罄")
 		return
-	# 源 openBuyPanel:314-322 equipboard.init("ofbuy", data)。data 字段照源 createCommon:343-358。
 	var amount: int = int(g.get("amount", 1))
 	var price: int = int(g.get("price", 0))
-	var cost: int = price * maxi(amount, 1)   # 源 createCommon:351 cost = price * max(amount,1)
+	var cost: int = price * maxi(amount, 1)
 	var popup := EquipboardOfbuyPanel.new("equipboardofbuy", {})
 	popup.setup_panel({
 		"id": int(g.get("id", 0)),
@@ -135,11 +131,10 @@ func _make_buy_confirm_handler(slot: int) -> Callable:
 	return func() -> void:
 		var ok: bool = shop_mgr.buy(shop_id, slot, pd, cm)
 		if ok:
-			GameData.mark_save_dirty()   # 照源 local_server:1281 商店购买脏标（扣货币+产出，60s/退出刷）
-			Toast.show_message("购买成功")   # 源 shop.lua:122 硬编码字面量（非 LSTR）
-			_show_talk("Purchase")   # 源 shop.lua:130 购买后对话
+			GameData.mark_save_dirty()
+			Toast.show_message("购买成功")
+			_show_talk("Purchase")
 		else:
-			# 照源 buy 失败区分：slot 越界 / amount<=0 → 售罄；否则货币不足。
 			var goods2: Array = shop_mgr.get_goods(shop_id)
 			var sold_out: bool = true
 			if slot >= 0 and slot < goods2.size():
@@ -147,19 +142,16 @@ func _make_buy_confirm_handler(slot: int) -> Callable:
 				sold_out = int(g2.get("amount", 0)) <= 0
 			if sold_out:
 				_show_talk("Soldout")
-			# 源 shop.lua:173/175 "金币不足"/"钻石不足" 硬编码字面量；interfax/gladiator 才走 LSTR（本项目统一降级字面量）。
 			Toast.show_message("已售罄" if sold_out else "货币不足")
 		call_deferred("_rebuild")
 
 
-# 源 doClickRefresh + shop_refresh（:302-313）。P1-8 照源 showConfirmDialog → 独立 ShopRefreshConfirm。
 func _on_refresh() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
 	if pd.diamond < cost:
 		Toast.show_message("钻石不足（需 %d）" % cost)
 		return
-	# 源 :307-308 SHOP.SPEND_XXX_TO_REFRESH（3 参：cost/coinname/refreshshoptimes）。
 	# coinname 源 config.getRefreshCoinName 返 i18n 货币名，本项目降级"钻石"字面量（无对应货币名 LSTR key）。
 	# refreshshoptimes 源 getRefreshShopTimes 返剩余次数，本项目 get_refresh_times 返已用次数（无刷新上限，语义差异）。
 	var coinname: String = "钻石"
@@ -170,11 +162,10 @@ func _on_refresh() -> void:
 	container.add_child(popup)
 
 
-# 源 :309 rightHandler（确认框确认）→ doSendRefresh。
 func _on_refresh_confirmed() -> void:
 	if shop_mgr.refresh(shop_id, pd, rng, cm):
 		Toast.show_message("刷新成功")
-		_show_talk("Refresh")   # 源 shop.lua:281 手动刷新对话
+		_show_talk("Refresh")
 	else:
 		Toast.show_message("钻石不足")
 	call_deferred("_rebuild")
@@ -205,7 +196,6 @@ func _now() -> int:
 	return int(Time.get_unix_time_from_system())
 
 
-# 源 shop.lua:19-73 showTalk：getTalkContent 选词 + 显示气泡 + 淡出（CCFadeOut）。无台词静默。
 func _show_talk(key: String) -> void:
 	var ttype: String = shop_mgr.get_time_type(shop_id, pd, _now())
 	var text: String = MerchantTalkData.get_talk_content(shop_id, key, ttype, rng, cm)
@@ -227,17 +217,15 @@ func _process(delta: float) -> void:
 	if _auto_refresh_accum < AUTO_REFRESH_CHECK_INTERVAL:
 		return
 	_auto_refresh_accum = 0.0
-	# 源 shop.lua:686-694 tc<0 and state=="expire" → showTalk(Expire)+alertDialog+popScene+停 update
 	if shop_mgr.check_expire(shop_id, pd, _now()):
 		_on_expire()
 		return
 	if shop_mgr.check_auto_refresh(shop_id, pd, _now(), rng):
 		_rebuild()
 		_show_talk("Refresh")
-	_update_next_refresh_label()   # 源 :662 每秒 setString（expire 倒计时 / refresh 描述）
+	_update_next_refresh_label()
 
 
-# 源 shop.lua:686-694 到期：showTalk(Expire) + alertDialog("神秘商人已漂走") + popScene。
 # 单机化：Toast 替 alertDialog + remove_window + clear_expire（常驻按钮再点重计，源 NPC 消失等价）。
 func _on_expire() -> void:
 	_show_talk("Expire")

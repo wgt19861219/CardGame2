@@ -9,18 +9,16 @@ extends RefCounted
 const MAP_W: float = 2400.0
 const MAP_H: float = 640.0   # grass/mountain/cloud/side 整体下移（_from_bottom 640 基准，grass 放屏底 160~640）
 const BG_DIR: String = "res://assets/ui/alpha/HVGA/"
-# 源 hello.lua:311 setContentScaleFactor(1.28125)；cocos sprite 显示=纹理/CS（无 fix_size 时）。
 const CONTENT_SCALE: float = 1.28125
 const SPINE_DIR: String = "res://assets/spine"
 const LOOP_ACTION: String = "Loop"
-const FIX_HEIGHT: float = 480.0       # 源 grass config.fix_height（缩放高度到 480）
-const CAMPAIGN_X: float = 530.0       # 源 mainres.CampaignX（veryTop bg3 偏移）
-const CAMPAIGN_Y: float = -30.0       # 源 mainres.CampaignY（源 y 上）
-const FOG_X: float = 600.0            # 源 mainres.mainFogX
-const BOTTOM_BLUE: Color = Color(40.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)   # 源 createBottomMap:685 ccc4(40,100,180)
+const FIX_HEIGHT: float = 480.0
+const CAMPAIGN_X: float = 530.0
+const CAMPAIGN_Y: float = -30.0
+const FOG_X: float = 600.0
+const BOTTOM_BLUE: Color = Color(40.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 const MOUNTAIN_TOP_GAP: float = 52.0   # mountain Spine position=MAP_H 时顶部空隙：root bone 不在包围盒左下角（源 Cocos anchor(0,0) 自动补偿，Godot position=root 需 MAP_H-此值 让包围盒顶部对齐 y=0 填满容器）
 
-# 源 mainres.cloud_res:357（pos + move_duration + move_distance；distance ccp(0,y) 源 y 上 → Godot 翻 Y）
 const CLOUD4_POS: Vector2 = Vector2(305.0, 370.0)
 const CLOUD4_DUR: float = 6.0
 const CLOUD4_DIST: Vector2 = Vector2(0.0, 5.0)
@@ -40,7 +38,7 @@ func build(parent: Control) -> Dictionary:
 	var verytop := _new_container("parallax_verytop")
 	var sub := _new_container("parallax_sub")
 	parent.add_child(bottom)        # z 最底
-	parent.add_child(middle)        # 源 createMiddleMap 空容器（sea 层）
+	parent.add_child(middle)
 	parent.add_child(top)
 	verytop.add_child(sub)
 	parent.add_child(verytop)       # z 最顶
@@ -59,7 +57,6 @@ func _new_container(node_name: String = "") -> Control:
 	return c
 
 
-# 源 createBottomMap:640-705：main_bg_mountain 静态山水图满铺 screen（MAP_H 640）。
 # 去 Spine 云海（Godot 渲染顶部黑覆盖 jpg 蓝天，致 statusbar 透明区露黑边）；jpg 满铺避拼接/黑边。
 func _build_bottom(container: Control) -> void:
 	var blue := ColorRect.new()
@@ -79,11 +76,8 @@ func _build_bottom(container: Control) -> void:
 		container.add_child(tr)
 
 
-# 源 createTopMap:788-902：grass_left/right + cloud4/5/6 + left_side/right_side + Fog spine + 黑云漂移。
 # 瀑布粒子（ccbi/Particle_Waterfall）无 Godot 等价，stub（源 :883 loadccbi 亦有 nil 降级）。
 # 返回 grass_left+right 显示总宽（源 create:1065 mapWidth，供 MainParallax 算 map_min_x）。
-# 源 readnode.lua:201-203 fix_height = setScale(fix_h/tex_h) 等比缩放（宽高同缩），显示宽 = tex_w × fix_h/tex_h。
-# 源 :1065 getContentSize 返回原图宽（setScale 不改 contentSize）→ map_min_x 偏大露 sea；此处用显示宽修正（grass_right 贴视口右不露）。
 func _build_top(container: Control) -> float:
 	var grass_l_tex: Texture2D = load(BG_DIR + "main_bg_grass_left.png")
 	var grass_l_w: float = grass_l_tex.get_size().x * FIX_HEIGHT / grass_l_tex.get_size().y if grass_l_tex != null else 0.0
@@ -108,13 +102,11 @@ func _build_top(container: Control) -> float:
 	return map_width
 
 
-# 源 createVeryTopMap:759-785：veryTop 内 subContainer 放 bg3（main_bg_Up.png @ CampaignX,Y）。
 func _build_verytop_sub(sub: Control) -> void:
 	_add_sprite(sub, BG_DIR + "main_bg_Up.png", Vector2(CAMPAIGN_X, CAMPAIGN_Y), _tex_size("main_bg_Up.png"))
 	_float_sub(sub)
 
 
-# 源 playBlackCloudAnim:905-918：cloud CCMoveBy(dur,dist)+reverse 循环。dist ccp(0,y) 源 y 上 → Godot y 下取反。
 func _play_black_cloud(cloud: TextureRect, duration: float, distance: Vector2) -> void:
 	var godot_dist := Vector2(distance.x, -distance.y)
 	var origin: Vector2 = cloud.position
@@ -124,7 +116,6 @@ func _play_black_cloud(cloud: TextureRect, duration: float, distance: Vector2) -
 	tween.tween_property(cloud, "position", origin, duration).set_trans(Tween.TRANS_SINE)
 
 
-# 源 create:1080-1085 subContainer 上下 ±10 浮动 4s（CCEaseSineInOut；源 y 上 +10 → Godot y 下 -10）。
 func _float_sub(sub: Control) -> void:
 	var origin_y: float = sub.position.y
 	var tween := sub.create_tween()
@@ -133,7 +124,6 @@ func _float_sub(sub: Control) -> void:
 	tween.tween_property(sub, "position:y", origin_y + 10.0, 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
-# 源 createTopMap:891-900 SpineContainer eff_UI_Main_Fog 'Loop'（pos mainFogX=600,Y=0）。加载失败静默跳过。
 func _add_fog(container: Control) -> void:
 	var sk := SpineSkeleton.new()
 	container.add_child(sk)
@@ -160,12 +150,10 @@ func _add_sprite(container: Control, tex_path: String, cocos_pos: Vector2, tex_s
 	return tr
 
 
-# 源 ccp(左下原点 y 上) + anchor(0,0) → Godot 左上角 position（y 翻转：MAP_H - cocos_y - tex_h）。
 func _from_bottom(cocos_pos: Vector2, tex_h: float) -> Vector2:
 	return Vector2(cocos_pos.x, MAP_H - cocos_pos.y - tex_h)
 
 
-# 源 ccp + anchor(0.5,0.5) 中心 → Godot 左上角（y 翻转：MAP_H - cocos_y - tex_h/2，x 居中）。
 func _from_center(cocos_pos: Vector2, tex_size: Vector2) -> Vector2:
 	return Vector2(cocos_pos.x - tex_size.x * 0.5, MAP_H - cocos_pos.y - tex_size.y * 0.5)
 

@@ -3,7 +3,6 @@ extends PopWindow
 
 ## 战斗结算奖励弹窗（照源 crusade.lua showRewardResult :344-394）。
 ## gold/crusadepoint 货币 Label + item ReadequipIcon + 关闭按钮。
-## 源 rewardLayer 为 cocos Studio UIRes 构建（UIRes 缺，Godot 用 PopWindow + 节点重建）。
 ##
 ## 重构（2026-07-18，hero_detail 范式）：CloseBtn 静态化进
 ## scenes/ui/battle_reward_popup_content.tscn（位置/size 编辑器可视化调）；
@@ -46,7 +45,6 @@ func _show_rewards(rewards: Array, p_cm: Variant) -> void:
 		idx += 1
 
 
-# 源 :362-385 分支：item 用 ReadequipIcon，gold/crusadepoint 货币 Label。
 func _reward_node(stype: String, amount: int, id: int, p_cm: Variant) -> Control:
 	if stype == "Item":
 		return ReadequipIcon.create_icon(id, amount, p_cm)

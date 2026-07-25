@@ -13,22 +13,16 @@ extends PopWindow
 ## 保留 procedural 挂 %HeroBox（数量动态）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_team_content.tscn")
-# 源 excavateteam.lua 无 fixed title LSTR；按 owner 显示玩家名/敌人名（单机用 "驻防/敌方" 兜底）
 const TITLE_MINE: String = "驻防队伍"
 const TITLE_MONSTER: String = "敌方守卫"
-# 源 :733-760 change_team_button → enterExcavateChange（mode=excavateChange）
 const LSTR_CHANGE_TEAM_KEY: String = "EXCAVATETEAM.ADJUST_FORMATION"
 const CHANGE_TEAM_FALLBACK: String = "调整阵容"
-# 源 :761-788 give_up_button（pop excavategiveup）；源 LSTR("excavateteam.1.10.1.002")="撤退"
 const GIVEUP_TEXT: String = "撤退"
-# 源 :538-564 go_battle_button（startbtn 整图，无文本）；保留 BATTLE_TEXT 仅作 fallback 注释（TextureButton 无 text）
 const BATTLE_TEXT: String = "出战"
 # ── Scale9 button 样式（.tscn 普通 Button 套 StyleBoxTexture）──
-# 源 excavateteam.lua:733-760 task_button Scale9 cap 15.63,15.63,19.53,15.63。
 const CHANGE_BTN_RES: String = "res://assets/ui/alpha/HVGA/task_button.png"
 const CHANGE_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/task_button_press.png"
 const CHANGE_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
-# 源 excavateteam.lua:761-788 sell_number_button Scale9 cap 15.63,15.63,19.53,15.63。
 const GIVEUP_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
 const GIVEUP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
 const GIVEUP_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
@@ -38,7 +32,7 @@ const FONT_BODY: int = 16
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
 const TEAM_SET_TEXT: String = "已用当前阵容驻防"   # 单机 Toast（无 LSTR）
 const OWNER_MINE: String = "mine"
-const ICON_SCALE: float = 0.77   # 源 length=80 / CONTAINER_SIZE 104 ≈ 0.77（excavateteam:165 createIcon length=80）
+const ICON_SCALE: float = 0.77
 
 var pd: PlayerData
 var rng: BattleRng
@@ -140,7 +134,6 @@ func _add_hero_icon(info: Dictionary) -> void:
 	_hero_box.add_child(wrapper)
 
 
-# 源 LSTR 走 pd.cm（已加载）；未初始化 fallback 中文兜底。
 func _lstr(key: String, fallback: String) -> String:
 	var cfg: ConfigManager = pd.cm
 	if cfg != null:

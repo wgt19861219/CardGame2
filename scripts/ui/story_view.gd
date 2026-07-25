@@ -20,7 +20,6 @@ const HERO_ICON_LEFT: Vector2 = Vector2(175.0, 100.0)
 const HERO_ICON_RIGHT: Vector2 = Vector2(625.0, 100.0)
 const NAME_FRAME_LEFT: Vector2 = Vector2(230.0, 120.0)
 const NAME_FRAME_RIGHT: Vector2 = Vector2(620.0, 120.0)
-# 源 hello.lua:311 setContentScaleFactor=1.28125，cocos CCSprite 显示=texture/CS。
 # heroIcon 源 sprite 无 fix_size → 显示=texture/CS（Godot TextureRect expand=IGNORE_SIZE + size=target）。
 const CONTENT_SCALE: float = 1.28125
 
@@ -31,13 +30,11 @@ var _ui: Dictionary = {}    # 节点引用（name_frame/name/content/hero_icon�
 var _shown_once: Dictionary = {}   # ShowOnce 持久化（会话内，源 CCUserDefault）
 
 
-# 源 cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 battle_view_coords 标准）。
 # Phase 4 早期直接用源值漏转，2026-07-14 补 to_godot。
 func _g(pos: Vector2) -> Vector2:
 	return BattleViewCoords.to_godot(pos.x, pos.y)
 
 
-## 源 showStory（:218-249）：加载分节 + ShowOnce 检查 + 创建层 + 首节 + pauseBattle。
 func show_story(story_name: String) -> void:
 	var data: Dictionary = StoryData.get_story(story_name)
 	if data.is_empty():
@@ -57,7 +54,6 @@ func show_story(story_name: String) -> void:
 ## 创建对话框 UI（源 createMainLayer:108-117 + uiRes 装配）。
 ## chrome 静态节点从 .tscn instantiate（位置/size/texture/font/color 已固化）；
 ## heroIcon 留 _show_section 动态创建（每节 icon 不同）。Control 非 PopWindow，content 挂 panel 自身。
-## 源 showStory :235-237 战斗场景下 pauseBattle("story")，剧情演出时怪物停止打。
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 自身吞点击（gui_input 推进剧情）
@@ -67,17 +63,15 @@ func _build_ui() -> void:
 	_ui["name_frame"] = content.get_node("%NameFrame") as TextureRect
 	_ui["name"] = content.get_node("%Name") as Label
 	_ui["content"] = content.get_node("%Content") as Label
-	_set_battle_pause(true)   # 源 :235-237 currentScene==ed.scene → pauseBattle("story")
+	_set_battle_pause(true)
 
 
-## 源 closeStory:168-175：关闭层 + resumeBattle + FireEvent StoryEnd。
 func _close_story() -> void:
-	_set_battle_pause(false)   # 源 :176-178 currentScene==ed.scene → resumeBattle("story")
+	_set_battle_pause(false)
 	queue_free()
 	story_ended.emit(_story_name)
 
 
-# 源 :235 ed.getCurrentScene()==ed.scene 判定 battle scene。目标鸭子类型查 current_scene.pause_locks
 # （battle_scene 的 pause_locks 字典 + is_paused 标量，参照第八轮 P1-17 多 reason 范式）。
 # story_view 也可能从 main_scene 触发（OpeningMain 等），非 battle scene 时 no-op（源语义一致）。
 func _set_battle_pause(locked: bool) -> void:
@@ -97,7 +91,6 @@ static func _apply_story_pause(scene: Node, locked: bool) -> void:
 	scene.set("is_paused", (locks as Dictionary).values().has(true))
 
 
-## 源 showStorySection:177-184 + changeStoryInfo:138-167：显示当前节 + 推进。
 func _show_section() -> void:
 	if _current_section > _sections.size():
 		_close_story()
@@ -120,7 +113,6 @@ func _show_section() -> void:
 	_current_section += 1
 
 
-## 源 onMainLayerTouch:186-199：点击屏幕推进下一节。
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		_show_section()

@@ -17,7 +17,6 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/fragment_compose_con
 const OK_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 const OK_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
 const OK_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)
-# 源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)，同 hero_detail/handbook 范式。
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
 # 碎片/产物图标源 ccp（:471/:475）→ host 内子节点 absolute position。
@@ -28,29 +27,24 @@ const COLOR_RED: Color = Color(1.0, 0.0, 0.0)
 const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
 const COLOR_DARK_RED: Color = Color(155.0 / 255.0, 34.0 / 255.0, 14.0 / 255.0)
 # ── 文字（源 LSTR key，setup_panel 时 cm.get_lstr 解析）──
-# 源 :369 EQUIPCRAFT.SYNTHESIS_COST_（带尾下划线）/ :459 CONFIRM_SYNTHESIS / :101 SUCCESSFULLY_SYNTHESIZED_FRAGMENT
-# 源 :129 INSUFFICIENT_FRAGMENT_SYNTHESIS_FAILED / :139 YOU_HAVE_ALREADY_GOT_THIS_HERO
-# 源 :132 useMidas → 单机化降级 toast（源无 LSTR key，TEXT_NO_GOLD 硬编码）。
 const LSTR_COST_TITLE: String = "EQUIPCRAFT.SYNTHESIS_COST_"
 const LSTR_OK: String = "FRAGMENTCOMPOSE.CONFIRM_SYNTHESIS"
 const LSTR_SUCCESS: String = "FRAGMENTCOMPOSE.SUCCESSFULLY_SYNTHESIZED_FRAGMENT"
 const LSTR_INSUFFICIENT: String = "FRAGMENTCOMPOSE.INSUFFICIENT_FRAGMENT_SYNTHESIS_FAILED"
 const LSTR_OWNED: String = "FRAGMENTCOMPOSE.YOU_HAVE_ALREADY_GOT_THIS_HERO"
 const TEXT_NO_GOLD: String = "金币不足"   # 单机化降级（源 :132 useMidas 弹点金手，单机版不接）
-const LSTR_SYNTHESIS_PREFIX: String = "EQUIPCRAFT.SYNTHESIS"   # 源 :273 name 前缀"合成"
+const LSTR_SYNTHESIS_PREFIX: String = "EQUIPCRAFT.SYNTHESIS"
 
 var cm: Variant = null
 var pd: PlayerData = null
 var _target_tid: int = 0
-var _info: Dictionary = {}   # 源 self.info（配方 + 持有量快照）
+var _info: Dictionary = {}
 
 
-# 源 cocos(800×480 左下) → Godot(960×640 左上)：cx+80, 560-cy（同 daily_login/battle_view_coords 标准）。
 func _g(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + OFFSET_X, BASE_Y - cy)
 
 
-# 源 create(selectid) + getInformation :202-248。target_tid = 产物英雄 tid（源 makeId）。
 func setup_panel(p_target_tid: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	_target_tid = p_target_tid
 	cm = p_cm
@@ -61,7 +55,6 @@ func setup_panel(p_target_tid: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
-# 源 :202-248 getInformation：Fragment[tid] 配方 + 玩家持有量。
 func _load_info() -> void:
 	var frag_id: int = cm.get_int(&"Fragment", _target_tid, &"Fragment ID")
 	var frag_need: int = cm.get_int(&"Fragment", _target_tid, &"Fragment Count")
@@ -95,9 +88,9 @@ func _build_content() -> void:
 	var make_icon: Control = ReadequipIcon.create_icon(int(_info["makeId"]), 0, cm)
 	make_icon.position = _g(MAKE_ICON_COCOS.x, MAKE_ICON_COCOS.y)
 	make_host.add_child(make_icon)
-	_fill_amount(content)       # 源 :316/:331 持有量/需求
-	_fill_universal(content)    # 源 :346 通用碎片提示
-	_fill_cost(content)         # 源 :359-399 金币费用
+	_fill_amount(content)
+	_fill_universal(content)
+	_fill_cost(content)
 	# 关闭按钮（源 :409 herodetail-detail-close，.tscn TextureButton normal/pressed 双态自带切换）
 	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
 	close_btn.pressed.connect(_on_close_pressed)
@@ -143,19 +136,18 @@ func _fill_cost(content: Control) -> void:
 	cost_lbl.modulate = COLOR_DARK_RED if cost <= _player_money() else COLOR_RED
 
 
-# 源 doCompose :123-164：预校验展示原因 → HeroManager.compose → toast。
 func _on_compose_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var frag_have := int(_info["fragmentAmount"])
 	var frag_need := int(_info["needAmount"])
 	var uni_avail: int = min(int(_info["universalAmount"]), int(_info["universalNeedAmount"]))
-	if frag_have + uni_avail < frag_need:   # 源 :128-129 碎片不足
+	if frag_have + uni_avail < frag_need:
 		_show_toast(cm.get_lstr(LSTR_INSUFFICIENT))
 		return
-	if _player_money() < int(_info["cost"]):   # 源 :132 金币不足（单机化降级）
+	if _player_money() < int(_info["cost"]):
 		_show_toast(TEXT_NO_GOLD)
 		return
-	if _hero_owned(int(_info["makeId"])):   # 源 :138-139 已有英雄
+	if _hero_owned(int(_info["makeId"])):
 		_show_toast(cm.get_lstr(LSTR_OWNED))
 		return
 	var ok := pd.hero_manager.compose(_target_tid)
@@ -195,7 +187,6 @@ func _hero_owned(tid: int) -> bool:
 	return false
 
 
-# 源 ed.showToast（本项目 Toast autoload，headless 安全降级，同 EquipCraftPanel）。
 func _show_toast(text: String) -> void:
 	if Engine.is_editor_hint():
 		return
