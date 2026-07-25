@@ -1,6 +1,8 @@
 class_name ExcavateTeamPanel
 extends PopWindow
 
+const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
+
 ## 挖掘队伍面板（View 层）— 照源 ui/popwindow/excavateteam.lua。
 ## mine 矿点：显示驻防英雄 + 换队（玩家阵容）+ 放弃（ExcavateGiveupPanel）。
 ## monster 矿点：显示敌人英雄 + 出战（ExcavateBattle.run_excavate_battle headless）。
@@ -143,28 +145,16 @@ func _lstr(key: String, fallback: String) -> String:
 
 # ChangeBtn 双态：normal/hover=task_button，pressed=task_button_press（源 :733-760）。
 func _apply_change_btn_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", _make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_sb(CHANGE_BTN_PRESS_RES, CHANGE_BTN_CAP))
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(CHANGE_BTN_PRESS_RES, CHANGE_BTN_CAP))
 
 
 # GiveupBtn 双态：normal/hover=sell_number_button，pressed=sell_number_button_down（源 :761-788）。
 func _apply_giveup_btn_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", _make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_sb(GIVEUP_BTN_PRESS_RES, GIVEUP_BTN_CAP))
-
-
-static func _make_sb(res_path: String, cap_insets: Rect2) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res_path) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = cap_insets.position.x
-	sb.texture_margin_top = cap_insets.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
-		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
-	return sb
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(GIVEUP_BTN_PRESS_RES, GIVEUP_BTN_CAP))
 
 
 func _on_change_team() -> void:

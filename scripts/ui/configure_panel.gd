@@ -1,6 +1,8 @@
 class_name ConfigurePanel
 extends PopWindow
 
+const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
+
 ## 设置面板（View 层）— 照源 popwindow/configure.lua createWindow:1062-1316 + createSWButton:719-1061。
 ## 名字 + 玩家信息 + change_name/change_head/save_manager + setup_button 系统设置 + language_button 语言。
 ## 单机化裁剪（联机）：createSociety 公会 / createLogoffButton 登出 / createGoogleConnectButton /
@@ -110,9 +112,9 @@ func _fill_info_line(content: Node, idx: int, text: String) -> void:
 # 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_detail）。
 # Label 字色/阴影已在 .tscn 静态声明（照源 sell_number_button 文字 浅米色 + 黑描边），不在此覆盖。
 func _apply_scale9_btn(btn: Button, label_text: String, handler: Callable) -> void:
-	btn.add_theme_stylebox_override("normal", _make_sb(BTN_RES, BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_sb(BTN_RES, BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_sb(BTN_PRESS_RES, BTN_CAP))
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(BTN_RES, BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(BTN_RES, BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(BTN_PRESS_RES, BTN_CAP))
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	# fill 独立 Label 子节点（.tscn 已建 %XxxLabel，命名规则 XxxBtn → XxxLabel）
 	var label_name: String = btn.name.replace("Btn", "Label")
@@ -120,18 +122,6 @@ func _apply_scale9_btn(btn: Button, label_text: String, handler: Callable) -> vo
 	if lbl != null:
 		lbl.text = label_text
 	btn.pressed.connect(handler)
-
-
-static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = cap_insets.position.x
-	sb.texture_margin_top = cap_insets.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
-		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
-	return sb
 
 
 func _on_change_name() -> void:

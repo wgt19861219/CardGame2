@@ -1,6 +1,8 @@
 class_name StageDetailPanel
 extends PopWindow
 
+const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
+
 ## 关卡详情（View 层）— 照源 stagedetail.lua create:1536-1934 完整复刻。
 ## 重构（2026-07-17）：base 层静态节点位置/size 固化进 stage_detail_content.tscn（instantiate + fill 范式，
 ## 同 hero_detail/shop）。本类管数据装配（getInformation :772）+ checkEnabled :785 + go/sweep/reset/close 交互。
@@ -121,24 +123,12 @@ func _setup_sweep_button(btn: Button, star: int) -> void:
 		btn.visible = false
 		return
 	btn.visible = true
-	btn.add_theme_stylebox_override("normal", _make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_sb(SWEEP_BTN_PRESS_RES, SWEEP_BTN_CAP))
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(SWEEP_BTN_PRESS_RES, SWEEP_BTN_CAP))
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	(btn.get_node("SweepLabel") as Label).text = String(player.cm.get_lstr("PRIVILEGE.FARM"))
 	btn.pressed.connect(_on_sweep_pressed)
-
-
-static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = cap_insets.position.x
-	sb.texture_margin_top = cap_insets.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
-		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
-	return sb
 
 
 func _on_go_pressed() -> void:

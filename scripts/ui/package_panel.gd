@@ -1,6 +1,8 @@
 class_name PackagePanel
 extends PopWindow
 
+const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
+
 ## 玩家背包（View 层）— 照源 ui/package.lua（721 行，两 identity 多 tab 4 列网格）。
 ## identity="package" 装备/物品包（5 tab）/ "fragment" 碎片包（3 tab）。
 ## Logic 走 EquipmentClassifier.classify（双容器适配，第 22 段交付）。
@@ -102,21 +104,9 @@ func _setup_handbook_button() -> void:
 # .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=sell_number_button, pressed=sell_number_button_down）。
 # 视觉等价源 Scale9Sprite sell_number_button + press mask sell_number_button_down。
 func _apply_handbook_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", _make_stylebox(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_stylebox(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_stylebox(HANDBOOK_BTN_PRESS_RES, HANDBOOK_BTN_CAP))
-
-
-static func _make_stylebox(res_path: String, cap: Rect2) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res_path) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = cap.position.x
-	sb.texture_margin_top = cap.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - cap.position.x - cap.size.x
-		sb.texture_margin_bottom = tex.get_height() - cap.position.y - cap.size.y
-	return sb
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(HANDBOOK_BTN_PRESS_RES, HANDBOOK_BTN_CAP))
 
 
 # .tscn 5 tab 常驻（位置可视化），按 identity 隐藏不用的（fragment 隐 stone/consume）。

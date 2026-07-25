@@ -1,6 +1,8 @@
 class_name CrusadePanel
 extends PopWindow
 
+const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
+
 ## UIRes 节点树缺（Cocos Studio 导出物，同 .Puppet 阻塞）→ 代码重建核心：
 ##   15 stage TextureButton + current/locked/passed 状态纹理 + 战斗入口 + 水平滚动。
 ##
@@ -144,22 +146,10 @@ static func _load_tex(path: String) -> Variant:
 # 视觉等价 Scale9Sprite + press mask。文字 fill 到独立 Label 子节点 %ResetLabel
 # （Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）。
 func _apply_reset_button_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-
-
-static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = cap_insets.position.x
-	sb.texture_margin_top = cap_insets.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
-		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
-	return sb
 
 
 func _stage_texture(i: int) -> String:
@@ -412,9 +402,9 @@ func _is_stage_locked(i: int) -> bool:
 # 规则按钮（照源 crusadeconfig.lua:965-987 showrule Scale9Button）。
 func _create_rule_button(content: Node) -> void:
 	var btn := Button.new()
-	btn.add_theme_stylebox_override("normal", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", _make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", _make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
+	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn.position = RULE_SHOWRULE_BTN_POS
 	btn.size = RULE_SHOWRULE_BTN_SIZE
