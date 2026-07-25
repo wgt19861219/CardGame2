@@ -143,3 +143,130 @@ func test_ghost_button_focus_is_stylebox_empty() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var sb: StyleBox = theme.get_stylebox("focus", "GhostButton")
 	assert_true(sb is StyleBoxEmpty, "GhostButton focus 是 StyleBoxEmpty")
+
+
+# ── 轮 3 新增 10 变体（完整签名断言，spec v2.2 §1.1）──
+
+func test_handbook_entry_label_has_entry_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "HandbookEntryLabel")
+	assert_color_approx(color, Color(0.698039, 0.588235, 0.572549, 1), "HandbookEntryLabel font_color")
+
+func test_handbook_entry_label_has_size_16() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "HandbookEntryLabel")
+	assert_eq(size, 16, "HandbookEntryLabel font_size = 16")
+
+func test_hero_tab_label_has_white_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "HeroTabLabel")
+	assert_color_approx(color, Color(1, 1, 1, 1), "HeroTabLabel font_color")
+
+func test_hero_tab_label_has_dark_red_shadow() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var shadow: Color = theme.get_color("font_shadow_color", "HeroTabLabel")
+	assert_color_approx(shadow, Color(0.247, 0.02, 0, 1), "HeroTabLabel font_shadow_color")
+
+func test_hero_tab_label_has_size_20() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "HeroTabLabel")
+	assert_eq(size, 20, "HeroTabLabel font_size = 20")
+
+func test_hero_tab_label_has_shadow_offset() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var sx: int = theme.get_constant("shadow_offset_x", "HeroTabLabel")
+	var sy: int = theme.get_constant("shadow_offset_y", "HeroTabLabel")
+	assert_eq(sx, 0, "HeroTabLabel shadow_offset_x = 0")
+	assert_eq(sy, 2, "HeroTabLabel shadow_offset_y = 2")
+
+func test_black_label_18_has_black_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "BlackLabel18")
+	assert_color_approx(color, Color(0, 0, 0, 1), "BlackLabel18 font_color")
+
+func test_black_label_18_has_size_18() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "BlackLabel18")
+	assert_eq(size, 18, "BlackLabel18 font_size = 18")
+
+func test_config_title_label_has_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "ConfigTitleLabel")
+	assert_color_approx(color, Color(0.922, 0.875, 0.812, 1), "ConfigTitleLabel font_color")
+
+func test_config_title_label_has_black_shadow() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var shadow: Color = theme.get_color("font_shadow_color", "ConfigTitleLabel")
+	assert_color_approx(shadow, Color(0, 0, 0, 1), "ConfigTitleLabel font_shadow_color")
+
+func test_config_title_label_has_size_20() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "ConfigTitleLabel")
+	assert_eq(size, 20, "ConfigTitleLabel font_size = 20")
+
+func test_config_title_label_has_shadow_offset() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var sx: int = theme.get_constant("shadow_offset_x", "ConfigTitleLabel")
+	var sy: int = theme.get_constant("shadow_offset_y", "ConfigTitleLabel")
+	assert_eq(sx, 0, "ConfigTitleLabel shadow_offset_x = 0")
+	assert_eq(sy, 2, "ConfigTitleLabel shadow_offset_y = 2")
+
+func test_stage_title_label_has_gold_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "StageTitleLabel")
+	assert_color_approx(color, Color(0.945, 0.757, 0.443, 1), "StageTitleLabel font_color")
+
+func test_stage_title_label_has_size_22() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "StageTitleLabel")
+	assert_eq(size, 22, "StageTitleLabel font_size = 22")
+
+func test_warn_label_has_warn_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "WarnLabel")
+	assert_color_approx(color, Color(0.572549, 0, 0.0156863, 1), "WarnLabel font_color")
+
+func test_warn_label_has_size_18() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "WarnLabel")
+	assert_eq(size, 18, "WarnLabel font_size = 18")
+
+func test_info_line_label_has_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "InfoLineLabel")
+	assert_color_approx(color, Color(0.858824, 0.768627, 0.494118, 1), "InfoLineLabel font_color")
+
+func test_info_line_label_has_size_19() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "InfoLineLabel")
+	assert_eq(size, 19, "InfoLineLabel font_size = 19")
+
+func test_stage_number_label_has_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "StageNumberLabel")
+	assert_color_approx(color, Color(0.961, 0.882, 0.745, 1), "StageNumberLabel font_color")
+
+func test_stage_number_label_has_size_22() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "StageNumberLabel")
+	assert_eq(size, 22, "StageNumberLabel font_size = 22")
+
+func test_detail_base_label_has_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "DetailBaseLabel")
+	assert_color_approx(color, Color(1, 0.918, 0.776, 1), "DetailBaseLabel font_color")
+
+func test_detail_base_label_has_size_16() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "DetailBaseLabel")
+	assert_eq(size, 16, "DetailBaseLabel font_size = 16")
+
+func test_accent_gold_row_label_has_gold_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "AccentGoldRowLabel")
+	assert_color_approx(color, Color(0.945, 0.757, 0.443, 1), "AccentGoldRowLabel font_color")
+
+func test_accent_gold_row_label_has_size_16() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "AccentGoldRowLabel")
+	assert_eq(size, 16, "AccentGoldRowLabel font_size = 16")
