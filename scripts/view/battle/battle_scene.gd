@@ -194,20 +194,23 @@ func _process(delta: float) -> void:
 		_finalize_battle()
 
 
+# 场景销毁 kill 残留 tween（leak P1：_shake_tween_x/y 持已释放 _camera，Tween 不随 Node 销毁）。
+func _exit_tree() -> void:
+	BattleCameraShake.kill_all(self)
+
+
 ## 战斗结束结算（View 接入闭环）：mode 分流委托 BattleSceneFinalizer。
 func _finalize_battle() -> void:
 	_finalized = true
 	if _battle_context.is_empty():
-		SceneManager.change_scene(STAGE_FAILED_PATH)
-		return
-	var mode: String = String(_battle_context.get("mode", "stage"))
-	if mode == "excavate":
+		SceneManager.change_scene(STAGE_FAILED_PATH); return
+	var m := String(_battle_context.get("mode", "stage"))
+	if m == "excavate":
 		BattleSceneFinalizer.finalize_excavate(self)
-		return
-	if mode == "pvp":
+	elif m == "pvp":
 		BattleSceneFinalizer.finalize_pvp(self)
-		return
-	BattleSceneFinalizer.finalize_stage(self)
+	else:
+		BattleSceneFinalizer.finalize_stage(self)
 
 
 func _sync_actors() -> void:
