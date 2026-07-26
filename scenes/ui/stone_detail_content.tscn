@@ -74,8 +74,7 @@ offset_left = 437.5
 offset_top = 226.0
 offset_right = 450.0
 offset_bottom = 248.0
-theme_override_colors/font_color = Color(0.662745, 0.356863, 0.109804, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"StoneAmountLabel"
 mouse_filter = 2
 text = "("
 
@@ -86,8 +85,7 @@ offset_left = 450.0
 offset_top = 226.0
 offset_right = 510.0
 offset_bottom = 248.0
-theme_override_colors/font_color = Color(0.662745, 0.356863, 0.109804, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"StoneAmountLabel"
 mouse_filter = 2
 
 [node name="AmountNeedLabel" type="Label" parent="."]
@@ -97,8 +95,7 @@ offset_left = 510.0
 offset_top = 226.0
 offset_right = 580.0
 offset_bottom = 248.0
-theme_override_colors/font_color = Color(0.662745, 0.356863, 0.109804, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"StoneAmountLabel"
 mouse_filter = 2
 
 [node name="GetwayHost" type="Control" parent="."]
