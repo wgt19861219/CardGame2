@@ -99,25 +99,23 @@ vertical_alignment = 1
 
 [node name="PowerTitle" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"StageTitleLabel"
 layout_mode = 3
 offset_left = 150.0
 offset_top = 330.0
 offset_right = 300.0
 offset_bottom = 354.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 text = "体力消耗"
 
 [node name="PowerNumber" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"StageNumberLabel"
 layout_mode = 3
 offset_left = 250.0
 offset_top = 330.0
 offset_right = 340.0
 offset_bottom = 354.0
-theme_override_colors/font_color = Color(0.961, 0.882, 0.745, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 
 [node name="PowerIcon" type="TextureRect" parent="."]
@@ -133,37 +131,34 @@ mouse_filter = 2
 
 [node name="CountTitle" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"StageTitleLabel"
 layout_mode = 3
 offset_left = 330.0
 offset_top = 330.0
 offset_right = 520.0
 offset_bottom = 354.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 text = "今日剩余次数:"
 
 [node name="CountNumber" type="Label" parent="."]
 unique_name_in_owner = true
 visible = false
+theme_type_variation = &"StageNumberLabel"
 layout_mode = 3
 offset_left = 470.0
 offset_top = 330.0
 offset_right = 520.0
 offset_bottom = 354.0
-theme_override_colors/font_color = Color(0.961, 0.882, 0.745, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 
 [node name="TotalNumber" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"StageNumberLabel"
 layout_mode = 3
 offset_left = 490.0
 offset_top = 330.0
 offset_right = 620.0
 offset_bottom = 354.0
-theme_override_colors/font_color = Color(0.961, 0.882, 0.745, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 
 [node name="Reset" type="TextureButton" parent="."]
@@ -204,25 +199,23 @@ mouse_filter = 2
 
 [node name="EnemyTitle" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"StageTitleLabel"
 layout_mode = 3
 offset_left = 150.0
 offset_top = 403.0
 offset_right = 300.0
 offset_bottom = 427.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 text = "敌方阵容"
 
 [node name="AwardTitle" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"StageTitleLabel"
 layout_mode = 3
 offset_left = 150.0
 offset_top = 483.0
 offset_right = 300.0
 offset_bottom = 507.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 text = "可能获得"
 
