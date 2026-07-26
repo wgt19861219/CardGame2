@@ -6,6 +6,10 @@ extends PopWindow
 ##   当前步骤 Label + next/skip 按钮 + 信号。
 ## 留续（源 maker 大模块）：步骤高亮(定位 UI 元素)+对话气泡(tutorialDialog)+fadeIn/Out 动画+触摸拦截(touchHandler)。
 ##
+## ⚠️ 受控偏离（用户决策 2026-07-26）：Next/Skip 按钮是本项目自建——源 tutorial.lua/tutorialmaker.lua
+## 是引导手指/提示层机制（createCommonFingerLayer/createCommonTipsLayer），无独立 Next/Skip 按钮 UI。
+## 保留 Next/Skip 理由：单机化无联机引导手指的多人协同场景，独立按钮交互更友好（优化阶段允许受控偏离）。
+##
 ## 重构（2026-07-18，hero_detail 范式）：静态节点（skip/bubble/head/step label/next btn）位置/size
 ## 静态化进 scenes/ui/tutorial_guide_view_content.tscn（编辑器可视化调）；
 ## circle/finger 高亮位置随步骤变，保留 procedural 挂 %HighlightHost（源 tutorialmaker getFinger）。

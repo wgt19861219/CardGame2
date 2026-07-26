@@ -109,7 +109,10 @@ func _build_content() -> void:
 	_gs_label = content.get_node("%GsLabel") as Label
 	_gs_label.text = "%s: 0" % cm.get_lstr(LSTR_COMBAT)
 	_go_button = content.get_node("%GoBtn") as Button
-	_go_button.text = cm.get_lstr(LSTR_CONFIRM)
+	# 照源 battleprepare.lua:1788-1791：GoBtn conform Label 仅 isSpecialgb（pvp defend/excavateChange）时 visible。
+	# 本项目单机化已裁剪这两模式（grep 零匹配 isSpecialgb/defend/excavateChange）→ conform text 始终隐藏，
+	# 由 prepare_go_battle 贴图自身表达"出战"语义（源 Sprite 贴图常显，conform text 是叠加层）。
+	_go_button.text = ""
 	_apply_go_style(_go_button)
 	_go_button.pressed.connect(_on_go_pressed)
 	var back_btn: TextureButton = content.get_node("%BackBtn") as TextureButton
