@@ -100,24 +100,22 @@ stretch_mode = 0
 
 [node name="Skill1Name" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 175.0
 offset_right = 365.0
 offset_bottom = 195.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
 text = "技能名1"
 
 [node name="Skill1Lvl" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 197.0
 offset_right = 365.0
 offset_bottom = 217.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
 text = "lv.1"
 
 [node name="Skill1Btn" type="TextureButton" parent="."]
@@ -171,24 +169,22 @@ stretch_mode = 0
 
 [node name="Skill2Name" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 265.0
 offset_right = 365.0
 offset_bottom = 285.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
 text = "技能名2"
 
 [node name="Skill2Lvl" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 287.0
 offset_right = 365.0
 offset_bottom = 307.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
 text = "lv.1"
 
 [node name="Skill2Btn" type="TextureButton" parent="."]
@@ -242,24 +238,22 @@ stretch_mode = 0
 
 [node name="Skill3Name" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 355.0
 offset_right = 365.0
 offset_bottom = 375.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
 text = "技能名3"
 
 [node name="Skill3Lvl" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 377.0
 offset_right = 365.0
 offset_bottom = 397.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
 text = "lv.1"
 
 [node name="Skill3Btn" type="TextureButton" parent="."]
@@ -313,24 +307,22 @@ stretch_mode = 0
 
 [node name="Skill4Name" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 445.0
 offset_right = 365.0
 offset_bottom = 465.0
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
 text = "技能名4"
 
 [node name="Skill4Lvl" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 245.0
 offset_top = 467.0
 offset_right = 365.0
 offset_bottom = 487.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
 text = "lv.1"
 
 [node name="Skill4Btn" type="TextureButton" parent="."]
