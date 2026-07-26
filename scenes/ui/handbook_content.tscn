@@ -82,13 +82,12 @@ ignore_texture_size = true
 
 [node name="Tag1Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 20.67
 offset_top = 150.0
 offset_right = 120.67
 offset_bottom = 170.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -106,13 +105,12 @@ ignore_texture_size = true
 
 [node name="Tag2Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 18.0
 offset_top = 230.0
 offset_right = 118.0
 offset_bottom = 250.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -130,13 +128,12 @@ ignore_texture_size = true
 
 [node name="Tag3Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 15.33
 offset_top = 310.0
 offset_right = 115.33
 offset_bottom = 330.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -154,13 +151,12 @@ ignore_texture_size = true
 
 [node name="Tag4Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 12.67
 offset_top = 390.0
 offset_right = 112.67
 offset_bottom = 410.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -178,13 +174,12 @@ ignore_texture_size = true
 
 [node name="Tag5Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 10.0
 offset_top = 470.0
 offset_right = 110.0
 offset_bottom = 490.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -202,13 +197,12 @@ ignore_texture_size = true
 
 [node name="Tag6Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 7.33
 offset_top = 550.0
 offset_right = 107.33
 offset_bottom = 570.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -226,13 +220,12 @@ ignore_texture_size = true
 
 [node name="Tag7Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 843.33
 offset_top = 150.0
 offset_right = 943.33
 offset_bottom = 170.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -250,13 +243,12 @@ ignore_texture_size = true
 
 [node name="Tag8Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 846.0
 offset_top = 230.0
 offset_right = 946.0
 offset_bottom = 250.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -274,13 +266,12 @@ ignore_texture_size = true
 
 [node name="Tag9Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 848.67
 offset_top = 310.0
 offset_right = 948.67
 offset_bottom = 330.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -298,13 +289,12 @@ ignore_texture_size = true
 
 [node name="Tag10Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 851.33
 offset_top = 390.0
 offset_right = 951.33
 offset_bottom = 410.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -322,13 +312,12 @@ ignore_texture_size = true
 
 [node name="Tag11Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 854.0
 offset_top = 470.0
 offset_right = 954.0
 offset_bottom = 490.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -346,13 +335,12 @@ ignore_texture_size = true
 
 [node name="Tag12Label" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"HandbookEntryLabel"
 layout_mode = 3
 offset_left = 856.67
 offset_top = 550.0
 offset_right = 956.67
 offset_bottom = 570.0
-theme_override_colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
-theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -379,13 +367,12 @@ ignore_texture_size = true
 
 [node name="PageLabel" type="Label" parent="."]
 unique_name_in_owner = true
+theme_type_variation = &"BlackLabel18"
 layout_mode = 3
 offset_left = 733.32
 offset_top = 553.34
 offset_right = 866.65
 offset_bottom = 580.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 18
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
