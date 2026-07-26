@@ -270,3 +270,72 @@ func test_accent_gold_row_label_has_size_16() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var size: int = theme.get_font_size("font_size", "AccentGoldRowLabel")
 	assert_eq(size, 16, "AccentGoldRowLabel font_size = 16")
+
+# ── 轮 4 新增 5 变体（完整签名断言，spec §1.1）──
+
+func test_white_label_16_has_white_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "WhiteLabel16")
+	assert_color_approx(color, Color(1, 1, 1, 1), "WhiteLabel16 font_color")
+
+func test_white_label_16_has_size_16() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "WhiteLabel16")
+	assert_eq(size, 16, "WhiteLabel16 font_size = 16")
+
+func test_white_label_18_has_white_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "WhiteLabel18")
+	assert_color_approx(color, Color(1, 1, 1, 1), "WhiteLabel18 font_color")
+
+func test_white_label_18_has_size_18() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "WhiteLabel18")
+	assert_eq(size, 18, "WhiteLabel18 font_size = 18")
+
+func test_white_label_18_has_outline_2() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var outline: int = theme.get_constant("outline_size", "WhiteLabel18")
+	assert_eq(outline, 2, "WhiteLabel18 outline_size = 2")
+
+func test_white_label_20_has_white_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "WhiteLabel20")
+	assert_color_approx(color, Color(1, 1, 1, 1), "WhiteLabel20 font_color")
+
+func test_white_label_20_has_size_20() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "WhiteLabel20")
+	assert_eq(size, 20, "WhiteLabel20 font_size = 20")
+
+func test_battle_prepare_tab_label_has_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "BattlePrepareTabLabel")
+	assert_color_approx(color, Color(0.769, 0.733, 0.667, 1), "BattlePrepareTabLabel font_color")
+
+func test_battle_prepare_tab_label_has_shadow() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var shadow: Color = theme.get_color("font_shadow_color", "BattlePrepareTabLabel")
+	assert_color_approx(shadow, Color(0.165, 0.122, 0.086, 1), "BattlePrepareTabLabel font_shadow_color")
+
+func test_battle_prepare_tab_label_has_size_20() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "BattlePrepareTabLabel")
+	assert_eq(size, 20, "BattlePrepareTabLabel font_size = 20")
+
+func test_battle_prepare_tab_label_has_shadow_offset() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var sx: int = theme.get_constant("shadow_offset_x", "BattlePrepareTabLabel")
+	var sy: int = theme.get_constant("shadow_offset_y", "BattlePrepareTabLabel")
+	assert_eq(sx, 0, "BattlePrepareTabLabel shadow_offset_x = 0")
+	assert_eq(sy, 2, "BattlePrepareTabLabel shadow_offset_y = 2")
+
+func test_stone_amount_label_has_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "StoneAmountLabel")
+	assert_color_approx(color, Color(0.663, 0.357, 0.110, 1), "StoneAmountLabel font_color")
+
+func test_stone_amount_label_has_size_16() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "StoneAmountLabel")
+	assert_eq(size, 16, "StoneAmountLabel font_size = 16")
