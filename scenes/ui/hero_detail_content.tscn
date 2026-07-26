@@ -211,8 +211,7 @@ offset_left = 243.5
 offset_top = 427.5
 offset_right = 293.5
 offset_bottom = 446.5
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"BlackLabel18"
 text = "等级:"
 
 [node name="GsTitle" type="Label" parent="BaseLayer" unique_id=2037405354]
@@ -222,8 +221,7 @@ offset_left = 346.5
 offset_top = 427.5
 offset_right = 396.5
 offset_bottom = 446.5
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"BlackLabel18"
 text = "战力:"
 
 [node name="ExpTitle" type="Label" parent="BaseLayer" unique_id=1852477416]
@@ -233,8 +231,7 @@ offset_left = 243.5
 offset_top = 455.5
 offset_right = 293.5
 offset_bottom = 474.5
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"BlackLabel18"
 text = "经验:"
 
 [node name="LevelNum" type="Label" parent="BaseLayer" unique_id=310012726]
@@ -244,8 +241,7 @@ offset_left = 293.5
 offset_top = 427.5
 offset_right = 343.5
 offset_bottom = 446.5
-theme_override_colors/font_color = Color(0.572549, 0, 0.0156863, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"WarnLabel"
 
 [node name="GsNum" type="Label" parent="BaseLayer" unique_id=299680256]
 unique_name_in_owner = true
@@ -254,8 +250,7 @@ offset_left = 416.5
 offset_top = 427.5
 offset_right = 503.25
 offset_bottom = 446.5
-theme_override_colors/font_color = Color(0.572549, 0, 0.0156863, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"WarnLabel"
 
 [node name="ExpNum" type="Label" parent="BaseLayer" unique_id=1905918452]
 unique_name_in_owner = true
@@ -264,8 +259,7 @@ offset_left = 296.5
 offset_top = 455.5
 offset_right = 423.25
 offset_bottom = 474.5
-theme_override_colors/font_color = Color(0.572549, 0, 0.0156863, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"WarnLabel"
 
 [node name="EquipSlotHost" type="Control" parent="BaseLayer" unique_id=1006655734]
 unique_name_in_owner = true
@@ -423,11 +417,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.247, 0.020, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "进阶"
@@ -456,11 +446,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.247, 0.020, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "觉醒"
@@ -486,11 +472,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.247, 0.020, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "详细属性"
@@ -516,11 +498,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.247, 0.020, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "图鉴"
@@ -546,11 +524,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.247, 0.020, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "技能升级"
