@@ -93,33 +93,30 @@ text = "玩家"
 
 [node name="InfoLine1" type="Label" parent="." unique_id=402882160]
 unique_name_in_owner = true
+theme_type_variation = &"InfoLineLabel"
 layout_mode = 0
 offset_left = 349.0
 offset_top = 170.0
 offset_right = 562.0
 offset_bottom = 192.0
-theme_override_colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
-theme_override_font_sizes/font_size = 19
 
 [node name="InfoLine2" type="Label" parent="." unique_id=192641511]
 unique_name_in_owner = true
+theme_type_variation = &"InfoLineLabel"
 layout_mode = 0
 offset_left = 349.0
 offset_top = 192.0
 offset_right = 562.0
 offset_bottom = 214.0
-theme_override_colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
-theme_override_font_sizes/font_size = 19
 
 [node name="InfoLine3" type="Label" parent="." unique_id=1863430891]
 unique_name_in_owner = true
+theme_type_variation = &"InfoLineLabel"
 layout_mode = 0
 offset_left = 349.0
 offset_top = 214.0
 offset_right = 562.0
 offset_bottom = 236.0
-theme_override_colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
-theme_override_font_sizes/font_size = 19
 
 [node name="ChangeNameBtn" type="Button" parent="." unique_id=508964241]
 unique_name_in_owner = true
@@ -131,6 +128,7 @@ offset_bottom = 202.0
 
 [node name="ChangeNameLabel" type="Label" parent="ChangeNameBtn" unique_id=508964242]
 unique_name_in_owner = true
+theme_type_variation = &"ConfigTitleLabel"
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -142,11 +140,6 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "修改名字"
@@ -161,6 +154,7 @@ offset_bottom = 275.0
 
 [node name="ChangeHeadLabel" type="Label" parent="ChangeHeadBtn" unique_id=393929177]
 unique_name_in_owner = true
+theme_type_variation = &"ConfigTitleLabel"
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -172,11 +166,6 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "更换头像"
@@ -191,6 +180,7 @@ offset_bottom = 356.0
 
 [node name="SaveManagerLabel" type="Label" parent="SaveManagerBtn" unique_id=887369570]
 unique_name_in_owner = true
+theme_type_variation = &"ConfigTitleLabel"
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -202,11 +192,6 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "存档管理"
@@ -221,6 +206,7 @@ offset_bottom = 445.0
 
 [node name="SetupLabel" type="Label" parent="SetupBtn" unique_id=69960515]
 unique_name_in_owner = true
+theme_type_variation = &"ConfigTitleLabel"
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -232,11 +218,6 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.922, 0.875, 0.812, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "系统设置"
