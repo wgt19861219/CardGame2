@@ -415,25 +415,9 @@ func _lookup_atk_frame_time(action: String) -> float:
 	return 0.0
 
 
-# ── 静态预热 / 缓存清理（battle_scene 进出战时调）──
-
-static func prewarm_unit(unit: Variant, cm: Variant) -> void:
-	var puppet_name: String = String(unit.info.get("Puppet", ""))
-	if puppet_name.is_empty():
-		return
-	var resource: String = String(cm.get_raw_table(&"Puppet").get(puppet_name, {}).get("Resource", ""))
-	if resource.is_empty():
-		return
-	var plist_path: String = "res://assets/anim_frames/" + resource + "/sheet.plist"
-	if _atlas_cache.has(plist_path):
-		return
-	var atlas := AtlasSprite.new()
-	if not atlas.load_atlas(plist_path):
-		return
-	_atlas_cache[plist_path] = atlas
-	var fca := FcaAnimation.new()
-	fca.load_from_ani(resource, atlas)
-	fca.queue_free()
+# ── 静态缓存清理（battle_scene 进出战时调）──
+# 注：prewarm_unit 已删（2026-07-26 A2）—— 零调用的死代码，建 N 个 Sprite2D 后立即 free 纯浪费。
+# 预热需求由首次 _try_load_fca/switch_puppet 自然填充 _cache + _atlas_cache 满足。
 
 
 static func clear_atlas_cache() -> void:

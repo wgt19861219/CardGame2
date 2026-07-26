@@ -47,3 +47,13 @@ static func stop_x(scene) -> void:
 		scene._shake_tween_x = null
 	if scene._camera != null:
 		scene._camera.offset.x = 0.0
+
+
+# 场景销毁时调用（_exit_tree）：仅 kill 残留 tween，不复位 camera offset（场景即将 free）。
+static func kill_all(scene) -> void:
+	if scene._shake_tween_x != null:
+		scene._shake_tween_x.kill()
+		scene._shake_tween_x = null
+	if scene._shake_tween_y != null:
+		scene._shake_tween_y.kill()
+		scene._shake_tween_y = null

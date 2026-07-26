@@ -161,6 +161,7 @@ func test_tab_label_uses_lstr() -> void:
 	assert_eq(panel._tab_label("front"), cm.get_lstr("UNIT.FRONT_ROW"), "前排 tab=LSTR.FRONT_ROW")
 	assert_eq(panel._tab_label("middle"), cm.get_lstr("UNIT.MIDDLE_ROW"), "中排 tab=LSTR.MIDDLE_ROW")
 	assert_eq(panel._tab_label("back"), cm.get_lstr("UNIT.REAR_ROW"), "后排 tab=LSTR.REAR_ROW")
-	# 开始战斗按钮照源 :2241 CHATCONFIG.CONFIRM（确定）
-	assert_eq(panel._go_button.text, cm.get_lstr("CHATCONFIG.CONFIRM"), "开始按钮=LSTR.CONFIRM")
+	# GoBtn conform text 照源 battleprepare.lua:1788-1791 仅 isSpecialgb（pvp defend/excavateChange）时 visible。
+	# 本项目单机化已裁剪这两模式（grep 零匹配 isSpecialgb）→ text 始终空，由 prepare_go_battle 贴图表达语义。
+	assert_eq(panel._go_button.text, "", "GoBtn conform text 隐藏（源仅 isSpecialgb 显示，本项目已裁剪）")
 	panel.queue_free()

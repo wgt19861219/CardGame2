@@ -94,10 +94,13 @@ static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
 static func _add_fca(btn: Button, res: String, sk_scale: float) -> Node2D:
 	var atlas := AtlasSprite.new()
 	if not atlas.load_atlas_from_ani(FCA_ANI_DIR + res + ".ani"):
-		atlas.queue_free()
+		# AtlasSprite extends RefCounted：queue_free() 无效（RefCounted 无此方法），
+		# 需 unload() 释放 _part_texture_cache 持有的 ImageTexture，引用计数归零自动 GC。
+		atlas.unload()
 		return null
 	var fca := FcaAnimation.new()
 	if not fca.load_from_ani("effect/" + res, atlas):
+		atlas.unload()   # 失败分支 fca 未持有 atlas，显式释放纹理缓存
 		fca.queue_free()
 		return null
 	# 非 CC 标准覆盖）。_create_sprites 已设 fca.scale=_coord_scale(0.39)，此处 ×v.scale 叠加。
