@@ -98,14 +98,12 @@ theme_override_constants/separation = 1
 
 [node name="Name" type="Label" parent="AttribListHost/AttribVBox/PH_Attr1" unique_id=989430934]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"AccentGoldRowLabel"
 text = "物理攻击力:"
 
 [node name="Base" type="Label" parent="AttribListHost/AttribVBox/PH_Attr1" unique_id=2101437772]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.918, 0.776, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"DetailBaseLabel"
 text = "1200"
 
 [node name="Add" type="Label" parent="AttribListHost/AttribVBox/PH_Attr1" unique_id=1839651202]
@@ -120,14 +118,12 @@ theme_override_constants/separation = 1
 
 [node name="Name" type="Label" parent="AttribListHost/AttribVBox/PH_Attr2" unique_id=1450862385]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"AccentGoldRowLabel"
 text = "生命值:"
 
 [node name="Base" type="Label" parent="AttribListHost/AttribVBox/PH_Attr2" unique_id=1547580564]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.918, 0.776, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"DetailBaseLabel"
 text = "8000"
 
 [node name="PH_Attr3" type="HBoxContainer" parent="AttribListHost/AttribVBox" unique_id=232608572]
@@ -136,12 +132,10 @@ theme_override_constants/separation = 1
 
 [node name="Name" type="Label" parent="AttribListHost/AttribVBox/PH_Attr3" unique_id=1927931423]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.945, 0.757, 0.443, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"AccentGoldRowLabel"
 text = "护甲:"
 
 [node name="Base" type="Label" parent="AttribListHost/AttribVBox/PH_Attr3" unique_id=1199727965]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.918, 0.776, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"DetailBaseLabel"
 text = "200"
