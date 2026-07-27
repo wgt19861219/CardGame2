@@ -98,6 +98,14 @@ func _build_content() -> void:
 	_create_stage_list(hbox)
 	# 规则页按钮（照源 crusadeconfig.lua:976 showrule Scale9Button handleName=showRuleInfo）
 	_create_rule_button(content)
+	# HudOverlay 切 identity=crusade（shortcut 隐藏，仅货币栏）。
+	HudOverlay.apply_identity("crusade")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 func _create_stage_list(hbox: HBoxContainer) -> void:

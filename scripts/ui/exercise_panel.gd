@@ -33,6 +33,13 @@ var _on_entry_selected: Callable  # 回调：func(key: String, groups: Array[int
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build_ui()
+	# HudOverlay 切 identity=exercise（Control 非 PopWindow，无 setup_panel，从 GameData 取）。
+	HudOverlay.apply_identity("exercise")
+
+
+func _exit_tree() -> void:
+	# exercise 是 Control 非 PopWindow，_exit_tree 恢复 HudOverlay identity=main。
+	HudOverlay.apply_identity("main")
 
 
 func set_entry_callback(cb: Callable) -> void:

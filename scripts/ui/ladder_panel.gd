@@ -92,6 +92,14 @@ func _build_content() -> void:
 	_lineup_title_label = lineup_view.get_node("%LineupTitleLabel") as Label
 	_lineup_host = lineup_view.get_node("%LineupHost") as Control
 	_wire_action_btn(lineup_view, "%SetLineupBtn", BTN_NORMAL_RES, BTN_NORMAL_PRESS, CAP_NORMAL, "PVP.ADJUSTMENT", LABEL_COLOR_NORMAL, _on_set_lineup)
+	# HudOverlay 切 identity=pvp（ladder 源无，本项目自建对齐源 pvp 场景语义）。
+	HudOverlay.apply_identity("pvp")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 # .tscn 静态 Button 运行时套 Scale9 StyleBox + Label + 绑信号（.tscn 普通 Button 无九宫格图，运行时补）。

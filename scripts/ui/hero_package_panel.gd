@@ -96,6 +96,14 @@ func _build_content() -> void:
 	_update_tab_visual()
 	# 分解按钮（2026-07-19 接线完成）：HeroSplitWindow 务实方案——内联英雄网格 + 返还预览 + 二次确认。
 	_add_herosplit_button(content)
+	# HudOverlay 切 identity=heropackage。
+	HudOverlay.apply_identity("heropackage")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 func _add_herosplit_button(content: Control) -> void:

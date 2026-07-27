@@ -79,6 +79,14 @@ func _build_content() -> void:
 	_build_goods()
 	_update_refresh_label()
 	_update_next_refresh_label()
+	# HudOverlay 切 identity=shop。
+	HudOverlay.apply_identity("shop")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 func _build_goods() -> void:

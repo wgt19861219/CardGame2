@@ -5,7 +5,6 @@ extends "res://scenes/base_ui.gd"
 ## 业务逻辑在 Logic/Data 层。布局坐标复用旧版 mainres.lua（800x480→960x640）。
 
 const MAP_H: float = 640.0   # grass + 按钮 + mountain/cloud/side/lightning 整体下移 104（grass 放屏底 56~536→160~640，图标 godot_y=MAP_H-cocos_y 跟着下移）
-const BAR_H: float = 52.0
 const BG_INIT_OFFSET: float = -300.0   # 初始视角偏移
 const TutorialGuideView = preload("res://scripts/ui/tutorial_guide_view.gd")
 const MainButtonFactory = preload("res://scripts/ui/main_button_factory.gd")
@@ -15,12 +14,10 @@ const GapLoopAnimator = preload("res://scripts/ui/gap_loop_animator.gd")
 const MainMapBuilder = preload("res://scripts/ui/main_map_builder.gd")
 const MainParallax = preload("res://scripts/ui/main_parallax.gd")
 const ExcavateMapPanel = preload("res://scripts/ui/excavate_map_panel.gd")
-const MainStatusBar = preload("res://scripts/ui/main_status_bar.gd")
 # P1-2026-07-10：补全未 preload 的 class_name 类（消除跨脚本强引用）
 const BattleRng = preload("res://scripts/systems/battle/battle_rng.gd")
 const FeatureLimit = preload("res://scripts/systems/feature_limit.gd")
 const PlayerData = preload("res://scripts/data/player_data.gd")
-const ShortcutPanel = preload("res://scripts/ui/shortcut_panel.gd")
 const StageSelectPanel = preload("res://scripts/ui/stage_select_panel.gd")
 const ConfigurePanel = preload("res://scripts/ui/configure_panel.gd")
 const TutorialManager = preload("res://scripts/systems/tutorial_manager.gd")
@@ -38,7 +35,7 @@ const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 94.0)
 # 15 入口按钮数据外移 main_scene_entries.gd（控 LINT005 ≤400，第九轮 P1-B 入口接线）。
 const MainSceneEntries = preload("res://scripts/ui/main_scene_entries.gd")
 
-var _status_refs: Dictionary = {}   # MainStatusBar 节点引用（label/head/vip）
+var _status_refs: Dictionary = {}   # 已废弃，保留兼容（HudOverlay autoload 接管 HUD）
 var _tutorial_view: TutorialGuideView = null   # 持引用供 EE/unlock/SU 跨阶段刷新
 var _containers: Dictionary                    # MainMapBuilder 建的 4 容器（top/middle/bottom/verytop/sub）
 var _parallax: MainParallax
@@ -54,8 +51,7 @@ func _ready() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	_build_map()
-	_build_status_bar()
-	_build_shortcut()
+	_build_hud()
 	_refresh_status()
 	setup(Events.bus)
 	_maybe_start_tutorial()
@@ -230,54 +226,24 @@ func _find_entry(entry_id: String) -> Dictionary:
 			return e
 	return {}
 
-## 顶部状态栏：等级/金币/钻石/体力（GameData 只读，data_changed 刷新）。
-func _build_status_bar() -> void:
-	var bar := Panel.new()
-	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	bar.custom_minimum_size = Vector2(0, BAR_H)
-	bar.mouse_filter = Control.MOUSE_FILTER_PASS
-	# statusbar 透明叠加（无整体背景图，只 number_bg 局部），露 grass/mountain。
-	# Panel 默认 StyleBox 灰底 → 改透明（map 已延伸到顶，露 mountain 天）。
-	bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	add_child(bar)
-	_status_refs = MainStatusBar.build(bar, _on_vitality_plus, func() -> void: ConfigurePanel.open(self), _open_midas, GameData.player, GameData.config)
-	# 每日签到入口按钮（dailylogin 按钮 clickHandler→showDailyLogin）。
+## Framework HUD 注入（顶部货币栏 + 右侧快捷栏）— 委托 HudOverlay autoload（全局 CanvasLayer）。
+## main 场景 identity=main（含头像 + shortcut 默认展开）。
+func _build_hud() -> void:
+	HudOverlay.apply_identity("main")
+	# 每日签到入口按钮（dailylogin 按钮 clickHandler→showDailyLogin，仅 main 建）。
 	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
 	dl_btn.pressed.connect(func() -> void: MainSceneEntryRouter.open_daily_login(self))
 	add_child(dl_btn)
 
 
-## 右侧 shortcut 快捷栏抽屉（scCreateBoard/scCreateButtons）。
-## 常驻 UI：5 按钮（heroPackage/package/fragment/task/todoList）竖排 + 切换按钮 + 展开收起动画。
-func _build_shortcut() -> void:
-	var shortcut := ShortcutPanel.new()
-	shortcut.setup_panel(true)   # 主界面默认展开
-	shortcut.open_requested.connect(_on_shortcut_open)
-	add_child(shortcut)
-
-
-## shortcut 按钮路由（getSCButtonTouchHandler）。
-## package/fragment→PackagePanel / heroPackage→hero_scene / task·todoList 桩。
+## shortcut 按钮路由（getSCButtonTouchHandler）— HudOverlay 已托管，本方法保留兼容。
 func _on_shortcut_open(key: String) -> void:
-	match key:
-		"package":
-			MainSceneEntryRouter.open_package(self, "package")
-		"fragment":
-			MainSceneEntryRouter.open_package(self, "fragment")
-		"heroPackage":
-			_open_hero()
-		"task":
-			MainSceneEntryRouter.open_task(self)
-		"todoList":
-			Toast.show_message("「每日任务」待实现")
-		_:
-			pass
+	pass
 
 
-## 从 GameData 刷新状态栏（委托 MainStatusBar，金币归 HeroManager）。
+## 从 GameData 刷新状态栏（委托 HudOverlay autoload → MainStatusBar）。
 func _refresh_status() -> void:
-	var p: PlayerData = GameData.player
-	MainStatusBar.refresh(_status_refs, p.team_level, p.hero_manager.gold, p.diamond, p.vitality, p.vitality_max, p.player_name, p.vip_level, p.avatar)
+	HudOverlay.refresh()
 
 
 ## 体力加号（vitality_add_icon→showHandyDialog("buyVitality")）。

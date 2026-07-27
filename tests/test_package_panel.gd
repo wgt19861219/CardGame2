@@ -214,13 +214,14 @@ func test_status_bar_built_with_three_bars() -> void:
 	var pd := PlayerData.new(cm)
 	var panel := _make_panel("package", pd)
 	panel.show_window(root)
-	# _status_refs 由 _create_status_bar 装配，含 gold/diamond/vitality 三个 Label ref。
-	assert_true(panel._status_refs.has("gold"), "货币条 gold label 装好")
-	assert_true(panel._status_refs.has("diamond"), "货币条 diamond label 装好")
-	assert_true(panel._status_refs.has("vitality"), "货币条 vitality label 装好")
-	# gold label 应显示玩家当前金币（int(PlayerData.hero_manager.gold)，新玩家默认 0）
-	var gold_lbl: Label = panel._status_refs["gold"]
-	assert_eq(gold_lbl.text, str(pd.hero_manager.gold), "gold label 显示玩家金币")
+	# 方案 B：HudOverlay autoload 接管 HUD。package 是子场景 → 用 _status_refs_sub（仅 3 货币条）。
+	# 注意：HudOverlay 数据源是全局 GameData.player（非测试 pd），gold label 显示全局玩家金币。
+	var status_refs: Dictionary = HudOverlay._status_refs_sub
+	assert_true(status_refs.has("gold"), "货币条 gold label 装好")
+	assert_true(status_refs.has("diamond"), "货币条 diamond label 装好")
+	assert_true(status_refs.has("vitality"), "货币条 vitality label 装好")
+	var gold_lbl: Label = status_refs["gold"]
+	assert_eq(gold_lbl.text, str(GameData.player.hero_manager.gold), "gold label 显示全局玩家金币")
 	panel.remove_window()
 	root.queue_free()
 
@@ -231,6 +232,8 @@ func test_status_bar_built_on_fragment_identity_too() -> void:
 	var pd := PlayerData.new(cm)
 	var panel := _make_panel("fragment", pd)
 	panel.show_window(root)
-	assert_true(panel._status_refs.has("vitality"), "fragment identity 也建货币条（源 framework common）")
+	# fragment identity 也走 HudOverlay.apply_identity，货币条恒建（源 framework common）。
+	var status_refs: Dictionary = HudOverlay._status_refs_sub
+	assert_true(status_refs.has("vitality"), "fragment identity 也建货币条（源 framework common）")
 	panel.remove_window()
 	root.queue_free()

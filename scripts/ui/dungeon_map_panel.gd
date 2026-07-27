@@ -92,6 +92,14 @@ func _build_content() -> void:
 		var fog_idx: int = ((s - 1) % FOG_IMG_COUNT) + 1
 		fog.texture = _load_tex(FOG_TEX_DIR + str(fog_idx) + ".png")
 		fog_rects.append(fog)
+	# HudOverlay 切 identity=dungeonMap。
+	HudOverlay.apply_identity("dungeonMap")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 func _fill_boss_list() -> void:
