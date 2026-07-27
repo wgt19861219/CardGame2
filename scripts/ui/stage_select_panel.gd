@@ -94,7 +94,7 @@ func _build_content() -> void:
 	# 用户偏好（2026-07-20）：frame 太大贴屏边 → 所有 frame 内元素 scale 0.9 about frame center(480,355)
 	# （frame+map+mode+dots+箭头 等比缩保相对布局；close 返回键 + FrameworkBg 全屏 bg 不缩）。
 	var _mode_layer: Control = _content.get_node("%ModeLayer") as Control
-	# 难度栏下移 20（避章节标题压 ModeBg；offset_top -50→-30，ModeBg top 144→164）。
+	# 难度栏下移 20（避章节标题压 ModeBg；.tscn 已固化 offset_top=-30，此行兜底防误改）。
 	_mode_layer.offset_top = -30.0
 	for t in [_frame_layer, _map_host, _dot_container, _mode_layer]:
 		(t as Control).pivot_offset = Vector2(480.0, 355.0)

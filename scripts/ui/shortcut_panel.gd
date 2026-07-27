@@ -78,7 +78,7 @@ func _build_content() -> void:
 		var btn: TextureButton = content.get_node("%" + String(BUTTON_NODE_NAMES[key])) as TextureButton
 		btn.pressed.connect(_on_button_pressed.bind(key))
 		_buttons[key] = btn
-	# 运行时覆盖 .tscn 固化的 toggle/board 位置（用 TOGGLE_CENTER 常量，便于整体调整对齐货币栏）。
+	# 运行时覆盖 .tscn 固化的 toggle/board 位置（.tscn 已固化相同值，此行兜底防误改 + 保常量单一来源）。
 	var toggle_topleft: Vector2 = _center_to_topleft(TOGGLE_CENTER, _toggle_down)
 	_toggle_down.position = toggle_topleft
 	_toggle_up.position = toggle_topleft
