@@ -67,7 +67,7 @@ agent 不得直接编辑（需改时改源文件并说明同步方式）：
 - **锁文件**：只让对应包管理器改
 - **VCS 元数据**：`.git/`（尤其 `hooks/`、`config`）
 - **带 `DO NOT EDIT` banner 的文件**（codegen / 同步产物）
-- `.tscn` 只用编辑器或 godot-mcp 改，禁外部脚本 patch
+- **`.tscn` 结构性改动禁外部 patch**：节点增删/重命名/parent 调整/ext_resource/uid/unique_id/load_steps 这些**结构性改动**只用编辑器或 godot-mcp（headless mcp scene 不可用时启动 editor 模式）。**纯数值改动**（offset/size/position/scale/rotation/color/modulate/visible 等）允许 Edit 工具改，但改完必须 `--import` + CI 验证兜底（2026-07-27 修订：实测 4 节点 8 行 offset 替换 + CI 1732/1732 全绿验证风险可控，旧版铁律源于 ext_resource id/uid 错乱致引用断裂的血泪，对纯数值改动过严）
 
 ### 完成前必说验证方式
 
@@ -247,7 +247,7 @@ bash tools/ci/check.sh
 - **跨脚本引用**：`preload` + 鸭子类型/接口，避免 class_name 解析时序问题（class_name 跨脚本交叉引用是反模式）
 - **装饰节点**：`mouse_filter = IGNORE`（值 2），避免吞点击
 - **UID**：从 `.import` 文件读，不猜
-- **`.tscn`**：只用编辑器或 godot-mcp 改，禁外部 patch；`.tscn` 禁 `#` 注释（报 Parse Error），注释用 `;`
+- **`.tscn`**：**结构性改动**（节点增删/重命名/parent/ext_resource/uid/unique_id/load_steps）只用编辑器或 godot-mcp，禁外部 patch；**纯数值改动**（offset/size/position/scale/color 等）允许 Edit 改但必跑 `--import`+CI 兜底；`.tscn` 禁 `#` 注释（报 Parse Error），注释用 `;`
 - **零魔法数字**：lint 门禁禁止 Logic 层裸数字常量（白名单 0/1/-1）；数值/公式走 `resources/data/*.json` 或 `resources/constants/*.tres`
 
 ---
@@ -272,7 +272,7 @@ bash tools/ci/check.sh
 | 场景脚本塞业务逻辑 | 三层分离 + AST 检查器 + 行数检查 |
 | class_name 跨脚本交叉引用 | 跨脚本用 `preload` + 接口，不依赖 class_name 强引用 |
 | 装饰节点 `mouse_filter=STOP` 吞点击 | 装饰节点强制 `mouse_filter=IGNORE` |
-| 外部脚本改 `.tscn` | `.tscn` 只在编辑器/MCP 内改，禁外部 patch |
+| 外部脚本改 `.tscn` 结构 | `.tscn` **结构性改动**（节点/ext_resource/uid/unique_id/load_steps）只在编辑器/MCP 内改；**纯数值改动**（offset/size/color 等）允许 Edit + import/CI 兜底（2026-07-27 修订） |
 | sed 批量替换缩进代码 | GDScript 禁 sed，用 MCP `edit_script search_and_replace` |
 | 拼写错误潜伏（immoblilize） | buff/技能效果全枚举单测 |
 | JSON float→int | PlayerData 入口统一 int 校验 |
@@ -355,3 +355,4 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/
 |------|------|
 | 2026-07-22 | 初版，基于通用模板 `C:\Users\wgt\ZCodeProject\templates\AGENTS-template.md` 重组；断开与 CLAUDE.md 的软链，AGENTS.md 独立自包含 |
 | 2026-07-24 | 迁移阶段结束，进入 Godot 原生适配/优化阶段：重写「项目阶段」（原「项目铁律」）解除源码强制对齐，解禁设计类 skill，开发协议改为 DESIGN → CODE → VERIFY；红线与工程规范保留不变 |
+| 2026-07-27 | 修订 `.tscn` 红线：结构性改动（节点/ext_resource/uid/unique_id/load_steps）仍禁外部 patch，**纯数值改动**（offset/size/position/scale/color 等）放开允许 Edit 改 + import/CI 兜底。依据：战役 HUD 补全时 4 节点 8 行 offset 替换 + CI 1732/1732 全绿实证风险可控；旧版铁律源于 ext_resource id/uid 错乱致引用断裂，对纯数值改动过严 |

@@ -53,7 +53,7 @@
 | 场景脚本塞业务逻辑 | 原则 1 三层分离 + AST 检查器 + 行数检查 |
 | class_name 跨脚本交叉引用 | 跨脚本用 `preload` + 接口，不依赖 class_name 强引用 |
 | 装饰节点 `mouse_filter=STOP` 吞点击 | 装饰节点强制 `mouse_filter=IGNORE` |
-| 外部脚本改 `.tscn` | `.tscn` 只在编辑器/MCP 内改，禁外部 patch |
+| 外部脚本改 `.tscn` 结构 | `.tscn` **结构性改动**（节点/ext_resource/uid/unique_id/load_steps）只在编辑器/MCP 内改；**纯数值改动**（offset/size/color 等）允许 Edit + import/CI 兜底（2026-07-27 修订） |
 | sed 批量替换缩进代码 | GDScript 禁 sed，用 MCP `edit_script search_and_replace` |
 | 拼写错误潜伏（immoblilize） | buff/技能效果全枚举单测 |
 | JSON float→int | PlayerData 入口统一 int 校验 |
@@ -70,7 +70,7 @@
 - headless 测试/运行前必须 `godot --headless --import`（首次/资源变动后）
 - 装饰性 Control 节点 `mouse_filter = IGNORE`（值 2）
 - UID 从 `.import` 文件读，不猜
-- `.tscn` 只用编辑器或 godot-mcp 改
+- `.tscn` **结构性改动**（节点/ext_resource/uid/unique_id/load_steps）只用编辑器或 godot-mcp 改；**纯数值改动**（offset/size/color 等）允许 Edit 改 + import/CI 兜底（2026-07-27 修订）
 
 ### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
 
