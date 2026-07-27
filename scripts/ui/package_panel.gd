@@ -51,7 +51,7 @@ var _cur_tab: String = "all"
 var _tab_buttons: Dictionary = {}  # tab_key(String) -> TextureButton
 var _tab_labels: Dictionary = {}   # tab_key(String) -> Label（运行时跟随 button position/size）
 var _grid: GridContainer = null
-var _status_refs: Dictionary = {}   # MainStatusBar 货币条 label 引用（_refresh_status 更新）
+var _status_refs: Dictionary = {}   # 已废弃，保留兼容（HudOverlay autoload 接管 HUD）
 var _content: Control = null        # .tscn instantiate 根节点（cleanup 引用）
 var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipLayer，点 cell refresh 非重建）
 
@@ -134,33 +134,21 @@ func _setup_tab_buttons() -> void:
 
 # package/fragment 源是 pushScene 独立场景，framework 在新场景顶层建货币条；
 # 本项目单机化改 PopWindow 弹窗（避 pushScene），但 bg.jpg 全屏遮 main_scene 货币条，
-# 故在 .tscn %StatusHost 自建（照 hero_scene.gd:41 范式，统一 MainStatusBar 常量）。
+# HudOverlay 切 identity（package/fragment 跟随构造传入）。
 func _create_status_bar() -> void:
-	var host: Control = _content.get_node("%StatusHost") as Control
-	_status_refs = MainStatusBar.build_bars_only(host, MainStatusBar.BAR_POS_X, MainStatusBar.BAR_Y, Callable(self, "_on_vitality_plus"))
+	HudOverlay.apply_identity(_identity)
 	_refresh_status()
 
 
-# 刷新货币条数值（委托 MainStatusBar.refresh，照 hero_scene.gd:45）。
+# 刷新货币条数值（委托 HudOverlay autoload）。
 func _refresh_status() -> void:
-	if pd == null or _status_refs.is_empty():
-		return
-	MainStatusBar.refresh(_status_refs, pd.team_level, pd.hero_manager.gold, pd.diamond, pd.vitality, pd.vitality_max, pd.player_name, pd.vip_level, pd.avatar)
+	HudOverlay.refresh()
 
 
-# 体力加号（照源 statusbar vitality_add_icon→buyVitality；单机化直接买 + Toast，同 main_scene/hero_scene）。
-func _on_vitality_plus() -> void:
-	if pd == null:
-		return
-	if not pd.can_buy_vitality():
-		Toast.show_message("今日购买体力次数已达上限")
-		return
-	if pd.buy_vitality():
-		GameData.mark_save_dirty()
-		Toast.show_message("购买体力 +120")
-		_refresh_status()
-	else:
-		Toast.show_message("钻石不足")
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 func _on_handbook_pressed() -> void:

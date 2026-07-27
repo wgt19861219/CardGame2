@@ -65,6 +65,14 @@ func _build_content() -> void:
 		(_ui["total_number"] as Label).visible = false
 	_setup_sweep_button(content.get_node("%SweepBtn") as Button, int(info.get("star", 0)))
 	_check_enabled()
+	# HudOverlay 切 identity=stagedetail。
+	HudOverlay.apply_identity("stagedetail")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 # 项目 StageData 首次访问可能缺 row，"关卡 %d" fallback 是项目适配（源 row 必存在）。

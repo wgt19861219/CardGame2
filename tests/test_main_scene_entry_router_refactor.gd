@@ -43,8 +43,10 @@ func test_no_translation_comments() -> void:
 		assert_false(stripped.find("# 源") != -1 or stripped.find("## 源") != -1 or stripped.find("照源") != -1, "无翻译注释: %s" % stripped)
 
 func test_add_theme_only_statusbar_exception() -> void:
+	# FrameworkHud 接管后，状态栏 StyleBoxEmpty 外迁到 framework_hud.gd；
+	# main_scene 本身不再有 add_theme_ 调用（count=0）。
 	var script_text: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
-	assert_eq(script_text.count("add_theme_"), 1, "add_theme 仅状态栏 StyleBoxEmpty 例外")
+	assert_eq(script_text.count("add_theme_"), 0, "add_theme 已外迁到 FrameworkHud，main_scene count=0")
 
 func test_main_scene_line_count() -> void:
 	var script_text: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")

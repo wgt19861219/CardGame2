@@ -94,6 +94,8 @@ func _build_content() -> void:
 	# 用户偏好（2026-07-20）：frame 太大贴屏边 → 所有 frame 内元素 scale 0.9 about frame center(480,355)
 	# （frame+map+mode+dots+箭头 等比缩保相对布局；close 返回键 + FrameworkBg 全屏 bg 不缩）。
 	var _mode_layer: Control = _content.get_node("%ModeLayer") as Control
+	# 难度栏下移 20（避章节标题压 ModeBg；.tscn 已固化 offset_top=-30，此行兜底防误改）。
+	_mode_layer.offset_top = -30.0
 	for t in [_frame_layer, _map_host, _dot_container, _mode_layer]:
 		(t as Control).pivot_offset = Vector2(480.0, 355.0)
 		(t as Control).scale = Vector2(0.9, 0.9)
@@ -102,6 +104,14 @@ func _build_content() -> void:
 		a.pivot_offset = Vector2(480.0 - a.offset_left, 355.0 - a.offset_top)
 		a.scale = Vector2(0.9, 0.9)
 	_refresh_view("init")
+	# HudOverlay 切 identity=stageselect（强制展开 shortcut + 子场景货币条）。
+	HudOverlay.apply_identity("stageselect")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 # setup_panel 在 show_window 前（panel 未入树），持续动画须等入树后启动（同 equip_strengthen_anim.gd:93 范式）。

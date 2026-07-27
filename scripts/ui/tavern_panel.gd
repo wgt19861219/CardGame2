@@ -83,6 +83,14 @@ func _build_content() -> void:
 	close_btn.pressed.connect(remove_window)
 	_create_boards()
 	_refresh_countdown_label()
+	# HudOverlay 切 identity=tavern。
+	HudOverlay.apply_identity("tavern")
+
+
+# 关闭时恢复 HudOverlay identity=main。
+func remove_window() -> void:
+	HudOverlay.apply_identity("main")
+	super.remove_window()
 
 
 # createCommonLayer/createMagicLayer（scroll_board 13 节点 + 滑动 + magic drop_bg）。per-board check/arrow/one_buy/ten_buy。

@@ -17,13 +17,13 @@ const CONTENT_SCALE: float = 1.28125
 const SCREEN_H: float = 640.0
 const BOARD_CENTER_X: float = 900.0
 # 用户视觉偏好(2026-07-14):快捷栏"更上一点贴近顶部"。整个抽屉上移 100px(板顶 180→80 / toggle 200→100,底部留 100px 空白)。
-const BOARD_UP_OFFSET: float = -100.0           # 整个抽屉上移量(负=上,用户偏好;BUTTON_CENTER_Y 已含同 offset)
-const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶 180 + 上移 100 → 80
+const BOARD_UP_OFFSET: float = -132.0           # 整个抽屉上移量(负=上)；-132 让下拉钮与货币栏上端平齐（top=26）
+const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶 180 + 上移 → 48
 const BOARD_WIDTH: float = 82.0
 const BOARD_H_MIN: float = 40.0
 const BOARD_H_MAX: float = 460.0
-const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)
-const BUTTON_CENTER_Y: Array[float] = [178.0, 268.0, 358.0, 448.0, 538.0]   # 间距 90（源 70~79 太挤，用户要加大；顶部 178 不变）
+const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=68，下拉钮 top=26 与货币栏 top=26 上端平齐
+const BUTTON_CENTER_Y: Array[float] = [146.0, 236.0, 326.0, 416.0, 506.0]   # 间距 90（源 70~79 太挤，用户要加大）；整体随 BOARD_UP_OFFSET 上移对齐
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
 const ANIM_DUR: float = 0.12
 const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）
@@ -78,6 +78,12 @@ func _build_content() -> void:
 		var btn: TextureButton = content.get_node("%" + String(BUTTON_NODE_NAMES[key])) as TextureButton
 		btn.pressed.connect(_on_button_pressed.bind(key))
 		_buttons[key] = btn
+	# 运行时覆盖 .tscn 固化的 toggle/board 位置（.tscn 已固化相同值，此行兜底防误改 + 保常量单一来源）。
+	var toggle_topleft: Vector2 = _center_to_topleft(TOGGLE_CENTER, _toggle_down)
+	_toggle_down.position = toggle_topleft
+	_toggle_up.position = toggle_topleft
+	_board.position = Vector2(BOARD_CENTER_X - BOARD_WIDTH / 2.0, BOARD_TOP_Y)
+	_board.size = Vector2(BOARD_WIDTH, BOARD_H_MIN)
 
 
 func _toggle_open() -> void:
@@ -187,3 +193,14 @@ func _kill_tween() -> void:
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	_tween = null
+
+
+# ── 公共查询/控制 API（供 HudOverlay 全局管理）──
+
+func is_open() -> bool:
+	return _is_open
+
+
+# 无动画强制展开（照源 framework.lua:989-992 doShortcut(true) 非 main 场景强制展开）。
+func open_instant() -> void:
+	_apply_open_instant()

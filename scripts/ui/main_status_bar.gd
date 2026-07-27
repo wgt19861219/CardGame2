@@ -15,7 +15,7 @@ const UIConstants := preload("res://resources/constants/ui_constants.gd")
 # C13 坐标基准核查结论：statusbar 是 framework HUD 层（标准 UI），走 to_godot(cx,cy)=(cx+80,560-cy)
 # （源 800×480 左下原点 → Godot 960×640 左上原点 + 居中偏移 80）；非 main_scene ENTRIES 的 MAP_H-cocos_y
 # 基准（map 全屏背景适配，950×640 整张图）。两者不冲突——ENTRIES 是 map 装饰，statusbar 是 framework HUD。
-const HEAD_POS: Vector2 = Vector2(150.0, 126.0)
+const HEAD_POS: Vector2 = Vector2(150.0, 66.0)
 const HEAD_SIZE: Vector2 = Vector2(137.0, 105.0)
 const HEAD_FRAME_RES: Array = [
 	"res://assets/ui/alpha/HVGA/main_head_bg_silver.png",   # VIP=0 银色
@@ -39,7 +39,7 @@ const VITALITY_ICON_RES: String = "res://assets/ui/alpha/HVGA/add_vitalityicon.p
 const PLUS_ICON_RES: String = "res://assets/ui/alpha/HVGA/main_status_plus_icon_1.png"
 # = (331,110)/(514,110)/(681,110)。源不等距：money→rmb 间距 183，rmb→vit 间距 167（旧版改等距 183 违反源）。
 const BAR_POS_X: Array = [331.0, 514.0, 681.0]
-const BAR_Y: float = 110.0
+const BAR_Y: float = 50.0
 const BAR_SIZE: Vector2 = Vector2(178.0, 48.0)
 const VIT_BAR_SIZE: Vector2 = Vector2(145.0, 48.0)
 
@@ -113,9 +113,11 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 
 # 仅货币条（无头像）— 非 main 场景用（源 framework.createTitle 所有场景建货币条，createHead 只 main）。
 # bar_pos_x/bar_y 由调用方传源 common 中心点（heroScene：cocos(251,434,601) y450 → godot [331,514,681] y110）。
-static func build_bars_only(parent: Control, bar_pos_x: Array, bar_y: float, vitality_plus_handler: Callable = Callable()) -> Dictionary:
+# parent: 挂载父节点（子场景直接挂 panel/scene）
+# gold_plus_handler: 金币"+"回调（照源 statusbar.lua:42-49 registerTitleTouchHandler，子场景也开 midas）
+static func build_bars_only(parent: Control, bar_pos_x: Array, bar_y: float, vitality_plus_handler: Callable = Callable(), gold_plus_handler: Callable = Callable()) -> Dictionary:
 	var refs: Dictionary = {}
-	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, Callable(), bar_y, BAR_SIZE)
+	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, gold_plus_handler, bar_y, BAR_SIZE)
 	refs["diamond"] = _build_bar(parent, float(bar_pos_x[1]), DIAMOND_ICON_RES, Callable(), bar_y, BAR_SIZE)
 	refs["vitality"] = _build_bar(parent, float(bar_pos_x[2]), VITALITY_ICON_RES, vitality_plus_handler, bar_y, VIT_BAR_SIZE)
 	return refs

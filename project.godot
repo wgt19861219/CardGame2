@@ -23,6 +23,7 @@ SceneManager="*res://scripts/autoload/scene_manager.gd"
 Toast="*res://scripts/autoload/toast.gd"
 GameData="*res://scripts/autoload/game_data.gd"
 AudioPlayer="*res://scripts/autoload/audio_player.gd"
+HudOverlay="*res://scripts/autoload/hud_overlay.gd"
 ThemeManager="*res://scripts/autoload/theme_manager.gd"
 
 [display]
@@ -30,7 +31,6 @@ ThemeManager="*res://scripts/autoload/theme_manager.gd"
 window/size/viewport_width=960
 window/size/viewport_height=640
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
 [editor_plugins]
 

@@ -5,10 +5,10 @@ func test_panel_assembles() -> void:
 	var panel := ExercisePanel.new()
 	add_child(panel)
 	# chrome 静态化进 exercise_content.tscn（instantiate + add_child）；
-	# panel 直接子节点 = content（1 个），content 内有 bg/title/close/EntryGrid 4 个。
-	# EntryGrid 内 7 个 procedural 入口按钮（数据驱动挂 meta + bind 回调）。
-	assert_eq(panel.get_child_count(), 1, "panel 应只有 content 一个直接子节点")
-	var content: Node = panel.get_child(0)
+	# 方案 B：HUD 走全局 HudOverlay autoload，panel 内只有 content。
+	# content 内有 bg/title/close/EntryGrid 4 个；EntryGrid 内 7 个 procedural 入口按钮。
+	var content: Node = panel.get_node_or_null("ExerciseContent")
+	assert_not_null(content, "content（ExerciseContent）应存在")
 	assert_eq(content.get_child_count(), 4, "content 应有 4 个子节点（bg/title/close/EntryGrid）")
 	var grid: Node = content.get_node_or_null("EntryGrid")
 	assert_not_null(grid, "EntryGrid 应存在")
