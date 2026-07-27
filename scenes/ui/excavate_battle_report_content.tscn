@@ -69,7 +69,7 @@ theme_override_constants/separation = 8
 [node name="Name" type="Label" parent="EnemySide/VBox/Head"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.254902, 0.223529, 0.211765, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 mouse_filter = 2
 text = "敌方"
@@ -113,7 +113,7 @@ theme_override_constants/separation = 8
 [node name="Name" type="Label" parent="SelfSide/VBox/Head"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.254902, 0.223529, 0.211765, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 mouse_filter = 2
 text = "我方"

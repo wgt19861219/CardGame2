@@ -21,7 +21,7 @@ const VIT_BG_RES := "res://assets/ui/alpha/HVGA/act/act_comment_bg.png"
 const VIT_ICON_RES := "res://assets/ui/alpha/HVGA/vitalityicon.png"
 const VIT_BG_SIZE := Vector2(60.0, 30.0)
 const VIT_ICON_SIZE := Vector2(30.0, 35.0)
-const VIT_NUM_COLOR := Color(0.91, 0.84, 0.71)
+const VIT_NUM_COLOR := Color(233.0 / 255.0, 214.0 / 255.0, 181.0 / 255.0)
 
 var boss_idx: int = 0
 var _content: Control = null              # .tscn 根（%Frame/TitleLabel/CloseBtn/DegreeHost 持有者）

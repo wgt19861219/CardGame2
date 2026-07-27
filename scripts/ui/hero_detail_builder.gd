@@ -40,7 +40,7 @@ static func setup_base(base: Control, hero: HeroInstance, cm: Variant) -> Dictio
 	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), hero, cm)
 	fill_stars(_collect_yellow_stars(base), hero.stars)
 	var gs_label: Label = fill_info_board(base, hero, cm)
-	fill_action_buttons(base, cm)
+	fill_action_buttons(base, hero, cm)
 	var tab_buttons: Dictionary = collect_tab_buttons(base)
 	fill_tab_labels(tab_buttons, cm)
 	for key in tab_buttons:
@@ -167,12 +167,17 @@ static func fill_info_board(base: Control, hero: HeroInstance, cm: Variant) -> L
 # UpgradeRankBtn 用独立 Label 子节点 %UpgradeRankLabel 居中（Button.text 内嵌 label 受 stylebox
 # content_margin 干扰致字体偏左上，改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1
 # 稳定居中，范式同 tab 按钮 fill_tab_labels）。
-static func fill_action_buttons(base: Control, cm: Variant) -> void:
+static func fill_action_buttons(base: Control, hero: HeroInstance, cm: Variant) -> void:
 	var labels: Dictionary = {
 		"UpgradeRankBtn": String(cm.get_lstr(&"HERODETAIL.ADVANCE_")) if cm != null else "进阶",
 	}
 	for btn_name in labels:
 		var btn: Button = base.get_node("%" + btn_name)
+		# 满级时隐藏进阶按钮（源 doClickUpgrade :701-705 满级 Toast + 不可进；
+		# 本项目隐藏按钮更直观，参照 fill_stone_bar is_max_star 范式）
+		if btn_name == "UpgradeRankBtn" and hero != null and hero.rank >= HeroManager.MAX_EQUIP_RANK:
+			btn.visible = false
+			continue
 		_apply_detail_style(btn)
 		# fill 独立 Label 子节点（.tscn 已建 %XxxLabel），不 fill Button.text
 		var label_key: String = btn_name.replace("Btn", "Label")

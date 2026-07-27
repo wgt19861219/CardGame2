@@ -25,6 +25,12 @@ const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png
 const ROOT_ICON_SCALE: float = 60.0 / 72.0
 const CRAFT_BG_PATH: String = "res://assets/ui/alpha/HVGA/equip_craft_bg.png"
 const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
+# 装备详情面板 fill 常量（照 equipboard_panel 范式 A，源 equipboard board.lua 校准）
+const ICON_POS: Vector2 = Vector2(14.0, 21.0)
+const ATT_TOP: float = 98.0
+const LSTR_HAVE: String = "EQUIPINFO.HAVE"
+const LSTR_ITEM: String = "EQUIPINFO.ITEM"
+const ATT_LABEL_COLOR: Color = Color(0.251, 0.247, 0.247, 1)
 # ── LSTR key──
 const LSTR_SYNTHESIS_SUCCESS: String = "EQUIPCRAFT.SYNTHESIS_SUCCESS"
 const LSTR_SYNTHESIS_FAILURE: String = "EQUIPCRAFT.SYNTHESIS_FAILURE"
@@ -46,7 +52,11 @@ var _context: String = ""
 var _hid: int = 0
 var _sid: int = 0
 var _content: Control = null            # .tscn 根（EquipCraftContent），info_btn/remark 取节点用
-var _equip_layer: Control = null        # .tscn %EquipLayer
+var _equip_layer: Control = null        # .tscn %EquipLayer（装备详情 Frame 容器）
+var _icon_host: Control = null          # .tscn %IconHost（EquipLayer 子，挂装备图标）
+var _name_label: Label = null           # .tscn %NameLabel（装备名）
+var _amount_label: Label = null         # .tscn %AmountLabel（拥有数量）
+var _att_host: VBoxContainer = null     # .tscn %AttHost（属性介绍多行）
 var _craft_window: Control = null       # .tscn %CraftWindow
 var _tree_host: Control = null          # .tscn %TreeHost（_craft_window 子，挂动态 tree/history）
 var _tree: Control = null
@@ -67,7 +77,7 @@ var _history_layer: Control = null
 var _info_button: BaseButton = null
 var _info_button_label: Label = null
 var _info_remark: Label = null
-var _is_open: bool = true
+var _is_open: bool = false
 var _has_play_puton_effect: bool = false
 
 
@@ -88,9 +98,11 @@ func setup_panel(p_target_id: int, p_cm: Variant, p_pd: PlayerData, p_hero: Hero
 	setup()
 	_build_content()
 	_refresh_amount()
-	_create_craft_tree(_target_id, false)
 	_init_history()
 	_create_info_button()
+	# 源 openCraftPanel（equipcraft.lua:575-587）才建合成树/合成窗口；初始弹窗只显装备+infoButton，
+	# 点 infoButton → _open_craft_panel 才 visible=true + _create_craft_tree。受控偏离源架构。
+	_craft_window.visible = false
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
@@ -102,6 +114,10 @@ func _build_content() -> void:
 	_content = content
 	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)
 	_equip_layer = _content.get_node("%EquipLayer") as Control
+	_icon_host = _content.get_node("%IconHost") as Control
+	_name_label = _content.get_node("%NameLabel") as Label
+	_amount_label = _content.get_node("%AmountLabel") as Label
+	_att_host = _content.get_node("%AttHost") as VBoxContainer
 	_craft_window = _content.get_node("%CraftWindow") as Control
 	_tree_host = _content.get_node("%TreeHost") as Control
 	_info_button = _content.get_node("%InfoButton") as BaseButton
@@ -118,12 +134,31 @@ func _on_close_pressed() -> void:
 func _refresh_amount() -> void:
 	if _equip_layer == null:
 		return
-	for c in _equip_layer.get_children():
-		c.queue_free()
+	# 图标挂 %IconHost（照 equipboard_panel _fill_icon 范式，ICON_POS 相对 EquipLayer 左上角）
+	for c in _icon_host.get_children():
+		c.free()
 	if _target_id > 0:
 		var icon: Control = ReadequipIcon.create_icon(_target_id, _get_amount(_target_id), cm)
 		icon.scale = Vector2(ROOT_ICON_SCALE, ROOT_ICON_SCALE)
-		_equip_layer.add_child(icon)
+		icon.position = ICON_POS
+		_icon_host.add_child(icon)
+	# 装备名（照 equipboard_panel:165，_equip_name 取 Equip.Name 的 LSTR）
+	_name_label.text = _equip_name(_target_id)
+	# 拥有数量（照 equipboard_panel:166-167，"拥有 X 个" 格式）
+	var amt: int = _get_amount(_target_id)
+	_amount_label.text = "%s %d %s" % [String(cm.get_lstr(LSTR_HAVE)), amt, String(cm.get_lstr(LSTR_ITEM))]
+	# 属性介绍（照 equipboard_panel _fill_att，ReadequipData.get_description 多行 VBox）
+	for c in _att_host.get_children():
+		c.free()
+	var rows: Array = ReadequipData.get_description(_target_id, 0, cm)
+	for row in rows:
+		var r: Dictionary = row as Dictionary
+		var lbl := Label.new()
+		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
+		lbl.add_theme_font_size_override("font_size", 18)
+		lbl.add_theme_color_override("font_color", ATT_LABEL_COLOR)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_att_host.add_child(lbl)
 
 
 # bg 已在 .tscn（%CraftWindow.%Bg，位置/size 静态化），本函数保留 stub 兼容旧调用（仅委托 _create_craft_tree）。
@@ -279,10 +314,14 @@ func _make_get_way_handler(idx: int) -> Callable:
 
 func _open_craft_panel() -> void:
 	_is_open = true
+	# 源 openCraftPanel（equipcraft.lua:575-587）：点 infoButton 后才建合成窗口 + 合成树。
+	_craft_window.visible = true
+	_create_craft_tree(_target_id, false)
 
 
 func _close_craft_panel() -> void:
 	_is_open = false
+	_craft_window.visible = false
 
 
 # ===== Step 4：history 历史记录栏 =====

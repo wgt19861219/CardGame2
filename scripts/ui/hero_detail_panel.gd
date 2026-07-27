@@ -2,13 +2,8 @@ class_name HeroDetailPanel
 extends PopWindow
 
 ## 英雄详情面板（View 层）— 属性 + 装备槽 + 升星/进阶按钮（信号）。
-## Phase A+B 重构（2026-07-17）：base 层 + tab view 全静态化进 hero_detail_content.tscn（instantiate + fill），
-## 位置/size 编辑器可视化调。tab（detail=属性 / card=图鉴 / skill=技能）visible 切换（不再 free+重建）。
-## task#9 拆分（2026-07-20）：纯绘制 fill 外迁 HeroDetailAttribs（属性）+ HeroDetailTabs（card/skill 绘制），
+## base + tab view 静态化进 hero_detail_content.tscn；绘制 fill 外迁 HeroDetailAttribs/Tabs/EquipSlots/UpgradeFx。
 ## 本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装（测试引用 + panel 状态）。
-## 批次1第2拆分（2026-07-24）：装备槽 5 函数外迁 HeroDetailEquipSlots（show_equips/open_equip_craft/on_equip_craft_jump）。
-## 信号由调用方接 hero_manager.evolve/split + pd.enhance_equip（单机化省 net 层）。
-
 signal evolve_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
@@ -40,6 +35,10 @@ const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 c
 const BASE_SLIDE_OFFSET: float = 178.0   # doMove 140（window.lua:300 container 右移）。目标 1:1 框偏大（CS 遗漏）。CloseBtn 移出 base 固定屏幕右上（不随 base），base 自由：178 让 bg left=399.5，card/popup 框与 bg 留 gap 10
 # doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
 const TAB_POP_OFFSET_X: float = -200.0
+# 进阶交互 LSTR（Toast 文案，常量在 HeroDetailUpgradeFx）
+const LSTR_MAX_RANK: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
+const LSTR_NEED_EQUIP: StringName = &"HERODETAIL.HERO_NEEDS_TO_WEAR_COMPLETE_EQUIPMENTS_FOR_ADVANCE"
+const LSTR_ADVANCE_FAIL: StringName = &"HERODETAIL.ADVANCE_FAILED"
 
 var hero: HeroInstance = null
 var cm: Variant = null
@@ -54,7 +53,8 @@ var _base_layer: Control = null   # .tscn %BaseLayer（base 元素层），开 t
 var _tab_views: Dictionary = {}    # Phase B：tab_key → Control（.tscn %TabCardView/Detail/Skill，visible 切换）
 var _skill_host: Control = null    # .tscn %SkillListHost（技能行动态挂）
 var _desc_host: Control = null     # .tscn %DescHost（技能描述动态挂）
-
+var _upgrade_light: Sprite2D = null   # 进阶按钮光效（可进阶时 fade 循环闪烁）
+var _light_tween: Tween = null        # 光效动画 tween（退出 kill 防泄漏）
 
 func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null, p_pd: PlayerData = null) -> void:
 	hero = p_hero
@@ -65,9 +65,7 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	_build_content()
 
 
-# 建 UI 内容。Phase A+B：base + tab view 从 .tscn instantiate（位置/size 可视化）+ fill 动态数据/样式；
-# tab 内容 fill 一次到各 host（visible 切换，不再 free+重建）。
-# createWindow（window.lua:2384-2396）base 常显 + setOpenMode 开 tab overlay。
+# 建 UI 内容（base + tab view 从 .tscn instantiate + fill；createWindow window.lua:2384-2396）。
 func _build_content(tab: String = DEFAULT_TAB) -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
@@ -80,12 +78,13 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	_pre_gs = hero.gs if hero != null else -1
 	_bind_signals()
 	# 装备槽外迁 HeroDetailEquipSlots（on_open 包装 open_equip_craft + 接口契约参数）
-	HeroDetailEquipSlots.show_equips(hero, cm, _base_layer,
-		func(slot: int) -> void:
-			HeroDetailEquipSlots.open_equip_craft(slot, hero, cm, pd,
-				get_parent(), refresh_content,
-				func(stage_id: int) -> void:
-					HeroDetailEquipSlots.on_equip_craft_jump(stage_id, self)))
+	# pd 传入供 get_hero_equip_state 判定 wear/cannotwear 角标
+	HeroDetailEquipSlots.show_equips(hero, cm, pd, _base_layer,
+			func(slot: int) -> void:
+				HeroDetailEquipSlots.open_equip_craft(slot, hero, cm, pd,
+					get_parent(), refresh_content,
+					func(stage_id: int) -> void:
+						HeroDetailEquipSlots.on_equip_craft_jump(stage_id, self)))
 	_tab_views = {
 		"card": content.get_node("%TabCardView") as Control,
 		"detail": content.get_node("%TabDetailView") as Control,
@@ -108,11 +107,12 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		detail_v_scroll.add_theme_stylebox_override("grabber_pressed", empty)
 	var detail_vbox: VBoxContainer = detail_host.get_node("AttribVBox") as VBoxContainer
 	HeroDetailAttribs.fill_attributes(detail_vbox, hero, cm)
-	_fill_skills()
+	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked)
 	_show_tab_content(tab)
+	_refresh_upgrade_light()   # 可进阶时按钮光效（源 createUpgradeButtonLight）
 
 
-## 升星/技能升级后刷新内容（数据变 → 重建 UI）。call_deferred 避信号处理中 free 按钮自身崩。
+## 升星/技能升级/进阶后刷新（call_deferred 避信号处理中 free 按钮崩）。
 func refresh_content() -> void:
 	call_deferred("_rebuild_content")
 
@@ -125,16 +125,14 @@ func _rebuild_content() -> void:
 	_build_content(saved_tab)
 
 
-# 绑定 .tscn 静态按钮信号：%CloseBtn + 2 action（升星/进阶）+ 3 tab。
-# herodetail 右侧只有 2 按钮（evolve 升星 + upgrade 进阶）；split 在 heropackage（:459-477）、
-# strengthen 在 main_scene estren（main.lua:1424-1434）。回源架构，4→2（2026-07-18）。
+# 绑定 .tscn 静态按钮信号：%CloseBtn + 升星/进阶/觉醒 + 3 tab。
 func _bind_signals() -> void:
 	(_base_layer.get_parent().get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")   # heroDetail.closeWindow（soundres.lua:204）
 		remove_window())
 	_wire_action_button("%GetStoneBtn", evolve_requested, "common_click_feedback")   # +号按钮执行升星（简化偏离源，源 evolve 文字按钮已删）
-	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")   # hero_upgrade（:867-901 rank+1）
-	_setup_awake_button()   # 单机化新增：觉醒按钮（Can Awake=true + 碎片够 才显示）
+	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")
+	HeroDetailUpgradeFx.setup_awake_button(_base_layer, hero, cm, AWAKE_LSTR_KEY, AWAKE_FALLBACK_TEXT, func() -> void: awake_requested.emit())
 	for key in _tab_buttons:
 		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
 
@@ -150,25 +148,6 @@ func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> v
 # 显示条件：Unit.Can Awake=true 且 hero.awake==false（扣碎片由点击时 perform_awake 校验）；Scale9 复用 detail 样式，文字 "觉醒"。
 const AWAKE_LSTR_KEY: StringName = &"HERODETAIL.AWAKE_"
 const AWAKE_FALLBACK_TEXT: String = "觉醒"
-func _setup_awake_button() -> void:
-	var awake_btn: BaseButton = _base_layer.get_node_or_null("%AwakeBtn") as BaseButton
-	if awake_btn == null:
-		return
-	var can_show: bool = hero != null and not hero.awake and cm != null and cm.get_bool(&"Unit", int(hero.tid), &"Can Awake")
-	awake_btn.visible = can_show
-	if not can_show:
-		return
-	# 套 Scale9 样式（复用 UpgradeRankBtn 的 detail-n 样式，照源 action button Scale9Sprite 等价）
-	if awake_btn is Button:
-		HeroDetailBuilder._apply_detail_style(awake_btn as Button)
-		var lbl: Label = awake_btn.get_node_or_null("%AwakeLabel") as Label
-		if lbl != null:
-			lbl.text = String(cm.get_lstr(AWAKE_LSTR_KEY)) if cm != null and cm.has_method("get_lstr") else AWAKE_FALLBACK_TEXT
-			if lbl.text == String(AWAKE_LSTR_KEY):
-				lbl.text = AWAKE_FALLBACK_TEXT
-	awake_btn.pressed.connect(func() -> void:
-		AudioPlayer.play_sfx("common_click_feedback")
-		awake_requested.emit())
 
 
 # ---- Phase B：tab 内容 fill（挂各 host，visible 切换）----
@@ -200,56 +179,6 @@ func _fill_card_view() -> void:
 # rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（:442-451，不显示等级+按钮）。
 # 否则：lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。
 # 显示等级 = skill_levels[slot] - InitLevel + 1（controller.getCacheSkillLevelDisplay）。
-func _fill_skills() -> void:
-	if hero == null:
-		return
-	# skill 行节点全静态化进 hero_detail_skill_tab.tscn（%Skill{1..4}Board/Frame/Icon/Name/Lvl/Btn），
-	# 本函数只 fill 数据 + 绑信号，位置/size 留 .tscn 编辑器可视化调（AGENTS.md .tscn 子场景范式）。
-	var skill_view: Control = _tab_views["skill"] as Control
-	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
-	for i in SKILL_COUNT:
-		var slot_info: Dictionary = sg.get(str(i + 1), {})
-		var display_name: String = cm.get_lstr(String(slot_info.get("Display Name", "skill" + str(i + 1))))
-		var init_level: int = int(slot_info.get("Init Level", 1))
-		var unlock_rank: int = int(slot_info.get("Unlock", 1))
-		var icon_res: String = String(slot_info.get("Icon", ""))
-		var locked: bool = hero.rank < unlock_rank
-		var slot_idx: int = i + 1   # .tscn 节点名 1-based（%Skill1Icon..%Skill4Icon）
-		# fill icon 纹理（动态，每技能不同）+ 灰显锁定 + 测试 meta
-		var icon_btn: TextureButton = skill_view.get_node("%Skill" + str(slot_idx) + "Icon") as TextureButton
-		var icon_tex: Texture2D = HeroDetailTabs.load_skill_icon(icon_res)
-		if icon_tex != null:
-			icon_btn.texture_normal = icon_tex
-			icon_btn.texture_hover = icon_tex
-		icon_btn.modulate = HeroDetailTabs.SKILL_GRAY_MODULATE if locked else Color.WHITE
-		icon_btn.set_meta(&"skill_icon", true)
-		for c in icon_btn.pressed.get_connections():
-			icon_btn.pressed.disconnect(c.callable)
-		icon_btn.pressed.connect(_toggle_skill_desc.bind(i))
-		# frame 灰显锁定
-		var frame: TextureRect = skill_view.get_node("%Skill" + str(slot_idx) + "Frame") as TextureRect
-		frame.modulate = HeroDetailTabs.SKILL_GRAY_MODULATE if locked else Color.WHITE
-		# fill name 文本
-		var name_lbl: Label = skill_view.get_node("%Skill" + str(slot_idx) + "Name") as Label
-		name_lbl.text = display_name
-		# fill lvl 文本（锁定显示"rank X 解锁"+隐藏 btn，已解锁显示 lv.X+显示 btn）+ 测试 meta
-		var lvl_lbl: Label = skill_view.get_node("%Skill" + str(slot_idx) + "Lvl") as Label
-		var btn: TextureButton = skill_view.get_node("%Skill" + str(slot_idx) + "Btn") as TextureButton
-		if locked:
-			var color_text: String = HeroDetailAttribs.get_lstr_fallback(String(RANK_COLOR_LSTR.get(unlock_rank, "")), str(unlock_rank), cm)
-			lvl_lbl.text = HeroDetailAttribs.get_lstr_fallback(String(LSTR_SKILL_UNLOCK), "rank %s 解锁", cm) % color_text
-			btn.visible = false
-		else:
-			var cur_level: int = int(hero.skill_levels[i]) if i < hero.skill_levels.size() else 1
-			var show_level: int = cur_level - init_level + 1
-			lvl_lbl.text = "lv." + str(show_level)
-			btn.visible = true
-			for c in btn.pressed.get_connections():
-				btn.pressed.disconnect(c.callable)
-			btn.pressed.connect(_on_skill_upgrade_clicked.bind(i))
-			btn.set_meta(&"skill_upgrade", true)
-
-
 # 技能升级按钮回调（源 skillstren.lua:345 升级按钮 pressHandler：tutorial + upgrade 信号）。
 func _on_skill_upgrade_clicked(idx: int) -> void:
 	Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
@@ -312,8 +241,7 @@ func refresh_gs_after_wear() -> void:
 			_gs_label.pivot_offset = Vector2(0, _gs_label.size.y * 0.5))   # :180 还原 (0,0.5)
 
 
-# skillstren.lua:14 createDescBoard + :8 destroyDescBoard。点击图标 toggle 描述（源按住 board_i 显示）。
-# 建 board 逻辑外迁 HeroDetailTabs.build_skill_desc（本方法留 toggle 状态入口 + _desc_label 字段，测试直调）。
+# 点击图标 toggle 技能描述（源 skillstren createDescBoard；board 逻辑外迁 HeroDetailTabs）。
 func _toggle_skill_desc(slot: int) -> void:
 	Events.bus.emit_tutorial_step(&"SUclickSkillButton")   # herodetail/window.lua:1659（点技能按钮）
 	if _desc_label != null and int(_desc_label.get_meta("slot", -1)) == slot:
@@ -335,7 +263,7 @@ func _hide_skill_desc() -> void:
 
 # ---- 底栏 tab 切换（源 createBottomButtons + setOpenMode/doClickDetail/Card/Skill）----
 
-# doClickDetail/Card/Skill（window.lua:454/519/391）：点 tab → setOpenMode。同 tab 再点 → setOpenMode(nil) 关（base 回位）。
+# doClickDetail/Card/Skill：点 tab → setOpenMode。同 tab 再点 → 关（base 回位）。
 func _on_tab_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")   # tab 点击反馈
 	if _current_tab == key:
@@ -344,8 +272,7 @@ func _on_tab_pressed(key: String) -> void:
 	_show_tab_content(key)
 
 
-# setOpenMode（window.lua:318-367）：切 tab layer visible + base 右移让位 + 切选中态。
-# Phase B：tab view 常驻（.tscn），visible 切换（不再 free+重建）。
+# setOpenMode：切 tab visible + base 右移让位 + 切选中态（Phase B visible 切换）。
 func _show_tab_content(key: String) -> void:
 	_current_tab = key
 	HeroDetailBuilder.set_tab_selected(_tab_buttons, key)
@@ -384,9 +311,9 @@ func _close_tab() -> void:
 	_hide_skill_desc()
 
 
-# ---- 信号→Logic 便捷封装（调用方接信号后调，或直调）----
+# ---- 信号→Logic 便捷封装 ----
 
-# 升星：hero_manager.evolve（扣碎片+金币，stars+1）。返是否成功。
+# 升星：hero_manager.evolve（扣碎片+金币，stars+1）。
 func perform_evolve() -> bool:
 	if hero_manager == null or hero == null:
 		return false
@@ -399,17 +326,44 @@ func perform_evolve() -> bool:
 	return ok
 
 
-# 进阶：hero_manager.upgrade_rank（6 槽穿齐 Hero_equip[rank] 配方 → rank+1 + 重置槽 + 重算 gs）。返是否成功。
+# 进阶：upgrade_rank + 照源补失败 Toast + 成功特效/飘字（doClickUpgrade/upgradeReply）。
 func perform_upgrade_rank() -> bool:
 	if hero_manager == null or hero == null:
 		return false
+	# 满级判定（源 doClickUpgrade :701-705）
+	if hero.rank >= HeroManager.MAX_EQUIP_RANK:
+		Toast.show_message(String(cm.get_lstr(LSTR_MAX_RANK)) if cm != null else "已进阶到顶级")
+		AudioPlayer.play_sfx("common_alert")
+		return false
+	# 未穿齐判定（源 doClickUpgrade :707-716，can_upgrade_rank 已含此判）
+	if not hero_manager.can_upgrade_rank(hero.inst_id):
+		Toast.show_message(String(cm.get_lstr(LSTR_NEED_EQUIP)) if cm != null else "英雄穿齐装备才能进阶")
+		AudioPlayer.play_sfx("common_alert")
+		return false
+	var old_gs: int = hero.gs   # 飘字 snapshot 进阶前 gs
 	var ok: bool = hero_manager.upgrade_rank(hero.inst_id)
 	if ok:
 		AudioPlayer.play_sfx("common_hero_upgrade")
-		GameData.save()   # 照源即时存（进阶：6 槽穿齐 Hero_equip[rank] → rank+1 重置槽重算 gs）
+		GameData.save()
+		HeroDetailUpgradeFx.play_upgrade_effect(_base_layer)
+		HeroDetailUpgradeFx.play_att_addition_anim(_base_layer, _gs_label, old_gs, hero.gs, self)
 	else:
+		Toast.show_message(String(cm.get_lstr(LSTR_ADVANCE_FAIL)) if cm != null else "进阶失败")
 		AudioPlayer.play_sfx("common_alert")
 	return ok
+
+
+# 进阶按钮光效（源 createUpgradeButtonLight）。
+func _refresh_upgrade_light() -> void:
+	if _base_layer == null or hero_manager == null or hero == null:
+		return
+	var btn: Button = _base_layer.get_node_or_null("%UpgradeRankBtn") as Button
+	if btn == null:
+		return
+	var can_upgrade: bool = hero_manager.can_upgrade_rank(hero.inst_id)
+	var r: Dictionary = HeroDetailUpgradeFx.refresh_upgrade_light(_base_layer, btn, can_upgrade, self, _upgrade_light, _light_tween)
+	_upgrade_light = r.get("light") as Sprite2D
+	_light_tween = r.get("tween") as Tween
 
 
 # 技能升级：pd.upgrade_hero_skill（扣技能点 + hero_manager.upgrade_skill_level 扣金币+升技能）。
@@ -422,8 +376,7 @@ func perform_upgrade_skill(idx: int) -> bool:
 	return ok
 
 
-# 觉醒（单机化新增）：AwakeHelper.awake_hero 扣 50 专属碎片 + hero.awake=true。
-# 成功后弹 HeroAwakePanel（B）展示觉醒动画，关闭后 refresh_content 隐藏按钮。
+# 觉醒（单机化）：AwakeHelper.awake_hero 扣碎片 + 弹 HeroAwakePanel 展示 + 关闭后 refresh。
 func perform_awake() -> bool:
 	if pd == null or hero == null:
 		return false

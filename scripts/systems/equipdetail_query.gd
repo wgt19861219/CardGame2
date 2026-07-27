@@ -132,3 +132,40 @@ static func can_wear_equip(hero: HeroInstance, eid: int, cm: Variant) -> Diction
 		return {"can": false, "hlv": 0, "elv": 0}
 	var elv: int = int(cm.get_raw_table(&"Equip").get(str(eid), {}).get(&"Level Requirement", 0))
 	return {"can": hero.level >= elv, "hlv": hero.level, "elv": elv}
+
+
+# 英雄装备槽状态判定（照源 herodetail/controller.lua:207-233 getHeroEquipState）。
+# 服务 HeroDetailEquipSlots 状态角标（源 createEquipTag:1051-1061 etires[eti]）。
+# 复用 get_slot_expected_equip / is_equip_craftable / can_wear_equip，零新建依赖。
+# slot 是 0-based（适配 hero.equip_slots[slot]）；内部 get_slot_expected_equip 转 1-based。
+#
+# 角标规则（源 etires 映射：wear=绿+ herodetail-equipadd / cannotwear=黄+ herodetail_icon_plus_yellow）：
+#   - eid==0（未解锁）/ ceid>0（已穿戴）→ 无角标
+#   - 有配方未装，按"可穿戴 + 可合成 + 持有"三维判定：
+#     · 持有>0 + 可穿 → 绿+（canWear）
+#     · 持有>0 + 不可穿 → 黄+（cannotwear）
+#     · 持有=0 + 可合成 + 可穿 → 绿+（canCraft+wear）
+#     · 持有=0 + 可合成 + 不可穿 → 黄+（canCraft+cannotwear）
+#     · 持有=0 + 不可合成 → 无角标（notHave，源不画）
+# 注：can_wear_equip 判 Level Requirement（hero.level >= equip 的等级要求）。
+static func get_hero_equip_state(hero: HeroInstance, slot: int, cm: Variant, pd: PlayerData) -> Dictionary:
+	if hero == null:
+		return {"ett": "ignore", "eti": ""}
+	var eid: int = get_slot_expected_equip(hero, slot + 1, cm)
+	var ceid: int = int(hero.equip_slots[slot]) if slot >= 0 and slot < hero.equip_slots.size() else 0
+	if eid == 0:
+		return {"ett": "ignore", "eti": ""}   # 未解锁槽：无角标
+	if ceid > 0:
+		return {"ett": "isEquiped", "eti": ""}   # 已穿戴：无角标
+	# 有配方未装（ceid==0 and eid>0）
+	var ea: int = int(pd.items.get(eid, 0)) if pd != null else 0
+	var can_wear: bool = can_wear_equip(hero, eid, cm)["can"]
+	if ea == 0:
+		# 未持有：看可合成
+		if is_equip_craftable(eid, cm, pd):
+			return {"ett": "canCraft", "eti": "wear" if can_wear else "cannotwear"}
+		return {"ett": "notHave", "eti": ""}   # 没持有+不可合成：源不画角标
+	# 已持有：看可穿戴
+	return {"ett": ("canWear" if can_wear else "cannotwear"), "eti": ("wear" if can_wear else "cannotwear")}
+
+

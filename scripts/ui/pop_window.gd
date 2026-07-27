@@ -32,6 +32,14 @@ func setup() -> void:
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shade_layer.add_child(container)
+	# 点击遮罩区域关闭弹窗（手游常见交互）。shade STOP 吞点击，gui_input 捕获后 remove_window。
+	shade_layer.gui_input.connect(_on_shade_clicked)
+
+
+# 点击遮罩区域（弹窗外）→ 关闭弹窗
+func _on_shade_clicked(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		remove_window()
 
 
 func show_window(parent: Node) -> void:
@@ -40,6 +48,10 @@ func show_window(parent: Node) -> void:
 	if shade_layer == null:
 		setup()
 	parent.add_child(self)
+	# 弹窗置顶（z_index=100 高于英雄详情 BaseLayer z=1/tab z=2，避免被挡）。
+	# 源靠 mainLayer z=120 + animLayer z=50；Godot 用 z_index 统一处理，100 兜底所有面板层级。
+	z_index = 100
+	z_as_relative = false
 	for h in _on_enter_handlers:
 		h.call()
 

@@ -38,6 +38,8 @@ func _make_panel(target_id: int, pd: PlayerData = null) -> EquipCraftPanel:
 	var root := Node.new()
 	add_child(root)
 	panel.show_window(root)
+	# 模拟用户点 infoButton 打开合成窗口（源 openCraftPanel）——setup_panel 初始不建合成树（受控偏离源）
+	panel._open_craft_panel()
 	return panel
 
 

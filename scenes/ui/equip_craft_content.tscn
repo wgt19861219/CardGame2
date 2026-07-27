@@ -5,6 +5,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_craft_bg.png" id="3_craftbg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="4_pkgbtn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="5_pkgbtnp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="6_detailbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="7_attbg"]
 
 [node name="EquipCraftContent" type="Control"]
 layout_mode = 3
@@ -24,14 +26,76 @@ texture_normal = ExtResource("1_back")
 texture_pressed = ExtResource("2_backp")
 ignore_texture_size = true
 
+; 装备详情面板（照源 equipboard ofcraft：frame package_detail_bg.png 288×385 + 名称 + 数量 + 属性介绍）
+; 位置：水平居中（game bridge 实测中心 480,320 调整）
 [node name="EquipLayer" type="Control" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 332.0
-offset_top = 320.0
-offset_right = 332.0
-offset_bottom = 320.0
+layout_mode = 0
+offset_left = 336.0
+offset_top = 128.0
+offset_right = 624.0
+offset_bottom = 513.0
 mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="EquipLayer"]
+layout_mode = 0
+offset_right = 288.0
+offset_bottom = 385.0
+mouse_filter = 2
+texture = ExtResource("6_detailbg")
+expand_mode = 1
+
+[node name="IconHost" type="Control" parent="EquipLayer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="EquipLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 92.0
+offset_top = 30.0
+offset_right = 280.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.259, 0.176, 0.11, 1)
+theme_override_font_sizes/font_size = 24
+vertical_alignment = 1
+
+[node name="AmountLabel" type="Label" parent="EquipLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 92.0
+offset_top = 68.0
+offset_right = 280.0
+offset_bottom = 92.0
+theme_override_colors/font_color = Color(0.263, 0.231, 0.22, 1)
+theme_override_font_sizes/font_size = 18
+vertical_alignment = 1
+
+[node name="AttBg" type="TextureRect" parent="EquipLayer"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 105.0
+offset_right = 275.0
+offset_bottom = 265.0
+mouse_filter = 2
+texture = ExtResource("7_attbg")
+expand_mode = 1
+
+[node name="AttHost" type="VBoxContainer" parent="EquipLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 22.0
+offset_top = 110.0
+offset_right = 265.0
+offset_bottom = 260.0
+mouse_filter = 2
+theme_override_constants/separation = 2
 
 [node name="CraftWindow" type="Control" parent="."]
 unique_name_in_owner = true
@@ -60,13 +124,14 @@ mouse_filter = 2
 [node name="InfoButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 96.27
-offset_top = 493.85
-offset_right = 357.73
-offset_bottom = 546.15
+offset_left = 358.0
+offset_top = 448.0
+offset_right = 602.0
+offset_bottom = 498.0
 texture_normal = ExtResource("4_pkgbtn")
 texture_pressed = ExtResource("5_pkgbtnp")
 ignore_texture_size = true
+stretch_mode = 5
 
 [node name="InfoButtonLabel" type="Label" parent="InfoButton"]
 unique_name_in_owner = true
@@ -82,9 +147,11 @@ vertical_alignment = 1
 [node name="InfoRemark" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 227.0
-offset_top = 480.0
-offset_right = 380.0
-offset_bottom = 500.0
+offset_left = 358.0
+offset_top = 423.0
+offset_right = 602.0
+offset_bottom = 443.0
+horizontal_alignment = 1
+vertical_alignment = 1
 theme_override_font_sizes/font_size = 18
 mouse_filter = 2

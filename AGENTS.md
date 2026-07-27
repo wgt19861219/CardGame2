@@ -282,6 +282,9 @@ bash tools/ci/check.sh
 | headless class_name 不可见 | **CI 先 `--import`**（根因是没 import，非 class_name 本身） |
 | `ScrollContainer.gui_input` 接管滚轮 | **gui_input 信号对滚轮事件完全不触发**（内置 `_gui_input` 处理后 `accept_event`，既不 emit 信号也不冒泡）。改走 `_input` + `host.get_global_rect().has_point()` 鼠标位置命中检测。详见 `验收记录-hero_detail滚动根因-2026-07-21.md` |
 | 凭 commit message 假设验收通过 | commit message 不是验收证据，数据才是（实证 print + scroll_vertical 实测变化） |
+| headless 截图验证坐标/布局 | **headless 模式 RendererDummy 无 GPU 渲染，`mcp__godot__screenshot capture` 截图全空白**。验证运行时坐标/布局必须用 `mcp__godot__game` bridge（game_query get_node_properties 读真实 position/size/global_position + take_screenshot 真 GPU 截图）。详见 `验收记录-英雄详情装备槽对齐源-2026-07-26.md` |
+| 纸面算坐标不实测 | **Sprite2D centered=false/TextureRect position/anchor 相对父尺寸——三者坐标系不同，纸面推算易错**。装备槽 lock/角标定位反复改 4 次都不对，根因是 container size(72) vs frame texture 渲染区(94×95) 不一致 + 误判元素（把角标当 lock）。教训：定位类问题**先用 game bridge 读真实坐标再改**，不要盲改反复试 |
+| 误判调试目标元素 | 装备槽"偏右上"反馈，想当然以为是 lock 占位，实测发现 6 槽全是"有配方未装"无 lock，偏的是 +号角标。教训：**先 game bridge find_nodes + get_node_properties 确认实际渲染的元素类型/坐标，再动手**，不要凭反馈关键词猜元素 |
 
 ### Godot 引擎规范速查
 

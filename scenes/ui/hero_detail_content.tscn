@@ -84,7 +84,7 @@ offset_left = 378.0
 offset_top = 391.0
 offset_right = 518.0
 offset_bottom = 419.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
 
 [node name="StarGrey1" type="TextureRect" parent="BaseLayer" unique_id=1654457485]

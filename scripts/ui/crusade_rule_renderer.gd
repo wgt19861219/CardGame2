@@ -12,6 +12,10 @@ const RULE_SHADE_ALPHA: float = 190.0 / 255.0
 const RULE_LABEL_FONT_SIZE: int = 18
 const RULE_SEP_HEIGHT: float = 10.0
 const VIEWPORT_SIZE: Vector2 = Vector2(960.0, 640.0)
+# 规则文本色组（源 fontconfigs.lua：LSTR 富文本前缀 <text|xxx|> 的 xxx 映射）
+# dark_white = ccc3(255,255,221) 叙事段；normalButton = ccc3(239,197,121) 战斗规则段
+const COLOR_DARK_WHITE: Color = Color(255.0 / 255.0, 255.0 / 255.0, 221.0 / 255.0)
+const COLOR_NORMAL_BUTTON: Color = Color(239.0 / 255.0, 197.0 / 255.0, 121.0 / 255.0)
 
 # 源 initRuleLayer 17 项：6 叙事(dark_white) + 1 间隔 + 战斗规则标题 + 7 规则(normalButton) + 2 间隔
 const RULE_LSTR_KEYS: Array[String] = [
@@ -81,9 +85,10 @@ static func build_rule_layer(container: Control, cm: Variant, on_close: Callable
 			vbox.add_child(sep)
 		else:
 			var raw: String = cm.get_lstr(key)
-			var text: String = strip_text_tag(raw)
+			var parsed: Dictionary = parse_rule_text(raw)
 			var lbl := Label.new()
-			lbl.text = text
+			lbl.text = parsed.text
+			lbl.add_theme_color_override("font_color", parsed.color)
 			lbl.add_theme_font_size_override("font_size", RULE_LABEL_FONT_SIZE)
 			lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -92,12 +97,24 @@ static func build_rule_layer(container: Control, cm: Variant, on_close: Callable
 	return layer
 
 
-# strip <text|xxx|> 富文本标记前缀（源 LSTR 带 dark_white/normalButton 样式标记，本项目 Label 纯文本）。
-static func strip_text_tag(raw: String) -> String:
+# 解析源 LSTR 富文本 <text|styleName|内容>，返回 {text, color}。
+# styleName 映射源 fontconfigs.lua 色组：dark_white=奶油白 / normalButton=浅金；无前缀默认白。
+# 修正：源富文本闭合尾 > 需剥除（原始 strip_text_tag 漏剥致文本多 >，长期潜伏）。
+static func parse_rule_text(raw: String) -> Dictionary:
 	var s := raw
+	var color: Color = Color(1, 1, 1)
 	var idx := s.find("|")
 	if idx != -1:
 		var idx2 := s.find("|", idx + 1)
 		if idx2 != -1:
+			var style_name: String = s.substr(idx + 1, idx2 - idx - 1)
 			s = s.substr(idx2 + 1)
-	return s
+			match style_name:
+				"dark_white":
+					color = COLOR_DARK_WHITE
+				"normalButton":
+					color = COLOR_NORMAL_BUTTON
+	# 剥除源富文本闭合尾 >（<text|style|内容> 格式）
+	if s.ends_with(">"):
+		s = s.substr(0, s.length() - 1)
+	return {"text": s, "color": color}

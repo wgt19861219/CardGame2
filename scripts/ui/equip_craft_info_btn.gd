@@ -21,7 +21,7 @@ const INFO_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_do
 # ── 颜色（源 ccc3）──
 const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
 const COLOR_RED: Color = Color(1.0, 0.0, 0.0)
-const COLOR_GREEN: Color = Color(24.0 / 255.0, 108.0 / 255.0, 0.0)
+const COLOR_GREEN: Color = Color(24.0 / 255.0, 102.0 / 255.0, 0.0)
 const COLOR_WHITE: Color = Color(1.0, 1.0, 1.0)
 # ── LSTR key（源 LSTR 宏，cm.get_lstr 取实际值）──
 const LSTR_EQUIPMENT: String = "EQUIPCRAFT.EQUIPMENT"
