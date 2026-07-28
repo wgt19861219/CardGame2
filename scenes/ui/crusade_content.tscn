@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_3.png" id="6_fog3"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_4.png" id="7_fog4"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="8_start"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/stagepointer.png" id="9_pointer"]
 
 [node name="CrusadeContent" type="Control"]
 layout_mode = 3
@@ -174,14 +175,13 @@ visible = false
 layout_mode = 3
 mouse_filter = 2
 
-[node name="StageHint" type="Label" parent="HintAnchor"]
+[node name="StageHint" type="TextureRect" parent="HintAnchor"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = -14.0
-offset_top = -30.0
-offset_right = 14.0
+offset_left = -18.0
+offset_top = -36.0
+offset_right = 18.0
 offset_bottom = 0.0
-theme_override_colors/font_color = Color(1, 0.6, 0, 1)
-theme_override_font_sizes/font_size = 28
+texture = ExtResource("9_pointer")
+expand_mode = 1
 mouse_filter = 2
-text = "▼"

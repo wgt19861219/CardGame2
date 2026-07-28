@@ -94,3 +94,18 @@ func test_get_tag_icon_mapping() -> void:
 	assert_eq(ShopBuilder._get_tag_icon("old"), "shop_hot.png", "old→shop_hot.png")
 	assert_eq(ShopBuilder._get_tag_icon(""), "", "空 tag 返空")
 	assert_eq(ShopBuilder._get_tag_icon("invalid"), "", "无效 tag 返空")
+
+
+# P0-1：源 shop.lua:198 商品 panel 按下 setScale(0.95)。_create_item 设 pivot_offset 居中
+# （Control scale 绕中心）+ ITEM_PRESS_SCALE 常量 0.95。
+func test_item_pivot_centered_for_press_scale() -> void:
+	var item: Control = _make_item({"id": 371, "type": "gold", "price": 100, "amount": 1})
+	assert_almost_eq(item.pivot_offset.x, item.size.x * 0.5, 0.5, "pivot x 居中（press scale 绕中心）")
+	assert_almost_eq(item.pivot_offset.y, item.size.y * 0.5, 0.5, "pivot y 居中")
+	item.free()
+
+
+func test_item_press_scale_constant() -> void:
+	# 源 shop.lua:198 setScale(0.95)
+	assert_almost_eq(ShopBuilder.ITEM_PRESS_SCALE.x, 0.95, 0.001, "press scale x=0.95 照源")
+	assert_almost_eq(ShopBuilder.ITEM_PRESS_SCALE.y, 0.95, 0.001, "press scale y=0.95 照源")

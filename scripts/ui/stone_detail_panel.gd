@@ -81,6 +81,8 @@ func setup_panel(p_tid: int, p_cm: Variant, p_pd: PlayerData, p_hero_mgr: HeroMa
 	_fill_amount()
 	_build_getway_list()
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+	# 源 EaseBackOut 0.2s：弹窗缩放入场（P2-10）。
+	register_on_enter(play_scale_in)
 
 
 # infoContainer 子节点 cocos local → Godot：cx+337.5, 512-cy（见类头注释推导）。

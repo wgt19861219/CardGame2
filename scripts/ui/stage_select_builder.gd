@@ -50,6 +50,7 @@ const STRETCH_CENTER: Vector2 = Vector2(400.0, 206.0)
 const META_FRAME: StringName = &"ss_frame"
 const META_TITLE: StringName = &"ss_title"
 const META_POINTER: StringName = &"ss_pointer"
+const META_MASK: StringName = &"ss_mask"   # 钥匙关 current/passed 闪烁遮罩（源 stageselect.lua:1229-1238 FadeTo 循环）
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
@@ -118,10 +119,13 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		btn.position = to_godot(_cx, _cy) - btn.size * 0.5 - CLIP_OFFSET
 		btn.set_meta(&"stage_info", info)
 		var dec_type := String(dec["type"])
+		var mask_res: String = String(dec.get("mask", ""))
 		if dec_type == "locked":
 			btn.disabled = true
 		else:
 			_add_stars(btn, info, mode, star_of)
+			# 钥匙关 current/passed mask 闪烁（源 stageselect.lua:1229-1238 FadeTo 循环）
+			_add_key_mask(btn, mask_res)
 		layer.add_child(btn)
 		if dec_type == "current":
 			_add_pointer(layer, info, CLIP_OFFSET)
@@ -196,6 +200,22 @@ static func _add_pointer(layer: Control, info: Dictionary, offset: Vector2 = Vec
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.set_meta(META_POINTER, true)   # panel _bob_all_pointers 识别后启动上下浮动 tween（源 currentTag:1308）
 	layer.add_child(p)
+
+
+# 钥匙关 current/passed mask（源 stageselect.lua:1229-1238 覆盖在 icon 上，循环 FadeTo 0.3-1.0）。
+# mask 节点挂 btn 下，全屏铺满，set_meta(META_MASK) 供 panel _blink_all_masks 启动 alpha 循环。
+static func _add_key_mask(btn: TextureButton, mask_res: String) -> void:
+	if mask_res.is_empty() or not ResourceLoader.exists(mask_res):
+		return
+	var mask := TextureRect.new()
+	mask.texture = load(mask_res) as Texture2D
+	mask.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mask.anchors_preset = Control.PRESET_FULL_RECT
+	mask.offset_right = 0.0
+	mask.offset_bottom = 0.0
+	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mask.set_meta(META_MASK, true)
+	btn.add_child(mask)
 
 
 static func _current_sid(info: Dictionary, mode: String) -> int:

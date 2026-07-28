@@ -34,6 +34,8 @@ const LSTR_INSUFFICIENT: String = "FRAGMENTCOMPOSE.INSUFFICIENT_FRAGMENT_SYNTHES
 const LSTR_OWNED: String = "FRAGMENTCOMPOSE.YOU_HAVE_ALREADY_GOT_THIS_HERO"
 const TEXT_NO_GOLD: String = "金币不足"   # 单机化降级（源 :132 useMidas 弹点金手，单机版不接）
 const LSTR_SYNTHESIS_PREFIX: String = "EQUIPCRAFT.SYNTHESIS"
+# name 标题宽上限（源 fragmentcompose.lua:477 长名溢出 scale 缩小）：NameLabel offset 112→332 = 220px。
+const NAME_MAX_W: float = 220.0
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -53,6 +55,8 @@ func setup_panel(p_target_tid: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	setup()
 	_build_content()
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+	# 源 EaseBackOut 0.2s：弹窗缩放入场（P2-10）。
+	register_on_enter(play_scale_in)
 
 
 func _load_info() -> void:
@@ -76,8 +80,12 @@ func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	# name 标题（源 :273-274 T(LSTR("EQUIPCRAFT.SYNTHESIS")) .. " " .. makeName，位置/颜色 .tscn 固化）
+	# 源 fragmentcompose.lua:477：长名溢出时 scale 缩小。
 	var name_lbl: Label = content.get_node("%NameLabel") as Label
 	name_lbl.text = cm.get_lstr(LSTR_SYNTHESIS_PREFIX) + " " + _make_name()
+	var name_w: float = name_lbl.get_combined_minimum_size().x
+	if name_w > NAME_MAX_W:
+		name_lbl.scale = Vector2(NAME_MAX_W / name_w, NAME_MAX_W / name_w)
 	# 碎片图标（源 :471 createFragment）→ 挂 %FragmentIconHost
 	var frag_host: Control = content.get_node("%FragmentIconHost") as Control
 	var frag_icon: Control = ReadequipIcon.create_icon(int(_info["id"]), 0, cm)

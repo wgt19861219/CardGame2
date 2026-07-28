@@ -68,6 +68,7 @@ const BURST_ROTATE_SEC: float = 5.0
 const HERO_BURST_QUALITY: int = 6
 const FULL_CIRCLE_DEG: float = 360.0
 const HERO_ID_MAX: int = 100
+# P0 magic 圆阵 / 阴影 / loot 名字（源 poptavernloot.lua:378-461 + 629-636）→ 拆 PopTavernLootMagic 控 ≤400。
 
 var box_type: String = ""
 var times: String = "one"
@@ -78,6 +79,7 @@ var _loot_host: Control = null     # %LootHost：动态 loot icons / FCA 挂载
 var _cost_host: Control = null     # %CostHost：cost_row procedural 挂载
 var _loot_icons: Array[Control] = []
 var _loot_targets: Array[Vector2] = []
+var _loot_data: Array = []          # 原 loots 数组（id/amount），供 _add_loot_name_label 查名
 
 
 func _g(pos: Vector2) -> Vector2:
@@ -118,6 +120,7 @@ func _build_content() -> void:
 func _aggregate(loots: Array, p_cm: Variant) -> void:
 	var thrown: Array = loots.duplicate()
 	_throw_loots(thrown)
+	_loot_data = thrown   # 名字 Label 按图标顺序查（throw 后顺序 = icon 顺序）
 	var is_single: bool = thrown.size() <= SINGLE_THRESHOLD
 	var idx: int = 0
 	for loot in thrown:
@@ -246,6 +249,11 @@ func show_window(parent: Node) -> void:
 
 func _after_show() -> void:
 	_play_box_anim()
+	# P0 magic 圆阵（源 poptavernloot.lua:340-343 boxAnim 序尾调 createMatrixContainerAnim）：
+	# box FCA 后建 circle_1/2 + 呼吸（circle_1 fadeTo 100/255 循环）。圆阵铺底，loot 飞其上。
+	# 在 box_shown 之前建（box_shown 表征"box 阶段完成含圆阵"，测试 await box_shown 后圆阵应可见）。
+	if box_type == "magic":
+		PopTavernLootMagic.create_matrix_container_anim(self)
 	box_shown.emit()
 	await get_tree().create_timer(BOX_FCA_LEAD_SEC).timeout
 	_play_loot_anim(0)
@@ -259,6 +267,8 @@ func _play_loot_anim(index: int) -> void:
 		return
 	_fly_loot(index)
 	await get_tree().create_timer(LOOT_ANIM_SEC).timeout
+	# P0 loot 名字 Label（源 poptavernloot.lua:561-636 createLootAnim 尾部 callback）：飞完显物/英雄名。
+	PopTavernLootMagic.add_loot_name_label(self, index)
 	_maybe_play_burst(index)
 	_play_loot_anim(index + 1)
 
@@ -267,6 +277,10 @@ func _fly_loot(index: int) -> void:
 	var icon: Control = _loot_icons[index]
 	if box_type != "magic":
 		_add_shadow(icon)
+	else:
+		# P0 magic 阴影（源 poptavernloot.lua:559 playMagicLootShadeAnim）：magic 分支
+		# 不加普通白光，改加 tavern_magicsoul_item_bg.png scale+move+fade（drop 60px→目标 + fadeout）。
+		PopTavernLootMagic.play_magic_loot_shade_anim(self, index)
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(icon, "scale", Vector2.ONE, LOOT_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -342,3 +356,5 @@ func _play_burst(icon: Control, quality: int) -> void:
 	icon.add_child(light)
 	var tw: Tween = icon.create_tween().set_loops()
 	tw.tween_property(light, "rotation", deg_to_rad(FULL_CIRCLE_DEG), BURST_ROTATE_SEC)
+
+# P0 magic 圆阵 / 阴影 / loot 名字实现在 PopTavernLootMagic（控 ≤400 行拆出）。

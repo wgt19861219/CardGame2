@@ -21,6 +21,9 @@ const SLIDE_DURATION: float = 0.2
 const RES_DIR: String = "res://assets/ui/alpha/HVGA/"
 const LIGHT_ROTATE_SEC: float = 5.0
 const FULL_CIRCLE_DEG: float = 360.0
+# 源 tavern.lua:566-574 getArrowudAnim：arrow MoveBy(1, ccp(0,-5)) SineInOut ↔ reverse 循环（上下浮动）。
+const ARROW_FLOAT_OFFSET_Y: float = -5.0
+const ARROW_FLOAT_SEC: float = 1.0
 # board 的 _tex/_button 工厂（纯 Sprite 无 fix_size）照源 /CS；_scale9 用源 scaleSize（1:1）不动。
 const CONTENT_SCALE: float = 1.28125
 
@@ -129,6 +132,21 @@ static func play_light_anim(board: Dictionary) -> void:
 	light.pivot_offset = light.size * 0.5
 	var tw: Tween = light.create_tween().set_loops()
 	tw.tween_property(light, "rotation", deg_to_rad(FULL_CIRCLE_DEG), LIGHT_ROTATE_SEC)
+
+
+# 源 tavern.lua:566-574 getArrowudAnim：arrow MoveBy(1, ccp(0,-5)) SineInOut ↔ reverse 循环。
+# 入树后调用（panel _create_boards add_child 后），create_tween 需在树内。
+static func play_arrow_float_anim(board: Dictionary) -> void:
+	var arrow: TextureButton = board.get("arrow_btn", null)
+	if arrow == null or not arrow.is_inside_tree():
+		return
+	var base_y: float = arrow.position.y
+	var tw: Tween = arrow.create_tween().set_loops()
+	tw.tween_property(arrow, "position:y", base_y + ARROW_FLOAT_OFFSET_Y, ARROW_FLOAT_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(arrow, "position:y", base_y, ARROW_FLOAT_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	arrow.set_meta(&"arrow_float_active", true)   # headless 测试查 meta（Tween 推进不可靠）
 
 
 # ---- 内部 ----

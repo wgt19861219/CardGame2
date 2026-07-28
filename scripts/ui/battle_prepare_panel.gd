@@ -117,6 +117,10 @@ func _build_content() -> void:
 	_go_button.pressed.connect(_on_go_pressed)
 	var back_btn: TextureButton = content.get_node("%BackBtn") as TextureButton
 	back_btn.pressed.connect(_on_back_pressed)
+	# 源 battleprepare.lua:1091-1114 listTitle 黄字提示（顶部居中 Label，LSTR 化）。
+	var list_title: Label = content.get_node_or_null("%ListTitleLabel") as Label
+	if list_title != null:
+		list_title.text = String(cm.get_lstr(LSTR_NOTENOUGH))
 	_refresh_list()
 	_refresh_team_display()
 	_refresh_gs()
@@ -235,12 +239,18 @@ func _remove_team_member(inst_id: int) -> void:
 func _refresh_team_display() -> void:
 	for i in range(TEAM_MAX):
 		var slot: TextureRect = _team_slots[i]
-		for c in slot.get_children(): c.queue_free()
-		if i < _team.size():
+		var halo: CanvasItem = slot.get_node_or_null("Halo") as CanvasItem
+		for c in slot.get_children():
+			if c is ReadheroIcon:
+				c.queue_free()
+		var occupied: bool = i < _team.size()
+		if occupied:
 			var hero = player.hero_manager.heroes[_team[i].inst_id]
 			var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
 			icon.position = Vector2(5, 5)
 			slot.add_child(icon)
+		if halo != null:
+			halo.visible = occupied
 
 
 func _refresh_gs() -> void:

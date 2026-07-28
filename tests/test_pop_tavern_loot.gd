@@ -204,3 +204,67 @@ func _has_node_of_type(node: Node, type: GDScript) -> bool:
 		if _has_node_of_type(c, type):
 			return true
 	return false
+
+
+# P0-4：源 poptavernloot.lua:340-343 + 378-405 magic box FCA 后建 matrixContainer（圆阵呼吸）。
+# create_matrix_container_anim 在 _loot_host 加 Control > circle_1（tavern_magicsoul_circle_1.png）。
+func test_magic_box_creates_circle() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "magic", "ten")
+	popup.show_window(root)
+	await popup.box_shown
+	# 圆阵挂 _loot_host：递归找含 tavern_magicsoul_circle_1 的 TextureRect。
+	var has_circle: bool = _has_texture_with_path(popup._loot_host, "tavern_magicsoul_circle_1")
+	assert_true(has_circle, "magic box → matrixContainer 含 circle_1")
+	popup.remove_window()
+	root.queue_free()
+
+
+# P0-5：源 poptavernloot.lua:430-461 playMagicLootShadeAnim magic 分支加 tavern_magicsoul_item_bg 阴影。
+# 阴影挂 _loot_host（与 icon 同层），飞完后仍在（fadeout 1s），等待 loot_anim_done 后短窗口内可见。
+func test_magic_loot_shade_anim() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "magic", "ten")
+	popup.show_window(root)
+	await popup.loot_anim_done
+	var has_shade: bool = _has_texture_with_path(popup._loot_host, "tavern_magicsoul_item_bg")
+	assert_true(has_shade, "magic loot → tavern_magicsoul_item_bg 阴影")
+	popup.remove_window()
+	root.queue_free()
+
+
+# P0-6：源 poptavernloot.lua:629-636 loot 名字 Label（hero→Unit Display Name / equip→Equip Name）。
+# 飞完后 _loot_host 加 Label，文字非空。
+func test_loot_name_label_added() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	# 101 是装备 id（≥100）→ Equip.Name 经 LSTR
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "one")
+	popup.show_window(root)
+	await popup.loot_anim_done
+	var name_label: Label = null
+	for c in popup._loot_host.get_children():
+		if c is Label and String((c as Label).text).length() > 0:
+			# 排除 cost_label（在 CostHost 不在 LootHost，但保险起见查文字非空且非 cost 数字）
+			if not String((c as Label).text).is_valid_int():
+				name_label = c as Label
+				break
+	assert_not_null(name_label, "loot 飞完后 _loot_host 加名字 Label")
+	popup.remove_window()
+	root.queue_free()
+
+
+# 递归扫子树找 TextureRect 含指定资源路径片段。
+func _has_texture_with_path(node: Node, path_fragment: String) -> bool:
+	if node is TextureRect and node.texture != null:
+		if String(node.texture.resource_path).find(path_fragment) >= 0:
+			return true
+	for c in node.get_children():
+		if _has_texture_with_path(c, path_fragment):
+			return true
+	return false

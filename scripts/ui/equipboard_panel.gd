@@ -30,6 +30,10 @@ const ICON_POS: Vector2 = Vector2(14.0, 21.0)
 const ICON_SCALE: float = 0.8   # 用户视觉偏好缩小（源 createIcon 无 scale，原 size 显示）
 # att_bg 顶边固定（icon 正下方；源 att_bg anchor 0.5,1 顶固定 ccp(143,287) → Godot 顶 y=385-287=98，向下扩）。
 const ATT_TOP: float = 98.0
+# name 框宽上限（源 board.lua:338 长名溢出 scale 缩小）：NameLabel offset 92→300 = 208px。
+const NAME_MAX_W: float = 208.0
+# frame 切换 fadeIn（源 board.lua:406-413 refresh 时 frame modulate.a 0→1）。
+const FRAME_FADE_DUR: float = 0.15
 
 # ── Scale9 按钮（源 ofpackage.lua:108-119 left_button / :154-165 right_button）──
 # .tscn 普通 Button 套 StyleBoxTexture 补九宫格（normal/hover=package_button，pressed=package_button_down）。
@@ -162,13 +166,25 @@ func _refresh_content() -> void:
 	for c in host.get_children():
 		c.free()
 	_fill_icon()
-	(_frame.get_node("%NameLabel") as Label).text = _equip_name()
+	# 源 board.lua:338：长名溢出时 scale 缩小（按字符宽估算，超 NAME_MAX_W 等比缩）。
+	var name_lbl: Label = _frame.get_node("%NameLabel") as Label
+	name_lbl.text = _equip_name()
+	name_lbl.scale = Vector2.ONE   # 重置上次缩放，避免短名残留长名 scale
+	var name_w: float = name_lbl.get_combined_minimum_size().x
+	if name_w > NAME_MAX_W:
+		name_lbl.scale = Vector2(NAME_MAX_W / name_w, NAME_MAX_W / name_w)
 	var amt: int = int(_cell_data.get("amount", 0))
 	(_frame.get_node("%AmountLabel") as Label).text = "%s %d %s" % [cm.get_lstr(LSTR_HAVE), amt, cm.get_lstr(LSTR_ITEM)]
 	_fill_sell_price()
 	_fill_att()
 	# fill 独立 Label 子节点 %RightLabel（范式同 SellLabel）。
 	(_frame.get_node("%RightLabel") as Label).text = _right_button_label()
+	# 源 board.lua:406-413：refresh 时 frame modulate.a 0→1 fadeIn（仅在 panel 已入树后切装备时触发，
+	# 首次显示由 register_on_enter 入场动画覆盖；用 is_inside_tree 区分）。
+	if is_inside_tree():
+		_frame.modulate.a = 0.0
+		var tw: Tween = create_tween()
+		tw.tween_property(_frame, "modulate:a", 1.0, FRAME_FADE_DUR)
 
 
 func _fill_att() -> void:

@@ -64,3 +64,53 @@ func test_guildliveness_branch() -> void:
 	assert_eq(int(items[19]["param"]), 600, "第 20 名 param=3000-20×120=600（源 :2291）")
 	# 源 _guild_summary 无 _level（user 榜 _user_summary 才有 _level）
 	assert_eq(int(items[0]["level"]), 0, "公会榜无 level（源 _guild_summary 结构）")
+
+
+# P0-7：源 ranklist.lua:1318-1571 createMyselfRankSummary。self_rank<=2 不建浮窗（前 2 已列表显）。
+func test_overlay_skipped_when_rank_le_2() -> void:
+	var parent := Control.new()
+	add_child(parent)
+	var page1: Control = RanklistMyselfOverlay.build(parent, 1, "P", 10, "")
+	var page2: Control = RanklistMyselfOverlay.build(parent, 2, "P", 10, "")
+	assert_null(page1, "self_rank=1 不建浮窗（前 2 已列表显）")
+	assert_null(page2, "self_rank=2 不建浮窗")
+	parent.queue_free()
+
+
+# P0-7：self_rank>2 建浮窗（pageContainer > board ranklist_my_bg + 排名 + up 箭头 + delta + name）。
+func test_overlay_built_when_rank_gt_2() -> void:
+	var parent := Control.new()
+	add_child(parent)
+	var page: Control = RanklistMyselfOverlay.build(parent, 5, "测试玩家", 30, "")
+	assert_not_null(page, "self_rank=5 建浮窗 pageContainer")
+	assert_eq(page.name, "PageContainer", "pageContainer 节点名")
+	assert_eq(page.get_child_count(), 1, "page > board（ranklist_my_bg）")
+	var board: TextureRect = page.get_child(0) as TextureRect
+	assert_not_null(board, "board 是 ranklist_my_bg TextureRect")
+	# board 含 rank 数字 + arrow + hint + delta + name（5 个子）
+	assert_gte(board.get_child_count(), 4, "board 含 rank/arrow/hint/delta/name 多子")
+	# delta>0（rank=5，prev=0 单机）→ 应有 pvp_up 箭头（资源存在）
+	var has_arrow: bool = false
+	for c in board.get_children():
+		if c is TextureRect and c.texture != null and String(c.texture.resource_path).find("pvp_up") >= 0:
+			has_arrow = true
+			break
+	assert_true(has_arrow, "delta>0 → pvp_up 升箭头")
+	parent.queue_free()
+
+
+# P0-7：>3 排名用数字 Label（#N），1/2/3 用徽章图（资源存在时）。
+func test_overlay_rank_3_uses_badge_or_number() -> void:
+	var parent := Control.new()
+	add_child(parent)
+	var page: Control = RanklistMyselfOverlay.build(parent, 3, "P", 10, "")
+	assert_not_null(page, "self_rank=3 建浮窗")
+	var board: TextureRect = page.get_child(0) as TextureRect
+	# 3rd 徽章资源存在 → TextureRect（pvp_rank_3rd_star）；否则数字 Label
+	var has_badge: bool = false
+	for c in board.get_children():
+		if c is TextureRect and c.texture != null and String(c.texture.resource_path).find("pvp_rank_3rd") >= 0:
+			has_badge = true
+			break
+	assert_true(has_badge, "self_rank=3 → 3rd 徽章图（资源存在）")
+	parent.queue_free()
