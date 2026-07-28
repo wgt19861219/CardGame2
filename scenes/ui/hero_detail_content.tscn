@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://cxgjpbesrb6nr"]
+[gd_scene format=3 uid="uid://cxgjpbesrb6nr" load_steps=2]
 
 [ext_resource type="Texture2D" uid="uid://dismqdek4v6vb" path="res://assets/ui/alpha/HVGA/herodetail-bg.png" id="1_bg"]
 [ext_resource type="Texture2D" uid="uid://bxmv83aoah1a6" path="res://assets/ui/alpha/HVGA/herodetail_name_bg.png" id="2_namebg"]
@@ -192,6 +192,16 @@ mouse_filter = 2
 texture = ExtResource("4_staryel")
 expand_mode = 1
 
+
+[node name="NameFrame" type="TextureRect" parent="BaseLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 373.8
+offset_top = 383.1
+offset_right = 525.2
+offset_bottom = 422.9
+mouse_filter = 2
+expand_mode = 1
 [node name="CloseBtn" type="TextureButton" parent="." unique_id=2058700208]
 unique_name_in_owner = true
 layout_mode = 0

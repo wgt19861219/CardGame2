@@ -63,13 +63,15 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 		name_lbl.text = pre + ":"
 		name_lbl.modulate = ATT_PRE_COLOR
 		row_box.add_child(name_lbl)
+		# suffix 始终显示在 base 后（源 attributes.lua:165-167 独立 label，visible 切换不含 suffix）。
+		# 之前 suffix 绑死在 add>0 分支，致 CDR/HEAL/SKL 满级属性丢 %/单位后缀。
 		var base_lbl := Label.new()
-		base_lbl.text = str(int(row["all"]))
+		base_lbl.text = str(int(row["all"])) + suffix
 		base_lbl.modulate = ATT_BASE_COLOR
 		row_box.add_child(base_lbl)
 		if int(row["add"]) > 0:
 			var add_lbl := Label.new()
-			add_lbl.text = "+" + str(int(row["add"])) + suffix
+			add_lbl.text = "+" + str(int(row["add"]))
 			add_lbl.modulate = ATT_ADD_COLOR
 			row_box.add_child(add_lbl)
 		vbox.add_child(row_box)
