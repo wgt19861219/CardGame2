@@ -41,7 +41,7 @@ static func make_entry(e: Dictionary, on_pressed: Callable, is_locked: bool) -> 
 	btn.pressed.connect(on_pressed)
 	_add_press(btn, e)   # 光效最底层（源 press z=0，先 addChild 在 Spine/title 之下）
 	var sk: Node2D = _add_spine(btn, e)
-	_add_title(btn, String(e["title"]))
+	_add_title(btn, String(e["title"]), is_locked)
 	_add_gap_loop(btn, sk, e)
 	return btn
 
@@ -125,7 +125,11 @@ static func _add_gap_loop(btn: Button, sk: Node2D, e: Dictionary) -> void:
 
 # title 背景图 + 标题文字（照源 createMainButton:607-630 titleres=main_title_a.png + label (60,18) font 17）。
 # title 中心 = 按钮中心 x，下方 25（源 createMainFca:443 pos.y - 25 → Godot y 下 +25）。
-static func _add_title(btn: Button, title_text: String) -> void:
+# is_locked：未解锁 disable 态（源 main.lua:1149 refreshButtons + 1166/1170 ui_main_button_disable
+# fontinfo + main_title_disable 纹理 + Label 色切）。本项目无 main_title_disable 纹理资源，
+# 按「资源缺则用 modulate 灰显 Color(0.5,0.5,0.5) 替代纹理切换」（任务红线 fallback 范式）：
+# title TextureRect + Label 整体 modulate 灰化，叠加 LOCKED_ALPHA 按钮半透明。
+static func _add_title(btn: Button, title_text: String, is_locked: bool = false) -> void:
 	var tex: Texture2D = load(TITLE_BG)
 	if tex == null:
 		return
@@ -137,6 +141,9 @@ static func _add_title(btn: Button, title_text: String) -> void:
 	title.size = display_size
 	title.position = Vector2(btn.size.x * 0.5 - display_size.x * 0.5, btn.size.y * 0.5 + TITLE_OFFSET_Y - display_size.y * 0.5)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 未解锁灰显（源 main_title_disable 纹理 fallback：无 disable 纹理资源，整体 modulate 灰化替代）
+	if is_locked:
+		title.modulate = Color(0.5, 0.5, 0.5)
 	btn.add_child(title)
 	var label := Label.new()
 	label.text = title_text

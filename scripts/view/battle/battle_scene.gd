@@ -22,6 +22,7 @@ const BattleSceneFinalizer = preload("res://scripts/view/battle/battle_scene_fin
 const BattleResourceAssembler = preload("res://scripts/view/battle/battle_resource_assembler.gd")
 const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
 const BattleWaveAdvancer = preload("res://scripts/view/battle/battle_wave_advancer.gd")
+const BattleTimeoutBanner = preload("res://scripts/view/battle/battle_timeout_banner.gd")
 
 const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3, 4]
 const STAGE_DONE_PATH: String = "res://scenes/battle/stage_done_scene.tscn"      # 胜利结算场景
@@ -29,7 +30,8 @@ const STAGE_FAILED_PATH: String = "res://scenes/battle/stage_failed_scene.tscn" 
 const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"         # 主菜单（excavate 战斗结束回）
 const ExcavateBattle = preload("res://scripts/systems/excavate_battle.gd")
 const LadderBattle = preload("res://scripts/systems/ladder_battle.gd")
-const MAX_TICKS: int = 6000  # 战斗最大帧数（防死循环；≥ time_limit(90s)×fps(60)=5400，覆盖 engine 自然 timeout）
+const MAX_TICKS: int = 6000  # 防死循环（≥ time_limit 90s×fps 60=5400，覆盖 engine 自然 timeout）
+const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_length 常量内联）
 
 signal battle_exited
 signal next_wave_requested
@@ -67,6 +69,7 @@ var frames: int = 0
 var _battle_context: Dictionary = {}  # GameData.battle_context 快照（_ready 读 / _finalize 读）
 var _finalized: bool = false          # 结算去重（防 _process 重复切场景）
 var _ticks_left: int = MAX_TICKS      # 战斗 tick 上限（防死循环）
+var _timeout_banner_pending: bool = false   # 超时横幅显示中（finalize 延迟到横幅 Tween 结束）
 
 
 func setup(p_engine: Variant, p_cm: Variant, p_battle_info: Variant = null) -> void:
@@ -134,22 +137,7 @@ func reset_state() -> void:
 
 
 func _create_background() -> void:
-	for child in background_layer.get_children():
-		child.queue_free()
-	var bg_name := String(battle_info.get("Background Pic", ""))
-	if bg_name.is_empty():
-		return
-	var bg_path := "res://assets/ui/alpha/HVGA/" + bg_name
-	if not ResourceLoader.exists(bg_path):
-		push_warning("[BattleScene] 背景图缺失: " + bg_path)
-		return
-	var bg_tex := load(bg_path) as Texture2D
-	var bg_sprite := Sprite2D.new()
-	bg_sprite.texture = bg_tex
-	bg_sprite.centered = false
-	bg_sprite.position = Vector2.ZERO
-	bg_sprite.flip_h = bool(battle_info.get("H Flip", false))
-	background_layer.add_child(bg_sprite)
+	BattleResourceAssembler.create_background(self)
 
 
 func set_speed_state(s: int) -> void:
@@ -191,7 +179,12 @@ func _process(delta: float) -> void:
 	step(delta)
 	_ticks_left -= 1
 	if (not bool(engine.running) or bool(engine.stage_ended)) or _ticks_left <= 0:
-		_finalize_battle()
+		# 超时分支（源 battle_scene.lua:1429-1438 addTimeOutUI）：stage 模式 + RESULT_TIMEOUT 先显示横幅，延迟 finalize。
+		if not _timeout_banner_pending and BattleTimeoutBanner.is_timeout_end(engine, _battle_context):
+			_timeout_banner_pending = true
+			BattleTimeoutBanner.show(self, _finalize_battle)
+		else:
+			_finalize_battle()
 
 
 # 场景销毁 kill 残留 tween（leak P1：_shake_tween_x/y 持已释放 _camera，Tween 不随 Node 销毁）。
@@ -303,7 +296,7 @@ func _advance_ui_list(dt: float) -> void:
 
 
 func add_big_blood_panel(unit: Variant) -> void:
-	var panel: BattleBigHpBar = BattleBigHpBar.create(unit, _calculate_big_hp_length())
+	var panel: BattleBigHpBar = BattleBigHpBar.create(unit, BIG_HP_LENGTH)
 	ui_layer.add_child(panel)
 	panel.position = BattleViewCoords.to_godot(375.0, 440.0)
 	ui_list.append(panel)
@@ -509,7 +502,3 @@ func add_hero_panel(unit: Variant) -> void:
 	heroes_panel.add_child(panel)
 	ui_list.append(panel)
 	_hero_panels[unit] = panel
-
-
-func _calculate_big_hp_length() -> float:
-	return 397.0

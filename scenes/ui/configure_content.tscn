@@ -1,10 +1,11 @@
-[gd_scene format=3 uid="uid://demscqpqa6doh"]
+[gd_scene format=3 uid="uid://demscqpqa6doh" load_steps=3]
 
 [ext_resource type="Texture2D" uid="uid://8hyx1ovdjrfh" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
 [ext_resource type="Texture2D" uid="uid://bldpeks6ew5b2" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
 [ext_resource type="Texture2D" uid="uid://cagmvsd4c6nbu" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
 [ext_resource type="Texture2D" uid="uid://bdijklfiaap4h" path="res://assets/ui/alpha/HVGA/avatar_head_bg.png" id="4_headbg"]
 [ext_resource type="Texture2D" uid="uid://dbhkrric2nc0h" path="res://assets/ui/alpha/HVGA/main_head_frame_silver.png" id="5_headframe"]
+[ext_resource type="Texture2D" uid="uid://d27s73tnfmptu" path="res://assets/ui/alpha/HVGA/avatar_head_patterns.png" id="5b_headpat"]
 [ext_resource type="Texture2D" uid="uid://02gx63nx2ssl" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="6_namebg"]
 
 [node name="ConfigureContent" type="Control" unique_id=728678537]
@@ -40,6 +41,16 @@ offset_bottom = 161.52
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
+
+[node name="HeadPattern" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 180.0
+offset_top = 115.0
+offset_right = 351.0
+offset_bottom = 286.0
+mouse_filter = 2
+texture = ExtResource("5b_headpat")
+expand_mode = 1
 
 [node name="HeadBg" type="TextureRect" parent="." unique_id=1122898611]
 layout_mode = 0
@@ -125,6 +136,7 @@ offset_left = 630.0
 offset_top = 147.0
 offset_right = 760.0
 offset_bottom = 202.0
+
 
 [node name="ChangeNameLabel" type="Label" parent="ChangeNameBtn" unique_id=508964242]
 unique_name_in_owner = true

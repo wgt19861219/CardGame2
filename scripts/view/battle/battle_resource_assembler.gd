@@ -7,6 +7,25 @@ extends RefCounted
 ## add_gold/add_loot_marker 是公开 API（被 BattleActor/BattleHeroPanel 调用），主类留转发桩。
 
 
+static func create_background(scene) -> void:
+	for child in scene.background_layer.get_children():
+		child.queue_free()
+	var bg_name := String(scene.battle_info.get("Background Pic", ""))
+	if bg_name.is_empty():
+		return
+	var bg_path := "res://assets/ui/alpha/HVGA/" + bg_name
+	if not ResourceLoader.exists(bg_path):
+		push_warning("[BattleScene] 背景图缺失: " + bg_path)
+		return
+	var bg_tex := load(bg_path) as Texture2D
+	var bg_sprite := Sprite2D.new()
+	bg_sprite.texture = bg_tex
+	bg_sprite.centered = false
+	bg_sprite.position = Vector2.ZERO
+	bg_sprite.flip_h = bool(scene.battle_info.get("H Flip", false))
+	scene.background_layer.add_child(bg_sprite)
+
+
 static func create_wave_mark(scene) -> void:
 	if scene.wave_mark != null:
 		scene.wave_mark.queue_free()
