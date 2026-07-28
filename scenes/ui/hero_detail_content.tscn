@@ -12,6 +12,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_status_plus_icon_2.png" id="10_djwpd"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="11_udv1k"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="12_byvlk"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_arrow_left.png" id="16_arrow_l"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_arrow_right.png" id="17_arrow_r"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_card_tab.tscn" id="13_iaufn"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_detail_tab.tscn" id="14_1fkl1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_skill_tab.tscn" id="15_o4jsg"]
@@ -512,6 +514,34 @@ offset_bottom = 73.0
 texture_normal = ExtResource("11_udv1k")
 texture_pressed = ExtResource("12_byvlk")
 ignore_texture_size = true
+
+[node name="LeftArrow" type="TextureButton" parent="BaseLayer" unique_id=701510001]
+unique_name_in_owner = true
+visible = false
+z_index = 16
+layout_mode = 0
+offset_left = 112.5
+offset_top = 342.5
+offset_right = 163.5
+offset_bottom = 417.5
+mouse_filter = 2
+texture_normal = ExtResource("16_arrow_l")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="RightArrow" type="TextureButton" parent="BaseLayer" unique_id=701510002]
+unique_name_in_owner = true
+visible = false
+z_index = 16
+layout_mode = 0
+offset_left = 796.5
+offset_top = 342.5
+offset_right = 847.5
+offset_bottom = 417.5
+mouse_filter = 2
+texture_normal = ExtResource("17_arrow_r")
+ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabCardView" type="Control" parent="." unique_id=1958418760 instance=ExtResource("13_iaufn")]
 unique_name_in_owner = true

@@ -1,4 +1,7 @@
-[gd_scene format=3 uid="uid://ca2d7tab8a01r"]
+[gd_scene format=3 uid="uid://ca2d7tab8a01r" load_steps=3]
+
+[ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
+[ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
 
 [node name="TabCardView" type="Control" unique_id=460883805]
 unique_name_in_owner = true
@@ -83,3 +86,17 @@ offset_top = 458.0
 offset_right = 360.0
 offset_bottom = 482.0
 theme_override_font_sizes/font_size = 22
+
+[node name="CardCloseBtn" type="TextureButton" parent="." unique_id=400100100]
+unique_name_in_owner = true
+z_index = 4
+layout_mode = 0
+offset_left = 380.0
+offset_top = 55.0
+offset_right = 431.0
+offset_bottom = 106.0
+mouse_filter = 0
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true
+stretch_mode = 0
