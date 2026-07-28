@@ -66,11 +66,20 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 				h.call())
 	_add_texture_rect(head, HEAD_FRAME_RES[vip_idx], Vector2.ZERO, HEAD_SIZE, "head_bg")
 	_add_texture_rect(head, HEAD_FRAME_BORDER_RES[vip_idx], Vector2.ZERO, HEAD_SIZE, "head_frame")
+	# 昵称底纹 name_bg（源 statusbar.lua:624 main_head_name_bg_silver/gold.png，叠加在 name Label 之下，
+	# 银金按 vip_idx 切换，参考 _refresh_head_frame 范式）。size 用纹理原始宽，高 20，居中 + 偏下覆盖 name 区。
+	# HEAD_SIZE=137×105，name Label pos=(20,75)；name_bg 横跨底部，垂直覆盖 name Label 行。
+	var name_bg_size: Vector2 = Vector2(HEAD_SIZE.x - 6.0, 22.0)
+	var name_bg: TextureRect = _add_texture_rect(head, NAME_BG_RES[vip_idx], Vector2(3.0, 72.0), name_bg_size, "name_bg")
+	refs["name_bg"] = name_bg
 	# 昵称 Label
 	var name_lbl := Label.new()
 	name_lbl.text = "Player"
 	name_lbl.position = Vector2(20.0, 75.0)
+	name_lbl.size = Vector2(HEAD_SIZE.x - 40.0, 18.0)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(name_lbl)
 	refs["name"] = name_lbl
 	# P1-15：等级 Label（源 statusbar.lua:658 level ccp(82,37) size=16）
@@ -86,6 +95,10 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	var vip_bg := _add_texture_rect(head, VIP_BG_RES, Vector2(90.0, 18.0), Vector2(50.0, 50.0), "vip_bg")
 	vip_bg.visible = false
 	refs["vip_bg"] = vip_bg
+	# VIP icon（源 statusbar.lua:591 recharge_vip_icon.png，叠加在 vip_bg 上）
+	var vip_icon := _add_texture_rect(head, VIP_ICON_RES, Vector2(90.0, 18.0), Vector2(50.0, 50.0), "vip_icon")
+	vip_icon.visible = false
+	refs["vip_icon"] = vip_icon
 	var vip_lbl := Label.new()
 	vip_lbl.text = "0"
 	vip_lbl.position = Vector2(85.0, 38.0)
@@ -194,6 +207,8 @@ static func refresh(refs: Dictionary, level: int, gold: int, diamond: int, vital
 		(refs["vip"] as Label).visible = vip > 0
 	if refs.has("vip_bg"):
 		(refs["vip_bg"] as TextureRect).visible = vip > 0
+	if refs.has("vip_icon"):
+		(refs["vip_icon"] as TextureRect).visible = vip > 0
 	# 头像框银/金切换（源 vip>0 用 gold 资源）
 	_refresh_head_frame(refs, vip_idx)
 
@@ -209,6 +224,10 @@ static func _refresh_head_frame(refs: Dictionary, vip_idx: int) -> void:
 	var head_frame: TextureRect = head.get_node_or_null("head_frame")
 	if head_frame != null:
 		head_frame.texture = load(HEAD_FRAME_BORDER_RES[vip_idx])
+	# name_bg 银金切换（照源 refreshHead 头像框同款逻辑，name_bg 也按 vip 切 silver/gold）
+	var name_bg: TextureRect = head.get_node_or_null("name_bg")
+	if name_bg != null:
+		name_bg.texture = load(NAME_BG_RES[vip_idx])
 
 
 # 辅助：创建 TextureRect 子节点。

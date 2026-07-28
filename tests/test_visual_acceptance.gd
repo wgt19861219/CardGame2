@@ -93,11 +93,15 @@ func test_switch_puppet_loads() -> void:
 
 # 6. HUD FCA 光圈——_play_skill_ready 建 BattleEffect（非 null）
 func test_hud_fca_ready_resource() -> void:
-	# 验证 FCA 资源文件存在
+	# 验证 FCA 资源文件存在（hero_panel.lua:30-33 四态：ready/cast/switch/trigger）
 	assert_true(FileAccess.file_exists("res://assets/anim_frames/effect/eff_UI_battle_skill_will_ready.abc"),
 		"FCA_READY 资源应存在")
 	assert_true(FileAccess.file_exists("res://assets/anim_frames/effect/eff_UI_battle_skill_cast.abc"),
 		"FCA_CAST 资源应存在")
+	assert_true(FileAccess.file_exists("res://assets/anim_frames/effect/eff_UI_battle_skill_can_switch.abc"),
+		"FCA_SWITCH 资源应存在（STATE_SWITCH 态）")
+	assert_true(FileAccess.file_exists("res://assets/anim_frames/effect/eff_UI_battle_skill_activate.abc"),
+		"FCA_TRIGGER 资源应存在（STATE_TRIGGER 态）")
 
 
 # 7. 飘字——BattlePopup 类存在且有 create 方法

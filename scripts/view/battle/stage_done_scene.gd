@@ -38,7 +38,10 @@ const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 0.0)
 # InfoBg 内 icon texture（tscn texture 留空，运行时 fill；xpicon 缺图 _load 容错 null 不报错）
 const GOLD_ICON_TEX: String = "goldicon_small.png"
 const EXP_ICON_TEX: String = "xpicon.png"
-const HERO_BAR_TEX: String = "heroxp-progress.png"
+# 英雄经验条（源 stagedone.lua:364-371,443-449 heroxp-progress-bg/progress/full 三 sprite）。
+const HERO_BAR_BG_TEX: String = "heroxp-progress-bg.png"      # 经验槽底（前景 progress 之下）
+const HERO_BAR_TEX: String = "heroxp-progress.png"            # 前景进度（scaleX 动画）
+const HERO_BAR_FULL_TEX: String = "heroxp-progress-full.png"  # 满级态覆盖（is_max_level 时显示）
 
 var _param: Dictionary = {}
 var _cm: ConfigManager = null
@@ -51,7 +54,9 @@ var _light: Sprite2D = null
 var _info_bg: Sprite2D = null
 var _star_nodes: Array = []         # Sprite2D[]
 var _hero_icon_nodes: Array = []    # ReadheroIcon[]
-var _hero_bars: Array = []          # Sprite2D[]（经验条，bar scaleX 动画用）
+var _hero_bars: Array = []          # Sprite2D[]（经验条前景，bar scaleX 动画用）
+var _hero_bar_bgs: Array = []       # Sprite2D[]（经验条底，静态显示，z_index 在前景下）
+var _hero_bar_fulls: Array = []     # Sprite2D[]（满级态覆盖，is_max_level 时 visible）
 var _loot_icon_nodes: Array = []    # Control[]
 var _replay_btn: TextureButton = null
 var _next_btn: TextureButton = null
@@ -166,6 +171,14 @@ func _create_hero_icons() -> void:
 		ri.position = Vector2(HERO_ORI_X + HERO_GAP_X * i, HERO_ORI_Y)
 		ri.icon.modulate.a = 0.0
 		_content.add_child(ri)   # setup 内部已 add icon 到 self（照 battle_hero_panel:55）
+		# 经验条三层（源 stagedone.lua:364-371,443-449）：bg 静态底 + progress 前景（scaleX 动画）+ full 满级覆盖。
+		# bg 先 add（z 序在下），progress 后 add（覆盖 bg），full 最后 add（覆盖 progress，仅 is_max_level visible）。
+		var bar_bg := Sprite2D.new()
+		bar_bg.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_BG_TEX)
+		bar_bg.centered = false
+		bar_bg.position = BAR_OFFSET
+		ri.icon.add_child(bar_bg)
+		_hero_bar_bgs.append(bar_bg)
 		var bar := Sprite2D.new()
 		bar.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_TEX)
 		bar.centered = false
@@ -175,6 +188,14 @@ func _create_hero_icons() -> void:
 		bar.scale.x = clampf(float(pre_exp) / float(maxi(pre_max, 1)), 0.0, 1.0)
 		ri.icon.add_child(bar)
 		_hero_bars.append(bar)
+		# 满级态覆盖（源 stagedone.lua:1676-1742 isMaxLevel 显示 full bar）；当前数据层 is_max_level 兜底 false。
+		var bar_full := Sprite2D.new()
+		bar_full.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_FULL_TEX)
+		bar_full.centered = false
+		bar_full.position = BAR_OFFSET
+		bar_full.visible = bool(hinfo.get("is_max_level", false))
+		ri.icon.add_child(bar_full)
+		_hero_bar_fulls.append(bar_full)
 		var exp_lbl := Label.new()
 		exp_lbl.text = "EXP +" + str(int(hinfo.get("add_hero_exp", 0)))
 		exp_lbl.position = EXP_LABEL_OFFSET
