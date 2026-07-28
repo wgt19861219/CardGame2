@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://ce4d8vbdcc03t"]
+[gd_scene format=3 uid="uid://ce4d8vbdcc03t" load_steps=3]
 
 [ext_resource type="Texture2D" uid="uid://c6hc85fvmusfb" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="1_popup"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_skill_bg_1.png" id="2_bg1"]
@@ -336,3 +336,138 @@ ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
 stretch_mode = 0
+
+[node name="Skill1MoneyIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 370.0
+offset_top = 219.0
+offset_right = 385.0
+offset_bottom = 234.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Skill1Cost" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 400.0
+offset_top = 219.0
+offset_right = 460.0
+offset_bottom = 235.0
+mouse_filter = 2
+
+[node name="Skill1LvlAdd" type="Label" parent="."]
+unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
+layout_mode = 0
+offset_left = 367.0
+offset_top = 197.0
+offset_right = 430.0
+offset_bottom = 217.0
+mouse_filter = 2
+
+[node name="Skill2MoneyIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 370.0
+offset_top = 309.0
+offset_right = 385.0
+offset_bottom = 324.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Skill2Cost" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 400.0
+offset_top = 309.0
+offset_right = 460.0
+offset_bottom = 325.0
+mouse_filter = 2
+
+[node name="Skill2LvlAdd" type="Label" parent="."]
+unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
+layout_mode = 0
+offset_left = 367.0
+offset_top = 287.0
+offset_right = 430.0
+offset_bottom = 307.0
+mouse_filter = 2
+
+[node name="Skill3MoneyIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 370.0
+offset_top = 399.0
+offset_right = 385.0
+offset_bottom = 414.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Skill3Cost" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 400.0
+offset_top = 399.0
+offset_right = 460.0
+offset_bottom = 415.0
+mouse_filter = 2
+
+[node name="Skill3LvlAdd" type="Label" parent="."]
+unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
+layout_mode = 0
+offset_left = 367.0
+offset_top = 377.0
+offset_right = 430.0
+offset_bottom = 397.0
+mouse_filter = 2
+
+[node name="Skill4MoneyIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 370.0
+offset_top = 489.0
+offset_right = 385.0
+offset_bottom = 504.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Skill4Cost" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 400.0
+offset_top = 489.0
+offset_right = 460.0
+offset_bottom = 505.0
+mouse_filter = 2
+
+[node name="Skill4LvlAdd" type="Label" parent="."]
+unique_name_in_owner = true
+theme_type_variation = &"WhiteLabel16"
+layout_mode = 0
+offset_left = 367.0
+offset_top = 467.0
+offset_right = 430.0
+offset_bottom = 487.0
+mouse_filter = 2
+
+
+[node name="SkillPointLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 200
+offset_top = 545
+offset_right = 560
+offset_bottom = 575
+mouse_filter = 2
+
+[node name="BuySkillPointBtn" type="TextureButton" parent="."]
+layout_mode = 0
+mouse_filter = 2
+offset_bottom = 595
+offset_left = 580
+offset_right = 660
+offset_top = 540
+unique_name_in_owner = true

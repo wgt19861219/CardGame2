@@ -17,6 +17,11 @@ const TAB_N_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-n.png"
 const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-a.png"
 const TAB_CAP: Rect2 = Rect2(15.0, 15.0, 138.0, 19.0)
 
+# ---- name_frame 名条品质边框（源 player.lua:2121 name_frames 表 + getIconNameFrameByRank:2149）----
+# rank 1-22 → 帧编号（含重复条目保源语义：rank 10/11 同图、12-19 同图、20-22 同图）。
+const NAME_FRAME_DIR: String = "res://assets/ui/alpha/HVGA/herodetail_name_frame_"
+const NAME_FRAME_BY_RANK: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12, 12]
+
 # ---- portrait FCA（源 createHeroFca window.lua:11-18）----
 const HERO_FCA_COCOS: Vector2 = Vector2(400.0, 265.0)
 const HERO_FCA_SCALE: float = 1.5
@@ -37,7 +42,7 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 # 返 {gs_label, tab_buttons}（panel 持有：gs_label 供 refresh_gs_after_wear，tab_buttons 供 tab 切换）。
 static func setup_base(base: Control, hero: HeroInstance, cm: Variant) -> Dictionary:
 	fill_portrait(base.get_node("%PortraitHost"), hero, cm)
-	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), hero, cm)
+	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), base.get_node_or_null("%NameFrame"), hero, cm)
 	fill_stars(_collect_yellow_stars(base), hero.stars)
 	var gs_label: Label = fill_info_board(base, hero, cm)
 	fill_action_buttons(base, hero, cm)
@@ -107,13 +112,29 @@ static func _add_portrait_fallback(parent: Control, hero: HeroInstance, cm: Vari
 	parent.add_child(sp)
 
 
-# fill %TypeIcon texture（源 hero_mark_res STR/AGI/INT，item.lua:1-5）+ %NameLabel text（Display Name）。
-static func fill_name_board(type_icon: TextureRect, name_label: Label, hero: HeroInstance, cm: Variant) -> void:
+# fill %TypeIcon texture（源 hero_mark_res STR/AGI/INT，item.lua:1-5）+ %NameLabel text（Display Name）
+# + %NameFrame texture（源 getIconNameFrameByRank，rank 1-22 → 12 张品质边框）。
+static func fill_name_board(type_icon: TextureRect, name_label: Label, name_frame: TextureRect, hero: HeroInstance, cm: Variant) -> void:
 	var attrib: String = String(cm.lookup("Unit", "Main Attrib", int(hero.tid))) if cm != null else ""
 	var type_res: String = _type_icon_res(attrib)
 	if not type_res.is_empty() and ResourceLoader.exists(type_res):
 		type_icon.texture = load(type_res) as Texture2D
 	name_label.text = get_display_name(hero, cm)
+	if name_frame != null:
+		var frame_no: int = _name_frame_no(int(hero.rank))
+		var frame_res: String = NAME_FRAME_DIR + str(frame_no) + ".png"
+		if ResourceLoader.exists(frame_res):
+			name_frame.texture = load(frame_res) as Texture2D
+
+
+# rank → name_frame 帧编号（源 player.lua:2149 getIconNameFrameByRank = name_frames[rank]）。
+# rank 超出 1-22 范围 clamp 到边界（防御）。
+static func _name_frame_no(rank: int) -> int:
+	if rank < 1:
+		rank = 1
+	elif rank > NAME_FRAME_BY_RANK.size():
+		rank = NAME_FRAME_BY_RANK.size()
+	return NAME_FRAME_BY_RANK[rank - 1]
 
 
 static func _type_icon_res(attrib: String) -> String:

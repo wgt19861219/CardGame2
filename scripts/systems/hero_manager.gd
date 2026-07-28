@@ -43,6 +43,11 @@ func _init_skill_levels(hero: HeroInstance) -> void:
 func get_hero(inst_id: int) -> HeroInstance:
 	return heroes.get(inst_id) as HeroInstance
 
+
+## 已拥有英雄的 inst_id 列表（照源 ed.player.heroes 顺序；hero_detail 翻页用）。
+func get_owned_hero_ids() -> Array:
+	return heroes.keys()
+
 ## 升星：消耗专属碎片 × HeroStars.Upgrade Fragments + 金币 Upgrade Price；达 max_stars 不可升。
 func evolve(inst_id: int) -> bool:
 	var hero := get_hero(inst_id)

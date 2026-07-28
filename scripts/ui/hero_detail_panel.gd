@@ -2,8 +2,7 @@ class_name HeroDetailPanel
 extends PopWindow
 
 ## 英雄详情面板（View 层）— 属性 + 装备槽 + 升星/进阶按钮（信号）。
-## base + tab view 静态化进 hero_detail_content.tscn；绘制 fill 外迁 HeroDetailAttribs/Tabs/EquipSlots/UpgradeFx。
-## 本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装（测试引用 + panel 状态）。
+## base + tab view 静态化进 hero_detail_content.tscn；绘制 fill 外迁 HeroDetailAttribs/Tabs/EquipSlots/UpgradeFx；本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装。
 signal evolve_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
@@ -35,6 +34,9 @@ const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 c
 const BASE_SLIDE_OFFSET: float = 178.0   # doMove 140（window.lua:300 container 右移）。目标 1:1 框偏大（CS 遗漏）。CloseBtn 移出 base 固定屏幕右上（不随 base），base 自由：178 让 bg left=399.5，card/popup 框与 bg 留 gap 10
 # doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
 const TAB_POP_OFFSET_X: float = -200.0
+# card 入场旋转（源 card.lua:17,45 doPopCard CCRotateTo(0.2, 360*rotate_amount ± 90)）：切 card tab 时 CardFrame 从 90° 旋回 0°。
+const CARD_POP_ROTATION: float = 90.0
+const CARD_POP_DURATION: float = 0.2
 # 进阶交互 LSTR（Toast 文案，常量在 HeroDetailUpgradeFx）
 const LSTR_MAX_RANK: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
 const LSTR_NEED_EQUIP: StringName = &"HERODETAIL.HERO_NEEDS_TO_WEAR_COMPLETE_EQUIPMENTS_FOR_ADVANCE"
@@ -55,12 +57,16 @@ var _skill_host: Control = null    # .tscn %SkillListHost（技能行动态挂�
 var _desc_host: Control = null     # .tscn %DescHost（技能描述动态挂）
 var _upgrade_light: Sprite2D = null   # 进阶按钮光效（可进阶时 fade 循环闪烁）
 var _light_tween: Tween = null        # 光效动画 tween（退出 kill 防泄漏）
+var _hero_ids: Array = []          # 拥有英雄 inst_id 列表（hero_manager.get_owned_hero_ids；翻页用）
+var _current_idx: int = -1         # hero.inst_id 在 _hero_ids 中的索引（无则 -1）
 
 func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null, p_pd: PlayerData = null) -> void:
 	hero = p_hero
 	cm = p_cm
 	hero_manager = p_mgr
 	pd = p_pd
+	_hero_ids = hero_manager.get_owned_hero_ids() if hero_manager != null and hero != null else []
+	_current_idx = _hero_ids.find(hero.inst_id) if hero != null else -1
 	setup()   # PopWindow.setup（shade + container）
 	_build_content()
 
@@ -95,8 +101,8 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
 	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
 	_fill_card_view()
-	# 隐藏 AttribListHost 垂直滚动条视觉（StyleBoxEmpty 覆盖 theme；visible=false 会禁用滚动）。
-	# 滚轮事件 gui_input 收不到（ScrollContainer accept_event 后不冒泡），改由 _input 接管（见 _handle_scroll_event）。
+	# 隐藏 AttribListHost 垂直滚动条视觉（StyleBoxEmpty 覆盖；visible=false 禁用滚动）。
+	# 滚轮事件 gui_input 收不到（ScrollContainer accept_event 后不冒泡），改由 _input 接管。
 	var detail_host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
 	var detail_v_scroll := detail_host.get_node_or_null("_v_scroll") as Control
 	if detail_v_scroll != null:
@@ -107,9 +113,47 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		detail_v_scroll.add_theme_stylebox_override("grabber_pressed", empty)
 	var detail_vbox: VBoxContainer = detail_host.get_node("AttribVBox") as VBoxContainer
 	HeroDetailAttribs.fill_attributes(detail_vbox, hero, cm)
-	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked)
+	# gold 不够 cost 变红（refreshCostColor），skl_add 显 levelAdd "+N"（refreshSkillAdd）。
+	var gold_for_skills: int = hero_manager.gold if hero_manager != null else -1
+	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked, gold_for_skills, HeroDetailUpgradeFx.calculate_skl_bonus(hero, cm))
 	_show_tab_content(tab)
 	_refresh_upgrade_light()   # 可进阶时按钮光效（源 createUpgradeButtonLight）
+	_setup_arrows()
+
+
+# 翻页箭头（window.lua:1843-1936 createArrowButton）。多于 1 个英雄才显示；重建内容后需重连。
+func _setup_arrows() -> void:
+	if _base_layer == null:
+		return
+	var show: bool = _hero_ids.size() > 1
+	# turnPrePage/turnNextPage：环形索引切 hero（_advance ∓1），refresh 复用 _rebuild_content。
+	_wire_arrow("%LeftArrow", show, func() -> void: _advance(-1))
+	_wire_arrow("%RightArrow", show, func() -> void: _advance(1))
+
+
+func _wire_arrow(node_path: String, show: bool, cb: Callable) -> void:
+	var btn: TextureButton = _base_layer.get_node_or_null(node_path) as TextureButton
+	if btn == null:
+		return
+	btn.visible = show
+	for c in btn.pressed.get_connections():
+		btn.pressed.disconnect(c.callable)
+	if show:
+		btn.pressed.connect(cb)
+
+
+# turnPrePage/turnNextPage：环形索引切 hero，refresh 复用 _rebuild_content。
+func _advance(delta: int) -> void:
+	if _hero_ids.is_empty() or hero_manager == null:
+		return
+	AudioPlayer.play_sfx("common_click_feedback")
+	var n: int = _hero_ids.size()
+	_current_idx = (_current_idx + delta + n) % n
+	var new_hero: HeroInstance = hero_manager.get_hero(int(_hero_ids[_current_idx])) as HeroInstance
+	if new_hero == null or new_hero == hero:
+		return
+	hero = new_hero
+	refresh_content()
 
 
 ## 升星/技能升级/进阶后刷新（call_deferred 避信号处理中 free 按钮崩）。
@@ -127,14 +171,18 @@ func _rebuild_content() -> void:
 
 # 绑定 .tscn 静态按钮信号：%CloseBtn + 升星/进阶/觉醒 + 3 tab。
 func _bind_signals() -> void:
-	(_base_layer.get_parent().get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
-		AudioPlayer.play_sfx("common_close_popup_window")   # heroDetail.closeWindow（soundres.lua:204）
-		remove_window())
+	(_base_layer.get_parent().get_node("%CloseBtn") as BaseButton).pressed.connect(_close_panel)
 	_wire_action_button("%GetStoneBtn", evolve_requested, "common_click_feedback")   # +号按钮执行升星（简化偏离源，源 evolve 文字按钮已删）
 	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")
 	HeroDetailUpgradeFx.setup_awake_button(_base_layer, hero, cm, AWAKE_LSTR_KEY, AWAKE_FALLBACK_TEXT, func() -> void: awake_requested.emit())
 	for key in _tab_buttons:
 		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
+
+
+# 关闭面板统一入口（外层 %CloseBtn + card_tab 内 %CardCloseBtn 共用，源 card.lua:158-180 close 按钮 → closeWindow）。
+func _close_panel() -> void:
+	AudioPlayer.play_sfx("common_close_popup_window")   # heroDetail.closeWindow（soundres.lua:204）
+	remove_window()
 
 
 func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> void:
@@ -144,8 +192,7 @@ func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> v
 		sig.emit())
 
 
-# 觉醒按钮可见性 + Scale9 样式（单机化新增，hero_detail 无觉醒入口）。
-# 显示条件：Unit.Can Awake=true 且 hero.awake==false（扣碎片由点击时 perform_awake 校验）；Scale9 复用 detail 样式，文字 "觉醒"。
+# 觉醒按钮（单机化新增）。显示条件：Unit.Can Awake=true 且 hero.awake==false（扣碎片由 perform_awake 校验）。
 const AWAKE_LSTR_KEY: StringName = &"HERODETAIL.AWAKE_"
 const AWAKE_FALLBACK_TEXT: String = "觉醒"
 
@@ -172,13 +219,16 @@ func _fill_card_view() -> void:
 		if c.name.begins_with("PH_"):
 			c.queue_free()
 	HeroDetailTabs.fill_card_view(view, hero, cm)
+	# 接 card_tab 内 %CardCloseBtn（card 平铺后便捷关闭入口，照源 card 弹窗独立 close；_bind_signals 阶段 _tab_views 未就绪故在此接）。
+	var close_btn: BaseButton = view.get_node_or_null("%CardCloseBtn") as BaseButton
+	if close_btn != null:
+		close_btn.pressed.connect(_close_panel)
 
 
 # skillstren.lua createSkill + createSkillIcon + createSkillUnlockLabel。
 # 每槽：技能图标（SkillGroup.Icon + equip_frame_white 边框）+ Display Name。
-# rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（:442-451，不显示等级+按钮）。
-# 否则：lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。
-# 显示等级 = skill_levels[slot] - InitLevel + 1（controller.getCacheSkillLevelDisplay）。
+# rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（:442-451）。
+# 否则：lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。等级 = skill_levels - InitLevel + 1。
 # 技能升级按钮回调（源 skillstren.lua:345 升级按钮 pressHandler：tutorial + upgrade 信号）。
 func _on_skill_upgrade_clicked(idx: int) -> void:
 	Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
@@ -291,6 +341,23 @@ func _show_tab_content(key: String) -> void:
 				tw.parallel().tween_property(v, "offset_right", -75.0, 0.2)
 		else:
 			v.visible = false
+	# 进入 skill tab 时 fill 技能点信息栏（源 skillstren.lua createInformationBar:476-486）。
+	if key == TAB_SKILL:
+		_refresh_skill_point_bar()
+	# 进入 card tab 时播 CardFrame 旋转入场（源 card.lua:17 doPopCard CCRotateTo 90°）。
+	if key == TAB_CARD:
+		_play_card_pop_rotation()
+
+
+# CardFrame 旋转入场：90° 旋回 0°（0.2s）。pivot 居中（.tscn offset 固化 size 315×545；layout 未结算时回退常量）。
+func _play_card_pop_rotation() -> void:
+	var frame: Control = (_tab_views.get("card", null) as Control).get_node_or_null("%CardFrame") as Control
+	if frame == null:
+		return
+	var frame_size: Vector2 = frame.size if frame.size.x > 1.0 else HeroDetailTabs.CARD_FRAME_SIZE
+	frame.pivot_offset = frame_size * 0.5
+	frame.rotation = deg_to_rad(CARD_POP_ROTATION)
+	create_tween().tween_property(frame, "rotation", 0.0, CARD_POP_DURATION).set_ease(Tween.EASE_OUT)
 
 
 # doMove/doMoveBack container CCMoveTo 0.2s（在树+非止态才动画，首次 _build_content 不在树直接设止态）。
@@ -372,8 +439,40 @@ func perform_upgrade_skill(idx: int) -> bool:
 		return false
 	var ok: bool = pd.upgrade_hero_skill(hero.inst_id, idx)
 	if ok:
-		GameData.mark_save_dirty()   # 照源 local_server:1480 技能升级脏标（扣技能点+金币，60s/退出刷）
+		GameData.mark_save_dirty()   # local_server:1480 技能升级脏标
+		HeroDetailUpgradeFx.play_skill_upgrade_fx(_tab_views.get("skill", null) as Control, idx, self)
+		_refresh_skill_point_bar()   # 点数扣了，刷新信息栏（点数=0 时切购买按钮）
 	return ok
+
+
+# 刷新技能点信息栏（点数 / 购买按钮）。skill tab fill + 升级后调用。
+func _refresh_skill_point_bar() -> void:
+	var skill_view: Control = _tab_views.get("skill", null) as Control
+	if skill_view == null:
+		return
+	var label: Label = skill_view.get_node_or_null("%SkillPointLabel") as Label
+	var buy_btn: TextureButton = skill_view.get_node_or_null("%BuySkillPointBtn") as TextureButton
+	HeroDetailUpgradeFx.fill_skill_point_bar(label, buy_btn, pd)
+	if buy_btn != null:
+		# 重连避免 _rebuild_content 后重复 connect（fill_skill_point_bar 控 visible，pressed 此处接）。
+		for c in buy_btn.pressed.get_connections():
+			buy_btn.pressed.disconnect(c.callable)
+		buy_btn.pressed.connect(_on_buy_skill_point)
+
+
+# 购买技能点（源 skillstren.lua:463-468 getResetCost + local_server:2184-2193 buySkillStrenPoint）。
+# 钻石梯度计费，每次买 10 点。失败（钻石不足 / VIP 上限）Toast 提示。
+func _on_buy_skill_point() -> void:
+	if pd == null:
+		return
+	AudioPlayer.play_sfx("common_click_feedback")
+	var ok: bool = pd.buy_skill_stren_point()
+	if ok:
+		GameData.mark_save_dirty()
+		Toast.show_message("技能点 +%d" % PlayerData.SKILL_BUY_AMOUNT)
+		_refresh_skill_point_bar()
+	else:
+		Toast.show_message("钻石不足")   # 源无显式 Toast（lua 弹窗），本项目单机化用 Toast 兜底
 
 
 # 觉醒（单机化）：AwakeHelper.awake_hero 扣碎片 + 弹 HeroAwakePanel 展示 + 关闭后 refresh。

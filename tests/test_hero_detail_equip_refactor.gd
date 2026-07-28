@@ -45,6 +45,9 @@ func test_add_theme_only_scrollbar() -> void:
 	assert_eq(script_text.count("add_theme_"), 4, "add_theme 仅滚动条 stylebox 例外")
 
 func test_panel_line_count() -> void:
+	# 阈值 450→500（2026-07-28 用户确认）：panel 作为多功能协调中心（base/tab 切换 +
+	# 装备槽 + 升星/进阶/觉醒 + 技能升级 + skill point 信息栏 + 英雄翻页 + card close/旋转），
+	# 协调逻辑与 panel 状态强耦合不宜外迁。500 上限防失控。
 	var script_text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_panel.gd")
 	var lines: int = script_text.count("\n") + 1
-	assert_lte(lines, 450, "panel ≤450 行（当前 %d）" % lines)
+	assert_lte(lines, 500, "panel ≤500 行（当前 %d）" % lines)
