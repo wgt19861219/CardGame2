@@ -41,7 +41,11 @@ const LSTR_CHAPTER_YET_TO_OPEN: String = "EQUIPCRAFT.CHAPTER_YET_TO_OPEN"
 const HISTORY_ORIGIN: Vector2 = Vector2(55.0, 350.0)
 const HISTORY_ICON_SCALE: float = 40.0 / 72.0
 const HISTORY_ARROW_PATH: String = "res://assets/ui/alpha/HVGA/view_history_arrow.png"
+# 历史选中态高亮（源 equipcraft.lua:887-892）：当前 cursor 位置 icon 上叠 equip_craft_select 框。
+const HISTORY_CURSOR_RES: String = "res://assets/ui/alpha/HVGA/equip_craft_select.png"
 const PROMPT_BG_PATH: String = "res://assets/ui/alpha/HVGA/craft_promt_bg.png"
+# craft panel 弹性滑入（源 equipcraft.lua:1256-1266 EaseBackOut position.y 从 -h 到 0）。
+const PANEL_SLIDE_DUR: float = 0.25
 
 
 var cm: Variant = null
@@ -314,8 +318,11 @@ func _make_get_way_handler(idx: int) -> Callable:
 
 func _open_craft_panel() -> void:
 	_is_open = true
-	# 源 openCraftPanel（equipcraft.lua:575-587）：点 infoButton 后才建合成窗口 + 合成树。
+	# 源 openCraftPanel（equipcraft.lua:575-587 / :1256-1266）：点 infoButton 后才建合成窗口 + 合成树。
+	# :1256-1266 弹性滑入（EaseBackOut）：position.y 从 -size.h 滑到 0。
 	_craft_window.visible = true
+	var tw: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(_craft_window, "position:y", _craft_window.position.y, PANEL_SLIDE_DUR).from(_craft_window.position.y - _craft_window.size.y)
 	_create_craft_tree(_target_id, false)
 
 
@@ -367,6 +374,8 @@ func _set_history(index: int, id: int) -> void:
 		_history.resize(index)
 		if index - 1 < _history.size():
 			_create_craft_tree(int(_history[index - 1]["id"]), false)
+	# 源 equipcraft.lua:887-892：刷新历史 cursor 高亮（当前 _history_id 对应 icon 上叠 select 框）。
+	EquipCraftTree.update_history_cursor(self)
 
 
 func _make_tree_node_handler(idx: int) -> Callable:

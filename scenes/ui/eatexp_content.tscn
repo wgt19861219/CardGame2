@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_herolist_bg.png" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_title_bg.png" id="2_titlebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade_title_short_bg.png" id="5_titlebg1"]
 
 [node name="EatexpContent" type="Control"]
 layout_mode = 3
@@ -29,6 +30,21 @@ offset_top = 172.5
 offset_right = 765.0
 offset_bottom = 208.5
 texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleBg1" type="TextureRect" parent="TitleBg"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_right = 100.0
+offset_top = -20.0
+offset_bottom = 56.0
+grow_horizontal = 2
+texture = ExtResource("5_titlebg1")
 expand_mode = 1
 mouse_filter = 2
 

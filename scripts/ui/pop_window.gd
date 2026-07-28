@@ -6,6 +6,8 @@ extends Control
 ## onEnterHandlers/onExitHandlers。Godot：shade mouse_filter STOP(swallow)/IGNORE + _enter_tree/_exit_tree。
 
 const DEFAULT_SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)
+# 弹窗缩放入场（源 EaseBackOut 0.2s）：container scale 0→1，pivot 居中。
+const SCALE_IN_DUR: float = 0.2
 
 var identity: String = ""
 var param: Dictionary = {}
@@ -74,3 +76,18 @@ func set_swallow(swallow: bool) -> void:
 	_swallow = swallow
 	if shade_layer != null:
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_STOP if _swallow else Control.MOUSE_FILTER_IGNORE
+
+
+# 弹窗缩放入场（源 EaseBackOut 0.2s scale 0→1）。在 register_on_enter 回调里调用。
+# 直接 scale container（全屏 anchor，pivot 取屏幕中心），所有子节点（Bg/按钮）按比例从中心放大。
+# Godot 无 Ease.BACK_OUT 直接 ease_name，用 set_trans/set_ease 等价（TRANS_BACK + EASE_OUT）。
+func play_scale_in() -> void:
+	if container == null or not is_instance_valid(container):
+		return
+	# container 进入 tree 后 size 已 layout（= 屏幕实际大小），pivot=屏幕中心。
+	container.pivot_offset = container.size * 0.5
+	container.scale = Vector2.ZERO
+	var tw: Tween = create_tween()
+	tw.set_ease(Tween.EASE_OUT)
+	tw.set_trans(Tween.TRANS_BACK)
+	tw.tween_property(container, "scale", Vector2.ONE, SCALE_IN_DUR)

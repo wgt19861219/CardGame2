@@ -198,6 +198,7 @@ func test_reset_shows_confirm_dialog() -> void:
 
 
 # P1-14（2026-07-11）：currentStageHint 导航箭头（源 refreshHintPos :298-323 + 浮动 :614-619）。
+# 2026-07-28：StageHint 由静态 ▼ Label 升级为 stagepointer.png TextureRect（源 crusadeconfig:1087）。
 func test_stage_hint_created_and_points_current() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -207,8 +208,9 @@ func test_stage_hint_created_and_points_current() -> void:
 	panel.setup_panel(pd, BattleRng.new(12345))
 	panel.show_window(root)
 	assert_not_null(panel.stage_hint, "导航箭头创建（源 currentStageHint）")
-	if panel.stage_hint != null:
-		assert_eq(panel.stage_hint.text, "▼", "箭头降级 ▼（UIRes 纹理缺）")
+	if panel.stage_hint != null and panel.stage_hint is TextureRect:
+		var hint_tex: TextureRect = panel.stage_hint as TextureRect
+		assert_not_null(hint_tex.texture, "箭头纹理化 stagepointer.png（替静态▼文字）")
 	# 首关 cur=1 未通关 → 指向 stage_buttons[0]（源 :306-308），hint_anchor 可见
 	assert_true(panel._hint_anchor.visible, "首关箭头指向当前关（源 :306）")
 	if panel.stage_buttons.size() > 0:

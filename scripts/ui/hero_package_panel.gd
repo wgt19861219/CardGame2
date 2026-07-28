@@ -27,6 +27,11 @@ const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
 const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"
 const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"
 const LIST_LINE_FALLBACK: String = "以下英雄尚未召唤"   # cm=null fallback（= 源 LSTR_zh-CN 值）
+# herosplit 按钮装饰（源 heropackage.lua:712-753）：equip_soulstone_tag 图标 + main_deal_tag 角标。
+# main_deal_tag 源 isShowTag 由可分解英雄数驱动；本项目未做该判断，默认隐藏 visible=false。
+const HEROSPLIT_ICON_RES: String = "res://assets/ui/alpha/HVGA/equip_soulstone_tag.png"
+const HEROSPLIT_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"
+const HEROSPLIT_ICON_TARGET_W: float = 22.0   # 图标缩放后宽（适配 120×75 按钮左侧）
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -116,6 +121,45 @@ func _add_herosplit_button(content: Control) -> void:
 		Color.WHITE)
 	btn.pressed.connect(_on_herosplit_pressed)
 	content.add_child(btn)
+	# 装饰图标（源 heropackage.lua:712-753）：按钮左侧 equip_soulstone_tag 提示分解得魂石。
+	_add_herosplit_decoration(btn)
+
+
+# herosplit 按钮装饰：equip_soulstone_tag 图标（左侧，呼吸存在感）+ main_deal_tag 角标（默认隐藏，
+# 源由 isShowTag 判可分解英雄驱动，本项目暂未做该状态判断，按 visible=false 占位照源声明节点）。
+# 装饰节点 mouse_filter=IGNORE 避免拦截按钮 pressed（红线：装饰节点必须 IGNORE）。
+func _add_herosplit_decoration(btn: Button) -> void:
+	var icon_tex: Texture2D = load(HEROSPLIT_ICON_RES) as Texture2D
+	if icon_tex != null:
+		var icon := TextureRect.new()
+		icon.texture = icon_tex
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var orig_w: float = float(icon_tex.get_width())
+		var scale_val: float = HEROSPLIT_ICON_TARGET_W / orig_w if orig_w > 0.0 else 1.0
+		var tex_w: float = float(icon_tex.get_width()) * scale_val
+		var tex_h: float = float(icon_tex.get_height()) * scale_val
+		icon.size = Vector2(tex_w, tex_h)
+		# 左侧垂直居中：x 距按钮左缘 8px，y 居中（按钮 75 高）。
+		icon.position = Vector2(8.0, (75.0 - tex_h) * 0.5)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(icon)
+	# main_deal_tag 角标：源 isShowTag 判驱动，本项目无状态来源故 visible=false 占位（保证节点存在，
+	# 后续接Logic即可只切 visible 不重建）。
+	var tag_tex: Texture2D = load(HEROSPLIT_TAG_RES) as Texture2D
+	if tag_tex != null:
+		var tag := TextureRect.new()
+		tag.texture = tag_tex
+		tag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		var tag_orig_w: float = float(tag_tex.get_width())
+		var tag_scale: float = 24.0 / tag_orig_w if tag_orig_w > 0.0 else 1.0
+		var tag_w: float = float(tag_tex.get_width()) * tag_scale
+		var tag_h: float = float(tag_tex.get_height()) * tag_scale
+		tag.size = Vector2(tag_w, tag_h)
+		# 右上角徽章（源 :730-740 ccp 105,0 位置 → 按钮本地右上）。
+		tag.position = Vector2(120.0 - tag_w - 4.0, -tag_h * 0.3)
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tag.visible = false
+		btn.add_child(tag)
 
 
 func _on_herosplit_pressed() -> void:

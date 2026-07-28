@@ -36,6 +36,8 @@ const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.pn
 const PLUS_CRAFT_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png"
 const DEAL_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"
 const PLUS_SIGN_TARGET: float = 30.0   # ⚠️偏离源 24，按源比例 24/22×28≈30 同步放大（用户决策 2026-07-18）
+# summonLight 呼吸动画（源 heroitem.lua:154-167 StoneGroup.SummonLight Tween FadeTo 循环）。
+const SUMMON_LIGHT_BREATH_DUR: float = 1.2   # 一次 fade in+out 总时长（秒）
 const DEAL_TAG_TARGET: float = 24.0
 const NAME_CENTER_X: float = 177.0
 const NAME_POS_Y: float = 72.0
@@ -71,6 +73,7 @@ var _deal_tag: TextureRect = null
 var _bar_fill: TextureRect = null
 var _stone_label: Label = null
 var _summon_light: TextureRect = null
+var _summon_light_tween: Tween = null
 
 
 # 入口：entry 是 HeroInstance（已拥有）或 {tid:int, miss:bool}（未拥有，源 getAllListWithMiss 产物）。
@@ -269,9 +272,31 @@ func _fill_stone() -> void:
 	_bar_fill.offset_right = BAR_FILL_OFFSET.x + fill_w
 	_bar_fill.offset_bottom = BAR_FILL_OFFSET.y + BAR_FILL_H
 	_fill_stone_label(sa, sn)
-	_summon_light.visible = sa >= sn
+	# 源 heroitem.lua:154-167：可召唤时 SummonLight 呼吸 FadeTo 循环（_modulate.a 1→0.3→1 pingpong）。
+	_play_summon_light_breath(sa >= sn)
 	if head != null and head.ori_icon != null:
 		head.ori_icon.modulate = GRAY_MODULATE
+
+
+# SummonLight 呼吸 Tween（源 heroitem.lua:154-167）：可召唤时启动 modulate.a 循环（1→0.3 pingpong），
+# 不可召唤时停 Tween + 隐藏。HeroPackageItem 是 RefCounted（不在树），create_tween 需绑定节点
+# 才能自动跟随 lifecycle。绑定到 _summon_light（节点本身在树）保证 item free 时 tween 一并销毁。
+func _play_summon_light_breath(active: bool) -> void:
+	if _summon_light == null or not is_instance_valid(_summon_light):
+		return
+	if _summon_light_tween != null and is_instance_valid(_summon_light_tween):
+		_summon_light_tween.kill()
+		_summon_light_tween = null
+	if not active:
+		_summon_light.visible = false
+		_summon_light.modulate.a = 1.0
+		return
+	_summon_light.visible = true
+	_summon_light.modulate.a = 1.0
+	_summon_light_tween = _summon_light.create_tween()
+	_summon_light_tween.set_loops(0)   # 无限循环（源 FadeTo repeat forever）
+	_summon_light_tween.tween_property(_summon_light, "modulate:a", 0.3, SUMMON_LIGHT_BREATH_DUR * 0.5).set_trans(Tween.TRANS_SINE)
+	_summon_light_tween.tween_property(_summon_light, "modulate:a", 1.0, SUMMON_LIGHT_BREATH_DUR * 0.5).set_trans(Tween.TRANS_SINE)
 
 
 func _fill_stone_label(sa: int, sn: int) -> void:

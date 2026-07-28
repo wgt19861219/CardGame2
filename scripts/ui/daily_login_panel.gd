@@ -19,6 +19,9 @@ const EXPLAIN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_norm
 const EXPLAIN_CAP: Rect2 = Rect2(20.0, 15.0, 88.0, 19.0)
 const EXPLAIN_LABEL_COLOR: Color = Color(225.0 / 255.0, 209.0 / 255.0, 186.0 / 255.0)
 const SUBHEAD_GAP: float = 5.0
+# 源 dailylogin.lua:721-732 refreshSubhead：number setScale 1→1.5(0.2 SineOut)→1(0.2 SineIn) 弹跳。
+const SUBHEAD_BOUNCE_PEAK: Vector2 = Vector2(1.5, 1.5)
+const SUBHEAD_BOUNCE_SEC: float = 0.2
 
 var _player: PlayerData
 var _mgr: DailyLoginManager
@@ -30,6 +33,7 @@ var _content: Control = null
 var _subhead_pre: Label = null
 var _subhead_num: Label = null
 var _subhead_suf: Label = null
+var _subhead_bounce_tween: Tween = null   # refreshSubhead 弹跳 tween（kill 复用）
 
 
 func setup_panel(p_player: PlayerData) -> void:
@@ -59,7 +63,8 @@ func _build_content() -> void:
 
 
 # chrome 静态节点不动，只刷新 title/subhead text + 重建网格。
-func _refresh_view() -> void:
+# bounce=true（领奖后）→ subhead_num 弹跳（源 refreshSubhead:721-732）；false（初建）不跳。
+func _refresh_view(bounce: bool = false) -> void:
 	_data_list = DailyLoginBuilder.build_reward_data(_cm)
 	var now: int = int(Time.get_unix_time_from_system())
 	var freq: int = _mgr.get_login_frequency(now)
@@ -74,6 +79,8 @@ func _refresh_view() -> void:
 	_subhead_suf.text = _cm.get_lstr("DAILYLOGIN.TIMES") if _cm != null else "次"
 	_subhead_num.position = _subhead_pre.position + Vector2(_subhead_pre.get_minimum_size().x + SUBHEAD_GAP, 0.0)
 	_subhead_suf.position = _subhead_num.position + Vector2(_subhead_num.get_minimum_size().x + SUBHEAD_GAP, 0.0)
+	if bounce:
+		_play_subhead_bounce()
 	# 网格（builder.fill_grid 清 %GridScroll 子节点并重建 content + cells）
 	var grid_scroll := _content.get_node("%GridScroll") as ScrollContainer
 	_cell_statuses.clear()
@@ -83,6 +90,22 @@ func _refresh_view() -> void:
 	_cells = grid["cells"]
 	for c in _cells:
 		(c["button"] as TextureButton).pressed.connect(_on_cell_pressed.bind(int(c["day"])))
+
+
+# 源 dailylogin.lua:721-732 refreshSubhead：number setScale(0.2,1.5) SineOut → setScale(0.2,1) SineIn。
+# anchor(0.5,0.5) → pivot 居中，弹跳绕中心。
+func _play_subhead_bounce() -> void:
+	if not is_instance_valid(_subhead_num):
+		return
+	# pivot 居中（Label 默认 pivot 0,0；设为 minimum_size/2 让 scale 绕中心）。
+	_subhead_num.pivot_offset = _subhead_num.size * 0.5
+	if _subhead_bounce_tween != null and _subhead_bounce_tween.is_valid():
+		_subhead_bounce_tween.kill()
+	_subhead_bounce_tween = create_tween()
+	_subhead_bounce_tween.tween_property(_subhead_num, "scale", SUBHEAD_BOUNCE_PEAK, SUBHEAD_BOUNCE_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_subhead_bounce_tween.tween_property(_subhead_num, "scale", Vector2.ONE, SUBHEAD_BOUNCE_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 
 func _cell_status(day: int, freq: int, status: String) -> String:
@@ -107,7 +130,7 @@ func _claim(day: int) -> void:
 	var r: Dictionary = _mgr.claim_reward(_player, _cm, now)
 	if bool(r.get("ok", false)):
 		Toast.show_message("领取成功：%s ×%d" % [String(r.get("type", "")), int(r.get("amount", 0))])
-		_refresh_view()
+		_refresh_view(true)   # 领奖后 refreshSubhead 弹跳（源 :721-732）
 	else:
 		var fail_text: String = _cm.get_lstr("DAILYLOGIN.FAILED_TO_RECEIVE") if _cm != null else "领取失败"
 		Toast.show_message(fail_text)

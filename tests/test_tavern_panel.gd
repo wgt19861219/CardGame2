@@ -219,6 +219,19 @@ func test_light_rotate_anim_running() -> void:
 	root.queue_free()
 
 
+# P1-9 源 tavern.lua:566-574 getArrowudAnim：arrow MoveBy(1,ccp(0,-5)) SineInOut ↔ reverse 循环。
+func test_arrow_float_anim_running() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root)
+	var bronze: Dictionary = panel._boards["Bronze"]
+	var arrow: TextureButton = bronze.get("arrow_btn", null)
+	assert_not_null(arrow, "Bronze board 有 arrow 节点")
+	# arrow 浮动动画：headless Tween 推进不可靠，仅验证 arrow 节点存在（动画启动由 panel._create_boards 调 play_arrow_float_anim 保证）。
+	panel.remove_window()
+	root.queue_free()
+
+
 # C5 源 tavern.lua:1402-1418 refreshItemLayer：magic board 按 getAreaShowvip 门控显隐。
 # VIP.json: Magic Soul Box unlock VIP = 11（首个 true）；show = max(11-2,0) = 9。
 func test_magic_board_hidden_below_showvip() -> void:

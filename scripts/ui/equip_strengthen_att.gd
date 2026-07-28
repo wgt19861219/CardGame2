@@ -19,6 +19,14 @@ const ATT_LEFT: float = 340.0
 const EXP_BAR_POS: Vector2 = Vector2(340.0, 415.0)
 const EXP_BAR_SIZE: Vector2 = Vector2(280.0, 22.0)
 const COST_LABEL_POS: Vector2 = Vector2(340.0, 350.0)
+# 金币区装饰（源 equipstrengthen.lua:817-866）：money_bg 框 + goldicon + 金币 Label。
+# 源 money_bg = pvp_price_bg（ PvP 价位框，复用作金币栏底纹）；money icon = goldicon。
+const MONEY_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_price_bg.png"
+const GOLDICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon.png"
+const MONEY_BG_SIZE: Vector2 = Vector2(150.0, 26.0)
+const GOLDICON_SIZE: Vector2 = Vector2(20.0, 20.0)
+const GOLDICON_OFFSET: Vector2 = Vector2(6.0, 3.0)   # icon 在 money_bg 内左缘偏移
+const COST_LABEL_OFFSET: Vector2 = Vector2(30.0, 3.0)   # label 相对 money_bg 左缘
 const EXP_BAR_SPEED: float = 60.0
 const EXP_BAR_MIN_DUR: float = 0.1
 # 提示文案 LSTR key（源 T(LSTR(...))，panel.cm.get_lstr 解析）。
@@ -251,11 +259,7 @@ static func refresh_exp_bar_preview(panel) -> void:
 
 
 static func refresh_stren_cost(panel) -> void:
-	if panel._cost_label == null:
-		panel._cost_label = Label.new()
-		panel._cost_label.position = COST_LABEL_POS
-		panel._cost_label.set_meta("cost", true)
-		panel.container.add_child(panel._cost_label)
+	_ensure_money_area(panel)
 	var has_mt: bool = false
 	for k in panel._addmt_info:
 		if int(panel._addmt_info[k]) > 0:
@@ -268,12 +272,48 @@ static func refresh_stren_cost(panel) -> void:
 	var total_exp: float = get_total_exp(panel, panel._selected_slot)
 	var target: float = max(min(panel._target_exp, total_exp), 0.0)
 	var cost: int = int(get_unit_money(panel, panel._selected_slot) * (target - panel._ori_exp))
+	# 保留"金币"前缀：源 equipstrengthen.lua:817-866 icon+数字，本项目保留前缀冗余作为可读性双保险
+	# （既有测试 test_refresh_stren_cost_shows_gold 断言 find("金币")>=0）。
 	panel._cost_label.text = "金币 " + str(cost)
 	if panel.pd != null and cost > panel.pd.hero_manager.gold:
 		panel._cost_label.modulate = Color.RED
 		EquipStrengthenAnim.do_speak(panel, _L(panel, TEXT_MONEY_SHORT_KEY))
 	else:
 		panel._cost_label.modulate = Color.WHITE
+
+
+# 金币区容器（源 equipstrengthen.lua:817-866）：money_bg 框 + goldicon + Label。
+# 仅首次调用时建容器，后续 refresh_stren_cost 复用 panel._cost_label（label 引用保留）。
+# 装饰节点 mouse_filter=IGNORE 避免拦截 slot/gui_input（红线：装饰节点必须 IGNORE）。
+static func _ensure_money_area(panel) -> void:
+	if panel._cost_label != null:
+		return   # 已建过容器，复用
+	var host: Control = panel.container
+	# money_bg：pvp_price_bg 框（NinePatchRect 不用，框是平铺纹理即可，照范成 TextureRect）。
+	var bg := TextureRect.new()
+	bg.texture = load(MONEY_BG_RES) as Texture2D
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.size = MONEY_BG_SIZE
+	bg.position = COST_LABEL_POS
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.set_meta("cost_bg", true)
+	host.add_child(bg)
+	# goldicon：金币图标（bg 内左侧）。
+	var icon := TextureRect.new()
+	icon.texture = load(GOLDICON_RES) as Texture2D
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.size = GOLDICON_SIZE
+	icon.position = COST_LABEL_POS + GOLDICON_OFFSET
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.set_meta("cost_icon", true)
+	host.add_child(icon)
+	# label：金币数（bg 内 icon 右侧）。
+	panel._cost_label = Label.new()
+	panel._cost_label.position = COST_LABEL_POS + COST_LABEL_OFFSET
+	panel._cost_label.size = Vector2(MONEY_BG_SIZE.x - COST_LABEL_OFFSET.x - 4.0, 20.0)
+	panel._cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	panel._cost_label.set_meta("cost", true)
+	host.add_child(panel._cost_label)
 
 
 static func refresh_fast_stren_cost(panel) -> void:

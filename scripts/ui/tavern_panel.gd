@@ -112,6 +112,7 @@ func _create_boards() -> void:
 		_board_host.add_child(board["container"])
 		_boards[key] = board
 		TavernBoardBuilder.play_light_anim(board)
+		TavernBoardBuilder.play_arrow_float_anim(board)
 	_refresh_magic_board_visibility()
 
 

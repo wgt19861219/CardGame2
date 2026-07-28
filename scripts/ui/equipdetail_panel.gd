@@ -44,6 +44,8 @@ func setup_panel(equip_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 	setup()
 	_build_content()
 	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
+	# 源 EaseBackOut 0.2s：弹窗缩放入场（P2-10）。
+	register_on_enter(play_scale_in)
 
 
 # 建 UI 内容：从 equipdetail_content.tscn instantiate，fill 动态装备数据 + 连信号 + 滚动 3 段。

@@ -24,10 +24,15 @@ const ARROW_BOB_TIME: float = 1.0
 const ARROW_BOB_DX: float = 10.0
 const POINTER_BOB_TIME: float = 0.5
 const POINTER_BOB_DY: float = 10.0
+const MASK_BLINK_TIME: float = 0.6
+const MASK_ALPHA_MIN: float = 0.3
+const MASK_ALPHA_MAX: float = 1.0
 const META_FRAME: StringName = &"ss_frame"
 const META_TITLE: StringName = &"ss_title"
 const META_POINTER: StringName = &"ss_pointer"
 const META_BOBBED: StringName = &"ss_bobbed"
+const META_MASK: StringName = &"ss_mask"
+const META_MASK_BLINKED: StringName = &"ss_mask_blinked"
 
 var mgr: StageManager = null
 var player: PlayerData = null
@@ -118,6 +123,7 @@ func remove_window() -> void:
 func _enter_tree() -> void:
 	_start_arrow_bob()
 	_bob_all_pointers()
+	_blink_all_masks()
 
 
 # op="init"（首次，无动画）/ "chapter"（map slide + title fade；frame 章节不重建，照源 createFrame 不随章节）/ "mode"（map fadeOut + frame/title/dots fade）。
@@ -161,6 +167,7 @@ func _refresh_view(op: String = "init") -> void:
 		StageSelectBuilder.create_chapter_dots(_dot_container, max_ch, _current_chapter, _mode)
 	# 启动新 pointer 浮动（未入树时 _bob_pointer 守卫跳过，_enter_tree 兜底；切换后新 pointer 在此启动）
 	_bob_all_pointers()
+	_blink_all_masks()
 
 
 static func _clear_children(host: Control) -> void:
@@ -249,6 +256,30 @@ func _bob_pointer(p: CanvasItem) -> void:
 	tw.tween_property(p, "position:y", base_y - POINTER_BOB_DY, POINTER_BOB_TIME)
 	tw.tween_property(p, "position:y", base_y, POINTER_BOB_TIME)
 	p.set_meta(META_BOBBED, true)
+
+
+# 钥匙关 current/passed mask 循环 alpha 闪烁（源 stageselect.lua:1229-1238 FadeTo 0.3↔1.0）。
+func _blink_all_masks() -> void:
+	if _map_host == null:
+		return
+	for layer in _map_host.get_children():
+		if not (layer is Control):
+			continue
+		for btn in (layer as Control).get_children():
+			if not (btn is TextureButton):
+				continue
+			for c in (btn as TextureButton).get_children():
+				if c.has_meta(META_MASK) and not c.get_meta(META_MASK_BLINKED, false):
+					_blink_mask(c as CanvasItem)
+
+
+func _blink_mask(m: CanvasItem) -> void:
+	if m == null or not m.is_inside_tree() or m.get_meta(META_MASK_BLINKED, false):
+		return
+	var tw := m.create_tween().set_loops()
+	tw.tween_property(m, "modulate:a", MASK_ALPHA_MIN, MASK_BLINK_TIME)
+	tw.tween_property(m, "modulate:a", MASK_ALPHA_MAX, MASK_BLINK_TIME)
+	m.set_meta(META_MASK_BLINKED, true)
 
 
 func _get_stage_stars(sid: int) -> int:

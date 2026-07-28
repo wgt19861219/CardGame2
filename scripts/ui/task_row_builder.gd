@@ -51,6 +51,9 @@ const C_FAST_BTN: Vector2 = Vector2(450.0, 30.0)
 const ICON_TARGET: int = 75  # icon scale 75/max
 const REWARD_ICON_H: int = 20  # reward icon mh
 const FAST_BTN_SIZE: Vector2 = Vector2(60.0, 45.0)  # createFastButton setContentSize
+# task.lua:324 doPressInList bg setScale(0.98)：按下缩 0.98，松开回弹 1.0（视觉反馈）。
+const ROW_PRESS_SCALE: Vector2 = Vector2(0.98, 0.98)
+const ROW_PRESS_SEC: float = 0.1
 
 # createTask 奖励标题 LSTR key（panel 层 fill 调用传入 reward_title 文字）。
 const LSTR_REWARD_TITLE: StringName = &"EXERCISE.AWARDS_"
@@ -98,6 +101,8 @@ static func make_task_row(task: Dictionary, on_claim: Callable,
 	bg.texture = load_tex(BOARD_FINISHED_RES if show_complete else BOARD_RES)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.custom_minimum_size = Vector2(float(BG_W), float(BG_H))
+	# pivot 居中：源 bg anchor(0.5,0.5) 按中心 setScale → Godot Control scale 绕 pivot_offset。
+	bg.pivot_offset = Vector2(float(BG_W), float(BG_H)) * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.name = "TaskRow"
 	add_icon(bg, task)
@@ -237,7 +242,21 @@ static func add_action_button(bg: TextureRect, label_text: String, on_press: Cal
 	btn.add_child(lbl)
 	if not on_press.is_null():
 		btn.pressed.connect(on_press)
+	# task.lua:324 doPressInList bg setScale(0.98)：按钮 down→bg 缩 0.98，up→回弹 1.0。
+	# 项目 bg mouse_filter=IGNORE 不接收输入，借子按钮 button_down/up 信号驱动 bg 缩放。
+	btn.button_down.connect(_tween_row_scale.bind(bg, ROW_PRESS_SCALE))
+	btn.button_up.connect(_tween_row_scale.bind(bg, Vector2.ONE))
 	bg.add_child(btn)
+
+
+# 行 bg 按下/松开 scale Tween（源 task.lua:324 setScale 0.98 视觉反馈）。
+# bg 未入树时 create_tween 返回无效 Tween（无 scene tree）；入树后正常。
+static func _tween_row_scale(bg: TextureRect, target: Vector2) -> void:
+	if not is_instance_valid(bg) or not bg.is_inside_tree():
+		return
+	var tw: Tween = bg.create_tween()
+	tw.tween_property(bg, "scale", target, ROW_PRESS_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 # createEmptyPrompt@784-810：task/dailyjob 两态 LSTR key。

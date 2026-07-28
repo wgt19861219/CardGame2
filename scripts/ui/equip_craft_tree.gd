@@ -69,6 +69,14 @@ const LSTR_CHAPTER_D: String = "EQUIPCRAFT._CHAPTER__D"
 # 故 bg 局部(cx,cy) → Godot 相对中心 = (cx - BG_HALF_W, BG_HALF_H - cy)。照源 equipcraft.lua:949-952。
 const BG_HALF_W: float = 184.5   # equip_craft_bg 369/2
 const BG_HALF_H: float = 246.5   # equip_craft_bg 493/2
+# 金币 cost 区装饰（源 equipcraft.lua:1110-1114）：equip_craft_money_bg 框 + goldicon。
+const COST_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_craft_money_bg.png"
+const COST_GOLDICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon.png"
+const COST_BG_POS: Vector2 = Vector2(140.0, 75.0)   # bg 框左上（包标题+icon+数额）
+const COST_BG_SIZE: Vector2 = Vector2(170.0, 30.0)
+const COST_GOLDICON_SIZE: Vector2 = Vector2(22.0, 22.0)
+const COST_GOLDICON_POS: Vector2 = Vector2(148.0, 79.0)   # icon 在 bg 内左侧
+const COST_AMOUNT_POS: Vector2 = Vector2(178.0, 85.0)   # 数额 label 位置（覆盖原 COST_POS）
 
 
 static func _gl(pos: Vector2) -> Vector2:
@@ -182,6 +190,22 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 
 
 static func _build_cost(panel, tree: Control, expense: int) -> void:
+	# 源 equipcraft.lua:1110-1114：cost 区背景 equip_craft_money_bg + goldicon + 数额。
+	# 装饰节点 mouse_filter=IGNORE 避免拦截合成树点击（红线：装饰节点必须 IGNORE）。
+	var bg := TextureRect.new()
+	bg.texture = load(COST_BG_RES) as Texture2D
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.size = COST_BG_SIZE
+	bg.position = _gl(COST_BG_POS)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tree.add_child(bg)
+	var gold_icon := TextureRect.new()
+	gold_icon.texture = load(COST_GOLDICON_RES) as Texture2D
+	gold_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gold_icon.size = COST_GOLDICON_SIZE
+	gold_icon.position = _gl(COST_GOLDICON_POS)
+	gold_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tree.add_child(gold_icon)
 	var cost_title := Label.new()
 	cost_title.text = panel.cm.get_lstr(LSTR_SYNTHESIS_COST)
 	cost_title.position = _gl(COST_TITLE_POS)
@@ -195,6 +219,45 @@ static func _build_cost(panel, tree: Control, expense: int) -> void:
 	cost_lbl.modulate = COLOR_DARK_RED if expense <= money else COLOR_RED
 	tree.add_child(cost_lbl)
 	panel._tree_data["cost"] = cost_lbl
+
+
+# 历史选中态高亮（源 equipcraft.lua:887-892）：当前 cursor 位置（panel._history_id-1 索引）icon
+# 上叠 equip_craft_select 框。每次 _set_history 末尾调用，刷新前先移除旧 cursor。
+# 装饰节点 mouse_filter=IGNORE 避免拦截 history icon gui_input（红线：装饰节点必须 IGNORE）。
+const CURSOR_META: String = "history_cursor"
+const HISTORY_CURSOR_TARGET_W: float = 50.0   # select 框缩放后宽（icon scale 40px → 框 50 略溢出包住）
+
+static func update_history_cursor(panel) -> void:
+	if panel._history_layer == null or not is_instance_valid(panel._history_layer):
+		return
+	# 移除旧 cursor（按 meta 标记查子树，防 cursor 误挂在 iconBg 内层）。
+	for child in panel._history_layer.get_children():
+		if child.has_meta(CURSOR_META):
+			child.queue_free()
+	var idx: int = panel._history_id - 1   # _history_id 1-based → 0-based 索引
+	if idx < 0 or idx >= panel._history.size():
+		return
+	var entry: Dictionary = panel._history[idx]
+	var icon_bg: Control = entry.get("iconBg", null)
+	if icon_bg == null or not is_instance_valid(icon_bg):
+		return
+	var tex: Texture2D = load(panel.HISTORY_CURSOR_RES) as Texture2D
+	if tex == null:
+		return
+	var cursor := TextureRect.new()
+	cursor.texture = tex
+	cursor.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# select 框包住 icon（icon scale=HISTORY_ICON_SCALE=40/72 → 实际 40×40，框 50×50 居中包住）。
+	var orig_w: float = float(tex.get_width())
+	var scale_val: float = HISTORY_CURSOR_TARGET_W / orig_w if orig_w > 0.0 else 1.0
+	var cursor_w: float = float(tex.get_width()) * scale_val
+	var cursor_h: float = float(tex.get_height()) * scale_val
+	cursor.size = Vector2(cursor_w, cursor_h)
+	# 框居中叠在 icon 上（icon 中心相对 icon_bg 0,0 = icon 实际尺寸/2）。
+	cursor.position = Vector2(20.0 - cursor_w * 0.5, 20.0 - cursor_h * 0.5)
+	cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cursor.set_meta(CURSOR_META, true)
+	icon_bg.add_child(cursor)
 
 
 static func _judge_lack_of_component(panel) -> void:

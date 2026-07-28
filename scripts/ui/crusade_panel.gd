@@ -51,7 +51,7 @@ var enemy_preview_box: Control = null
 var start_btn: TextureButton = null
 var _shake_timer: Timer = null
 var _hint_anchor: Control = null
-var stage_hint: Label = null
+var stage_hint: CanvasItem = null
 var _rule_layer: Control = null   # 规则页层（null=未建，visible 切换 show/close）
 
 
@@ -87,7 +87,7 @@ func _build_content() -> void:
 	start_btn.visible = false
 	result_label.text = "远征：第 " + str(player.crusade_manager.cur_stage) + " 关"
 	_hint_anchor = content.get_node("%HintAnchor") as Control
-	stage_hint = content.get_node("%StageHint") as Label
+	stage_hint = content.get_node("%StageHint") as CanvasItem
 	_start_hint_float()
 	# Fog1-4 .tscn 静态，instantiate 后收集（按 currentStage 显隐）。
 	fog_rects.clear()

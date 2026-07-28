@@ -17,6 +17,10 @@ const SUBBTN_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subb
 const SUBBTN_CURRENT: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_current_1.png"
 const ME_BG_RES: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_me_bg.png"
 const OTHER_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
+# P0 我的排名浮窗（源 ranklist.lua:1318-1571）→ RanklistMyselfOverlay 控 ≤400 拆出。
+# pageContainer 源 ccp(245,400) 在 ranklist window 容器（cocos 480 tall y-up → Godot y=480-400=80）。
+const OVERLAY_PAGE_GODOT_X: float = 245.0
+const OVERLAY_PAGE_GODOT_Y: float = 80.0
 const ROW_W: float = 400.0
 const ROW_H: float = 56.0
 const SELF_COLOR: Color = Color(1.0, 1.0, 0.0)
@@ -134,6 +138,10 @@ func _on_row_input(event: InputEvent, rank: int, row_name: String, level: int, p
 func _refresh_list() -> void:
 	for c in _list_layer.get_children():
 		c.queue_free()
+	# P0 我的排名浮窗（源 :1318-1571）：旧 pageContainer 清理（_list_layer 子或浮在 scroll 上）。
+	for c in container.get_children():
+		if c.name == "PageContainer":
+			c.queue_free()
 	var r: Dictionary = _rm.generate_ranklist(_player, _rank_type)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 2)
@@ -143,6 +151,25 @@ func _refresh_list() -> void:
 	for i in r["items"].size():
 		var item: Dictionary = r["items"][i]
 		vbox.add_child(_make_row(i + 1, String(item["name"]), int(item["level"]), int(item["param"]), int(item.get("avatar", 0))))
+	# P0 我的排名浮窗：self_rank>2 时在 ScrollLayer 之上叠 pageContainer（前 2 已列表内显）。
+	_build_myself_overlay(int(r["self_rank"]), int(r.get("self_avatar", 0)))
+
+
+# 源 ranklist.lua:1318-1571 createMyselfRankSummary：self_rank<=2 不叠（前 2 已列表显）。
+# 单机化 prev_index=0 → delta=self_rank（源 :1364-1365）。挂 container（ScrollLayer 之上）。
+func _build_myself_overlay(self_rank: int, avatar: int) -> void:
+	if self_rank <= RanklistMyselfOverlay.RANK_TOP_VISIBLE_MAX:
+		return
+	var avatar_pic: String = ""
+	if _player != null and _player.cm != null:
+		avatar_pic = String(_player.cm.get_raw_table(&"Avatar").get(str(avatar), {}).get("Picture", ""))
+		if not avatar_pic.is_empty():
+			avatar_pic = "res://assets/ui/" + avatar_pic.substr(3)
+	# pageContainer 源 ccp(245,400) 在 ranklist window 容器坐标系（cocos y-up 480 → Godot y-down）。
+	# ranklist_content.tscn 容器局部坐标系：x 照源，y = 480-400=80 近顶部偏下（窗口内固定位置）。
+	var page: Control = RanklistMyselfOverlay.build(container, self_rank, _player.player_name, _player.team_level, avatar_pic)
+	if page != null:
+		page.position = Vector2(OVERLAY_PAGE_GODOT_X, OVERLAY_PAGE_GODOT_Y)
 
 
 # 目标简化：board TextureRect（ranklist_me_bg 自己/pvp_rank_bg_high 他人）+ 排名数字（1st/2nd/3rd 图标缺降级）+ name + param。

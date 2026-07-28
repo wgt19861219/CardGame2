@@ -43,7 +43,7 @@ offset_left = 717.0
 offset_top = 180.0
 offset_right = 817.0
 offset_bottom = 210.0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -65,7 +65,7 @@ offset_left = 717.0
 offset_top = 240.0
 offset_right = 817.0
 offset_bottom = 270.0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -87,7 +87,7 @@ offset_left = 717.0
 offset_top = 300.0
 offset_right = 817.0
 offset_bottom = 330.0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -109,7 +109,7 @@ offset_left = 717.0
 offset_top = 360.0
 offset_right = 817.0
 offset_bottom = 390.0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 

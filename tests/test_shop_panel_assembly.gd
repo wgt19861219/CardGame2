@@ -126,3 +126,17 @@ func test_buy_confirm_handler_calls_shop_mgr() -> void:
 	# 主要验证信号链路：confirmed → handler → shop_mgr.buy（不直接断言 gold 变化避免被 goods 状态干扰）
 	assert_true(handler.is_valid(), "_make_buy_confirm_handler 返有效 Callable（源 param.doBuy）")
 	panel.free()
+
+
+# P1-10 源 shop.lua:33-44 talkBg Scale9 气泡背景。_build_content 后 _talk_bg 应装配（资源存在）。
+func test_talk_bubble_assembled() -> void:
+	var pd := PlayerData.new(cm)
+	var panel := ShopPanel.new("shop", {})
+	add_child(panel)
+	panel.setup_panel(1, ShopManager.new(cm), pd, BattleRng.new(1))
+	var talk_bg: NinePatchRect = panel.get("_talk_bg") as NinePatchRect
+	assert_not_null(talk_bg, "_talk_bg Scale9 气泡装配（源 shop.lua:33-44）")
+	assert_true(talk_bg.texture != null, "talk_bg 用 shop_talk_bg.png 纹理")
+	# 初始隐藏（_show_talk 时淡入）。
+	assert_almost_eq(talk_bg.modulate.a, 0.0, 0.01, "talk_bg 初始 modulate.a=0（随 talk 淡入）")
+	panel.free()

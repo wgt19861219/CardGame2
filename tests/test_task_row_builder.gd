@@ -63,3 +63,41 @@ func test_row_builder_uses_theme_variation() -> void:
 	assert_true(script_text.find("theme_type_variation") != -1, "Label 用 theme_type_variation")
 	assert_true(script_text.find("TaskProgressDoneLabel") != -1, "progress done variation")
 	assert_true(script_text.find("TaskProgressTodoLabel") != -1, "progress todo variation")
+
+
+# P0-3：源 task.lua:324 doPressInList bg setScale(0.98)。ROW_PRESS_SCALE 常量 0.98 + bg pivot 居中。
+func test_row_press_scale_constant() -> void:
+	assert_almost_eq(TaskRowBuilder.ROW_PRESS_SCALE.x, 0.98, 0.001, "row press scale x=0.98 照源")
+	assert_almost_eq(TaskRowBuilder.ROW_PRESS_SCALE.y, 0.98, 0.001, "row press scale y=0.98 照源")
+
+
+# bg pivot 居中（Control scale 绕中心，源 anchor 0.5,0.5 等价）。
+func test_row_bg_pivot_centered() -> void:
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 5, "isFinished": false, "icon": "", "reward": [],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable())
+	var bg: TextureRect = row as TextureRect
+	assert_almost_eq(bg.pivot_offset.x, float(TaskRowBuilder.BG_W) * 0.5, 0.5, "bg pivot x 居中")
+	assert_almost_eq(bg.pivot_offset.y, float(TaskRowBuilder.BG_H) * 0.5, 0.5, "bg pivot y 居中")
+	row.free()
+
+
+# action button 连 button_down/up 信号驱动 bg scale（源 doPressInList 通过整 layer 拦截，
+# 项目 bg mouse_filter=IGNORE，借子按钮信号驱动等价视觉反馈）。
+func test_row_action_button_wires_press_signals() -> void:
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 5, "isFinished": false, "icon": "", "reward": [],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable())
+	var btn: TextureButton = null
+	for c in row.get_children():
+		if c is TextureButton:
+			btn = c as TextureButton
+			break
+	assert_not_null(btn, "行含 action button")
+	assert_true(btn.button_down.is_connected(TaskRowBuilder._tween_row_scale), "button_down 连 _tween_row_scale")
+	assert_true(btn.button_up.is_connected(TaskRowBuilder._tween_row_scale), "button_up 连 _tween_row_scale")
+	row.free()

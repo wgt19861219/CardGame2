@@ -9,6 +9,9 @@ extends RefCounted
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
 const CONTENT_SCALE: float = 1.28125
+# 源 shop.lua:198 商品 panel 按下 setScale(0.95)：press→缩 0.95，release→回弹 1.0（视觉反馈）。
+const ITEM_PRESS_SCALE: Vector2 = Vector2(0.95, 0.95)
+const ITEM_PRESS_SEC: float = 0.1
 
 # ── 源 marketconfig.lua framePos（shop.lua:786 readNode layout.position = ui_config.framePos）──
 # id=1 普通商人 framePos=ccp(400,225)。源 frame sprite anchor 0.5,0.5 中心。
@@ -172,6 +175,8 @@ static func _create_item(g: Dictionary, top_left: Vector2, config: Dictionary, p
 	var item := Control.new()
 	item.position = top_left
 	item.size = ITEM_SIZE
+	# pivot 居中：源 panel anchor(0.5,0.5) 按中心 setScale → Godot Control scale 绕 pivot_offset。
+	item.pivot_offset = ITEM_SIZE * 0.5
 	item.mouse_filter = Control.MOUSE_FILTER_STOP
 	_add_texture(item, UI_DIR + String(config["productBgRes"]), Vector2.ZERO)
 	var equip_row: Dictionary = p_cm.get_raw_table(&"Equip").get(str(g["id"]), {})

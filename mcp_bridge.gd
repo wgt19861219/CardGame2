@@ -529,6 +529,8 @@ func _handle_message(raw: String, pid: int) -> String:
 			result = _cmd_find_nodes(params)
 		"get_node_properties":
 			result = _cmd_get_node_properties(params)
+		"get_node_layout":
+			result = _cmd_get_node_layout(params)
 		"set_node_property":
 			result = _cmd_set_node_property(params)
 		"call_method":
@@ -576,7 +578,7 @@ func _handle_message(raw: String, pid: int) -> String:
 		"click_button":
 			result = _cmd_click_button(params)
 		_:
-			error = {"code": -32601, "message": "Method not found: %s" % method}
+			error = {"code": -32601, "message": "Method not found: %s. 若为新增 method（如 get_node_layout），项目根 mcp_bridge.gd 可能版本过旧，请重新 game_bridge_install 或同步上游 src/scripts/mcp_bridge.gd。" % method}
 
 	# Promote command-level errors to top-level so TS client sees them.
 	# TS sendToBridge only checks resp.error (top-level), never result.error.
@@ -729,6 +731,49 @@ func _cmd_get_node_properties(params: Dictionary) -> Variant:
 			val = str(val.get_path())
 		props[name] = val
 	return {"properties": props, "node": path}
+
+
+func _cmd_get_node_layout(params: Dictionary) -> Variant:
+	var path: String = str(params.get("path", ""))
+	var node := get_node_or_null(path)
+	if not is_instance_valid(node):
+		return {"error": {"code": -1, "message": "Node not found: %s" % path}}
+	var data: Dictionary = {}
+	data["type"] = node.get_class()
+	# visible 横切（P1）：CanvasItem 与 Node3D 各自定义 visible
+	if node is CanvasItem or node is Node3D:
+		data["visible"] = node.visible
+	if node is CanvasItem:
+		data["z_index"] = node.z_index
+	# 变换字段（P2）：Node2D/Control 各自定义，读取代码相同合并；Node3D 在下面用 Vector3 覆盖。
+	if node is Node2D or node is Control:
+		data["position"] = _jsonify(node.position)
+		data["global_position"] = _jsonify(node.global_position)
+		data["rotation"] = _jsonify(node.rotation)
+		data["scale"] = _jsonify(node.scale)
+	if node is Control:
+		data["size"] = _jsonify(node.size)
+		data["rect"] = _jsonify(node.get_rect())
+		data["anchor_left"] = node.anchor_left
+		data["anchor_right"] = node.anchor_right
+		data["anchor_top"] = node.anchor_top
+		data["anchor_bottom"] = node.anchor_bottom
+		data["offset_left"] = node.offset_left
+		data["offset_right"] = node.offset_right
+		data["offset_top"] = node.offset_top
+		data["offset_bottom"] = node.offset_bottom
+		data["pivot_offset"] = _jsonify(node.pivot_offset)
+	# 独立 if 非 elif（P3）：Sprite2D 同时命中上面的 Node2D 变换层 + 这里的专属层
+	if node is Sprite2D:
+		data["centered"] = node.centered
+		data["offset"] = _jsonify(node.offset)
+	if node is Node3D:
+		data["position"] = _jsonify(node.position)
+		data["global_position"] = _jsonify(node.global_position)
+		data["rotation"] = _jsonify(node.rotation)
+		data["scale"] = _jsonify(node.scale)
+	# 注：global_position 节点未入树时引擎静默返 ZERO，调用方须警惕未入树场景。
+	return {"layout": data, "node": path}
 
 
 func _cmd_set_node_property(params: Dictionary) -> Variant:
@@ -999,7 +1044,14 @@ func _cmd_take_screenshot(params: Dictionary) -> Variant:
 		if segment == ".." or segment == ".":
 			return {"error": {"code": -1, "message": "Screenshot path contains directory traversal"}}
 	var viewport := get_viewport()
-	var img := viewport.get_texture().get_image()
+	if viewport == null:
+		return {"error": {"code": -3, "message": "No active viewport available for screenshot"}}
+	var tex := viewport.get_texture()
+	if tex == null:
+		return {"error": {"code": -3, "message": "Viewport has no render texture (window not yet rendered or headless backend)"}}
+	var img := tex.get_image()
+	if img == null:
+		return {"error": {"code": -3, "message": "Failed to capture viewport image (GPU not ready or window minimized/backgrounded)"}}
 	var err := img.save_png(clean_path)
 	if err != OK:
 		return {"error": {"code": -2, "message": "Failed to save screenshot: error %d" % err}}

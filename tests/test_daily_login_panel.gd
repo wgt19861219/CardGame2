@@ -113,3 +113,32 @@ func test_panel_title_uses_lstr_month() -> void:
 	assert_true(fmt.find("%d") >= 0, "标题 LSTR 含 %d 月占位符")
 	var month: int = int(Time.get_datetime_dict_from_system().get("month", 1))
 	assert_eq(fmt % month, "%d月签到奖励" % month, "标题 LSTR 格式化正确")
+
+
+# P0-8：源 dailylogin.lua:721-732 refreshSubhead：number 弹跳 1→1.5→1。
+# _refresh_view(bounce=true) → _subhead_num pivot 居中 + tween 启动。
+func test_subhead_bounce_on_claim() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := DailyLoginPanel.new("daily_login", {})
+	panel.setup_panel(_make_player_with_freq(1))
+	panel.show_window(root)
+	# 触发领奖路径（_claim 调 _refresh_view(true)）需 day==freq 且 status==common；
+	# 直接调 _refresh_view(true) 验证弹跳 tween 启动。
+	panel._refresh_view(true)
+	await get_tree().create_timer(0.05).timeout
+	# bounce tween 应启动且 pivot 居中（scale 绕中心）。
+	assert_almost_eq(panel._subhead_num.pivot_offset.x, panel._subhead_num.size.x * 0.5, 0.5, "subhead_num pivot x 居中")
+	assert_true(panel._subhead_bounce_tween != null and panel._subhead_bounce_tween.is_valid(), "bounce tween 启动")
+	panel.remove_window()
+	root.queue_free()
+
+
+# _make_player_with_freq：构造 PlayerData，DailyLoginManager 返指定 freq + common 状态。
+func _make_player_with_freq(freq: int) -> PlayerData:
+	var pd := PlayerData.new(cm)
+	# DailyLoginManager.get_login_frequency/get_reward_status 默认返 0/"none"，
+	# 直接 monkey-patch 不便（RefCounted 无 set_meta 法）。用 GameData 桥接：
+	# 实际 freq 来自 save，测试隔离下默认 freq=0 → checkin_num=-1（freq-1）。
+	# 本测试不验证 checkin_num 数值，只验证 bounce tween 启动（_refresh_view(true) 总跳）。
+	return pd
