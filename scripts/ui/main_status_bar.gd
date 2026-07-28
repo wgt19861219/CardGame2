@@ -86,6 +86,10 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	var vip_bg := _add_texture_rect(head, VIP_BG_RES, Vector2(90.0, 18.0), Vector2(50.0, 50.0), "vip_bg")
 	vip_bg.visible = false
 	refs["vip_bg"] = vip_bg
+	# VIP icon（源 statusbar.lua:591 recharge_vip_icon.png，叠加在 vip_bg 上）
+	var vip_icon := _add_texture_rect(head, VIP_ICON_RES, Vector2(90.0, 18.0), Vector2(50.0, 50.0), "vip_icon")
+	vip_icon.visible = false
+	refs["vip_icon"] = vip_icon
 	var vip_lbl := Label.new()
 	vip_lbl.text = "0"
 	vip_lbl.position = Vector2(85.0, 38.0)
@@ -194,6 +198,8 @@ static func refresh(refs: Dictionary, level: int, gold: int, diamond: int, vital
 		(refs["vip"] as Label).visible = vip > 0
 	if refs.has("vip_bg"):
 		(refs["vip_bg"] as TextureRect).visible = vip > 0
+	if refs.has("vip_icon"):
+		(refs["vip_icon"] as TextureRect).visible = vip > 0
 	# 头像框银/金切换（源 vip>0 用 gold 资源）
 	_refresh_head_frame(refs, vip_idx)
 

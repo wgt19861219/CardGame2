@@ -1,66 +1,69 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/back2mapbtn.png" id="1_exit"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sound_on.png" id="2_sound"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/resume_battle.png" id="3_resume"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/back2mapbtn.png" id="1_33wau"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/back2mapbtn-disabled.png" id="2_6hll7"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sound_on.png" id="3_kcqwq"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/resume_battle.png" id="4_xn3xu"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/resume_battle_press.png" id="5_5v3ps"]
 
-[node name="BattlePauseLayerContent" type="Control"]
+[node name="BattlePauseLayerContent" type="Control" unique_id=1559688231]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="ExitBtn" type="TextureButton" parent="."]
+[node name="ExitBtn" type="TextureButton" parent="." unique_id=1580597919]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 335.0
 offset_top = 295.0
 offset_right = 475.0
 offset_bottom = 418.0
-texture_normal = ExtResource("1_exit")
+texture_normal = ExtResource("1_33wau")
+texture_pressed = ExtResource("2_6hll7")
 
-[node name="ExitLabel" type="Label" parent="."]
-layout_mode = 3
+[node name="ExitLabel" type="Label" parent="." unique_id=151744762]
+layout_mode = 0
 offset_left = 335.0
 offset_top = 380.0
 offset_right = 475.0
 offset_bottom = 404.0
-mouse_filter = 2
 text = "退出战斗"
 
-[node name="SoundBtn" type="TextureButton" parent="."]
+[node name="SoundBtn" type="TextureButton" parent="." unique_id=597323199]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 480.0
 offset_top = 295.0
 offset_right = 608.0
 offset_bottom = 418.0
-texture_normal = ExtResource("2_sound")
+texture_normal = ExtResource("3_kcqwq")
 
-[node name="SoundLabel" type="Label" parent="."]
-layout_mode = 3
+[node name="SoundLabel" type="Label" parent="." unique_id=2085306495]
+layout_mode = 0
 offset_left = 480.0
 offset_top = 380.0
 offset_right = 608.0
 offset_bottom = 404.0
-mouse_filter = 2
 text = "音效"
 
-[node name="ResumeBtn" type="TextureButton" parent="."]
+[node name="ResumeBtn" type="TextureButton" parent="." unique_id=1035355519]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 625.0
 offset_top = 295.0
 offset_right = 753.0
 offset_bottom = 418.0
-texture_normal = ExtResource("3_resume")
+texture_normal = ExtResource("4_xn3xu")
+texture_pressed = ExtResource("5_5v3ps")
 
-[node name="ResumeLabel" type="Label" parent="."]
-layout_mode = 3
+[node name="ResumeLabel" type="Label" parent="." unique_id=480028675]
+layout_mode = 0
 offset_left = 625.0
 offset_top = 380.0
 offset_right = 753.0
 offset_bottom = 404.0
-mouse_filter = 2
 text = "继续战斗"
