@@ -45,7 +45,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PH_ArtPlaceholder" type="ColorRect" parent="CardArtHost"]
+[node name="PH_ArtPlaceholder" type="ColorRect" parent="CardArtHost" unique_id=1491769480]
 layout_mode = 0
 offset_left = 130.5
 offset_top = 56.5
@@ -53,6 +53,26 @@ offset_right = 429.5
 offset_bottom = 583.5
 mouse_filter = 2
 color = Color(0.2, 0.2, 0.3, 0.6)
+
+[node name="CardArtName" type="Label" parent="." unique_id=1517265690]
+unique_name_in_owner = true
+z_index = 3
+layout_mode = 0
+offset_left = 177.5
+offset_top = 532.5
+offset_right = 357.5
+offset_bottom = 546.5
+
+[node name="CardNameBgLine" type="TextureRect" parent="." unique_id=1828308982]
+unique_name_in_owner = true
+z_index = 2
+layout_mode = 0
+offset_left = 293.5
+offset_top = 527.0
+offset_right = 364.5
+offset_bottom = 538.0
+mouse_filter = 2
+expand_mode = 1
 
 [node name="CardNameLabel" type="Label" parent="." unique_id=302242378]
 unique_name_in_owner = true

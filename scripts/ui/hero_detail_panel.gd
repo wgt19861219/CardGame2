@@ -2,8 +2,7 @@ class_name HeroDetailPanel
 extends PopWindow
 
 ## 英雄详情面板（View 层）— 属性 + 装备槽 + 升星/进阶按钮（信号）。
-## base + tab view 静态化进 hero_detail_content.tscn；绘制 fill 外迁 HeroDetailAttribs/Tabs/EquipSlots/UpgradeFx。
-## 本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装（测试引用 + panel 状态）。
+## base + tab view 静态化进 hero_detail_content.tscn；绘制 fill 外迁 HeroDetailAttribs/Tabs/EquipSlots/UpgradeFx；本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装。
 signal evolve_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
@@ -107,7 +106,9 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		detail_v_scroll.add_theme_stylebox_override("grabber_pressed", empty)
 	var detail_vbox: VBoxContainer = detail_host.get_node("AttribVBox") as VBoxContainer
 	HeroDetailAttribs.fill_attributes(detail_vbox, hero, cm)
-	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked)
+	# gold 不够 cost 变红（refreshCostColor），skl_add 显 levelAdd "+N"（refreshSkillAdd）。
+	var gold_for_skills: int = hero_manager.gold if hero_manager != null else -1
+	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked, gold_for_skills, HeroDetailUpgradeFx.calculate_skl_bonus(hero, cm))
 	_show_tab_content(tab)
 	_refresh_upgrade_light()   # 可进阶时按钮光效（源 createUpgradeButtonLight）
 
@@ -144,8 +145,7 @@ func _wire_action_button(node_path: String, sig: Signal, sound_key: String) -> v
 		sig.emit())
 
 
-# 觉醒按钮可见性 + Scale9 样式（单机化新增，hero_detail 无觉醒入口）。
-# 显示条件：Unit.Can Awake=true 且 hero.awake==false（扣碎片由点击时 perform_awake 校验）；Scale9 复用 detail 样式，文字 "觉醒"。
+# 觉醒按钮（单机化新增）。显示条件：Unit.Can Awake=true 且 hero.awake==false（扣碎片由 perform_awake 校验）。
 const AWAKE_LSTR_KEY: StringName = &"HERODETAIL.AWAKE_"
 const AWAKE_FALLBACK_TEXT: String = "觉醒"
 

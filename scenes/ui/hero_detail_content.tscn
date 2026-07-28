@@ -1,20 +1,20 @@
-[gd_scene format=3 uid="uid://cxgjpbesrb6nr" load_steps=2]
+[gd_scene format=3]
 
-[ext_resource type="Texture2D" uid="uid://dismqdek4v6vb" path="res://assets/ui/alpha/HVGA/herodetail-bg.png" id="1_bg"]
-[ext_resource type="Texture2D" uid="uid://bxmv83aoah1a6" path="res://assets/ui/alpha/HVGA/herodetail_name_bg.png" id="2_namebg"]
-[ext_resource type="Texture2D" uid="uid://ctixyttvireb0" path="res://assets/ui/alpha/HVGA/herodetail_star_grey.png" id="3_stargrey"]
-[ext_resource type="Texture2D" uid="uid://dvgia0e652ml0" path="res://assets/ui/alpha/HVGA/herodetail_star_yellow.png" id="4_staryel"]
-[ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="5_close"]
-[ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="6_closep"]
-[ext_resource type="Texture2D" uid="uid://c6hc85fvmusfb" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="7_popup"]
-[ext_resource type="Texture2D" uid="uid://36rw1tt1fjxe" path="res://assets/ui/alpha/HVGA/herodetail_soulstone_icon.png" id="8_stone"]
-[ext_resource type="Texture2D" uid="uid://csx7niibndmik" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress_bg.png" id="9_barbg"]
-[ext_resource type="Texture2D" uid="uid://r62klw38nq0r" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress.png" id="10_bar"]
-[ext_resource type="Texture2D" uid="uid://rqps1iu8v4up" path="res://assets/ui/alpha/HVGA/herodetail_status_plus_icon_1.png" id="11_getstone"]
-[ext_resource type="Texture2D" uid="uid://b64rmyhqgasx7" path="res://assets/ui/alpha/HVGA/equip_frame_white.png" id="12_equipframe"]
-[ext_resource type="PackedScene" uid="uid://ca2d7tab8a01r" path="res://scenes/ui/hero_detail_card_tab.tscn" id="13_cardtab"]
-[ext_resource type="PackedScene" uid="uid://bd3d7uacbb02s" path="res://scenes/ui/hero_detail_detail_tab.tscn" id="14_detailtab"]
-[ext_resource type="PackedScene" uid="uid://ce4d8vbdcc03t" path="res://scenes/ui/hero_detail_skill_tab.tscn" id="15_skilltab"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-bg.png" id="1_arm7d"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_name_bg.png" id="2_rpxrd"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_star_grey.png" id="3_dnsxi"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_star_yellow.png" id="4_j2r37"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_frame_white.png" id="5_qtsdm"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_soulstone_icon.png" id="6_yxfmg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress_bg.png" id="7_xulm4"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress.png" id="8_436n0"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_status_plus_icon_1.png" id="9_rasiu"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_status_plus_icon_2.png" id="10_djwpd"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="11_udv1k"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="12_byvlk"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_card_tab.tscn" id="13_iaufn"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_detail_tab.tscn" id="14_1fkl1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_skill_tab.tscn" id="15_o4jsg"]
 
 [node name="HeroDetailContent" type="Control" unique_id=109460258]
 layout_mode = 3
@@ -27,6 +27,7 @@ mouse_filter = 2
 
 [node name="BaseLayer" type="Control" parent="." unique_id=1847197793]
 unique_name_in_owner = true
+z_index = 1
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,7 +35,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-z_index = 1
 
 [node name="Bg" type="TextureRect" parent="BaseLayer" unique_id=1605552371]
 layout_mode = 0
@@ -43,7 +43,7 @@ offset_top = 35.0
 offset_right = 738.5
 offset_bottom = 605.0
 mouse_filter = 2
-texture = ExtResource("1_bg")
+texture = ExtResource("1_arm7d")
 expand_mode = 1
 
 [node name="PortraitHost" type="Control" parent="BaseLayer" unique_id=1580609114]
@@ -64,7 +64,7 @@ offset_top = 383.1
 offset_right = 525.2
 offset_bottom = 422.9
 mouse_filter = 2
-texture = ExtResource("2_namebg")
+texture = ExtResource("2_rpxrd")
 expand_mode = 1
 
 [node name="TypeIcon" type="TextureRect" parent="BaseLayer" unique_id=1510124278]
@@ -84,8 +84,8 @@ offset_left = 378.0
 offset_top = 391.0
 offset_right = 518.0
 offset_bottom = 419.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 
 [node name="StarGrey1" type="TextureRect" parent="BaseLayer" unique_id=1654457485]
 layout_mode = 0
@@ -94,7 +94,7 @@ offset_top = 289.1
 offset_right = 456.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("3_stargrey")
+texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey2" type="TextureRect" parent="BaseLayer" unique_id=380122176]
@@ -104,7 +104,7 @@ offset_top = 289.1
 offset_right = 476.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("3_stargrey")
+texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey3" type="TextureRect" parent="BaseLayer" unique_id=1936126234]
@@ -114,7 +114,7 @@ offset_top = 289.1
 offset_right = 496.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("3_stargrey")
+texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey4" type="TextureRect" parent="BaseLayer" unique_id=868172271]
@@ -124,7 +124,7 @@ offset_top = 289.1
 offset_right = 516.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("3_stargrey")
+texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey5" type="TextureRect" parent="BaseLayer" unique_id=1926070244]
@@ -134,7 +134,7 @@ offset_top = 289.1
 offset_right = 536.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("3_stargrey")
+texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarYellow1" type="TextureRect" parent="BaseLayer" unique_id=2071279257]
@@ -145,7 +145,7 @@ offset_top = 289.1
 offset_right = 456.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("4_staryel")
+texture = ExtResource("4_j2r37")
 expand_mode = 1
 
 [node name="StarYellow2" type="TextureRect" parent="BaseLayer" unique_id=1595927956]
@@ -156,7 +156,7 @@ offset_top = 289.1
 offset_right = 476.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("4_staryel")
+texture = ExtResource("4_j2r37")
 expand_mode = 1
 
 [node name="StarYellow3" type="TextureRect" parent="BaseLayer" unique_id=1739545107]
@@ -167,7 +167,7 @@ offset_top = 289.1
 offset_right = 496.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("4_staryel")
+texture = ExtResource("4_j2r37")
 expand_mode = 1
 
 [node name="StarYellow4" type="TextureRect" parent="BaseLayer" unique_id=563642089]
@@ -178,7 +178,7 @@ offset_top = 289.1
 offset_right = 516.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("4_staryel")
+texture = ExtResource("4_j2r37")
 expand_mode = 1
 
 [node name="StarYellow5" type="TextureRect" parent="BaseLayer" unique_id=1986775410]
@@ -189,11 +189,10 @@ offset_top = 289.1
 offset_right = 536.1
 offset_bottom = 314.9
 mouse_filter = 2
-texture = ExtResource("4_staryel")
+texture = ExtResource("4_j2r37")
 expand_mode = 1
 
-
-[node name="NameFrame" type="TextureRect" parent="BaseLayer"]
+[node name="NameFrame" type="TextureRect" parent="BaseLayer" unique_id=678324230]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 373.8
@@ -202,17 +201,6 @@ offset_right = 525.2
 offset_bottom = 422.9
 mouse_filter = 2
 expand_mode = 1
-[node name="CloseBtn" type="TextureButton" parent="." unique_id=2058700208]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 889.0
-offset_top = 22.0
-offset_right = 940.0
-offset_bottom = 73.0
-z_index = 2
-texture_normal = ExtResource("5_close")
-texture_pressed = ExtResource("6_closep")
-ignore_texture_size = true
 
 [node name="LevelTitle" type="Label" parent="BaseLayer" unique_id=818367256]
 unique_name_in_owner = true
@@ -296,7 +284,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(94, 95)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("12_equipframe")
+texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
 [node name="EquipSlot3" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotLeftColumn" unique_id=545256893]
@@ -304,7 +292,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(94, 95)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("12_equipframe")
+texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
 [node name="EquipSlot5" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotLeftColumn" unique_id=823588371]
@@ -312,7 +300,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(94, 95)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("12_equipframe")
+texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
 [node name="EquipSlotRightColumn" type="VBoxContainer" parent="BaseLayer/EquipSlotHost" unique_id=646686815]
@@ -330,7 +318,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(94, 95)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("12_equipframe")
+texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
 [node name="EquipSlot4" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotRightColumn" unique_id=1032196593]
@@ -338,7 +326,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(94, 95)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("12_equipframe")
+texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
 [node name="EquipSlot6" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotRightColumn" unique_id=1510603513]
@@ -346,7 +334,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(94, 95)
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("12_equipframe")
+texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
 [node name="StoneIcon" type="TextureRect" parent="BaseLayer" unique_id=5101001]
@@ -357,7 +345,7 @@ offset_top = 484.0
 offset_right = 280.5
 offset_bottom = 530.0
 mouse_filter = 2
-texture = ExtResource("8_stone")
+texture = ExtResource("6_yxfmg")
 expand_mode = 1
 
 [node name="StoneBarBg" type="TextureRect" parent="BaseLayer" unique_id=5101002]
@@ -368,7 +356,7 @@ offset_top = 494.0
 offset_right = 459.5
 offset_bottom = 520.0
 mouse_filter = 2
-texture = ExtResource("9_barbg")
+texture = ExtResource("7_xulm4")
 expand_mode = 1
 
 [node name="StoneBar" type="TextureRect" parent="BaseLayer" unique_id=5101003]
@@ -379,7 +367,7 @@ offset_top = 494.0
 offset_right = 279.5
 offset_bottom = 520.0
 mouse_filter = 2
-texture = ExtResource("10_bar")
+texture = ExtResource("8_436n0")
 expand_mode = 1
 
 [node name="StoneBarLabel" type="Label" parent="BaseLayer" unique_id=5101004]
@@ -389,9 +377,9 @@ offset_left = 321.5
 offset_top = 494.0
 offset_right = 417.5
 offset_bottom = 520.0
+theme_override_font_sizes/font_size = 18
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 18
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -402,7 +390,8 @@ offset_left = 464.5
 offset_top = 487.0
 offset_right = 504.5
 offset_bottom = 527.0
-texture_normal = ExtResource("11_getstone")
+texture_normal = ExtResource("9_rasiu")
+texture_pressed = ExtResource("10_djwpd")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -420,20 +409,13 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"HeroTabLabel"
+text = "进阶"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "进阶"
 
-; 觉醒按钮（单机化新增；源 hero_detail 无觉醒按钮——源 awake 由服务器注入玩家不可主动激活）
-; 位置：UpgradeRankBtn 正下方（同为"英雄养成"动作区），可见性由 panel 运行时按 Can Awake + 碎片数控制
 [node name="AwakeBtn" type="Button" parent="BaseLayer" unique_id=700100001]
 unique_name_in_owner = true
 visible = false
@@ -449,17 +431,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"HeroTabLabel"
+text = "觉醒"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "觉醒"
 
 [node name="TabDetailBtn" type="Button" parent="BaseLayer" unique_id=643380600]
 unique_name_in_owner = true
@@ -475,17 +452,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"HeroTabLabel"
+text = "详细属性"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "详细属性"
 
 [node name="TabCardBtn" type="Button" parent="BaseLayer" unique_id=1105052158]
 unique_name_in_owner = true
@@ -501,17 +473,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"HeroTabLabel"
+text = "图鉴"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "图鉴"
 
 [node name="TabSkillBtn" type="Button" parent="BaseLayer" unique_id=1554135451]
 unique_name_in_owner = true
@@ -527,23 +494,61 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"HeroTabLabel"
+text = "技能升级"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=2058700208]
+unique_name_in_owner = true
+z_index = 2
+layout_mode = 0
+offset_left = 889.0
+offset_top = 22.0
+offset_right = 940.0
+offset_bottom = 73.0
+texture_normal = ExtResource("11_udv1k")
+texture_pressed = ExtResource("12_byvlk")
+ignore_texture_size = true
+
+[node name="TabCardView" type="Control" parent="." unique_id=1958418760 instance=ExtResource("13_iaufn")]
+unique_name_in_owner = true
+visible = false
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_type_variation = &"HeroTabLabel"
-horizontal_alignment = 1
-vertical_alignment = 1
-text = "技能升级"
 
-[node name="TabCardView" parent="." instance=ExtResource("13_cardtab")]
+[node name="TabDetailView" type="Control" parent="." unique_id=1129281829 instance=ExtResource("14_1fkl1")]
 unique_name_in_owner = true
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="TabDetailView" parent="." instance=ExtResource("14_detailtab")]
+[node name="TabSkillView" type="Control" parent="." unique_id=94822661 instance=ExtResource("15_o4jsg")]
 unique_name_in_owner = true
-
-[node name="TabSkillView" parent="." instance=ExtResource("15_skilltab")]
-unique_name_in_owner = true
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_right = -75.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

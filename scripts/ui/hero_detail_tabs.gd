@@ -40,6 +40,19 @@ const CARD_TYPE_ICON_RES: Dictionary = {
 const CARD_STAR_RES: String = "res://assets/ui/alpha/HVGA/card/card_star_big.png"
 const CARD_STAR_SIZE: Vector2 = Vector2(23.0, 24.0)
 const EQUIP_FRAME_WHITE_PATH: String = "res://assets/ui/alpha/HVGA/equip_frame_white.png"
+# 名字底纹条（源 readhero.lua:1141-1148）：name 像素宽 > NAME_BG_SHORT_THRESHOLD 用 short 版，否则 long 版。
+const CARD_NAME_BG_SHORT_RES: String = "res://assets/ui/alpha/HVGA/card/card_name_bg_short.png"
+const CARD_NAME_BG_LONG_RES: String = "res://assets/ui/alpha/HVGA/card/card_name_bg_long.png"
+const CARD_NAME_BG_SHORT_THRESHOLD: float = 120.0   # 源 readhero.lua:1143 阈值
+const CARD_NAME_BG_SHORT_W: float = 71.0   # PIL 实测 short.png IHDR 宽
+const CARD_NAME_BG_LONG_W: float = 151.0   # PIL 实测 long.png IHDR 宽
+const CARD_NAME_BG_H: float = 11.0   # PIL 实测 short/long.png IHDR 高
+# skill icon equip_frame_white 白边框相对 icon 偏移（源 readhero.lua:1016 pos ccp(30,29) 相对 icon 中心 60×60 区）。
+# PIL 实测 equip_frame_white.png 94×95，icon size 22×22。frame 居中盖 icon → frame pos = icon pos - (frame_size-icon_size)/2。
+const SKILL_ICON_FRAME_SIZE: Vector2 = Vector2(40.0, 40.0)   # frame 显示尺寸（略大于 icon 22，源 frame 60 区盖 32 icon 比例 1.875×）
+# CardArtName 称号 Label（源 readhero.lua:1102-1110）：max_width=180 size=14 暖白 ccc3(233,232,213)。
+const CARD_ART_NAME_MAX_WIDTH: float = 180.0
+const CARD_ART_NAME_COLOR: Color = Color(233.0 / 255.0, 232.0 / 255.0, 213.0 / 255.0, 1.0)
 const SKILL_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)
 const SKILL_ICON_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)   # 技能图标可点击区
 const SKILL_BTN_SIZE: Vector2 = Vector2(80.0, 28.0)
@@ -62,7 +75,7 @@ static func fill_card_view(view: Control, hero: HeroInstance, cm: Variant) -> vo
 		return
 	_fill_card_frame(view.get_node("%CardFrame") as TextureRect, hero.rank)
 	_fill_card_art(view.get_node("%CardArtHost") as Control, hero, cm)
-	_fill_card_name(view.get_node("%CardNameLabel") as Label, hero, cm)
+	_fill_card_name(view.get_node("%CardNameLabel") as Label, view.get_node("%CardArtName") as Label, view.get_node("%CardNameBgLine") as TextureRect, hero, cm)
 	_fill_card_type_icon(view, hero, cm)
 	_fill_card_skill_icons(view, hero, cm)
 	_fill_card_stars(view, hero)
@@ -84,9 +97,38 @@ static func _fill_card_art(host: Control, hero: HeroInstance, cm: Variant) -> vo
 		host.add_child(art)
 
 
-# fill %CardNameLabel text（源 card.lua:112 name = Display Name）。get_display_name 在 builder（共用）。
-static func _fill_card_name(label: Label, hero: HeroInstance, cm: Variant) -> void:
-	label.text = HeroDetailBuilder.get_display_name(hero, cm)
+# fill %CardNameLabel text（源 card.lua:112 name = Display Name）+ %CardArtName 称号（源 readhero.lua:1102-1110
+# Unit "Art Name" LSTR key）+ %CardNameBgLine 底纹条（源 readhero.lua:1141-1148 按 name 像素宽选 short/long）。
+# name_label = 主名 Label；art_label = 称号小字 Label；bg_line = 名字底纹 TextureRect。
+static func _fill_card_name(name_label: Label, art_label: Label, bg_line: TextureRect, hero: HeroInstance, cm: Variant) -> void:
+	var display_name: String = HeroDetailBuilder.get_display_name(hero, cm)
+	name_label.text = display_name
+	# 称号（Art Name 字段，LSTR key → 本地化）。可能为空（部分英雄无称号），art_label.text 留空。
+	var art_key: String = String(cm.lookup("Unit", "Art Name", int(hero.tid)))
+	art_label.text = cm.get_lstr(art_key) if not art_key.is_empty() else ""
+	# 底纹条按 name 像素宽选贴图（源 readhero.lua:1143 name:getSize().width > 120 判定）。
+	# 用 name_label 当前 font 量宽，无 font 时回退 display_name.length() 近似。
+	var name_width: float = _measure_label_text_width(name_label, display_name)
+	var use_short: bool = name_width > CARD_NAME_BG_SHORT_THRESHOLD
+	var bg_res: String = CARD_NAME_BG_SHORT_RES if use_short else CARD_NAME_BG_LONG_RES
+	var bg_tex: Texture2D = _load_texture(bg_res)
+	bg_line.texture = bg_tex
+	# 重设 offset_left/right 让 bg 右对齐 anchor(1,0.5)（源 ccp(242,60) anchor(1,0.5) 右锚定）。
+	# frame 内右锚点 Godot x = 122.5 + 242 = 364.5；bg 宽按选贴图。
+	var bg_w: float = CARD_NAME_BG_SHORT_W if use_short else CARD_NAME_BG_LONG_W
+	bg_line.offset_right = 364.5
+	bg_line.offset_left = 364.5 - bg_w
+
+
+# 用 Label 当前 font 量字符串像素宽（font 未就绪时回退 char 数 ×8 近似，保证有底纹）。
+static func _measure_label_text_width(label: Label, text_str: String) -> float:
+	if text_str.is_empty():
+		return 0.0
+	var font: Font = label.get_theme_default_font()
+	var size: int = label.get_theme_font_size(&"font_size")
+	if font == null:
+		return float(text_str.length()) * 8.0
+	return font.get_string_size(text_str, HORIZONTAL_ALIGNMENT_LEFT, -1.0, max(size, 1)).x
 
 
 # rank → card_bg_{color}.png（源 card_frame 索引）。red 缺图 → orange 降级。
@@ -168,6 +210,8 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 	if cm == null or hero == null:
 		return
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
+	# frame 白边框纹理预加载（4 icon 共用，源 readhero.lua:1014-1018 每个 skill icon addChild equip_frame_white）。
+	var frame_tex: Texture2D = _load_texture(EQUIP_FRAME_WHITE_PATH)
 	for i in range(4):
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
 		var icon_res: String = String(slot_info.get("Icon", ""))
@@ -176,11 +220,25 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 		var tex: Texture2D = _load_ui_texture(icon_res)
 		if tex == null:
 			continue
+		# icon 中心（Godot）：CONTAINER_ORIGIN + cocos(130.5 + 27.2*i, -28) 偏移。
+		var icon_center: Vector2 = CONTAINER_ORIGIN + Vector2((130.5 + 27.2 * float(i)) * COORD_SX, -28.0 * COORD_SY)
+		# frame 白边框（先 add → 在 view 子序下层，icon 后 add 盖其上）。frame 居中盖 icon，size 略大于 icon。
+		# 源 frame 60 区盖 32 icon → 比例 ~1.875×；本项目 icon 22 → frame 40（比例 ~1.82×，视觉对齐源）。
+		if frame_tex != null:
+			var frame := TextureRect.new()
+			frame.texture = frame_tex
+			frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			frame.size = SKILL_ICON_FRAME_SIZE
+			frame.position = icon_center - frame.size * 0.5
+			frame.z_index = 3   # 与 icon 同层（先 add 子序在下，icon 盖 frame 中心透明区）
+			frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			view.add_child(frame)
+			frame.set_meta(&"tab_content", true)
 		var icon := TextureRect.new()
 		icon.texture = tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.size = Vector2(22.0, 22.0)
-		icon.position = CONTAINER_ORIGIN + Vector2((130.5 + 27.2 * float(i)) * COORD_SX, -28.0 * COORD_SY) - icon.size * 0.5
+		icon.position = icon_center - icon.size * 0.5
 		icon.z_index = 3   # 在 Art(z=2) 之上
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		view.add_child(icon)
