@@ -18,17 +18,49 @@ func test_panel_assembles() -> void:
 	panel.setup_panel(pd, BattleRng.new(12345))
 	panel.show_window(root)
 	# 2026-07-17 .tscn 重构（hero_detail 范式）：container → content（.tscn 根，1 子节点）。
-	# content 10 静态直接子：FrameworkBg/CloseBtn/ResetBtn/FogLayer/StageScroll/
-	# EnemyPreviewHost/StartBtn/ResultLabel/HintAnchor + RuleButton（procedural 规则按钮）。
+	# content 直接子：10 .tscn 静态（FrameworkBg/CloseBtn/ResetBtn/FogLayer/StageScroll/
+	# EnemyPreviewHost/StartBtn/ResultLabel/HintAnchor/RuleButton）
+	# + 5 procedural 静态美术层（frame/light1/light2/title_bg/reset_bg，CrusadePanelBuilder.build_crusade）。
 	assert_eq(panel.container.get_child_count(), 1, "container 仅挂 content（.tscn 根）")
 	var content: Node = panel.container.get_child(0)
-	assert_eq(content.get_child_count(), 10, "content 10 静态子节点（bg/close/reset/fogLayer/scroll/preview/start/result/hint/ruleBtn）")
+	assert_eq(content.get_child_count(), 15, "content 15 直接子（10 静态 + 5 美术层）")
 	assert_eq(panel.fog_rects.size(), 4, "4 fog（.tscn 静态，instantiate 后收集）")
 	assert_eq(panel.stage_buttons.size(), CrusadeData.MAX_STAGE, "15 stage 按钮")
 	# box 改 TextureButton 可点（源 :311 boxButton{i}）
 	assert_eq(panel.box_rects.size(), CrusadeData.MAX_STAGE, "15 box 按钮（源 :311）")
 	for i in range(panel.box_rects.size()):
 		assert_true(panel.box_rects[i] is TextureButton, "box 是 TextureButton 可点（源 :311）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 静态美术层补全（2026-07-28）：crusade_content.tscn 缺 5 类美术（bg1/2/3 + frame + light1/2 + title_bg + reset_bg）。
+# CrusadePanelBuilder procedural 建挂 content（frame/light/title/reset）和 StageScroll（bg 三段滚动）。
+func test_static_art_layers_present() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_hero(1)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(12345))
+	panel.show_window(root)
+	var content: Node = panel.container.get_child(0)
+	# frame/light1/light2/title_bg/reset_bg 挂 content（5 TextureRect，排除 .tscn 静态 FrameworkBg）。
+	var tex_rects: Array[TextureRect] = []
+	for c in content.get_children():
+		if c is TextureRect and c.name != "FrameworkBg":
+			tex_rects.append(c as TextureRect)
+	assert_eq(tex_rects.size(), 5, "content 上 5 个静态美术 TextureRect（frame/light1/light2/title_bg/reset_bg）")
+	for tr in tex_rects:
+		assert_not_null(tr.texture, "美术层纹理非空（资源加载成功）")
+		assert_eq(tr.mouse_filter, Control.MOUSE_FILTER_IGNORE, "美术层 mouse_filter=IGNORE（装饰不挡交互）")
+	# bg 三段挂 StageScroll 内（与 StageHBox sibling，滚动联动）。
+	var stage_scroll: ScrollContainer = content.get_node("%StageScroll")
+	var bg_count: int = 0
+	for c in stage_scroll.get_children():
+		if c is TextureRect and (c as TextureRect).name.begins_with("ScrollBg"):
+			bg_count += 1
+	assert_eq(bg_count, 3, "StageScroll 内 3 段滚动背景 ScrollBg1/2/3（铺关卡下方）")
 	panel.remove_window()
 	root.queue_free()
 

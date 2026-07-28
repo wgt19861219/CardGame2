@@ -2,6 +2,7 @@ class_name CrusadePanel
 extends PopWindow
 
 const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
+const CrusadePanelBuilder := preload("res://scripts/ui/crusade_panel_builder.gd")
 
 ## UIRes 节点树缺（Cocos Studio 导出物，同 .Puppet 阻塞）→ 代码重建核心：
 ##   15 stage TextureButton + current/locked/passed 状态纹理 + 战斗入口 + 水平滚动。
@@ -93,6 +94,9 @@ func _build_content() -> void:
 	fog_rects.clear()
 	for i in range(1, 5):
 		fog_rects.append(content.get_node("%Fog" + str(i)) as TextureRect)
+	# 静态美术层（5 类缺图：bg 三段滚动背景 + frame 外框 + light 光效 + title_bg 标题底 + reset_bg 底部栏）。
+	# 必须在 _create_stage_list 之前建：HBox 子后建，bg/frame 在 .tscn 静态层之上、关卡按钮之下。
+	CrusadePanelBuilder.build_crusade(content)
 	# HBox 内 15 VBox ×（stage btn + box btn）。
 	var hbox: HBoxContainer = content.get_node("%StageHBox") as HBoxContainer
 	_create_stage_list(hbox)

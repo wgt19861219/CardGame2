@@ -119,3 +119,31 @@ func test_reward_display_name_uses_item_table() -> void:
 	# 只断言"返回非空字符串"（照源 fallback 兜底）
 	assert_true(name.length() > 0, "_reward_display_name 永返非空（源 :253-255 row or fallback）")
 	panel.free()
+
+
+# 静态美术层补全（2026-07-28）：dungeon_map_content.tscn 缺 5 类美术（照搬 crusade）。
+# CrusadePanelBuilder procedural 建挂 content（frame/light/title/reset）和 Sub1/2/3（bg 各一段）。
+func test_static_art_layers_present() -> void:
+	var mgr := StageManager.new(GameData.config)
+	var panel := DungeonMapPanel.new("dungeonMap", {})
+	panel.setup_panel(GameData.player, mgr, BattleRng.new(randi()), "em", [50005, 50006, 50007])
+	var content: Node = panel._content
+	# frame/light1/light2/title_bg/reset_bg 挂 content（5 TextureRect，排除 .tscn 静态 FrameworkBg）。
+	var tex_rects: Array[TextureRect] = []
+	for c in content.get_children():
+		if c is TextureRect and c.name != "FrameworkBg":
+			tex_rects.append(c as TextureRect)
+	assert_eq(tex_rects.size(), 5, "content 上 5 个静态美术 TextureRect（frame/light1/light2/title_bg/reset_bg）")
+	for tr in tex_rects:
+		assert_not_null(tr.texture, "美术层纹理非空（资源加载成功）")
+		assert_eq(tr.mouse_filter, Control.MOUSE_FILTER_IGNORE, "美术层 mouse_filter=IGNORE（装饰不挡交互）")
+	# bg 三段分别挂 Sub1/2/3（每 section 内 SectionBg）。
+	for s in range(1, 4):
+		var sub: Control = content.get_node("%Sub" + str(s))
+		var has_section_bg: bool = false
+		for c in sub.get_children():
+			if c is TextureRect and (c as TextureRect).name == "SectionBg":
+				has_section_bg = true
+				assert_eq((c as TextureRect).get_index(), 0, "SectionBg 在 Sub" + str(s) + " 子序首位（z 序在 Fog/boss 下）")
+		assert_true(has_section_bg, "Sub" + str(s) + " 挂 SectionBg（滚动背景一段）")
+	panel.free()

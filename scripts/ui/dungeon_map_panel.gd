@@ -6,6 +6,7 @@ extends PopWindow
 ## 2026-07-17 重构：静态层（FrameworkBg/TitleLabel/ResultLabel/CloseBtn/Scroll/Sub1-3/Fog1-3）
 
 const DegreePopup := preload("res://scripts/ui/dungeon_degree_popup.gd")
+const CrusadePanelBuilder := preload("res://scripts/ui/crusade_panel_builder.gd")
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/dungeon_map_content.tscn")
 
 # 纯 Sprite（CCSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS（含 setScale 累乘）等价。
@@ -92,6 +93,9 @@ func _build_content() -> void:
 		var fog_idx: int = ((s - 1) % FOG_IMG_COUNT) + 1
 		fog.texture = _load_tex(FOG_TEX_DIR + str(fog_idx) + ".png")
 		fog_rects.append(fog)
+	# 静态美术层（5 类缺图，照源 dungeonmapconfig.lua "完全照搬远征"）。
+	# 必须在 _fill_boss_list 之前建：bg 挂 Sub 后 move 到 0 让其在 Fog/boss 之下绘制。
+	CrusadePanelBuilder.build_dungeon_map(_content)
 	# HudOverlay 切 identity=dungeonMap。
 	HudOverlay.apply_identity("dungeonMap")
 
