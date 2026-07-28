@@ -10,6 +10,12 @@ const UPGRADE_LIGHT_RES: String = "res://assets/ui/alpha/HVGA/hero_upgrade_butto
 const UPGRADE_FCA_1: String = "res://assets/anim_frames/effect/eff_UI_hero_upgrade_1.abc"
 const UPGRADE_FCA_2: String = "res://assets/anim_frames/effect/eff_UI_hero_upgrade_2.abc"
 const FCA_ROOT_POS: Vector2 = Vector2(480.0, 320.0)   # 源 ccp(460,220) → Godot 近中心
+# 技能升级 FCA + 飘字（源 skillstren.lua:74-124 playAttAnim）。
+# FCA 在 icon ccp(32,30) 播 eff_UI_skill_level_up（:80-83）。
+# 飘字 ccc3(231,206,19) 黄 + 黑描边 size 2（:96-101），从 ccp(100,35) 上浮 ccp(100,70) 后 FadeOut（:105-122）。
+const SKILL_UP_FCA_RES: String = "res://assets/anim_frames/effect/eff_UI_skill_level_up.abc"
+const SKILL_ATT_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
+const SKILL_ATT_POPUP_FALLBACK: String = "技能+1"   # 源 att_anim_name 缺失时的通用文案
 # 源 skillstren.lua createSkillLevelBoard :331-417：技能行金币图标（goldicon_small）+
 # cost Label（getCost）+ levelAdd Label（refreshSkillAdd）。色值照源 ccc3() 0-255 → Godot 0-1。
 const GOLD_ICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
@@ -37,6 +43,54 @@ static func play_upgrade_effect(base_layer: Control) -> void:
 		if actions.size() > 0:
 			fca.play(actions[0], false)
 		fca.action_finished.connect(fca.queue_free)
+
+
+# 技能升级特效（源 skillstren.lua:74-124 playAttAnim）：FCA 光效 + 属性飘字。
+# skill_view: %TabSkillView（含 Skill{1..4}Icon）。skill_idx: 0-3（升哪槽）。
+# scene_root: 提供 create_tween（须在 tree 内）。资源缺/失败静默降级（同 _add_fca 容错范式）。
+# AtlasSprite 是 RefCounted 不可手动 free（GC 回收）；FcaAnimation 是 Node2D 失败需 free。
+static func play_skill_upgrade_fx(skill_view: Control, skill_idx: int, scene_root: Node) -> void:
+	if skill_view == null:
+		return
+	var icon: TextureButton = skill_view.get_node_or_null("%Skill" + str(skill_idx + 1) + "Icon") as TextureButton
+	if icon == null:
+		return
+	# FCA 光效：源 :80-83 effect:setPosition(ccp(32,30)) → Godot icon 内 (16,15)（坐标半值适配图标 40x40）。
+	if FileAccess.file_exists(SKILL_UP_FCA_RES):
+		var atlas := AtlasSprite.new()
+		if atlas.load_atlas_from_ani(SKILL_UP_FCA_RES):
+			var fca := FcaAnimation.new()
+			if fca.load_from_ani(SKILL_UP_FCA_RES.get_file().get_basename(), atlas):
+				fca.position = Vector2(16.0, 15.0)
+				icon.add_child(fca)
+				var actions: PackedStringArray = fca.get_action_names()
+				if actions.size() > 0:
+					fca.play(actions[0], false)
+				fca.action_finished.connect(fca.queue_free)
+			else:
+				fca.free()   # Node2D 不在 tree 内用 free（queue_free 需 tree 内 frame 才生效）
+	# 属性飘字：源 :85-122 多个 Label（这里只发 1 个，通用文案）。
+	# 位置 ccp(100,35)→(100,70) 是 icon 父坐标系（SkillXBoard 局部坐标），用 icon.get_parent() 作 host。
+	if scene_root == null or not scene_root.is_inside_tree():
+		return   # 测试无 tree 时不播 tween（同 create_tween 前置要求）
+	var host: Node = icon.get_parent()
+	if host == null or not (host is Node2D or host is Control):
+		host = skill_view
+	var label := Label.new()
+	label.text = SKILL_ATT_POPUP_FALLBACK
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", SKILL_ATT_COLOR)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	label.add_theme_constant_override("outline_size", 2)
+	label.position = Vector2(100.0, 35.0)
+	label.modulate.a = 0.0   # 源 visible=false，CCCallFunc setVisible(true)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(label)
+	var tw := scene_root.create_tween()
+	tw.tween_property(label, "modulate:a", 1.0, 0.05)   # setVisible(true)
+	tw.tween_property(label, "position:y", 70.0, 0.5)   # CCMoveTo 0.5s 上浮
+	tw.tween_property(label, "modulate:a", 0.0, 0.1)   # CCFadeOut 0.1s
+	tw.tween_callback(label.queue_free)
 
 
 # GS 增量飘字（源 playAttAdditionAnim）。抄 equip_strengthen_material play_add_exp_anim。

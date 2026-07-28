@@ -176,9 +176,8 @@ func _fill_card_view() -> void:
 
 # skillstren.lua createSkill + createSkillIcon + createSkillUnlockLabel。
 # 每槽：技能图标（SkillGroup.Icon + equip_frame_white 边框）+ Display Name。
-# rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（:442-451，不显示等级+按钮）。
-# 否则：lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。
-# 显示等级 = skill_levels[slot] - InitLevel + 1（controller.getCacheSkillLevelDisplay）。
+# rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（:442-451）。
+# 否则：lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。等级 = skill_levels - InitLevel + 1。
 # 技能升级按钮回调（源 skillstren.lua:345 升级按钮 pressHandler：tutorial + upgrade 信号）。
 func _on_skill_upgrade_clicked(idx: int) -> void:
 	Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
@@ -372,7 +371,8 @@ func perform_upgrade_skill(idx: int) -> bool:
 		return false
 	var ok: bool = pd.upgrade_hero_skill(hero.inst_id, idx)
 	if ok:
-		GameData.mark_save_dirty()   # 照源 local_server:1480 技能升级脏标（扣技能点+金币，60s/退出刷）
+		GameData.mark_save_dirty()   # local_server:1480 技能升级脏标
+		HeroDetailUpgradeFx.play_skill_upgrade_fx(_tab_views.get("skill", null) as Control, idx, self)
 	return ok
 
 
