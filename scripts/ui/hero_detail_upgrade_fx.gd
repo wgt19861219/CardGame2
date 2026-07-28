@@ -21,6 +21,10 @@ const SKILL_ATT_POPUP_FALLBACK: String = "技能+1"   # 源 att_anim_name 缺失
 const GOLD_ICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const COST_INSUFFICIENT_COLOR: Color = Color(1.0, 0.3, 0.3)   # 源 refreshCostColor:230-241 钱不够时 cost 变红
 const SKL_ADD_COLOR: Color = Color(17.0 / 255.0, 1.0, 23.0 / 255.0)   # 源 refreshSkillAdd:281-300 ccc3(17,255,23) 绿
+# 技能点信息栏（源 skillstren.lua createInformationBar:476-486）：源两套 UI 动态切换，本项目简化单套。
+# pre 标签色 ccc3(241,193,113) 金 + 数字色 ccc3(255,234,198) 米黄。本项目合并成单 Label 同金色。
+const SKILL_POINT_PRE_COLOR: Color = Color(241.0 / 255.0, 193.0 / 255.0, 113.0 / 255.0)
+const BUY_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 
 
 # 进阶 FCA 特效（源 upgradeReply :672-685 eff_UI_hero_upgrade_1/2）。抄 hero_awake_panel _add_fca。
@@ -198,6 +202,44 @@ static func fill_skills(skill_view: Control, hero: HeroInstance, cm: Variant, sk
 			btn.set_meta(&"skill_upgrade", true)
 			_fill_skill_cost(money_icon, cost_lbl, cur_level, gold, gold_tex, cm)
 			_fill_skill_lvl_add(lvl_add_lbl, skl_add)
+
+
+# 技能点信息栏 fill（源 skillstren.lua createInformationBar:476-486）。
+# 源两套 UI 动态切换：chance>0 显 timesBar（剩余点数 + 倒计时） / chance<=0 显 cdBar（购买按钮 + 倒计时）。
+# 本项目简化单套：点数>0 显"剩余技能点: N"（金色） + 隐藏购买按钮；点数=0 显购买按钮 + 提示文案。
+# 倒计时本项目单机化：不做定时器，仅打开面板时算一次产出（recover_skill_point）。
+# 返回 int：本次 recover 补产出的点数（调用方可用于 Toast 提示，源无显式 Toast，本项目可选）。
+static func fill_skill_point_bar(label: Label, buy_btn: TextureButton, pd: PlayerData) -> int:
+	if label == null:
+		return 0
+	if pd == null:
+		label.visible = false
+		if buy_btn != null:
+			buy_btn.visible = false
+		return 0
+	# 补算产出（更新 pd.skill_points；CD 300s +1，受 VIP 上限）。
+	var recovered: int = pd.recover_skill_point(Time.get_unix_time_from_system())
+	label.visible = true
+	label.add_theme_color_override("font_color", SKILL_POINT_PRE_COLOR)
+	if pd.skill_points > 0:
+		label.text = "剩余技能点: " + str(pd.skill_points)
+		if buy_btn != null:
+			buy_btn.visible = false
+	else:
+		# 点数不足：显提示文案 + 购买按钮（源 cdBar：cdButton + cdLabel + cdSuffix "获得1点技能点"）。
+		label.text = "技能点不足"
+		if buy_btn != null:
+			if ResourceLoader.exists(BUY_BTN_RES):
+				var tex: Texture2D = load(BUY_BTN_RES) as Texture2D
+				if tex != null:
+					buy_btn.texture_normal = tex
+					buy_btn.texture_hover = tex
+					buy_btn.texture_pressed = tex
+				buy_btn.visible = true
+			else:
+				# 资源缺失：按钮不可见但保留节点（避免 null 解引用），文案兜底。
+				buy_btn.visible = false
+	return recovered
 
 
 # fill 单行金币图标 + cost Label（源 skillstren.lua getCost = SkillLevels[level].Price
