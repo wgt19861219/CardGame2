@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "godot_bridge": {
+      "command": "<PATH_TO_NODE>",
+      "args": ["<PROJECT_ROOT>/tools/mcp/godot_bridge.mjs"],
+      "env": {
+        "GODOT_BRIDGE_PORT": "9081",
+        "GODOT_PROJECT_DIR": "<PROJECT_ROOT>"
+      },
+      "timeoutMs": 30000
+    }
+  }
+}
