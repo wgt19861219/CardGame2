@@ -5,9 +5,8 @@ scan_empty_textures.py — 扫描 scenes/ 下所有 .tscn，找出图片类节�
 
 稳健解析：逐行状态机切分节点块，不使用贪婪正则 + re.DOTALL（避免 07-28 的 75 处误报 bug）。
 
-运行：
-    cd /workspace/worktrees/CardGame2
-    .venv/bin/python tools/audit/scan_empty_textures.py
+运行（仓库根目录下）：
+    python tools/audit/scan_empty_textures.py
 """
 import os
 import re
