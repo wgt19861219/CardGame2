@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shine.png" id="1_shine"]
 
 [node name="HeroAwakeContent" type="Control"]
 layout_mode = 3
@@ -23,6 +25,7 @@ expand_mode = 1
 [node name="LightSprite" type="Sprite2D" parent="." unique_id=1002]
 unique_name_in_owner = true
 position = Vector2(480, 10)
+texture = ExtResource("1_shine")
 
 [node name="CardHost" type="Control" parent="." unique_id=1003]
 unique_name_in_owner = true

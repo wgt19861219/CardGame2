@@ -35,8 +35,7 @@ const BATTLE_STATIST_PRESS_TEX: String = "herodetail-upgrade-mask.png"
 const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)
 const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)
 const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 0.0)
-# InfoBg 内 icon texture（tscn texture 留空，运行时 fill；xpicon 缺图 _load 容错 null 不报错）
-const GOLD_ICON_TEX: String = "goldicon_small.png"
+# InfoBg 内 ExpIcon texture（GoldIcon 已静态化进 .tscn；xpicon 缺图 _load 容错 null 不报错）
 const EXP_ICON_TEX: String = "xpicon.png"
 # 英雄经验条（源 stagedone.lua:364-371,443-449 heroxp-progress-bg/progress/full 三 sprite）。
 const HERO_BAR_BG_TEX: String = "heroxp-progress-bg.png"      # 经验槽底（前景 progress 之下）
@@ -117,9 +116,8 @@ func _fill_static_nodes() -> void:
 	_next_btn.pressed.connect(_on_next_pressed)
 
 
-# 填 InfoBg 内动态 icon texture（tscn texture 留空，运行时 fill；xpicon 缺图 _load 容错 null）。
+# 填 InfoBg 内动态 icon texture（GoldIcon 已静态化进 .tscn；xpicon 缺图 _load 容错 null）。
 func _fill_info_bg_icons() -> void:
-	(_info_bg.get_node("GoldIcon") as Sprite2D).texture = _load(ALPHA_HVGA_DIR + GOLD_ICON_TEX)
 	(_info_bg.get_node("ExpIcon") as Sprite2D).texture = _load(ALPHA_HVGA_DIR + EXP_ICON_TEX)
 
 

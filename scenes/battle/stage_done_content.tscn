@@ -1,5 +1,6 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="14_gold"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/lettherebelight.png" id="1_light"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/star_left.png" id="2_star1"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/star_center.png" id="3_star2"]
@@ -87,6 +88,7 @@ texture = ExtResource("12_title1")
 
 [node name="GoldIcon" type="Sprite2D" parent="InfoBg"]
 position = Vector2(-40, 90)
+texture = ExtResource("14_gold")
 
 [node name="ExpIcon" type="Sprite2D" parent="InfoBg"]
 position = Vector2(30, 90)

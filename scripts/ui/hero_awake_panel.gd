@@ -32,7 +32,6 @@ const BG_RES_MAP: Dictionary = {
 	"green": "res://assets/ui/alpha/HVGA/tavern_get_hero_bg_green.jpg",
 	"blue": "res://assets/ui/alpha/HVGA/tavern_get_hero_bg_blue.jpg",
 }
-const SHINE_RES: String = "res://assets/ui/alpha/HVGA/shine.png"
 const FCA_BASE_DIR: String = "res://assets/anim_frames/effect/"
 const BUBBLE_RES: String = "eff_UI_tavern_bubble"
 const CARD_FCA_PREFIX: String = "eff_UI_tavern_card_"
@@ -85,8 +84,6 @@ func _build_content() -> void:
 	if not bg_res.is_empty() and ResourceLoader.exists(bg_res):
 		_bg.texture = load(bg_res) as Texture2D
 	_bg.modulate.a = 0.0
-	if ResourceLoader.exists(SHINE_RES):
-		_light.texture = load(SHINE_RES) as Texture2D
 	_light.scale = Vector2(LIGHT_SCALE, LIGHT_SCALE)
 	_light.modulate.a = 0.0
 	_build_hero_card()

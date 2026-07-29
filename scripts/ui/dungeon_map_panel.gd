@@ -14,7 +14,6 @@ const CONTENT_SCALE: float = 1.28125
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
 const BOX_CLOSED_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_closed.png"
 const BOX_OPEN_TEX := "res://assets/ui/alpha/HVGA/crusade/crusade_box_bronze_open.png"
-const FOG_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/crusade_fog_"
 const STAGE_SIZE := Vector2(110.0, 110.0)
 const BOX_SIZE := Vector2(60.0, 60.0)
 const SECTION_HEIGHT: float = 350.0
@@ -35,7 +34,6 @@ const CRUSADE_BOX_POS := [
 const TEAM_MAX: int = 5
 const DUNGEON_DIFF_OFFSET: int = 1000
 const STAGE_IMG_COUNT: int = 15
-const FOG_IMG_COUNT: int = 4
 const BOX_OPEN_SCALE: float = 0.8
 const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
 
@@ -90,8 +88,6 @@ func _build_content() -> void:
 	for s in range(1, MAX_SECTIONS + 1):
 		var sub: Control = _content.get_node("%Sub" + str(s)) as Control
 		var fog: TextureRect = sub.get_node("%Fog" + str(s)) as TextureRect
-		var fog_idx: int = ((s - 1) % FOG_IMG_COUNT) + 1
-		fog.texture = _load_tex(FOG_TEX_DIR + str(fog_idx) + ".png")
 		fog_rects.append(fog)
 	# 静态美术层（5 类缺图，照源 dungeonmapconfig.lua "完全照搬远征"）。
 	# 必须在 _fill_boss_list 之前建：bg 挂 Sub 后 move 到 0 让其在 Fog/boss 之下绘制。

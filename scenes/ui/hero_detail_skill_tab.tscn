@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://ce4d8vbdcc03t" load_steps=3]
+[gd_scene format=3 uid="uid://ce4d8vbdcc03t" load_steps=8]
 
 [ext_resource type="Texture2D" uid="uid://c6hc85fvmusfb" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="1_popup"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_skill_bg_1.png" id="2_bg1"]
@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" uid="uid://b64rmyhqgasx7" path="res://assets/ui/alpha/HVGA/equip_frame_white.png" id="4_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png" id="5_upbtn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_2.png" id="6_upbtnp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="7_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="8_buybtn"]
 
 [node name="TabSkillView" type="Control"]
 unique_name_in_owner = true
@@ -346,6 +348,7 @@ offset_right = 385.0
 offset_bottom = 234.0
 mouse_filter = 2
 expand_mode = 1
+texture = ExtResource("7_gold")
 
 [node name="Skill1Cost" type="Label" parent="."]
 unique_name_in_owner = true
@@ -375,6 +378,7 @@ offset_right = 385.0
 offset_bottom = 324.0
 mouse_filter = 2
 expand_mode = 1
+texture = ExtResource("7_gold")
 
 [node name="Skill2Cost" type="Label" parent="."]
 unique_name_in_owner = true
@@ -404,6 +408,7 @@ offset_right = 385.0
 offset_bottom = 414.0
 mouse_filter = 2
 expand_mode = 1
+texture = ExtResource("7_gold")
 
 [node name="Skill3Cost" type="Label" parent="."]
 unique_name_in_owner = true
@@ -433,6 +438,7 @@ offset_right = 385.0
 offset_bottom = 504.0
 mouse_filter = 2
 expand_mode = 1
+texture = ExtResource("7_gold")
 
 [node name="Skill4Cost" type="Label" parent="."]
 unique_name_in_owner = true
@@ -471,3 +477,6 @@ offset_left = 580
 offset_right = 660
 offset_top = 540
 unique_name_in_owner = true
+texture_normal = ExtResource("8_buybtn")
+texture_pressed = ExtResource("8_buybtn")
+texture_hover = ExtResource("8_buybtn")

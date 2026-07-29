@@ -16,15 +16,13 @@ const FCA_ROOT_POS: Vector2 = Vector2(480.0, 320.0)   # 源 ccp(460,220) → God
 const SKILL_UP_FCA_RES: String = "res://assets/anim_frames/effect/eff_UI_skill_level_up.abc"
 const SKILL_ATT_COLOR: Color = Color(231.0 / 255.0, 206.0 / 255.0, 19.0 / 255.0)
 const SKILL_ATT_POPUP_FALLBACK: String = "技能+1"   # 源 att_anim_name 缺失时的通用文案
-# 源 skillstren.lua createSkillLevelBoard :331-417：技能行金币图标（goldicon_small）+
+# 源 skillstren.lua createSkillLevelBoard :331-417：技能行金币图标（已静态化进 .tscn）+
 # cost Label（getCost）+ levelAdd Label（refreshSkillAdd）。色值照源 ccc3() 0-255 → Godot 0-1。
-const GOLD_ICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const COST_INSUFFICIENT_COLOR: Color = Color(1.0, 0.3, 0.3)   # 源 refreshCostColor:230-241 钱不够时 cost 变红
 const SKL_ADD_COLOR: Color = Color(17.0 / 255.0, 1.0, 23.0 / 255.0)   # 源 refreshSkillAdd:281-300 ccc3(17,255,23) 绿
 # 技能点信息栏（源 skillstren.lua createInformationBar:476-486）：源两套 UI 动态切换，本项目简化单套。
 # pre 标签色 ccc3(241,193,113) 金 + 数字色 ccc3(255,234,198) 米黄。本项目合并成单 Label 同金色。
 const SKILL_POINT_PRE_COLOR: Color = Color(241.0 / 255.0, 193.0 / 255.0, 113.0 / 255.0)
-const BUY_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
 
 
 # 进阶 FCA 特效（源 upgradeReply :672-685 eff_UI_hero_upgrade_1/2）。抄 hero_awake_panel _add_fca。
@@ -154,7 +152,6 @@ static func fill_skills(skill_view: Control, hero: HeroInstance, cm: Variant, sk
 	if hero == null:
 		return
 	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
-	var gold_tex: Texture2D = _load_gold_icon()
 	for i in skill_count:
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
 		var display_name: String = cm.get_lstr(String(slot_info.get("Display Name", "skill" + str(i + 1))))
@@ -200,7 +197,7 @@ static func fill_skills(skill_view: Control, hero: HeroInstance, cm: Variant, sk
 				btn.pressed.disconnect(c.callable)
 			btn.pressed.connect(on_upgrade.bind(i))
 			btn.set_meta(&"skill_upgrade", true)
-			_fill_skill_cost(money_icon, cost_lbl, cur_level, gold, gold_tex, cm)
+			_fill_skill_cost(money_icon, cost_lbl, cur_level, gold, cm)
 			_fill_skill_lvl_add(lvl_add_lbl, skl_add)
 
 
@@ -226,34 +223,23 @@ static func fill_skill_point_bar(label: Label, buy_btn: TextureButton, pd: Playe
 		if buy_btn != null:
 			buy_btn.visible = false
 	else:
-		# 点数不足：显提示文案 + 购买按钮（源 cdBar：cdButton + cdLabel + cdSuffix "获得1点技能点"）。
+		# 点数不足：显提示文案 + 购买按钮（texture 已静态化进 .tscn）。
 		label.text = "技能点不足"
 		if buy_btn != null:
-			if ResourceLoader.exists(BUY_BTN_RES):
-				var tex: Texture2D = load(BUY_BTN_RES) as Texture2D
-				if tex != null:
-					buy_btn.texture_normal = tex
-					buy_btn.texture_hover = tex
-					buy_btn.texture_pressed = tex
-				buy_btn.visible = true
-			else:
-				# 资源缺失：按钮不可见但保留节点（避免 null 解引用），文案兜底。
-				buy_btn.visible = false
+			buy_btn.visible = true
 	return recovered
 
 
 # fill 单行金币图标 + cost Label（源 skillstren.lua getCost = SkillLevels[level].Price
 # + refreshCostColor:230-241 钱不够时 cost 变红）。gold=-1 表示不查金币（cost 永不变红）。
 static func _fill_skill_cost(money_icon: TextureRect, cost_lbl: Label, cur_level: int,
-		gold: int, gold_tex: Texture2D, cm: Variant) -> void:
+		gold: int, cm: Variant) -> void:
 	if money_icon == null and cost_lbl == null:
 		return
 	var cost: int = _get_skill_upgrade_cost(cur_level, cm)
 	var affordable: bool = gold < 0 or gold >= cost
 	if money_icon != null:
 		money_icon.visible = true
-		if gold_tex != null:
-			money_icon.texture = gold_tex
 	if cost_lbl != null:
 		cost_lbl.visible = true
 		cost_lbl.text = str(cost)
@@ -303,12 +289,6 @@ static func calculate_skl_bonus(hero: HeroInstance, cm: Variant) -> int:
 		var lv: float = float(hero.equip_exp[slot]) if slot < hero.equip_exp.size() else 0.0
 		skl += float(eq.get(&"SKL", 0)) + float(eq.get(&"+SKL", 0)) * lv
 	return int(skl)
-
-
-static func _load_gold_icon() -> Texture2D:
-	if not ResourceLoader.exists(GOLD_ICON_RES):
-		return null
-	return load(GOLD_ICON_RES) as Texture2D
 
 
 # 觉醒按钮设置（从 hero_detail_panel._setup_awake_button 抽出）。
