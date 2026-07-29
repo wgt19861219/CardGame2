@@ -247,8 +247,10 @@ static func create_frame(container: Control, mode: String) -> void:
 static func create_title(container: Control, chapter: int, cm: Variant) -> void:
 	var chapter_table: Dictionary = cm.get_raw_table(&"Chapter")
 	var ch_row: Dictionary = chapter_table.get(str(chapter), {})
-	var pre: String = String(ch_row.get("Pre Chapter Name", ""))
-	var name: String = String(ch_row.get("Chapter Name", ""))
+	# Chapter Name/Pre Chapter Name 存 LSTR key（如 CHAPTER.NEW_EVIL），需 get_lstr 本地化为中文
+	# （源 lua :863 直接拼因 LSTR 宏已展开；本项目 JSON 存原始 key，不转换会显示英文 key）。
+	var pre: String = _lstr(cm, String(ch_row.get("Pre Chapter Name", "")))
+	var name: String = _lstr(cm, String(ch_row.get("Chapter Name", "")))
 	var lbl := Label.new()
 	lbl.text = pre + "   " + name if not name.is_empty() else ("第 " + str(chapter) + " 章")
 	lbl.add_theme_color_override("font_color", Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0))
@@ -258,8 +260,18 @@ static func create_title(container: Control, chapter: int, cm: Variant) -> void:
 	lbl.size = Vector2(240.0, 24.0)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 文字须压在 title_bg（z=200 全局）上面，否则被标题栏背景框盖住、框里看着空白。
+	lbl.z_index = 201
+	lbl.z_as_relative = false
 	lbl.set_meta(META_TITLE, true)
 	container.add_child(lbl)
+
+
+# Chapter/Stage Name 存 LSTR key，get_lstr 本地化（_lang 未初始化时 fallback 查 LSTR_zh-CN 表）。
+static func _lstr(cm: Variant, key: String) -> String:
+	if cm == null or key.is_empty():
+		return key
+	return String(cm.get_lstr(key))
 
 
 static func _frame_res(mode: String) -> String:

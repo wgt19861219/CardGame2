@@ -65,22 +65,23 @@ func _build_content() -> void:
 		(_ui["total_number"] as Label).visible = false
 	_setup_sweep_button(content.get_node("%SweepBtn") as Button, int(info.get("star", 0)))
 	_check_enabled()
-	# HudOverlay 切 identity=stagedetail。
-	HudOverlay.apply_identity("stagedetail")
-
-
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
+	# 详情是关卡选择的子弹窗（stage_select_panel.gd detail.show_window(get_parent())），
+	# 不碰 HudOverlay identity——遵循项目范式（battle_reward_popup / excavate_team_panel 等子弹窗
+	# 同样不调 apply_identity）。否则关闭详情会把 identity 错误跳回 "main"，使头像/shortcut
+	# 在仍在前台的关卡选择面板之上错误显示。identity 保持父级 stageselect，由 StageSelectPanel
+	# 关闭时恢复 main。
 
 
 # 项目 StageData 首次访问可能缺 row，"关卡 %d" fallback 是项目适配（源 row 必存在）。
 func _get_stage_info() -> Dictionary:
 	var row: Dictionary = player.cm.get_raw_table("Stage").get(str(stage_id), {})
+	# Stage Name/description 存 LSTR key（535 条中 508/425 条是 key），需 get_lstr 本地化
+	# （源 lua 直接取因 LSTR 宏已展开；本项目 JSON 存原始 key 须转换，否则标题显示英文 key）。
+	var title_raw: String = String(row.get("Stage Name", "关卡 %d" % stage_id))
+	var detail_raw: String = String(row.get("description", ""))
 	return {
-		"title": String(row.get("Stage Name", "关卡 %d" % stage_id)),
-		"detail": String(row.get("description", "")),
+		"title": String(player.cm.get_lstr(title_raw)),
+		"detail": String(player.cm.get_lstr(detail_raw)),
 		"power": _stage_data.vitality_cost if _stage_data != null else 0,
 		"count_limit": int(row.get("Daily Limit", 0)),
 		"count": int(player.stage_limit.get(stage_id, 0)),
