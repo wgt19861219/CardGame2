@@ -316,6 +316,45 @@ func _on_stage_clicked(sid: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if mgr == null or player == null or rng == null:
 		return
+	# 详情标题栏复用关卡选择的章节标题栏（FrameLayer 下 procedural Label，全屏绝对坐标 z=201）。
+	# 详情打开期间把它的文字从章节名（如"第一章 全军出击"）改成当前关卡名（如"异界战场"），
+	# 详情关闭（tree_exited）时恢复章节名（2026-07-30）。详情自身的 Title 节点已删（避免两个标题重叠）。
+	_set_chapter_title_text(_stage_name(sid))
 	var detail := StageDetailPanel.new("stagedetail", {})
 	detail.setup_panel(sid, mgr, player, rng)
 	detail.show_window(get_parent())
+	detail.tree_exited.connect(_on_detail_closed)
+
+
+# 详情关闭时恢复章节标题为当前章节名。
+func _on_detail_closed() -> void:
+	_set_chapter_title_text(_chapter_name())
+
+
+# 取关卡名（Stage 表 "Stage Name" 经 get_lstr 本地化，同 stage_detail_panel._get_stage_info 口径）。
+func _stage_name(sid: int) -> String:
+	if player == null:
+		return ""
+	var row: Dictionary = player.cm.get_raw_table(&"Stage").get(str(sid), {})
+	return String(player.cm.get_lstr(String(row.get("Stage Name", str(sid)))))
+
+
+# 取当前章节名（Chapter 表 "Pre Chapter Name" + "Chapter Name"，同 StageSelectBuilder.create_title 口径）。
+func _chapter_name() -> String:
+	if player == null:
+		return ""
+	var cm: Variant = player.cm
+	var ch_row: Dictionary = cm.get_raw_table(&"Chapter").get(str(_current_chapter), {})
+	var pre: String = String(cm.get_lstr(String(ch_row.get("Pre Chapter Name", ""))))
+	var name: String = String(cm.get_lstr(String(ch_row.get("Chapter Name", ""))))
+	return pre + "   " + name if not name.is_empty() else ("第 " + str(_current_chapter) + " 章")
+
+
+# 设 FrameLayer 下带 META_TITLE 的章节标题 Label 的文字（create_title procedural 建的 Label）。
+func _set_chapter_title_text(t: String) -> void:
+	if _frame_layer == null:
+		return
+	for c in _meta_children(_frame_layer, META_TITLE):
+		if is_instance_valid(c) and c is Label:
+			(c as Label).text = t
+

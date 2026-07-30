@@ -79,7 +79,6 @@ static func setup_content(content: Control, info: Dictionary, res_info: Dictiona
 	frame2.offset_right = frame_center.x + scaled_size.x * 0.5
 	frame2.offset_top = frame_center.y - scaled_size.y * 0.5
 	frame2.offset_bottom = frame_center.y + scaled_size.y * 0.5
-	_set_texture(content.get_node("%MapTitleBg") as TextureRect, String(res_info.get("title_bg", "")))
 	var title_bg: TextureRect = content.get_node("%TitleBg") as TextureRect
 	# texture 已烘 .tscn（detail_title_bg.png 各 stage_type 共用），仅运行时按 stage_type 重设 size/position。
 	var bg_size: Vector2 = Vector2(res_info.get("title_bg_size", Vector2(504.0, 12.0)))
@@ -90,8 +89,6 @@ static func setup_content(content: Control, info: Dictionary, res_info: Dictiona
 		"frame2": content.get_node("%Frame2"),
 		"frame3": content.get_node("%Frame3"),
 		"title_bg": title_bg,
-		"map_title_bg": content.get_node("%MapTitleBg"),
-		"title": content.get_node("%Title"),
 		"detail": content.get_node("%Detail"),
 		"power_title": content.get_node("%PowerTitle"),
 		"power_number": content.get_node("%PowerNumber"),
@@ -107,7 +104,6 @@ static func setup_content(content: Control, info: Dictionary, res_info: Dictiona
 		"go_button": content.get_node("%GoButton"),
 		"go_button_shade": content.get_node("%GoButtonShade"),
 	}
-	(ui["title"] as Label).text = String(info.get("title", ""))
 	var detail_lbl: Label = ui["detail"] as Label
 	detail_lbl.text = String(info.get("detail", ""))
 	detail_lbl.visible = bool(info.get("is_key_stage", false)) or String(info.get("detail", "")) != ""

@@ -57,7 +57,7 @@ func test_setup_content_returns_ui_dict() -> void:
 	var ui: Dictionary = StageDetailBuilder.setup_content(content, info, StageDetailBuilder.get_res_info("normal"), cm)
 	assert_true(ui.has("frame2"), "应有 frame2")
 	assert_true(ui.has("frame3"), "应有 frame3")
-	assert_true(ui.has("title"), "应有 title")
+	assert_false(ui.has("title"), "不应有 title（节点已删，关卡名改由父面板章节标题栏显示）")
 	assert_true(ui.has("go_button"), "应有 go_button")
 	assert_true(ui.has("reset"), "应有 reset")
 	assert_true(ui.has("count_number"), "应有 count_number")
@@ -106,7 +106,8 @@ func test_setup_content_fills_title_and_detail_text() -> void:
 	var content: Control = _instantiate_content()
 	var info: Dictionary = {"title": "第一章", "detail": "关卡描述", "stage_type": "normal"}
 	var ui: Dictionary = StageDetailBuilder.setup_content(content, info, StageDetailBuilder.get_res_info("normal"), cm)
-	assert_eq((ui["title"] as Label).text, "第一章", "title 文本")
+	# Title 节点已删（关卡名改由父面板关卡选择的章节标题栏显示），ui dict 不再含 title 项。
+	assert_false(ui.has("title"), "ui dict 不应含 title（节点已删）")
 	assert_eq((ui["detail"] as Label).text, "关卡描述", "detail 文本")
 	assert_true((ui["detail"] as Label).visible, "detail 非空 → visible")
 	content.queue_free()
