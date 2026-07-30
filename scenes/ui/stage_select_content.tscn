@@ -7,6 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://d1folv1hfojcj" path="res://assets/ui/alpha/HVGA/nextchap.png" id="5_next"]
 [ext_resource type="Texture2D" uid="uid://dqa34v8g886cf" path="res://assets/ui/alpha/HVGA/backbtn.png" id="6_back"]
 [ext_resource type="Texture2D" uid="uid://cxusvs3ojqiiw" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="7_backp"]
+[ext_resource type="Texture2D" uid="uid://7gni6shy3d8v" path="res://assets/ui/alpha/HVGA/stage-map-frame.png" id="8_frameph"]
+[ext_resource type="Texture2D" uid="uid://d1rcdb56gxrp3" path="res://assets/ui/alpha/HVGA/Normal_title_bg.png" id="9_titbgph"]
 
 [node name="StageSelectContent" type="Control" unique_id=950695773]
 layout_mode = 3
@@ -45,6 +47,28 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="FramePlaceholder" type="TextureRect" parent="FrameLayer"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 101.5
+offset_right = 948.0
+offset_bottom = 355.0
+texture = ExtResource("8_frameph")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleBgPlaceholder" type="TextureRect" parent="FrameLayer"]
+layout_mode = 0
+offset_left = 184.0
+offset_top = 77.5
+offset_right = 770.0
+offset_bottom = 156.5
+texture = ExtResource("9_titbgph")
+expand_mode = 1
+mouse_filter = 2
+z_index = 200
+z_as_relative = false
 
 [node name="ModeLayer" type="Control" parent="." unique_id=1967117237]
 unique_name_in_owner = true

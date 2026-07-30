@@ -18,7 +18,6 @@ const C_DISABLE: Color = Color(1.0, 102.0 / 255.0, 49.0 / 255.0)             # t
 const C_RESET: Color = Color(1.0, 206.0 / 255.0, 31.0 / 255.0)               # :1816 ccc3(255,206,31)
 
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
-const TITLE_BG_RES: String = UI_DIR + "detail_title_bg.png"
 const BOSS_TAG_RES: String = UI_DIR + "stagedetail_boss_tag.png"
 const STAR_RES: String = UI_DIR + "detail_star.png"
 const STAR_GREY_RES: String = UI_DIR + "detail_star_grey.png"
@@ -82,7 +81,7 @@ static func setup_content(content: Control, info: Dictionary, res_info: Dictiona
 	frame2.offset_bottom = frame_center.y + scaled_size.y * 0.5
 	_set_texture(content.get_node("%MapTitleBg") as TextureRect, String(res_info.get("title_bg", "")))
 	var title_bg: TextureRect = content.get_node("%TitleBg") as TextureRect
-	_set_texture(title_bg, TITLE_BG_RES)
+	# texture 已烘 .tscn（detail_title_bg.png 各 stage_type 共用），仅运行时按 stage_type 重设 size/position。
 	var bg_size: Vector2 = Vector2(res_info.get("title_bg_size", Vector2(504.0, 12.0)))
 	title_bg.size = bg_size
 	title_bg.position = to_godot(TITLE_BG_COCOS.x, TITLE_BG_COCOS.y) - bg_size * 0.5

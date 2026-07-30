@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/detail_bg_2.png" id="2_frame2"]
@@ -11,6 +11,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="9_resetp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="10_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="11_backp"]
+[ext_resource type="Texture2D" uid="uid://7gni6shy3d8v" path="res://assets/ui/alpha/HVGA/stage-map-frame.png" id="12_frame3"]
+[ext_resource type="Texture2D" uid="uid://d1rcdb56gxrp3" path="res://assets/ui/alpha/HVGA/Normal_title_bg.png" id="13_maptit"]
 
 [node name="StageDetailContent" type="Control"]
 layout_mode = 3
@@ -46,6 +48,7 @@ offset_left = 115.0
 offset_top = 157.0
 offset_right = 845.0
 offset_bottom = 553.0
+texture = ExtResource("12_frame3")
 expand_mode = 1
 mouse_filter = 2
 
@@ -67,6 +70,7 @@ offset_left = 357.0
 offset_top = 147.0
 offset_right = 597.0
 offset_bottom = 187.0
+texture = ExtResource("13_maptit")
 expand_mode = 1
 mouse_filter = 2
 
