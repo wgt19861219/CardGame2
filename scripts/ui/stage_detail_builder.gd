@@ -19,15 +19,12 @@ const C_RESET: Color = Color(1.0, 206.0 / 255.0, 31.0 / 255.0)               # :
 
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const BOSS_TAG_RES: String = UI_DIR + "stagedetail_boss_tag.png"
-const STAR_RES: String = UI_DIR + "detail_star.png"
-const STAR_GREY_RES: String = UI_DIR + "detail_star_grey.png"
 
 const ENEMY_CONTAINER: float = 104.0  # ReadheroIcon.CONTAINER_SIZE.x
-const ENEMY_OX: float = 205.0
-const ENEMY_OY: float = 168.0
-const ENEMY_GAP: float = 80.0
-const REWARD_OX: float = 205.0
-const REWARD_OY: float = 50.0
+const ENEMY_LEN_NORMAL: float = 70.0  # 源 createEnemy:1172 普通敌人边长（cocos px）
+const ENEMY_LEN_BOSS: float = 80.0    # 源 createEnemy:1169 boss 边长
+const ENEMY_BOSS_OX: float = 5.0      # 源 createEnemy:1172 boss 额外偏移
+const REWARD_ICON_SCALE: float = 0.7  # 奖励图标缩放（72→~50，对齐源 cocos 80 间距视觉）
 
 # title_bg 在 .tscn 取 normal 基线 size（504×12），fill 时按 stage_type 重设 size + position（源 Scale9 中心定位）。
 const TITLE_BG_COCOS: Vector2 = Vector2(400.0, 355.0)
@@ -103,6 +100,9 @@ static func setup_content(content: Control, info: Dictionary, res_info: Dictiona
 		"award_title": content.get_node("%AwardTitle"),
 		"go_button": content.get_node("%GoButton"),
 		"go_button_shade": content.get_node("%GoButtonShade"),
+		"star_box": content.get_node("%StarHBox"),
+		"enemy_box": content.get_node("%EnemyHBox"),
+		"reward_box": content.get_node("%RewardHBox"),
 	}
 	var detail_lbl: Label = ui["detail"] as Label
 	detail_lbl.text = String(info.get("detail", ""))
@@ -131,9 +131,20 @@ static func _set_texture(rect: TextureRect, res_path: String) -> void:
 	rect.texture = load(res_path) as Texture2D
 
 
+# 敌方阵容：照源 createEnemy:1142-1192 翻译，容器化（ReadheroIcon 是 Node2D 不能直接进 HBox，
+# 套 Control wrapper + custom_minimum_size，范式同 excavate_team_panel._add_hero_icon）。
+# boss/普通尺寸差异通过 wrapper size + icon scale 处理，坐标交由 %EnemyHBox 自动排版。
 static func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
-	var idx: int = 0
+	# boss 排在小怪后面（用户偏好：详情阵容 boss 在末尾，区别于战斗站位 Boss Position）。
+	var ordered: Array = []
+	var bosses: Array = []
 	for e in enemies:
+		if bool(e.get("is_boss", false)):
+			bosses.append(e)
+		else:
+			ordered.append(e)
+	ordered.append_array(bosses)
+	for e in ordered:
 		var tid: int = int(e.get("tid", 0))
 		if tid == 0:
 			continue
@@ -141,18 +152,20 @@ static func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
 		var icon := ReadheroIcon.new()
 		var rank: int = mini(ExcavateData.hero_level_to_rank(int(e.get("level", 1))), 8)
 		icon.setup({"id": tid, "rank": rank, "stars": int(e.get("stars", 0))}, cm)
-		var length: float = 80.0 if is_boss else 70.0
+		var length: float = ENEMY_LEN_BOSS if is_boss else ENEMY_LEN_NORMAL
 		var s: float = length / ENEMY_CONTAINER
-		var bx: float = ENEMY_OX + ENEMY_GAP * float(idx) + (5.0 if is_boss else 0.0)
-		var by: float = ENEMY_OY + (5.0 if is_boss else 0.0)
+		var wrapper := Control.new()
+		wrapper.custom_minimum_size = Vector2(ENEMY_CONTAINER * s + (ENEMY_BOSS_OX if is_boss else 0.0), ENEMY_CONTAINER * s)
+		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		icon.scale = Vector2(s, s)
-		icon.position = to_godot(bx, by) - Vector2(ENEMY_CONTAINER * s, ENEMY_CONTAINER * s) * 0.5
+		icon.position = Vector2(ENEMY_BOSS_OX if is_boss else 0.0, 0.0)
+		wrapper.add_child(icon)
+		parent.add_child(wrapper)
 		if icon.ori_icon is Sprite2D:
 			(icon.ori_icon as Sprite2D).flip_h = true
-		parent.add_child(icon)
 		if is_boss:
 			_add_boss_tag(icon)
-		idx += 1
 
 
 static func _add_boss_tag(icon: ReadheroIcon) -> void:
@@ -175,27 +188,25 @@ static func _add_boss_tag(icon: ReadheroIcon) -> void:
 		host.add_child(lbl)
 
 
+# 奖励：照源 createReward:1193-1211 翻译，容器化（ReadequipIcon 返回 Control 直接进 %RewardHBox）。
 static func create_reward(parent: Node, drops: Array, cm: Variant) -> void:
-	var idx: int = 0
 	for d in drops:
 		var item_id: int = int(d.get("item_id", 0))
 		if item_id == 0:
 			continue
 		var icon: Control = ReadequipIcon.create_icon(item_id, 1, cm)
-		var gx: float = to_godot(REWARD_OX + 80.0 * float(idx), REWARD_OY).x
-		var gy: float = to_godot(REWARD_OX, REWARD_OY).y  # anchor(0.5,0) 底对齐 → 左上偏移
-		icon.position = Vector2(gx - ReadequipIcon.ICON_SIZE * 0.5, gy - ReadequipIcon.ICON_SIZE)
+		icon.scale = Vector2(REWARD_ICON_SCALE, REWARD_ICON_SCALE)
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		parent.add_child(icon)
-		idx += 1
 
 
-static func create_stars(parent: Node, star_count: int, star_gap: int) -> void:
+# 星级：照源 createStars:1212-1261，星星已静态化进 .tscn（%StarHBox 下 Star1/2/3 TextureRect）。
+# 本方法按 star_count 切换 3 个 TextureRect 的 texture（detail_star / detail_star_grey）。
+static func apply_stars(star_box: Node, star_count: int) -> void:
 	for i in range(3):
-		var res_path: String = STAR_RES if i < star_count else STAR_GREY_RES
-		var s := Sprite2D.new()
+		var star: TextureRect = (star_box.get_child(i)) as TextureRect
+		if star == null:
+			continue
+		var res_path: String = (UI_DIR + "detail_star.png") if i < star_count else (UI_DIR + "detail_star_grey.png")
 		if ResourceLoader.exists(res_path):
-			s.texture = load(res_path) as Texture2D
-		s.centered = false
-		s.position = to_godot(320.0 + float(star_gap) * float(i), 336.0)
-		s.scale = Vector2(0.8, 0.8)
-		parent.add_child(s)
+			star.texture = load(res_path) as Texture2D

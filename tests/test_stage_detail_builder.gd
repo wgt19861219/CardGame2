@@ -62,6 +62,9 @@ func test_setup_content_returns_ui_dict() -> void:
 	assert_true(ui.has("reset"), "应有 reset")
 	assert_true(ui.has("count_number"), "应有 count_number")
 	assert_true(ui.has("go_button_shade"), "应有 go_button_shade")
+	assert_true(ui.has("star_box"), "应有 star_box（容器化后的星星容器）")
+	assert_true(ui.has("enemy_box"), "应有 enemy_box（容器化后的敌方阵容容器）")
+	assert_true(ui.has("reward_box"), "应有 reward_box（容器化后的奖励容器）")
 	assert_gt(content.get_child_count(), 0, "content 含静态子节点")
 	content.queue_free()
 
@@ -113,12 +116,38 @@ func test_setup_content_fills_title_and_detail_text() -> void:
 	content.queue_free()
 
 
-func test_create_stars_three_with_texture() -> void:
-	var parent := Node.new()
-	add_child(parent)
-	StageDetailBuilder.create_stars(parent, 2, 55)
-	assert_eq(parent.get_child_count(), 3, "应建 3 颗星（2 亮 1 暗）")
-	var s0: Sprite2D = parent.get_child(0) as Sprite2D
+# apply_stars：星星已静态化进 .tscn（%StarHBox 下 Star1/2/3 TextureRect），按 star_count 切换 texture。
+func test_apply_stars_switches_textures_by_count() -> void:
+	var content: Control = _instantiate_content()
+	var star_box: Node = content.get_node("%StarHBox")
+	StageDetailBuilder.apply_stars(star_box, 2)
+	assert_eq(star_box.get_child_count(), 3, "应含 3 个静态星 TextureRect")
+	var s0: TextureRect = star_box.get_child(0) as TextureRect
+	var s2: TextureRect = star_box.get_child(2) as TextureRect
 	assert_ne(s0.texture, null, "亮星应加载 detail_star 纹理")
-	assert_almost_eq(s0.scale.x, 0.8, 0.01, "星 scale 0.8（源 :1229）")
-	parent.queue_free()
+	assert_ne(s2.texture, null, "暗星应加载 detail_star_grey 纹理")
+	# 2 亮：Star1/Star2 亮 + Star3 暗（i<star_count 判定）
+	var grey_res := load("res://assets/ui/alpha/HVGA/detail_star_grey.png")
+	assert_ne(s2.texture.resource_path, s0.texture.resource_path, "第3颗(i=2>=2)应为暗星纹理")
+	content.queue_free()
+
+
+# create_enemy：容器化（ReadheroIcon 套 Control wrapper 进 HBox，范式同 excavate_team）。
+func test_create_enemy_wraps_in_control_into_hbox() -> void:
+	var hbox := HBoxContainer.new()
+	add_child(hbox)
+	var enemies := [{"tid": 1, "level": 1}, {"tid": 2, "level": 1, "is_boss": true}]
+	StageDetailBuilder.create_enemy(hbox, enemies, cm)
+	assert_eq(hbox.get_child_count(), 2, "2 个敌人各套一个 Control wrapper")
+	var wrapper: Control = hbox.get_child(0) as Control
+	assert_gt(wrapper.custom_minimum_size.x, 0.0, "wrapper 应有 custom_minimum_size 供 HBox 排版")
+	hbox.queue_free()
+
+
+# create_reward：ReadequipIcon 返回 Control 直接进 HBox。
+func test_create_reward_adds_control_to_hbox() -> void:
+	var hbox := HBoxContainer.new()
+	add_child(hbox)
+	StageDetailBuilder.create_reward(hbox, [{"item_id": 1001}, {"item_id": 1002}], cm)
+	assert_eq(hbox.get_child_count(), 2, "2 个奖励图标直接进 HBox")
+	hbox.queue_free()

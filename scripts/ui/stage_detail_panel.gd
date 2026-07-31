@@ -10,10 +10,13 @@ const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_detail_content.tscn")
 const TEAM_MAX: int = 5
-# SweepBtn Scale9 样式（源 stagedetail.lua:378/392 tavern_button_normal_1/2.png，cap 20,15,90,15）。
+# 扫荡 Scale9 样式（源 stagedetail.lua:378/392 tavern_button_normal_1/2.png，cap 20,15,90,15）。
 const SWEEP_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
 const SWEEP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
 const SWEEP_BTN_CAP: Rect2 = Rect2(20.0, 15.0, 90.0, 15.0)
+# 扫荡次数上限（源 parameter.lua:20-21 default_normal/elite_sweep_times）。
+const SWEEP_DEFAULT_NORMAL: int = 10
+const SWEEP_DEFAULT_ELITE: int = 3
 
 var stage_id: int = 0
 var mgr: StageManager = null
@@ -52,10 +55,10 @@ func _build_content() -> void:
 	container.add_child(content)
 	var info: Dictionary = _get_stage_info()
 	_ui = StageDetailBuilder.setup_content(content, info, _res_info, player.cm)
-	StageDetailBuilder.create_enemy(content.get_node("%EnemyHost"), _enemies, player.cm)
+	StageDetailBuilder.create_enemy(content.get_node("%EnemyHBox"), _enemies, player.cm)
 	if _stage_data != null:
-		StageDetailBuilder.create_reward(content.get_node("%RewardHost"), _stage_data.drops, player.cm)
-	StageDetailBuilder.create_stars(content.get_node("%StarHost"), int(info.get("star", 0)), int(_res_info.get("star_gap", 55)))
+		StageDetailBuilder.create_reward(content.get_node("%RewardHBox"), _stage_data.drops, player.cm)
+	StageDetailBuilder.apply_stars(content.get_node("%StarHBox"), int(info.get("star", 0)))
 	(_ui["go_button"] as TextureButton).pressed.connect(_on_go_pressed)
 	(_ui["reset"] as TextureButton).pressed.connect(_on_reset_pressed)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
@@ -63,7 +66,7 @@ func _build_content() -> void:
 		(_ui["count_title"] as Label).visible = false
 		(_ui["count_number"] as Label).visible = false
 		(_ui["total_number"] as Label).visible = false
-	_setup_sweep_button(content.get_node("%SweepBtn") as Button, int(info.get("star", 0)))
+	_setup_sweep_cluster(content, int(info.get("star", 0)), String(info.get("stage_type", "normal")))
 	_check_enabled()
 	# 详情是关卡选择的子弹窗（stage_select_panel.gd detail.show_window(get_parent())），
 	# 不碰 HudOverlay identity——遵循项目范式（battle_reward_popup / excavate_team_panel 等子弹窗
@@ -114,6 +117,10 @@ func _check_enabled() -> void:
 			gs.visible = false
 	elif gs != null:
 		gs.visible = true
+	# 扫荡集群券计数刷新（扫荡后 player.get_sweep_times 变化）。
+	var ticket: Label = _ui.get("sweep_ticket_count", null) as Label
+	if ticket != null:
+		ticket.text = str(player.get_sweep_times())
 
 
 func _left_times() -> int:
@@ -124,20 +131,50 @@ func _daily_limit() -> int:
 	return int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Daily Limit", 0))
 
 
-# .tscn %SweepBtn 默认 visible=false，3 星 + 有 mgr 时切 visible=true + 绑信号。
-# 套 Scale9 stylebox（tavern_button_normal_1/2 cap 20,15,90,15）+ fill 独立 Label 子节点 %SweepLabel
-# （Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）。
-func _setup_sweep_button(btn: Button, star: int) -> void:
-	if mgr == null or star < 3:
-		btn.visible = false
+# 扫荡集群（源 stagedetail.lua createRepeatBattle:266-468）：满 3 星 + normal/elite 才显示。
+# %SweepCluster（Panel 底板 main_vit_tips）内含 SweepOnceBtn（扫荡1次）/SweepSomeBtn（扫荡N次）
+# + SweepTicketIcon + SweepTicketCount（券计数）。单机化裁剪：去 VIP 功能解锁（localMode 跳过）；
+# 券不足直接 toast 不暴露钻石扫荡路径（源 doPaySweepConfirm 联机流程）。
+# Button 套 Scale9 stylebox（tavern_button_normal_1/2 cap 20,15,90,15）+ 独立子 Label
+# （Button.text 内嵌 label 受 stylebox content_margin 干扰，范式同 hero_detail）。
+func _setup_sweep_cluster(content: Control, star: int, stage_type: String) -> void:
+	var cluster: Panel = content.get_node("%SweepCluster") as Panel
+	if mgr == null or star < 3 or (stage_type != "normal" and stage_type != "elite"):
+		cluster.visible = false
 		return
-	btn.visible = true
+	cluster.visible = true
+	var cm: Variant = player.cm
+	var once_btn: Button = cluster.get_node("%SweepOnceBtn") as Button
+	_apply_sweep_btn_style(once_btn)
+	(once_btn.get_node("SweepOnceLabel") as Label).text = String(cm.get_lstr("PRIVILEGE.FARM"))
+	once_btn.pressed.connect(_on_sweep_once_pressed)
+	var some_btn: Button = cluster.get_node("%SweepSomeBtn") as Button
+	_apply_sweep_btn_style(some_btn)
+	var n: int = _sweep_some_times(stage_type)
+	var raid_fmt: String = String(cm.get_lstr("STAGEDETAIL.RAID__D_TIMES"))
+	if raid_fmt == "STAGEDETAIL.RAID__D_TIMES":
+		raid_fmt = "扫荡%d次"
+	(some_btn.get_node("SweepSomeLabel") as Label).text = raid_fmt % n
+	if n < 1:
+		(some_btn.get_node("SweepSomeLabel") as Label).text = String(cm.get_lstr("STAGEDETAIL.RAID_FAILED"))
+		some_btn.disabled = true
+	else:
+		some_btn.pressed.connect(_on_sweep_some_pressed.bind(stage_type))
+	(cluster.get_node("SweepTicketCount") as Label).text = str(player.get_sweep_times())
+	_ui["sweep_ticket_count"] = cluster.get_node("SweepTicketCount")
+
+
+func _apply_sweep_btn_style(btn: Button) -> void:
 	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
 	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
 	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(SWEEP_BTN_PRESS_RES, SWEEP_BTN_CAP))
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	(btn.get_node("SweepLabel") as Label).text = String(player.cm.get_lstr("PRIVILEGE.FARM"))
-	btn.pressed.connect(_on_sweep_pressed)
+
+
+# 扫荡N次的 N（源 getRepeatInformation:231-265）：min(剩余进入次数, 普通关10/精英关3)。
+func _sweep_some_times(stage_type: String) -> int:
+	var cap: int = SWEEP_DEFAULT_ELITE if stage_type == "elite" else SWEEP_DEFAULT_NORMAL
+	return maxi(0, mini(_left_times(), cap))
 
 
 func _on_go_pressed() -> void:
@@ -154,12 +191,34 @@ func _on_go_pressed() -> void:
 	remove_window()
 
 
+# 扫荡1次（源 doRepeatOnce:153-163 → doClickSweep(1)）。单机化去 VIP 校验（localMode 跳过）。
+func _on_sweep_once_pressed() -> void:
+	_do_sweep(1)
+
+
+# 扫荡N次（源 doRepeatSome:164-174 → doClickSweep(limit)）。stage_type 由 bind 传入算 N。
+func _on_sweep_some_pressed(stage_type: String) -> void:
+	_do_sweep(_sweep_some_times(stage_type))
+
+
+# 扫荡统一执行 + 前置校验（对齐源 doClickSweep:128-151 分层拦截，单机化裁剪网络/钻石路径）。
 # 注：源用 repeatRewardWindow 显示战利品（stagedetail.lua:1946），项目单机化用 Toast 简化反馈。
-func _on_sweep_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	if mgr == null or player == null:
+func _do_sweep(times: int) -> void:
+	if mgr == null or player == null or times <= 0:
 		return
-	var r: Dictionary = mgr.sweep(stage_id, 1, rng, player, "free")
+	AudioPlayer.play_sfx("common_click_feedback")
+	var cm: Variant = player.cm
+	if times > _left_times():
+		Toast.show_message(String(cm.get_lstr("STAGEDETAIL.ENTER_TO_THIS_GAME_POINTS_HAS_REACHED_THE_UPPER_LIMIT_TODAY")))
+		return
+	var power: int = (_stage_data.vitality_cost if _stage_data != null else 0) * times
+	if player.vitality < power:
+		Toast.show_message("体力不足")
+		return
+	if player.get_sweep_times() < times:
+		Toast.show_message("扫荡券不足")
+		return
+	var r: Dictionary = mgr.sweep(stage_id, times, rng, player, "free")
 	if bool(r.get("ok", false)):
 		Toast.show_message("扫荡成功")  # 源无此 toast（用 repeatRewardWindow），项目单机化简化
 		_check_enabled()
