@@ -28,7 +28,7 @@ const STATUS_BAR_H: float = 52.0   # StatusBar 容器高度（照 main_scene 原
 const MAIN_IDENTITY: String = "main"
 const SHORTCUT_HIDDEN_IDENTITIES: Array[String] = ["crusade", "battle"]
 const SHORTCUT_HIDDEN_SUFFIXES: Array[String] = ["GWMode"]
-const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle"]   # 整体隐藏 HUD（battle_scene 源里无 HUD）
+const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle", "battleprepare"]   # 整体隐藏 HUD（battle_scene/battle_prepare 源里无 HUD）
 
 var _status_parent_main: Panel = null   # main 版容器（含头像）
 var _status_parent_sub: Panel = null    # 子场景版容器（仅货币条）
@@ -98,6 +98,11 @@ func apply_identity(identity: String) -> void:
 	# 源 framework.lua:989-992 非 main 强制展开规则不采纳（本项目 PopWindow 嵌套与源 pushScene 语义不同）。
 	_shortcut.visible = not hide_all and is_main
 	_refresh_status()
+
+
+## 当前 identity（battle_prepare 等弹窗进入前记录、退出时恢复用）。
+func get_identity() -> String:
+	return _current_identity
 
 
 ## 从 GameData 刷新 StatusBar 数值（两套都刷，避切换时显示旧值）。

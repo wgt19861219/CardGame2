@@ -138,9 +138,10 @@ func test_order_by_max_range() -> void:
 
 func test_gs_displayed() -> void:
 	var panel := _make_panel()
-	var gs_text: String = panel._gs_label.text
-	# 照源 battleprepare.lua:2256 gs_title=BATTLEPREPARE.COMBAT（战斗力）
-	assert_true(gs_text.begins_with(cm.get_lstr("BATTLEPREPARE.COMBAT")), "gs Label 应有战斗力前缀")
+	# 照源 battleprepare.lua:2252-2279 gs_title（COMBAT 标题）+ gs（数值）两行，拆成 GsTitleLabel + GsLabel。
+	assert_not_null(panel._gs_title_label, "gs 标题 Label 应装配")
+	assert_eq(panel._gs_title_label.text, cm.get_lstr("BATTLEPREPARE.COMBAT"), "GsTitleLabel 应为战斗力标题")
+	assert_true(panel._gs_label.text.is_valid_int(), "GsLabel 应为战斗力数值（整数）")
 	panel.queue_free()
 
 

@@ -67,9 +67,11 @@ var _current_tab: String = TAB_ALL
 var _list_grid: GridContainer = null
 var _team_slots: Array[TextureRect] = []  # 5 个槽位底（源 herobucket.png，.tscn %MemberBg1-5）
 var _gs_label: Label = null
+var _gs_title_label: Label = null  # 战斗力标题（源 gs_title，GsLabel 上方）
 var _go_button: Button = null
 var _tab_buttons: Dictionary = {}   # tab_key → Button（源 listButton/listButtonSelect 双态切换）
 var _tab_labels: Dictionary = {}    # tab_key → Label（独立 Label 子节点，Button.text 内嵌 label 受 stylebox 干扰）
+var _prev_identity: String = ""     # 进入前 HUD identity（tree_exited 恢复用）
 
 
 # p_mode/p_min_level 可选（默认 "stage" + 0 = 不限等级），向后兼容 stage_detail_panel 5 参数调用。
@@ -77,9 +79,24 @@ func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
 	mode = p_mode; min_level = p_min_level
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# BattlePreparePanel 是 Control 非 PopWindow，无 PopWindow 的 z_index=100 置顶。
+	# 详情面板 _on_go_pressed 在 add_child 后 remove_window 关详情，若不置顶，BattlePreparePanel
+	# 会被 z=100 的关卡选择面板盖住（详情是关卡选择的子弹窗），表现为"点 GoButton 回到关卡选择"。
+	# z=210 进一步盖住关卡选择章节标题（FrameLayer procedural Label z=201 全局），战前界面应全屏遮底。
+	z_index = 210
+	z_as_relative = false
+	# 战前编队界面源里无 HUD（货币栏/标题），切 battleprepare identity 整体隐藏 HUD；
+	# tree_exited（queue_free）时恢复进入前 identity（stageselect/crusade 等）。
+	_prev_identity = HudOverlay.get_identity()
+	HudOverlay.apply_identity("battleprepare")
+	tree_exited.connect(_restore_identity)
 	_load_hero_list()
 	_build_content()
 	_load_default_team()
+
+
+func _restore_identity() -> void:
+	HudOverlay.apply_identity(_prev_identity)
 
 
 # 建 UI 内容（Phase 重构：从 battle_prepare_content.tscn instantiate + fill 动态数据/样式）。
@@ -88,26 +105,28 @@ func _build_content() -> void:
 	var content := CONTENT_SCENE.instantiate()
 	add_child(content)
 	_list_grid = content.get_node("%ListGrid") as GridContainer
+	# 层级（照 hero_package:90-91）：ListFrame z=2 挡未选 tab 重叠区，ListScroll z=10 英雄列表置顶不被挡。
+	(content.get_node("ListFrame") as CanvasItem).z_index = 2
+	(content.get_node("ListScroll") as CanvasItem).z_index = 10
 	_tab_buttons = {
-		TAB_ALL: content.get_node("%TabAllBtn") as Button,
-		TAB_FRONT: content.get_node("%TabFrontBtn") as Button,
-		TAB_MIDDLE: content.get_node("%TabMiddleBtn") as Button,
-		TAB_BACK: content.get_node("%TabBackBtn") as Button,
+		TAB_ALL: content.get_node("%TabAllBtn") as TextureButton,
+		TAB_FRONT: content.get_node("%TabFrontBtn") as TextureButton,
+		TAB_MIDDLE: content.get_node("%TabMiddleBtn") as TextureButton,
+		TAB_BACK: content.get_node("%TabBackBtn") as TextureButton,
 	}
 	for key in _tab_buttons:
-		var btn: Button = _tab_buttons[key] as Button
-		btn.text = ""
-		# 收集独立 Label 子节点（.tscn %TabXxxLabel），fill text 不走 Button.text（避 stylebox 干扰）。
+		var btn: TextureButton = _tab_buttons[key] as TextureButton
+		# Label 独立节点（.tscn %TabXxxLabel，与 hero_package 范式一致），fill text。
 		var lbl: Label = content.get_node(TAB_LABEL_NODE_NAMES[key]) as Label
 		lbl.text = _tab_label(key)
 		_tab_labels[key] = lbl
-		_apply_tab_style(btn, key == _current_tab)
 		btn.pressed.connect(_on_tab_pressed.bind(key))
+	_update_tab_visual()
 	_team_slots.clear()
 	for i in range(TEAM_MAX):
 		_team_slots.append(content.get_node("%MemberBg" + str(i + 1)) as TextureRect)
 	_gs_label = content.get_node("%GsLabel") as Label
-	_gs_label.text = "%s: 0" % cm.get_lstr(LSTR_COMBAT)
+	_gs_title_label = content.get_node("%GsTitleLabel") as Label
 	_go_button = content.get_node("%GoBtn") as Button
 	# 照源 battleprepare.lua:1788-1791：GoBtn conform Label 仅 isSpecialgb（pvp defend/excavateChange）时 visible。
 	# 本项目单机化已裁剪这两模式（grep 零匹配 isSpecialgb/defend/excavateChange）→ conform text 始终隐藏，
@@ -127,15 +146,18 @@ func _build_content() -> void:
 
 
 # Button 套 StyleBoxTexture（classbtn/classbtnselected 整图，content_margin=0 视觉等价纯贴图）。
-# 选中色 ccc3(230,190,76) 金黄 / 未选 ccc3(196,187,170) 浅灰棕（源 :1200-1229）。
-func _apply_tab_style(btn: Button, selected: bool) -> void:
-	var res_path: String = TAB_A_RES if selected else TAB_N_RES
-	btn.add_theme_stylebox_override("normal", _make_stylebox(res_path))
-	btn.add_theme_stylebox_override("hover", _make_stylebox(res_path))
-	# 同步切独立 Label 字色（按 tab_key 反查 _tab_labels）
+# Tab 选中态：照 hero_package _update_tab_visual——texture_normal 切 classbtn/classbtnselected
+# + Label 字色金黄/浅灰棕（源 :1200-1229 ccc3(230,190,76)/(196,187,170)）。
+func _update_tab_visual() -> void:
 	for key in _tab_buttons:
-		if _tab_buttons[key] == btn and _tab_labels.has(key):
-			var lbl: Label = _tab_labels[key] as Label
+		var btn: TextureButton = _tab_buttons[key] as TextureButton
+		var selected: bool = key == _current_tab
+		btn.texture_normal = load(TAB_A_RES if selected else TAB_N_RES)
+		# 照 hero_package：未选 z=1 被 ListFrame(z=2) 挡重叠区，选中 z=3 凸出。
+		btn.z_index = 3 if selected else 1
+		var lbl: Label = _tab_labels.get(key) as Label
+		if lbl != null:
+			lbl.z_index = 4
 			var color: Color = TAB_FONT_COLOR_SELECTED if selected else TAB_FONT_COLOR_UNSELECTED
 			lbl.add_theme_color_override("font_color", color)
 			lbl.add_theme_color_override("font_shadow_color", TAB_SHADOW_COLOR)
@@ -190,7 +212,10 @@ func _refresh_list() -> void:
 	for h in _heroes_filtered:
 		var hero = player.hero_manager.heroes[h.inst_id]
 		var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
-		var btn := Button.new(); btn.add_child(icon); btn.custom_minimum_size = Vector2(64, 64)
+		# 源 gap_x/gap_y=100（hero icon 100×100 排列，battleprepare.lua:1548-1551）。icon 容器 104，
+		# 按背景框内部可用区放大 icon 到 112（scale 1.08），填满 ListScroll 宽度。
+		icon.scale = Vector2(1.08, 1.08)
+		var btn := Button.new(); btn.add_child(icon); btn.custom_minimum_size = Vector2(112, 112)
 		btn.set_meta("inst_id", h.inst_id)
 		var selected: bool = _team.any(func(t): return t.inst_id == h.inst_id)
 		if selected: btn.modulate = Color(0.5, 0.5, 0.5)
@@ -247,7 +272,10 @@ func _refresh_team_display() -> void:
 		if occupied:
 			var hero = player.hero_manager.heroes[_team[i].inst_id]
 			var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
-			icon.position = Vector2(5, 5)
+			# ReadheroIcon 是 Node2D，内部子节点从中心 (52,52) 绘制（CONTAINER_SIZE=104）。
+			# 居中：icon.position = slot 中心 - icon 视觉中心偏移（52,52），按 slot 实际 size 动态算。
+			var slot_center: Vector2 = slot.size * 0.5
+			icon.position = slot_center - Vector2(ReadheroIcon.CONTAINER_SIZE.x, ReadheroIcon.CONTAINER_SIZE.y) * 0.5
 			slot.add_child(icon)
 		if halo != null:
 			halo.visible = occupied
@@ -258,7 +286,10 @@ func _refresh_gs() -> void:
 	for t in _team:
 		var hero = player.hero_manager.heroes[t.inst_id]
 		total += int(player.hero_manager.calc_gs(hero))
-	_gs_label.text = "%s: %d" % [cm.get_lstr(LSTR_COMBAT), total]
+	# 源 gs_title（COMBAT 标题）+ gs（数值）两行（battleprepare.lua:2252-2279），拆成两个 Label。
+	if _gs_title_label != null:
+		_gs_title_label.text = String(cm.get_lstr(LSTR_COMBAT))
+	_gs_label.text = str(total)
 
 
 func _tab_label(tab: String) -> String:
@@ -272,8 +303,7 @@ func _tab_label(tab: String) -> String:
 func _on_tab_pressed(tab: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_current_tab = tab
-	for key in _tab_buttons:
-		_apply_tab_style(_tab_buttons[key] as Button, key == _current_tab)
+	_update_tab_visual()
 	_refresh_list()
 
 
