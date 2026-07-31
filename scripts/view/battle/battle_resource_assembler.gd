@@ -12,6 +12,8 @@ extends RefCounted
 const WAVE_MARK_POS: Vector2 = Vector2(460.0, 120.0)  # 原 to_godot(380,440)，波次标记 HUD 原生坐标
 const GOLD_MARK_POS: Vector2 = Vector2(190.0, 120.0)  # 原 to_godot(110,440)，金标记 HUD 原生坐标
 const LOOT_MARK_POS: Vector2 = Vector2(290.0, 120.0)  # 原 to_godot(210,440)，掉落标记 HUD 原生坐标
+const VIEW_SIZE: Vector2 = Vector2(960.0, 640.0)       # HVGA 屏幕尺寸
+const VIEW_CENTER: Vector2 = Vector2(480.0, 320.0)     # 屏幕中心
 
 
 static func create_background(scene) -> void:
@@ -27,9 +29,16 @@ static func create_background(scene) -> void:
 	var bg_tex := load(bg_path) as Texture2D
 	var bg_sprite := Sprite2D.new()
 	bg_sprite.texture = bg_tex
-	bg_sprite.centered = false
-	bg_sprite.position = Vector2.ZERO
+	bg_sprite.centered = true
+	bg_sprite.position = VIEW_CENTER
 	bg_sprite.flip_h = bool(scene.battle_info.get("H Flip", false))
+	# 背景图(1024×615)缩放铺满屏幕(960×640)：cover 取 max(scale)，完全覆盖可能裁切少许。
+	var tex_size: Vector2 = bg_tex.get_size() if bg_tex != null else VIEW_SIZE
+	if tex_size.x > 0.0 and tex_size.y > 0.0:
+		var scale_x: float = VIEW_SIZE.x / tex_size.x
+		var scale_y: float = VIEW_SIZE.y / tex_size.y
+		var cover_scale: float = maxf(scale_x, scale_y)
+		bg_sprite.scale = Vector2(cover_scale, cover_scale)
 	scene.background_layer.add_child(bg_sprite)
 
 

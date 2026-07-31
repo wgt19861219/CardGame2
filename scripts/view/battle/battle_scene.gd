@@ -193,6 +193,8 @@ func _ready() -> void:
 		var eng: BattleEngine = _battle_context["engine"]
 		var info: Dictionary = _battle_context["battle_info"]
 		setup(eng, GameData.config, info)
+	# 战斗场景无全局 HUD（货币栏/快捷栏）— 声明 identity 让 HudOverlay 整体隐藏。
+	HudOverlay.apply_identity("battle")
 
 
 func _process(delta: float) -> void:

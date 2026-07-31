@@ -661,6 +661,8 @@ func test_create_background_from_battle_info() -> void:
 		if scene.background_layer.get_child_count() > 0:
 			var bg: Sprite2D = scene.background_layer.get_child(0) as Sprite2D
 			assert_not_null(bg.texture, "背景 texture 加载（源 :104 createSprite）")
-			assert_eq(bg.centered, false, "centered=false 左上锚点（源 :109 setAnchorPoint(ccpZero)）")
+			assert_eq(bg.centered, true, "centered=true 居中（全屏铺满：cover scale + 屏幕中心）")
+			assert_eq(bg.position, Vector2(480.0, 320.0), "背景居中屏幕中心(480,320)")
+			assert_gt(bg.scale.x, 1.0, "背景 cover scale>1（1024×615→铺满 960×640）")
 	scene.queue_free()
 
