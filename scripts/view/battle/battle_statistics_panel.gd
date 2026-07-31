@@ -9,6 +9,9 @@ extends Control
 ## 数据：unit_snapshot（finalizer 从 engine.unit_list 快照，含 tid/camp/dmg_statistics/rank/stars/level）。
 ## 坐标：源 hurtBg 800×480 Cocos，子节点 ccp(cx,cy) 相对 hurtBg 左下 → Godot 局部 (cx, 360-cy)。
 ## 资源降级：hp_black_small/stagedone_statistics_friend/enemy 缺图时 ColorRect 降级（不阻塞装配）。
+## 已知债（2026-07-31 标注）：HURT_BG_H=360 / ROWS_Y / M_SPRITE_X 等脚本常量与 .tscn 的 HurtBg offset
+## （270,140-690,500，即 420×360）隐式耦合——改 HurtBg 尺寸需同步脚本常量。英雄行为动态生成挂 HurtBg
+## 用局部坐标，容器化会破坏 fill 逻辑，故保留 procedural（参考 hero_detail 双 VBox 装备槽范式可后续重构）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_statistics_content.tscn")
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"

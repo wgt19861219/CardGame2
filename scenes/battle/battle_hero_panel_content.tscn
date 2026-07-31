@@ -4,10 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/portraitredmask.png" id="2_redmask"]
 
 [node name="BattleHeroPanelContent" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+layout_mode = 0
 mouse_filter = 2
 
 [node name="PortraitHost" type="Control" parent="."]

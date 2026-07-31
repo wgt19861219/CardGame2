@@ -183,7 +183,7 @@ func test_add_big_blood_panel_for_boss() -> void:
 	assert_eq(scene.ui_list.size(), 1, "Boss hpLayer=3 → BigHpBar 入 ui_list")
 	var panel: Variant = scene.ui_list[0]
 	assert_not_null(panel, "BigHpBar 实例应就位")
-	assert_eq(panel.position, BattleViewCoords.to_godot(375.0, 440.0), "Boss 血条固定 源 ccp(375,440)→Godot(455,120)")
+	assert_eq(panel.position, Vector2(455.0, 120.0), "Boss 血条固定 HUD 原生坐标(455,120)（原 to_godot(375,440)）")
 	scene.queue_free()
 
 

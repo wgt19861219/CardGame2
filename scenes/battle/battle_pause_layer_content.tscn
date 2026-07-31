@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/back2mapbtn.png" id="1_33wau"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/back2mapbtn-disabled.png" id="2_6hll7"]
@@ -6,7 +6,12 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/resume_battle.png" id="4_xn3xu"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/resume_battle_press.png" id="5_5v3ps"]
 
-[node name="BattlePauseLayerContent" type="Control" unique_id=1559688231]
+; 战斗暂停面板内容（照源 battle_scene.lua createPauseLayer）。
+; 重构：3 按钮 + 3 标签从裸 offset 改 HBoxContainer + VBoxContainer 编排，去硬编码坐标。
+; ButtonRow 居中（anchors_preset=8 CENTER + grow 双向），HBox separation=45 对齐源间距，
+; 每组 VBox(按钮+标签) separation=2，按钮 custom_minimum_size 固定纹理基准尺寸。
+
+[node name="BattlePauseLayerContent" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,55 +20,84 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="ExitBtn" type="TextureButton" parent="." unique_id=1580597919]
+[node name="ButtonRow" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -218.0
+offset_top = -62.0
+offset_right = 218.0
+offset_bottom = 62.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 45
+alignment = 1
+
+[node name="ExitGroup" type="VBoxContainer" parent="ButtonRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="ExitBtn" type="TextureButton" parent="ButtonRow/ExitGroup"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 335.0
-offset_top = 295.0
-offset_right = 475.0
-offset_bottom = 418.0
+layout_mode = 2
+custom_minimum_size = Vector2(140, 123)
 texture_normal = ExtResource("1_33wau")
 texture_pressed = ExtResource("2_6hll7")
+ignore_texture_size = true
+stretch_mode = 5
 
-[node name="ExitLabel" type="Label" parent="." unique_id=151744762]
-layout_mode = 0
-offset_left = 335.0
-offset_top = 380.0
-offset_right = 475.0
-offset_bottom = 404.0
+[node name="ExitLabel" type="Label" parent="ButtonRow/ExitGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
 text = "退出战斗"
 
-[node name="SoundBtn" type="TextureButton" parent="." unique_id=597323199]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 480.0
-offset_top = 295.0
-offset_right = 608.0
-offset_bottom = 418.0
-texture_normal = ExtResource("3_kcqwq")
+[node name="SoundGroup" type="VBoxContainer" parent="ButtonRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
 
-[node name="SoundLabel" type="Label" parent="." unique_id=2085306495]
-layout_mode = 0
-offset_left = 480.0
-offset_top = 380.0
-offset_right = 608.0
-offset_bottom = 404.0
+[node name="SoundBtn" type="TextureButton" parent="ButtonRow/SoundGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(128, 123)
+texture_normal = ExtResource("3_kcqwq")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="SoundLabel" type="Label" parent="ButtonRow/SoundGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
 text = "音效"
 
-[node name="ResumeBtn" type="TextureButton" parent="." unique_id=1035355519]
+[node name="ResumeGroup" type="VBoxContainer" parent="ButtonRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="ResumeBtn" type="TextureButton" parent="ButtonRow/ResumeGroup"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 625.0
-offset_top = 295.0
-offset_right = 753.0
-offset_bottom = 418.0
+layout_mode = 2
+custom_minimum_size = Vector2(128, 123)
 texture_normal = ExtResource("4_xn3xu")
 texture_pressed = ExtResource("5_5v3ps")
+ignore_texture_size = true
+stretch_mode = 5
 
-[node name="ResumeLabel" type="Label" parent="." unique_id=480028675]
-layout_mode = 0
-offset_left = 625.0
-offset_top = 380.0
-offset_right = 753.0
-offset_bottom = 404.0
+[node name="ResumeLabel" type="Label" parent="ButtonRow/ResumeGroup"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
 text = "继续战斗"

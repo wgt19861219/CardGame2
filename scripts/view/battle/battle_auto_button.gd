@@ -12,7 +12,7 @@ extends Control
 ## setup instantiate + get_node("%AutoButton") as Button 取节点 + _apply_label fill on/off 文案。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_auto_button_content.tscn")
-const BUTTON_POS: Vector2 = Vector2(734.0, 60.0)
+const GODOT_POS: Vector2 = Vector2(814.0, 500.0)  # 原 to_godot(734,60)=(734+80,560-60)，HUD 原生坐标
 const LABEL_ON: String = "自动战斗 开"
 const LABEL_OFF: String = "自动战斗 关"
 
@@ -24,7 +24,7 @@ var _button: Button = null
 
 func setup(initial_on: bool = false, visible_default: bool = true) -> void:
 	_on = initial_on
-	position = BattleViewCoords.to_godot(BUTTON_POS.x, BUTTON_POS.y)
+	position = GODOT_POS
 	var content := CONTENT_SCENE.instantiate()
 	add_child(content)   # Control 组件 content 挂 panel 自身（坑 7）
 	_button = content.get_node("%AutoButton") as Button

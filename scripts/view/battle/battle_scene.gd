@@ -23,6 +23,9 @@ const BattleResourceAssembler = preload("res://scripts/view/battle/battle_resour
 const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
 const BattleWaveAdvancer = preload("res://scripts/view/battle/battle_wave_advancer.gd")
 const BattleTimeoutBanner = preload("res://scripts/view/battle/battle_timeout_banner.gd")
+const BattleHud = preload("res://scripts/view/battle/battle_hud.gd")
+const BattleHudAssembler = preload("res://scripts/view/battle/battle_hud_assembler.gd")
+const HUD_SCENE: PackedScene = preload("res://scenes/battle/battle_hud.tscn")
 
 const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3, 4]
 const STAGE_DONE_PATH: String = "res://scenes/battle/stage_done_scene.tscn"      # 胜利结算场景
@@ -32,6 +35,8 @@ const ExcavateBattle = preload("res://scripts/systems/excavate_battle.gd")
 const LadderBattle = preload("res://scripts/systems/ladder_battle.gd")
 const MAX_TICKS: int = 6000  # 防死循环（≥ time_limit 90s×fps 60=5400，覆盖 engine 自然 timeout）
 const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_length 常量内联）
+const BIG_HP_POS: Vector2 = Vector2(455.0, 120.0)  # 原 to_godot(375,440)=(375+80,560-440)，Boss 血条 HUD 原生坐标
+const RETURN_BTN_POS: Vector2 = Vector2(837.0, 120.0)  # 原 to_godot(757,440)=(757+80,560-440)，返回键 HUD 原生坐标
 
 signal battle_exited
 signal next_wave_requested
@@ -59,6 +64,7 @@ var wave_mark: Variant = null
 var gold_marker: Variant = null
 var loot_marker: Variant = null
 var heroes_panel: Control = null
+var hud: BattleHud = null          # 战斗 HUD 容器（常驻，分区编排 HUD 元素）
 var _hero_panels: Dictionary = {} # unit→HeroPanel（源 unit.heroPanel 波次复用，scene dict 避改 BattleUnit）
 var auto_combat: bool = false
 var auto_btn: Variant = null
@@ -98,6 +104,9 @@ func _create_layers() -> void:
 	ui_layer = CanvasLayer.new()
 	ui_layer.name = "UI"
 	add_child(ui_layer)
+	# HUD 容器常驻 ui_layer（分区编排所有 HUD 元素，脱离 to_godot）。波次重置只清子节点不重建。
+	hud = HUD_SCENE.instantiate() as BattleHud
+	ui_layer.add_child(hud)
 	_camera = Camera2D.new()
 	add_child(_camera)
 	# Node2D 层（actor/背景）需 Camera2D current 才在 viewport 渲染；CanvasLayer(UI) 独立不需。
@@ -296,21 +305,12 @@ func _advance_ui_list(dt: float) -> void:
 
 
 func add_big_blood_panel(unit: Variant) -> void:
-	var panel: BattleBigHpBar = BattleBigHpBar.create(unit, BIG_HP_LENGTH)
-	ui_layer.add_child(panel)
-	panel.position = BattleViewCoords.to_godot(375.0, 440.0)
-	ui_list.append(panel)
+	BattleHudAssembler.add_big_blood_panel(self, unit)
 
 
 # 初始档同步当前 speed_state（源从 CCUserDefault 持久化，单机化默认 1）。
 func _create_speed_button() -> void:
-	if speed_btn != null:
-		speed_btn.queue_free()
-	var btn := BattleSpeedButton.new()
-	btn.setup(speed_state)
-	btn.speed_changed.connect(_on_speed_changed)
-	ui_layer.add_child(btn)
-	speed_btn = btn
+	BattleHudAssembler.create_speed_button(self)
 
 
 func _on_speed_changed(state: int) -> void:
@@ -322,14 +322,7 @@ func _on_speed_changed(state: int) -> void:
 
 
 func _create_return_button() -> void:
-	if return_btn != null:
-		return_btn.queue_free()
-	var btn := TextureButton.new()
-	btn.texture_normal = load("res://assets/ui/alpha/HVGA/pausebtn.png") as Texture2D
-	btn.position = BattleViewCoords.to_godot(757.0, 440.0)
-	btn.pressed.connect(_on_return_pressed)
-	ui_layer.add_child(btn)
-	return_btn = btn
+	BattleHudAssembler.create_return_button(self)
 
 
 func _on_return_pressed() -> void:
@@ -370,12 +363,7 @@ func _clear_pause_layer() -> void:
 
 
 func _create_timer() -> void:
-	if timer != null:
-		timer.queue_free()
-	var t := BattleTimer.new()
-	t.setup()
-	ui_layer.add_child(t)
-	timer = t
+	BattleHudAssembler.create_timer(self)
 
 
 func _update_timer() -> void:
@@ -384,13 +372,7 @@ func _update_timer() -> void:
 
 
 func _create_next_button() -> void:
-	if next_btn != null:
-		next_btn.queue_free()
-	var btn := BattleNextButton.new()
-	btn.setup()
-	btn.pressed.connect(_on_next_pressed)
-	ui_layer.add_child(btn)
-	next_btn = btn
+	BattleHudAssembler.create_next_button(self)
 
 
 func _on_next_pressed() -> void:
@@ -439,13 +421,7 @@ func _on_next_wave_requested() -> void:
 
 
 func _create_auto_button() -> void:
-	if auto_btn != null:
-		auto_btn.queue_free()
-	var btn := BattleAutoButton.new()
-	btn.setup(false, false)   # 默认 off + 隐藏（pve stars<3，源 :1224-1226）
-	btn.toggled.connect(_on_auto_toggled)
-	ui_layer.add_child(btn)
-	auto_btn = btn
+	BattleHudAssembler.create_auto_button(self)
 
 
 func _on_auto_toggled(on: bool) -> void:
@@ -486,19 +462,8 @@ func add_loot_marker(num: int) -> void:
 
 
 func _create_heroes_panel() -> void:
-	if heroes_panel != null:
-		heroes_panel.queue_free()
-	_hero_panels.clear()
-	heroes_panel = Control.new()
-	heroes_panel.position = BattleViewCoords.to_godot(70.0, 5.0)
-	ui_layer.add_child(heroes_panel)
+	BattleHudAssembler.create_heroes_panel(self)
 
 
 func add_hero_panel(unit: Variant) -> void:
-	if heroes_panel == null:
-		return
-	var panel := BattleHeroPanel.new()
-	panel.setup(unit, cm, self)
-	heroes_panel.add_child(panel)
-	ui_list.append(panel)
-	_hero_panels[unit] = panel
+	BattleHudAssembler.add_hero_panel(self, unit)

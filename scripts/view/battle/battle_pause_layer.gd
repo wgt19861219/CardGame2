@@ -9,8 +9,8 @@ extends ColorRect
 ## scenes/battle/battle_pause_layer_content.tscn（instantiate + add_child + get_node + fill）。
 ## ColorRect 根保留 gd 设（color/mouse_filter/size 模态遮罩），content 挂 panel 自身（无 PopWindow container）。
 ## 动态：sound 按钮初始贴图（sound_on 参数）+ 信号接线 + 进/退场 scale tween（_content pivot=CENTER）。
-## 坐标源 800×480 → Godot 960×640 经 BattleViewCoords.to_godot（exit 255,265→335,295 / sound 400,265→480,295
-## / resume 545,265→625,295 / label_y 180→380）固化进 .tscn。
+## 坐标：2026-07-31 容器化重构，3 按钮 + 3 标签改 HBoxContainer + VBoxContainer 编排（ButtonRow 居中），
+## 去除历史裸 offset 硬编码（原 exit 335,295 / sound 480,295 / resume 625,295）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_pause_layer_content.tscn")
 const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/"

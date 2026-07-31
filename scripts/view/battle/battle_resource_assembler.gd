@@ -5,6 +5,13 @@ extends RefCounted
 ## static 方法第一参 scene，照 equip_strengthen_anim.gd 静态拆分范式。
 ## 主类 _create_wave_mark/_create_resource_markers 转发本类。
 ## add_gold/add_loot_marker 是公开 API（被 BattleActor/BattleHeroPanel 调用），主类留转发桩。
+##
+## 坐标：原 to_godot(cx,cy)=(cx+80,560-cy) 已换算为 Godot 原生常量（HUD 顶部带 y≈120）。
+
+
+const WAVE_MARK_POS: Vector2 = Vector2(460.0, 120.0)  # 原 to_godot(380,440)，波次标记 HUD 原生坐标
+const GOLD_MARK_POS: Vector2 = Vector2(190.0, 120.0)  # 原 to_godot(110,440)，金标记 HUD 原生坐标
+const LOOT_MARK_POS: Vector2 = Vector2(290.0, 120.0)  # 原 to_godot(210,440)，掉落标记 HUD 原生坐标
 
 
 static func create_background(scene) -> void:
@@ -30,7 +37,7 @@ static func create_wave_mark(scene) -> void:
 	if scene.wave_mark != null:
 		scene.wave_mark.queue_free()
 	var node := Control.new()
-	node.position = BattleViewCoords.to_godot(380.0, 440.0)
+	node.position = WAVE_MARK_POS
 	var wave_id: int = int(scene.battle_info.get("Wave ID", 1))
 	var lbl := Label.new()
 	var ls := LabelSettings.new()
@@ -39,7 +46,7 @@ static func create_wave_mark(scene) -> void:
 	lbl.label_settings = ls
 	lbl.text = str(wave_id) + "/3"
 	node.add_child(lbl)
-	scene.ui_layer.add_child(node)
+	scene.hud.add_child(node)
 	scene.wave_mark = node
 
 
@@ -49,12 +56,12 @@ static func create_resource_markers(scene) -> void:
 	if scene.loot_marker != null:
 		scene.loot_marker.queue_free()
 	var gold := BattleResourceMarker.new()
-	gold.setup(BattleResourceMarker.Kind.GOLD, BattleViewCoords.to_godot(110.0, 440.0))
-	scene.ui_layer.add_child(gold)
+	gold.setup(BattleResourceMarker.Kind.GOLD, GOLD_MARK_POS)
+	scene.hud.add_child(gold)
 	scene.gold_marker = gold
 	var loot := BattleResourceMarker.new()
-	loot.setup(BattleResourceMarker.Kind.LOOT, BattleViewCoords.to_godot(210.0, 440.0))
-	scene.ui_layer.add_child(loot)
+	loot.setup(BattleResourceMarker.Kind.LOOT, LOOT_MARK_POS)
+	scene.hud.add_child(loot)
 	scene.loot_marker = loot
 	add_gold(scene, 0)
 	add_loot_marker(scene, 0)

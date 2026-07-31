@@ -12,7 +12,7 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_speed_button_content.tscn")
 const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/CombatAcceleration_"
-const BUTTON_POS: Vector2 = Vector2(735.0, 120.0)
+const GODOT_POS: Vector2 = Vector2(815.0, 440.0)  # 原 to_godot(735,120)=(735+80,560-120)，HUD 原生坐标
 const MAX_STATE: int = 4
 const SPEED_LABELS := ["1x", "2x", "3x", "4x"]
 
@@ -24,7 +24,7 @@ var _label: Label = null
 
 
 func setup(initial_state: int = 1) -> void:
-	position = BattleViewCoords.to_godot(BUTTON_POS.x, BUTTON_POS.y)
+	position = GODOT_POS
 	_state = clampi(initial_state, 1, MAX_STATE)
 	var content := CONTENT_SCENE.instantiate()
 	add_child(content)   # Control 组件 content 挂 panel 自身（坑 7，原点 = panel 自身）

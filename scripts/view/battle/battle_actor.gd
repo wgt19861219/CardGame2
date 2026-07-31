@@ -8,7 +8,7 @@ extends Node2D
 const BAR_SCALE: float = 0.6666666666666666
 const BAR_HP_Y: float = 114.5
 const BAR_SHIELD_Y: float = 110.0
-const BOSS_BAR_POS: Vector2 = Vector2(355.0, 426.0)
+const BOSS_BAR_POS: Vector2 = Vector2(435.0, 134.0)  # 原 to_godot(355,426)=(355+80,560-426)，Boss 护盾条 HUD 原生坐标
 const BAR_Z: int = 999
 const MANUALLY_CAST_SCALE: float = 1.35
 const GRAVITY: float = -1800.0
@@ -340,7 +340,7 @@ func _create_floating_bars() -> void:
 	else:
 		# Boss：ShieldBoss 挂 ui_layer 固定位置（源 :1558-1562）
 		bar_shield = BattleFloatingBar.create(model, "ShieldBoss")
-		bar_shield.position = BattleViewCoords.to_godot(BOSS_BAR_POS.x, BOSS_BAR_POS.y)
+		bar_shield.position = BOSS_BAR_POS
 		bar_shield.scale.x = -1.0
 		if _ui_layer != null:
 			_ui_layer.add_child(bar_shield)

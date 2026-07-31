@@ -10,7 +10,7 @@ extends Control
 ## show/hide_button 摆动动画保留 procedural（position.x tween）。Control 组件 content 挂 panel 自身（坑 7）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_next_button_content.tscn")
-const BUTTON_POS: Vector2 = Vector2(670.0, 260.0)
+const GODOT_POS: Vector2 = Vector2(750.0, 300.0)  # 原 to_godot(670,260)=(670+80,560-260)，HUD 原生坐标
 const BUTTON_SCALE: float = 1.25
 const SWING_DIST: float = 30.0
 const SWING_DURATION: float = 0.65
@@ -19,12 +19,10 @@ signal pressed
 
 var _btn: TextureButton = null
 var _swing_tween: Tween = null
-var _godot_pos: Vector2 = Vector2.ZERO   # BUTTON_POS 经 to_godot 转换（源 800×480→Godot 960×640）
 
 
 func setup() -> void:
-	_godot_pos = BattleViewCoords.to_godot(BUTTON_POS.x, BUTTON_POS.y)
-	position = _godot_pos
+	position = GODOT_POS
 	scale = Vector2(BUTTON_SCALE, BUTTON_SCALE)
 	var content := CONTENT_SCENE.instantiate()
 	add_child(content)   # Control 组件 content 挂 panel 自身（坑 7，坐标原点 = btn 原点）
@@ -38,8 +36,8 @@ func show_button() -> void:
 	if _swing_tween:
 		_swing_tween.kill()
 	_swing_tween = create_tween().set_loops()
-	_swing_tween.tween_property(self, "position:x", _godot_pos.x + SWING_DIST, SWING_DURATION)
-	_swing_tween.tween_property(self, "position:x", _godot_pos.x, SWING_DURATION)
+	_swing_tween.tween_property(self, "position:x", GODOT_POS.x + SWING_DIST, SWING_DURATION)
+	_swing_tween.tween_property(self, "position:x", GODOT_POS.x, SWING_DURATION)
 
 
 func hide_button() -> void:
@@ -48,7 +46,7 @@ func hide_button() -> void:
 	if _swing_tween:
 		_swing_tween.kill()
 		_swing_tween = null
-	position.x = _godot_pos.x
+	position.x = GODOT_POS.x
 
 
 func _on_pressed() -> void:
