@@ -642,7 +642,8 @@ func test_start_player_walk_maxtime() -> void:
 	scene.queue_free()
 
 
-# 源 reset :101-111 — battle_info["Background Pic"] → Sprite2D add background_layer。
+# 源 reset :101-111 — battle_info["Background Pic"] → 背景图。Godot 侧挂独立 CanvasLayer
+# （layer=-1，TextureRect full_rect + KEEP_ASPECT_COVERED），不受 Camera2D 偏移且不遮挡 actor。
 func test_create_background_from_battle_info() -> void:
 	var eng := _make_engine()
 	eng.stage_info = cm.get_raw_table(&"Stage").get("1", {})
@@ -657,12 +658,15 @@ func test_create_background_from_battle_info() -> void:
 	if bg_pic.is_empty():
 		gut.p("Battle 表 stage1 wave1 无 Background Pic 字段，跳过")
 	else:
-		assert_gt(scene.background_layer.get_child_count(), 0, "背景创建 Sprite2D 子节点（源 :111）")
-		if scene.background_layer.get_child_count() > 0:
-			var bg: Sprite2D = scene.background_layer.get_child(0) as Sprite2D
-			assert_not_null(bg.texture, "背景 texture 加载（源 :104 createSprite）")
-			assert_eq(bg.centered, true, "centered=true 居中（全屏铺满：cover scale + 屏幕中心）")
-			assert_eq(bg.position, Vector2(480.0, 320.0), "背景居中屏幕中心(480,320)")
-			assert_gt(bg.scale.x, 1.0, "背景 cover scale>1（1024×615→铺满 960×640）")
+		var bg_layer: CanvasLayer = scene.get_node_or_null("BackgroundLayer") as CanvasLayer
+		assert_not_null(bg_layer, "背景独立 CanvasLayer（layer=-1，渲染在 actor 之下）")
+		if bg_layer != null:
+			assert_eq(bg_layer.layer, -1, "CanvasLayer layer=-1（在世界画布之下）")
+			var bg: TextureRect = bg_layer.get_child(0) as TextureRect
+			assert_not_null(bg, "背景 TextureRect（源 :104 createSprite）")
+			if bg != null:
+				assert_not_null(bg.texture, "背景 texture 加载")
+				assert_eq(bg.anchors_preset, Control.PRESET_FULL_RECT, "全屏 anchor")
+				assert_eq(bg.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_COVERED, "cover 模式铺满")
 	scene.queue_free()
 

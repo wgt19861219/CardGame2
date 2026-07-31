@@ -13,12 +13,21 @@ const WAVE_MARK_POS: Vector2 = Vector2(460.0, 120.0)  # 原 to_godot(380,440)，
 const GOLD_MARK_POS: Vector2 = Vector2(190.0, 120.0)  # 原 to_godot(110,440)，金标记 HUD 原生坐标
 const LOOT_MARK_POS: Vector2 = Vector2(290.0, 120.0)  # 原 to_godot(210,440)，掉落标记 HUD 原生坐标
 const VIEW_SIZE: Vector2 = Vector2(960.0, 640.0)       # HVGA 屏幕尺寸
-const VIEW_CENTER: Vector2 = Vector2(480.0, 320.0)     # 屏幕中心
+const BG_LAYER_NAME: String = "BackgroundLayer"        # 背景独立 CanvasLayer 节点名
+const BG_LAYER_ORDER: int = -1                         # CanvasLayer layer 值：负值 → 渲染在 Node2D 世界画布（layer 0）之下
 
 
+# 背景图挂独立 CanvasLayer（layer=-1，TextureRect 全屏 cover），不受 Camera2D DRAG_CENTER 偏移影响，
+# 且渲染在 Node2D 世界画布（actor/特效）之下，不遮挡人物动画。
+# 源 Axmol：CCLayer background_layer + createSprite setAnchorPoint(ccpZero) 原尺寸不缩放，
+# 靠 1024×615 > 800×480 自然覆盖。Godot 960×640 屏更大（高 640>615），需 cover scale 铺满。
 static func create_background(scene) -> void:
+	# 清旧背景（兼容历史：先清 background_layer Node2D 残留，再清独立 CanvasLayer）
 	for child in scene.background_layer.get_children():
 		child.queue_free()
+	var old_layer: Node = scene.get_node_or_null(BG_LAYER_NAME)
+	if old_layer != null:
+		old_layer.queue_free()
 	var bg_name := String(scene.battle_info.get("Background Pic", ""))
 	if bg_name.is_empty():
 		return
@@ -27,19 +36,22 @@ static func create_background(scene) -> void:
 		push_warning("[BattleScene] 背景图缺失: " + bg_path)
 		return
 	var bg_tex := load(bg_path) as Texture2D
-	var bg_sprite := Sprite2D.new()
-	bg_sprite.texture = bg_tex
-	bg_sprite.centered = true
-	bg_sprite.position = VIEW_CENTER
-	bg_sprite.flip_h = bool(scene.battle_info.get("H Flip", false))
-	# 背景图(1024×615)缩放铺满屏幕(960×640)：cover 取 max(scale)，完全覆盖可能裁切少许。
-	var tex_size: Vector2 = bg_tex.get_size() if bg_tex != null else VIEW_SIZE
-	if tex_size.x > 0.0 and tex_size.y > 0.0:
-		var scale_x: float = VIEW_SIZE.x / tex_size.x
-		var scale_y: float = VIEW_SIZE.y / tex_size.y
-		var cover_scale: float = maxf(scale_x, scale_y)
-		bg_sprite.scale = Vector2(cover_scale, cover_scale)
-	scene.background_layer.add_child(bg_sprite)
+	# 独立 CanvasLayer（layer=-1）：不受 Camera2D 变换影响（CanvasLayer 有独立坐标），
+	# 且 layer<0 保证渲染在 Node2D 世界画布（actor）之下。
+	var bg_canvas := CanvasLayer.new()
+	bg_canvas.name = BG_LAYER_NAME
+	bg_canvas.layer = BG_LAYER_ORDER
+	scene.add_child(bg_canvas)
+	# TextureRect 全屏 cover：PRESET_FULL_RECT + EXPAND_IGNORE_SIZE + KEEP_ASPECT_COVERED
+	# → 自动按屏幕(960×640)与纹理(1024×615)比例 cover 缩放铺满。
+	var bg_rect := TextureRect.new()
+	bg_rect.texture = bg_tex
+	bg_rect.flip_h = bool(scene.battle_info.get("H Flip", false))
+	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg_canvas.add_child(bg_rect)
 
 
 static func create_wave_mark(scene) -> void:
