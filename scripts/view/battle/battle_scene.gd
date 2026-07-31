@@ -115,6 +115,9 @@ func _create_layers() -> void:
 	if _camera == null:
 		_camera = Camera2D.new()
 		add_child(_camera)
+	# FIXED_TOP_LEFT：世界坐标直接映射屏幕坐标（无 DRAG_CENTER 的 +480,+320 偏移）。
+	# to_view_position 输出已是目标屏幕坐标（地面 y=295≈屏幕中部），不应再被相机偏移到底部。
+	_camera.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
 	# Node2D 层（actor/背景）需 Camera2D current 才在 viewport 渲染；CanvasLayer(UI) 独立不需。
 	# 仅运行时入树后激活（GUT 测试 scene 不入树，跳过）。
 	if _camera.is_inside_tree():
