@@ -136,8 +136,10 @@ func on_start_new_action() -> void:
 			puppet.play_attack(Vector2.ZERO)
 		"ult":
 			puppet.play_ult(Vector2.ZERO)
-		"Move", "Idle", "":
-			pass
+		"Move":
+			puppet.play_action("Move", true)
+		"Idle", "":
+			puppet.play_action("Idle", true)
 		_:
 			puppet.play_action(action, bool(model.action_loop))
 
