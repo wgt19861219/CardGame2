@@ -1,6 +1,23 @@
-[gd_scene format=3 uid="uid://bef32ehf3csrq"]
+[gd_scene load_steps=3 format=3 uid="uid://bef32ehf3csrq"]
 
 [ext_resource type="Script" uid="uid://c4d80lq3c2thd" path="res://scripts/view/battle/battle_scene.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/battle/battle_hud.tscn" id="2_hud"]
+
+; 战斗主场景骨架（2026-07-31 升级：从空壳改为含四层 + hud 实例的骨架场景）。
+; 编辑器 2D 视图可见结构，运行时由 battle_scene.gd _create_layers 取节点引用，
+; 动态内容（actor/特效/血条/按钮）仍运行时挂载。Camera2D 需运行时 make_current。
 
 [node name="BattleScene" type="Node2D" unique_id=1644804383]
 script = ExtResource("1")
+
+[node name="Background" type="Node2D" parent="."]
+
+[node name="Main" type="Node2D" parent="."]
+
+[node name="Top" type="Node2D" parent="."]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="BattleHud" parent="UI" instance=ExtResource("2_hud")]
+
+[node name="Camera2D" type="Camera2D" parent="."]

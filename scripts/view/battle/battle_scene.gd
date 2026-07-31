@@ -90,29 +90,42 @@ func setup(p_engine: Variant, p_cm: Variant, p_battle_info: Variant = null) -> v
 
 
 func _create_layers() -> void:
-	for child in get_children():
-		child.queue_free()
-	background_layer = Node2D.new()
-	background_layer.name = "Background"
-	add_child(background_layer)
-	main_layer = Node2D.new()
-	main_layer.name = "Main"
-	add_child(main_layer)
-	top_layer = Node2D.new()
-	top_layer.name = "Top"
-	add_child(top_layer)
-	ui_layer = CanvasLayer.new()
-	ui_layer.name = "UI"
-	add_child(ui_layer)
-	# HUD 容器常驻 ui_layer（分区编排所有 HUD 元素，脱离 to_godot）。波次重置只清子节点不重建。
-	hud = HUD_SCENE.instantiate() as BattleHud
-	ui_layer.add_child(hud)
-	_camera = Camera2D.new()
-	add_child(_camera)
+	# 四层 + hud + camera 已固化进 battle_scene.tscn（编辑器可视化），此处只取节点引用。
+	# 兼容旧空壳场景：节点不存在时回退 new()（GUT 测试可能用旧实例）。
+	background_layer = (get_node_or_null("Background") as Node2D)
+	if background_layer == null:
+		background_layer = _ensure_layer("Background")
+	main_layer = (get_node_or_null("Main") as Node2D)
+	if main_layer == null:
+		main_layer = _ensure_layer("Main")
+	top_layer = (get_node_or_null("Top") as Node2D)
+	if top_layer == null:
+		top_layer = _ensure_layer("Top")
+	ui_layer = (get_node_or_null("UI") as CanvasLayer)
+	if ui_layer == null:
+		ui_layer = CanvasLayer.new()
+		ui_layer.name = "UI"
+		add_child(ui_layer)
+	# HUD：优先取 .tscn 实例化的实例，否则回退 instantiate（波次重置只清子节点不重建）。
+	hud = (ui_layer.get_node_or_null("BattleHud") as BattleHud)
+	if hud == null:
+		hud = HUD_SCENE.instantiate() as BattleHud
+		ui_layer.add_child(hud)
+	_camera = (get_node_or_null("Camera2D") as Camera2D)
+	if _camera == null:
+		_camera = Camera2D.new()
+		add_child(_camera)
 	# Node2D 层（actor/背景）需 Camera2D current 才在 viewport 渲染；CanvasLayer(UI) 独立不需。
 	# 仅运行时入树后激活（GUT 测试 scene 不入树，跳过）。
 	if _camera.is_inside_tree():
 		_camera.make_current()
+
+
+func _ensure_layer(layer_name: String) -> Node2D:
+	var layer := Node2D.new()
+	layer.name = layer_name
+	add_child(layer)
+	return layer
 
 
 func reset_state() -> void:
