@@ -720,3 +720,17 @@ func test_start_enter_walk_sets_offline_and_velocity() -> void:
 	assert_gt(float(e_actor._walk_pos.x), 500.0, "敌方起步在场外（x>站位）")
 	e_actor.queue_free()
 	scene.queue_free()
+
+
+# .abc 单位（Treant，Unit 101）ZIP 直读：无预解压目录，从 Treant.abc 加载 FCA 成功。
+func test_abc_unit_loads_fca_from_zip() -> void:
+	var eng := _make_engine()
+	var u := BattleUnit.new({"_tid": 101, "_level": 1, "_stars": 1}, BattleEngine.CAMP_ENEMY, {"estimate_rank": false}, cm, eng, {}, lib)
+	eng.add_unit(u)
+	assert_eq(String(u.info.get("Puppet", "")), "Treant.cha", "Unit 101 Puppet=Treant.cha")
+	assert_false(FileAccess.file_exists("res://assets/anim_frames/Treant/sheet.plist"), "Treant 无预解压目录（.abc 单位）")
+	assert_true(FileAccess.file_exists("res://assets/anim_frames/Treant.abc"), "Treant.abc zip 存在")
+	var sprite := UnitSprite.new()
+	sprite.setup(u, cm)
+	assert_true(sprite._using_fca, "Treant(.abc) ZIP 直读 FCA 成功（非降级头像）")
+	sprite.queue_free()

@@ -64,7 +64,10 @@ func _try_load_fca() -> void:
 	if _resource.is_empty():
 		_fallback_to_portrait()
 		return
+	# atlas 加载：先试外部目录（.ani 预解压产物），失败试 .abc/.ani ZIP 直读。
 	var atlas: AtlasSprite = _get_or_load_atlas("res://assets/anim_frames/" + _resource + "/sheet.plist")
+	if atlas == null or not atlas.is_loaded():
+		atlas = _get_or_load_atlas_zip("res://assets/anim_frames/" + _resource)
 	if atlas == null or not atlas.is_loaded():
 		_fallback_to_portrait()
 		return
@@ -97,6 +100,21 @@ func _get_or_load_atlas(plist_path: String) -> AtlasSprite:
 	if atlas.load_atlas(plist_path):
 		_atlas_cache[plist_path] = atlas
 		return atlas
+	return null
+
+
+# ZIP 直读 atlas：.abc 单位（Treant 等）无预解压目录，从 .abc/.ani zip 直读 plist+png。
+# 试 .abc 再 .ani（同 FCA 格式，入口名 cha/plist 或 sheet.key/sheet.plist）。
+func _get_or_load_atlas_zip(resource_dir: String) -> AtlasSprite:
+	for ext in [".abc", ".ani"]:
+		var zip_path: String = resource_dir + ext
+		if _atlas_cache.has(zip_path):
+			return _atlas_cache[zip_path]
+		if FileAccess.file_exists(zip_path):
+			var atlas := AtlasSprite.new()
+			if atlas.load_atlas_from_ani(zip_path):
+				_atlas_cache[zip_path] = atlas
+				return atlas
 	return null
 
 
