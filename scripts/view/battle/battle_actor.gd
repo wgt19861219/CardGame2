@@ -4,6 +4,9 @@ extends Node2D
 ## 单位 actor（View 包装）— 照源 unit.lua:1518-1567 UnitActorCreate + :1724-1785 update 翻译。
 ## 从 battle_scene.gd 拆出（控四大原则 ≤400，2026-07-02）。Node2D 容器 + UnitSprite puppet +
 ## 位置同步 + interp 双缓冲插值（tick 间 lerp）+ FloatingBar 血条 + knockup 弧线 + getRuntimeScale/setActionSpeeder。
+##
+## 入场走路（start_enter_walk）：战斗开场单位从场外走到站位（_offline 离线自驱），
+## 到位发 enter_walk_finished 信号，BattleScene 计数归零后解冻 engine。
 
 const BAR_SCALE: float = 0.6666666666666666
 const BAR_HP_Y: float = 114.5
@@ -13,6 +16,11 @@ const BAR_Z: int = 999
 const MANUALLY_CAST_SCALE: float = 1.35
 const GRAVITY: float = -1800.0
 const NEXT_BATTLE_WALK_SPEEDER: float = 1.75
+const ENTER_WALK_SPEEDER: float = 1.75   # 入场走路加速（复用切波系数）
+const ENTER_ARRIVE_THRESHOLD: float = 5.0  # 入场到位判定阈值（logic 单位）
+
+# 入场走路完成（BattleScene 计数归零后解冻 engine）。
+signal enter_walk_finished
 const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
 
 var model: Variant = null     # BattleUnit（Logic 层单位）
@@ -36,6 +44,7 @@ var _height: float = 0.0
 var _effects: Dictionary = {}
 var _shader_stack: Array[String] = []
 var _cm: Variant = null                 # ConfigManager（use_puppet 查 Puppet 表）
+var _enter_target: Variant = null       # 入场目标 logic 坐标（Vector2）或 null（非入场态）
 
 
 func setup(p_model: Variant, p_cm: Variant, p_ui_layer: Node = null) -> void:
@@ -68,6 +77,19 @@ func update_view(dt: float) -> void:
 	var logic_pos: Vector2
 	if _offline and _velocity != Vector2.ZERO:
 		_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
+		# 入场到位判定：_walk_pos 接近 _enter_target 时发信号、清离线态、重接 engine 同步。
+		if _enter_target != null:
+			var tgt: Vector2 = Vector2(_enter_target)
+			if _walk_pos.distance_to(tgt) < ENTER_ARRIVE_THRESHOLD:
+				_walk_pos = tgt
+				_enter_target = null
+				_offline = false
+				_velocity = Vector2.ZERO
+				_tick = -1  # 重置 tick 让下帧重新接 engine interp
+				_has_interp = false
+				if puppet != null and puppet.has_method("play_action"):
+					puppet.play_action("Idle", true)
+				enter_walk_finished.emit()
 		position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
 		z_index = -int(_walk_pos.y)
 		if bar_group != null:
@@ -305,6 +327,32 @@ func _delay_call(scene: Node, delay: float, cb: Callable) -> void:
 
 func launch(time: float) -> void:
 	_z_speed = time * -GRAVITY * 0.5
+
+
+# 战斗入场走路：actor 从场外起点走到 target_logic_pos，到位发 enter_walk_finished。
+# from_offset 为相对站位的场外偏移（玩家负=左外，敌方正=右外）；velocity 方向自动朝向 target。
+# 复用 _offline 离线自驱机制（同 goto_next_battle），setup 的初始 update_view 须跳过（_enter_pending）。
+func start_enter_walk(target_logic_pos: Vector2, from_offset: float) -> void:
+	var start_pos := Vector2(target_logic_pos.x + from_offset, target_logic_pos.y)
+	_walk_pos = start_pos
+	_enter_target = target_logic_pos
+	var base_speed: float = float(model.info.get("Walk Speed", 0.0)) if model != null else 0.0
+	if base_speed <= 0.0:
+		base_speed = 100.0   # 兜底（Walk Speed 缺失）
+	# 方向：offset<0（玩家从左外）→ +x 走向 target；offset>0（敌方从右外）→ -x。
+	var dir_x: float = -1.0 if from_offset > 0.0 else 1.0
+	_velocity = Vector2(dir_x * base_speed * ENTER_WALK_SPEEDER, 0.0)
+	if puppet != null:
+		if puppet.has_method("play_walk_anim_only"):
+			puppet.play_walk_anim_only()
+		if puppet.has_method("set_speed"):
+			puppet.set_speed(sqrt(ENTER_WALK_SPEEDER))
+	_offline = true
+	_has_interp = false
+	_z_speed = null
+	_height = 0.0
+	# 立即定位到场外起点（不等下一帧 update_view）。
+	position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
 
 
 # puppet Move + speeder^0.5 + velocity = Walk Speed × 1.75 + scale(1,1) 朝右 + offline + 清 interp。

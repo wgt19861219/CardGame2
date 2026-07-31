@@ -54,6 +54,9 @@ var speed_state: int = 1
 var pause_locks: Dictionary = {}  # P1-17：源 pause_locks 多 reason 字典
 var is_paused: bool = false       # pause_locks.values().has(true) 缓存（调用点内联算，源 :777-780 any）
 var last_sync_tick: int = -1
+var _entering: bool = false           # 入场走路进行中（冻结 engine，仅驱动 actor 离线走）
+var _pending_enter_count: int = 0     # 待入场就位 actor 计数
+var _enter_walk_enabled: bool = false # 入场走路开关（真实战斗 _ready 从 battle_context 装配时开启）
 var speed_btn: Variant = null
 var return_btn: Variant = null
 var pause_layer: Variant = null
@@ -161,6 +164,16 @@ func reset_state() -> void:
 		_create_background()
 
 
+# 战斗入场走路编排（转发 BattleEnterWalk helper）：冻结 engine，预创建 actor 放场外，走到位后解冻。
+func _start_enter_walk() -> void:
+	BattleEnterWalk.start(self)
+
+
+# 单个 actor 入场就位回调（转发 helper）；全部就位后解冻 engine。
+func _on_actor_enter_done() -> void:
+	BattleEnterWalk.on_actor_done(self)
+
+
 func _create_background() -> void:
 	BattleResourceAssembler.create_background(self)
 
@@ -196,12 +209,20 @@ func _ready() -> void:
 		var eng: BattleEngine = _battle_context["engine"]
 		var info: Dictionary = _battle_context["battle_info"]
 		setup(eng, GameData.config, info)
+		_enter_walk_enabled = true   # 真实战斗入口（经 battle_context 装配）启用入场走路
 	# 战斗场景无全局 HUD（货币栏/快捷栏）— 声明 identity 让 HudOverlay 整体隐藏。
 	HudOverlay.apply_identity("battle")
+	# 入场走路（engine 已 setup 就位时触发；测试可调 skip_enter_walk 跳过）。
+	if engine != null and _enter_walk_enabled:
+		_start_enter_walk()
 
 
 func _process(delta: float) -> void:
 	if engine == null or _finalized:
+		return
+	if _entering:
+		# 入场期间冻结 engine（不 step），仅驱动 actor 离线走路推进。
+		_advance_actor_list(delta)
 		return
 	step(delta)
 	_ticks_left -= 1

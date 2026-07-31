@@ -670,3 +670,53 @@ func test_create_background_from_battle_info() -> void:
 				assert_eq(bg.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_COVERED, "cover 模式铺满")
 	scene.queue_free()
 
+
+
+# 入场走路状态机：_start_enter_walk 冻结 engine（is_paused）+ _entering=true；全部就位后解冻。
+func test_enter_walk_freezes_then_unfreezes_engine() -> void:
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	var e := _make_unit(1, BattleEngine.CAMP_ENEMY, eng, Vector2(300, 0))
+	eng.add_unit(p)
+	eng.add_unit(e)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm)
+	add_child(scene)
+	scene._start_enter_walk()   # 测试默认关入场，手动触发
+	assert_true(scene.is_paused, "入场期间 engine 冻结（is_paused=true）")
+	assert_true(scene._entering, "_entering=true")
+	assert_eq(scene._pending_enter_count, 2, "2 个单位待入场")
+	# 模拟全部就位
+	p.actor.enter_walk_finished.emit()
+	assert_true(scene._entering, "1 个就位，仍入场中")
+	e.actor.enter_walk_finished.emit()
+	assert_false(scene._entering, "全部就位，_entering=false")
+	assert_false(scene.is_paused, "全部就位，engine 解冻")
+	scene.queue_free()
+
+
+# start_enter_walk：actor 起步在场外（offset）、_offline=true、velocity 朝向 target。
+func test_start_enter_walk_sets_offline_and_velocity() -> void:
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	eng.add_unit(p)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm)
+	add_child(scene)
+	scene._start_enter_walk()   # 测试默认关入场，手动触发
+	var actor: BattleActor = p.actor
+	assert_not_null(actor, "玩家 actor 已预创建")
+	# 玩家 offset=-300 → 起步 x=100-300=-200（场外左），velocity +x 朝 target。
+	assert_lt(float(actor._walk_pos.x), 100.0, "玩家起步在场外（x<站位）")
+	assert_true(actor._offline, "_offline=true（离线自驱）")
+	assert_gt(float(actor._velocity.x), 0.0, "玩家 velocity +x（走向右）")
+	# 敌方 offset=+300 → velocity -x
+	var e := _make_unit(2, BattleEngine.CAMP_ENEMY, eng, Vector2(500, 0))
+	eng.add_unit(e)
+	var e_actor := BattleActor.new()
+	e_actor.setup(e, cm)
+	e_actor.start_enter_walk(Vector2(500, 0), 300.0)
+	assert_lt(float(e_actor._velocity.x), 0.0, "敌方 velocity -x（走向左）")
+	assert_gt(float(e_actor._walk_pos.x), 500.0, "敌方起步在场外（x>站位）")
+	e_actor.queue_free()
+	scene.queue_free()
