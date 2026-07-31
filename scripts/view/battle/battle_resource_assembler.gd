@@ -46,7 +46,7 @@ static func create_wave_mark(scene) -> void:
 	lbl.label_settings = ls
 	lbl.text = str(wave_id) + "/3"
 	node.add_child(lbl)
-	scene.hud.add_child(node)
+	scene.hud.add_to_top_bar(node)
 	scene.wave_mark = node
 
 
@@ -57,11 +57,11 @@ static func create_resource_markers(scene) -> void:
 		scene.loot_marker.queue_free()
 	var gold := BattleResourceMarker.new()
 	gold.setup(BattleResourceMarker.Kind.GOLD, GOLD_MARK_POS)
-	scene.hud.add_child(gold)
+	scene.hud.add_to_top_bar(gold)
 	scene.gold_marker = gold
 	var loot := BattleResourceMarker.new()
 	loot.setup(BattleResourceMarker.Kind.LOOT, LOOT_MARK_POS)
-	scene.hud.add_child(loot)
+	scene.hud.add_to_top_bar(loot)
 	scene.loot_marker = loot
 	add_gold(scene, 0)
 	add_loot_marker(scene, 0)

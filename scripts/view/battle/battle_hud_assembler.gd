@@ -24,7 +24,7 @@ static func create_speed_button(scene) -> void:
 	var btn := BattleSpeedButton.new()
 	btn.setup(scene.speed_state)
 	btn.speed_changed.connect(scene._on_speed_changed)
-	scene.hud.add_child(btn)
+	scene.hud.add_to_bottom_right(btn)
 	scene.speed_btn = btn
 
 
@@ -36,7 +36,7 @@ static func create_return_button(scene) -> void:
 	btn.texture_normal = load(RETURN_BTN_TEX) as Texture2D
 	btn.position = scene.RETURN_BTN_POS
 	btn.pressed.connect(scene._on_return_pressed)
-	scene.hud.add_child(btn)
+	scene.hud.add_to_top_bar(btn)
 	scene.return_btn = btn
 
 
@@ -46,7 +46,7 @@ static func create_timer(scene) -> void:
 		scene.timer.queue_free()
 	var t := BattleTimer.new()
 	t.setup()
-	scene.hud.add_child(t)
+	scene.hud.add_to_top_bar(t)
 	scene.timer = t
 
 
@@ -57,7 +57,7 @@ static func create_next_button(scene) -> void:
 	var btn := BattleNextButton.new()
 	btn.setup()
 	btn.pressed.connect(scene._on_next_pressed)
-	scene.hud.add_child(btn)
+	scene.hud.add_to_center_right(btn)
 	scene.next_btn = btn
 
 
@@ -68,14 +68,14 @@ static func create_auto_button(scene) -> void:
 	var btn := BattleAutoButton.new()
 	btn.setup(false, false)   # 默认 off + 隐藏（pve stars<3，源 :1224-1226）
 	btn.toggled.connect(scene._on_auto_toggled)
-	scene.hud.add_child(btn)
+	scene.hud.add_to_bottom_right(btn)
 	scene.auto_btn = btn
 
 
 # Boss 多血段大血条装配（源 addBigBloodPanel :541-546）。挂 hud 固定 BIG_HP_POS，入 ui_list。
 static func add_big_blood_panel(scene, unit: Variant) -> void:
 	var panel: BattleBigHpBar = BattleBigHpBar.create(unit, scene.BIG_HP_LENGTH)
-	scene.hud.add_child(panel)
+	scene.hud.add_to_top_bar(panel)
 	panel.position = scene.BIG_HP_POS
 	scene.ui_list.append(panel)
 

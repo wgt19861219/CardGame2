@@ -16,14 +16,14 @@ extends Control
 
 
 var bottom_left: HBoxContainer = null
-var bottom_right: VBoxContainer = null
+var bottom_right: Control = null
 var center_right: Control = null
 var top_bar: Control = null
 
 
 func _ready() -> void:
 	bottom_left = get_node("%BottomLeft") as HBoxContainer
-	bottom_right = get_node("%BottomRight") as VBoxContainer
+	bottom_right = get_node("%BottomRight") as Control
 	center_right = get_node("%CenterRight") as Control
 	top_bar = get_node("%TopBar") as Control
 
