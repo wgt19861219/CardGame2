@@ -33,6 +33,8 @@ static func start(scene) -> void:
 	if scene._pending_enter_count == 0:
 		scene.is_paused = false
 		scene._entering = false
+		scene.engine.running = true
+		scene.engine.enabled = true
 
 
 # 单个 actor 入场就位回调；全部就位后解冻 engine，恢复 step 正常流程。
@@ -41,3 +43,5 @@ static func on_actor_done(scene) -> void:
 	if scene._pending_enter_count <= 0:
 		scene.is_paused = false
 		scene._entering = false
+		scene.engine.running = true
+		scene.engine.enabled = true

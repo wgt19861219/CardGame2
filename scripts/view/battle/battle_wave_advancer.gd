@@ -23,6 +23,41 @@ static func advance_wave(scene) -> void:
 	scene._create_wave_mark()
 	scene._create_background()
 	scene.auto_combat = auto
+	# 重置波次清完标志 + 恢复战斗（新 wave 开始）。
+	scene.engine.wave_clear = false
+	scene._wave_clear_handled = false
+	# 玩家 actor 重置 interp（切波后重新接 engine position，避免瞬移）。
+	for actor in scene.actor_list:
+		if actor is BattleActor and int(actor.model.camp) == BattleEngine.CAMP_PLAYER:
+			actor._tick = -1
+			actor._has_interp = false
+	# 新敌人入场走路（预创建敌方 actor 从右外走到站位，玩家方不动）。
+	_enter_new_enemies(scene)
+
+
+# 新敌人入场：预创建敌方 actor 从右外走到站位（玩家方已在场不动）。
+# 冻结 engine（_entering=true），全部就位后 _on_actor_enter_done 解冻恢复 running。
+static func _enter_new_enemies(scene) -> void:
+	scene._entering = true
+	scene.is_paused = true
+	scene._pending_enter_count = 0
+	for unit in scene.engine.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
+		var actor: BattleActor = scene._create_actor(unit)
+		if actor == null:
+			continue
+		unit.actor = actor
+		actor.in_scene = true
+		scene._add_actor(actor)
+		var target: Vector2 = Vector2(float(unit.position.x), float(unit.position.y))
+		actor.enter_walk_finished.connect(scene._on_actor_enter_done)
+		scene._pending_enter_count += 1
+		actor.start_enter_walk(target, 300.0)
+	# 无新敌人直接解冻
+	if scene._pending_enter_count == 0:
+		scene._entering = false
+		scene.is_paused = false
+		scene.engine.running = true
+		scene.engine.enabled = true
 
 
 static func _current_lookup_id(scene) -> int:

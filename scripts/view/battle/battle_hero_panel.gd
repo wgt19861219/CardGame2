@@ -73,12 +73,23 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	hp_bar = BattleFloatingBar.create(unit, "HP")
 	hp_bar.auto_hide = false
 	hp_bar_host.add_child(hp_bar)
+	hp_bar.position = Vector2(52.0, 6.5)   # bg centered=true，条中心对齐 Zone(104×13) 中心
 	var mp_type: String = str(unit.info.get("MP Type", "MP"))
 	mp_bar = BattleFloatingBar.create(unit, mp_type)
 	mp_bar.auto_hide = false
 	mp_bar_host.add_child(mp_bar)
+	mp_bar.position = Vector2(52.0, 6.5)   # 同 HP，条中心对齐 Zone 中心
 	_start_redmask_flicker()
 	frame_btn.disabled = true
+
+
+# 每帧驱动 hp_bar/mp_bar 的 update（percent 刷新 + 血量动画 + visible）。
+# BattleFloatingBar 无自驱 _process，需外部调 update（源 actor update 链路调 bar.update）。
+func _process(delta: float) -> void:
+	if hp_bar != null:
+		hp_bar.update(delta)
+	if mp_bar != null:
+		mp_bar.update(delta)
 
 
 func _start_redmask_flicker() -> void:

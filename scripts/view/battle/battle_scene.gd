@@ -36,7 +36,7 @@ const LadderBattle = preload("res://scripts/systems/ladder_battle.gd")
 const MAX_TICKS: int = 6000  # 防死循环（≥ time_limit 90s×fps 60=5400，覆盖 engine 自然 timeout）
 const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_length 常量内联）
 const BIG_HP_POS: Vector2 = Vector2(455.0, 120.0)  # 原 to_godot(375,440)=(375+80,560-440)，Boss 血条 HUD 原生坐标
-const RETURN_BTN_POS: Vector2 = Vector2(837.0, 120.0)  # 原 to_godot(757,440)=(757+80,560-440)，返回键 HUD 原生坐标
+const RETURN_BTN_POS: Vector2 = Vector2(870.0, 20.0)   # 暂停键贴右上角（用户布局，贴图70×69，右边距20）
 
 signal battle_exited
 signal next_wave_requested
@@ -57,6 +57,8 @@ var last_sync_tick: int = -1
 var _entering: bool = false           # 入场走路进行中（冻结 engine，仅驱动 actor 离线走）
 var _pending_enter_count: int = 0     # 待入场就位 actor 计数
 var _enter_walk_enabled: bool = false # 入场走路开关（真实战斗 _ready 从 battle_context 装配时开启）
+var _wave_clear_handled: bool = false  # 本波清完已显示 next_btn（防重复触发）
+var _walking_to_next: bool = false    # 切波走路中（玩家 gotoNextBattle，冻结 engine 驱动走路）
 var speed_btn: Variant = null
 var return_btn: Variant = null
 var pause_layer: Variant = null
@@ -220,13 +222,18 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if engine == null or _finalized:
 		return
-	if _entering:
-		# 入场期间冻结 engine（不 step），仅驱动 actor 离线走路推进。
+	if _entering or _walking_to_next:
+		# 入场/切波走路期间冻结 engine（不 step），仅驱动 actor 离线走路推进。
 		_advance_actor_list(delta)
 		return
 	step(delta)
 	_ticks_left -= 1
-	if (not bool(engine.running) or bool(engine.stage_ended)) or _ticks_left <= 0:
+	# 波次清完待切波：显示"下一波"按钮，不 finalize（源 :1608 showNextButton）。
+	if bool(engine.wave_clear) and not _wave_clear_handled:
+		_wave_clear_handled = true
+		_on_wave_clear()
+		return
+	if (not bool(engine.wave_clear) and not bool(engine.running)) or bool(engine.stage_ended) or _ticks_left <= 0:
 		# 超时分支（源 battle_scene.lua:1429-1438 addTimeOutUI）：stage 模式 + RESULT_TIMEOUT 先显示横幅，延迟 finalize。
 		if not _timeout_banner_pending and BattleTimeoutBanner.is_timeout_end(engine, _battle_context):
 			_timeout_banner_pending = true
@@ -453,6 +460,23 @@ func _auto_collect_loots() -> void:
 func show_next_button() -> void:
 	if next_btn != null:
 		next_btn.show_button()
+
+
+# 本波敌人清完（engine.wave_clear）：玩家向右走到下一波 + 切波 + 新敌人入场。
+func _on_wave_clear() -> void:
+	if next_btn != null:
+		next_btn.hide_button()
+	await get_tree().create_timer(0.5).timeout   # 让死亡动画播完
+	if _finalized or engine == null or engine.stage_ended:
+		return
+	# 玩家向右走（gotoNextBattle），_walking_to_next 冻结 engine 驱动走路。
+	_walking_to_next = true
+	var maxtime: float = _start_player_walk_to_next_battle()
+	await get_tree().create_timer(maxtime).timeout
+	_walking_to_next = false
+	if _finalized or engine == null:
+		return
+	BattleWaveAdvancer.advance_wave(self)
 
 
 func _on_next_wave_requested() -> void:

@@ -14,6 +14,9 @@ const DEATH_HIDE_CAP: float = 0.5
 # 源 floating_bar_settings（:340-380）。fg 按 camp（1 玩家绿 / -1,0 敌红）。ShieldBoss 用 guild 资源（:367-379）。
 const SETTINGS: Dictionary = {
 	"HP": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "hp_green_small.png", "-1": "hp_red_small.png", "0": "hp_red_small.png"}, "inc_speed": 0.8, "auto_hide": true},
+	"Mana": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "mp_mana.png", "-1": "mp_mana.png", "0": "mp_mana.png"}, "inc_speed": 2.0, "auto_hide": true},
+	"Energy": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "mp_energy.png", "-1": "mp_energy.png", "0": "mp_energy.png"}, "inc_speed": 2.0, "auto_hide": true},
+	"Rage": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "mp_rage.png", "-1": "mp_rage.png", "0": "mp_rage.png"}, "inc_speed": 2.0, "auto_hide": true},
 	"Shield": {"bg": "hp_shield_bg.png", "mid": "hp_yellow_shield.png", "fg": {"1": "hp_shield.png", "-1": "hp_shield.png", "0": "hp_shield.png"}, "inc_speed": 1.0, "auto_hide": true},
 	"ShieldBoss": {"bg": "guild/guildraid_hpbar_boss_shield_bg.png", "mid": "guild/guildraid_hpbar_transition_shield.png", "fg": {"1": "guild/guildraid_hpbar_boss_shield.png", "-1": "guild/guildraid_hpbar_boss_shield.png", "0": "guild/guildraid_hpbar_boss_shield.png"}, "inc_speed": 0.5, "auto_hide": false},
 }
@@ -55,11 +58,17 @@ func _setup(unit: Variant, bar_type: String) -> void:
 		var camp_key: String = str(int(_unit.camp))
 		_midlayer = _load_sprite(String(cfg.get("mid", "")))
 		_foreground = _load_sprite(String((cfg.get("fg", {}) as Dictionary).get(camp_key, "")))
+		# bg centered=true（原点在贴图中心）；fg/mid centered=false 需左对齐 bg：
+		# position = -bg尺寸/2，让 fg 左上角对齐 bg 左上角（否则 fg 从 bg 中心向右画只显示右半）。
+		var bg_tex: Texture2D = _background.texture
+		var bg_half: Vector2 = (bg_tex.get_size() * 0.5) if bg_tex != null else Vector2.ZERO
 		if _midlayer:
 			_midlayer.centered = false
+			_midlayer.position = -bg_half
 			_background.add_child(_midlayer)
 		if _foreground:
 			_foreground.centered = false
+			_foreground.position = -bg_half
 			_background.add_child(_foreground)
 	_refresh_percent()
 	_fore_length = _percent
@@ -97,7 +106,8 @@ func update(dt: float) -> float:
 		_hide_timer = HIDE_DELAY
 	if _percent == 0.0:
 		_hide_timer = 0.0
-		visible = false
+		if auto_hide:
+			visible = false
 	if not bool(_unit.is_alive()):
 		_hide_timer = minf(DEATH_HIDE_CAP, _hide_timer)
 	_hide_timer -= dt
@@ -120,6 +130,8 @@ func _refresh_percent() -> void:
 func _get_value() -> float:
 	if _type == "HP":
 		return float(_unit.hp)
+	if _type == "Mana" or _type == "Energy" or _type == "Rage":
+		return float(_unit.mp)
 	var total: float = 0.0   # Shield/ShieldBoss：累加 buff.shield（源 :568-572）
 	for buff in _unit.buff_list:
 		var sv: Variant = buff.get("shield")
@@ -131,6 +143,8 @@ func _get_value() -> float:
 func _get_value_max() -> float:
 	if _type == "HP":
 		return float(_unit.attribs.get("HP", 1.0))
+	if _type == "Mana" or _type == "Energy" or _type == "Rage":
+		return float(_unit.attribs.get("MP", 1.0))
 	if _type == "ShieldBoss":
 		var ms: Variant = _unit.get("max_shield")
 		if ms != null:

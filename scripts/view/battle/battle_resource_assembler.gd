@@ -9,9 +9,9 @@ extends RefCounted
 ## 坐标：原 to_godot(cx,cy)=(cx+80,560-cy) 已换算为 Godot 原生常量（HUD 顶部带 y≈120）。
 
 
-const WAVE_MARK_POS: Vector2 = Vector2(460.0, 120.0)  # 原 to_godot(380,440)，波次标记 HUD 原生坐标
-const GOLD_MARK_POS: Vector2 = Vector2(190.0, 120.0)  # 原 to_godot(110,440)，金标记 HUD 原生坐标
-const LOOT_MARK_POS: Vector2 = Vector2(290.0, 120.0)  # 原 to_godot(210,440)，掉落标记 HUD 原生坐标
+const WAVE_MARK_POS: Vector2 = Vector2(465.0, 20.0)   # 波次标记：y=20 与金/掉落同高，x 居中画面（用户布局）
+const GOLD_MARK_POS: Vector2 = Vector2(20.0, 20.0)   # 金标记贴左上角（用户布局需求）
+const LOOT_MARK_POS: Vector2 = Vector2(130.0, 20.0)  # 掉落标记贴左上角（金右侧，金宽100+间距10）
 const VIEW_SIZE: Vector2 = Vector2(960.0, 640.0)       # HVGA 屏幕尺寸
 const BG_LAYER_NAME: String = "BackgroundLayer"        # 背景独立 CanvasLayer 节点名
 const BG_LAYER_ORDER: int = -1                         # CanvasLayer layer 值：负值 → 渲染在 Node2D 世界画布（layer 0）之下

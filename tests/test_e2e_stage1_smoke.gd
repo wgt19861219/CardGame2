@@ -43,12 +43,23 @@ func test_stage1_full_battle_flow() -> void:
 	assert_gt(enemy_count, 0, "敌人单位 > 0")
 	gut.p("装配完成：玩家=%d 敌人=%d" % [player_count, enemy_count])
 
-	# --- 2. engine 跑（最多 5000 tick）---
+	# --- 2. engine 跑（最多 5000 tick/波，3 波）---
+	# wave_clear 时（本波清完）自动 next_battle 切波继续，模拟玩家点"下一波"。
 	var ticks_left := 5000
-	while eng.running and not eng.stage_ended and ticks_left > 0:
+	while ticks_left > 0:
+		if eng.stage_ended:
+			break
+		if not eng.running:
+			if eng.wave_clear:
+				BattleEngineWaves.next_battle(eng, cm)   # 自动切波（测试模拟玩家点下一波）
+				eng.wave_clear = false
+				eng.running = true   # 切波后恢复战斗（同 advance_wave）
+				ticks_left = 5000   # 重置（新波次）
+				continue
+			break   # 真正结束（非 wave_clear）
 		eng.update(BattleEngine.TICK_INTERVAL)
 		ticks_left -= 1
-	assert_true(ticks_left > 0, "不应触发 ticks 死循环兜底（ticks_left=%d）" % ticks_left)
+	assert_true(eng.stage_ended, "战斗应自然结束（3 波全清）")
 	assert_false(eng.running or not eng.stage_ended, "战斗应自然结束")
 	gut.p("战斗结束：ticks_left=%d stage_ended=%s" % [ticks_left, eng.stage_ended])
 

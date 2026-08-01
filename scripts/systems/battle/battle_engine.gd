@@ -28,6 +28,7 @@ const INITIAL_POSITIONS: Array[Vector2] = [Vector2(0, 0), Vector2(-80, -40), Vec
 # —— 状态字段（照源 resetStage/resetBattle）——
 var enabled: bool = true
 var stage_ended: bool = false
+var wave_clear: bool = false        # 本波清完待切波（wave_id < Waves，View 显示 next_btn）
 var running: bool = true
 var ticks: int = 0
 var next_tick: float = 0.0
@@ -74,6 +75,7 @@ func _init() -> void:
 func reset_stage() -> void:
 	enabled = true
 	stage_ended = false
+	wave_clear = false
 	stage_info = {}
 	arena_mode = false
 	crusade_mode = false
@@ -301,6 +303,12 @@ func pve_mode() -> bool:
 
 func victory(_skip: bool = false) -> void:
 	running = false
+	# 源 :1579 还有下一波时（wave_id < Waves）不结束关卡：View 层自动切波。
+	# 仅最后一波或 skip 才真正 exit_stage（算星级、stage_ended + 胜利音效）。
+	var total_waves: int = int(stage_info.get("Waves", 1))
+	if wave_id < total_waves and not _skip:
+		wave_clear = true   # 本波清完待切波（View 检测此标志自动切下一波）
+		return
 	AudioPlayer.play_sfx("battle_win")
 	death_count = 0
 	for unit in unit_list:

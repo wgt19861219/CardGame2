@@ -10,7 +10,7 @@ extends Control
 ## Control 组件 content 挂 panel 自身（坑 7）。setup instantiate + get_node("%Xxx") as 取节点；
 ## 倒计时文本与 mask visible/<20s 红闪保留 fill 动态（update）。
 ## 坐标现状：组件原点挂在 hud（hud 全屏 Control 原点=屏幕原点），内部子节点为 Godot 原生绝对坐标
-## （历史 to_godot 烘焙值：bg/mask (690,120)、hourglass (757,123)、text (702,142)）。
+## （右上角布局：bg/mask (768,47)、hourglass (835,50)、text (780,69)，与暂停键(870,20)顶部对齐）。
 ## 内部硬编码坐标的容器化留待后续阶段。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_timer_content.tscn")

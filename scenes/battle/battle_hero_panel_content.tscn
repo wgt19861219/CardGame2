@@ -3,44 +3,67 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herobucket.png" id="1_bucket"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/portraitredmask.png" id="2_redmask"]
 
-[node name="BattleHeroPanelContent" type="Control"]
-layout_mode = 0
+; VBoxContainer 根：头像/HP/MP 垂直自动排列，separation 控制间距。
+; 各 Zone 带 custom_minimum_size 让 VBox 算布局（替代散乱绝对 offset）。
+[node name="BattleHeroPanelContent" type="VBoxContainer"]
+layout_mode = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+; 头像区：portrait 104×104 + frame 109×109，Zone 110×115 容纳。
+[node name="PortraitZone" type="Control" parent="."]
+custom_minimum_size = Vector2(110, 115)
+layout_mode = 2
 mouse_filter = 2
 
-[node name="PortraitHost" type="Control" parent="."]
+; PortraitHost 在 Zone 内居中（offset 3,3 让 104 portrait 居中 110 宽）。
+[node name="PortraitHost" type="Control" parent="PortraitZone"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 0.0
-offset_top = 70.0
+offset_left = 3.0
+offset_top = 3.0
 mouse_filter = 2
 
-[node name="FrameBtn" type="TextureButton" parent="PortraitHost"]
+[node name="FrameBtn" type="TextureButton" parent="PortraitZone/PortraitHost"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = -2.0
-offset_top = -2.0
+offset_left = 2.0
+offset_top = 2.0
 offset_right = 102.0
 offset_bottom = 102.0
 
-[node name="Redmask" type="Sprite2D" parent="PortraitHost/FrameBtn"]
+[node name="Redmask" type="Sprite2D" parent="PortraitZone/PortraitHost/FrameBtn"]
 unique_name_in_owner = true
 visible = false
 texture = ExtResource("2_redmask")
 
-[node name="Container" type="Sprite2D" parent="PortraitHost"]
+[node name="Container" type="Sprite2D" parent="PortraitZone/PortraitHost"]
+position = Vector2(52, 52)
 z_index = -2
 texture = ExtResource("1_bucket")
 
-[node name="HpBarHost" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 0.0
-offset_top = 21.0
+; HP 条区：104×13（mp 贴图宽 104 统一，HP bg 89 宽居中）。
+[node name="HpBarZone" type="Control" parent="."]
+custom_minimum_size = Vector2(104, 13)
+layout_mode = 2
 mouse_filter = 2
 
-[node name="MpBarHost" type="Control" parent="."]
+[node name="HpBarHost" type="Control" parent="HpBarZone"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 0.0
-offset_top = 8.0
+offset_top = 0.0
+mouse_filter = 2
+
+; MP 条区：104×13。
+[node name="MpBarZone" type="Control" parent="."]
+custom_minimum_size = Vector2(104, 13)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="MpBarHost" type="Control" parent="MpBarZone"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
 mouse_filter = 2

@@ -62,8 +62,12 @@ func test_next_wave_switches_and_clears_enemy_actors() -> void:
 	# 触发切波（源 nextBattle scene 侧）
 	scene._on_next_wave_requested()
 	assert_eq(eng.wave_id, 2, "切到 wave 2（源 :496 engine.next_battle）")
-	assert_eq(scene.actor_list.size(), 1, "切波后只留玩家 actor（源 :468-479 清旧敌人）")
-	assert_eq(int(scene.actor_list[0].model.camp), BattleEngine.CAMP_PLAYER, "保留的是玩家 actor")
+	assert_gte(scene.actor_list.size(), 2, "切波后有玩家+新入场敌人 actor（_enter_new_enemies 预创建）")
+	var has_p: bool = false
+	for a in scene.actor_list:
+		if int(a.model.camp) == BattleEngine.CAMP_PLAYER:
+			has_p = true
+	assert_true(has_p, "切波后保留玩家 actor")
 	assert_gt(eng.alive_units.get(BattleEngine.CAMP_ENEMY, []).size(), 0, "wave 2 装配新敌人（reset_battle 留玩家+setup_battle）")
 	scene.queue_free()
 
@@ -157,18 +161,33 @@ func test_actor_interp_lerps_between_ticks() -> void:
 # 源 UnitActorCreate:1545-1563 — actor 集成 FloatingBarGroup（HP + Shield 头顶）。
 func test_actor_has_floating_bar_group() -> void:
 	var eng := _make_engine()
+	# 敌方单位保留头顶血条（玩家方头顶不显示，底部面板已有 HP/MP）。
+	var e := _make_unit(1, BattleEngine.CAMP_ENEMY, eng, Vector2(300, 0))
+	eng.add_unit(e)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm)
+	scene.step(0.033)
+	var actor: Variant = scene.actor_list[0]
+	assert_not_null(actor.bar_group, "actor 应有 bar_group（源 :1545）")
+	assert_not_null(actor.bar_hp, "敌方普通单位应有头顶 HP bar")
+	assert_not_null(actor.bar_shield, "应有 Shield bar")
+	assert_eq(actor.bar_hp.position, Vector2(0.0, -114.5), "HP bar y=-114.5（头顶，源 Cocos y=114.5 翻转）")
+	assert_eq(actor.bar_shield.position, Vector2(0.0, -110.0), "Shield bar y=-110（头顶）")
+	assert_almost_eq(actor.bar_hp.scale.x, 0.6667, 0.001, "HP bar scale 0.666（源 :1550）")
+	scene.queue_free()
+
+
+# 玩家方头顶不创建血条（底部英雄面板已有 HP/MP）。
+func test_player_actor_no_head_bar() -> void:
+	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
 	var scene := BattleScene.new()
 	scene.setup(eng, cm)
 	scene.step(0.033)
 	var actor: Variant = scene.actor_list[0]
-	assert_not_null(actor.bar_group, "actor 应有 bar_group（源 :1545）")
-	assert_not_null(actor.bar_hp, "普通单位应有头顶 HP bar")
-	assert_not_null(actor.bar_shield, "应有 Shield bar")
-	assert_eq(actor.bar_hp.position, Vector2(0.0, 114.5), "HP bar y=114.5（源 :1549）")
-	assert_eq(actor.bar_shield.position, Vector2(0.0, 110.0), "Shield bar y=110（源 :1554）")
-	assert_almost_eq(actor.bar_hp.scale.x, 0.6667, 0.001, "HP bar scale 0.666（源 :1550）")
+	assert_null(actor.bar_hp, "玩家方头顶不创建 HP bar（底部面板已有）")
+	assert_null(actor.bar_shield, "玩家方头顶不创建 Shield bar")
 	scene.queue_free()
 
 

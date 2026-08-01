@@ -9,8 +9,8 @@ extends Node2D
 ## 到位发 enter_walk_finished 信号，BattleScene 计数归零后解冻 engine。
 
 const BAR_SCALE: float = 0.6666666666666666
-const BAR_HP_Y: float = 114.5
-const BAR_SHIELD_Y: float = 110.0
+const BAR_HP_Y: float = -114.5   # 源 Cocos y=114.5（向上），Godot 左上原点翻转为负（头顶）
+const BAR_SHIELD_Y: float = -110.0
 const BOSS_BAR_POS: Vector2 = Vector2(435.0, 134.0)  # 原 to_godot(355,426)=(355+80,560-426)，Boss 护盾条 HUD 原生坐标
 const BAR_Z: int = 999
 const MANUALLY_CAST_SCALE: float = 1.35
@@ -76,6 +76,10 @@ func update_view(dt: float) -> void:
 			puppet.set_speed(spd)
 	var logic_pos: Vector2
 	if _offline and _velocity != Vector2.ZERO:
+		# 离线走路时设朝向（velocity 方向 = 朝向，玩家朝右 +scale.x / 敌方朝左 -scale.x）。
+		var abs_s: float = absf(scale.x) if scale.x != 0.0 else 1.0
+		var sign_x: float = 1.0 if _velocity.x > 0.0 else -1.0
+		scale = Vector2(sign_x * abs_s, abs_s)
 		_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
 		# 入场到位判定：_walk_pos 接近 _enter_target 时发信号、清离线态、重接 engine 同步。
 		if _enter_target != null:
@@ -342,6 +346,9 @@ func start_enter_walk(target_logic_pos: Vector2, from_offset: float) -> void:
 	# 方向：offset<0（玩家从左外）→ +x 走向 target；offset>0（敌方从右外）→ -x。
 	var dir_x: float = -1.0 if from_offset > 0.0 else 1.0
 	_velocity = Vector2(dir_x * base_speed * ENTER_WALK_SPEEDER, 0.0)
+	# 朝向由 setup 的 update_view(0.0) 已设（direction × rt_scale），_offline 分支每帧按 velocity 维持。
+	# 不在此重复设 scale（避免与 setup 设的朝向冲突导致首帧抖动）。
+	# 朝向由 update_view 的 _offline 分支每帧按 velocity 方向设（玩家朝右 / 敌方朝左）。
 	if puppet != null:
 		if puppet.has_method("play_walk_anim_only"):
 			puppet.play_walk_anim_only()
@@ -373,6 +380,9 @@ func goto_next_battle(walk_speed: float) -> void:
 
 func _create_floating_bars() -> void:
 	bar_group = BattleFloatingBar.create_group()
+	# 玩家方头顶不显示血条（底部英雄面板已有 HP/MP）；敌方保留头顶血条看血量。
+	if int(model.camp) == BattleEngine.CAMP_PLAYER:
+		return
 	if int(model.hp_layer) == 0:
 		# 普通单位：头顶 HP + Shield，挂 actor node（源 :1547-1556）
 		bar_hp = BattleFloatingBar.create(model, "HP")

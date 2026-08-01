@@ -1,33 +1,37 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://dm0y2c74raldr"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/battle_number_bg.png" id="1_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/timermask.png" id="2_mask"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/hourglass.png" id="3_hg"]
+[ext_resource type="Texture2D" uid="uid://bgoaa63inoyo3" path="res://assets/ui/alpha/HVGA/battle_number_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" uid="uid://cthx6d2aqs5p5" path="res://assets/ui/alpha/HVGA/timermask.png" id="2_mask"]
+[ext_resource type="Texture2D" uid="uid://djf0qw2pl3cxh" path="res://assets/ui/alpha/HVGA/hourglass.png" id="3_hg"]
 
-[node name="BattleTimerContent" type="Control"]
+[node name="BattleTimerContent" type="Control" unique_id=675098989]
 layout_mode = 3
+anchors_preset = 0
 mouse_filter = 2
 
-[node name="Bg" type="Sprite2D" parent="."]
+[node name="Bg" type="Sprite2D" parent="." unique_id=377521043]
 unique_name_in_owner = true
-position = Vector2(690, 120)
+position = Vector2(768, 47)
 texture = ExtResource("1_bg")
 
-[node name="Mask" type="Sprite2D" parent="."]
+[node name="Mask" type="Sprite2D" parent="." unique_id=409547365]
 unique_name_in_owner = true
-position = Vector2(690, 120)
-texture = ExtResource("2_mask")
 visible = false
+position = Vector2(768, 47)
+texture = ExtResource("2_mask")
 
-[node name="Hourglass" type="Sprite2D" parent="."]
+[node name="Hourglass" type="Sprite2D" parent="." unique_id=431525221]
 unique_name_in_owner = true
-position = Vector2(757, 123)
+position = Vector2(797, 47)
 texture = ExtResource("3_hg")
 
-[node name="TimeText" type="Label" parent="."]
+[node name="TimeText" type="Label" parent="." unique_id=2083824182]
 unique_name_in_owner = true
 layout_mode = 0
-position = Vector2(702, 142)
+offset_left = 714.0
+offset_top = 30.0
+offset_right = 777.0
+offset_bottom = 64.0
+horizontal_alignment = 1
+vertical_alignment = 1
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-mouse_filter = 2
-text = ""
