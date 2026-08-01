@@ -38,11 +38,9 @@ func jump() -> void:
 	jump_timer += float(skill.info.get("Chain Gap", 0.0))
 	affect_times[target] = int(affect_times.get(target, 0)) + 1
 	skill.take_effect_on(target, source)
-	var chain_eff: String = str(skill.info.get("Chain Effect", ""))
-	if chain_eff != "" and source != null and source.actor != null:
-		var actor: Variant = source.actor
-		if actor.has_method("play_effect"):
-			actor.play_effect(chain_eff, target.position, 1.0, CHAIN_EFFECT_HEIGHT, 1)
+	# Chain 连线特效由 View 层 ChainActor 渲染（照源 chain.lua ChainEffect，含距离拉伸+旋转）。
+	# ChainActor 通过 ProjectileSync 发现本 chain（actor==null）后挂载，跟随 source/target 变化。
+	# 此处不主动调 play_effect（旧实现是无拉伸直线，被 ChainActor 取代）。
 
 
 func update(dt: float) -> void:

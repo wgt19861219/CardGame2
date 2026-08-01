@@ -15,14 +15,20 @@ var _loop: bool = false
 
 
 ## 静态工厂（照源 createFcaNode + EffectCreate .cha 分支）。
-## effect_name 可能带 .cha 后缀（源 string.gsub 剥除）；返回 BattleEffect 或 null。
+## effect_name 可能带 .cha 后缀（源 string.gsub 剥除）或 effect/ 子目录前缀；返回 BattleEffect 或 null。
+## 路径回退：数据表原始值（如 "eff_tile_X.cha"）无子目录前缀，但资源全在
+## assets/anim_frames/effect/ 下，故原路径查不到时自动补 effect/ 前缀重试。
 static func create(effect_name: String) -> BattleEffect:
 	var name := effect_name.substr(0, effect_name.length() - 4) if effect_name.ends_with(".cha") else effect_name
 	# 注意：.abc/.ani 是 zip 非 Godot 资源，用 FileAccess.file_exists 而非 ResourceLoader.exists
 	var atlas := AtlasSprite.new()
+	var atlas_ok := false
 	var zip_path := "res://assets/anim_frames/" + name + ".abc"
 	var ani_path := "res://assets/anim_frames/" + name + ".ani"
-	var atlas_ok := false
+	# 原路径查不到时回退 effect/ 子目录（生产数据表值无前缀，资源全在 effect/ 下）。
+	if not (FileAccess.file_exists(zip_path) or FileAccess.file_exists(ani_path)):
+		zip_path = "res://assets/anim_frames/effect/" + name + ".abc"
+		ani_path = "res://assets/anim_frames/effect/" + name + ".ani"
 	if FileAccess.file_exists(zip_path):
 		atlas_ok = atlas.load_atlas_from_ani(zip_path)
 	elif FileAccess.file_exists(ani_path):

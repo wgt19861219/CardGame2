@@ -275,8 +275,11 @@ func launch_point() -> Array:
 	return h.call(self) if h.is_valid() else _launch_point_default()
 
 func _launch_point_default() -> Array:
+	# 照源 skill.lua:651-670 launchPoint：骨骼挂点坐标（event.X/Y 动画像素）需经三重缩放
+	# 才是逻辑坐标：cha_scale(0.09) × runtime_scale(manually_casting 1.35/scale_action) × unit_scale(Puppet.Scale)。
 	var e: Dictionary = next_event if (not next_event.is_empty() and str(next_event.get("Type", "")) == "Attack") else {"X": 0.0, "Y": LAUNCH_DEFAULT_Y}
-	return [Vector2(caster.position.x + float(e.get("X", 0.0)), caster.position.y), float(e.get("Y", LAUNCH_DEFAULT_Y))]
+	var s: float = BattleSkillPhase.launch_scale(caster)
+	return [Vector2(caster.position.x + float(e.get("X", 0.0)) * s, caster.position.y), float(e.get("Y", LAUNCH_DEFAULT_Y)) * s]
 
 func trigger() -> void:
 	var h: Callable = hero_hooks.get("trigger", Callable())
