@@ -6,8 +6,39 @@ extends RefCounted
 ## rebuild_phase_list 查 Puppet/AnimDuration/AnimAtkFrame 表填真实 phase_list（2026-07-05 验证：Coco atk phase_list 含 Time=0.275 Attack 帧，双 Coco 对打 1792 帧分胜负）。
 ## goto_event_idx 的 idx 为 1-based（对齐源 Lua event_list 索引）；actor setActionElapsed 属 View，桩。
 
+# 投射物发射点缩放系数（照源 skill.lua:651-670 launchPoint）：cha_scale × runtime_scale × unit_scale。
+const CHA_SCALE: float = 0.09
+const MANUALLY_CAST_SCALE: float = 1.35
+
 # + AnimAtkFrame events 排序 by Time → phase{action_name, duration, event_list}。
 # 静态接 skill + puppet；cm 经 caster.cm（ConfigManager，BattleUnit 字段）。
+
+
+# 投射物发射缩放：骨骼像素坐标→逻辑坐标的三重缩放系数（照源 launchPoint 的 cha_scale * sx * us）。
+static func launch_scale(caster: Variant) -> float:
+	return CHA_SCALE * _runtime_scale(caster) * _unit_scale(caster)
+
+
+# 施法者运行时缩放（照源 getRuntimeScale）：scale_action 进行中按进度插值，否则 manually_casting=1.35。
+static func _runtime_scale(caster: Variant) -> float:
+	if bool(caster.is_scale_action_running):
+		var dur: float = float(caster.scale_action_duration)
+		if dur > 0.0 and float(caster.scale_action_running_time) > dur:
+			return float(caster.scale_action_scale_value)
+		if dur > 0.0:
+			return float(caster.scale_action_running_time) / dur * (float(caster.scale_action_scale_value) - 1.0) + 1.0
+	return MANUALLY_CAST_SCALE if bool(caster.manually_casting) else 1.0
+
+
+# 施法者单位缩放（照源 getUnitScale）：Puppet 表 Scale × config.size_mod（默认 1）。
+static func _unit_scale(caster: Variant) -> float:
+	var puppet_name: String = ""
+	if caster.puppet_stack.size() > 0:
+		puppet_name = String(caster.puppet_stack[-1])
+	if puppet_name == "" or caster.cm == null:
+		return 1.0
+	var cfg: Dictionary = caster.cm.get_raw_table(&"Puppet").get(puppet_name, {})
+	return float(cfg.get("Scale", 1.0)) * float(caster.config.get("size_mod", 1.0))
 static func rebuild_phase_list(skill: BattleSkill, puppet: String) -> void:
 	skill.phase_list = []
 	if puppet == "":

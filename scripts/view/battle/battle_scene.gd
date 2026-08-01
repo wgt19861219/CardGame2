@@ -25,6 +25,7 @@ const BattleWaveAdvancer = preload("res://scripts/view/battle/battle_wave_advanc
 const BattleTimeoutBanner = preload("res://scripts/view/battle/battle_timeout_banner.gd")
 const BattleHud = preload("res://scripts/view/battle/battle_hud.gd")
 const BattleHudAssembler = preload("res://scripts/view/battle/battle_hud_assembler.gd")
+const ProjectileSync = preload("res://scripts/view/battle/projectile_sync.gd")
 const HUD_SCENE: PackedScene = preload("res://scenes/battle/battle_hud.tscn")
 
 const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3, 4]
@@ -197,6 +198,7 @@ func step(dt: float) -> void:
 	engine.update(dt)
 	frames += 1
 	_sync_actors()
+	ProjectileSync.sync(self)
 	_advance_actor_list(dt)
 	_advance_effect_list(dt)
 	_advance_ui_list(dt)
@@ -328,7 +330,9 @@ func play_effect_on_scene(effect_name: String, origin: Vector2, scale: float = 1
 	else:
 		effect = BattleEffect.FallbackEffect.new(Node2D.new(), 1.0)  # 降级
 	var n: Node2D = effect.get_node()
-	n.position = BattleViewCoords.to_view_position(origin.x, origin.y, height); n.scale = Vector2(scale, scale)
+	n.position = BattleViewCoords.to_view_position(origin.x, origin.y, height)
+	# scale 作额外倍率乘进去（照源 :897-898 setScaleX(getScaleX()*scale)），不覆盖 FCA 自带缩放（0.09）。
+	n.scale = Vector2(n.scale.x * scale, n.scale.y * scale)
 	n.z_index = -int(origin.y)
 	(background_layer if zorder < 0 else (main_layer if zorder == 0 else top_layer)).add_child(n)
 	effect_list.append(effect)

@@ -33,6 +33,15 @@ func test_effect_cha_suffix_stripped() -> void:
 		eff2.get_node().queue_free()
 
 
+func test_effect_no_prefix_falls_back_to_effect_dir() -> void:
+	# 数据表原始值无 effect/ 前缀（如 "eff_tile_AV_atk2.cha"），资源全在 effect/ 子目录。
+	# create 应自动回退 effect/ 前缀加载（修投射物/命中特效全降级 bug）。
+	var eff := BattleEffect.create("eff_tile_AV_atk2.cha")
+	assert_not_null(eff, "无 effect/ 前缀应回退到 effect/ 子目录加载成功")
+	if eff:
+		eff.get_node().queue_free()
+
+
 func test_play_effect_on_scene_creates_fca() -> void:
 	var scene := BattleScene.new()
 	scene.setup(null, null)  # 建 4 层节点（_create_layers + reset_state）

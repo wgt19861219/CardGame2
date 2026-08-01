@@ -61,19 +61,21 @@ func load_from_ani(resource: String, atlas: AtlasSprite) -> bool:
 
 
 func _read_key_data(resource: String) -> PackedByteArray:
-	# 单位资源 .ani（zip），特效资源 .abc（zip，同结构）—— 两种扩展名都试
-	for ext in [".ani", ".abc"]:
-		var zip_path: String = "res://assets/anim_frames/" + resource + ext
-		if FileAccess.file_exists(zip_path):  # .abc/.ani 是 zip 非 Godot 资源
-			var reader: ZIPReader = ZIPReader.new()
-			if reader.open(zip_path) == OK:
-				# .ani 用 "sheet.key"，.abc 用 "cha"（同格式，源 LegendAnimationFileInfo 适配）
-				var files: PackedStringArray = reader.get_files()
-				var key_entry: String = "sheet.key" if files.has("sheet.key") else "cha"
-				var data: PackedByteArray = reader.read_file(key_entry)
-				reader.close()
-				if not data.is_empty():
-					return data
+	# 单位资源 .ani（zip），特效资源 .abc（zip，同结构）—— 两种扩展名都试。
+	# 资源可能在根目录或 effect/ 子目录（数据表值无前缀但文件在 effect/ 下），两种都试。
+	for base_dir in ["", "effect/"]:
+		for ext in [".ani", ".abc"]:
+			var zip_path: String = "res://assets/anim_frames/" + base_dir + resource + ext
+			if FileAccess.file_exists(zip_path):  # .abc/.ani 是 zip 非 Godot 资源
+				var reader: ZIPReader = ZIPReader.new()
+				if reader.open(zip_path) == OK:
+					# .ani 用 "sheet.key"，.abc 用 "cha"（同格式，源 LegendAnimationFileInfo 适配）
+					var files: PackedStringArray = reader.get_files()
+					var key_entry: String = "sheet.key" if files.has("sheet.key") else "cha"
+					var data: PackedByteArray = reader.read_file(key_entry)
+					reader.close()
+					if not data.is_empty():
+						return data
 
 	var key_path: String = "res://assets/anim_frames/" + resource + "/sheet.key"
 	if FileAccess.file_exists(key_path):
