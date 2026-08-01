@@ -49,6 +49,7 @@ var _shader_stack: Array[String] = []
 var _cm: Variant = null                 # ConfigManager（use_puppet 查 Puppet 表）
 var _enter_target: Variant = null       # 入场目标 logic 坐标（Vector2）或 null（非入场态）
 var _hold_offline: bool = false         # 到位后保持离线静止（goto_next_battle 走屏外等切波，不接 engine interp）
+var _enter_arrive_dir: int = 0          # 入场到位锁定的朝向（±1），interp 首帧用它防 engine direction 瞬变致翻转
 
 
 func setup(p_model: Variant, p_cm: Variant, p_ui_layer: Node = null) -> void:
@@ -74,7 +75,11 @@ func update_view(dt: float) -> void:
 		_interp_to = Vector2(float(model.position.x), float(model.position.y))
 		_interp_alpha = 0.0
 		var rt_scale: float = _get_runtime_scale()
-		scale = Vector2(int(model.direction) * rt_scale, rt_scale)
+		# 入场到位锁定：到位后 interp 首帧用锁定朝向（防 engine 解冻首 tick direction 瞬变致翻转），
+		# 只锁第一帧（_enter_arrive_dir 清零），之后交给 model.direction 正常接管。
+		var dir_for_scale: int = _enter_arrive_dir if _enter_arrive_dir != 0 else int(model.direction)
+		_enter_arrive_dir = 0
+		scale = Vector2(dir_for_scale * rt_scale, rt_scale)
 		if puppet != null:
 			var spd: float = 0.0 if bool(model.buff_effects.get("frozen", false)) else float(model.speeder)
 			puppet.set_speed(spd)
@@ -100,6 +105,9 @@ func update_view(dt: float) -> void:
 						_hold_offline = false
 					else:
 						# start_enter_walk 到位：清离线态重接 engine interp + emit（_on_actor_enter_done 解冻）。
+						# 锁定到位朝向：engine 解冻首 tick 的 direction 会瞬变（实测 +1 持续 3 帧再回 -1），
+						# 直接映射到 actor scale = 整体翻转 3 帧 = 猛抖。记录到位朝向，interp 首帧用它防翻转。
+						_enter_arrive_dir = 1 if scale.x > 0.0 else -1
 						_offline = false
 						_tick = -1
 						_has_interp = false
@@ -358,9 +366,10 @@ func start_enter_walk(target_logic_pos: Vector2, from_offset: float) -> void:
 	# 方向：offset<0（玩家从左外）→ +x 走向 target；offset>0（敌方从右外）→ -x。
 	var dir_x: float = -1.0 if from_offset > 0.0 else 1.0
 	_velocity = Vector2(dir_x * base_speed * ENTER_WALK_SPEEDER, 0.0)
-	# 朝向由 setup 的 update_view(0.0) 已设（direction × rt_scale），_offline 分支每帧按 velocity 维持。
-	# 不在此重复设 scale（避免与 setup 设的朝向冲突导致首帧抖动）。
-	# 朝向由 update_view 的 _offline 分支每帧按 velocity 方向设（玩家朝右 / 敌方朝左）。
+	# 立即设朝向（按 velocity 方向），消除首帧错误朝向（敌方 setup 时 direction 可能还是默认 +1，
+	# 首帧渲染会朝右，第 2 帧 _offline 分支才纠正 → 起步闪一下）。
+	var abs_s: float = absf(scale.x) if scale.x != 0.0 else 1.0
+	scale = Vector2(dir_x * abs_s, abs_s)
 	if puppet != null:
 		if puppet.has_method("play_walk_anim_only"):
 			puppet.play_walk_anim_only()
