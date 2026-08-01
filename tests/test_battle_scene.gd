@@ -652,9 +652,9 @@ func test_start_player_walk_maxtime() -> void:
 	scene.step(0.033)
 	p.info["Walk Speed"] = 200.0
 	var maxtime: float = scene._start_player_walk_to_next_battle()
-	# 目标 = WAVE_WALK_OFFSCREEN_X(900)，distance = 900-100 = 800, walk_speed = 200*1.75 = 350
-	# maxtime = 800/350 ≈ 2.286（出屏目标，非 maxX；maxX=800 view 880 仍在屏内会被看见切波瞬移）
-	assert_almost_eq(maxtime, 800.0 / 350.0, 0.01, "maxtime = distance/(WalkSpeed×1.75)（出屏目标 :424）")
+	# 目标 = WAVE_WALK_OFFSCREEN_X(1050)，distance = 1050-100 = 950, walk_speed = 200*1.75 = 350
+	# maxtime = 950/350 ≈ 2.714（出屏目标，view 1130 出屏 170px 角色完全藏住）
+	assert_almost_eq(maxtime, 950.0 / 350.0, 0.01, "maxtime = distance/(WalkSpeed×1.75)（出屏目标 :424）")
 	var actor: Variant = scene.actor_list[0]
 	assert_eq(actor._offline, true, "_start_player_walk 触发 actor.goto_next_battle（源 :421）")
 	scene.queue_free()

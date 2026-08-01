@@ -7,6 +7,7 @@ extends RefCounted
 
 
 # + 刷 wave_mark。玩家 actor/UI 复用（源 :498 reset skipUI=true）；新敌人 actor 由 _sync_actors 下次 tick 装配。
+# 切波后双方都重新入场走路（玩家从左屏外、敌人从右屏外走到各自站位），而非漂到站位。
 static func advance_wave(scene) -> void:
 	if scene.engine == null:
 		return
@@ -26,26 +27,42 @@ static func advance_wave(scene) -> void:
 	# 重置波次清完标志 + 恢复战斗（新 wave 开始）。
 	scene.engine.wave_clear = false
 	scene._wave_clear_handled = false
-	# 重新绑定玩家 actor 到 unit（next_battle → reset_battle → add_unit 把 unit.actor 清成 null，
-	# 但 _remove_enemy_actors 保留的旧玩家 actor 物理节点还在 actor_list/Main 层）。
-	# 不重绑会导致 _sync_actors 走 actor==null 分支建新 actor → 旧 actor 残留 = 视觉复制。
-	# 重绑后 unit.actor 指向保留的旧 actor，_sync_actors 跳过（in_scene=true），无复制。
+	# 收集保留的玩家 actor（_remove_enemy_actors 保留玩家，但其 model 指向旧 unit 引用）。
+	# next_battle → reset_battle → add_unit 重建了玩家 unit（actor=null），需把保留的旧 actor 重绑到新 unit。
+	var player_actors: Array = []
 	for actor in scene.actor_list:
 		if actor is BattleActor and int(actor.model.camp) == BattleEngine.CAMP_PLAYER:
-			actor.model.actor = actor
-			actor.in_scene = true
-			if actor.has_method("reset_after_wave_walk"):
-				actor.reset_after_wave_walk()
-	# 新敌人入场走路（预创建敌方 actor 从右外走到站位，玩家方不动）。
-	_enter_new_enemies(scene)
+			player_actors.append(actor)
+	# 双方入场走路（玩家从左屏外、敌人从右屏外走到站位），冻结 engine，全部就位后解冻。
+	_enter_wave_units(scene, player_actors)
 
 
-# 新敌人入场：预创建敌方 actor 从右外走到站位（玩家方已在场不动）。
-# 冻结 engine（_entering=true），全部就位后 _on_actor_enter_done 解冻恢复 running。
-static func _enter_new_enemies(scene) -> void:
+# 切波入场：玩家 actor 从左屏外走回站位 + 新敌人 actor 从右屏外走到站位。
+# 复用 BattleEnterWalk 的入场机制（_entering 冻结 engine，全部就位 _on_actor_enter_done 解冻）。
+# 玩家 offset 用负（左屏外），敌人 offset 用正（右屏外），与 BattleEnterWalk.PLAYER/ENEMY_OFFSET 一致。
+static func _enter_wave_units(scene, player_actors: Array) -> void:
 	scene._entering = true
 	scene.is_paused = true
 	scene._pending_enter_count = 0
+	# 玩家：重绑保留的旧 actor 到新 unit（顺序一致：reset_battle 保序 + actor_list 入场序）+ 从左屏外走回站位。
+	var alive_players: Array = scene.engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
+	var pi: int = 0
+	for unit in alive_players:
+		if pi >= player_actors.size():
+			break
+		var actor: BattleActor = player_actors[pi]
+		actor.model = unit  # 重绑到新 unit（旧 unit 已被 reset_battle 丢弃，新 unit actor=null）
+		unit.actor = actor
+		actor.in_scene = true
+		# 重复切波：玩家 actor 跨波复用，先断开旧连接再重连（防 enter_walk_finished 多次触发 _on_actor_enter_done）。
+		if actor.enter_walk_finished.is_connected(scene._on_actor_enter_done):
+			actor.enter_walk_finished.disconnect(scene._on_actor_enter_done)
+		var target: Vector2 = Vector2(float(unit.position.x), float(unit.position.y))
+		actor.enter_walk_finished.connect(scene._on_actor_enter_done)
+		scene._pending_enter_count += 1
+		actor.start_enter_walk(target, BattleEnterWalk.PLAYER_OFFSET)
+		pi += 1
+	# 新敌人：预创建 actor 从右屏外走到站位。
 	for unit in scene.engine.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
 		var actor: BattleActor = scene._create_actor(unit)
 		if actor == null:
@@ -56,8 +73,8 @@ static func _enter_new_enemies(scene) -> void:
 		var target: Vector2 = Vector2(float(unit.position.x), float(unit.position.y))
 		actor.enter_walk_finished.connect(scene._on_actor_enter_done)
 		scene._pending_enter_count += 1
-		actor.start_enter_walk(target, 300.0)
-	# 无新敌人直接解冻
+		actor.start_enter_walk(target, BattleEnterWalk.ENEMY_OFFSET)
+	# 无单位直接解冻
 	if scene._pending_enter_count == 0:
 		scene._entering = false
 		scene.is_paused = false

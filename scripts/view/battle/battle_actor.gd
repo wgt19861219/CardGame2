@@ -18,9 +18,9 @@ const GRAVITY: float = -1800.0
 const NEXT_BATTLE_WALK_SPEEDER: float = 1.75
 const ENTER_WALK_SPEEDER: float = 1.75   # 入场走路加速（复用切波系数）
 const ENTER_ARRIVE_THRESHOLD: float = 5.0  # 入场到位判定阈值（logic 单位）
-# 切波走路出屏目标 x（view 屏宽 960，OFFSET_X=80 → logic x>880 出屏；取 900 确保完全出屏，
-# 避免 maxX=800 view 880 仍在屏内被看见切波瞬移到站位）。源 Cocos maxX=800 同问题，本项目修正。
-const WAVE_WALK_OFFSCREEN_X: float = 900.0
+# 切波走路出屏目标 x（view 屏宽 960，OFFSET_X=80 → logic x>880 出屏）。
+# 取 1050（view 1130，出屏 170px）确保角色（宽约 130px）完全藏在屏外，停在 900（view 980）会半露右边缘。
+const WAVE_WALK_OFFSCREEN_X: float = 1050.0
 
 # 入场走路完成（BattleScene 计数归零后解冻 engine）。
 signal enter_walk_finished
@@ -48,6 +48,7 @@ var _effects: Dictionary = {}
 var _shader_stack: Array[String] = []
 var _cm: Variant = null                 # ConfigManager（use_puppet 查 Puppet 表）
 var _enter_target: Variant = null       # 入场目标 logic 坐标（Vector2）或 null（非入场态）
+var _hold_offline: bool = false         # 到位后保持离线静止（goto_next_battle 走屏外等切波，不接 engine interp）
 
 
 func setup(p_model: Variant, p_cm: Variant, p_ui_layer: Node = null) -> void:
@@ -78,25 +79,33 @@ func update_view(dt: float) -> void:
 			var spd: float = 0.0 if bool(model.buff_effects.get("frozen", false)) else float(model.speeder)
 			puppet.set_speed(spd)
 	var logic_pos: Vector2
-	if _offline and _velocity != Vector2.ZERO:
-		# 离线走路时设朝向（velocity 方向 = 朝向，玩家朝右 +scale.x / 敌方朝左 -scale.x）。
-		var abs_s: float = absf(scale.x) if scale.x != 0.0 else 1.0
-		var sign_x: float = 1.0 if _velocity.x > 0.0 else -1.0
-		scale = Vector2(sign_x * abs_s, abs_s)
-		_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
-		# 入场到位判定：_walk_pos 接近 _enter_target 时发信号、清离线态、重接 engine 同步。
-		if _enter_target != null:
-			var tgt: Vector2 = Vector2(_enter_target)
-			if _walk_pos.distance_to(tgt) < ENTER_ARRIVE_THRESHOLD:
-				_walk_pos = tgt
-				_enter_target = null
-				_offline = false
-				_velocity = Vector2.ZERO
-				_tick = -1  # 重置 tick 让下帧重新接 engine interp
-				_has_interp = false
-				if puppet != null and puppet.has_method("play_action"):
-					puppet.play_action("Idle", true)
-				enter_walk_finished.emit()
+	if _offline:
+		# 离线态：velocity!=ZERO 时走路（设朝向 + 移动 _walk_pos）；velocity==ZERO 时静止（如 goto_next_battle
+		# 到位后等切波，保持屏外不动，不被 interp 拉回站位）。
+		if _velocity != Vector2.ZERO:
+			# 离线走路时设朝向（velocity 方向 = 朝向，玩家朝右 +scale.x / 敌方朝左 -scale.x）。
+			var abs_s: float = absf(scale.x) if scale.x != 0.0 else 1.0
+			var sign_x: float = 1.0 if _velocity.x > 0.0 else -1.0
+			scale = Vector2(sign_x * abs_s, abs_s)
+			_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
+			# 入场到位判定：_walk_pos 接近 _enter_target 时发信号。
+			if _enter_target != null:
+				var tgt: Vector2 = Vector2(_enter_target)
+				if _walk_pos.distance_to(tgt) < ENTER_ARRIVE_THRESHOLD:
+					_walk_pos = tgt
+					_enter_target = null
+					_velocity = Vector2.ZERO
+					if _hold_offline:
+						# goto_next_battle 到位：保持离线静止在屏外等切波（不 emit、不切 interp，防被拉回站位）。
+						_hold_offline = false
+					else:
+						# start_enter_walk 到位：清离线态重接 engine interp + emit（_on_actor_enter_done 解冻）。
+						_offline = false
+						_tick = -1
+						_has_interp = false
+						if puppet != null and puppet.has_method("play_action"):
+							puppet.play_action("Idle", true)
+						enter_walk_finished.emit()
 		position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
 		z_index = -int(_walk_pos.y)
 		if bar_group != null:
@@ -359,16 +368,16 @@ func start_enter_walk(target_logic_pos: Vector2, from_offset: float) -> void:
 			puppet.set_speed(sqrt(ENTER_WALK_SPEEDER))
 	_offline = true
 	_has_interp = false
+	_hold_offline = false  # 入场到位后正常 emit + 重接 engine interp（非 goto_next_battle 的屏外静止）
 	_z_speed = null
 	_height = 0.0
 	# 立即定位到场外起点（不等下一帧 update_view）。
 	position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
 
 
-# puppet Move + speeder^0.5 + velocity = Walk Speed × 1.75 + scale(1,1) 朝右 + offline + 清 interp。
-# puppet Move + speeder^0.5 + velocity = Walk Speed × 1.75 + scale(1,1) 朝右 + offline + 清 interp。
-# target_x：切波走路目标 x（屏外右）；到位后清离线态（双保险：await maxtime 与到位回调任一先到都能停，
-# 避免源 lua 靠定时器裸跑的"跑到屏外无限远"问题）。
+# 切波走路：玩家走到屏外（target_x）等 advance_wave 切波。puppet Move + velocity 朝右 + offline。
+# 到位后 _hold_offline 保持离线静止在屏外（不接 interp，防被拉回站位闪现），等 start_enter_walk 接管。
+# target_x：屏外右目标 x；到位停止（双保险：到位判定 + await maxtime 任一先到）。
 func goto_next_battle(walk_speed: float, target_x: float = -1.0) -> void:
 	if puppet != null:
 		if puppet.has_method("play_walk_anim_only"):
@@ -378,8 +387,9 @@ func goto_next_battle(walk_speed: float, target_x: float = -1.0) -> void:
 	_velocity = Vector2(walk_speed * NEXT_BATTLE_WALK_SPEEDER, 0.0)
 	_walk_pos = Vector2(float(model.position.x), float(model.position.y))
 	if target_x > 0.0:
-		# _enter_target 是 logic 坐标；_walk_pos 超过 target_x 即停（update_view _offline 分支判定）。
+		# _enter_target 是 logic 坐标；_walk_pos 到达 target_x 即停（update_view _offline 分支判定）。
 		_enter_target = Vector2(target_x, float(model.position.y))
+		_hold_offline = true  # 到位后保持屏外静止等切波（不 emit、不切 interp）
 	scale = Vector2.ONE
 	_offline = true
 	_has_interp = false
@@ -387,9 +397,8 @@ func goto_next_battle(walk_speed: float, target_x: float = -1.0) -> void:
 	_height = 0.0
 
 
-# 切波走路完成 / 切波后重置：清离线态让 actor 重新接 engine interp（源 syncActors 波次 reparent
-# 分支 :570-579 对 offline/interp/position/tick 的重置；本项目玩家 actor in_scene=true 不进 _sync_actors
-# 重置分支，故显式调本方法）。
+# 切波后重置离线态让 actor 重新接 engine interp（源 syncActors 波次 reparent 分支 :570-579）。
+# 当前切波改走 start_enter_walk（玩家也走入场），本方法暂无调用者，保留供未来需要时复用。
 func reset_after_wave_walk() -> void:
 	_offline = false
 	_velocity = Vector2.ZERO
