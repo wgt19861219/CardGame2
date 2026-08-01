@@ -437,11 +437,14 @@ func _start_player_walk_to_next_battle() -> float:
 	var maxtime: float = 0.0
 	if engine == null:
 		return maxtime
-	var max_x: float = float(engine.stage_rect.get("maxX", 0.0))
+	# 出屏目标 x（>屏宽 960 对应 logic x>880，取 WAVE_WALK_OFFSCREEN_X=900 确保出屏；
+	# 用 maxX 会停在 view 880 仍在屏内，切波瞬移到站位时被看见）。
+	var target_x: float = BattleActor.WAVE_WALK_OFFSCREEN_X
 	for unit in engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
 		if unit.actor != null and unit.actor.has_method("goto_next_battle"):
-			unit.actor.goto_next_battle(float(unit.info.get("Walk Speed", 0.0)))
-		var distance: float = max_x - float(unit.position.x)
+			# 传 target_x 作停止点（双保险：到位回调 + await maxtime 任一先到都能停）。
+			unit.actor.goto_next_battle(float(unit.info.get("Walk Speed", 0.0)), target_x)
+		var distance: float = target_x - float(unit.position.x)
 		var walk_speed: float = float(unit.info.get("Walk Speed", 0.0)) * BattleActor.NEXT_BATTLE_WALK_SPEEDER
 		if walk_speed > 0.0:
 			maxtime = maxf(maxtime, distance / walk_speed)

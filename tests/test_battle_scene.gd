@@ -642,7 +642,7 @@ func test_actor_offline_velocity_moves_position() -> void:
 	scene.queue_free()
 
 
-# 源 nextBtnTapHandler :418-428：_start_player_walk_to_next_battle 算 maxtime（玩家 actor 走到 maxX）。
+# 源 nextBtnTapHandler :418-428：_start_player_walk_to_next_battle 算 maxtime（玩家 actor 走到出屏目标）。
 func test_start_player_walk_maxtime() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100.0, 0.0))
@@ -650,12 +650,11 @@ func test_start_player_walk_maxtime() -> void:
 	var scene := BattleScene.new()
 	scene.setup(eng, cm)
 	scene.step(0.033)
-	# 手设 stage_rect.maxX + Walk Speed 算可预期 maxtime
-	eng.stage_rect["maxX"] = 1000.0
 	p.info["Walk Speed"] = 200.0
 	var maxtime: float = scene._start_player_walk_to_next_battle()
-	# distance = 1000-100 = 900, walk_speed = 200*1.75 = 350, maxtime = 900/350 ≈ 2.571
-	assert_almost_eq(maxtime, 900.0 / 350.0, 0.01, "maxtime = distance/(WalkSpeed×1.75)（源 :424）")
+	# 目标 = WAVE_WALK_OFFSCREEN_X(900)，distance = 900-100 = 800, walk_speed = 200*1.75 = 350
+	# maxtime = 800/350 ≈ 2.286（出屏目标，非 maxX；maxX=800 view 880 仍在屏内会被看见切波瞬移）
+	assert_almost_eq(maxtime, 800.0 / 350.0, 0.01, "maxtime = distance/(WalkSpeed×1.75)（出屏目标 :424）")
 	var actor: Variant = scene.actor_list[0]
 	assert_eq(actor._offline, true, "_start_player_walk 触发 actor.goto_next_battle（源 :421）")
 	scene.queue_free()

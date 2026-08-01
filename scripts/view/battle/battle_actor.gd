@@ -18,6 +18,9 @@ const GRAVITY: float = -1800.0
 const NEXT_BATTLE_WALK_SPEEDER: float = 1.75
 const ENTER_WALK_SPEEDER: float = 1.75   # 入场走路加速（复用切波系数）
 const ENTER_ARRIVE_THRESHOLD: float = 5.0  # 入场到位判定阈值（logic 单位）
+# 切波走路出屏目标 x（view 屏宽 960，OFFSET_X=80 → logic x>880 出屏；取 900 确保完全出屏，
+# 避免 maxX=800 view 880 仍在屏内被看见切波瞬移到站位）。源 Cocos maxX=800 同问题，本项目修正。
+const WAVE_WALK_OFFSCREEN_X: float = 900.0
 
 # 入场走路完成（BattleScene 计数归零后解冻 engine）。
 signal enter_walk_finished
@@ -363,7 +366,10 @@ func start_enter_walk(target_logic_pos: Vector2, from_offset: float) -> void:
 
 
 # puppet Move + speeder^0.5 + velocity = Walk Speed × 1.75 + scale(1,1) 朝右 + offline + 清 interp。
-func goto_next_battle(walk_speed: float) -> void:
+# puppet Move + speeder^0.5 + velocity = Walk Speed × 1.75 + scale(1,1) 朝右 + offline + 清 interp。
+# target_x：切波走路目标 x（屏外右）；到位后清离线态（双保险：await maxtime 与到位回调任一先到都能停，
+# 避免源 lua 靠定时器裸跑的"跑到屏外无限远"问题）。
+func goto_next_battle(walk_speed: float, target_x: float = -1.0) -> void:
 	if puppet != null:
 		if puppet.has_method("play_walk_anim_only"):
 			puppet.play_walk_anim_only()
@@ -371,8 +377,25 @@ func goto_next_battle(walk_speed: float) -> void:
 			puppet.set_speed(sqrt(NEXT_BATTLE_WALK_SPEEDER))
 	_velocity = Vector2(walk_speed * NEXT_BATTLE_WALK_SPEEDER, 0.0)
 	_walk_pos = Vector2(float(model.position.x), float(model.position.y))
+	if target_x > 0.0:
+		# _enter_target 是 logic 坐标；_walk_pos 超过 target_x 即停（update_view _offline 分支判定）。
+		_enter_target = Vector2(target_x, float(model.position.y))
 	scale = Vector2.ONE
 	_offline = true
+	_has_interp = false
+	_z_speed = null
+	_height = 0.0
+
+
+# 切波走路完成 / 切波后重置：清离线态让 actor 重新接 engine interp（源 syncActors 波次 reparent
+# 分支 :570-579 对 offline/interp/position/tick 的重置；本项目玩家 actor in_scene=true 不进 _sync_actors
+# 重置分支，故显式调本方法）。
+func reset_after_wave_walk() -> void:
+	_offline = false
+	_velocity = Vector2.ZERO
+	_enter_target = null
+	_walk_pos = Vector2.ZERO
+	_tick = -1
 	_has_interp = false
 	_z_speed = null
 	_height = 0.0

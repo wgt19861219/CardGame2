@@ -26,11 +26,16 @@ static func advance_wave(scene) -> void:
 	# 重置波次清完标志 + 恢复战斗（新 wave 开始）。
 	scene.engine.wave_clear = false
 	scene._wave_clear_handled = false
-	# 玩家 actor 重置 interp（切波后重新接 engine position，避免瞬移）。
+	# 重新绑定玩家 actor 到 unit（next_battle → reset_battle → add_unit 把 unit.actor 清成 null，
+	# 但 _remove_enemy_actors 保留的旧玩家 actor 物理节点还在 actor_list/Main 层）。
+	# 不重绑会导致 _sync_actors 走 actor==null 分支建新 actor → 旧 actor 残留 = 视觉复制。
+	# 重绑后 unit.actor 指向保留的旧 actor，_sync_actors 跳过（in_scene=true），无复制。
 	for actor in scene.actor_list:
 		if actor is BattleActor and int(actor.model.camp) == BattleEngine.CAMP_PLAYER:
-			actor._tick = -1
-			actor._has_interp = false
+			actor.model.actor = actor
+			actor.in_scene = true
+			if actor.has_method("reset_after_wave_walk"):
+				actor.reset_after_wave_walk()
 	# 新敌人入场走路（预创建敌方 actor 从右外走到站位，玩家方不动）。
 	_enter_new_enemies(scene)
 
