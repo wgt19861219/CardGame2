@@ -15,15 +15,9 @@ extends Control
 ## light 旋转 tween / prompt ≤2 Label 挂 %PromptHost。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_failed_content.tscn")
-const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
-const SOURCE_UI_PREFIX: String = "UI/alpha/HVGA/"
-# P1-16（2026-07-11）battleStatist 战斗统计按钮（源 stagefailed.lua:345-392 else 分支）
-const BATTLE_STATIST_TEX: String = ALPHA_HVGA_DIR + "herodetail-upgrade.png"
-const BATTLE_STATIST_PRESS_TEX: String = ALPHA_HVGA_DIR + "herodetail-upgrade-mask.png"
-const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)
+# P1-16 battleStatist 战斗统计按钮位置常量（贴图/CAP/路径走公共 helper；本场景独有的位置/偏移）。
 const BATTLE_STATIST_POS: Vector2 = Vector2(500.0, 335.0)
 const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 26.0)
-const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"
 
 const PROMPT_Y: float = 165.0
 const PROMPT_POS: Array[Vector2] = [Vector2(205.0, PROMPT_Y), Vector2(445.0, PROMPT_Y)]
@@ -63,7 +57,7 @@ func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate()
 	add_child(_content)
 	# bg texture 动态（源 :162-171 getBattleBgRes，stage_id 决定）。
-	(_content.get_node("Bg") as TextureRect).texture = _load_bg()
+	(_content.get_node("Bg") as TextureRect).texture = StageSettlementCommon.load_battle_bg(stage_id, _cm)
 	# title text 动态（源 :191-201 getLoseTitleRes，lose_type 决定；源 Sprite 资源缺 → Label 降级）。
 	(_content.get_node("Title") as Label).text = TITLE_TIMEOUT_TEXT if lose_type == "timeout" else TITLE_FAIL_TEXT
 	# back/menu 按钮（源 :202-247 TextureButton + doClickBack/doClickMenu）。
@@ -71,11 +65,12 @@ func _build_content() -> void:
 	(_content.get_node("Menu") as BaseButton).pressed.connect(_on_menu_pressed)
 	# battleStatist 按钮（源 :345-392 Scale9 + count Label）：.tscn 普通 Button，运行时套 Scale9 StyleBox。
 	var statist_btn: Button = _content.get_node("BattleStatist") as Button
-	UiScale9Button.apply_with_label(statist_btn, BATTLE_STATIST_TEX, BATTLE_STATIST_PRESS_TEX, BATTLE_STATIST_CAP)
+	var tex_dir: String = StageSettlementCommon.ALPHA_HVGA_DIR
+	UiScale9Button.apply_with_label(statist_btn, tex_dir + StageSettlementCommon.BATTLE_STATIST_TEX, tex_dir + StageSettlementCommon.BATTLE_STATIST_PRESS_TEX, StageSettlementCommon.BATTLE_STATIST_CAP)
 	statist_btn.pressed.connect(_on_battle_statist_pressed)
 	# battleStatist count Label（源 :388 battleCount "数据"）— procedural 挂 _content（位置=BATTLE_STATIST_POS + OFFSET）。
 	var count := Label.new()
-	count.text = _statist_label_text()
+	count.text = StageSettlementCommon.statist_label_text(_cm)
 	count.position = BATTLE_STATIST_POS + BATTLE_STATIST_LABEL_OFFSET
 	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.add_child(count)
@@ -90,13 +85,12 @@ func _start_light_rotate() -> void:
 
 # 音效：源 stagefailedlsr clickBack 读 stageFailed.replay，soundres:180 定义 reply（拼写不一致→nil 不播）。
 func _on_back_pressed() -> void:
-	SceneManager.change_scene(MAIN_SCENE_PATH)
+	StageSettlementCommon.goto_main_scene("")
 
 
 # 音效：源 stagefailedlsr clickMenu → stageFailed.nextStage = common_click_feedback（soundres:181）。
 func _on_menu_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	SceneManager.change_scene(MAIN_SCENE_PATH)
+	StageSettlementCommon.goto_main_scene()
 
 
 # 贴图资源 battledone_failed_*.png 不在源仓库 → Label 降级（同 title 范式）。
@@ -126,18 +120,9 @@ func _create_prompt() -> void:
 		host.add_child(label)
 
 
-func _statist_label_text() -> String:
-	if _cm != null:
-		return str(_cm.get_lstr("STAGEDONE.DATA"))
-	return "数据"
-
-
-# panel 全屏模态挂 scene 根（Control），setup 后自管理（cExit/遮罩关闭 queue_free）。
+# 战斗统计面板弹出（公共逻辑，照源 _on_battle_statist_pressed）。
 func _on_battle_statist_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	var panel := BattleStatisticsPanel.new()
-	add_child(panel)
-	panel.setup(Array(GameData.last_result.get("unit_list", [])), _cm)
+	StageSettlementCommon.show_battle_statistics(self, _cm)
 
 
 func _can_hero_evolve(hm: HeroManager) -> bool:
@@ -182,15 +167,3 @@ func _can_enhance_equip(hm: HeroManager) -> bool:
 			if int(slot) != 0:
 				return true
 	return false
-
-
-func _load(path: String) -> Texture2D:
-	if not ResourceLoader.exists(path):
-		return null
-	return load(path) as Texture2D
-
-
-# bg 资源：StageAccount.get_battle_bg_res 返源路径 "UI/alpha/HVGA/xxx.png" → 转 res://assets/...
-func _load_bg() -> Texture2D:
-	var src_path: String = StageAccount.get_battle_bg_res(stage_id, _cm)
-	return _load(src_path.replace(SOURCE_UI_PREFIX, ALPHA_HVGA_DIR))

@@ -15,8 +15,6 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_done_content.tscn")
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
-const SOURCE_UI_PREFIX: String = "UI/alpha/HVGA/"
-const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"
 
 # 静态节点（bg/shelter/light/star×3/info_bg 父/replay/next）坐标已固化进 stage_done_content.tscn，
 # 这里仅保留动态节点（hero/loot icon）+ InfoBg 内 icon texture fill + battleStatist 子（Button + Label）所需常量。
@@ -29,10 +27,7 @@ const LOOT_GAP_X: float = 70.0
 const BAR_OFFSET: Vector2 = Vector2(0.0, -8.0)
 const EXP_LABEL_OFFSET: Vector2 = Vector2(38.0, -30.0)
 const MAX_STARS: int = 3
-# battleStatistNode 子（Button + BattleCount Label）procedural fill 挂 BattleStatistNode
-const BATTLE_STATIST_TEX: String = "herodetail-upgrade.png"
-const BATTLE_STATIST_PRESS_TEX: String = "herodetail-upgrade-mask.png"
-const BATTLE_STATIST_CAP: Rect2 = Rect2(20.0, 20.0, 20.0, 20.0)
+# battleStatistNode 子位置常量（贴图/CAP 走 C 公共常量；本场景独有的尺寸/偏移）。
 const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)
 const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 0.0)
 # InfoBg 内 ExpIcon texture（GoldIcon 已静态化进 .tscn；xpicon 缺图 _load 容错 null 不报错）
@@ -107,7 +102,7 @@ func _build_content() -> void:
 # 填静态节点的动态字段：bg texture（按 stage_id）+ lv 文本（玩家等级）+ replay/next visible + 按钮 pressed。
 func _fill_static_nodes() -> void:
 	var bg: TextureRect = _content.get_node("%Bg") as TextureRect
-	bg.texture = _load_bg()
+	bg.texture = StageSettlementCommon.load_battle_bg(int(_param.get("stage_id", 0)), _cm)
 	var player_info: Dictionary = _param.get("player_info", {})
 	_lv_label.text = "LV " + str(int(player_info.get("ori_level", 1)))
 	var is_key: bool = bool(_param.get("is_key_stage", false))
@@ -118,38 +113,29 @@ func _fill_static_nodes() -> void:
 
 # 填 InfoBg 内动态 icon texture（GoldIcon 已静态化进 .tscn；xpicon 缺图 _load 容错 null）。
 func _fill_info_bg_icons() -> void:
-	(_info_bg.get_node("ExpIcon") as Sprite2D).texture = _load(ALPHA_HVGA_DIR + EXP_ICON_TEX)
+	(_info_bg.get_node("ExpIcon") as Sprite2D).texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + EXP_ICON_TEX)
 
 
 # 父 Sprite2D 在 .tscn（pos + modulate.a=0 独立 fade），Button + Label procedural fill 挂父（Scale9 复杂构造）。
 func _fill_battle_statist() -> void:
 	var btn: Button = UiScale9Button.make_centered(
-		ALPHA_HVGA_DIR + BATTLE_STATIST_TEX,
-		ALPHA_HVGA_DIR + BATTLE_STATIST_PRESS_TEX,
+		ALPHA_HVGA_DIR + StageSettlementCommon.BATTLE_STATIST_TEX,
+		ALPHA_HVGA_DIR + StageSettlementCommon.BATTLE_STATIST_PRESS_TEX,
 		BATTLE_STATIST_LABEL_OFFSET,
 		BATTLE_STATIST_SIZE,
-		BATTLE_STATIST_CAP)
+		StageSettlementCommon.BATTLE_STATIST_CAP)
 	btn.pressed.connect(_on_battle_statist_pressed)
 	_battle_statist_node.add_child(btn)
 	var count := Label.new()
 	count.name = "BattleCount"
-	count.text = _statist_label_text()
+	count.text = StageSettlementCommon.statist_label_text(_cm)
 	count.position = BATTLE_STATIST_LABEL_OFFSET
 	_battle_statist_node.add_child(count)
 
 
-func _statist_label_text() -> String:
-	if _cm != null:
-		return str(_cm.get_lstr("STAGEDONE.DATA"))
-	return "数据"
-
-
-# panel 全屏模态挂 scene 根（Control），setup 后自管理（cExit/遮罩关闭 queue_free）。
+# 战斗统计面板弹出（公共逻辑，照源 _on_battle_statist_pressed）。
 func _on_battle_statist_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	var panel := BattleStatisticsPanel.new()
-	add_child(panel)
-	panel.setup(Array(GameData.last_result.get("unit_list", [])), _cm)
+	StageSettlementCommon.show_battle_statistics(self, _cm)
 
 
 # 初始 icon modulate.a=0（playHeroAnim fade in）；bar scaleX=pre_exp/pre_max（playHeroBarAnim 动画到 tExp/tMaxExp）。
@@ -172,13 +158,13 @@ func _create_hero_icons() -> void:
 		# 经验条三层（源 stagedone.lua:364-371,443-449）：bg 静态底 + progress 前景（scaleX 动画）+ full 满级覆盖。
 		# bg 先 add（z 序在下），progress 后 add（覆盖 bg），full 最后 add（覆盖 progress，仅 is_max_level visible）。
 		var bar_bg := Sprite2D.new()
-		bar_bg.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_BG_TEX)
+		bar_bg.texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + HERO_BAR_BG_TEX)
 		bar_bg.centered = false
 		bar_bg.position = BAR_OFFSET
 		ri.icon.add_child(bar_bg)
 		_hero_bar_bgs.append(bar_bg)
 		var bar := Sprite2D.new()
-		bar.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_TEX)
+		bar.texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + HERO_BAR_TEX)
 		bar.centered = false
 		bar.position = BAR_OFFSET
 		var pre_exp: int = int(hinfo.get("exp", 0))
@@ -188,7 +174,7 @@ func _create_hero_icons() -> void:
 		_hero_bars.append(bar)
 		# 满级态覆盖（源 stagedone.lua:1676-1742 isMaxLevel 显示 full bar）；当前数据层 is_max_level 兜底 false。
 		var bar_full := Sprite2D.new()
-		bar_full.texture = _load(ALPHA_HVGA_DIR + HERO_BAR_FULL_TEX)
+		bar_full.texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + HERO_BAR_FULL_TEX)
 		bar_full.centered = false
 		bar_full.position = BAR_OFFSET
 		bar_full.visible = bool(hinfo.get("is_max_level", false))
@@ -250,22 +236,8 @@ func _gui_input(event: InputEvent) -> void:
 
 # 音效：stagedonelsr clickReply → stageDone.replay = common_click_feedback（soundres:168）。
 func _on_replay_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	SceneManager.change_scene(MAIN_SCENE_PATH)
+	StageSettlementCommon.goto_main_scene()
 
 
 func _on_next_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
-	SceneManager.change_scene(MAIN_SCENE_PATH)
-
-
-func _load(path: String) -> Texture2D:
-	if not ResourceLoader.exists(path):
-		return null
-	return load(path) as Texture2D
-
-
-# bg 资源：StageAccount.get_battle_bg_res 返源路径 "UI/alpha/HVGA/xxx.png" → 转 res://assets/...
-func _load_bg() -> Texture2D:
-	var src_path: String = StageAccount.get_battle_bg_res(int(_param.get("stage_id", 0)), _cm)
-	return _load(src_path.replace(SOURCE_UI_PREFIX, ALPHA_HVGA_DIR))
+	StageSettlementCommon.goto_main_scene()
