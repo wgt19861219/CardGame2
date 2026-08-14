@@ -65,7 +65,7 @@ func _ult_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> voi
 	if int(skill.attack_counter) == 1:
 		if skill.target != null:
 			var pos1: float = float(skill.target.position.x) + float(caster.direction) * BLINK_OFFSET
-			if bool(skill.target.buff_effects.get("stable", false)) or pos1 > STAGE_MAX_X or pos1 < 1:
+			if bool(skill.target.buff_effects.get(BattleEffectKeys.STABLE, false)) or pos1 > STAGE_MAX_X or pos1 < 1:
 				pos1 = pos1 - float(caster.direction) * BLINK_REVERSE
 			caster.position = Vector2(pos1, skill.target.position.y)
 	else:

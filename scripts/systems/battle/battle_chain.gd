@@ -62,7 +62,7 @@ func find_next_target() -> Variant:
 	for unit in engine.foreach_alive_unit(int(skill._target_camp())):
 		if unit == source:
 			continue
-		if bool(unit.buff_effects.get("untargetable", false)):
+		if bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 			continue
 		var times: int = int(affect_times.get(unit, 0))
 		if times > min_times:

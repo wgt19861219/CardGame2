@@ -34,7 +34,7 @@ static func create_healer(p_owner: Variant) -> BattleAi:
 func update(_dt: float) -> void:
 	var res: Array = search_target()
 	var found: Variant = res[0] if res.size() > 0 else null
-	if bool(owner.buff_effects.get("building", false)):
+	if bool(owner.buff_effects.get(BattleEffectKeys.BUILDING, false)):
 		if found != null:
 			target = found
 			var skill: Variant = find_skill_to_cast()
@@ -71,7 +71,7 @@ func search_target() -> Array:
 	for unit in owner.engine.foreach_alive_unit(int(owner.focamp)):
 		if unit == owner:
 			continue
-		if bool(unit.buff_effects.get("untargetable", false)):
+		if bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 			continue
 		var p1: Vector2 = unit.position
 		var dx: float = p0.x - p1.x

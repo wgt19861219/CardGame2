@@ -139,7 +139,7 @@ static func _try_hurt(u: Variant, lost: float) -> void:
 		return
 	if u.current_skill != null and not bool(u.current_skill.info.get("Interruptable", false)):
 		return
-	if bool(u.buff_effects.get("uncontrollable", false)):
+	if bool(u.buff_effects.get(BattleEffectKeys.UNCONTROLLABLE, false)):
 		return
 	hurt(u)
 
@@ -246,7 +246,7 @@ static func take_heal(u: Variant, amount: float, p_type: String, source: Variant
 	var is_add_point: bool = true
 	if p_type == "mp":
 		u.set_mp(int(float(u.mp) + amount))
-	elif not bool(u.buff_effects.get("unheal", false)):
+	elif not bool(u.buff_effects.get(BattleEffectKeys.UNHEAL, false)):
 		u.set_hp(int(float(u.hp) + amount))
 	else:
 		is_add_point = false
@@ -260,7 +260,7 @@ static func take_heal(u: Variant, amount: float, p_type: String, source: Variant
 
 
 static func knockup(u: Variant, time: float, distance: Vector2) -> void:
-	if bool(u.buff_effects.get("stable", false)):
+	if bool(u.buff_effects.get(BattleEffectKeys.STABLE, false)):
 		return
 	u.knockup_time = time
 	u.knockup_v = Vector2(distance.x / time, distance.y / time) if time != 0.0 else Vector2.ZERO

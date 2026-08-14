@@ -81,7 +81,7 @@ func update_view(dt: float) -> void:
 		_enter_arrive_dir = 0
 		scale = Vector2(dir_for_scale * rt_scale, rt_scale)
 		if puppet != null:
-			var spd: float = 0.0 if bool(model.buff_effects.get("frozen", false)) else float(model.speeder)
+			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) else float(model.speeder)
 			puppet.set_speed(spd)
 	var logic_pos: Vector2
 	if _offline:

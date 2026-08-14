@@ -18,7 +18,7 @@ func _atk3_ice_take_effect_at(skill: Variant, location: Vector2, src: Variant) -
 
 func _ice_create_buff(skill: Variant, target: Variant) -> Variant:
 	var caster: Variant = skill.caster
-	if bool(target.buff_effects.get("frozen", false)):
+	if bool(target.buff_effects.get(BattleEffectKeys.FROZEN, false)):
 		var ice_mark: Variant = caster.skills.get("ExSilverDragon_ice_mark")
 		if ice_mark:
 			ice_mark.take_effect_at(target.position)

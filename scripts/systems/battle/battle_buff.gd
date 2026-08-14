@@ -7,29 +7,8 @@ extends RefCounted
 ## on_damaged shield 抵伤；update HPR + timer 到期；check_add_buff 命中骰（等级/抗性）。
 ## owner/caster duck-type（单位，Phase 2.2 续完整对接）。
 ## View 副作用（onAddedClient 的 effect/shader/Popup）桩，Phase 4 接 Actor。
+## 效果 key 常量与蕴含/负面表见 BattleEffectKeys（阶段三 T1 迁出，单一权威来源）。
 
-const EFFECT_INCLUSIONS: Dictionary = {
-	"frozen": ["stun"],
-	"stun": ["immoblilize", "silence", "disarm", "disableAI"],
-	"immoblilize": [],
-	"silence": [],
-	"disarm": [],
-	"disableAI": [],
-	"imprisonment": ["stun", "untargetable", "invulnerable"],
-	"untargetable": [],
-	"invulnerable": [],
-	"uncontrollable": [],
-	"enchanted": [],
-	"building": ["stable", "fix"],
-	"stable": [],
-	"fix": [],
-	"unheal": [],
-	"noHPR": [],
-}
-const NEGATIVE_EFFECTS: Dictionary = {
-	"frozen": true, "stun": true, "immoblilize": true, "silence": true,
-	"disarm": true, "imprisonment": true, "enchanted": true,
-}
 const RESIST_DENOM: float = 100.0
 const LEVEL_INSTANT_PASS_RATE: float = 0.3
 const LEVEL_NORM_THRESHOLD: int = 30
@@ -124,28 +103,28 @@ func apply() -> void:
 
 func apply_effect(effect: String) -> void:
 	var buff_effects: Dictionary = owner.buff_effects
-	if bool(buff_effects.get("uncontrollable", false)) and NEGATIVE_EFFECTS.has(effect):
+	if bool(buff_effects.get(BattleEffectKeys.UNCONTROLLABLE, false)) and BattleEffectKeys.NEGATIVE.has(effect):
 		return
 	if buff_effects.has(effect):
 		return
 	buff_effects[effect] = true
-	for sub in EFFECT_INCLUSIONS.get(effect, []):
+	for sub in BattleEffectKeys.INCLUSIONS.get(effect, []):
 		apply_effect(String(sub))
-	if effect == "uncontrollable":
-		for neg in NEGATIVE_EFFECTS:
+	if effect == BattleEffectKeys.UNCONTROLLABLE:
+		for neg in BattleEffectKeys.NEGATIVE:
 			buff_effects.erase(neg)
 
 
 func is_negative_conflict_uncontrollable() -> bool:
 	for effect in info.get("Control Effects", []):
-		if NEGATIVE_EFFECTS.has(String(effect)):
+		if BattleEffectKeys.NEGATIVE.has(String(effect)):
 			return true
 	return false
 
 
 func has_uncontrollable_effect() -> bool:
 	for effect in info.get("Control Effects", []):
-		if String(effect) == "uncontrollable":
+		if String(effect) == BattleEffectKeys.UNCONTROLLABLE:
 			return true
 	return false
 

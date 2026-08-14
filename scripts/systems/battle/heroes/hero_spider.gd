@@ -49,7 +49,7 @@ func _buff_update(buff: Variant, dt: float) -> void:
 			continue
 		for effect in buf.info.get("Control Effects", []):
 			var eff: String = String(effect)
-			if eff.find("stun") >= 0 or eff.find("frozen") >= 0 or eff.find("silence") >= 0:
+			if eff.find(BattleEffectKeys.STUN) >= 0 or eff.find(BattleEffectKeys.FROZEN) >= 0 or eff.find(BattleEffectKeys.SILENCE) >= 0:
 				owner.global_cd = SPIDER_CD
 				owner.remove_buff(buff)
 				return

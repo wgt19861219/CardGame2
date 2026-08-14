@@ -149,7 +149,7 @@ func test_take_effect_on_knockback() -> void:
 func test_take_effect_on_invulnerable() -> void:
 	var s := _make_skill({"Plus Ratio": 1.0, "Plus Attr": "AD"})
 	var t := MockTarget.new()
-	t.buff_effects["invulnerable"] = true
+	t.buff_effects[BattleEffectKeys.INVULNERABLE] = true
 	BattleSkillEffect.take_effect_on(s, t)
 	assert_eq(t.taken.size(), 0, "invulnerable 免疫")
 
@@ -171,9 +171,9 @@ func test_can_cast_cd() -> void:
 # 源 canCastWithTarget（:261）：stun
 func test_can_cast_stun() -> void:
 	var s := _make_skill({"Cost MP": 0})
-	s.caster.buff_effects["stun"] = true
+	s.caster.buff_effects[BattleEffectKeys.STUN] = true
 	var res := s.can_cast_with_target(MockTarget.new())
-	assert_eq(str(res["reason"]), "stun")
+	assert_eq(str(res["reason"]), BattleEffectKeys.STUN)
 
 # 源 affectedCamp（:182-185）：focamp × Affected Camp × -1
 func test_affected_camp() -> void:

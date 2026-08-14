@@ -29,7 +29,7 @@ func _find_next(projectile: Variant) -> Variant:
 	var skill: Variant = projectile.skill
 	var source: Variant = projectile.source
 	for unit in projectile.engine.foreach_alive_unit(int(skill._target_camp())):
-		if unit == source or bool(unit.buff_effects.get("untargetable", false)):
+		if unit == source or bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 			continue
 		var dist_sq: float = unit.position.distance_squared_to(source.position)  # edpDistanceSQ
 		if min_sq < dist_sq:

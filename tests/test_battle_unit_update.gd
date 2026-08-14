@@ -217,7 +217,7 @@ func test_ai_dispatched_when_idle() -> void:
 func test_ai_blocked_by_disable_ai() -> void:
 	var u := _make_unit()
 	u.state = BattleUnit.State.IDLE
-	u.buff_effects["disableAI"] = true
+	u.buff_effects[BattleEffectKeys.DISABLE_AI] = true
 	u.ai = MockAi.new()
 	BattleUnitUpdate.update(u, 0.033)
 	assert_eq(int(u.ai.updated), 0, "disableAI → ai 不更新")
@@ -261,7 +261,7 @@ func test_regen_hpr() -> void:
 func test_no_hpr_blocks_regen() -> void:
 	var u := _make_unit()
 	u.attribs["HPR"] = 5.0
-	u.buff_effects["noHPR"] = true
+	u.buff_effects[BattleEffectKeys.NO_HPR] = true
 	u.hp = 100
 	BattleUnitUpdate.update(u, 1.0)
 	assert_eq(u.hp, 100, "noHPR → 不回血")

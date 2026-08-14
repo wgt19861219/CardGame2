@@ -8,7 +8,7 @@ extends RefCounted
 ## LSTR/T() 国际化（源 checkHeroGender gender）单机化去本地化层，gender 直传字段值（如 "Female"）。
 ## scripts 表 key 用字符串（源数据 ID，避 lint 裸数字），mp/坐标提 const。
 
-const GUILD_BUFF: String = "unheal"
+const GUILD_BUFF: String = BattleEffectKeys.UNHEAL
 const DR_MP_BONUS: int = 150
 const BOSS_MP_6: int = 800
 const BOSS_MP_7: int = 950
@@ -74,7 +74,7 @@ static func monster_reset_pos_and_buff(monster_tid: Variant, pos_x: Variant, pos
 		var rect: Dictionary = eng.stage_rect
 		for monster in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
 			if cm != null:
-				monster.add_buff(_lookup_buff(cm, "unheal"), monster)
+				monster.add_buff(_lookup_buff(cm, BattleEffectKeys.UNHEAL), monster)
 			if int(monster.tid) == int(monster_tid):
 				monster.position = Vector2(float(rect["maxX"]) - float(pos_x), float(pos_y))
 				if cm != null:

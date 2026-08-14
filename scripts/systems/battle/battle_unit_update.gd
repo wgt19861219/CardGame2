@@ -31,14 +31,14 @@ static func update(u: Variant, dt: float) -> void:
 		u.action_elapsed = elapsed
 	if not bool(u.is_alive()):
 		return
-	var movable: bool = not bool(u.buff_effects.get("immoblilize", false))
+	var movable: bool = not bool(u.buff_effects.get(BattleEffectKeys.IMMOBILIZE, false))
 	var pos: Vector2 = u.position
 	u.previous_position = pos
 	var v1: Vector2 = u.walk_v if movable else Vector2.ZERO
 	var v2: Vector2 = u.knockup_v
 	var vel: Vector2 = Vector2(v1.x + v2.x, v1.y + v2.y)
 	u.velocity = vel
-	if bool(u.buff_effects.get("fix", false)):
+	if bool(u.buff_effects.get(BattleEffectKeys.FIX, false)):
 		u.direction = 1 if int(u.camp) == BattleEngine.CAMP_PLAYER else -1
 	else:
 		var dir_sign: float = 0.0
@@ -70,13 +70,13 @@ static func update(u: Variant, dt: float) -> void:
 	var sc_hooks: Variant = u.get("hero_hooks")
 	if sc_hooks is Dictionary and (sc_hooks as Dictionary).has("specialCheckEnableAi") and bool((sc_hooks as Dictionary)["specialCheckEnableAi"].call(u)):
 		enable_ai = true
-	enable_ai = enable_ai and not bool(buff_effects.get("disableAI", false))
+	enable_ai = enable_ai and not bool(buff_effects.get(BattleEffectKeys.DISABLE_AI, false))
 	enable_ai = enable_ai and int(u.engine.freeze_level) == 0
 	if enable_ai and u.ai != null:
 		u.ai.update(dt)
 	var is_walking: bool = u.state == BattleUnit.State.WALK
 	var is_idle: bool = u.state == BattleUnit.State.IDLE
-	var is_building: bool = bool(buff_effects.get("building", false))
+	var is_building: bool = bool(buff_effects.get(BattleEffectKeys.BUILDING, false))
 	if movable and (is_walking or is_idle):
 		var push_velocity: float = 0.0
 		for unit in u.engine.foreach_alive_unit(int(u.camp)):
@@ -101,9 +101,9 @@ static func update(u: Variant, dt: float) -> void:
 		buff.update(dt)
 	var mp_regen: float = float(attribs.get("MPR", 0.0))
 	u.set_mp(int(float(u.mp) + mp_regen * dt * float(u.engine.mp_bonus)))
-	if not bool(buff_effects.get("noHPR", false)):
+	if not bool(buff_effects.get(BattleEffectKeys.NO_HPR, false)):
 		var hp_regen: float = float(attribs.get("HPR", 0.0))
-		if hp_regen < 0.0 or not bool(buff_effects.get("unheal", false)):
+		if hp_regen < 0.0 or not bool(buff_effects.get(BattleEffectKeys.UNHEAL, false)):
 			u.set_hp(int(float(u.hp) + hp_regen * dt))
 	if int(u.hp) == 0 and bool(u.is_alive()):
 		u.hp = 1

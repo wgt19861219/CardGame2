@@ -92,7 +92,7 @@ func _update_default(dt: float) -> void:
 	if t_target != null:
 		if not bool(t_target.is_alive()):
 			track_target = null
-		if bool(t_target.buff_effects.get("untargetable", false)):
+		if bool(t_target.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 			track_target = null
 	previous_position = position
 	super.update(dt)
@@ -140,7 +140,7 @@ func hit(p_target: Variant) -> void:
 func collide_check(unit: Variant) -> float:
 	if track_target != null and unit != track_target:
 		return COLLIDE_NONE
-	if bool(unit.buff_effects.get("untargetable", false)):
+	if bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 		return COLLIDE_NONE
 	var radius: float = float(unit.info.get("Collide Radius", 0.0))
 	var ux: float = float(unit.position.x)
@@ -192,7 +192,7 @@ func find_next_target() -> Variant:
 	for unit in engine.foreach_alive_unit(int(skill._target_camp())):
 		if unit == source:
 			continue
-		if bool(unit.buff_effects.get("untargetable", false)):
+		if bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 			continue
 		if affect_times.has(unit):
 			continue

@@ -20,7 +20,7 @@ func apply(hero: Variant) -> void:
 func _die(hero: Variant, killer: Variant) -> void:
 	var skill: Variant = hero.skills.get("SNK_pasv2")
 	var used: int = int(hero.custom_data.get("rebirth_used", 0))
-	if skill and used != 1 and not bool(hero.buff_effects.get("unheal", false)):
+	if skill and used != 1 and not bool(hero.buff_effects.get(BattleEffectKeys.UNHEAL, false)):
 		hero.custom_data["rebirth_timer"] = REBIRTH_TIME
 		hero.custom_data["rebirth_used"] = 1
 		hero.state = BattleUnit.State.BIRTH

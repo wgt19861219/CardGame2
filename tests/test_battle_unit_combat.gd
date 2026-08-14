@@ -267,7 +267,7 @@ func test_take_heal_mp() -> void:
 func test_take_heal_unheal() -> void:
 	var u := _make_unit()
 	u.hp = 500
-	u.buff_effects["unheal"] = true
+	u.buff_effects[BattleEffectKeys.UNHEAL] = true
 	BattleUnitCombat.take_heal(u, 100, "hp", null)
 	assert_eq(u.hp, 500, "unheal 不加血")
 
@@ -293,7 +293,7 @@ func test_knockup() -> void:
 # 源 :1394 stable 免击退
 func test_knockup_stable() -> void:
 	var u := _make_unit()
-	u.buff_effects["stable"] = true
+	u.buff_effects[BattleEffectKeys.STABLE] = true
 	BattleUnitCombat.knockup(u, 1.0, Vector2(100, 0))
 	assert_eq(u.knockup_time, -1.0, "stable 免击退（time 不变）")
 

@@ -109,7 +109,7 @@ func _buff_update(buff: Variant, dt: float) -> void:
 	var skill2: Variant = caster.skills.get(UNIT_NAME + "_atk2")
 	var hurtcounts: int = int(buff.custom_data.get("hurtcounts", 0)) + 1
 	buff.custom_data["hurtcounts"] = hurtcounts
-	if hurtcounts % HURT_PERIOD == HURT_FIRST and not bool(owner.buff_effects.get("uncontrollable", false)) and skill2 != null:
+	if hurtcounts % HURT_PERIOD == HURT_FIRST and not bool(owner.buff_effects.get(BattleEffectKeys.UNCONTROLLABLE, false)) and skill2 != null:
 		var info2: Dictionary = skill2.info
 		var plus_attr: String = str(info2.get("Plus Attr", ""))
 		var damage: float = float(info2.get("Basic Num", 0.0)) + float(info2.get("Plus Ratio", 0.0)) * float(caster.attribs.get(plus_attr, DEFAULT_ATTRIB))

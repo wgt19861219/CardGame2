@@ -48,7 +48,7 @@ func _on_attack_frame(skill: Variant) -> void:
 		var origin := Vector2(
 			skill.caster.position.x + ULT_ORIGIN_X * float(skill.caster.direction),
 			skill.caster.position.y)
-		if skill.target != null and not bool(skill.target.buff_effects.get("stable", false)):
+		if skill.target != null and not bool(skill.target.buff_effects.get(BattleEffectKeys.STABLE, false)):
 			skill.target.position = Vector2(
 				origin.x + ULT_ORIGIN_EXTRA * float(skill.caster.direction),
 				origin.y)

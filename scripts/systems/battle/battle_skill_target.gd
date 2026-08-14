@@ -30,18 +30,18 @@ static func can_cast_with_target(skill: Variant, p_target: Variant) -> Dictionar
 		return {"ok": false, "reason": "mp"}
 	if skill.cd_remaining > 0.0:
 		return {"ok": false, "reason": "cd"}
-	if bool(skill.caster.buff_effects.get("stun", false)):
-		return {"ok": false, "reason": "stun"}
-	if dt == "AD" and bool(skill.caster.buff_effects.get("disarm", false)):
-		return {"ok": false, "reason": "disarm"}
-	if dt != "AD" and bool(skill.caster.buff_effects.get("silence", false)):
-		return {"ok": false, "reason": "silence"}
+	if bool(skill.caster.buff_effects.get(BattleEffectKeys.STUN, false)):
+		return {"ok": false, "reason": BattleEffectKeys.STUN}
+	if dt == "AD" and bool(skill.caster.buff_effects.get(BattleEffectKeys.DISARM, false)):
+		return {"ok": false, "reason": BattleEffectKeys.DISARM}
+	if dt != "AD" and bool(skill.caster.buff_effects.get(BattleEffectKeys.SILENCE, false)):
+		return {"ok": false, "reason": BattleEffectKeys.SILENCE}
 	if skill._target_selector().is_valid():
 		p_target = skill._select_target(p_target)
 	if p_target == null:
 		return {"ok": false, "reason": "no target"}
-	if bool(p_target.buff_effects.get("untargetable", false)):
-		return {"ok": false, "reason": "untargetable"}
+	if bool(p_target.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
+		return {"ok": false, "reason": BattleEffectKeys.UNTARGETABLE}
 	if float(p_target.camp) * float(skill._target_camp()) < 0.0:
 		return {"ok": false, "reason": "target camp"}
 	var dsq: float = p_target.position.distance_squared_to(skill.caster.position)
@@ -73,9 +73,9 @@ static func select_target_default(skill: Variant, default_t: Variant) -> Variant
 		var max_v: float = -BattleSkill.HUGE
 		var chosen: Variant = null
 		var cpos: Vector2 = skill.caster.position
-		var enchanted: bool = bool(skill.caster.buff_effects.get("enchanted", false))
+		var enchanted: bool = bool(skill.caster.buff_effects.get(BattleEffectKeys.ENCHANTED, false))
 		for unit in skill.caster.engine.foreach_alive_unit(skill._target_camp()):
-			if bool(unit.buff_effects.get("untargetable", false)):
+			if bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 				continue
 			if enchanted and unit == skill.caster:
 				continue

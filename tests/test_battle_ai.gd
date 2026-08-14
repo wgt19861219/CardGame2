@@ -78,7 +78,7 @@ func test_search_target_nearest() -> void:
 func test_search_target_skip_untargetable() -> void:
 	var o := _make_owner()
 	var close := _make_enemy(10)
-	close.buff_effects["untargetable"] = true
+	close.buff_effects[BattleEffectKeys.UNTARGETABLE] = true
 	var far := _make_enemy(200)
 	o.engine.units_by_camp[-1] = [close, far]
 	var res := BattleAi.new(o).search_target()
@@ -171,7 +171,7 @@ func test_update_walk_when_no_skill() -> void:
 # 源（ai.lua:40-42）：building + 有目标 + 无技能 → idle（非 walk）
 func test_update_building_idle() -> void:
 	var o := _make_owner()
-	o.buff_effects["building"] = true
+	o.buff_effects[BattleEffectKeys.BUILDING] = true
 	o.engine.units_by_camp[-1] = [_make_enemy(500)]
 	o.skill_list = []
 	BattleAi.new(o).update(0.033)

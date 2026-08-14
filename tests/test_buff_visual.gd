@@ -87,10 +87,10 @@ func test_on_added_client_popup_ad() -> void:
 
 func test_on_added_client_popup_text_override() -> void:
 	var owner := _make_owner()
-	var b := BattleBuff.new({"Name": "Silence", "AD": 50, "Popup Text": "silence"}, owner, _make_caster())
+	var b := BattleBuff.new({"Name": "Silence", "AD": 50, "Popup Text": BattleEffectKeys.SILENCE}, owner, _make_caster())
 	b.on_added_client()
 	assert_eq(owner.actor.popups.size(), 1)
-	assert_eq(owner.actor.popups[0].text, "silence", "Popup Text 应覆盖 AD 飘字")
+	assert_eq(owner.actor.popups[0].text, BattleEffectKeys.SILENCE, "Popup Text 应覆盖 AD 飘字")
 
 
 func test_on_removed_clears_effect() -> void:

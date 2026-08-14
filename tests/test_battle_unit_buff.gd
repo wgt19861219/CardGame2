@@ -29,9 +29,9 @@ func test_add_buff_applies_attrib() -> void:
 func test_add_buff_stun_triggers_hurt() -> void:
 	var u := _make_unit()
 	u.state = BattleUnit.State.IDLE
-	var buff := BattleBuff.new({"Name": "stun", "Control Effects": ["stun"]}, u, u)
+	var buff := BattleBuff.new({"Name": BattleEffectKeys.STUN, "Control Effects": [BattleEffectKeys.STUN]}, u, u)
 	u.add_buff(buff, u)
-	assert_true(bool(u.buff_effects.get("stun", false)), "stun 控制效果蕴含生效")
+	assert_true(bool(u.buff_effects.get(BattleEffectKeys.STUN, false)), "stun 控制效果蕴含生效")
 	assert_eq(u.state, BattleUnit.State.HURT, "rebuild stun → hurt")
 
 

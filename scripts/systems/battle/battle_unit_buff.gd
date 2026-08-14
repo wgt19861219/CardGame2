@@ -17,7 +17,7 @@ static func battle_supply(u: Variant, coefficient: float) -> void:
 
 
 static func is_has_uncontrol_buff_effect(u: Variant) -> bool:
-	return bool(u.buff_effects.get("uncontrollable", false))
+	return bool(u.buff_effects.get(BattleEffectKeys.UNCONTROLLABLE, false))
 
 
 static func remove_buffs_conflict_with_uncontrol(u: Variant) -> void:

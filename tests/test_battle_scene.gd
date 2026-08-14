@@ -230,7 +230,7 @@ func test_actor_frozen_zero_action_speeder() -> void:
 	scene.setup(eng, cm)
 	scene.step(0.033)
 	var actor: Variant = scene.actor_list[0]
-	p.buff_effects["frozen"] = true   # step 后设（避 rebuild 擦）
+	p.buff_effects[BattleEffectKeys.FROZEN] = true   # step 后设（避 rebuild 擦）
 	actor._tick = -1   # 强制下个 update_view 触发 tick 块（源 :1746 在 tick 变化块内）
 	actor.update_view(0.0)
 	assert_eq(actor.puppet._current_speed, 0.0, "frozen → setActionSpeeder(0)（源 :1746）")

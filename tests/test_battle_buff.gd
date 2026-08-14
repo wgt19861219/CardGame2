@@ -50,20 +50,20 @@ func test_apply_adds_attribs() -> void:
 # 源 applyEffect（buff.lua:137-154）：stun 蕴含 immoblilize/silence/disarm/disableAI
 func test_apply_stun_inclusions() -> void:
 	var owner := _make_owner()
-	BattleBuff.new({"Name": "S", "Control Effects": ["stun"]}, owner, _make_caster()).apply()
-	assert_true(bool(owner.buff_effects.get("stun")), "stun")
-	assert_true(bool(owner.buff_effects.get("silence")), "蕴含 silence")
-	assert_true(bool(owner.buff_effects.get("disarm")), "蕴含 disarm")
-	assert_true(bool(owner.buff_effects.get("immoblilize")), "蕴含 immoblilize（源拼写）")
-	assert_true(bool(owner.buff_effects.get("disableAI")), "蕴含 disableAI")
+	BattleBuff.new({"Name": "S", "Control Effects": [BattleEffectKeys.STUN]}, owner, _make_caster()).apply()
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.STUN)), BattleEffectKeys.STUN)
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.SILENCE)), "蕴含 silence")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.DISARM)), "蕴含 disarm")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.IMMOBILIZE)), "蕴含 immoblilize（源拼写）")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.DISABLE_AI)), "蕴含 disableAI")
 
 # 源 applyEffect uncontrollable 清负面（buff.lua:149-153）
 func test_uncontrollable_clears_negative() -> void:
 	var owner := _make_owner()
-	owner.buff_effects["stun"] = true
-	BattleBuff.new({"Name": "U", "Control Effects": ["uncontrollable"]}, owner, _make_caster()).apply()
-	assert_true(bool(owner.buff_effects.get("uncontrollable")), "uncontrollable")
-	assert_false(owner.buff_effects.has("stun"), "清除负面 stun")
+	owner.buff_effects[BattleEffectKeys.STUN] = true
+	BattleBuff.new({"Name": "U", "Control Effects": [BattleEffectKeys.UNCONTROLLABLE]}, owner, _make_caster()).apply()
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.UNCONTROLLABLE)), BattleEffectKeys.UNCONTROLLABLE)
+	assert_false(owner.buff_effects.has(BattleEffectKeys.STUN), "清除负面 stun")
 
 # 源 onDamaged（buff.lua:250-275）：shield 抵伤（Shield Type 匹配）
 func test_on_damaged_shield() -> void:
@@ -104,47 +104,47 @@ func test_check_resist_attribute_returns_resist_reason() -> void:
 
 # 源 isCrlEftConflictWithUncontrollable（buff.lua:111-121）
 func test_is_negative_conflict() -> void:
-	var b_neg := BattleBuff.new({"Name": "S", "Control Effects": ["stun"]}, _make_owner(), _make_caster())
+	var b_neg := BattleBuff.new({"Name": "S", "Control Effects": [BattleEffectKeys.STUN]}, _make_owner(), _make_caster())
 	assert_true(b_neg.is_negative_conflict_uncontrollable(), "含 stun 负面 → 冲突")
-	var b_neu := BattleBuff.new({"Name": "B", "Control Effects": ["building"]}, _make_owner(), _make_caster())
+	var b_neu := BattleBuff.new({"Name": "B", "Control Effects": [BattleEffectKeys.BUILDING]}, _make_owner(), _make_caster())
 	assert_false(b_neu.is_negative_conflict_uncontrollable(), "building 非负面")
 
 
 # 源 applyEffect frozen（EFFECT_INCLUSIONS:13 递归）：frozen 蕴含 stun（stun 递归含 immoblilize/silence/disarm/disableAI）
 func test_apply_frozen_inclusions() -> void:
 	var owner := _make_owner()
-	BattleBuff.new({"Name": "F", "Control Effects": ["frozen"]}, owner, _make_caster()).apply()
-	assert_true(bool(owner.buff_effects.get("frozen")), "frozen")
-	assert_true(bool(owner.buff_effects.get("stun")), "蕴含 stun")
-	assert_true(bool(owner.buff_effects.get("silence")), "递归蕴含 silence")
-	assert_true(bool(owner.buff_effects.get("immoblilize")), "递归蕴含 immoblilize（源拼写）")
+	BattleBuff.new({"Name": "F", "Control Effects": [BattleEffectKeys.FROZEN]}, owner, _make_caster()).apply()
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.FROZEN)), BattleEffectKeys.FROZEN)
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.STUN)), "蕴含 stun")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.SILENCE)), "递归蕴含 silence")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.IMMOBILIZE)), "递归蕴含 immoblilize（源拼写）")
 
 
 # 源 imprisonment（EFFECT_INCLUSIONS:19）：蕴含 stun+untargetable+invulnerable
 func test_apply_imprisonment_inclusions() -> void:
 	var owner := _make_owner()
-	BattleBuff.new({"Name": "P", "Control Effects": ["imprisonment"]}, owner, _make_caster()).apply()
-	assert_true(bool(owner.buff_effects.get("imprisonment")), "imprisonment")
-	assert_true(bool(owner.buff_effects.get("stun")), "蕴含 stun")
-	assert_true(bool(owner.buff_effects.get("untargetable")), "蕴含 untargetable")
-	assert_true(bool(owner.buff_effects.get("invulnerable")), "蕴含 invulnerable")
+	BattleBuff.new({"Name": "P", "Control Effects": [BattleEffectKeys.IMPRISONMENT]}, owner, _make_caster()).apply()
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.IMPRISONMENT)), BattleEffectKeys.IMPRISONMENT)
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.STUN)), "蕴含 stun")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.UNTARGETABLE)), "蕴含 untargetable")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.INVULNERABLE)), "蕴含 invulnerable")
 
 
 # 源 building（EFFECT_INCLUSIONS:24）：蕴含 stable+fix（建筑类，非负面）
 func test_apply_building_inclusions() -> void:
 	var owner := _make_owner()
-	BattleBuff.new({"Name": "Bld", "Control Effects": ["building"]}, owner, _make_caster()).apply()
-	assert_true(bool(owner.buff_effects.get("building")), "building")
-	assert_true(bool(owner.buff_effects.get("stable")), "蕴含 stable")
-	assert_true(bool(owner.buff_effects.get("fix")), "蕴含 fix")
+	BattleBuff.new({"Name": "Bld", "Control Effects": [BattleEffectKeys.BUILDING]}, owner, _make_caster()).apply()
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.BUILDING)), BattleEffectKeys.BUILDING)
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.STABLE)), "蕴含 stable")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.FIX)), "蕴含 fix")
 
 
 # 源 enchanted（EFFECT_INCLUSIONS:23）：无蕴含子效果仅自身，但属负面（NEGATIVE_EFFECTS:33）
 func test_apply_enchanted_no_inclusion() -> void:
 	var owner := _make_owner()
-	var b := BattleBuff.new({"Name": "E", "Control Effects": ["enchanted"]}, owner, _make_caster())
+	var b := BattleBuff.new({"Name": "E", "Control Effects": [BattleEffectKeys.ENCHANTED]}, owner, _make_caster())
 	b.apply()
-	assert_true(bool(owner.buff_effects.get("enchanted")), "enchanted")
+	assert_true(bool(owner.buff_effects.get(BattleEffectKeys.ENCHANTED)), BattleEffectKeys.ENCHANTED)
 	assert_true(b.is_negative_conflict_uncontrollable(), "enchanted 属负面（NEGATIVE_EFFECTS）")
 
 

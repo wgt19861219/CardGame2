@@ -80,7 +80,7 @@ static func take_effect_on(skill: BattleSkill, p_target: Variant, src: Variant =
 	var info: Dictionary = skill.info
 	var caster: Variant = skill.caster
 	var source: Variant = src if src != null else caster
-	if not bool(p_target.is_alive()) or bool(p_target.buff_effects.get("invulnerable", false)):
+	if not bool(p_target.is_alive()) or bool(p_target.buff_effects.get(BattleEffectKeys.INVULNERABLE, false)):
 		return [false, 0.0]
 	if bool(p_target.manually_casting) and int(source.camp) != int(p_target.camp):
 		return [false, 0.0]

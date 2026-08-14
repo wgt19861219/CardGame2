@@ -32,7 +32,7 @@ func _take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var r: Array = BattleSkillEffect.take_effect_on(skill, target, src)  # basefunc [succ, dmg]
 	var caster: Variant = skill.caster
 	var rng: Variant = caster.engine.rng
-	if _check_vs_ult(float(skill.level), float(target.level), rng) and not bool(target.buff_effects.get("stable", false)):
+	if _check_vs_ult(float(skill.level), float(target.level), rng) and not bool(target.buff_effects.get(BattleEffectKeys.STABLE, false)):
 		var target_pos: Vector2 = target.position
 		var caster_pos: Vector2 = caster.position
 		caster.position = target_pos

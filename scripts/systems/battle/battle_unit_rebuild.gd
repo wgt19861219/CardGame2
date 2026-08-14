@@ -60,16 +60,16 @@ static func rebuild(u: Variant) -> void:
 	var buff_effects: Dictionary = u.buff_effects
 	for buff in u.buff_list:
 		buff.apply()
-	if bool(buff_effects.get("immoblilize", false)) and String(u.action_name) == "Move":
+	if bool(buff_effects.get(BattleEffectKeys.IMMOBILIZE, false)) and String(u.action_name) == "Move":
 		u.idle()
 	var skill: Variant = u.current_skill
-	if bool(buff_effects.get("stun", false)):
+	if bool(buff_effects.get(BattleEffectKeys.STUN, false)):
 		u.hurt()
 	elif skill != null:
 		var sdt: String = String(skill.info.get("Damage Type", ""))
-		if (sdt == "AD" and bool(buff_effects.get("disarm", false))) or (sdt != "AD" and bool(buff_effects.get("silence", false))):
+		if (sdt == "AD" and bool(buff_effects.get(BattleEffectKeys.DISARM, false))) or (sdt != "AD" and bool(buff_effects.get(BattleEffectKeys.SILENCE, false))):
 			skill.interrupt()
-	u.focamp = int(u.camp) if bool(buff_effects.get("enchanted", false)) else -int(u.camp)
+	u.focamp = int(u.camp) if bool(buff_effects.get(BattleEffectKeys.ENCHANTED, false)) else -int(u.camp)
 	for attr1 in BattleUnit.ATTRIB_TRANS:
 		var val: float = float(attribs.get(attr1, 0))
 		var orig_val: float = float(orig.get(attr1, 0))

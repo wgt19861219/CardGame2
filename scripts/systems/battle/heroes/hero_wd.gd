@@ -84,9 +84,9 @@ func _select_target(skill: Variant, default_t: Variant) -> Variant:
 			var max_v: float = -HUGE
 			var chosen: Variant = null
 			var caster: Variant = skill.caster
-			var enchanted: bool = bool(caster.buff_effects.get("enchanted", false))
+			var enchanted: bool = bool(caster.buff_effects.get(BattleEffectKeys.ENCHANTED, false))
 			for unit in caster.engine.foreach_alive_unit(int(skill._target_camp())):
-				if bool(unit.buff_effects.get("untargetable", false)):
+				if bool(unit.buff_effects.get(BattleEffectKeys.UNTARGETABLE, false)):
 					continue
 				if enchanted and unit == caster:
 					continue
