@@ -200,11 +200,12 @@ chore: 升级 Godot 到 4.7
 - **施工蓝图**：`D:\workspace\Obsidian\CardGameGodot2\系统文档\施工蓝图-全局重制.md`
 - **知识库**：`D:\workspace\Obsidian\CardGameGodot2\`
 - **仓库结构**：
-  - `scenes/<feature>/` — View 层：纯 UI，只显示 + 发信号
+  - `scenes/<feature>/` — View 资产层：入口场景 tscn（3 个，绑同目录本地脚本）+ content 底板 tscn（69 个，无脚本）
   - `scripts/systems/` — Logic 层：纯业务逻辑，不依赖 Node/Control，可 headless 单测
-  - `scripts/data/` — Data 层：PlayerData / SaveManager / ConfigManager
+  - `scripts/data/` — Data 层：PlayerData / SaveManager / ConfigManager + feature_catalog（源 71 handler 功能对照清单，CI catalog_check 依赖）
   - `scripts/autoload/` — 自动加载单例
-  - `scripts/ui/` — UI 组件
+  - `scripts/ui/` — 主 View 层：功能 panel + builder + 跨域通用展示工具（atlas_sprite / fca_animation / readhero_icon 等）
+  - `scripts/view/battle/` — 战斗 View 子域：battle 场景 / actor / HUD / 战前布阵等 battle 专属 View
   - `tests/` — GUT 单测（`test_` 前缀）
   - `resources/` — 数据/配置（`data/*.json`、`constants/*.tres`）
   - `addons/` — 第三方插件（GUT、godot_mcp_server）
@@ -285,10 +286,25 @@ bash tools/ci/check.sh
 | headless 截图验证坐标/布局 | **headless 模式 RendererDummy 无 GPU 渲染，`mcp__godot__screenshot capture` 截图全空白**。验证运行时坐标/布局必须用 `mcp__godot__game` bridge（game_query get_node_properties 读真实 position/size/global_position + take_screenshot 真 GPU 截图）。详见 `验收记录-英雄详情装备槽对齐源-2026-07-26.md` |
 | 纸面算坐标不实测 | **Sprite2D centered=false/TextureRect position/anchor 相对父尺寸——三者坐标系不同，纸面推算易错**。装备槽 lock/角标定位反复改 4 次都不对，根因是 container size(72) vs frame texture 渲染区(94×95) 不一致 + 误判元素（把角标当 lock）。教训：定位类问题**先用 game bridge 读真实坐标再改**，不要盲改反复试 |
 | 误判调试目标元素 | 装备槽"偏右上"反馈，想当然以为是 lock 占位，实测发现 6 槽全是"有配方未装"无 lock，偏的是 +号角标。教训：**先 game bridge find_nodes + get_node_properties 确认实际渲染的元素类型/坐标，再动手**，不要凭反馈关键词猜元素 |
+| View 文件放错域（battle panel 进 ui/、通用工具进 view/battle） | battle 专属 View 进 `scripts/view/battle/`，跨域通用工具进 `scripts/ui/`；依赖方向恒为 view/battle → ui（见「tscn↔gd 绑定规范」节） |
 
 ### Godot 引擎规范速查
 
 - headless 测试/运行前必须 `godot --headless --import`（首次/资源变动后）
+
+### tscn↔gd 绑定规范（一轨制，2026-08-14 阶段二立）
+
+按 tscn 用途分三轨，每轨固定唯一绑定方式，禁混用（基线实测 76 tscn = 69 + 4 + 3）：
+
+| 轨 | 用途 | 绑定方式 | 实例 |
+|----|------|---------|------|
+| A（69 个，主体） | panel content 底板 | **无脚本**；panel/builder `preload(.tscn).instantiate()` + fill（详见下节范式） | `scenes/ui/*_content.tscn` |
+| B（4 个） | 战斗完整场景 | 绑远端 `scripts/view/battle/*.gd`（root 节点 ext_resource Script） | battle_scene / battle_hud / stage_done / stage_failed |
+| C（3 个） | 游戏入口场景 | 绑**同目录本地脚本** | main_scene / loading_scene / hero_scene |
+
+- 新增 panel 默认走轨 A；新增战斗整场景走轨 B；入口场景固定三个不再增。
+- **禁止**：content tscn 绑脚本（与 fill 范式双头管理）、非 root 节点绑业务脚本。
+- panel 脚本归位：battle 专属进 `scripts/view/battle/`，跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui，禁反向）。
 
 ### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
 
@@ -356,3 +372,4 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/
 | 2026-07-22 | 初版，基于通用模板 `C:\Users\wgt\ZCodeProject\templates\AGENTS-template.md` 重组；断开与 CLAUDE.md 的软链，AGENTS.md 独立自包含 |
 | 2026-07-24 | 迁移阶段结束，进入 Godot 原生适配/优化阶段：重写「项目阶段」（原「项目铁律」）解除源码强制对齐，解禁设计类 skill，开发协议改为 DESIGN → CODE → VERIFY；红线与工程规范保留不变 |
 | 2026-07-27 | 修订 `.tscn` 红线：结构性改动（节点/ext_resource/uid/unique_id/load_steps）仍禁外部 patch，**纯数值改动**（offset/size/position/scale/color 等）放开允许 Edit 改 + import/CI 兜底。依据：战役 HUD 补全时 4 节点 8 行 offset 替换 + CI 1732/1732 全绿实证风险可控；旧版铁律源于 ext_resource id/uid 错乱致引用断裂，对纯数值改动过严 |
+| 2026-08-14 | 架构重构阶段二（目录与规范统一）：View 职责重划（battle panel 归 `scripts/view/battle/` + 3 通用展示工具下沉 `scripts/ui/`，治反向依赖）；删 ModuleRegistry/InstanceModule 死骨架；feature_catalog 并入 `scripts/data/`（`scripts/server/` 目录消失，顶层 7→6）；新增「tscn↔gd 绑定规范（一轨制）」节；仓库结构描述同步实况 |

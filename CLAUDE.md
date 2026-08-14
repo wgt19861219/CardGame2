@@ -30,9 +30,11 @@
 ## 四大架构原则（每个 PR 必须满足，CI 门禁强制）
 
 ### 1. 三层分离（治架构耦合）
-- `scenes/<feature>/` — **View 层**：纯 UI，只显示 + 发信号，禁含业务逻辑
+- `scenes/<feature>/` — **View 资产层**：入口场景 tscn（3 个，绑同目录本地脚本）+ content 底板 tscn（69 个，无脚本）
 - `scripts/systems/` — **Logic 层**：纯业务逻辑，不依赖 Node/Control，可 headless 单测
-- `scripts/data/` — **Data 层**：PlayerData / SaveManager / ConfigManager
+- `scripts/data/` — **Data 层**：PlayerData / SaveManager / ConfigManager + feature_catalog
+- `scripts/ui/` — **主 View 层**：功能 panel + builder + 跨域通用展示工具
+- `scripts/view/battle/` — **战斗 View 子域**：battle 场景 / actor / HUD / 战前布阵
 - **铁律**：Logic 层禁止 import 任何 `scenes/` 或 `Control` 子类（AST 检查器拦截，CI fail）
 
 ### 2. 单文件 ≤ 300 行（场景脚本 ≤ 400）
@@ -71,6 +73,10 @@
 - 装饰性 Control 节点 `mouse_filter = IGNORE`（值 2）
 - UID 从 `.import` 文件读，不猜
 - `.tscn` **结构性改动**（节点/ext_resource/uid/unique_id/load_steps）只用编辑器或 godot-mcp 改；**纯数值改动**（offset/size/color 等）允许 Edit 改 + import/CI 兜底（2026-07-27 修订）
+
+### tscn↔gd 绑定规范（一轨制，2026-08-14 阶段二立）
+
+按用途三轨、每轨唯一绑定方式（基线 76 tscn = 69 + 4 + 3）：**A** content 底板无脚本（builder instantiate + fill，主体范式）｜**B** 战斗完整场景绑远端 `scripts/view/battle/*.gd`（4 个）｜**C** 入口场景绑同目录本地脚本（3 个，固定不再增）。禁 content tscn 绑脚本；panel 脚本归位 battle 专属进 `scripts/view/battle/`、跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui）。详见 AGENTS.md 同名节。
 
 ### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
 
