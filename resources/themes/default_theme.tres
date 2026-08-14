@@ -102,6 +102,7 @@ TitleLabel/constants/outline_size = 3
 TitleLabel/font_sizes/font_size = 20
 VBoxContainer/constants/separation = 8
 ; ── 轮 3 新增 10 变体（完整签名，spec v2.2 §1.1）──
+; ── 试点 variation 组（shop 标签 + hero_detail 按钮，2026-08-14）──
 HeroDetailTab/base_type = &"Button"
 HeroDetailTab/styles/normal = SubResource("SB_detail_n")
 HeroDetailTab/styles/hover = SubResource("SB_detail_n")

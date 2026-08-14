@@ -31,12 +31,29 @@ func test_hero_detail_button_variations_exist() -> void:
 
 func test_hero_detail_tab_styleboxes_set() -> void:
 	var t: Theme = _theme()
-	assert_not_null(t.get_stylebox("normal", "HeroDetailTab"), "Tab normal=detail-n")
-	assert_not_null(t.get_stylebox("pressed", "HeroDetailTab"), "Tab pressed=detail-pressed-n")
-	assert_not_null(t.get_stylebox("normal", "HeroDetailTabActive"), "选中态 normal=detail-a")
+	_assert_detail_stylebox(t.get_stylebox("normal", "HeroDetailTab"), "Tab normal=detail-n")
+	_assert_detail_stylebox(t.get_stylebox("pressed", "HeroDetailTab"), "Tab pressed=detail-pressed-n")
+	_assert_detail_stylebox(t.get_stylebox("normal", "HeroDetailTabActive"), "选中态 normal=detail-a")
+
+
+## 锁实测值：类型 + texture + margins。assert_not_null 会命中 Godot theme fallback
+## （未注册回落 StyleBoxEmpty 非 null），无防护力，故必须锁死具体类型与数值
+## （margins 依据 herodetail-detail-*.png 219×67、cap 15,15,138,19 实测推导）。
+func _assert_detail_stylebox(sb: StyleBox, label: String) -> void:
+	assert_true(sb is StyleBoxTexture, "%s 应为 StyleBoxTexture（防 fallback 空 box 蒙混）" % label)
+	if not (sb is StyleBoxTexture):
+		return
+	var sbt := sb as StyleBoxTexture
+	assert_not_null(sbt.texture, "%s texture 非空" % label)
+	assert_eq(sbt.texture_margin_left, 15.0, "%s margin_left=15（cap x）" % label)
+	assert_eq(sbt.texture_margin_top, 15.0, "%s margin_top=15（cap y）" % label)
+	assert_eq(sbt.texture_margin_right, 66.0, "%s margin_right=66（219-15-138）" % label)
+	assert_eq(sbt.texture_margin_bottom, 33.0, "%s margin_bottom=33（67-15-19）" % label)
 
 
 func test_hero_detail_tab_label_variation() -> void:
 	var t: Theme = _theme()
 	assert_true("HeroDetailTabLabel" in t.get_type_variation_list("Label"), "HeroDetailTabLabel 注册")
-	assert_ne(t.get_color("font_color", "HeroDetailTabLabel"), Color.WHITE, "黑字（源按钮文字 BLACK）")
+	assert_eq(t.get_color("font_color", "HeroDetailTabLabel"), Color(0, 0, 0, 1), "黑字（源按钮文字 BLACK）")
+	assert_eq(t.get_color("font_outline_color", "HeroDetailTabLabel"), Color(1, 1, 1, 1), "白描边（源按钮描边 WHITE）")
+	assert_eq(t.get_constant("outline_size", "HeroDetailTabLabel"), 2, "描边宽 2")
