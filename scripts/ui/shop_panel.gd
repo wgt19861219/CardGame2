@@ -11,14 +11,6 @@ extends PopWindow
 ## CS：源 hello.lua:311 setContentScaleFactor=1.28125，CCSprite 显示=纹理/CS。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_content.tscn")
-# 源 shop.lua:33-44 talkBg Scale9 frame（capInsets 30,15,110,26）+ talk Label。
-# TalkLabel 在 .tscn 已建；本项目补 talk_bg Scale9 气泡背景（shop_talk_bg.png）。
-const TALK_BG_RES: String = "res://assets/ui/alpha/HVGA/shop_talk_bg.png"
-const TALK_BG_CAP: Rect2 = Rect2(30.0, 15.0, 110.0, 26.0)
-# talkBg 源 anchor(0,0.5) ccp(190,360)（talk bg 左中），talk Label 同 anchor ccp(190+10,360)。
-# .tscn TalkLabel 已固定位置，bg 衬其下：bg 左上对齐 TalkLabel 左边 + 一定 padding。
-const TALK_BG_PADDING: Vector2 = Vector2(-10.0, -10.0)
-const TALK_BG_SIZE_PAD: Vector2 = Vector2(20.0, 20.0)
 const AUTO_REFRESH_CHECK_INTERVAL: float = 1.0   # _process 自动刷新轮询间隔（秒，源客户端 auto_refresh 轮询）
 
 var shop_id: int = 1
@@ -82,7 +74,7 @@ func _build_content() -> void:
 	_refresh_cost_label = _panel_layer.get_node("%RefreshCostLabel") as Label
 	_talk_label = _panel_layer.get_node("%TalkLabel") as Label
 	_talk_label.modulate.a = 0.0   # 初始隐藏（淡入时设 a=1）
-	_add_talk_bubble()   # P1 talkBg Scale9 气泡背景（源 shop.lua:33-44）
+	_talk_bg = _panel_layer.get_node("%TalkBg") as NinePatchRect   # TalkBg 已静态化进 .tscn
 	_next_refresh_label = _panel_layer.get_node("%TimeLabel") as Label
 	_item_layer = _panel_layer.get_node("%ItemLayer") as Control
 	_refresh_money()
@@ -254,28 +246,6 @@ func _show_talk(key: String) -> void:
 		_talk_tween.tween_property(_talk_label, "modulate:a", 0.0, 0.8)
 		if _talk_bg != null:
 			_talk_tween.tween_property(_talk_bg, "modulate:a", 0.0, 0.8)
-
-
-# P1 源 shop.lua:33-44 talkBg Scale9 frame（shop_talk_bg.png cap 30,15,110,26）。
-# 衬在 TalkLabel 下（z 低），随 talk 文字同步淡入淡出。.tscn TalkLabel 位置已固定，bg 跟随其 rect。
-func _add_talk_bubble() -> void:
-	if not ResourceLoader.exists(TALK_BG_RES):
-		return
-	_talk_bg = NinePatchRect.new()
-	_talk_bg.texture = load(TALK_BG_RES) as Texture2D
-	_talk_bg.patch_margin_left = int(TALK_BG_CAP.position.x)
-	_talk_bg.patch_margin_top = int(TALK_BG_CAP.position.y)
-	if _talk_bg.texture != null:
-		_talk_bg.patch_margin_right = int(_talk_bg.texture.get_width()) - int(TALK_BG_CAP.position.x) - int(TALK_BG_CAP.size.x)
-		_talk_bg.patch_margin_bottom = int(_talk_bg.texture.get_height()) - int(TALK_BG_CAP.position.y) - int(TALK_BG_CAP.size.y)
-	# bg 跟随 TalkLabel rect + padding（衬其下）。
-	_talk_bg.position = _talk_label.position + TALK_BG_PADDING
-	_talk_bg.size = _talk_label.size + TALK_BG_SIZE_PAD
-	_talk_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_talk_bg.modulate.a = 0.0   # 初始隐藏（_show_talk 时淡入）
-	var label_idx: int = _talk_label.get_index()
-	_panel_layer.add_child(_talk_bg)
-	_panel_layer.move_child(_talk_bg, label_idx)   # bg 移到 label 前（z 低，label 绘其上）
 
 
 # 运行中轮询（源 shop.lua timeRefresh:648-698 每秒）：① 到期检查（地精/黑市停留 3600s）② 自动刷新（Refresh Times 点）③ 时刻 Label 刷新。

@@ -128,15 +128,30 @@ func test_buy_confirm_handler_calls_shop_mgr() -> void:
 	panel.free()
 
 
-# P1-10 源 shop.lua:33-44 talkBg Scale9 气泡背景。_build_content 后 _talk_bg 应装配（资源存在）。
+# P1-10 源 shop.lua:33-44 talkBg Scale9 气泡背景。两件套范式（2026-08-14）：TalkBg 静态化进
+# shop_content.tscn（NinePatchRect + patch_margin 烘焙），panel 只取 %TalkBg 引用。
 func test_talk_bubble_assembled() -> void:
 	var pd := PlayerData.new(cm)
 	var panel := ShopPanel.new("shop", {})
 	add_child(panel)
 	panel.setup_panel(1, ShopManager.new(cm), pd, BattleRng.new(1))
 	var talk_bg: NinePatchRect = panel.get("_talk_bg") as NinePatchRect
-	assert_not_null(talk_bg, "_talk_bg Scale9 气泡装配（源 shop.lua:33-44）")
+	assert_not_null(talk_bg, "_talk_bg 取自 .tscn %TalkBg（源 shop.lua:33-44）")
 	assert_true(talk_bg.texture != null, "talk_bg 用 shop_talk_bg.png 纹理")
-	# 初始隐藏（_show_talk 时淡入）。
+	assert_eq(talk_bg.patch_margin_left, 30, "cap 30（源 capInsets 30,15,110,26）")
+	assert_eq(talk_bg.patch_margin_right, 87, "cap 右=227-30-110")
 	assert_almost_eq(talk_bg.modulate.a, 0.0, 0.01, "talk_bg 初始 modulate.a=0（随 talk 淡入）")
 	panel.free()
+
+
+# 默认贴图烘焙：id=1 商人的 Bg/Head 底图应在 .tscn 里可见（编辑器所见即所得）。
+func test_default_textures_baked() -> void:
+	var content: Control = (load("res://scenes/ui/shop_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var bg: TextureRect = content.get_node("%PanelLayer/%Bg") as TextureRect
+	assert_true(bg.texture != null, "Bg 烘 shop_bg.png 默认贴图（market_config.gd:36）")
+	var head: TextureRect = content.get_node("%PanelLayer/%Head") as TextureRect
+	assert_true(head.texture != null, "Head 烘 shop_head.png 默认贴图")
+	var title: Label = content.get_node("%PanelLayer/%Title") as Label
+	assert_eq(String(title.theme_type_variation), "ShopTitleLabel", "Title 走 theme variation")
+	content.free()

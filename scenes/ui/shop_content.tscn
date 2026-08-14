@@ -1,10 +1,13 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_refresh_button.png" id="2_refresh"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_refresh_button_down.png" id="3_refreshp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="4_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="5_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_talk_bg.png" id="6_talkbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_bg.png" id="7_shopbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_head.png" id="8_head"]
 
 [node name="ShopContent" type="Control"]
 layout_mode = 3
@@ -37,6 +40,7 @@ layout_mode = 3
 offset_right = 702.0
 offset_bottom = 424.0
 expand_mode = 1
+texture = ExtResource("7_shopbg")
 mouse_filter = 2
 
 [node name="Head" type="TextureRect" parent="PanelLayer"]
@@ -47,6 +51,7 @@ offset_top = -22.5
 offset_right = 159.5
 offset_bottom = 96.5
 expand_mode = 1
+texture = ExtResource("8_head")
 mouse_filter = 2
 
 [node name="Title" type="Label" parent="PanelLayer"]
@@ -56,7 +61,7 @@ offset_left = 340.0
 offset_top = 18.0
 offset_right = 540.0
 offset_bottom = 42.0
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"ShopTitleLabel"
 mouse_filter = 2
 
 [node name="CloseBtn" type="TextureButton" parent="PanelLayer"]
@@ -99,7 +104,7 @@ offset_left = 474.0
 offset_top = 40.0
 offset_right = 588.0
 offset_bottom = 58.0
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"ShopCostLabel"
 mouse_filter = 2
 
 [node name="MoneyLabel" type="Label" parent="PanelLayer"]
@@ -120,6 +125,21 @@ offset_right = 159.5
 offset_bottom = 96.5
 mouse_filter = 0
 
+[node name="TalkBg" type="NinePatchRect" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = -3.5
+offset_top = -82.5
+offset_right = 316.5
+offset_bottom = -22.5
+texture = ExtResource("6_talkbg")
+patch_margin_left = 30
+patch_margin_top = 15
+patch_margin_right = 87
+patch_margin_bottom = 33
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0)
+
 [node name="TalkLabel" type="Label" parent="PanelLayer"]
 unique_name_in_owner = true
 layout_mode = 3
@@ -127,7 +147,7 @@ offset_left = 6.5
 offset_top = -72.5
 offset_right = 306.5
 offset_bottom = -32.5
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"ShopTalkLabel"
 mouse_filter = 2
 
 [node name="TimeLabel" type="Label" parent="PanelLayer"]
@@ -137,8 +157,7 @@ offset_left = 474.0
 offset_top = 120.0
 offset_right = 700.0
 offset_bottom = 140.0
-theme_override_colors/font_color = Color(0.858824, 0.780392, 0.658824, 1)
-theme_override_font_sizes/font_size = 13
+theme_type_variation = &"ShopTimeLabel"
 mouse_filter = 2
 
 [node name="ItemLayer" type="Control" parent="PanelLayer"]
