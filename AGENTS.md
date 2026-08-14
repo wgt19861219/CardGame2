@@ -305,6 +305,7 @@ bash tools/ci/check.sh
 - 新增 panel 默认走轨 A；新增战斗整场景走轨 B；入口场景固定三个不再增。
 - **禁止**：content tscn 绑脚本（与 fill 范式双头管理）、非 root 节点绑业务脚本。
 - panel 脚本归位：battle 专属进 `scripts/view/battle/`，跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui，禁反向）。
+- `scenes/` 只放 tscn 资产与 3 个入口脚本，纯代码控件/panel 一律进 `scripts/ui/` 或 `scripts/view/battle/`（2026-08-14 收官：confirm_dialog/number_roll/star_display 三控件已从 scenes/ui/ 归位）。
 
 ### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
 

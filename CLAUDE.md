@@ -76,7 +76,7 @@
 
 ### tscn↔gd 绑定规范（一轨制，2026-08-14 阶段二立）
 
-按用途三轨、每轨唯一绑定方式（基线 76 tscn = 69 + 4 + 3）：**A** content 底板无脚本（builder instantiate + fill，主体范式）｜**B** 战斗完整场景绑远端 `scripts/view/battle/*.gd`（4 个）｜**C** 入口场景绑同目录本地脚本（3 个，固定不再增）。禁 content tscn 绑脚本；panel 脚本归位 battle 专属进 `scripts/view/battle/`、跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui）。详见 AGENTS.md 同名节。
+按用途三轨、每轨唯一绑定方式（基线 76 tscn = 69 + 4 + 3）：**A** content 底板无脚本（builder instantiate + fill，主体范式）｜**B** 战斗完整场景绑远端 `scripts/view/battle/*.gd`（4 个）｜**C** 入口场景绑同目录本地脚本（3 个，固定不再增）。禁 content tscn 绑脚本；panel 脚本归位 battle 专属进 `scripts/view/battle/`、跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui）；`scenes/` 只放 tscn 资产与入口脚本。详见 AGENTS.md 同名节。
 
 ### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
 
