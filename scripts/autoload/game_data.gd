@@ -77,7 +77,3 @@ func save() -> int:
 ## 标脏（照源 ed.saveDirty=true）：等 60s Timer 合并刷盘，避免高频操作每次写盘。
 func mark_save_dirty() -> void:
 	_dirty = true
-
-## 通知 View 刷新（Logic 层改数据后调，触发 EventBus.data_changed）。
-func notify_changed(scope: StringName) -> void:
-	Events.bus.emit_data_changed(scope)

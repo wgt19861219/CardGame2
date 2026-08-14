@@ -1,4 +1,4 @@
-extends "res://scenes/base_ui.gd"
+extends Control
 
 ## 加载场景（View 层 Step 4.2）：启动入口过渡。
 ## 单机版资源随 PCK 加载，用进度条过渡后切主界面（源 loading.lua 的 Godot 适配）。
@@ -17,7 +17,6 @@ var _progress: float = 0.0
 
 func _ready() -> void:
 	_build_ui()
-	setup(Events.bus)
 
 ## 动态建背景 + 进度条 + 百分比（不依赖 .tscn 子节点，治 MCP parent path bug）。
 func _build_ui() -> void:

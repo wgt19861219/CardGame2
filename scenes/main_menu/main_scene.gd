@@ -1,7 +1,7 @@
-extends "res://scenes/base_ui.gd"
+extends Control
 
 ## 主界面（View 层 Step 4.2）：游戏入口。拖拽地图 + 入口按钮 + 状态栏。
-## View 纯 UI：建 UI + 按钮→SceneManager + 状态栏订阅 data_changed 刷新（GameData 只读）。
+## View 纯 UI：建 UI + 按钮→SceneManager + 状态栏（HudOverlay 手动 refresh，GameData 只读）。
 ## 业务逻辑在 Logic/Data 层。布局坐标复用旧版 mainres.lua（800x480→960x640）。
 
 const MAP_H: float = 640.0   # grass + 按钮 + mountain/cloud/side/lightning 整体下移 104（grass 放屏底 56~536→160~640，图标 godot_y=MAP_H-cocos_y 跟着下移）
@@ -53,7 +53,6 @@ func _ready() -> void:
 	_build_map()
 	_build_hud()
 	_refresh_status()
-	setup(Events.bus)
 	_maybe_start_tutorial()
 	_maybe_resume_excavate()
 	_maybe_resume_pvp()
@@ -71,11 +70,11 @@ func _maybe_start_tutorial() -> void:
 	_tutorial_view = TutorialGuideView.new("tutorial", {})
 	_tutorial_view.setup_panel(tm)
 	_tutorial_view.show_window(self)
-	if _event_bus != null:
-		if not _event_bus.tutorial_step.is_connected(tutorial_try_complete):
-			_event_bus.tutorial_step.connect(tutorial_try_complete)
-		if not _event_bus.tutorial_switch.is_connected(tutorial_switch_phase):
-			_event_bus.tutorial_switch.connect(tutorial_switch_phase)
+	# 教程信号直连 Events.bus（BaseUI 拆除后无 _event_bus 字段；main_scene 释放时 Godot 自动断连）。
+	if not Events.bus.tutorial_step.is_connected(tutorial_try_complete):
+		Events.bus.tutorial_step.connect(tutorial_try_complete)
+	if not Events.bus.tutorial_switch.is_connected(tutorial_switch_phase):
+		Events.bus.tutorial_switch.connect(tutorial_switch_phase)
 
 
 func _maybe_resume_excavate() -> void:
@@ -340,9 +339,5 @@ func _open_crusade() -> void:
 # 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
 # _open_dungeon_groups 由 ExercisePanel entry_callback 反射调，转给 helper。
 func _open_exercise_panel() -> void:
-	MainSceneEntryRouter.open_exercise_panel(self, func(m: String, g: Array) -> void:
-		MainSceneEntryRouter.open_dungeon_groups(self, m, g))
-
-
-func _on_data_changed(_scope: StringName) -> void:
-	_refresh_status()
+		MainSceneEntryRouter.open_exercise_panel(self, func(m: String, g: Array) -> void:
+			MainSceneEntryRouter.open_dungeon_groups(self, m, g))

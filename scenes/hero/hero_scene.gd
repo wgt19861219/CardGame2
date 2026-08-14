@@ -1,4 +1,4 @@
-extends "res://scenes/base_ui.gd"
+extends Control
 
 ## 英雄管理场景（View 层）：顶部货币条（金币/钻石/体力）+ bg.jpg +
 ## HeroPackagePanel（英雄列表）→ 点英雄 → HeroDetailPanel（装备/强化/技能升级）。
@@ -16,12 +16,6 @@ func _ready() -> void:
 	HudOverlay.apply_identity("heropackage")
 	_open_hero_package()
 	HudOverlay.refresh()
-	setup(Events.bus)
-
-
-func _exit_tree() -> void:
-	# BaseUI._exit_tree 解 EventBus。hero_scene 切走时 HudOverlay 自动随下一个场景 apply_identity。
-	super._exit_tree()
 
 
 # 目标 960×640，bg.jpg(512×308) EXPAND_IGNORE_SIZE 拉伸铺满（同 loading 坑，size=get_viewport_rect）。

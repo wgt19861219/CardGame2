@@ -1,8 +1,7 @@
 extends GutTest
 # P1-GUT-3：autoload game_data→Events 顺序依赖守护测试。
 # game_data._ready 第 24 行 player.events = Events.bus 依赖 Events autoload 已初始化。
-# 本测试验证：(1) GameData 初始化后 player.events 非 null (2) Events.bus 是 EventBus 实例
-# (3) game_data.notify_changed 不崩（依赖 Events.bus 存在）。
+# 本测试验证：(1) GameData 初始化后 player.events 非 null (2) Events.bus 是 EventBus 实例。
 # project.godot autoload 顺序：Events(21) < GameData(24)，守护此顺序不被破坏。
 
 func test_game_data_injects_event_bus_to_player() -> void:
@@ -36,15 +35,3 @@ func test_events_autoload_ready_before_game_data() -> void:
 	assert_gt(events_idx, 0, "Events autoload 应存在于 [autoload] 段")
 	assert_gt(game_data_idx, 0, "GameData autoload 应存在于 [autoload] 段")
 	assert_lt(events_idx, game_data_idx, "Events 必须在 GameData 之前（game_data._ready 依赖 Events.bus）")
-
-
-func test_game_data_notify_changed_uses_events_bus() -> void:
-	# notify_changed 依赖 Events.bus.emit_data_changed，验证不崩 + 信号触发
-	var gd_script := preload("res://scripts/autoload/game_data.gd")
-	var game_data := gd_script.new()
-	add_child(game_data)
-	watch_signals(Events.bus)
-	# notify_changed 应通过 Events.bus 发 data_changed（不崩 = Events.bus 已就绪）
-	game_data.notify_changed(&"hero")
-	assert_signal_emitted(Events.bus, "data_changed", "notify_changed 应触发 Events.bus.data_changed")
-	game_data.queue_free()
