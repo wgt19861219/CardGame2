@@ -1,0 +1,87 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_product_bg.png" id="1_pbg"]
+
+[node name="ShopItem" type="Control"]
+layout_mode = 3
+offset_right = 204.0
+offset_bottom = 146.0
+pivot_offset = Vector2(102, 73)
+mouse_filter = 0
+
+[node name="ProductBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 204.0
+offset_bottom = 146.0
+texture = ExtResource("1_pbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="IconHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 100.0
+offset_top = 71.0
+offset_right = 100.0
+offset_bottom = 71.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 100.0
+offset_top = 21.0
+offset_right = 200.0
+offset_bottom = 37.0
+mouse_filter = 2
+
+[node name="CoinHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 40.0
+offset_top = 121.0
+offset_right = 40.0
+offset_bottom = 121.0
+mouse_filter = 2
+
+[node name="PriceLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 110.0
+offset_top = 121.0
+offset_right = 190.0
+offset_bottom = 137.0
+mouse_filter = 2
+
+[node name="SaleBadge" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 75.0
+offset_top = 96.0
+offset_right = 130.0
+offset_bottom = 112.0
+mouse_filter = 2
+visible = false
+text = "SALE"
+
+[node name="TagBadge" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 55.0
+offset_top = 91.0
+offset_right = 110.0
+offset_bottom = 107.0
+mouse_filter = 2
+visible = false
+
+[node name="SoldoutLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 55.0
+offset_top = 60.0
+offset_right = 150.0
+offset_bottom = 76.0
+mouse_filter = 2
+visible = false
+text = "售罄"
