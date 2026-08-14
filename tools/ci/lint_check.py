@@ -55,7 +55,7 @@ LINE_COUNT_DIRS: tuple[str, ...] = (
 )
 # Logic 层目录前缀（行数按 300 严管），其余 LINE_COUNT_DIRS 目录按 View 层 400
 _LOGIC_PREFIXES: tuple[str, ...] = (
-    "scripts/systems", "scripts/data", "scripts/server", "scripts/autoload",
+    "scripts/systems", "scripts/data", "scripts/autoload",
 )
 # 行数豁免清单：上游/开发工具脚本（非复刻产物，上游更新会覆盖拆分无意义）
 # mcp_bridge.gd：godot-mcp-enhanced 插件桥接（TCP+认证+加密+monitor+watch+recording），

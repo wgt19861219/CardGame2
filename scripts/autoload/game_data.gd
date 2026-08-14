@@ -1,7 +1,7 @@
 extends Node
 
 ## 全局数据访问（autoload GameData）：ConfigManager + PlayerData + 技能库/技能组单例。
-## View 层只读访问数据；Logic 模块仍通过 ModuleRegistry 注入。
+## View 层只读访问数据；Logic 模块依赖（skill_lib/sfx_hook 等）在 _ready 手工注入。
 ## _ready 加载配置 + 存档（无存档则新游戏）。存档用 SaveManager 原子写。
 ## 存档调度照源 main.lua：登录首存(:1120) + 脏标 mark_save_dirty + 60s startAutoSave(:761)。
 ## 测试隔离：check.sh 设 GODOT_TEST_MODE=1（或编辑器内跑 GUT）→ 不 load 不写真实存档，

@@ -61,7 +61,7 @@ def _find_in_scripts(scripts_dir: str, name: str, exclude: set[str]) -> bool:
 
 
 def run(root: str) -> int:
-    catalog_path = os.path.join(root, "scripts", "server", "feature_catalog.gd")
+    catalog_path = os.path.join(root, "scripts", "data", "feature_catalog.gd")
     if not os.path.isfile(catalog_path):
         print(f"⚠️  feature_catalog.gd 不存在：{catalog_path}（跳过 catalog 校验）")
         return 0

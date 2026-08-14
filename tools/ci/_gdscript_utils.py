@@ -12,7 +12,7 @@ from gdtoolkit.parser import parser as gd_parser
 from lark import Token, Tree
 
 # Logic 层目录（相对项目根），分层检查器只扫这里
-LOGIC_DIRS: tuple[str, ...] = ("scripts/systems", "scripts/data", "scripts/server")
+LOGIC_DIRS: tuple[str, ...] = ("scripts/systems", "scripts/data")
 # Logic 层允许的 extends 基类（Node/Control 系一律禁止）
 ALLOWED_LOGIC_BASES: frozenset[str] = frozenset({"RefCounted", "Object", "Resource"})
 
