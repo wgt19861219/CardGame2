@@ -195,6 +195,7 @@ func step(dt: float) -> void:
 	if is_paused or engine == null:
 		return
 	engine.update(dt)
+	BattleEventRenderer.render(engine)   # T4：同帧 drain 表现事件分发渲染（时序近等价旧同步直调）
 	frames += 1
 	_sync_actors()
 	ProjectileSync.sync(self)

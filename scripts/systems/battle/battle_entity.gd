@@ -41,6 +41,71 @@ func collide_with(another: BattleEntity) -> bool:
 	return position.distance_squared_to(another.position) < rsum * rsum
 
 
+# ---- 表现事件发射（阶段三 T4）--------------------------------------------------------
+# Logic 层唯一表现出口：经 engine.events 队列，View（battle_scene）逐帧 drain 渲染。
+# 替代旧「u.get("actor") + has_method 守卫 + 直调」鸭子链；engine 缺席（headless 裸实体）静默丢弃。
+
+func emit_event(e: BattleEvent) -> void:
+	if engine != null:
+		engine.emit_event(e)
+
+
+func emit_popup(text: String, color: String, crit: bool = false, style: String = "damage") -> void:
+	emit_event(BattleEvent.popup(self, text, color, crit, style))
+
+
+func emit_add_effect(effect_name: String, zorder: int = 0) -> void:
+	emit_event(BattleEvent.add_effect(self, effect_name, zorder))
+
+
+func emit_remove_effect(effect_name: String) -> void:
+	emit_event(BattleEvent.remove_effect(self, effect_name))
+
+
+func emit_play_effect(effect_name: String, at: Vector2, p_scale: float = 1.0, p_height: float = 0.0, zorder: int = 0) -> void:
+	emit_event(BattleEvent.play_effect(self, effect_name, at, p_scale, p_height, zorder))
+
+
+func emit_tint(p_r: float, p_g: float, p_b: float) -> void:
+	emit_event(BattleEvent.tint(self, Vector3(p_r, p_g, p_b)))
+
+
+func emit_voice(unit_name: String, suffix: String) -> void:
+	emit_event(BattleEvent.voice(self, unit_name, suffix))
+
+
+func emit_shader_push(token: int, shader_name: String) -> void:
+	emit_event(BattleEvent.shader_push(self, token, shader_name))
+
+
+func emit_shader_remove(token: int) -> void:
+	emit_event(BattleEvent.shader_remove(self, token))
+
+
+func emit_shake(max_height: float, shake_time: float, shake_num: int) -> void:
+	emit_event(BattleEvent.shake(self, max_height, shake_time, shake_num))
+
+
+func emit_gold_drop() -> void:
+	emit_event(BattleEvent.gold_drop(self))
+
+
+func emit_launch(time: float) -> void:
+	emit_event(BattleEvent.launch(self, time))
+
+
+func emit_new_action() -> void:
+	emit_event(BattleEvent.new_action(self))
+
+
+func emit_puppet() -> void:
+	emit_event(BattleEvent.puppet(self))
+
+
+func emit_npc_death() -> void:
+	emit_event(BattleEvent.npc_death(self))
+
+
 func terminate() -> void:
 	terminated = true
 

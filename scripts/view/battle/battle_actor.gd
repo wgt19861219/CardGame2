@@ -46,6 +46,7 @@ var _z_speed: Variant = null
 var _height: float = 0.0
 var _effects: Dictionary = {}
 var _shader_stack: Array[String] = []
+var _shader_keys: Dictionary = {}      # T4：Logic token → push_shader 返回槽位（keyed 变体用）
 var _cm: Variant = null                 # ConfigManager（use_puppet 查 Puppet 表）
 var _enter_target: Variant = null       # 入场目标 logic 坐标（Vector2）或 null（非入场态）
 var _hold_offline: bool = false         # 到位后保持离线静止（goto_next_battle 走屏外等切波，不接 engine interp）
@@ -243,6 +244,15 @@ func push_shader(shader_name: String) -> int:
 	_shader_stack.append(shader_name)
 	_apply_top_shader()
 	return _shader_stack.size()
+
+## T4 事件化配套：Logic 侧 token 关联（跨事件队列 PUSH/REMOVE 保序），token→栈槽映射由 View 维护。
+func push_shader_keyed(token: int, shader_name: String) -> void:
+	_shader_keys[token] = push_shader(shader_name)
+
+func remove_shader_keyed(token: int) -> void:
+	if _shader_keys.has(token):
+		remove_shader(int(_shader_keys[token]))
+		_shader_keys.erase(token)
 
 func remove_shader(shader_id: int) -> void:
 	if shader_id > _shader_stack.size() or shader_id < 1:

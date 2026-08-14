@@ -44,6 +44,7 @@ var stage_rect: Dictionary = {}
 var unit_list: Array = []  # duck-type 单位
 var projectile_list: Array = []
 var npc_list: Array = []
+var events: Array[BattleEvent] = []  # 表现事件队列（T4）：Logic 发射入队，View 逐帧 drain 渲染；headless 累积供测试断言
 var alive_units: Dictionary = {}  # camp(int) -> Array
 var alive_alliance_count: int = 0
 var alive_enemy_count: int = 0
@@ -110,6 +111,7 @@ func reset_battle() -> void:
 	time_limit = TIME_LIMIT_DEFAULT
 	projectile_list = []
 	npc_list = []
+	events = []
 	alive_alliance_count = 0
 	alive_enemy_count = 0
 	dead_alliance_count = 0
@@ -132,6 +134,18 @@ func update(dt: float) -> void:
 	while next_tick <= 0.0:
 		tick()
 		next_tick += tick_interval
+
+
+## 表现事件入队（T4）：实体 emit 糖方法经此转发；headless 无消费者时事件累积供测试断言。
+func emit_event(e: BattleEvent) -> void:
+	events.append(e)
+
+
+## 取走并清空当前事件批次（View 逐帧 drain 渲染，同帧消费保时序近等价旧同步直调）。
+func drain_events() -> Array[BattleEvent]:
+	var batch: Array[BattleEvent] = events
+	events = []
+	return batch
 
 
 func tick() -> void:
