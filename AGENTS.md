@@ -372,4 +372,4 @@ procedural UI（动态建节点 + 硬编码坐标）反复试错时，把位置/
 | 2026-07-22 | 初版，基于通用模板 `C:\Users\wgt\ZCodeProject\templates\AGENTS-template.md` 重组；断开与 CLAUDE.md 的软链，AGENTS.md 独立自包含 |
 | 2026-07-24 | 迁移阶段结束，进入 Godot 原生适配/优化阶段：重写「项目阶段」（原「项目铁律」）解除源码强制对齐，解禁设计类 skill，开发协议改为 DESIGN → CODE → VERIFY；红线与工程规范保留不变 |
 | 2026-07-27 | 修订 `.tscn` 红线：结构性改动（节点/ext_resource/uid/unique_id/load_steps）仍禁外部 patch，**纯数值改动**（offset/size/position/scale/color 等）放开允许 Edit 改 + import/CI 兜底。依据：战役 HUD 补全时 4 节点 8 行 offset 替换 + CI 1732/1732 全绿实证风险可控；旧版铁律源于 ext_resource id/uid 错乱致引用断裂，对纯数值改动过严 |
-| 2026-08-14 | 架构重构阶段二（目录与规范统一）：View 职责重划（battle panel 归 `scripts/view/battle/` + 3 通用展示工具下沉 `scripts/ui/`，治反向依赖）；删 ModuleRegistry/InstanceModule 死骨架；feature_catalog 并入 `scripts/data/`（`scripts/server/` 目录消失，顶层 7→6）；新增「tscn↔gd 绑定规范（一轨制）」节；仓库结构描述同步实况 |
+| 2026-08-14 | 架构重构阶段二（目录与规范统一）：View 职责重划（battle panel 归 `scripts/view/battle/` + 3 通用展示工具下沉 `scripts/ui/`，治反向依赖）；删 ModuleRegistry/InstanceModule 死骨架；feature_catalog 并入 `scripts/data/`（`scripts/server/` 目录消失，顶层 6→5）；新增「tscn↔gd 绑定规范（一轨制）」节；仓库结构描述同步实况 |
