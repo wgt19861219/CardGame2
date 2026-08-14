@@ -33,7 +33,7 @@ func _hero_update(hero: Variant, dt: float) -> void:
 
 
 func apply(hero: Variant) -> void:
-	if BattleHeroRegistry.proto_awake(hero.proto):
+	if BattleHeroScripts.proto_awake(hero.proto):
 		hero.custom_data["last_hp"] = int(hero.hp)
 		hero.custom_data["awake_threshold"] = AWAKE_THRESHOLD
 		hero.hero_hooks["update"] = Callable(self, "_hero_update")

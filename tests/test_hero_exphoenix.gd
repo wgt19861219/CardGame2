@@ -59,7 +59,7 @@ func test_exphoenix_ult_hp1_with_shield_dies() -> void:
 	owner.buff_list = [b31]
 	ult.caster = owner
 	hero.skills["ExPhoenix_ult"] = ult
-	BattleHeroRegistry.apply("battle/heroes/ExPhoenix", hero)
+	BattleHeroScripts.apply("battle/heroes/ExPhoenix", hero)
 	var h: Callable = ult.hero_hooks["onAttackFrame"]
 	h.call(ult)
 	assert_eq(owner.died, 1, "P0-3：hp==1 + shield buff 照源直接 die（源 :175-186 抵消是死代码）")
@@ -75,7 +75,7 @@ func test_exphoenix_ult_hp_full_no_die() -> void:
 	owner.hp = 100
 	ult.caster = owner
 	hero.skills["ExPhoenix_ult"] = ult
-	BattleHeroRegistry.apply("battle/heroes/ExPhoenix", hero)
+	BattleHeroScripts.apply("battle/heroes/ExPhoenix", hero)
 	var h: Callable = ult.hero_hooks["onAttackFrame"]
 	h.call(ult)
 	assert_eq(owner.died, 0, "hp!=1 不 die")
@@ -91,7 +91,7 @@ func test_exphoenix_ult_counter1_hp1_dies() -> void:
 	owner.hp = 1
 	ult.caster = owner
 	hero.skills["ExPhoenix_ult"] = ult
-	BattleHeroRegistry.apply("battle/heroes/ExPhoenix", hero)
+	BattleHeroScripts.apply("battle/heroes/ExPhoenix", hero)
 	var h: Callable = ult.hero_hooks["onAttackFrame"]
 	h.call(ult)
 	assert_eq(owner.died, 1, "counter==1 + hp==1 照源 die")

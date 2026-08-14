@@ -9,14 +9,14 @@ const BUFF_OK_ID: int = 137
 
 func _atk2_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var r: Array = BattleSkillEffect.take_effect_on(skill, target, src)
-	if BattleHeroRegistry.proto_awake(skill.caster.proto):
+	if BattleHeroScripts.proto_awake(skill.caster.proto):
 		var binfo: Variant = skill.caster.cm.lookup(&"Buff", "", BUFF_OK_ID)
 		target.add_buff(binfo, skill.caster)
 	return r
 
 
 func apply(hero: Variant) -> void:
-	if BattleHeroRegistry.proto_awake(hero.proto):
+	if BattleHeroScripts.proto_awake(hero.proto):
 		var skill2: Variant = hero.skills.get("OK_atk2")
 		if skill2:
 			skill2.hero_hooks["takeEffectOn"] = Callable(self, "_atk2_take_effect_on")

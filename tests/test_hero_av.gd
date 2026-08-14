@@ -47,7 +47,7 @@ func test_av_hooks_registered() -> void:
 	hero.skills["AV_ult"] = MockSkill.new()
 	hero.skills["AV_atk3"] = MockSkill.new()
 	hero.skills["AV_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/AV", hero)
+	BattleHeroScripts.apply("battle/heroes/AV", hero)
 	var ult: MockSkill = hero.skills["AV_ult"]
 	var atk3: MockSkill = hero.skills["AV_atk3"]
 	var atk2: MockSkill = hero.skills["AV_atk2"]
@@ -68,7 +68,7 @@ func test_av_will_cast() -> void:
 	ult.caster = caster
 	hero.skills["AV_ult"] = ult
 	hero.skills["AV_atk3"] = atk3
-	BattleHeroRegistry.apply("battle/heroes/AV", hero)
+	BattleHeroScripts.apply("battle/heroes/AV", hero)
 	var h: Callable = ult.hero_hooks["willCast"]
 	caster.current_skill = atk3
 	assert_false(h.call(ult), "current==AV_atk3 → false")
@@ -87,7 +87,7 @@ func test_av_atk3_counter0_addbuff() -> void:
 	caster.skills["AV_atk3"] = atk3
 	atk3.caster = caster
 	hero.skills["AV_atk3"] = atk3
-	BattleHeroRegistry.apply("battle/heroes/AV", hero)
+	BattleHeroScripts.apply("battle/heroes/AV", hero)
 	var h: Callable = atk3.hero_hooks["onAttackFrame"]
 	h.call(atk3)
 	assert_true(caster.custom_data.has("AVultposition"), "AVultposition 记录")
@@ -105,7 +105,7 @@ func test_av_atk3_counter11_stop() -> void:
 	caster.position = Vector2(500, 0)
 	atk3.caster = caster
 	hero.skills["AV_atk3"] = atk3
-	BattleHeroRegistry.apply("battle/heroes/AV", hero)
+	BattleHeroScripts.apply("battle/heroes/AV", hero)
 	var h: Callable = atk3.hero_hooks["onAttackFrame"]
 	h.call(atk3)
 	assert_eq(caster.walk_v, Vector2.ZERO, "walk_v 清零")

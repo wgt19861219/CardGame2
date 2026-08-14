@@ -146,7 +146,7 @@ func _init(unit_proto: Dictionary, unit_camp: int, unit_config: Dictionary, cm: 
 	state = State.IDLE
 	var script_path: String = String(info.get("Script", ""))
 	if script_path != "":
-		BattleHeroRegistry.apply(script_path, self)
+		BattleHeroScripts.apply(script_path, self)
 	puppet_stack = [String(info.get("Puppet", ""))]
 
 

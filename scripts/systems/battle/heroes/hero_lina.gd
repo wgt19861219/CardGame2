@@ -11,7 +11,7 @@ const HEAL_TYPE_MP: String = "mp"
 func _atk_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 	var r: Array = BattleSkillEffect.take_effect_on(skill, target, src)
 	var skillawake: Variant = skill.caster.skills.get("Lina_awake")
-	if skillawake != null and BattleHeroRegistry.proto_awake(skill.caster.proto):
+	if skillawake != null and BattleHeroScripts.proto_awake(skill.caster.proto):
 		target.add_buff(skillawake.create_buff(target), skill.caster)
 	return r
 
@@ -28,5 +28,5 @@ func apply(hero: Variant) -> void:
 	var skillatk: Variant = hero.skills.get("Lina_atk")
 	if skillatk:
 		skillatk.hero_hooks["onAttackFrame"] = Callable(self, "_atk_on_attack_frame")
-		if BattleHeroRegistry.proto_awake(hero.proto):
+		if BattleHeroScripts.proto_awake(hero.proto):
 			skillatk.hero_hooks["takeEffectOn"] = Callable(self, "_atk_take_effect_on")

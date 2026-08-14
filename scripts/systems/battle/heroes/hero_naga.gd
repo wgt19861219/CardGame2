@@ -78,7 +78,7 @@ func _hero_update(hero: Variant, dt: float) -> void:
 func apply(hero: Variant) -> void:
 	hero.custom_data["mobcd"] = 0.0
 	hero.ordered_idx = []
-	if BattleHeroRegistry.proto_awake(hero.proto):
+	if BattleHeroScripts.proto_awake(hero.proto):
 		hero.hero_hooks["die"] = Callable(self, "_die")
 		hero.hero_hooks["onHitMiss"] = Callable(self, "_on_hit_miss")  # dodge miss 时 battle_skill_effect 调用
 		hero.hero_hooks["update"] = Callable(self, "_hero_update")

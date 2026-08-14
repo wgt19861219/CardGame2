@@ -27,7 +27,7 @@ func test_ancienttreant_atk2_takeEffectAt_registered() -> void:
 	hero.skills["AncientTreant_atk"] = atk
 	hero.skills["AncientTreant_atk2"] = atk2
 	hero.skills["AncientTreant_atk6"] = atk6
-	BattleHeroRegistry.apply("battle/heroes/AncientTreant", hero)
+	BattleHeroScripts.apply("battle/heroes/AncientTreant", hero)
 	assert_true(atk2.hero_hooks.has("takeEffectAt"), "AncientTreant P1: atk2 takeEffectAt 补挂（源 :53-55，hook 注册完整）")
 	assert_true(atk.hero_hooks.has("createProjectile"), "atk createProjectile 仍挂")
 	assert_true(atk6.hero_hooks.has("start"), "atk6 start 仍挂")

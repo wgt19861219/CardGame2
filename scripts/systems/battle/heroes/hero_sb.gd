@@ -136,7 +136,7 @@ func _awake_update(hero: Variant, dt: float) -> void:
 
 
 func apply(hero: Variant) -> void:
-	if BattleHeroRegistry.proto_awake(hero.proto):
+	if BattleHeroScripts.proto_awake(hero.proto):
 		hero.hero_hooks["update"] = Callable(self, "_awake_update")
 	hero.hero_hooks["reset"] = Callable(self, "_reset")
 	var skillatk2: Variant = hero.skills.get("SB_atk2")

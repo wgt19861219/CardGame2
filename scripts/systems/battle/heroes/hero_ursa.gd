@@ -75,7 +75,7 @@ func _awake_rate(caster: Variant) -> float:
 
 
 func apply(hero: Variant) -> void:
-	if BattleHeroRegistry.proto_awake(hero.proto):
+	if BattleHeroScripts.proto_awake(hero.proto):
 		var skillpasv3: Variant = hero.skills.get("Ursa_pasv3")
 		if skillpasv3:
 			skillpasv3.hero_hooks["getDamage"] = Callable(self, "_pasv3_get_damage")

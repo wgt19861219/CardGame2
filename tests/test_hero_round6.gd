@@ -103,7 +103,7 @@ func test_bosscoco_skill6_scaling_pair() -> void:
 	atk2.info = {"CD": 5.0, "Shape Arg1": 1}
 	caster.skills["BossCoco_atk2"] = atk2
 	hero.skills["BossCoco_atk6"] = ult
-	BattleHeroRegistry.apply("battle/heroes/BossCoco", hero)
+	BattleHeroScripts.apply("battle/heroes/BossCoco", hero)
 	ult.hero_hooks["onAttackFrame"].call(ult)
 	assert_eq(caster.start_scale_calls.size(), 1, "C2 onAttackFrame 调 start_scaling_action")
 	assert_almost_eq(caster.start_scale_calls[0][0], 1.2, 0.01, "C2 scale 值 1.2")
@@ -123,7 +123,7 @@ func test_bosshuskar_skill6_scaling_pair() -> void:
 	atk3.info = {"Plus Attr": "AD", "CD": 5.0}
 	caster.skills["BossHuskar_atk3"] = atk3
 	hero.skills["BossHuskar_atk6"] = ult
-	BattleHeroRegistry.apply("battle/heroes/BossHuskar", hero)
+	BattleHeroScripts.apply("battle/heroes/BossHuskar", hero)
 	ult.hero_hooks["onAttackFrame"].call(ult)
 	assert_eq(caster.start_scale_calls.size(), 1, "H2 onAttackFrame 调 start_scaling_action")
 	assert_almost_eq(caster.start_scale_calls[0][1], 0.8, 0.01, "H2 duration 0.8（源 :15）")
@@ -141,7 +141,7 @@ func test_bosskotl_skill6_scaling_duration() -> void:
 	ult.current_phase = {"duration": 3.0}
 	ult.next_event = {"Time": 1.0}
 	hero.skills["BossKOTL_atk6"] = ult
-	BattleHeroRegistry.apply("battle/heroes/BossKOTL", hero)
+	BattleHeroScripts.apply("battle/heroes/BossKOTL", hero)
 	ult.hero_hooks["onAttackFrame"].call(ult)
 	assert_eq(caster.start_scale_calls.size(), 1, "K1 onAttackFrame 调 start_scaling_action")
 	# 源 skill.lua:164 getDurationFromAttackFrameToEnd = phase.duration - event.Time = 3.0 - 1.0
@@ -159,7 +159,7 @@ func test_bosskotl_atk2_impact_effect() -> void:
 	caster.attribs["PDM"] = 100.0
 	skill2.caster = caster
 	hero.skills["BossKOTL_atk2"] = skill2
-	BattleHeroRegistry.apply("battle/heroes/BossKOTL", hero)
+	BattleHeroScripts.apply("battle/heroes/BossKOTL", hero)
 	var target := MockCaster.new()
 	target.hp = 100
 	target.actor = MockActor.new()
@@ -180,7 +180,7 @@ func test_bosssil_no_manual_and_scaling() -> void:
 	atk4.info = {"CD": 5.0}
 	caster.skills["BossSil_atk4"] = atk4
 	hero.skills["BossSil_atk6"] = ult
-	BattleHeroRegistry.apply("battle/heroes/BossSil", hero)
+	BattleHeroScripts.apply("battle/heroes/BossSil", hero)
 	assert_false(hero.is_action_stage_change_by_manual, "S1: BossSil 不设 manual stage（源 BossSil.lua 全文 48 行无 setActionStageChangeByManual，:76 实指 BB.lua）")
 	ult.hero_hooks["onAttackFrame"].call(ult)
 	assert_eq(caster.start_scale_calls.size(), 1, "S2 onAttackFrame 调 start_scaling_action（源 :21）")
@@ -193,7 +193,7 @@ func test_luna_atk3_no_takeEffectOn_hook() -> void:
 	var hero := MockHero.new()
 	var skill_atk3 := MockSkill.new()
 	hero.skills["Luna_atk3"] = skill_atk3
-	BattleHeroRegistry.apply("battle/heroes/Luna", hero)
+	BattleHeroScripts.apply("battle/heroes/Luna", hero)
 	assert_false(skill_atk3.hero_hooks.has("takeEffectOn"), "Luna-1: 源 init_hero 未挂 takeEffectOn（latent bug），照源不挂")
 	assert_true(skill_atk3.hero_hooks.has("createProjectile"), "Luna atk3 createProjectile 仍挂（源 :44）")
 	assert_true(skill_atk3.hero_hooks.has("power"), "Luna atk3 power 仍挂（源 :45）")
@@ -207,7 +207,7 @@ func test_exbossspider_atk4_crit_mod_zero() -> void:
 	var caster := MockCaster.new()
 	skill_atk4.caster = caster
 	hero.skills["ExBossSpider_atk4"] = skill_atk4
-	BattleHeroRegistry.apply("battle/heroes/ExBossSpider", hero)
+	BattleHeroScripts.apply("battle/heroes/ExBossSpider", hero)
 	var buff: Variant = skill_atk4.hero_hooks["createBuff"].call(skill_atk4, null)
 	# dt=1.0 让 timeTag(0.5) 倒计 ≤0 触发周期 take_damage
 	buff.hero_hooks["update"].call(buff, 1.0)
@@ -225,7 +225,7 @@ func test_bosscoco_finish_dps_mod_negative_multiplied() -> void:
 	atk2.info = {"CD": 5.0, "Shape Arg1": 1}
 	caster.skills["BossCoco_atk2"] = atk2
 	hero.skills["BossCoco_atk6"] = ult
-	BattleHeroRegistry.apply("battle/heroes/BossCoco", hero)
+	BattleHeroScripts.apply("battle/heroes/BossCoco", hero)
 	ult.hero_hooks["finish"].call(ult)
 	# 源 :32 dps_mod and dps_mod*1.5：负数 truthy → -5*1.5=-7.5（旧 >0 守卫不改，偏离源）
 	assert_almost_eq(float(caster.config["dps_mod"]), -7.5, 0.01, "C4: dps_mod 负数照源 ×MULT（Lua truthy，!= null 守卫非 >0）")

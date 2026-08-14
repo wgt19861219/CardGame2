@@ -27,7 +27,7 @@ func test_sf_ult_no_power_hook() -> void:
 	var skill2 := MockSkill.new()
 	hero.skills["SF_ult"] = skillult
 	hero.skills["SF_atk2"] = skill2
-	BattleHeroRegistry.apply("battle/heroes/SF", hero)
+	BattleHeroScripts.apply("battle/heroes/SF", hero)
 	assert_false(skillult.hero_hooks.has("power"), "SF P0: skill5_power 死代码不挂 → SF_ult 走默认 power")
 	assert_true(skill2.hero_hooks.has("finish"), "SF_atk2 finish 仍挂（源 :55 注册）")
 	assert_true(skill2.hero_hooks.has("takeEffectAt"), "SF_atk2 takeEffectAt 仍挂（源 :54 注册）")
@@ -40,6 +40,6 @@ func test_cm_ult_no_hook() -> void:
 	var hero := MockHero.new()
 	var skillult := MockSkill.new()
 	hero.skills["CM_ult"] = skillult
-	BattleHeroRegistry.apply("battle/heroes/CM", hero)
+	BattleHeroScripts.apply("battle/heroes/CM", hero)
 	assert_false(skillult.hero_hooks.has("start"), "CM P0: skill3_start 死代码不挂 → CM_ult 走默认 start")
 	assert_false(skillult.hero_hooks.has("takeEffectAt"), "CM P0: skill3_takeEffectAt 死代码不挂 → CM_ult 走默认 take_effect_at")

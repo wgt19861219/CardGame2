@@ -1,6 +1,6 @@
 extends GutTest
 # Phase 2.7 英雄 hook 基础设施验证。
-# 验证 BattleHeroRegistry 分发 + 英雄脚本 apply 注册 hero_hooks + wrapper 行为（OD INT 免疫）。
+# 验证 BattleHeroScripts 分发（阶段三 T2 前为 BattleHeroRegistry） + 英雄脚本 apply 注册 hero_hooks + wrapper 行为（OD INT 免疫）。
 
 
 class MockSkill:
@@ -70,7 +70,7 @@ class MockEngine:
 func test_viper_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Viper_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Viper", hero)
+	BattleHeroScripts.apply("battle/heroes/Viper", hero)
 	assert_true(hero.skills["Viper_ult"].hero_hooks.has("createProjectile"), "Viper createProjectile hook 注册")
 	assert_true(hero.skills["Viper_ult"].hero_hooks["createProjectile"].is_valid(), "hook Callable 有效")
 
@@ -79,7 +79,7 @@ func test_viper_hook_registered() -> void:
 func test_sil_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Sil_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Sil", hero)
+	BattleHeroScripts.apply("battle/heroes/Sil", hero)
 	assert_true(hero.skills["Sil_atk3"].hero_hooks.has("takeEffectOn"), "Sil takeEffectOn hook 注册")
 
 
@@ -88,7 +88,7 @@ func test_od_int_immune_returns_false() -> void:
 	var hero := MockHero.new()
 	var skill := MockSkill.new()
 	hero.skills["OD_ult"] = skill
-	BattleHeroRegistry.apply("battle/heroes/OD", hero)
+	BattleHeroScripts.apply("battle/heroes/OD", hero)
 	var target := MockSkill.new()
 	target.info["Main Attrib"] = "INT"
 	var h: Callable = skill.hero_hooks["takeEffectOn"]
@@ -100,7 +100,7 @@ func test_od_int_immune_returns_false() -> void:
 func test_unknown_script_skipped() -> void:
 	var hero := MockHero.new()
 	hero.skills["Foo_atk"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Unknown", hero)
+	BattleHeroScripts.apply("battle/heroes/Unknown", hero)
 	assert_false(hero.skills["Foo_atk"].hero_hooks.has("takeEffectOn"), "未知 Script 路径安全跳过")
 
 
@@ -108,7 +108,7 @@ func test_unknown_script_skipped() -> void:
 func test_mortar_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Mortar_atk"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Mortar", hero)
+	BattleHeroScripts.apply("battle/heroes/Mortar", hero)
 	assert_true(hero.skills["Mortar_atk"].hero_hooks.has("createProjectile"), "Mortar createProjectile hook 注册")
 
 
@@ -116,7 +116,7 @@ func test_mortar_hook_registered() -> void:
 func test_gorilla_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Gorilla_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Gorilla", hero)
+	BattleHeroScripts.apply("battle/heroes/Gorilla", hero)
 	assert_true(hero.skills["Gorilla_atk2"].hero_hooks.has("createProjectile"), "Gorilla createProjectile hook 注册")
 
 
@@ -124,7 +124,7 @@ func test_gorilla_hook_registered() -> void:
 func test_archer_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Archer_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Archer", hero)
+	BattleHeroScripts.apply("battle/heroes/Archer", hero)
 	assert_true(hero.skills["Archer_atk2"].hero_hooks.has("createProjectile"), "Archer createProjectile hook 注册")
 
 
@@ -132,7 +132,7 @@ func test_archer_hook_registered() -> void:
 func test_dr_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["DR_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/DR", hero)
+	BattleHeroScripts.apply("battle/heroes/DR", hero)
 	assert_true(hero.skills["DR_ult"].hero_hooks.has("createProjectile"), "DR createProjectile hook 注册")
 
 
@@ -140,7 +140,7 @@ func test_dr_hook_registered() -> void:
 func test_pugna_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Pugna_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Pugna", hero)
+	BattleHeroScripts.apply("battle/heroes/Pugna", hero)
 	assert_true(hero.skills["Pugna_ult"].hero_hooks.has("takeEffectOn"), "Pugna takeEffectOn hook 注册")
 
 
@@ -148,7 +148,7 @@ func test_pugna_hook_registered() -> void:
 func test_razor_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Razor_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Razor", hero)
+	BattleHeroScripts.apply("battle/heroes/Razor", hero)
 	assert_true(hero.skills["Razor_atk3"].hero_hooks.has("takeEffectOn"), "Razor takeEffectOn hook 注册")
 
 
@@ -156,7 +156,7 @@ func test_razor_hook_registered() -> void:
 func test_huskar_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Huskar_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Huskar", hero)
+	BattleHeroScripts.apply("battle/heroes/Huskar", hero)
 	assert_true(hero.skills["Huskar_ult"].hero_hooks.has("takeEffectOn"), "Huskar takeEffectOn hook 注册")
 
 
@@ -164,7 +164,7 @@ func test_huskar_hook_registered() -> void:
 func test_qop_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["QOP_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/QOP", hero)
+	BattleHeroScripts.apply("battle/heroes/QOP", hero)
 	assert_true(hero.skills["QOP_atk3"].hero_hooks.has("start"), "QOP start hook 注册")
 
 
@@ -172,7 +172,7 @@ func test_qop_hook_registered() -> void:
 func test_panda_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Panda_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Panda", hero)
+	BattleHeroScripts.apply("battle/heroes/Panda", hero)
 	assert_true(hero.skills["Panda_ult"].hero_hooks.has("onAttackFrame"), "Panda onAttackFrame hook 注册")
 
 
@@ -180,7 +180,7 @@ func test_panda_hook_registered() -> void:
 func test_cw_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["CW_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/CW", hero)
+	BattleHeroScripts.apply("battle/heroes/CW", hero)
 	assert_true(hero.skills["CW_atk3"].hero_hooks.has("start"), "CW start hook 注册")
 	assert_true(hero.skills["CW_atk3"].hero_hooks.has("onAttackFrame"), "CW onAttackFrame hook 注册")
 
@@ -189,7 +189,7 @@ func test_cw_hook_registered() -> void:
 func test_pom_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["POM_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/POM", hero)
+	BattleHeroScripts.apply("battle/heroes/POM", hero)
 	assert_true(hero.skills["POM_atk2"].hero_hooks.has("start"), "POM start hook 注册")
 	assert_true(hero.skills["POM_atk2"].hero_hooks.has("onAttackFrame"), "POM onAttackFrame hook 注册")
 
@@ -198,7 +198,7 @@ func test_pom_hook_registered() -> void:
 func test_axe_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Axe_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Axe", hero)
+	BattleHeroScripts.apply("battle/heroes/Axe", hero)
 	assert_true(hero.skills["Axe_ult"].hero_hooks.has("takeEffectOn"), "Axe takeEffectOn hook 注册")
 	assert_true(hero.skills["Axe_ult"].hero_hooks.has("willCast"), "Axe willCast hook 注册")
 
@@ -209,7 +209,7 @@ func test_om_hooks_registered() -> void:
 	hero.skills["OM_ult"] = MockSkill.new()
 	hero.skills["OM_atk2"] = MockSkill.new()
 	hero.skills["OM_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/OM", hero)
+	BattleHeroScripts.apply("battle/heroes/OM", hero)
 	assert_true(hero.skills["OM_ult"].hero_hooks.has("takeEffectOn"), "OM_ult takeEffectOn hook 注册")
 	assert_true(hero.skills["OM_atk2"].hero_hooks.has("createProjectile"), "OM_atk2 createProjectile hook 注册")
 	assert_true(hero.skills["OM_atk3"].hero_hooks.has("takeEffectOn"), "OM_atk3 takeEffectOn hook 注册")
@@ -219,7 +219,7 @@ func test_om_hooks_registered() -> void:
 func test_lich_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Lich_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Lich", hero)
+	BattleHeroScripts.apply("battle/heroes/Lich", hero)
 	assert_true(hero.skills["Lich_ult"].hero_hooks.has("createProjectile"), "Lich createProjectile hook 注册")
 
 
@@ -228,7 +228,7 @@ func test_jugg_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["JUGG_ult"] = MockSkill.new()
 	hero.skills["JUGG_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/JUGG", hero)
+	BattleHeroScripts.apply("battle/heroes/JUGG", hero)
 	assert_true(hero.skills["JUGG_ult"].hero_hooks.has("start"), "JUGG_ult start hook 注册")
 	assert_true(hero.skills["JUGG_atk2"].hero_hooks.has("finish"), "JUGG_atk2 finish hook 注册")
 
@@ -237,7 +237,7 @@ func test_jugg_hooks_registered() -> void:
 func test_coco_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Coco_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Coco", hero)
+	BattleHeroScripts.apply("battle/heroes/Coco", hero)
 	assert_true(hero.skills["Coco_ult"].hero_hooks.has("launchPoint"), "Coco launchPoint hook 注册")
 
 
@@ -246,7 +246,7 @@ func test_am_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["AM_ult"] = MockSkill.new()
 	hero.skills["AM_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/AM", hero)
+	BattleHeroScripts.apply("battle/heroes/AM", hero)
 	assert_true(hero.skills["AM_ult"].hero_hooks.has("takeEffectAt"), "AM_ult takeEffectAt hook 注册")
 	assert_true(hero.skills["AM_atk2"].hero_hooks.has("start"), "AM_atk2 start hook 注册")
 
@@ -255,7 +255,7 @@ func test_am_hooks_registered() -> void:
 func test_bone_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Bone_awake"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Bone", hero)
+	BattleHeroScripts.apply("battle/heroes/Bone", hero)
 	assert_true(hero.skills["Bone_awake"].hero_hooks.has("selectTarget"), "Bone selectTarget hook 注册")
 	assert_true(hero.skills["Bone_awake"].hero_hooks.has("onAttackFrame"), "Bone onAttackFrame hook 注册")
 
@@ -264,7 +264,7 @@ func test_bone_hooks_registered() -> void:
 func test_footman_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Footman_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Footman", hero)
+	BattleHeroScripts.apply("battle/heroes/Footman", hero)
 	assert_true(hero.skills["Footman_atk2"].hero_hooks.has("createBuff"), "Footman createBuff hook 注册")
 
 
@@ -274,7 +274,7 @@ func test_loa_hooks_registered() -> void:
 	hero.skills["LOA_ult"] = MockSkill.new()
 	hero.skills["LOA_atk2"] = MockSkill.new()
 	hero.skills["LOA_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/LOA", hero)
+	BattleHeroScripts.apply("battle/heroes/LOA", hero)
 	assert_true(hero.skills["LOA_ult"].hero_hooks.has("createBuff"), "LOA_ult createBuff hook 注册")
 	assert_true(hero.skills["LOA_atk2"].hero_hooks.has("takeEffectOn"), "LOA_atk2 takeEffectOn hook 注册")
 	assert_true(hero.skills["LOA_atk3"].hero_hooks.has("createBuff"), "LOA_atk3 createBuff hook 注册")
@@ -284,7 +284,7 @@ func test_loa_hooks_registered() -> void:
 func test_sorceress_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Sorceress_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Sorceress", hero)
+	BattleHeroScripts.apply("battle/heroes/Sorceress", hero)
 	assert_true(hero.skills["Sorceress_atk2"].hero_hooks.has("createBuff"), "Sorceress createBuff hook 注册")
 
 
@@ -292,7 +292,7 @@ func test_sorceress_hook_registered() -> void:
 func test_snk_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["SNK_pasv2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/SNK", hero)
+	BattleHeroScripts.apply("battle/heroes/SNK", hero)
 	assert_true(hero.hero_hooks.has("die"), "SNK die hook 注册")
 	assert_true(hero.hero_hooks.has("onActionFinished"), "SNK onActionFinished hook 注册")
 	assert_true(hero.hero_hooks.has("update"), "SNK update hook 注册")
@@ -302,7 +302,7 @@ func test_snk_hooks_registered() -> void:
 func test_ench_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Ench_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Ench", hero)
+	BattleHeroScripts.apply("battle/heroes/Ench", hero)
 	assert_true(hero.skills["Ench_atk3"].hero_hooks.has("takeEffectOn"), "Ench takeEffectOn hook 注册")
 
 
@@ -310,7 +310,7 @@ func test_ench_hook_registered() -> void:
 func test_sp_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["SP_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/SP", hero)
+	BattleHeroScripts.apply("battle/heroes/SP", hero)
 	assert_true(hero.skills["SP_atk3"].hero_hooks.has("createBuff"), "SP createBuff hook 注册")
 
 
@@ -318,7 +318,7 @@ func test_sp_hook_registered() -> void:
 func test_thd_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["THD_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/THD", hero)
+	BattleHeroScripts.apply("battle/heroes/THD", hero)
 	assert_true(hero.skills["THD_ult"].hero_hooks.has("createBuff"), "THD createBuff hook 注册")
 
 
@@ -326,7 +326,7 @@ func test_thd_hook_registered() -> void:
 func test_vs_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["VS_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/VS", hero)
+	BattleHeroScripts.apply("battle/heroes/VS", hero)
 	assert_true(hero.skills["VS_ult"].hero_hooks.has("takeEffectOn"), "VS takeEffectOn hook 注册")
 
 
@@ -335,7 +335,7 @@ func test_sniper_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Sniper_ult"] = MockSkill.new()
 	hero.skills["Sniper_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Sniper", hero)
+	BattleHeroScripts.apply("battle/heroes/Sniper", hero)
 	assert_true(hero.skills["Sniper_ult"].hero_hooks.has("start"), "Sniper_ult start hook 注册")
 	assert_true(hero.skills["Sniper_atk3"].hero_hooks.has("createProjectile"), "Sniper_atk3 createProjectile hook 注册")
 	assert_true(hero.hero_hooks.has("castManualSkill"), "Sniper castManualSkill hook 注册")
@@ -345,7 +345,7 @@ func test_sniper_hooks_registered() -> void:
 func test_suicidegoblinjr_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["SuicideGoblinjr_atk"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/SuicideGoblinjr", hero)
+	BattleHeroScripts.apply("battle/heroes/SuicideGoblinjr", hero)
 	assert_true(hero.skills["SuicideGoblinjr_atk"].hero_hooks.has("start"), "SuicideGoblinjr start hook 注册")
 	assert_true(hero.skills["SuicideGoblinjr_atk"].hero_hooks.has("takeEffectAt"), "SuicideGoblinjr takeEffectAt hook 注册")
 
@@ -355,7 +355,7 @@ func test_nec_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["NEC_ult"] = MockSkill.new()
 	hero.skills["NEC_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/NEC", hero)
+	BattleHeroScripts.apply("battle/heroes/NEC", hero)
 	assert_true(hero.hero_hooks.has("castManualSkill"), "NEC castManualSkill hook 注册")
 	assert_true(hero.skills["NEC_ult"].hero_hooks.has("takeEffectOn"), "NEC_ult takeEffectOn hook 注册")
 	assert_true(hero.skills["NEC_ult"].hero_hooks.has("update"), "NEC_ult update hook 注册")
@@ -366,7 +366,7 @@ func test_nec_hooks_registered() -> void:
 func test_tiny_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Tiny_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Tiny", hero)
+	BattleHeroScripts.apply("battle/heroes/Tiny", hero)
 	assert_true(hero.skills["Tiny_ult"].hero_hooks.has("onAttackFrame"), "Tiny onAttackFrame hook 注册")
 	assert_true(hero.skills["Tiny_ult"].hero_hooks.has("update"), "Tiny update hook 注册")
 
@@ -376,7 +376,7 @@ func test_luna_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Luna_ult"] = MockSkill.new()
 	hero.skills["Luna_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Luna", hero)
+	BattleHeroScripts.apply("battle/heroes/Luna", hero)
 	assert_true(hero.skills["Luna_ult"].hero_hooks.has("start"), "Luna_ult start hook 注册")
 	assert_true(hero.skills["Luna_atk3"].hero_hooks.has("createProjectile"), "Luna_atk3 createProjectile hook 注册")
 	assert_true(hero.skills["Luna_atk3"].hero_hooks.has("power"), "Luna_atk3 power hook 注册")
@@ -387,7 +387,7 @@ func test_med_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Med_atk2"] = MockSkill.new()
 	hero.skills["Med_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Med", hero)
+	BattleHeroScripts.apply("battle/heroes/Med", hero)
 	assert_true(hero.skills["Med_atk2"].hero_hooks.has("createProjectile"), "Med_atk2 createProjectile hook 注册")
 	assert_true(hero.skills["Med_atk2"].hero_hooks.has("power"), "Med_atk2 power hook 注册")
 	assert_true(hero.skills["Med_atk3"].hero_hooks.has("takeEffectAt"), "Med_atk3 takeEffectAt hook 注册")
@@ -399,7 +399,7 @@ func test_sf_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["SF_ult"] = MockSkill.new()
 	hero.skills["SF_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/SF", hero)
+	BattleHeroScripts.apply("battle/heroes/SF", hero)
 	assert_true(hero.hero_hooks.has("update"), "SF update hook 注册")
 	assert_true(hero.hero_hooks.has("handleUnitDieEvent"), "SF handleUnitDieEvent hook 注册")
 	assert_false(hero.skills["SF_ult"].hero_hooks.has("power"), "SF_ult power 死代码不挂（源 init_hero 未 override）→ 走默认 power")
@@ -410,7 +410,7 @@ func test_sf_hooks_registered() -> void:
 func test_spider_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Spider_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Spider", hero)
+	BattleHeroScripts.apply("battle/heroes/Spider", hero)
 	assert_true(hero.skills["Spider_atk2"].hero_hooks.has("createBuff"), "Spider createBuff hook 注册")
 	assert_true(hero.skills["Spider_atk2"].hero_hooks.has("canCastWithTarget"), "Spider canCastWithTarget hook 注册")
 
@@ -420,7 +420,7 @@ func test_silverdragon_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["SilverDragon_atk2_ice"] = MockSkill.new()
 	hero.skills["SilverDragon_atk_ice"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/SilverDragon", hero)
+	BattleHeroScripts.apply("battle/heroes/SilverDragon", hero)
 	assert_true(hero.skills["SilverDragon_atk2_ice"].hero_hooks.has("createBuff"), "SilverDragon atk2_ice createBuff hook 注册")
 	assert_true(hero.skills["SilverDragon_atk_ice"].hero_hooks.has("createBuff"), "SilverDragon atk_ice createBuff hook 注册")
 
@@ -431,7 +431,7 @@ func test_wd_hooks_registered() -> void:
 	hero.skills["WD_atk3"] = MockSkill.new()
 	hero.skills["WD_atk4"] = MockSkill.new()
 	hero.skills["WD_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/WD", hero)
+	BattleHeroScripts.apply("battle/heroes/WD", hero)
 	assert_true(hero.skills["WD_atk3"].hero_hooks.has("createProjectile"), "WD_atk3 createProjectile hook 注册")
 	assert_true(hero.skills["WD_atk3"].hero_hooks.has("getDamage"), "WD_atk3 getDamage hook 注册")
 	assert_true(hero.skills["WD_atk3"].hero_hooks.has("createBuff"), "WD_atk3 createBuff hook 注册")
@@ -444,7 +444,7 @@ func test_troll_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.ai = MockAi.new()
 	hero.skills["Troll_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Troll", hero)
+	BattleHeroScripts.apply("battle/heroes/Troll", hero)
 	assert_true(hero.ai.hero_hooks.has("walkTo"), "Troll ai.walkTo hook 注册")
 
 
@@ -453,7 +453,7 @@ func test_ancienttreant_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["AncientTreant_atk"] = MockSkill.new()
 	hero.skills["AncientTreant_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/AncientTreant", hero)
+	BattleHeroScripts.apply("battle/heroes/AncientTreant", hero)
 	assert_true(hero.skills["AncientTreant_atk"].hero_hooks.has("createProjectile"), "AncientTreant atk createProjectile hook 注册")
 	assert_true(hero.skills["AncientTreant_atk6"].hero_hooks.has("finish"), "AncientTreant atk6 finish hook 注册")
 
@@ -462,7 +462,7 @@ func test_ancienttreant_hooks_registered() -> void:
 func test_kotl_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["KOTL_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/KOTL", hero)
+	BattleHeroScripts.apply("battle/heroes/KOTL", hero)
 	assert_true(hero.skills["KOTL_ult"].hero_hooks.has("canTrigger"), "KOTL canTrigger hook 注册")
 	assert_true(hero.skills["KOTL_ult"].hero_hooks.has("trigger"), "KOTL trigger hook 注册")
 	assert_true(hero.skills["KOTL_ult"].hero_hooks.has("interrupt"), "KOTL interrupt hook 注册")
@@ -476,7 +476,7 @@ func test_ta_hooks_registered() -> void:
 	hero.skills["TA_ult"] = MockSkill.new()
 	hero.skills["TA_atk2"] = MockSkill.new()
 	hero.skills["TA_atk4"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/TA", hero)
+	BattleHeroScripts.apply("battle/heroes/TA", hero)
 	assert_true(hero.hero_hooks.has("handleUnitDieEvent"), "TA handleUnitDieEvent hook 注册")
 	assert_true(hero.skills["TA_ult"].hero_hooks.has("selectTarget"), "TA_ult selectTarget hook 注册")
 	assert_true(hero.skills["TA_ult"].hero_hooks.has("takeEffectAt"), "TA_ult takeEffectAt hook 注册")
@@ -488,7 +488,7 @@ func test_ta_hooks_registered() -> void:
 func test_dp_hook_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["DP_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/DP", hero)
+	BattleHeroScripts.apply("battle/heroes/DP", hero)
 	assert_true(hero.skills["DP_ult"].hero_hooks.has("createBuff"), "DP createBuff hook 注册")
 
 
@@ -497,7 +497,7 @@ func test_tk_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["TK_ult"] = MockSkill.new()
 	hero.skills["TK_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/TK", hero)
+	BattleHeroScripts.apply("battle/heroes/TK", hero)
 	assert_true(hero.skills["TK_ult"].hero_hooks.has("onAttackFrame"), "TK_ult onAttackFrame hook 注册")
 	assert_true(hero.skills["TK_ult"].hero_hooks.has("createProjectile"), "TK_ult createProjectile hook 注册")
 	assert_true(hero.skills["TK_atk3"].hero_hooks.has("createProjectile"), "TK_atk3 createProjectile hook 注册")
@@ -507,7 +507,7 @@ func test_tk_hooks_registered() -> void:
 func test_necromancersr_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Necromancersr_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Necromancersr", hero)
+	BattleHeroScripts.apply("battle/heroes/Necromancersr", hero)
 	assert_true(hero.skills["Necromancersr_atk2"].hero_hooks.has("selectTarget"), "Necromancersr selectTarget hook 注册")
 	assert_true(hero.skills["Necromancersr_atk2"].hero_hooks.has("onAttackFrame"), "Necromancersr onAttackFrame hook 注册")
 	assert_true(hero.skills["Necromancersr_atk2"].hero_hooks.has("takeEffectOn"), "Necromancersr takeEffectOn hook 注册")
@@ -519,7 +519,7 @@ func test_wl_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["WL_ult"] = MockSkill.new()
 	hero.skills["WL_atk2"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/WL", hero)
+	BattleHeroScripts.apply("battle/heroes/WL", hero)
 	assert_true(hero.skills["WL_ult"].hero_hooks.has("createProjectile"), "WL_ult createProjectile hook 注册")
 	assert_true(hero.skills["WL_ult"].hero_hooks.has("takeEffectAt"), "WL_ult takeEffectAt hook 注册")
 	assert_true(hero.skills["WL_atk2"].hero_hooks.has("createBuff"), "WL_atk2 createBuff hook 注册")
@@ -532,7 +532,7 @@ func test_tb_hooks_registered() -> void:
 	hero.skills["TB_ult"] = MockSkill.new()
 	hero.skills["TB_atk2"] = MockSkill.new()
 	hero.skills["TB_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/TB", hero)
+	BattleHeroScripts.apply("battle/heroes/TB", hero)
 	assert_true(hero.skills["TB_ult"].hero_hooks.has("createBuff"), "TB_ult createBuff hook 注册")
 	assert_true(hero.skills["TB_ult"].hero_hooks.has("canCastWithTarget"), "TB_ult canCastWithTarget hook 注册")
 	assert_true(hero.skills["TB_ult"].hero_hooks.has("finish"), "TB_ult finish hook 注册")
@@ -549,7 +549,7 @@ func test_pl_hooks_registered() -> void:
 	hero.skills["Lancer_atk2"] = MockSkill.new()
 	hero.skills["Lancer_atk"] = MockSkill.new()
 	hero.skills["Lancer_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/PL", hero)
+	BattleHeroScripts.apply("battle/heroes/PL", hero)
 	assert_true(hero.skills["Lancer_ult"].hero_hooks.has("power"), "Lancer_ult power hook 注册")
 	assert_true(hero.skills["Lancer_ult"].hero_hooks.has("onAttackFrame"), "Lancer_ult onAttackFrame hook 注册")
 	assert_true(hero.skills["Lancer_atk"].hero_hooks.has("onPhaseFinished"), "Lancer_atk onPhaseFinished hook 注册")
@@ -568,7 +568,7 @@ func test_titanhead_hooks_registered() -> void:
 	hero.skills["TitanHead_atk4"] = MockSkill.new()
 	hero.skills["TitanHead_atk5"] = MockSkill.new()
 	hero.skills["TitanHead_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/TitanHead", hero)
+	BattleHeroScripts.apply("battle/heroes/TitanHead", hero)
 	assert_true(hero.skills["TitanHead_atk"].hero_hooks.has("createProjectile"), "TitanHead atk createProjectile hook 注册")
 	assert_true(hero.skills["TitanHead_atk2"].hero_hooks.has("power"), "TitanHead atk2 power hook 注册")
 	assert_true(hero.skills["TitanHead_atk3"].hero_hooks.has("takeEffectAt"), "TitanHead atk3 takeEffectAt hook 注册")
@@ -585,7 +585,7 @@ func test_titanhead_atk6_start_passes_null() -> void:
 	var atk6 := MockSkill.new()
 	atk6.caster = hero  # _atk6_start 访问 caster.custom_data
 	hero.skills["TitanHead_atk6"] = atk6
-	BattleHeroRegistry.apply("battle/heroes/TitanHead", hero)
+	BattleHeroScripts.apply("battle/heroes/TitanHead", hero)
 	# 源 :205 basefunc(skill) 不传 target → _start_default(null)
 	atk6.hero_hooks["start"].call(atk6, hero)  # _target=hero 传入但应被忽略
 	assert_null(atk6.start_default_arg, "TitanHead atk6 start _start_default 收到 null（源 :205 basefunc 不传 target）")
@@ -596,7 +596,7 @@ func test_bosssil_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["BossSil_atk3"] = MockSkill.new()
 	hero.skills["BossSil_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/BossSil", hero)
+	BattleHeroScripts.apply("battle/heroes/BossSil", hero)
 	assert_true(hero.skills["BossSil_atk3"].hero_hooks.has("takeEffectOn"), "BossSil atk3 takeEffectOn hook 注册")
 	assert_true(hero.skills["BossSil_atk6"].hero_hooks.has("finish"), "BossSil atk6 finish hook 注册")
 
@@ -607,7 +607,7 @@ func test_bosscoco_hooks_registered() -> void:
 	hero.skills["BossCoco_atk4"] = MockSkill.new()
 	hero.skills["BossCoco_atk5"] = MockSkill.new()
 	hero.skills["BossCoco_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/BossCoco", hero)
+	BattleHeroScripts.apply("battle/heroes/BossCoco", hero)
 	assert_true(hero.skills["BossCoco_atk4"].hero_hooks.has("launchPoint"), "BossCoco atk4 launchPoint hook 注册")
 	assert_true(hero.skills["BossCoco_atk5"].hero_hooks.has("takeEffectOn"), "BossCoco atk5 takeEffectOn hook 注册")
 	assert_true(hero.skills["BossCoco_atk6"].hero_hooks.has("finish"), "BossCoco atk6 finish hook 注册")
@@ -618,7 +618,7 @@ func test_bosshuskar_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["BossHuskar_atk3"] = MockSkill.new()
 	hero.skills["BossHuskar_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/BossHuskar", hero)
+	BattleHeroScripts.apply("battle/heroes/BossHuskar", hero)
 	assert_true(hero.skills["BossHuskar_atk3"].hero_hooks.has("takeEffectOn"), "BossHuskar atk3 takeEffectOn hook 注册")
 	assert_true(hero.skills["BossHuskar_atk3"].hero_hooks.has("finish"), "BossHuskar atk3 finish hook 注册")
 
@@ -629,7 +629,7 @@ func test_bosskotl_hooks_registered() -> void:
 	hero.skills["BossKOTL_atk4"] = MockSkill.new()
 	hero.skills["BossKOTL_atk2"] = MockSkill.new()
 	hero.skills["BossKOTL_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/BossKOTL", hero)
+	BattleHeroScripts.apply("battle/heroes/BossKOTL", hero)
 	assert_true(hero.skills["BossKOTL_atk4"].hero_hooks.has("canTrigger"), "BossKOTL atk4 canTrigger hook 注册")
 	assert_true(hero.skills["BossKOTL_atk4"].hero_hooks.has("power"), "BossKOTL atk4 power hook 注册")
 	assert_true(hero.skills["BossKOTL_atk2"].hero_hooks.has("takeEffectOn"), "BossKOTL atk2 takeEffectOn hook 注册")
@@ -643,7 +643,7 @@ func test_exsilverdragon_hooks_registered() -> void:
 	hero.skills["ExSilverDragon_atk2_ice"] = MockSkill.new()
 	hero.skills["ExSilverDragon_atk_ice"] = MockSkill.new()
 	hero.skills["ExSilverDragon_frozen"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/ExSilverDragon", hero)
+	BattleHeroScripts.apply("battle/heroes/ExSilverDragon", hero)
 	assert_true(hero.hero_hooks.has("update"), "ExSilverDragon update hook 注册")
 	assert_true(hero.skills["ExSilverDragon_atk3_ice"].hero_hooks.has("takeEffectAt"), "ExSilverDragon atk3_ice takeEffectAt hook 注册")
 	assert_true(hero.skills["ExSilverDragon_atk2_ice"].hero_hooks.has("createBuff"), "ExSilverDragon atk2_ice createBuff hook 注册")
@@ -659,7 +659,7 @@ func test_kael_hooks_registered() -> void:
 	hero.skills["Kael_book"] = MockSkill.new()
 	hero.skills["Kael_atk"] = MockSkill.new()
 	hero.skills["Kael_fire3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Kael", hero)
+	BattleHeroScripts.apply("battle/heroes/Kael", hero)
 	assert_true(hero.hero_hooks.has("update"), "Kael update hook 注册")
 	assert_true(hero.hero_hooks.has("castSkill"), "Kael castSkill hook 注册")
 	assert_true(hero.hero_hooks.has("reset"), "Kael reset hook 注册")
@@ -679,7 +679,7 @@ func test_exbosshuskar_hooks_registered() -> void:
 	hero.skills["ExBossHuskar_atk2"] = MockSkill.new()
 	hero.skills["ExBossHuskar_atk3"] = MockSkill.new()
 	hero.skills["ExBossHuskar_atk5"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/ExBossHuskar", hero)
+	BattleHeroScripts.apply("battle/heroes/ExBossHuskar", hero)
 	assert_true(hero.hero_hooks.has("reset"), "ExBossHuskar 单位 reset hook 注册")
 	assert_true(hero.skills["ExBossHuskar_atk2"].hero_hooks.has("createProjectile"), "ExBossHuskar atk2 createProjectile hook 注册")
 	assert_true(hero.skills["ExBossHuskar_atk3"].hero_hooks.has("takeEffectOn"), "ExBossHuskar atk3 takeEffectOn hook 注册")
@@ -691,7 +691,7 @@ func test_exbossspider_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["ExBossSpider_atk2"] = MockSkill.new()
 	hero.skills["ExBossSpider_atk4"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/ExBossSpider", hero)
+	BattleHeroScripts.apply("battle/heroes/ExBossSpider", hero)
 	assert_true(hero.hero_hooks.has("reset"), "ExBossSpider 单位 reset hook 注册")
 	assert_true(hero.skills["ExBossSpider_atk2"].hero_hooks.has("start"), "ExBossSpider atk2 start hook 注册")
 	assert_true(hero.skills["ExBossSpider_atk2"].hero_hooks.has("onAttackFrame"), "ExBossSpider atk2 onAttackFrame hook 注册")
@@ -705,7 +705,7 @@ func test_bosstb_hooks_registered() -> void:
 	hero.skills["BossTB_atk2"] = MockSkill.new()
 	hero.skills["BossTB_atk3"] = MockSkill.new()
 	hero.skills["BossTB_atk6"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/BossTB", hero)
+	BattleHeroScripts.apply("battle/heroes/BossTB", hero)
 	assert_true(hero.skills["BossTB_atk2"].hero_hooks.has("takeEffectAt"), "BossTB atk2 takeEffectAt hook 注册")
 	assert_true(hero.skills["BossTB_atk6"].hero_hooks.has("createBuff"), "BossTB atk6 createBuff hook 注册")
 	assert_true(hero.skills["BossTB_atk6"].hero_hooks.has("finish"), "BossTB atk6 finish hook 注册")
@@ -721,7 +721,7 @@ func test_exloz_hooks_registered() -> void:
 	hero.skills["ExLoz_ult"] = MockSkill.new()
 	hero.skills["ExLoz_atk2"] = MockSkill.new()
 	hero.skills["ExLoz_atk4"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/ExLoz", hero)
+	BattleHeroScripts.apply("battle/heroes/ExLoz", hero)
 	assert_true(hero.skills["ExLoz_ult"].hero_hooks.has("createProjectile"), "ExLoz ult createProjectile hook 注册")
 	assert_true(hero.skills["ExLoz_atk2"].hero_hooks.has("start"), "ExLoz atk2 start hook 注册")
 	assert_true(hero.skills["ExLoz_atk2"].hero_hooks.has("createBuff"), "ExLoz atk2 createBuff hook 注册")
@@ -736,7 +736,7 @@ func test_sb_hooks_registered() -> void:
 	hero.engine = MockEngine.new()
 	hero.skills["SB_atk2"] = MockSkill.new()
 	hero.skills["SB_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/SB", hero)
+	BattleHeroScripts.apply("battle/heroes/SB", hero)
 	assert_true(hero.hero_hooks.has("reset"), "SB 单位 reset hook 注册")
 	assert_true(hero.skills["SB_atk2"].hero_hooks.has("start"), "SB atk2 start hook 注册")
 	assert_true(hero.skills["SB_atk2"].hero_hooks.has("onAttackFrame"), "SB atk2 onAttackFrame hook 注册")
@@ -750,7 +750,7 @@ func test_marine_hooks_registered() -> void:
 	hero.skills["Marine_ult"] = MockSkill.new()
 	hero.skills["Marine_atk2"] = MockSkill.new()
 	hero.skills["Marine_atk"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Marine", hero)
+	BattleHeroScripts.apply("battle/heroes/Marine", hero)
 	assert_true(hero.skills["Marine_ult"].hero_hooks.has("onPhaseFinished"), "Marine ult onPhaseFinished hook 注册")
 	assert_true(hero.skills["Marine_ult"].hero_hooks.has("takeEffectAt"), "Marine ult takeEffectAt hook 注册")
 	assert_true(hero.skills["Marine_ult"].hero_hooks.has("takeEffectOn"), "Marine ult takeEffectOn hook 注册")
@@ -772,7 +772,7 @@ func test_phoenix_hooks_registered() -> void:
 	hero.skills["Phoenix_pasv"] = MockSkill.new()
 	hero.skills["Phoenix_ult"] = MockSkill.new()
 	hero.skills["Phoenix_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Phoenix", hero)
+	BattleHeroScripts.apply("battle/heroes/Phoenix", hero)
 	assert_true(hero.hero_hooks.has("die"), "Phoenix 单位 die hook 注册")
 	assert_true(hero.hero_hooks.has("getLostHPAfterImmunity"), "Phoenix 单位 getLostHPAfterImmunity hook 注册")
 	assert_true(hero.skills["Phoenix_atk2"].hero_hooks.has("createBuff"), "Phoenix atk2 createBuff hook 注册")
@@ -788,7 +788,7 @@ func test_bb_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["BB_atk3"] = MockSkill.new()
 	hero.skills["BB_ult"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/BB", hero)
+	BattleHeroScripts.apply("battle/heroes/BB", hero)
 	assert_true(hero.hero_hooks.has("takeDamage"), "BB 单位 takeDamage hook 注册")
 	assert_true(hero.hero_hooks.has("getLostHPAfterImmunity"), "BB 单位 getLostHPAfterImmunity hook 注册")
 	assert_true(hero.hero_hooks.has("update"), "BB 单位 update hook 注册")
@@ -807,7 +807,7 @@ func test_exphoenix_hooks_registered() -> void:
 	hero.skills["ExPhoenix_pasv"] = MockSkill.new()
 	hero.skills["ExPhoenix_ult"] = MockSkill.new()
 	hero.skills["ExPhoenix_atk3"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/ExPhoenix", hero)
+	BattleHeroScripts.apply("battle/heroes/ExPhoenix", hero)
 	assert_true(hero.hero_hooks.has("update"), "ExPhoenix 单位 update hook 注册")
 	assert_true(hero.hero_hooks.has("die"), "ExPhoenix 单位 die hook 注册")
 	assert_true(hero.hero_hooks.has("getLostHPAfterImmunity"), "ExPhoenix 单位 getLostHPAfterImmunity hook 注册")
@@ -824,27 +824,27 @@ func test_exphoenix_hooks_registered() -> void:
 func test_lina_hooks_registered() -> void:
 	var hero := MockHero.new()
 	hero.skills["Lina_atk"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Lina", hero)
+	BattleHeroScripts.apply("battle/heroes/Lina", hero)
 	assert_true(hero.skills["Lina_atk"].hero_hooks.has("onAttackFrame"), "Lina atk onAttackFrame 总挂（当前生效）")
 	assert_false(hero.skills["Lina_atk"].hero_hooks.has("takeEffectOn"), "Lina takeEffectOn 不挂（proto_awake false，Phase5 激活）")
 
 
 # protoAwake 读 proto._awake 字段（源 C++ compiled 无定义，实现读 HeroInstance.awake 养成控制）。
 func test_proto_awake_reads_awake_field() -> void:
-	assert_false(BattleHeroRegistry.proto_awake({}), "proto 无 _awake 键 → false（不觉醒）")
-	assert_false(BattleHeroRegistry.proto_awake({"_awake": false}), "proto._awake=false → false")
-	assert_true(BattleHeroRegistry.proto_awake({"_awake": true}), "proto._awake=true → 觉醒激活")
+	assert_false(BattleHeroScripts.proto_awake({}), "proto 无 _awake 键 → false（不觉醒）")
+	assert_false(BattleHeroScripts.proto_awake({"_awake": false}), "proto._awake=false → false")
+	assert_true(BattleHeroScripts.proto_awake({"_awake": true}), "proto._awake=true → 觉醒激活")
 
 
 # SB：proto._awake=true 时 awake_update 挂（dying 倒计投球）；false 不挂。
 func test_sb_awake_update_hooked_when_awake() -> void:
 	var hero := MockHero.new()
 	hero.proto = {"_awake": true}
-	BattleHeroRegistry.apply("battle/heroes/SB", hero)
+	BattleHeroScripts.apply("battle/heroes/SB", hero)
 	assert_true(hero.hero_hooks.has("update"), "SB awake_update 挂（proto._awake=true）")
 	#不觉醒时不挂
 	var hero2 := MockHero.new()
-	BattleHeroRegistry.apply("battle/heroes/SB", hero2)
+	BattleHeroScripts.apply("battle/heroes/SB", hero2)
 	assert_false(hero2.hero_hooks.has("update"), "SB awake_update 不挂（proto 无 _awake）")
 
 
@@ -852,7 +852,7 @@ func test_sb_awake_update_hooked_when_awake() -> void:
 func test_naga_hooks_hooked_when_awake() -> void:
 	var hero := MockHero.new()
 	hero.proto = {"_awake": true}
-	BattleHeroRegistry.apply("battle/heroes/Naga", hero)
+	BattleHeroScripts.apply("battle/heroes/Naga", hero)
 	assert_true(hero.hero_hooks.has("die"), "Naga die 挂（proto._awake=true）")
 	assert_true(hero.hero_hooks.has("onHitMiss"), "Naga onHitMiss 挂（proto._awake=true）")
 	assert_true(hero.hero_hooks.has("update"), "Naga update 挂（proto._awake=true）")
@@ -864,14 +864,14 @@ func test_ursa_proto_awake_not_hooked() -> void:
 	hero.skills["Ursa_pasv3"] = MockSkill.new()
 	hero.skills["Ursa_ult"] = MockSkill.new()
 	hero.skills["Ursa_atk"] = MockSkill.new()
-	BattleHeroRegistry.apply("battle/heroes/Ursa", hero)
+	BattleHeroScripts.apply("battle/heroes/Ursa", hero)
 	assert_false(hero.skills["Ursa_pasv3"].hero_hooks.has("getDamage"), "Ursa pasv3 getDamage 不挂（proto_awake false）")
 
 
 # Naga：mobcd=0 总设 + protoAwake 守卫（false 时 die/onHitMiss/update 不挂）。
 func test_naga_proto_awake_not_hooked() -> void:
 	var hero := MockHero.new()
-	BattleHeroRegistry.apply("battle/heroes/Naga", hero)
+	BattleHeroScripts.apply("battle/heroes/Naga", hero)
 	assert_eq(float(hero.custom_data.get("mobcd", -1)), 0.0, "Naga mobcd=0 总设")
 	assert_false(hero.hero_hooks.has("die"), "Naga die 不挂（proto_awake false）")
 	assert_false(hero.hero_hooks.has("update"), "Naga update 不挂（proto_awake false）")

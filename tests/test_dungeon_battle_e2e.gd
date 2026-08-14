@@ -3,9 +3,15 @@ extends GutTest
 ## dungeon 战斗端到端冒烟（Phase 2.2 集成冒烟 dungeon 分支）。
 # 验证 expand_battle_dungeon.py 注入的真实敌人能跑完整战斗闭环（装配→循环→胜负→finalize），不崩。
 # bridge ACL 坑无法运行时验收，headless 端到端跑是 dungeon 战斗真实性的最强验证。
+# 测试隔离（2026-08-14）：装配扣体力读的是 GameData.player 持久存档（user:// 与真实游戏共用），
+# 连续重跑会把体力耗干致 no_vitality 假失败——每场战斗前重置满体力（本文件测战斗闭环，不测经济）。
+
+func _reset_vitality() -> void:
+	GameData.player.vitality = GameData.player.vitality_max
 
 func test_dungeon_battle_e2e_51013_diff2() -> void:
 	# 51013 = 50013 纳克萨玛斯首关 diff2（HP% 缩放 ×1.5）。boss=6 末日使者，m=[40,42,17]
+	_reset_vitality()
 	var player: PlayerData = GameData.player
 	var mgr := StageManager.new(GameData.config)
 	var rng := BattleRng.new(12345)
@@ -17,6 +23,7 @@ func test_dungeon_battle_e2e_51013_diff2() -> void:
 
 
 func test_dungeon_battle_e2e_50013_base() -> void:
+	_reset_vitality()
 	# base 关 50013（diff1 无缩放，HP% 2000）也能跑完整闭环
 	var player: PlayerData = GameData.player
 	var mgr := StageManager.new(GameData.config)
@@ -25,6 +32,7 @@ func test_dungeon_battle_e2e_50013_base() -> void:
 
 
 func test_dungeon_battle_e2e_53021_last() -> void:
+	_reset_vitality()
 	# 53021 = 末关 diff4（安其拉废墟，HP% ×3.0），验证极端缩放关不崩
 	var player: PlayerData = GameData.player
 	var mgr := StageManager.new(GameData.config)
@@ -33,6 +41,7 @@ func test_dungeon_battle_e2e_53021_last() -> void:
 
 
 func test_dungeon_battle_hero_hp_mp_field() -> void:
+	_reset_vitality()
 	# finalize_stage_battle 收集 hero_hp_mp 字段（源 stageaccount:138-139 hp=hero:hp_perc()）。
 	# 存活玩家单位真实 hp/mp 百分比，死亡单位不在快照（stage_account 默认 0）。
 	var player: PlayerData = GameData.player
