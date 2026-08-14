@@ -73,7 +73,7 @@ static func destroy_prompt(_ref: Dictionary = {}) -> void:
 
 
 static func _build_text(player: PlayerData, cm: ConfigManager) -> String:
-	var gap: int = PlayerData.VITALITY_RECOVER_INTERVAL
+	var gap: int = VitalityManager.RECOVER_INTERVAL
 	var max_vit: int = player.vitality_max
 	var cur_vit: int = player.vitality
 	var lt: int = max(max_vit - cur_vit - 1, 0)
@@ -95,7 +95,7 @@ static func _build_text(player: PlayerData, cm: ConfigManager) -> String:
 
 static func _seconds_to_next_update(player: PlayerData) -> int:
 	var now: int = int(Time.get_unix_time_from_system())
-	var dt: int = PlayerData.VITALITY_RECOVER_INTERVAL - (now - player.vitality_last_recover)
+	var dt: int = VitalityManager.RECOVER_INTERVAL - (now - player.vitality_last_recover)
 	return max(dt, 0)
 
 

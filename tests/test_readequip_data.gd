@@ -89,7 +89,7 @@ func test_enhance_equip_quality1_fails() -> void:
 	var iid: int = pd.hero_manager.add_hero(1)
 	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
 	hero.equip_slots[0] = 101   # Quality=1 → ml=0
-	assert_eq(pd.enhance_equip(iid, 0, {101: 1}), false, "品质 1 装备不可强化（ml=0）")
+	assert_eq(EquipCraftManager.enhance_equip(pd, iid, 0, {101: 1}), false, "品质 1 装备不可强化（ml=0）")
 
 
 # 强化成功：材料 Enhance Value 经验累积 + 扣 Unit Price×exp 金币 + 扣材料（照源 local_server:1436-1443）。
@@ -102,7 +102,7 @@ func test_enhance_equip_accumulates_exp() -> void:
 	pd.hero_manager.add_money(100000)
 	pd.add_item(target_id, 10)
 	var exp_before := float(hero.equip_exp[0])
-	assert_eq(pd.enhance_equip(iid, 0, {target_id: 1}), true, "强化成功")
+	assert_eq(EquipCraftManager.enhance_equip(pd, iid, 0, {target_id: 1}), true, "强化成功")
 	assert_true(float(hero.equip_exp[0]) > exp_before, "exp 累积增加")
 	assert_eq(int(pd.items.get(target_id, 0)), 9, "材料扣 1")
 
@@ -115,7 +115,7 @@ func test_enhance_equip_insufficient_material_fails() -> void:
 	var target_id := _find_enhanceable()
 	hero.equip_slots[0] = target_id
 	pd.hero_manager.add_money(100000)
-	assert_eq(pd.enhance_equip(iid, 0, {target_id: 1}), false, "材料不足 → false")
+	assert_eq(EquipCraftManager.enhance_equip(pd, iid, 0, {target_id: 1}), false, "材料不足 → false")
 	assert_eq(int(pd.items.get(target_id, 0)), 0, "不扣材料")
 
 
@@ -185,7 +185,7 @@ func test_enhance_equip_to_max_success() -> void:
 	hero.equip_slots[0] = target_id
 	pd.add_diamond(999999)
 	var dia_before: int = pd.diamond
-	assert_eq(pd.enhance_equip_to_max(iid, 0), true, "钻石满级成功")
+	assert_eq(EquipCraftManager.enhance_equip_to_max(pd, iid, 0), true, "钻石满级成功")
 	var le: Array = ReadequipData.get_equip_level_exp(target_id, cm)["le"]
 	var total: float = 0.0
 	for v in le:
@@ -201,7 +201,7 @@ func test_enhance_equip_to_max_no_diamond() -> void:
 	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
 	var target_id := _find_enhanceable()
 	hero.equip_slots[0] = target_id
-	assert_eq(pd.enhance_equip_to_max(iid, 0), false, "钻石 0 → false")
+	assert_eq(EquipCraftManager.enhance_equip_to_max(pd, iid, 0), false, "钻石 0 → false")
 
 
 # 已满级 → false（源 checkMaxLevel）。
@@ -213,7 +213,7 @@ func test_enhance_equip_to_max_max_level_blocked() -> void:
 	hero.equip_slots[0] = target_id
 	hero.equip_exp[0] = 999999   # 满级
 	pd.add_diamond(999999)
-	assert_eq(pd.enhance_equip_to_max(iid, 0), false, "满级 → false")
+	assert_eq(EquipCraftManager.enhance_equip_to_max(pd, iid, 0), false, "满级 → false")
 
 
 # ===== 第九轮 A1：enhance_equip 金币按满级截断后经验算（源 ui/equipstrengthen.lua:512-514）=====
@@ -237,7 +237,7 @@ func test_enhance_equip_cost_truncated_near_max() -> void:
 	pd.hero_manager.add_money(1000000)
 	pd.add_item(target_id, 9999)   # 放超量材料（add_exp 远超 gap）
 	var gold_before: int = pd.hero_manager.gold
-	assert_eq(pd.enhance_equip(iid, 0, {target_id: 9999}), true, "超量材料强化成功")
+	assert_eq(EquipCraftManager.enhance_equip(pd, iid, 0, {target_id: 9999}), true, "超量材料强化成功")
 	var consumed: int = gold_before - pd.hero_manager.gold
 	assert_eq(consumed, int(unit_price * gap), "cost 按截断后经验算（源 :512-514 target=min，非 × add_exp）")
 	assert_eq(float(hero.equip_exp[0]), max_exp, "最终经验 = 满级上限（不溢出）")
@@ -258,5 +258,5 @@ func test_enhance_equip_at_max_returns_false() -> void:
 	pd.hero_manager.add_money(1000000)
 	pd.add_item(target_id, 10)
 	var gold_before: int = pd.hero_manager.gold
-	assert_eq(pd.enhance_equip(iid, 0, {target_id: 1}), false, "已满级 → false（守卫前置）")
+	assert_eq(EquipCraftManager.enhance_equip(pd, iid, 0, {target_id: 1}), false, "已满级 → false（守卫前置）")
 	assert_eq(pd.hero_manager.gold, gold_before, "失败不扣金币")

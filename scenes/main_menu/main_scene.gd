@@ -250,10 +250,10 @@ func _refresh_status() -> void:
 ## 先 can_buy_vitality 查 VIP 当日上限，再 buy_vitality 扣 50 钻 +120 体力（钻石不足返 false）。
 func _on_vitality_plus() -> void:
 	var p: PlayerData = GameData.player
-	if not p.can_buy_vitality():
+	if not VitalityManager.can_buy(p):
 		Toast.show_message("今日购买体力次数已达上限")
 		return
-	if p.buy_vitality():
+	if VitalityManager.buy(p):
 		Toast.show_message("购买体力 +120")
 		_refresh_status()
 	else:

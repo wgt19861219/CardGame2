@@ -13,7 +13,7 @@ func test_buy_vitality_success() -> void:
 	var pd := PlayerData.new(cm)
 	pd.diamond = 100
 	pd.vitality = 0
-	assert_true(pd.buy_vitality(), "买体力成功")
+	assert_true(VitalityManager.buy(pd), "买体力成功")
 	assert_eq(pd.diamond, 50, "扣 50 钻")
 	assert_eq(pd.vitality, 120, "+120 体力")
 	assert_eq(pd.vitality_today_buy, 1, "today_buy +1")
@@ -22,14 +22,14 @@ func test_buy_vitality_success() -> void:
 func test_buy_vitality_insufficient_diamond() -> void:
 	var pd := PlayerData.new(cm)
 	pd.diamond = 49   # < 50
-	assert_false(pd.buy_vitality(), "钻石不足 → 失败")
+	assert_false(VitalityManager.buy(pd), "钻石不足 → 失败")
 	assert_eq(pd.diamond, 49, "不扣")
 
 
 func test_buy_vitality_persistence() -> void:
 	var pd := PlayerData.new(cm)
 	pd.diamond = 100
-	pd.buy_vitality()
+	VitalityManager.buy(pd)
 	var d: Dictionary = pd.to_dict()
 	assert_eq(int(d["vitality_today_buy"]), 1, "today_buy 持久化")
 	var restored := PlayerData.from_dict(d, cm)
@@ -41,14 +41,14 @@ func test_buy_vitality_stockpile() -> void:
 	var pd := PlayerData.new(cm)
 	pd.diamond = 100
 	pd.vitality = 100
-	assert_true(pd.buy_vitality(), "买体力成功")
+	assert_true(VitalityManager.buy(pd), "买体力成功")
 	assert_eq(pd.vitality, 220, "vitality=100 +120 = 220（不被自然恢复 120 上限卡）")
 
 
 func test_can_buy_vitality_within_limit() -> void:
 	var pd := PlayerData.new(cm)
 	pd.vitality_today_buy = 0   # VIP[0]["Buy Vit Max"]=1，未达上限
-	assert_true(pd.can_buy_vitality(), "today_buy=0 < VIP 上限 → 可买")
+	assert_true(VitalityManager.can_buy(pd), "today_buy=0 < VIP 上限 → 可买")
 
 
 func test_can_buy_vitality_at_vip_limit() -> void:
@@ -57,9 +57,9 @@ func test_can_buy_vitality_at_vip_limit() -> void:
 	var limit: int = int(VipData.get_vip_field(pd.vip_level, "Buy Vit Max", cm))
 	assert_eq(limit, 1, "VIP[0] 当日买体力上限=1")
 	pd.vitality_today_buy = limit
-	assert_false(pd.can_buy_vitality(), "today_buy=limit 达 VIP 上限 → 不可买")
+	assert_false(VitalityManager.can_buy(pd), "today_buy=limit 达 VIP 上限 → 不可买")
 	pd.vitality_today_buy = limit - 1
-	assert_true(pd.can_buy_vitality(), "today_buy=limit-1 → 可买")
+	assert_true(VitalityManager.can_buy(pd), "today_buy=limit-1 → 可买")
 
 
 # T2 存档标脏钩子：buy_vitality 成功触发 save_hook，失败不触发，缺省 Callable 不崩。
@@ -68,12 +68,12 @@ func test_buy_vitality_save_hook() -> void:
 	var dirty: Array[int] = []
 	pd.save_hook = func() -> void: dirty.append(1)
 	pd.diamond = 100
-	assert_true(pd.buy_vitality(), "买体力成功")
+	assert_true(VitalityManager.buy(pd), "买体力成功")
 	assert_eq(dirty.size(), 1, "成功触发一次 save_hook（存档标脏内聚 Logic）")
 	pd.vitality_today_buy = 0   # 重置 VIP 次数限制
 	pd.diamond = 10
-	assert_false(pd.buy_vitality(), "钻石不足失败")
+	assert_false(VitalityManager.buy(pd), "钻石不足失败")
 	assert_eq(dirty.size(), 1, "失败不触发 save_hook")
 	var pd_no_hook := PlayerData.new(cm)   # 缺省 Callable（headless 无注入）
 	pd_no_hook.diamond = 100
-	assert_true(pd_no_hook.buy_vitality(), "缺省 hook 不崩且成功")
+	assert_true(VitalityManager.buy(pd_no_hook), "缺省 hook 不崩且成功")

@@ -87,7 +87,7 @@ func test_vitality_recover_by_time() -> void:
 	pd.vitality_max = 120
 	pd.vitality_last_recover = 0
 	# 720s = 2 个恢复周期(360s) → 恢复 2 点
-	var recovered := pd.recover_vitality(720)
+	var recovered := VitalityManager.recover(pd, 720)
 	assert_eq(recovered, 2)
 	assert_eq(pd.vitality, 102)
 
@@ -96,7 +96,7 @@ func test_vitality_capped() -> void:
 	pd.vitality = 119
 	pd.vitality_max = 120
 	pd.vitality_last_recover = 0
-	pd.recover_vitality(99999)
+	VitalityManager.recover(pd, 99999)
 	assert_eq(pd.vitality, 120, "体力不超上限")
 
 func test_team_level_caps_at_99() -> void:

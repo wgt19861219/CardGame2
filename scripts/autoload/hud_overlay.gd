@@ -134,10 +134,10 @@ func _on_vitality_plus() -> void:
 	var p: PlayerData = GameData.player
 	if p == null:
 		return
-	if not p.can_buy_vitality():
+	if not VitalityManager.can_buy(p):
 		Toast.show_message("今日购买体力次数已达上限")
 		return
-	if p.buy_vitality():
+	if VitalityManager.buy(p):
 		Toast.show_message("购买体力 +120")   # 存档标脏已内聚 buy_vitality（save_hook，T2）
 		_refresh_status()
 	else:

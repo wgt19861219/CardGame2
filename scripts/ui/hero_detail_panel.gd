@@ -433,11 +433,11 @@ func _refresh_upgrade_light() -> void:
 	_light_tween = r.get("tween") as Tween
 
 
-# 技能升级：pd.upgrade_hero_skill（扣技能点 + hero_manager.upgrade_skill_level 扣金币+升技能）。
+# 技能升级：SkillPointManager.upgrade_hero_skill（扣技能点 + hero_manager.upgrade_skill_level 扣金币+升技能）。
 func perform_upgrade_skill(idx: int) -> bool:
 	if pd == null or hero == null:
 		return false
-	var ok: bool = pd.upgrade_hero_skill(hero.inst_id, idx)
+	var ok: bool = SkillPointManager.upgrade_hero_skill(pd, hero.inst_id, idx)
 	if ok:
 		GameData.mark_save_dirty()   # local_server:1480 技能升级脏标
 		HeroDetailUpgradeFx.play_skill_upgrade_fx(_tab_views.get("skill", null) as Control, idx, self)
@@ -466,10 +466,10 @@ func _on_buy_skill_point() -> void:
 	if pd == null:
 		return
 	AudioPlayer.play_sfx("common_click_feedback")
-	var ok: bool = pd.buy_skill_stren_point()
+	var ok: bool = SkillPointManager.buy_stren_point(pd)
 	if ok:
 		GameData.mark_save_dirty()
-		Toast.show_message("技能点 +%d" % PlayerData.SKILL_BUY_AMOUNT)
+		Toast.show_message("技能点 +%d" % SkillPointManager.BUY_AMOUNT)
 		_refresh_skill_point_bar()
 	else:
 		Toast.show_message("钻石不足")   # 源无显式 Toast（lua 弹窗），本项目单机化用 Toast 兜底

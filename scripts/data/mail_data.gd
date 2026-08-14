@@ -124,7 +124,7 @@ func claim_attach(mail_id: int, player: Variant) -> void:
 	if diamond > 0 and player != null:
 		player.add_diamond(diamond)
 	if skill_point > 0 and player != null:
-		player.add_skill_point(skill_point)
+		SkillPointManager.add(player, skill_point)
 	if player != null:
 		for item in raw.get("_items", []):
 			player.add_item(int(item["id"]), int(item["amount"]))

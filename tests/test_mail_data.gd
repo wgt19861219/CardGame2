@@ -107,12 +107,15 @@ func test_format_attach_common() -> void:
 	assert_eq(ac2.size(), 1, "mail 2 attach_common 1 项（Gold）")
 
 
-# Mock player（duck-type MailData.claim_attach 用：hero_manager.add_money/add_diamond/add_skill_point/add_item）。
+# Mock player（duck-type MailData.claim_attach 用：hero_manager.add_money/add_diamond/add_item
+# + SkillPointManager.add 契约字段 vip_level/cm/skill_points——阶段三 T3 断代理后技能点走 manager 直调）。
 class _MockPlayer:
 	var hero_manager: _MockHeroMgr
 	var diamond: int = 0
-	var _skill_point: int = 0
 	var items: Dictionary = {}
+	var vip_level: int = 0
+	var cm: Variant = null   # 测试邮件无 skill_point 附件，SkillPointManager.add 分支不触发
+	var skill_points: int = 0
 
 	func _init() -> void:
 		hero_manager = _MockHeroMgr.new()
@@ -122,9 +125,6 @@ class _MockPlayer:
 
 	func add_item(item_id: int, count: int = 1) -> void:
 		items[item_id] = int(items.get(item_id, 0)) + count
-
-	func add_skill_point(amount: int = 1) -> void:
-		_skill_point += amount
 
 
 class _MockHeroMgr:

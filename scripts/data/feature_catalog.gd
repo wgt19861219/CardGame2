@@ -61,7 +61,7 @@ const IMPLEMENTATIONS: Dictionary = {
 	"hero_equip_upgrade": "PlayerData.enhance_equip", "fragment_compose": "HeroManager.compose",
 	"sell_item": "PlayerData.sell_equip",
 	"tavern_draw": "PlayerData.draw_tavern_full", "ask_magicsoul": "TavernData",
-	"sync_vitality": "PlayerData.recover_vitality", "buy_vitality": "PlayerData.buy_vitality",
+	"sync_vitality": "VitalityManager.recover", "buy_vitality": "VitalityManager.buy",
 	"midas": "MidasManager.exchange", "query_data": "PlayerData",
 	"shop_refresh": "ShopManager.refresh", "shop_consume": "ShopManager.buy",
 	"shop_star_consume": "ShopManager", "open_shop": "ShopManager",

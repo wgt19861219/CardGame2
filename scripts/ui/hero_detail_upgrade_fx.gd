@@ -215,7 +215,7 @@ static func fill_skill_point_bar(label: Label, buy_btn: TextureButton, pd: Playe
 			buy_btn.visible = false
 		return 0
 	# 补算产出（更新 pd.skill_points；CD 300s +1，受 VIP 上限）。
-	var recovered: int = pd.recover_skill_point(Time.get_unix_time_from_system())
+	var recovered: int = SkillPointManager.recover(pd, Time.get_unix_time_from_system())
 	label.visible = true
 	label.add_theme_color_override("font_color", SKILL_POINT_PRE_COLOR)
 	if pd.skill_points > 0:

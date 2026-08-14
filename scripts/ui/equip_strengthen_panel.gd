@@ -202,18 +202,18 @@ func get_addmt_info() -> Dictionary:
 	return _addmt_info.duplicate()
 
 
-# 装备强化：pd.enhance_equip（源 doClickStren:667 收集 addmtInfo→net；本项目强化按钮调）。
+# 装备强化：EquipCraftManager.enhance_equip（源 doClickStren:667 收集 addmtInfo→net；本项目强化按钮调）。
 func perform_enhance(materials: Dictionary = {}) -> bool:
 	if pd == null or hero == null or _selected_slot < 0:
 		return false
 	var mats: Dictionary = materials if not materials.is_empty() else _addmt_info
-	return pd.enhance_equip(hero.inst_id, _selected_slot, mats)
+	return EquipCraftManager.enhance_equip(pd, hero.inst_id, _selected_slot, mats)
 
 
 func perform_enhance_fast() -> bool:
 	if pd == null or hero == null or _selected_slot < 0:
 		return false
-	return pd.enhance_equip_to_max(hero.inst_id, _selected_slot)
+	return EquipCraftManager.enhance_equip_to_max(pd, hero.inst_id, _selected_slot)
 
 
 func do_click_stren() -> void:

@@ -10,13 +10,6 @@ const PlayerDataSerde = preload("res://scripts/data/player_data_serde.gd")
 
 const MAX_TEAM_LEVEL: int = 99            # 战队等级上限（源 2026-06 解除绑定）
 const VITALITY_DEFAULT_MAX: int = 120     # 体力上限（源 DEFAULT_DATA vitality=120）
-const VITALITY_RECOVER_INTERVAL: int = 360  # 每 360s 恢复 1 点（速率待核源 sync_vitality）
-const BUY_VIT_COST: int = 50
-const BUY_VIT_AMOUNT: int = 120
-const BUY_VIT_HARD_CAP: int = 9999
-const SKILL_POINT_COST: int = 1        # 技能升级消耗技能点
-const SKILL_BUY_AMOUNT: int = 10
-const SKILL_BUY_MAX_TIMES: int = 30
 const SKILL_DEFAULT_POINTS: int = 5
 const TEAM_EXP_PER_LEVEL: int = 100       # 简化：每级 100 经验（PlayerLevel 表集成后续）
 const REWARD_MULTIPLIER: int = 10
@@ -152,64 +145,12 @@ func spend_diamond(amount: int) -> bool:
 
 
 ## 消耗体力（Stage 通关基础）。不足返 false。
+## 体力购买/时间恢复见 VitalityManager（阶段三 T3 归位；本方法属货币读写留聚合根）。
 func spend_vitality(amount: int) -> bool:
 	if vitality < amount:
 		return false
 	vitality -= amount
 	return true
-
-
-## 是否还能买体力（照源 player.lua:603 canBuyVitality：今日次数 < VIP["Buy Vit Max"]）。
-## UI 预检用，与 buy_vitality 互补：本方法只查 VIP 当日上限，buy_vitality 还查钻石是否够。
-func can_buy_vitality() -> bool:
-	var limit: int = int(VipData.get_vip_field(vip_level, "Buy Vit Max", cm))
-	return limit <= 0 or vitality_today_buy < limit
-
-
-## 买体力（照源 local_server:1793 buy_vitality + player.lua:605 VIP 上限）。
-## 扣 50 钻 + 体力+120 + today_buy++（受 VIP["Buy Vit Max"] 上限）。返是否成功。
-func buy_vitality() -> bool:
-	var limit: int = int(VipData.get_vip_field(vip_level, "Buy Vit Max", cm))
-	if limit > 0 and vitality_today_buy >= limit: return false   # 超 VIP 当日上限
-	if diamond < BUY_VIT_COST:
-		return false
-	diamond -= BUY_VIT_COST
-	vitality = min(vitality + BUY_VIT_AMOUNT, BUY_VIT_HARD_CAP); vitality_today_buy += 1
-	if save_hook.is_valid(): save_hook.call()   # 写操作自动标脏（存档调度内聚 Logic，T2）
-	return true
-
-
-## 增加技能点（受 VIP["Max Skill Points"] 上限，源 player.lua:704）。Logic 委托 SkillPointManager。
-func add_skill_point(amount: int = 1) -> void:
-	SkillPointManager.add(self, amount)
-
-
-## 买技能强化点（照源 local_server:2184-2193 + skillstren.lua:187-202/463-468）。
-## 单机化 Logic 统一入口：梯度计费 GradientPrice[min(reset_times+1,30)]["Skill Upgrade Reset"] 钻石。
-## 买前先跨日重置 skill_reset_times（源 player.lua:727 getSkillResetTimes 内部 resetSkillData→:718-731）。
-## 返是否成功（钻石不足返 false）。
-func buy_skill_stren_point() -> bool:
-	SkillPointManager.check_cross_day_reset(self, Time.get_unix_time_from_system())
-	var cost: int = _get_skill_buy_cost()
-	if diamond < cost:
-		return false
-	diamond -= cost
-	skill_reset_times += 1
-	add_skill_point(SKILL_BUY_AMOUNT)
-	return true
-
-
-## 按时间自动恢复技能点（照源 player.lua:658-686 getSkillLvupChance）。CD 间隔 300s，上限 VIP["Max Skill Points"]。
-## Logic 委托 SkillPointManager（控行数 + 可单测）。返回本次恢复量。
-func recover_skill_point(now_seconds: int) -> int:
-	return SkillPointManager.recover(self, now_seconds)
-
-
-## 下一笔购买钻石消耗（源 skillstren.lua:463-468 getResetCost）。
-func _get_skill_buy_cost() -> int:
-	var idx: int = min(skill_reset_times + 1, SKILL_BUY_MAX_TIMES)
-	var gp: Dictionary = cm.get_raw_table(&"GradientPrice")
-	return int(gp.get(str(idx), {}).get(&"Skill Upgrade Reset", 0))
 
 
 func get_tutorial_record(step_id: int) -> int: return int(tutorial_records.get(step_id, 0))
@@ -219,32 +160,8 @@ func set_tutorial_record(step_id: int, times: int = 1) -> void:
 	tutorial_records[step_id] = times
 
 
-## 技能升级：消耗技能点 + hero_manager.upgrade_skill_level。返是否成功。
-func upgrade_hero_skill(inst_id: int, skill_idx: int) -> bool:
-	if skill_points < SKILL_POINT_COST:
-		return false
-	if not hero_manager.upgrade_skill_level(inst_id, skill_idx):
-		return false
-	skill_points -= SKILL_POINT_COST
-	if task_manager != null and cm != null:
-		task_manager.record_by_type(cm, "SkillUpgradeSuccess")
-	return true
-
-
-## 装备强化（照源 ui/equipstrengthen.lua:495-616 + local_server.lua:1436-1443）。
-## Logic 抽至 EquipCraftManager（治 LINT005 + 装备 Logic 独立成层）；薄代理保持 ed.player 入口。
-func enhance_equip(inst_id: int, slot: int, materials: Dictionary) -> bool:
-	return EquipCraftManager.enhance_equip(self, inst_id, slot, materials)
-
-
-## 装备钻石一键满级（照源 ui/equipstrengthen.lua:701-722 upFastStren op_type=2）。代理 EquipCraftManager。
-func enhance_equip_to_max(inst_id: int, slot: int) -> bool:
-	return EquipCraftManager.enhance_equip_to_max(self, inst_id, slot)
-
-
-## 装备合成（照源 local_server:1059-1115 equip_synthesis）。代理 EquipCraftManager。
-func synthesize_equip(target_id: int) -> bool:
-	return EquipCraftManager.synthesize_equip(self, target_id)
+## 技能升级：消耗技能点 + hero_manager.upgrade_skill_level → 见 SkillPointManager.upgrade_hero_skill（阶段三 T3 迁出）。
+## 装备强化/满级/合成 → 见 EquipCraftManager（enhance_equip/enhance_equip_to_max/synthesize_equip）。
 
 
 ## 扣物品不加金币（照源 player.lua:1232 consumeEquip 减 equip_qunty[id]，eatexplist 喂药消耗经验药用）。
@@ -325,18 +242,7 @@ func draw_tavern_full(tavern_type: String, is_ten: bool, is_free: bool, count: i
 func _fragment_id_for_hero(tid: int) -> int:
 	return int(cm.get_raw_table(&"Fragment").get(str(tid), {}).get(&"Fragment ID", 0))
 
-## 体力恢复（基于时间差）。返回恢复量；满体力时刷新时间戳。
-func recover_vitality(now_seconds: int) -> int:
-	if vitality >= vitality_max:
-		vitality_last_recover = now_seconds
-		return 0
-	var elapsed: int = now_seconds - vitality_last_recover
-	if elapsed < VITALITY_RECOVER_INTERVAL:
-		return 0
-	var recovered: int = elapsed / VITALITY_RECOVER_INTERVAL
-	vitality = min(vitality + recovered, vitality_max)
-	vitality_last_recover += recovered * VITALITY_RECOVER_INTERVAL
-	return recovered
+## 体力时间恢复 → VitalityManager.recover（阶段三 T3 迁出；⚠️ 当前零调用，恢复链路未接线，见验收记录）。
 
 ## 战队经验增加，自动升级（上限 MAX_TEAM_LEVEL）+ 发放 Vitality Reward（源 PlayerLevel）。
 ## 实际升级后调 check_unlocks（源 baselsr.lua:25-28 happenPlayerLevelup 仅升级时设标志）。

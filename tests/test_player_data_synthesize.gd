@@ -17,7 +17,7 @@ func test_synthesize_consumes_materials() -> void:
 	pd.add_item(114, 1)
 	pd.add_item(104, 1)
 	pd.add_item(106, 1)
-	assert_eq(pd.synthesize_equip(118), true, "合成成功")
+	assert_eq(EquipCraftManager.synthesize_equip(pd, 118), true, "合成成功")
 	assert_eq(int(pd.items.get(118, 0)), 1, "产出 target_id 进 items 背包")
 	assert_eq(int(pd.items.get(114, 0)), 0, "基础材料消耗")
 	assert_eq(pd.hero_manager.gold, 700, "扣 Expense 300 金币")
@@ -26,7 +26,7 @@ func test_synthesize_consumes_materials() -> void:
 func test_synthesize_fails_without_materials() -> void:
 	var pd := PlayerData.new(cm)
 	pd.hero_manager.add_money(1000)
-	assert_eq(pd.synthesize_equip(118), false, "缺基础材料 → false")
+	assert_eq(EquipCraftManager.synthesize_equip(pd, 118), false, "缺基础材料 → false")
 
 
 func test_synthesize_fails_without_gold() -> void:
@@ -34,4 +34,4 @@ func test_synthesize_fails_without_gold() -> void:
 	pd.add_item(114, 1)
 	pd.add_item(104, 1)
 	pd.add_item(106, 1)
-	assert_eq(pd.synthesize_equip(118), false, "金币不足 → false")
+	assert_eq(EquipCraftManager.synthesize_equip(pd, 118), false, "金币不足 → false")
