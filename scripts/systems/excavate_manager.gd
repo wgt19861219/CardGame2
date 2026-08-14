@@ -33,6 +33,8 @@ var search_id: int = 0          # 当前搜索点 id（源 excavateSearchId）
 var config: ConfigManager = null
 var history: ExcavateHistory   # 战斗历史（单机：玩家 excavate 战斗记录）
 var _next_id: int = ID_START
+# T3 依赖倒置：战斗表现音效钩子（GameData 装配后注入 ExcavateBattle.assemble 用；缺省静默跳过）。
+var sfx_hook: Callable = Callable()
 
 
 func _init(cm: ConfigManager = null) -> void:

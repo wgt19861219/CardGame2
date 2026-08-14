@@ -53,12 +53,22 @@ var loot_count: int = 0
 var gold_count: int = 0
 var death_count: int = 0
 var hero_id_list: Array[int] = []
+# T3 依赖倒置：胜/败音效钩子（装配方注入 AudioPlayer 桥；缺省 Callable 静默跳过，headless 可测。
+# 阶段三战斗事件化的过渡形态）。skill_lib 同理由装配注入（waves 建怪用，替代 GameData.skills 全局读）。
+var sfx_hook: Callable = Callable()
+var skill_lib: SkillLibrary = null
 var arena_mode: bool = false
 var crusade_mode: bool = false
 var excavate_mode: bool = false
 var replay_mode: bool = false
 var guild_instance_mode: bool = false
 var gm_mode: bool = false
+
+
+# 表现层音效（T3 依赖倒置）：hook 缺省静默跳过——engine 不再直调 AudioPlayer autoload，
+# headless 单测零 autoload 依赖；胜/败时由装配方注入的桥调用。
+func _play_sfx(sfx_name: String) -> void:
+	if sfx_hook.is_valid(): sfx_hook.call(sfx_name)
 var stage_info: Dictionary = {}
 var last_result: int = -1  # exit_stage 记录最终结果（供 View/结算读，Phase 2.1续）
 # —— Kael 能量球投放槽位（源 battle_engine.lua :108/:789-848，Kael apply 时填 player/enemy_kael_hero）——
@@ -143,7 +153,7 @@ func tick() -> void:
 	elif alive_alliance_count == 0:
 		result_stars = 0
 		unfreeze(true)
-		AudioPlayer.play_sfx("battle_lose")
+		_play_sfx("battle_lose")
 		on_battle_end()
 		exit_stage(RESULT_LOSE)
 
@@ -309,7 +319,7 @@ func victory(_skip: bool = false) -> void:
 	if wave_id < total_waves and not _skip:
 		wave_clear = true   # 本波清完待切波（View 检测此标志自动切下一波）
 		return
-	AudioPlayer.play_sfx("battle_win")
+	_play_sfx("battle_win")
 	death_count = 0
 	for unit in unit_list:
 		if int(unit.camp) == CAMP_PLAYER and bool(unit.is_hero()) and not bool(unit.is_alive()):

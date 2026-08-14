@@ -37,6 +37,9 @@ var chapter_star_claimed: Dictionary = {}
 # 结构 {stage_key: {item_key: miss_count}}，会话内有效（照源 M.sweep_loot_record 生命周期）。
 var sweep_loot_record: Dictionary = {}
 
+# T3 依赖倒置：战斗表现音效钩子 + 技能库（GameData 装配后注入；缺省 Callable/null 静默降级，headless 可测）。
+var sfx_hook: Callable = Callable(); var skill_lib: SkillLibrary = null
+
 func _init(cm: ConfigManager) -> void:
 	config = cm
 
@@ -154,6 +157,7 @@ func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int]
 	var loots: Array[Dictionary] = generate_loot_list(sid, rng)
 	var eng := BattleEngine.new()
 	eng.rng = rng
+	eng.sfx_hook = sfx_hook; eng.skill_lib = skill_lib   # T3 注入（胜/败音效 + waves 建怪技能库）
 	_enter_stage(eng, sid, player, player_tids)
 	var battle_info: Dictionary = BattleData.from_config(config, sid).battle_info
 	return {"ok": true, "engine": eng, "loots": loots, "battle_info": battle_info, "stage_id": sid}
@@ -209,15 +213,13 @@ func _init_self_hero(eng: BattleEngine, player: PlayerData, player_tids: Array[i
 		var proto: Dictionary = {"_tid": tid}
 		var hero: HeroInstance = _find_hero_by_tid(player.hero_manager, tid)
 		if hero != null:
-			proto["_level"] = hero.level
-			proto["_stars"] = hero.stars
-			proto["_rank"] = hero.rank
-			proto["_items"] = _hero_items(hero)
+			proto["_level"] = hero.level; proto["_stars"] = hero.stars
+			proto["_rank"] = hero.rank; proto["_items"] = _hero_items(hero)
 			proto["_awake"] = hero.awake
 		else:
 			proto["_level"] = 1; proto["_stars"] = 1
-		# lib=GameData.skills（源 ed 全局 SkillLibrary；lib null 致 init_skill 跳过→skill_list 空→不攻击 latent bug 修）
-		var u := BattleUnit.new(proto, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, config, eng, {}, GameData.skills)
+		# lib=skill_lib（源 ed 全局 SkillLibrary，T3 改装配注入；lib null 致 init_skill 跳过→skill_list 空→不攻击 latent bug 修）
+		var u := BattleUnit.new(proto, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, config, eng, {}, skill_lib)
 		u.ai.will_cast_manual_skill = false
 		eng.add_unit(u)
 		eng.hero_id_list.append(tid)

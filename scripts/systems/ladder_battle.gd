@@ -27,6 +27,7 @@ static func assemble_pvp_battle(ladder: LadderManager, oppo_user_id: int, player
 	var eng := BattleEngine.new()
 	eng.rng = BattleRng.new(int(sb["rseed"]))
 	var lib := SkillLibrary.new(cm)
+	eng.sfx_hook = ladder.sfx_hook; eng.skill_lib = lib   # T3 注入（胜/败音效 + waves 备用技能库）
 	BattleEngineArena.enter_arena(eng, cm, lib, self_list, enemy_list, false, true)  # 玩家非 bot / AI 敌方 bot
 	var battle_info: Dictionary = BattleData.from_config(cm, StageAccount.ARENA_STAGE_ID).battle_info
 	return {"ok": true, "engine": eng, "battle_info": battle_info, "oppo_user_id": oppo_user_id, "hero_list": self_list, "enemy_list": enemy_list}

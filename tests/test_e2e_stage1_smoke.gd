@@ -28,6 +28,8 @@ func test_stage1_full_battle_flow() -> void:
 	var player := _make_player()
 	var rng := BattleRng.new(12345)
 	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
 
 	var tids: Array[int] = [1, 2, 3, 4, 5]
 
@@ -97,6 +99,7 @@ func test_battle_scene_view_integration() -> void:
 	var player := _make_player()
 	var rng := BattleRng.new(999)
 	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
 	var tids: Array[int] = [1, 2, 3, 4, 5]
 
 	var asm := mgr.assemble_stage_battle(1, player, tids, rng)
@@ -150,6 +153,7 @@ func test_stage_failed_scene_assemble() -> void:
 func test_finalize_stage_battle_passes_lose_type() -> void:
 	var player := _make_player()
 	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
 	var tids: Array[int] = [1, 2, 3, 4, 5]
 	var asm := mgr.assemble_stage_battle(1, player, tids, BattleRng.new(7))
 	var eng: BattleEngine = asm["engine"]
@@ -173,6 +177,7 @@ func test_stage_done_scene_assemble() -> void:
 	var player := _make_player()
 	var rng := BattleRng.new(7)
 	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
 	var tids: Array[int] = [1, 2, 3, 4, 5]
 
 	# 跑完一场真战斗

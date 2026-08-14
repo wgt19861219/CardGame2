@@ -28,6 +28,7 @@ static func assemble_excavate_battle(mgr: Variant, excavate_id: int, player: Pla
 	var eng := BattleEngine.new()
 	eng.rng = rng
 	var lib := SkillLibrary.new(cm)
+	eng.sfx_hook = mgr.sfx_hook; eng.skill_lib = lib   # T3 注入（mgr.sfx_hook 由 GameData 装配注入）
 	var stage_id: int = ExcavateData.get_wild_stage_id(cm, int(d["_wild_id"]))
 	BattleEngineArena.enter_excavate(eng, cm, lib, hero_list, enemy_list, true, {}, {}, stage_id, int(d["_type_id"]))
 	var battle_info: Dictionary = BattleData.from_config(cm, stage_id).battle_info

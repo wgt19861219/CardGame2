@@ -33,6 +33,12 @@ func _ready() -> void:
 	# T2 依赖倒置：Logic 写操作自动标脏（buy_vitality/midas exchange 等；缺省 Callable headless 可测）。
 	player.save_hook = mark_save_dirty
 	player.midas.save_hook = mark_save_dirty
+	# T3 依赖倒置：战斗胜/败音效由 Logic 钩子回调（battle_engine 不再直调 AudioPlayer autoload）。
+	var sfx: Callable = func(name: String) -> void: AudioPlayer.play_sfx(name)
+	player.stage_manager.sfx_hook = sfx; player.stage_manager.skill_lib = skills
+	player.crusade_manager.sfx_hook = sfx
+	player.excavate.sfx_hook = sfx
+	player.ladder.sfx_hook = sfx
 	skills = SkillLibrary.new(config)
 	skill_groups = SkillGroupData.new(config)
 	_start_autosave_timer()

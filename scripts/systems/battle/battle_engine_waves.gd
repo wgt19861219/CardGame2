@@ -55,7 +55,7 @@ static func setup_battle(engine: Variant, cm: ConfigManager, battle: Dictionary,
 					config[&"size_mod"] = _modify(float(config[&"size_mod"]), float(battle.get(&"BOSS SIZE%", 0)), BOSS_SIZE_DEFAULT)
 				var proto: Dictionary = {&"_tid": id, &"_level": level, &"_stars": stars}
 				var monster_hp_info: Dictionary = hp_info.get(i, {}) if has_hp_info else {}
-				var monster: BattleUnit = BattleUnit.new(proto, BattleEngine.CAMP_ENEMY, config, cm, engine, monster_hp_info, GameData.skills)
+				var monster: BattleUnit = BattleUnit.new(proto, BattleEngine.CAMP_ENEMY, config, cm, engine, monster_hp_info, engine.skill_lib)
 				monster.mp = int(battle.get(StringName("MP " + str(i)), 0))
 				if monster.hp != 0:
 					monster_pos_idx += 1

@@ -35,6 +35,8 @@ var cleared_stages: Dictionary = {}  # stage(int) -> bool
 var rewarded_stages: Dictionary = {} # stage(int) -> bool
 var enemies: Dictionary = {}  # stage(int) -> {heroes, name, level, avatar, vip}（源 initCrusade 生成）
 var config: ConfigManager = null
+# T3 依赖倒置：战斗表现音效钩子（GameData 装配后注入；缺省 Callable 静默跳过，headless 可测）。
+var sfx_hook: Callable = Callable()
 
 
 func _init(cm: ConfigManager = null) -> void:
@@ -182,6 +184,7 @@ func run_crusade_battle(stage: int, player: PlayerData, player_tids: Array[int],
 		return {"ok": false}
 	var eng := BattleEngine.new()
 	eng.rng = rng
+	eng.sfx_hook = sfx_hook   # T3 注入（胜/败音效；crusade 不走 waves，无需 skill_lib）
 	var hero_list: Array[Dictionary] = []
 	var self_crusade: Dictionary = {}
 	for tid in player_tids:

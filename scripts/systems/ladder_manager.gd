@@ -55,6 +55,8 @@ const RANKLIST_LEVEL_STEP: int = 2
 const RANKLIST_LEVEL_MIN: int = 10
 
 var pvp: Dictionary = {}
+# T3 依赖倒置：战斗表现音效钩子（GameData 装配后注入 LadderBattle.assemble 用；缺省静默跳过）。
+var sfx_hook: Callable = Callable()
 
 
 static func generate_ai_player(rank: int, player_level: int, cm: ConfigManager, rng: BattleRng) -> Dictionary:

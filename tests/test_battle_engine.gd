@@ -187,6 +187,20 @@ func test_on_battle_end_merges_summon_damage() -> void:
 func test_deterministic_same_input_same_ticks() -> void:
 	assert_eq(_run_ten_updates(), _run_ten_updates(), "同输入两次 ticks 一致（确定性）")
 
+# T3 依赖倒置：胜/败音效走 sfx_hook（battle_engine 不再直调 AudioPlayer autoload）。
+func test_sfx_hook_called_on_victory() -> void:
+	var e := BattleEngine.new()
+	var played: Array[String] = []
+	e.sfx_hook = func(name: String) -> void: played.append(name)
+	e.victory()
+	assert_has(played, "battle_win", "victory 应经 sfx_hook 回调 battle_win")
+
+
+func test_sfx_hook_default_no_crash() -> void:
+	var e := BattleEngine.new()
+	e.victory()   # 缺省 Callable 静默跳过（headless 零 autoload 依赖）
+	pass_test("缺省 sfx_hook 静默跳过不崩")
+
 func _run_ten_updates() -> int:
 	var e := BattleEngine.new()
 	e.add_unit(_make_player())
