@@ -62,6 +62,7 @@ var _refresh_timer: float = 0.0
 
 
 func setup_panel(p_player: PlayerData, rng: BattleRng) -> void:
+	hud_identity = "tavern"   # T4：原 apply/remove override 样板上收基类
 	_player = p_player
 	_rng = rng
 	_cm = p_player.cm
@@ -84,13 +85,8 @@ func _build_content() -> void:
 	_create_boards()
 	_refresh_countdown_label()
 	# HudOverlay 切 identity=tavern。
-	HudOverlay.apply_identity("tavern")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 # createCommonLayer/createMagicLayer（scroll_board 13 节点 + 滑动 + magic drop_bg）。per-board check/arrow/one_buy/ten_buy。

@@ -47,15 +47,14 @@ var _lineup_host: Control = null    # .tscn %LineupHost（阵容槽位动态挂�
 
 
 func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_rng: BattleRng) -> void:
+	hud_identity = "pvp"   # T4：原 apply/remove override 样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	_player = p_player
 	_cm = p_cm
 	_rng = p_rng
 	_ladder = _player.ladder
 	setup()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补全屏 bg.jpg 还原源视觉。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	_fill_tab(_current_tab)
 
@@ -93,13 +92,8 @@ func _build_content() -> void:
 	_lineup_host = lineup_view.get_node("%LineupHost") as Control
 	_wire_action_btn(lineup_view, "%SetLineupBtn", BTN_NORMAL_RES, BTN_NORMAL_PRESS, CAP_NORMAL, "PVP.ADJUSTMENT", LABEL_COLOR_NORMAL, _on_set_lineup)
 	# HudOverlay 切 identity=pvp（ladder 源无，本项目自建对齐源 pvp 场景语义）。
-	HudOverlay.apply_identity("pvp")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 # .tscn 静态 Button 运行时套 Scale9 StyleBox + Label + 绑信号（.tscn 普通 Button 无九宫格图，运行时补）。

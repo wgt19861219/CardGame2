@@ -41,6 +41,9 @@ var _auto_refresh_accum: float = 0.0   # _process 自动刷新轮询累加器
 
 
 func setup_panel(p_shop_id: int, p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
+	hud_identity = "shop"   # T4：原 apply/remove override 样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	shop_id = p_shop_id
 	shop_mgr = p_mgr
 	pd = p_pd
@@ -50,16 +53,12 @@ func setup_panel(p_shop_id: int, p_mgr: ShopManager, p_pd: PlayerData, p_rng: Ba
 	setup()
 	# shop 是 pushScene 独立场景（main.lua:1378），framework.lua:749 自动铺全屏 bg.jpg。
 	# 单机化用 PopWindow 弹窗替代 pushScene → shade 透明 + .tscn %FrameworkBg 补 bg.jpg。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shop_mgr.open_shop(shop_id, rng, cm)
 	shop_mgr.init_auto_refresh(shop_id, pd, _now())
 	shop_mgr.init_expire(shop_id, pd, _now())
 	shop_mgr.check_auto_refresh(shop_id, pd, _now(), rng)
 	_build_content()
 	register_on_enter(func() -> void:
-		AudioPlayer.play_sfx("common_popup_window")
 		_show_talk("Welcome"))
 
 
@@ -91,13 +90,8 @@ func _build_content() -> void:
 	_update_refresh_label()
 	_update_next_refresh_label()
 	# HudOverlay 切 identity=shop。
-	HudOverlay.apply_identity("shop")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 func _build_goods() -> void:

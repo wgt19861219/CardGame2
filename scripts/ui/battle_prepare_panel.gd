@@ -236,7 +236,7 @@ func _add_team_member(inst_id: int) -> void:
 		return
 	var h: Dictionary = _heroes_all.filter(func(x): return x.inst_id == inst_id)[0]
 	if _team.any(func(t): return t.tid == h.tid):
-		_show_toast(cm.get_lstr(LSTR_SAME_NAME))
+		Toast.show_message(cm.get_lstr(LSTR_SAME_NAME))   # extends Control 非 PopWindow，直调（T4 注）
 		return  # 同名英雄禁用
 	_order_team(h)  # 按 maxRange 插入正确位置
 	_refresh_list(); _refresh_team_display(); _refresh_gs()
@@ -339,7 +339,7 @@ func _on_go_pressed() -> void:
 	for t in _team:
 		tids.append(int(t.tid))
 	if tids.is_empty():
-		_show_toast(cm.get_lstr(LSTR_NOTENOUGH))
+		Toast.show_message(cm.get_lstr(LSTR_NOTENOUGH))
 		return
 	if mode == "crusade":
 		_run_crusade_go(tids)
@@ -364,9 +364,3 @@ func _run_crusade_go(tids: Array[int]) -> void:
 	crusade_battle_finished.emit(won, stage)
 
 
-func _show_toast(text: String) -> void:
-	if Engine.is_editor_hint():
-		return
-	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_message"):
-		toast_node.show_message(text)

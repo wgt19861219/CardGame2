@@ -48,6 +48,7 @@ var _param: Dictionary = {}
 
 
 func setup_panel(p_param: Dictionary, p_cm: Variant) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_param = p_param
 	cm = p_cm
 	setup()
@@ -55,7 +56,6 @@ func setup_panel(p_param: Dictionary, p_cm: Variant) -> void:
 		shade_layer.color.a = 0.4
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_content()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
 func _build_content() -> void:

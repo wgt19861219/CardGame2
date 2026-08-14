@@ -50,6 +50,8 @@ var _arrows_bobbing: bool = false
 
 
 func setup_panel(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) -> void:
+	hud_identity = "stageselect"   # T4：原 apply/remove override 样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	mgr = p_mgr
 	player = p_player
 	rng = p_rng
@@ -82,9 +84,6 @@ func _chapter_of_stage(stage_id: int) -> int:
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_map_host = _content.get_node("%MapLayerHost") as Control
 	_frame_layer = _content.get_node("%FrameLayer") as Control
 	_dot_container = _content.get_node("%DotContainer") as Control
@@ -110,13 +109,8 @@ func _build_content() -> void:
 		a.scale = Vector2(0.9, 0.9)
 	_refresh_view("init")
 	# HudOverlay 切 identity=stageselect（强制展开 shortcut + 子场景货币条）。
-	HudOverlay.apply_identity("stageselect")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 # setup_panel 在 show_window 前（panel 未入树），持续动画须等入树后启动（同 equip_strengthen_anim.gd:93 范式）。

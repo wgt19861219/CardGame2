@@ -31,6 +31,7 @@ var _is_count_enabled: bool = false
 
 
 func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) -> void:
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	stage_id = p_sid
 	mgr = p_mgr
 	player = p_player
@@ -41,9 +42,6 @@ func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: B
 	_res_info = StageDetailBuilder.get_res_info(StageAccount.stage_type(p_sid))
 	setup()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明（.tscn %FrameworkBg 已铺 bg.jpg 还原源视觉，同 PackagePanel 范式）。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 
 

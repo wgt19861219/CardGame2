@@ -57,14 +57,13 @@ var _rule_layer: Control = null   # 规则页层（null=未建，visible 切换 
 
 
 func setup_panel(p_player: PlayerData, p_rng: BattleRng) -> void:
+	hud_identity = "crusade"   # T4：原 apply/remove override 样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	player = p_player
 	rng = p_rng
 	player.ensure_crusade(rng)
 	setup()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn 已补全屏 bg.jpg 还原源视觉。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	_create_shake_timer()
 	_refresh_stage_states()
@@ -103,13 +102,8 @@ func _build_content() -> void:
 	# 规则页按钮（照源 crusadeconfig.lua:976 showrule Scale9Button handleName=showRuleInfo）
 	_create_rule_button(content)
 	# HudOverlay 切 identity=crusade（shortcut 隐藏，仅货币栏）。
-	HudOverlay.apply_identity("crusade")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 func _create_stage_list(hbox: HBoxContainer) -> void:

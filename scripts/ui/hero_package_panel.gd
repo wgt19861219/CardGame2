@@ -49,15 +49,14 @@ static func _to_godot(cocos: Vector2) -> Vector2:
 
 
 func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData = null) -> void:
+	hud_identity = "heropackage"   # T4：原 apply/remove override 样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	_hero_mgr = hero_mgr
 	cm = p_cm
 	pd = p_pd
 	setup()
 	# heroPackage 照源 framework 是全屏场景（bg.jpg 在 hero_scene 底层），无 PopWindow shade 黑遮罩。
 	# shade 透明（a=0）不遮 bg.jpg，但 visible=true 保持 container 子树可见（container 挂 shade_layer 下，visible=false 会连隐藏整个内容）。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	_classify_heroes()
 	_refresh_list()
@@ -102,13 +101,8 @@ func _build_content() -> void:
 	# 分解按钮（2026-07-19 接线完成）：HeroSplitWindow 务实方案——内联英雄网格 + 返还预览 + 二次确认。
 	_add_herosplit_button(content)
 	# HudOverlay 切 identity=heropackage。
-	HudOverlay.apply_identity("heropackage")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 func _add_herosplit_button(content: Control) -> void:

@@ -50,6 +50,8 @@ var _item_presses: Array = []   # item_press 高亮节点（源 :204 点击 setV
 
 
 func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	shop_mgr = p_mgr
 	pd = p_pd
 	rng = p_rng
@@ -57,11 +59,7 @@ func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void
 	setup()
 	shop_mgr.open_star_shop()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉（同 PackagePanel 范式）。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
 # 建 UI 内容：chrome 从 .tscn instantiate（位置/size 可视化）；5 件商品项保留 procedural 挂 %ItemLayer。

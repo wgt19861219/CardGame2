@@ -58,6 +58,9 @@ var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipL
 
 # 决定 tab 集 + classify 输出取 prop/fragment。调用：PackagePanel.new("package"/"fragment", {}).setup_panel(cm, pd)。
 func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
+	hud_identity = _identity   # T4：原 apply/remove override 样板上收基类（identity 构造传入）
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	_identity = identity
 	cm = p_cm
 	pd = p_pd
@@ -66,14 +69,10 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	setup()
 	# package/fragment 源是 pushScene 独立场景（framework.lua:615/628），framework 自动建 bg.jpg 全屏背景。
 	# 本项目单机化用 PopWindow 弹窗替代 pushScene，故 shade 透明（.tscn FrameworkBg 已还原源视觉）。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	_create_status_bar()
 	_select_tab("all")
 	cell_clicked.connect(_on_cell_clicked)
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
 # panel 层从 .tscn instantiate（位置/size 可视化）+ fill 动态数据 + 绑定信号。
@@ -136,7 +135,6 @@ func _setup_tab_buttons() -> void:
 # 本项目单机化改 PopWindow 弹窗（避 pushScene），但 bg.jpg 全屏遮 main_scene 货币条，
 # HudOverlay 切 identity（package/fragment 跟随构造传入）。
 func _create_status_bar() -> void:
-	HudOverlay.apply_identity(_identity)
 	_refresh_status()
 
 
@@ -145,10 +143,6 @@ func _refresh_status() -> void:
 	HudOverlay.refresh()
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 func _on_handbook_pressed() -> void:

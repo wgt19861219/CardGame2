@@ -71,13 +71,13 @@ func _equip_name() -> String:
 
 
 func setup_panel(item_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_item_id = item_id
 	cm = p_cm
 	pd = p_pd
 	_exp_per_pill = int(cm.get_raw_table(&"Equip").get(str(item_id), {}).get(&"Exp", 0))
 	setup()
 	_build_content()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
 # 建 UI 内容。panel 层（frame/bg/title/close/scroll）从 .tscn instantiate（位置/size 可视化）。
@@ -286,12 +286,6 @@ func _on_close_pressed() -> void:
 	remove_window()
 
 
-func _show_toast(text: String) -> void:
-	if Engine.is_editor_hint():
-		return
-	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_message"):
-		toast_node.show_message(text)
 
 
 func _load_tex(path: String) -> Texture2D:

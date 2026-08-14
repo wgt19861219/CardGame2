@@ -70,6 +70,7 @@ var _getway_host: Control = null
 
 
 func setup_panel(p_tid: int, p_cm: Variant, p_pd: PlayerData, p_hero_mgr: HeroManager) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_tid = p_tid
 	cm = p_cm
 	pd = p_pd
@@ -80,7 +81,6 @@ func setup_panel(p_tid: int, p_cm: Variant, p_pd: PlayerData, p_hero_mgr: HeroMa
 	_fill_stone_icon()
 	_fill_amount()
 	_build_getway_list()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 	# 源 EaseBackOut 0.2s：弹窗缩放入场（P2-10）。
 	register_on_enter(play_scale_in)
 
@@ -282,10 +282,6 @@ func _make_getway_handler(idx: int) -> Callable:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
 			if idx < _getway_ids.size():
 				_on_get_way_clicked(int(_getway_ids[idx]))
-
-
-func _show_toast(text: String) -> void:
-	Toast.show_message(text)
 
 
 func _on_close_pressed() -> void:

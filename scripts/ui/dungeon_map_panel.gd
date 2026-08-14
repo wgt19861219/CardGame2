@@ -56,6 +56,8 @@ var _content: Control = null             # .tscn 根（%FrameworkBg/Title/Close/
 
 
 func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: BattleRng, p_mode: String, p_group_ids: Array[int]) -> void:
+	hud_identity = "dungeonMap"   # T4：原 apply/remove override 样板上收基类
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	player = p_player
 	stage_manager = p_stage_manager
 	rng = p_rng
@@ -64,9 +66,6 @@ func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: Bat
 	_collect_bosses()
 	setup()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + %FrameworkBg（.tscn 已固化）还原源视觉（同 PackagePanel 范式）。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	_fill_boss_list()
 	_refresh_boss_states()
@@ -93,13 +92,8 @@ func _build_content() -> void:
 	# 必须在 _fill_boss_list 之前建：bg 挂 Sub 后 move 到 0 让其在 Fog/boss 之下绘制。
 	CrusadePanelBuilder.build_dungeon_map(_content)
 	# HudOverlay 切 identity=dungeonMap。
-	HudOverlay.apply_identity("dungeonMap")
 
 
-# 关闭时恢复 HudOverlay identity=main。
-func remove_window() -> void:
-	HudOverlay.apply_identity("main")
-	super.remove_window()
 
 
 func _fill_boss_list() -> void:

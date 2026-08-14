@@ -91,6 +91,7 @@ func _g(pos: Vector2) -> Vector2:
 
 
 func setup_panel(p_target_id: int, p_cm: Variant, p_pd: PlayerData, p_hero: HeroInstance = null, p_context: String = "heroDetail", p_sid: int = 0) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_target_id = p_target_id
 	cm = p_cm
 	pd = p_pd
@@ -107,7 +108,6 @@ func setup_panel(p_target_id: int, p_cm: Variant, p_pd: PlayerData, p_hero: Hero
 	# 源 openCraftPanel（equipcraft.lua:575-587）才建合成树/合成窗口；初始弹窗只显装备+infoButton，
 	# 点 infoButton → _open_craft_panel 才 visible=true + _create_craft_tree。受控偏离源架构。
 	_craft_window.visible = false
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 
 
 # 建 UI 内容：base 层从 equip_craft_content.tscn instantiate（位置/size 可视化）+ 连接信号。
@@ -240,12 +240,6 @@ func _equip_name(id: int) -> String:
 	return cm.get_lstr(String(cm.get_raw_table("Equip").get(str(id), {}).get("Name", "")))
 
 
-func _show_toast(text: String) -> void:
-	if Engine.is_editor_hint():
-		return
-	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_message"):
-		toast_node.show_message(text)
 
 
 # ===== Step 4：playCraftEffect 合成动画 + createNeedCraftPrompt =====

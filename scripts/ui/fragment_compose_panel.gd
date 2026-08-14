@@ -48,13 +48,13 @@ func _g(cx: float, cy: float) -> Vector2:
 
 
 func setup_panel(p_target_tid: int, p_cm: Variant, p_pd: PlayerData) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_target_tid = p_target_tid
 	cm = p_cm
 	pd = p_pd
 	_load_info()
 	setup()
 	_build_content()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 	# 源 EaseBackOut 0.2s：弹窗缩放入场（P2-10）。
 	register_on_enter(play_scale_in)
 
@@ -195,9 +195,3 @@ func _hero_owned(tid: int) -> bool:
 	return false
 
 
-func _show_toast(text: String) -> void:
-	if Engine.is_editor_hint():
-		return
-	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_message"):
-		toast_node.show_message(text)

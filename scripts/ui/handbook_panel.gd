@@ -52,14 +52,12 @@ var _is_fading: bool = false            # #3 翻页动画进行中(防动画期�
 
 
 func setup_panel(p_player: PlayerData) -> void:
+	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	_player = p_player
 	_cm = p_player.cm
 	setup()
 	# handbook 照源是全屏场景(源 handbook.lua:618 base=basescene + bg.jpg,.tscn FrameworkBg 已固化),
 	# shade 透明不遮背景(同 HeroPackagePanel)。
-	if shade_layer != null:
-		shade_layer.color.a = 0
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 全屏场景(照源 pushScene 替换 package):z_index 提高盖住底层 package 内部高 z 元素。
 	# package tab/Grid z=1-3 照源 package.lua,Godot z_index 同 canvas 全局比较(cocos z 局部于 mainLayer),
 	# handbook 挂 MainScene z=0 会被 package z=3 元素穿透显示在上。z=100 盖住(> package 内部 z max)。
@@ -286,9 +284,3 @@ func _now() -> float:
 	return Time.get_ticks_msec() / 1000.0
 
 
-func _show_toast(text: String) -> void:
-	if Engine.is_editor_hint():
-		return
-	var toast_node: Node = Engine.get_main_loop().root.get_node_or_null("/root/Toast")
-	if toast_node != null and toast_node.has_method("show_message"):
-		toast_node.show_message(text)

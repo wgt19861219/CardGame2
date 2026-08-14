@@ -8,6 +8,8 @@ extends Control
 const DEFAULT_SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)
 # 弹窗缩放入场（源 EaseBackOut 0.2s）：container scale 0→1，pivot 居中。
 const SCALE_IN_DUR: float = 0.2
+# 打开弹窗音效名（源 common_popup_window；play_open_sfx 开关控制）。
+const OPEN_SFX_NAME: String = "common_popup_window"
 
 var identity: String = ""
 var param: Dictionary = {}
@@ -16,6 +18,14 @@ var container: Control = null
 var _on_enter_handlers: Array[Callable] = []
 var _on_exit_handlers: Array[Callable] = []
 var _swallow: bool = true
+# --- T4 样板收敛（审查报告-架构评估与重构方案-2026-08-14 阶段一；默认值保持旧默认行为，子类按需置位）---
+# 打开弹窗音效（原 10 份 register_on_enter(func(): AudioPlayer.play_sfx(...)) 样板上收；默认关）。
+var play_open_sfx: bool = false
+# shade 全透明且不吞点击（原 10 文件静态 shade_layer.color.a=0 + IGNORE hack；pushScene 型面板 tscn 已带全屏 bg）。
+var transparent_shade: bool = false
+# HudOverlay identity（非空时 show_window 切换 / remove_window 恢复 "main"；原 8 份 remove_window override 样板。
+# 动态 identity/恢复的面板（battle_prepare 记 _prev_identity、package 构造传入）不适用，保留各自 override）。
+var hud_identity: String = ""
 
 
 func _init(p_identity: String = "", p_param: Dictionary = {}) -> void:
@@ -29,6 +39,9 @@ func setup() -> void:
 	shade_layer.color = DEFAULT_SHADE_COLOR
 	shade_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade_layer.mouse_filter = Control.MOUSE_FILTER_STOP if _swallow else Control.MOUSE_FILTER_IGNORE
+	if transparent_shade:
+		shade_layer.color.a = 0
+		shade_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade_layer)
 	container = Control.new()
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -54,14 +67,25 @@ func show_window(parent: Node) -> void:
 	# 源靠 mainLayer z=120 + animLayer z=50；Godot 用 z_index 统一处理，100 兜底所有面板层级。
 	z_index = 100
 	z_as_relative = false
+	if play_open_sfx:
+		AudioPlayer.play_sfx(OPEN_SFX_NAME)
+	if hud_identity != "":
+		HudOverlay.apply_identity(hud_identity)
 	for h in _on_enter_handlers:
 		h.call()
 
 
 func remove_window() -> void:
+	if hud_identity != "":
+		HudOverlay.apply_identity("main")
 	for h in _on_exit_handlers:
 		h.call()
 	queue_free()
+
+
+## Toast 提示（原 7 份逐字复制的反射版 _show_toast 收敛；GUT 环境 Toast autoload 常在，直调）。
+func _show_toast(text: String) -> void:
+	Toast.show_message(text)
 
 
 func register_on_enter(handler: Callable) -> void:

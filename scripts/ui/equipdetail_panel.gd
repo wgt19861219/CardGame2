@@ -38,12 +38,12 @@ var _scroll_vbox: VBoxContainer = null
 
 
 func setup_panel(equip_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
+	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_equip_id = equip_id
 	cm = p_cm
 	pd = p_pd
 	setup()
 	_build_content()
-	register_on_enter(func() -> void: AudioPlayer.play_sfx("common_popup_window"))
 	# 源 EaseBackOut 0.2s：弹窗缩放入场（P2-10）。
 	register_on_enter(play_scale_in)
 

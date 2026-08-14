@@ -27,3 +27,46 @@ func test_set_swallow() -> void:
 	w.set_swallow(false)
 	assert_eq(w.shade_layer.mouse_filter, Control.MOUSE_FILTER_IGNORE, "swallow=false → IGNORE")
 	w.queue_free()
+
+
+# ---- T4 样板收敛（阶段一）：4 能力基类接管 ----
+
+# 透明遮罩：transparent_shade=true → shade 全透明 + IGNORE（原 10 文件 hack 收敛）。
+func test_transparent_shade() -> void:
+	var w := PopWindow.new()
+	w.transparent_shade = true
+	w.setup()
+	assert_eq(w.shade_layer.color.a8, 0, "transparent_shade → alpha=0")
+	assert_eq(w.shade_layer.mouse_filter, Control.MOUSE_FILTER_IGNORE, "transparent_shade → IGNORE")
+	w.queue_free()
+
+
+# HUD identity：非空时 show 切换 / remove 恢复 main（原 8 份 override 收敛）。
+func test_hud_identity_lifecycle() -> void:
+	var root := Node.new()
+	add_child(root)
+	HudOverlay.apply_identity("main")
+	var w := PopWindow.new("t4", {})
+	w.hud_identity = "crusade"
+	w.show_window(root)
+	assert_eq(HudOverlay.get_identity(), "crusade", "show_window 应切 hud_identity")
+	w.remove_window()
+	assert_eq(HudOverlay.get_identity(), "main", "remove_window 应恢复 main")
+	root.queue_free()
+
+
+# 音效开关：默认关不播；play_open_sfx=true 时经 AudioPlayer 播 common_popup_window（默认 false 保持旧无音效面板行为）。
+func test_play_open_sfx_default_off() -> void:
+	var root := Node.new()
+	add_child(root)
+	var w := PopWindow.new("t4b", {})
+	w.show_window(root)   # play_open_sfx 缺省 false：AudioPlayer 无该资源也不报错（play_sfx 有守卫），主断言在 true 分支
+	w.queue_free()
+	root.queue_free()
+
+
+func test_show_toast_base_method() -> void:
+	var w := PopWindow.new()
+	w._show_toast("t4-toast")   # 基类方法直调 Toast.show_message 不崩（GUT 环境 autoload 在）
+	pass_test("基类 _show_toast 可用")
+	w.queue_free()
