@@ -5,8 +5,8 @@ extends RefCounted
 ## 把 FcaAnimation 包装为 effect_list 兼容对象（update/is_terminated 协议）。
 ## .abc 资源加载失败时降级为空 Node2D（照源 createFcaNode stub 兜底）。
 
-const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
-const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
+const AtlasSprite = preload("res://scripts/ui/atlas_sprite.gd")
+const FcaAnimation = preload("res://scripts/ui/fca_animation.gd")
 
 var _fca: FcaAnimation = null
 var _node: Node2D = null

@@ -11,7 +11,7 @@ extends Control
 ## battle_hero_panel_content.tscn instantiate（位置/size 可视化）；动态 portrait/hp_bar/mp_bar 挂 %Host。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_hero_panel_content.tscn")
-const ReadheroIcon: Script = preload("res://scripts/view/battle/readhero_icon.gd")
+const ReadheroIcon: Script = preload("res://scripts/ui/readhero_icon.gd")
 const BattleFloatingBar: Script = preload("res://scripts/view/battle/battle_floating_bar.gd")
 const BattleEffect: Script = preload("res://scripts/view/battle/battle_effect.gd")
 

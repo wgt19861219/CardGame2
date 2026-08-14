@@ -16,7 +16,7 @@ extends Control
 signal crusade_battle_finished(won: bool, stage: int)
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/battle_prepare_content.tscn")
-const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
+const ReadheroIcon = preload("res://scripts/ui/readhero_icon.gd")
 const TEAM_MAX: int = 5
 
 const TAB_ALL: String = "all"

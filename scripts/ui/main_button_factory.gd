@@ -19,8 +19,8 @@ const TITLE_OFFSET_Y: float = 25.0
 const DEFAULT_RADIUS: float = 56.0    # 无 radius 字段的默认触摸半径
 const GapLoopAnimator = preload("res://scripts/ui/gap_loop_animator.gd")
 const RoundButton = preload("res://scripts/ui/round_button.gd")
-const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
-const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
+const FcaAnimation = preload("res://scripts/ui/fca_animation.gd")
+const AtlasSprite = preload("res://scripts/ui/atlas_sprite.gd")
 const FCA_ANI_DIR: String = "res://assets/anim_frames/effect/"   # eff_UI_*.ani FCA 序列帧目录
 
 

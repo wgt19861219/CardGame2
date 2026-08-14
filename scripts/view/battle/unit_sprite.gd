@@ -6,8 +6,8 @@ extends Node2D
 ## battle_animator 降级（本项目无该文件，FCA 失败直接降级头像）。
 ## 动作名照源 unit.lua setAction：Idle/Move/atk/atk2/atk3/ult/Damaged/Death。
 
-const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
-const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
+const AtlasSprite = preload("res://scripts/ui/atlas_sprite.gd")
+const FcaAnimation = preload("res://scripts/ui/fca_animation.gd")
 
 const WALK_VISUAL_SPEED: float = 120.0
 const PLAYER_CAMP: int = 1            # = BattleEngine.CAMP_PLAYER（照源玩家阵营）

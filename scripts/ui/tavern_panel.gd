@@ -18,7 +18,7 @@ extends PopWindow
 signal drawn
 
 const TavernBoardBuilder = preload("res://scripts/ui/tavern_board_builder.gd")
-const ReadheroIcon = preload("res://scripts/view/battle/readhero_icon.gd")
+const ReadheroIcon = preload("res://scripts/ui/readhero_icon.gd")
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/tavern_content.tscn")
 const POOL_KEYS: Array[String] = ["Bronze", "Gold", "MagicSoul"]
 # board 横排中心照源 draglist(80,80)+board_bg ccp(160,205) → Godot (240,355)/(480,355)/(720,355)

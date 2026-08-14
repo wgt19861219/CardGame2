@@ -36,8 +36,8 @@ const FCA_BASE_DIR: String = "res://assets/anim_frames/effect/"
 const BUBBLE_RES: String = "eff_UI_tavern_bubble"
 const CARD_FCA_PREFIX: String = "eff_UI_tavern_card_"
 
-const AtlasSprite = preload("res://scripts/view/battle/atlas_sprite.gd")
-const FcaAnimation = preload("res://scripts/view/battle/fca_animation.gd")
+const AtlasSprite = preload("res://scripts/ui/atlas_sprite.gd")
+const FcaAnimation = preload("res://scripts/ui/fca_animation.gd")
 
 var _hero: HeroInstance = null
 var _cm: Variant = null
