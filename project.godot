@@ -17,7 +17,7 @@ config/features=PackedStringArray("4.7")
 
 [autoload]
 
-autoload/MCPBridge="*res://mcp_bridge.gd"
+MCPBridge="*res://mcp_bridge.gd"
 Events="*res://scripts/autoload/events.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 Toast="*res://scripts/autoload/toast.gd"
