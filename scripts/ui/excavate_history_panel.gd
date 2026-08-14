@@ -34,7 +34,6 @@ const LSTR_MIN_KEY: String = "PVP._D_MINUTES_AGO"
 const MIN_FALLBACK_FMT: String = "%d分钟前"
 const LSTR_SEC_KEY: String = "PVP._D_SECONDS_AGO"
 const SEC_FALLBACK_FMT: String = "%d秒前"
-const ExcavateBattleReportPanel = preload("res://scripts/view/battle/excavate_battle_report_panel.gd")
 
 var pd: PlayerData
 
