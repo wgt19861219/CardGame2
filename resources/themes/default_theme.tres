@@ -1,6 +1,31 @@
-[gd_resource type="Theme" format=3]
+[gd_resource type="Theme" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="3_detailp"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
+
+[sub_resource type="StyleBoxTexture" id="SB_detail_n"]
+texture = ExtResource("1_detailn")
+texture_margin_left = 15.0
+texture_margin_top = 15.0
+texture_margin_right = 66.0
+texture_margin_bottom = 33.0
+
+[sub_resource type="StyleBoxTexture" id="SB_detail_a"]
+texture = ExtResource("2_detaila")
+texture_margin_left = 15.0
+texture_margin_top = 15.0
+texture_margin_right = 66.0
+texture_margin_bottom = 33.0
+
+[sub_resource type="StyleBoxTexture" id="SB_detail_p"]
+texture = ExtResource("3_detailp")
+texture_margin_left = 15.0
+texture_margin_top = 15.0
+texture_margin_right = 66.0
+texture_margin_bottom = 33.0
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -77,6 +102,27 @@ TitleLabel/constants/outline_size = 3
 TitleLabel/font_sizes/font_size = 20
 VBoxContainer/constants/separation = 8
 ; ── 轮 3 新增 10 变体（完整签名，spec v2.2 §1.1）──
+HeroDetailTab/base_type = &"Button"
+HeroDetailTab/styles/normal = SubResource("SB_detail_n")
+HeroDetailTab/styles/hover = SubResource("SB_detail_n")
+HeroDetailTab/styles/pressed = SubResource("SB_detail_p")
+HeroDetailTabActive/base_type = &"Button"
+HeroDetailTabActive/styles/normal = SubResource("SB_detail_a")
+HeroDetailTabActive/styles/hover = SubResource("SB_detail_a")
+HeroDetailTabActive/styles/pressed = SubResource("SB_detail_p")
+HeroDetailTabLabel/base_type = &"Label"
+HeroDetailTabLabel/colors/font_color = Color(0, 0, 0, 1)
+HeroDetailTabLabel/colors/font_outline_color = Color(1, 1, 1, 1)
+HeroDetailTabLabel/constants/outline_size = 2
+ShopCostLabel/base_type = &"Label"
+ShopCostLabel/font_sizes/font_size = 14
+ShopTalkLabel/base_type = &"Label"
+ShopTalkLabel/font_sizes/font_size = 16
+ShopTimeLabel/base_type = &"Label"
+ShopTimeLabel/colors/font_color = Color(0.858824, 0.780392, 0.658824, 1)
+ShopTimeLabel/font_sizes/font_size = 13
+ShopTitleLabel/base_type = &"Label"
+ShopTitleLabel/font_sizes/font_size = 24
 HandbookEntryLabel/base_type = &"Label"
 HandbookEntryLabel/colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
 HandbookEntryLabel/font_sizes/font_size = 16
