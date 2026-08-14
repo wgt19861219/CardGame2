@@ -155,3 +155,10 @@ func test_default_textures_baked() -> void:
 	var title: Label = content.get_node("%PanelLayer/%Title") as Label
 	assert_eq(String(title.theme_type_variation), "ShopTitleLabel", "Title 走 theme variation")
 	content.free()
+
+
+# 两件套范式（2026-08-14）：ShopBuilder 退役，fill 归 panel。
+func test_shop_builder_retired() -> void:
+	var panel_text: String = FileAccess.get_file_as_string("res://scripts/ui/shop_panel.gd")
+	assert_true(panel_text.find("ShopBuilder") == -1, "panel 不再引用 ShopBuilder")
+	assert_false(ResourceLoader.exists("res://scripts/ui/shop_builder.gd"), "shop_builder.gd 已删")

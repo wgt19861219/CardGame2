@@ -61,6 +61,7 @@ offset_left = 75.0
 offset_top = 96.0
 offset_right = 130.0
 offset_bottom = 112.0
+theme_override_font_sizes/font_size = 14
 mouse_filter = 2
 visible = false
 text = "SALE"
@@ -72,6 +73,7 @@ offset_left = 55.0
 offset_top = 91.0
 offset_right = 110.0
 offset_bottom = 107.0
+theme_override_font_sizes/font_size = 14
 mouse_filter = 2
 visible = false
 
