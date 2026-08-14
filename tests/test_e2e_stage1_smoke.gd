@@ -195,8 +195,9 @@ func test_stage_done_scene_assemble() -> void:
 	}
 	var built := StageAccount.build_result_param(result_param, cm, player, player.hero_manager)
 
-	# StageDoneScene.setup 不崩（_ready 时 GameData.last_result 应有 stage_id+victory，直接传 built 模拟）
-	var scene := StageDoneScene.new()
+	# StageDoneScene.setup 不崩（2026-08-05 合并后：静态节点固化进 .tscn，必须 instantiate）。
+	var scene: StageDoneScene = load("res://scenes/battle/stage_done_scene.tscn").instantiate() as StageDoneScene
+	add_child(scene)
 	scene.setup(built, cm)
 	gut.p("StageDoneScene setup OK，star_nodes=%d hero_icons=%d loot_icons=%d" % [
 		scene._star_nodes.size(), scene._hero_icon_nodes.size(), scene._loot_icon_nodes.size(),

@@ -15,12 +15,13 @@ extends Control
 ## light 旋转 tween / prompt ≤2 Label 挂 %PromptHost。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_failed_content.tscn")
+# Cocos 800×480（左下原点）→ Godot 960×640（左上原点）等比转换：x*1.2, (480-y)*1.333
 # P1-16 battleStatist 战斗统计按钮位置常量（贴图/CAP/路径走公共 helper；本场景独有的位置/偏移）。
-const BATTLE_STATIST_POS: Vector2 = Vector2(500.0, 335.0)
+const BATTLE_STATIST_POS: Vector2 = Vector2(642.0, 160.0)
 const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 26.0)
 
-const PROMPT_Y: float = 165.0
-const PROMPT_POS: Array[Vector2] = [Vector2(205.0, PROMPT_Y), Vector2(445.0, PROMPT_Y)]
+const PROMPT_Y: float = 420.0
+const PROMPT_POS: Array[Vector2] = [Vector2(246.0, PROMPT_Y), Vector2(534.0, PROMPT_Y)]
 const ROTATE_DURATION: float = 5.0
 const TITLE_FAIL_TEXT: String = "失败"
 const TITLE_TIMEOUT_TEXT: String = "超时"

@@ -49,7 +49,11 @@ func show_step(step: StringName, parent: Node) -> void:
 
 # bg/light/label 从 .tscn instantiate（位置/size 可视化），icon/fca 保留 procedural。
 func _setup_panel(cfg: Dictionary) -> void:
-	setup()  # PopWindow 建 shade + container
+	setup()  # PopWindow 建 shade + container（已连 _on_shade_clicked → remove_window）
+	# 覆盖父类点击行为：子类用 _destroy（带关闭动画）而非直接 remove_window。
+	# 先断开父类的 _on_shade_clicked，再连自己的 _on_shade_input，避免双触发。
+	if shade_layer.gui_input.is_connected(_on_shade_clicked):
+		shade_layer.gui_input.disconnect(_on_shade_clicked)
 	shade_layer.gui_input.connect(_on_shade_input)
 	# panel 居中（UnlockContent 根节点 anchors_preset=8 已在 .tscn 设；container 子节点 position=0）
 	_panel = CONTENT_SCENE.instantiate() as Control

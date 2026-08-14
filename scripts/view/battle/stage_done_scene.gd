@@ -7,29 +7,25 @@ extends Control
 ## 单机化：去 guildInstanceData/bestRankReward(PVP)/mercenary/FCA 特效/draglist 滚动/getNewHero announce/
 ##   battleStatist/isMaxLevel full bar。speedDiv=1（无战斗速度系统）。doClickReplay/Next→main_scene。
 ##
-## 重构（2026-07-18，hero_detail 范式）：静态结构（bg/shelter/light/star×3/info_bg+装饰+icon+label+
-## battleStatistNode 父/replay/next）静态化进 scenes/battle/stage_done_content.tscn（位置/size 可视化调）；
-## scene 改为 instantiate + add_child + get_node("%..") + fill。动态（bg texture 按 stage_id / lv·gold·exp
-## 文本 / replay visible 按 is_key_stage / battleStatist Scale9 Button + BattleCount Label）运行时 fill。
-## hero/loot icon（数量随 _param 变）保留 procedural 挂 _content（保留原 add_child 行为，最少改动）。
+## 重构（2026-08-05）：content.tscn 合并进 scene.tscn（单文件）。所有静态 UI 节点（bg/shelter/light/
+## star×3/info_bg+装饰+icon+label+BattleStatistBtn+BattleCount/HeroHost/LootHost/replay/next）固化进
+## stage_done_scene.tscn。scene 改为 get_node("%..") + fill。动态（bg texture 按 stage_id / lv·gold·exp
+## 文本 / replay visible 按 is_key_stage / BattleStatistBtn Scale9 样式）运行时 fill。
+## hero/loot icon（数量随 _param 变）保留 procedural 挂 %HeroHost/%LootHost（Node2D/RefCounted 无法 .tscn 实例化）。
 
-const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_done_content.tscn")
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
 
-# 静态节点（bg/shelter/light/star×3/info_bg 父/replay/next）坐标已固化进 stage_done_content.tscn，
-# 这里仅保留动态节点（hero/loot icon）+ InfoBg 内 icon texture fill + battleStatist 子（Button + Label）所需常量。
-const HERO_ORI_X: float = 195.0
-const HERO_ORI_Y: float = 243.0
-const HERO_GAP_X: float = 92.0
-const LOOT_ORI_X: float = 200.0
-const LOOT_ORI_Y: float = 100.0
-const LOOT_GAP_X: float = 70.0
+# 静态节点（bg/shelter/light/star×3/info_bg 父/replay/next/HeroHost/LootHost）坐标已固化进
+# stage_done_scene.tscn（2026-08-05 合并 content.tscn）。这里仅保留动态节点（hero/loot icon 间距、bar 偏移）所需常量。
+# Cocos 800×480（左下原点）→ Godot 960×640（左上原点）等比转换：x*1.2, (480-y)*1.333
+# hero/loot 起始坐标（HERO_ORI/LOOT_ORI）已搬进 %HeroHost/%LootHost 的 position，可视化调。
+const HERO_GAP_X: float = 110.0
+const LOOT_GAP_X: float = 84.0
 const BAR_OFFSET: Vector2 = Vector2(0.0, -8.0)
 const EXP_LABEL_OFFSET: Vector2 = Vector2(38.0, -30.0)
 const MAX_STARS: int = 3
-# battleStatistNode 子位置常量（贴图/CAP 走 C 公共常量；本场景独有的尺寸/偏移）。
+# battleStatist 按钮 Scale9 尺寸/CAP（贴图路径走公共常量；本场景独有的尺寸）。
 const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)
-const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 0.0)
 # InfoBg 内 ExpIcon texture（GoldIcon 已静态化进 .tscn；xpicon 缺图 _load 容错 null 不报错）
 const EXP_ICON_TEX: String = "xpicon.png"
 # 英雄经验条（源 stagedone.lua:364-371,443-449 heroxp-progress-bg/progress/full 三 sprite）。
@@ -41,7 +37,7 @@ var _param: Dictionary = {}
 var _cm: ConfigManager = null
 var _animator: StageDoneAnimator = null
 var _anim_playing: bool = false
-var _content: Control = null       # stage_done_content.tscn 实例（静态结构容器）
+var _content: Control = null       # 合并后指向 self（保留以兼容 animator/test 的 _content.get_node 调用）
 
 # 装配节点（animator 操作，从 _content get_node as 取）
 var _light: Sprite2D = null
@@ -57,7 +53,10 @@ var _next_btn: TextureButton = null
 var _exp_label: Label = null
 var _gold_label: Label = null
 var _lv_label: Label = null
-var _battle_statist_node: Sprite2D = null
+var _battle_statist_btn: Button = null
+var _battle_count_label: Label = null
+var _hero_host: Control = null     # %HeroHost：hero icon 数量动态，procedural 挂此（起始坐标固化进 .tscn）
+var _loot_host: Control = null     # %LootHost：loot icon 数量动态，procedural 挂此
 
 
 func _ready() -> void:
@@ -81,11 +80,10 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 	_animator.play_enter()
 
 
-# 建 UI 内容：静态结构从 .tscn instantiate（位置/size 可视化）。
-# 取出 animator 操作的节点引用（light/info_bg/star/btn/label/battleStatist）。
+# UI 节点已全部固化进 stage_done_scene.tscn（2026-08-05 合并 content.tscn）。
+# _content 指向 self，保留以兼容 animator/test 的 _content.get_node("%..") 调用（最小改动）。
 func _build_content() -> void:
-	_content = CONTENT_SCENE.instantiate() as Control
-	add_child(_content)
+	_content = self
 	_light = _content.get_node("%Light") as Sprite2D
 	_info_bg = _content.get_node("%InfoBg") as Sprite2D
 	_star_nodes.clear()
@@ -96,7 +94,10 @@ func _build_content() -> void:
 	_exp_label = _content.get_node("%Exp") as Label
 	_gold_label = _content.get_node("%Gold") as Label
 	_lv_label = _content.get_node("%Lv") as Label
-	_battle_statist_node = _content.get_node("%BattleStatistNode") as Sprite2D
+	_battle_statist_btn = _content.get_node("%BattleStatistBtn") as Button
+	_battle_count_label = _content.get_node("%BattleCount") as Label
+	_hero_host = _content.get_node("%HeroHost") as Control
+	_loot_host = _content.get_node("%LootHost") as Control
 
 
 # 填静态节点的动态字段：bg texture（按 stage_id）+ lv 文本（玩家等级）+ replay/next visible + 按钮 pressed。
@@ -116,21 +117,16 @@ func _fill_info_bg_icons() -> void:
 	(_info_bg.get_node("ExpIcon") as Sprite2D).texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + EXP_ICON_TEX)
 
 
-# 父 Sprite2D 在 .tscn（pos + modulate.a=0 独立 fade），Button + Label procedural fill 挂父（Scale9 复杂构造）。
+# Button 已静态化进 .tscn（%BattleStatistBtn + %BattleCount Label 子节点）。
+# 运行时只补 Scale9 样式（apply_with_label 不传文案，避免与 %BattleCount 双重显示）+ 文案 + 信号。
 func _fill_battle_statist() -> void:
-	var btn: Button = UiScale9Button.make_centered(
+	UiScale9Button.apply_with_label(
+		_battle_statist_btn,
 		ALPHA_HVGA_DIR + StageSettlementCommon.BATTLE_STATIST_TEX,
 		ALPHA_HVGA_DIR + StageSettlementCommon.BATTLE_STATIST_PRESS_TEX,
-		BATTLE_STATIST_LABEL_OFFSET,
-		BATTLE_STATIST_SIZE,
 		StageSettlementCommon.BATTLE_STATIST_CAP)
-	btn.pressed.connect(_on_battle_statist_pressed)
-	_battle_statist_node.add_child(btn)
-	var count := Label.new()
-	count.name = "BattleCount"
-	count.text = StageSettlementCommon.statist_label_text(_cm)
-	count.position = BATTLE_STATIST_LABEL_OFFSET
-	_battle_statist_node.add_child(count)
+	_battle_count_label.text = StageSettlementCommon.statist_label_text(_cm)
+	_battle_statist_btn.pressed.connect(_on_battle_statist_pressed)
 
 
 # 战斗统计面板弹出（公共逻辑，照源 _on_battle_statist_pressed）。
@@ -152,9 +148,9 @@ func _create_hero_icons() -> void:
 			"hp": int(hinfo.get("hp", 0)),
 			"mp": int(hinfo.get("mp", 0)),
 		}, _cm)
-		ri.position = Vector2(HERO_ORI_X + HERO_GAP_X * i, HERO_ORI_Y)
+		ri.position = Vector2(HERO_GAP_X * i, 0.0)
 		ri.icon.modulate.a = 0.0
-		_content.add_child(ri)   # setup 内部已 add icon 到 self（照 battle_hero_panel:55）
+		_hero_host.add_child(ri)   # 起始坐标已固化进 %HeroHost.position，此处相对 host 横向排列
 		# 经验条三层（源 stagedone.lua:364-371,443-449）：bg 静态底 + progress 前景（scaleX 动画）+ full 满级覆盖。
 		# bg 先 add（z 序在下），progress 后 add（覆盖 bg），full 最后 add（覆盖 progress，仅 is_max_level visible）。
 		var bar_bg := Sprite2D.new()
@@ -194,9 +190,9 @@ func _create_loot_icons() -> void:
 		var info: Dictionary = loot_list[id]
 		var amount: int = int(info.get("amount", 1))
 		var icon: Control = ReadequipIcon.create_icon(int(id), amount, _cm)
-		icon.position = Vector2(LOOT_ORI_X + LOOT_GAP_X * i, LOOT_ORI_Y)
+		icon.position = Vector2(LOOT_GAP_X * i, 0.0)
 		icon.scale = Vector2.ZERO
-		_content.add_child(icon)
+		_loot_host.add_child(icon)
 		_loot_icon_nodes.append(icon)
 		i += 1
 

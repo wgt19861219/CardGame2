@@ -64,9 +64,9 @@ func _start_light_rotate() -> void:
 func _play_info_bg() -> void:
 	var tw: Tween = _new_tween()
 	tw.tween_property(_s._info_bg, "modulate:a", 1.0, FADE_DUR)
-	if _s._battle_statist_node != null:
+	if _s._battle_statist_btn != null:
 		var tw2: Tween = _new_tween()
-		tw2.tween_property(_s._battle_statist_node, "modulate:a", 1.0, FADE_DUR)
+		tw2.tween_property(_s._battle_statist_btn, "modulate:a", 1.0, FADE_DUR)
 
 
 func _play_level() -> void:

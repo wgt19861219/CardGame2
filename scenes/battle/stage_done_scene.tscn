@@ -1,12 +1,197 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://uffxere2me65"]
 
-[ext_resource type="Script" path="res://scripts/view/battle/stage_done_scene.gd" id="1_stage_done"]
+[ext_resource type="Texture2D" uid="uid://cyp7cmum3jqk5" path="res://assets/ui/alpha/HVGA/lettherebelight.png" id="1_light"]
+[ext_resource type="Script" uid="uid://xbkoy85150hb" path="res://scripts/view/battle/stage_done_scene.gd" id="1_stage_done"]
+[ext_resource type="Texture2D" uid="uid://gpy06sp5lba7" path="res://assets/ui/alpha/HVGA/star_left.png" id="2_star1"]
+[ext_resource type="Texture2D" uid="uid://cju25r5fkgfjq" path="res://assets/ui/alpha/HVGA/star_center.png" id="3_star2"]
+[ext_resource type="Texture2D" uid="uid://1uxhhscc1nrb" path="res://assets/ui/alpha/HVGA/star_right.png" id="4_star3"]
+[ext_resource type="Texture2D" uid="uid://dp1n5y1cfv6hw" path="res://assets/ui/alpha/HVGA/replaybtn.png" id="5_replay"]
+[ext_resource type="Texture2D" uid="uid://dr141610icpvl" path="res://assets/ui/alpha/HVGA/replaybtn-disabled.png" id="6_replayp"]
+[ext_resource type="Texture2D" uid="uid://nqnk2glp2ijf" path="res://assets/ui/alpha/HVGA/nextstagebtn.png" id="7_next"]
+[ext_resource type="Texture2D" uid="uid://8ifnen30lw0h" path="res://assets/ui/alpha/HVGA/nextstagebtn-disabled.png" id="8_nextp"]
+[ext_resource type="Texture2D" uid="uid://b4qm7l2nsoa1g" path="res://assets/ui/alpha/HVGA/bigyellowbar.png" id="9_infobg"]
+[ext_resource type="Texture2D" uid="uid://h3eub2s1sb16" path="res://assets/ui/alpha/HVGA/wing_win_bg_1.png" id="10_top1"]
+[ext_resource type="Texture2D" uid="uid://n3ipftphrx2i" path="res://assets/ui/alpha/HVGA/wing_win_bg_2.png" id="11_top2"]
+[ext_resource type="Texture2D" uid="uid://dbmhu8lfn3m4x" path="res://assets/ui/alpha/HVGA/yellowbar_win_bg.png" id="12_title1"]
+[ext_resource type="Texture2D" uid="uid://cpyfjvblmhjg2" path="res://assets/ui/alpha/HVGA/shadow_win_bg.png" id="13_title2"]
+[ext_resource type="Texture2D" uid="uid://s4de6u60hqct" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="14_gold"]
 
-[node name="StageDoneScene" type="Control"]
+[node name="StageDoneScene" type="Control" unique_id=193704999]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_right = 960.0
 offset_bottom = 640.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_stage_done")
+
+[node name="Bg" type="TextureRect" parent="." unique_id=1071425880]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Shelter" type="ColorRect" parent="." unique_id=605151113]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.588235)
+
+[node name="Light" type="Sprite2D" parent="." unique_id=762288245]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+position = Vector2(446, 107)
+texture = ExtResource("1_light")
+
+[node name="Star1" type="Sprite2D" parent="." unique_id=1584956854]
+unique_name_in_owner = true
+z_index = 100
+position = Vector2(312, 104)
+scale = Vector2(1e-05, 1e-05)
+texture = ExtResource("2_star1")
+
+[node name="Star2" type="Sprite2D" parent="." unique_id=980427014]
+unique_name_in_owner = true
+z_index = 101
+position = Vector2(454, 93)
+scale = Vector2(1e-05, 1e-05)
+texture = ExtResource("3_star2")
+
+[node name="Star3" type="Sprite2D" parent="." unique_id=1976436254]
+unique_name_in_owner = true
+z_index = 102
+position = Vector2(586, 104)
+scale = Vector2(1e-05, 1e-05)
+texture = ExtResource("4_star3")
+
+[node name="InfoBg" type="Sprite2D" parent="." unique_id=1337558394]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+position = Vector2(456, 420)
+texture = ExtResource("9_infobg")
+
+[node name="TopWinBg1" type="Sprite2D" parent="InfoBg" unique_id=1662719642]
+position = Vector2(0, -278)
+texture = ExtResource("10_top1")
+
+[node name="TopWinBg2" type="Sprite2D" parent="InfoBg" unique_id=1574907406]
+position = Vector2(0, -278)
+texture = ExtResource("11_top2")
+
+[node name="InfoTitleBg2" type="Sprite2D" parent="InfoBg" unique_id=1332038426]
+z_index = 1
+position = Vector2(0, -200)
+texture = ExtResource("13_title2")
+
+[node name="InfoTitleBg1" type="Sprite2D" parent="InfoBg" unique_id=1262789858]
+z_index = 1
+position = Vector2(0, -200)
+texture = ExtResource("12_title1")
+
+[node name="GoldIcon" type="Sprite2D" parent="InfoBg" unique_id=963062940]
+position = Vector2(-40, -200)
+texture = ExtResource("14_gold")
+
+[node name="ExpIcon" type="Sprite2D" parent="InfoBg" unique_id=1214630530]
+position = Vector2(30, -200)
+
+[node name="Lv" type="Label" parent="InfoBg" unique_id=789345339]
+unique_name_in_owner = true
+offset_left = -60.0
+offset_top = -200.0
+offset_right = 40.0
+offset_bottom = -180.0
+text = "LV 1"
+
+[node name="Gold" type="Label" parent="InfoBg" unique_id=762184030]
+unique_name_in_owner = true
+offset_left = -10.0
+offset_top = -200.0
+offset_right = 80.0
+offset_bottom = -180.0
+text = "+0"
+
+[node name="Exp" type="Label" parent="InfoBg" unique_id=1217841582]
+unique_name_in_owner = true
+offset_left = 60.0
+offset_top = -200.0
+offset_right = 150.0
+offset_bottom = -180.0
+text = "+0"
+
+[node name="BattleStatistBtn" type="Button" parent="InfoBg" unique_id=313899263]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+z_index = 2
+offset_left = 115.0
+offset_top = -225.0
+offset_right = 185.0
+offset_bottom = -175.0
+
+[node name="BattleCount" type="Label" parent="InfoBg/BattleStatistBtn" unique_id=2079246851]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "数据"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Replay" type="TextureButton" parent="." unique_id=2145971126]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 788.0
+offset_top = 159.0
+offset_right = 916.0
+offset_bottom = 282.0
+texture_normal = ExtResource("5_replay")
+texture_pressed = ExtResource("6_replayp")
+ignore_texture_size = true
+
+[node name="Next" type="TextureButton" parent="." unique_id=1231073365]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 788.0
+offset_top = 446.0
+offset_right = 916.0
+offset_bottom = 569.0
+texture_normal = ExtResource("7_next")
+texture_pressed = ExtResource("8_nextp")
+ignore_texture_size = true
+
+[node name="HeroHost" type="Control" parent="." unique_id=1891025862]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 234.0
+offset_top = 316.0
+offset_right = 234.0
+offset_bottom = 316.0
+mouse_filter = 2
+
+[node name="LootHost" type="Control" parent="." unique_id=1814744843]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 240.0
+offset_top = 507.0
+offset_right = 240.0
+offset_bottom = 507.0
+mouse_filter = 2

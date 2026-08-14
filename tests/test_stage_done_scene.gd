@@ -31,8 +31,12 @@ func _make_param(stars: int = 2) -> Dictionary:
 	}
 
 
+const SCENE_PACKED: PackedScene = preload("res://scenes/battle/stage_done_scene.tscn")
+
+
 func _make_scene(stars: int = 2) -> StageDoneScene:
-	var scene := StageDoneScene.new()
+	# 2026-08-05 合并后：静态节点固化进 .tscn，必须 instantiate（不能 new()，否则无子节点）。
+	var scene := SCENE_PACKED.instantiate() as StageDoneScene
 	add_child(scene)
 	scene.setup(_make_param(stars), cm)
 	return scene
@@ -40,7 +44,7 @@ func _make_scene(stars: int = 2) -> StageDoneScene:
 
 func test_setup_creates_nodes() -> void:
 	var scene := _make_scene()
-	# 重构后静态节点在 stage_done_content.tscn（scene._content 子树，unique_name % 查找）
+	# 重构后静态节点在 stage_done_scene.tscn（scene._content=self 子树，unique_name % 查找）
 	var c: Control = scene._content
 	assert_not_null(c.get_node_or_null("%Bg"), "Bg 节点")
 	assert_not_null(c.get_node_or_null("%Shelter"), "Shelter 节点")
@@ -168,12 +172,13 @@ func test_hero_and_loot_counts() -> void:
 	scene.queue_free()
 
 
-# P1-16（2026-07-11）：battleStatistNode + gold_icon + 装饰背景层补全。
+# P1-16（2026-07-11）：battleStatist 按钮 + gold_icon + 装饰背景层补全。
+# 2026-08-05 重构：BattleStatistNode(Sprite2D 父) → BattleStatistBtn(Button) + BattleCount(Label 子节点) 静态化进 .tscn。
 func test_battle_statist_node_created() -> void:
 	var scene := _make_scene()
-	assert_not_null(scene._battle_statist_node, "battleStatistNode 装配")
-	assert_eq(scene._battle_statist_node.modulate.a, 0.0, "battleStatistNode 初始 modulate.a=0（独立 fade）")
-	assert_not_null(scene._battle_statist_node.get_node_or_null("BattleCount"), "battleCount Label")
+	assert_not_null(scene._battle_statist_btn, "BattleStatistBtn 装配")
+	assert_eq(scene._battle_statist_btn.modulate.a, 0.0, "BattleStatistBtn 初始 modulate.a=0（独立 fade）")
+	assert_not_null(scene._battle_statist_btn.get_node_or_null("BattleCount"), "battleCount Label")
 	scene.queue_free()
 
 
@@ -181,6 +186,17 @@ func test_battle_statist_node_created() -> void:
 func test_info_bg_has_decor_and_icons() -> void:
 	var scene := _make_scene()
 	var info_bg: Sprite2D = scene._info_bg
-	# 4 装饰背景 + lv/gold_icon/gold/exp_icon/exp/battleStatistNode = 10 子节点
+	# 4 装饰背景 + gold_icon/exp_icon + lv/gold/exp label + battleStatistBtn = 10 子节点
 	assert_gt(info_bg.get_child_count(), 5, "InfoBg 子节点 >5（装饰背景+图标+label+statist）")
+	scene.queue_free()
+
+
+# 2026-08-05 重构：HeroHost/LootHost 起始坐标固化进 .tscn，hero/loot icon procedural 挂此。
+func test_hero_loot_host_exist() -> void:
+	var scene := _make_scene()
+	assert_not_null(scene._hero_host, "%HeroHost 节点存在")
+	assert_not_null(scene._loot_host, "%LootHost 节点存在")
+	# hero/loot icon 挂在 Host 下（数量随 _param）
+	assert_eq(scene._hero_host.get_child_count(), scene._hero_icon_nodes.size(), "HeroHost 子节点数 = hero icon 数")
+	assert_eq(scene._loot_host.get_child_count(), scene._loot_icon_nodes.size(), "LootHost 子节点数 = loot icon 数")
 	scene.queue_free()
