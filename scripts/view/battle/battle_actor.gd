@@ -139,10 +139,10 @@ func update_view(dt: float) -> void:
 
 func _get_runtime_scale() -> float:
 	if bool(model.is_scale_action_running):
-		model.scale_action_running_time += float(model.dt_action)
-		if model.scale_action_running_time > model.scale_action_duration:
+		# 计时由 Logic 推进（T4-B6，battle_unit_update），View 只读（治反写）
+		if float(model.scale_action_running_time) > float(model.scale_action_duration):
 			return float(model.scale_action_scale_value)
-		return model.scale_action_running_time / model.scale_action_duration * (model.scale_action_scale_value - 1.0) + 1.0
+		return float(model.scale_action_running_time) / float(model.scale_action_duration) * (float(model.scale_action_scale_value) - 1.0) + 1.0
 	return MANUALLY_CAST_SCALE if bool(model.manually_casting) else 1.0
 
 

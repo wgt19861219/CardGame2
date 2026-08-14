@@ -22,6 +22,9 @@ static func update(u: Variant, dt: float) -> void:
 	u.speeder = speeder
 	var dt_action: float = dt * speeder
 	u.dt_action = dt_action
+	# 缩放动画计时推进（T4-B6 自 View 反写归位：skill_phase 读此值，推进必须在 Logic）
+	if "is_scale_action_running" in u and bool(u.is_scale_action_running):
+		u.scale_action_running_time += dt_action
 	if u.action_name != "" and not u.action_loop:
 		var elapsed: float = float(u.action_elapsed) + dt_action
 		var duration: float = float(u.action_duration)
