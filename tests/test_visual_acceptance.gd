@@ -77,8 +77,7 @@ func test_freeze_tint_changes_modulate() -> void:
 	actor.set_meta("tint", true)
 	# 用真实 BattleEntity + MockActor（复用 test_buff_visual 模式）
 	# 这里简化验证：freeze 设 frozen_actor + 调 tint
-	entity.actor = null  # 无 actor 时不 tint 但设 frozen_actor
-	entity.freeze()
+	entity.freeze()   # T4-B7 后无 actor 字段；engine null → TINT 事件静默丢弃
 	assert_true(entity.frozen_actor, "freeze 后 frozen_actor 应 true")
 
 

@@ -51,8 +51,8 @@ static func _enter_wave_units(scene, player_actors: Array) -> void:
 		if pi >= player_actors.size():
 			break
 		var actor: BattleActor = player_actors[pi]
-		actor.model = unit  # 重绑到新 unit（旧 unit 已被 reset_battle 丢弃，新 unit actor=null）
-		unit.actor = actor
+		actor.model = unit  # 重绑到新 unit（旧 unit 已被 reset_battle 丢弃）
+		scene._actors_by_unit[unit] = actor
 		actor.in_scene = true
 		# 重复切波：玩家 actor 跨波复用，先断开旧连接再重连（防 enter_walk_finished 多次触发 _on_actor_enter_done）。
 		if actor.enter_walk_finished.is_connected(scene._on_actor_enter_done):
@@ -67,7 +67,7 @@ static func _enter_wave_units(scene, player_actors: Array) -> void:
 		var actor: BattleActor = scene._create_actor(unit)
 		if actor == null:
 			continue
-		unit.actor = actor
+		scene._actors_by_unit[unit] = actor
 		actor.in_scene = true
 		scene._add_actor(actor)
 		var target: Vector2 = Vector2(float(unit.position.x), float(unit.position.y))

@@ -9,6 +9,7 @@ const BattleNpc = preload("res://scripts/systems/battle/battle_npc.gd")
 
 # mock 场景（sync_actors 需：engine/cm/actor_list/main_layer）
 class _MockScene extends Node2D:
+	var _actors_by_unit: Dictionary = {}   # T4-B7：unit→actor 映射（对齐 BattleScene）
 	var engine: Variant = null
 	var cm: Variant = null
 	var main_layer: Node2D = null
@@ -76,10 +77,11 @@ func test_sync_actors_assembles_npc() -> void:
 	scene.engine = engine
 	NpcActor.sync_actors(scene)
 	assert_eq(scene.actor_list.size(), 1, "1 个无 actor 的 npc → 装配 1 NpcActor 入 actor_list")
-	assert_not_null(npc.actor, "npc.actor 被赋 NpcActor")
-	assert_true(bool(npc.actor.in_scene), "NpcActor.in_scene = true")
-	assert_true(npc.actor.has_method("on_start_new_action"), "NpcActor 有 on_start_new_action（动作桥）")
-	assert_true(npc.actor.has_method("on_npc_death"), "NpcActor 有 on_npc_death（死亡桥）")
+	var actor: Variant = scene._actors_by_unit.get(npc)
+	assert_not_null(actor, "npc → 映射表被赋 NpcActor（T4-B7）")
+	assert_true(bool(actor.in_scene), "NpcActor.in_scene = true")
+	assert_true(actor.has_method("on_start_new_action"), "NpcActor 有 on_start_new_action（动作桥）")
+	assert_true(actor.has_method("on_npc_death"), "NpcActor 有 on_npc_death（死亡桥）")
 	# 二次 sync 跳过已有 actor 的 npc
 	NpcActor.sync_actors(scene)
 	assert_eq(scene.actor_list.size(), 1, "已有 actor 的 npc 二次 sync 跳过，不重复装配")
@@ -119,5 +121,6 @@ func test_npc_actor_battle_scene_integration() -> void:
 	scene.setup(eng, cm_real)
 	scene.step(0.033)
 	assert_eq(scene.actor_list.size(), 1, "1 NPC → _sync_actors 装配 1 NpcActor 入 actor_list（:240 接线生效）")
-	assert_not_null(npc.actor, "npc.actor 被赋 NpcActor")
-	assert_true(npc.actor.has_method("on_start_new_action"), "NpcActor 动作桥就位")
+	var n_actor: Variant = scene._actors_by_unit.get(npc)
+	assert_not_null(n_actor, "npc → 映射表被赋 NpcActor（T4-B7）")
+	assert_true(n_actor.has_method("on_start_new_action"), "NpcActor 动作桥就位")

@@ -48,6 +48,7 @@ var main_layer: Node2D = null
 var top_layer: Node2D = null
 var ui_layer: CanvasLayer = null
 var actor_list: Array = []        # BattleActor 实例（源 actor_list）
+var _actors_by_unit: Dictionary = {}  # T4-B7：unit/projectile/npc→actor 映射（Logic actor 黑板退役）
 var effect_list: Array = []
 var ui_list: Array = []
 var speed_state: int = 1
@@ -140,7 +141,7 @@ func reset_state() -> void:
 	for a in actor_list:
 		if a is Node:
 			a.queue_free()
-	actor_list.clear()
+	actor_list.clear(); _actors_by_unit.clear()
 	effect_list.clear()
 	for u in ui_list:
 		if u is Node:
@@ -195,8 +196,7 @@ func step(dt: float) -> void:
 	if is_paused or engine == null:
 		return
 	engine.update(dt)
-	BattleEventRenderer.render(engine)   # T4：同帧 drain 表现事件分发渲染（时序近等价旧同步直调）
-	frames += 1
+	BattleEventRenderer.render(engine, _actors_by_unit); frames += 1   # T4：同帧 drain 事件分发（近等价旧同步直调）
 	_sync_actors()
 	ProjectileSync.sync(self)
 	_advance_actor_list(dt)
@@ -268,11 +268,11 @@ func _sync_actors() -> void:
 		return
 	last_sync_tick = int(engine.ticks)
 	for unit in engine.foreach_alive_unit(BattleEngine.CAMP_BOTH):
-		var actor: Variant = unit.actor
+		var actor: Variant = _actors_by_unit.get(unit)
 		if actor == null:
 			var new_actor: BattleActor = _create_actor(unit)
 			if new_actor:
-				unit.actor = new_actor
+				_actors_by_unit[unit] = new_actor
 				new_actor.in_scene = true
 				_add_actor(new_actor)
 		elif not actor.in_scene:
@@ -445,13 +445,13 @@ func _start_player_walk_to_next_battle() -> float:
 	# 用 maxX 会停在 view 880 仍在屏内，切波瞬移到站位时被看见）。
 	var target_x: float = BattleActor.WAVE_WALK_OFFSCREEN_X
 	for unit in engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
-		if unit.actor != null and unit.actor.has_method("goto_next_battle"):
+		var wa: Variant = _actors_by_unit.get(unit)
+		if wa != null and wa.has_method("goto_next_battle"):
 			# 传 target_x 作停止点（双保险：到位回调 + await maxtime 任一先到都能停）。
-			unit.actor.goto_next_battle(float(unit.info.get("Walk Speed", 0.0)), target_x)
-		var distance: float = target_x - float(unit.position.x)
+			wa.goto_next_battle(float(unit.info.get("Walk Speed", 0.0)), target_x)
 		var walk_speed: float = float(unit.info.get("Walk Speed", 0.0)) * BattleActor.NEXT_BATTLE_WALK_SPEEDER
 		if walk_speed > 0.0:
-			maxtime = maxf(maxtime, distance / walk_speed)
+			maxtime = maxf(maxtime, (target_x - float(unit.position.x)) / walk_speed)
 	return maxtime
 
 

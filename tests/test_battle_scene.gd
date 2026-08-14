@@ -262,9 +262,8 @@ func test_unit_knockup_launches_actor() -> void:
 	scene.setup(eng, cm)
 	scene.step(0.033)
 	var actor: Variant = scene.actor_list[0]
-	p.actor = actor   # Logic→View 引用（源 unit.actor）
 	p.knockup(0.4, Vector2(50.0, 0.0))   # 源 knockup → LAUNCH 事件 → actor.launch(0.4)
-	BattleEventRenderer.render(eng)   # T4：drain 事件分发（生产路径为 scene.step 内同帧 drain）
+	BattleEventRenderer.render(eng, {p: actor})   # T4：drain 分发（生产为 scene.step 内同帧，映射在 scene）
 	assert_almost_eq(float(actor._z_speed), 360.0, 1.0, "knockup(0.4) → actor.launch → zSpeed=0.4*1800*0.5=360")
 	scene.queue_free()
 
@@ -706,9 +705,9 @@ func test_enter_walk_freezes_then_unfreezes_engine() -> void:
 	assert_true(scene._entering, "_entering=true")
 	assert_eq(scene._pending_enter_count, 2, "2 个单位待入场")
 	# 模拟全部就位
-	p.actor.enter_walk_finished.emit()
+	scene._actors_by_unit[p].enter_walk_finished.emit()
 	assert_true(scene._entering, "1 个就位，仍入场中")
-	e.actor.enter_walk_finished.emit()
+	scene._actors_by_unit[e].enter_walk_finished.emit()
 	assert_false(scene._entering, "全部就位，_entering=false")
 	assert_false(scene.is_paused, "全部就位，engine 解冻")
 	scene.queue_free()
@@ -723,8 +722,8 @@ func test_start_enter_walk_sets_offline_and_velocity() -> void:
 	scene.setup(eng, cm)
 	add_child(scene)
 	scene._start_enter_walk()   # 测试默认关入场，手动触发
-	var actor: BattleActor = p.actor
-	assert_not_null(actor, "玩家 actor 已预创建")
+	var actor: BattleActor = scene._actors_by_unit.get(p) as BattleActor
+	assert_not_null(actor, "玩家 actor 已预创建（T4-B7：查 scene 映射）")
 	# 玩家 offset=-300 → 起步 x=100-300=-200（场外左），velocity +x 朝 target。
 	assert_lt(float(actor._walk_pos.x), 100.0, "玩家起步在场外（x<站位）")
 	assert_true(actor._offline, "_offline=true（离线自驱）")

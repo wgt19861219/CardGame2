@@ -7,15 +7,15 @@ extends RefCounted
 ## （on_npc_death 仅 NpcActor 实现等差异用 has_method 软分发——View 调 View，无跨层问题）。
 ## shader 用 Logic 侧 token 关联 PUSH/REMOVE（actor 维护 token→栈槽映射，跨队列保序）。
 
-static func render(engine: BattleEngine) -> void:
+static func render(engine: BattleEngine, actors_by_unit: Dictionary) -> void:
 	for e in engine.drain_events():
-		_dispatch(e)
+		_dispatch(e, actors_by_unit)
 
 
-static func _dispatch(e: BattleEvent) -> void:
+static func _dispatch(e: BattleEvent, actors_by_unit: Dictionary) -> void:
 	if e.unit == null:
 		return
-	var actor: Variant = e.unit.actor
+	var actor: Variant = actors_by_unit.get(e.unit)
 	if actor == null:
 		return   # 单位未挂 actor（已退场/未入场）→ 静默跳过，等价旧守卫跳过
 	match e.type:

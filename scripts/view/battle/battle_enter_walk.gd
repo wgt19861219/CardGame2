@@ -21,7 +21,7 @@ static func start(scene) -> void:
 		var actor: BattleActor = scene._create_actor(unit)
 		if actor == null:
 			continue
-		unit.actor = actor
+		scene._actors_by_unit[unit] = actor
 		actor.in_scene = true
 		scene._add_actor(actor)
 		var target: Vector2 = Vector2(float(unit.position.x), float(unit.position.y))

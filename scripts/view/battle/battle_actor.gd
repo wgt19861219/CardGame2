@@ -158,7 +158,7 @@ func spawn_popup(text: String, color: String, crit: bool = false, style: String 
 	BattlePopup.create(text, model, crit, style, color, _ui_layer)
 
 
-# combat die / behavior cast_manual_skill 鸭子调 u.actor.play_voice(name, suffix)，转发
+# T4：VOICE 事件（combat die / behavior cast_manual_skill）经 renderer 分发到此
 # AudioPlayer.play_sfx_by_path（三层分离：Logic 不直接碰 Audio；照 spawn_popup 同模式）。
 # name 传入时已 to_upper（源 :1111/1156 string.upper(self.name) 在 Logic 完成）。
 func play_voice(unit_name: String, suffix: String) -> void:
@@ -196,7 +196,7 @@ func apply_action_named(action: String, loop: bool) -> void:
 			puppet.play_action(action, loop)
 
 
-# hero hook 鸭子调 caster.actor.add_effect(name, zorder) / target.actor.add_effect(name, zorder)。
+# T4：ADD_EFFECT 事件（skill/heroes hook）经 renderer 分发到此。
 func add_effect(effect_name: String, zorder: int = 0) -> void:
 	if effect_name == "":
 		return
@@ -313,7 +313,7 @@ func use_puppet(p_action: String = "", p_loop: bool = false) -> void:
 			buff.on_added_client()
 
 
-# u.actor.play_effect(...)，转发到 BattleScene.play_effect_on_scene（三层分离：Logic 不 import scene）。
+# T4：PLAY_EFFECT 事件经 renderer 分发；转发到 BattleScene.play_effect_on_scene（三层分离）。
 func play_effect(effect_name: String, origin: Vector2, scale: float = 1.0, height: float = 0.0, zorder: int = 0) -> void:
 	var scene := get_parent()
 	while scene != null and not scene.has_method("play_effect_on_scene"):
@@ -322,7 +322,7 @@ func play_effect(effect_name: String, origin: Vector2, scale: float = 1.0, heigh
 		scene.play_effect_on_scene(effect_name, origin, scale, height, zorder)
 
 
-# u.actor.start_camera_shake_animation_y(...)，转发到 BattleScene（三层分离：Logic 不 import scene）。
+# T4：SHAKE 事件经 renderer 分发；转发到 BattleScene（三层分离）。
 # scene==null（纯 Logic 测试 / headless 无场景）自动跳过，等价源 ed.run_with_scene 守卫。
 func start_camera_shake_animation_y(max_height: float, shake_time: float, shake_num: int) -> void:
 	var scene := get_parent()

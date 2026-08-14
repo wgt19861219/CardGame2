@@ -58,11 +58,11 @@ static func sync_actors(scene: Node) -> void:
 		return
 	var cm: Variant = scene.cm
 	for npc in engine.foreach_npc():
-		if npc.actor != null:
+		if scene._actors_by_unit.get(npc) != null:
 			continue
 		var actor: NpcActor = NpcActor.new()
 		actor.setup(npc, cm)
-		npc.actor = actor
+		scene._actors_by_unit[npc] = actor
 		actor.in_scene = true
 		scene.actor_list.append(actor)
 		scene.main_layer.add_child(actor)

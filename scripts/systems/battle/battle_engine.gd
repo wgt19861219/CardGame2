@@ -203,7 +203,6 @@ func add_unit(unit: Variant) -> void:
 			CAMP_PLAYER: dead_alliance_count += 1
 			CAMP_ENEMY: dead_enemy_count += 1
 	unit.index_in_engine = unit_list.size()
-	unit.actor = null
 
 
 func summon_unit(unit: Variant, position: Vector2, summoner: Variant, born_action_name: String = "") -> void:

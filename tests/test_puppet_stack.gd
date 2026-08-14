@@ -37,7 +37,7 @@ func _puppet_events(u: BattleUnit) -> Array:
 func test_push_puppet_changes_stack() -> void:
 	var u := _make_unit()
 	var initial_size := u.puppet_stack.size()
-	u.actor = MockActor.new()
+
 	u.push_puppet("Duck")
 	assert_eq(u.puppet_stack.size(), initial_size + 1, "push 后栈深度+1")
 	assert_eq(String(u.puppet_stack[-1]), "Duck", "栈顶应为 Duck")
@@ -45,7 +45,7 @@ func test_push_puppet_changes_stack() -> void:
 
 func test_push_puppet_returns_id() -> void:
 	var u := _make_unit()
-	u.actor = MockActor.new()
+
 	var pid: int = u.push_puppet("Duck")
 	assert_eq(pid, u.puppet_stack.size(), "返回的 id 应=栈深度")
 	assert_true(pid >= 2, "初始栈含 info.Puppet，push 后 id>=2")
@@ -53,7 +53,7 @@ func test_push_puppet_returns_id() -> void:
 
 func test_remove_puppet_pops_stack() -> void:
 	var u := _make_unit()
-	u.actor = MockActor.new()
+
 	var pid: int = u.push_puppet("Duck")
 	assert_eq(String(u.puppet_stack[-1]), "Duck", "push 后栈顶 Duck")
 	u.remove_puppet(pid)
@@ -114,8 +114,7 @@ func test_use_puppet_reruns_buff_on_added_client() -> void:
 	u.buff_list.append(buff)
 	assert_eq(buff.on_added_client_count, 0, "初始 0 次")
 	# push puppet 触发 use_puppet
-	u.actor = actor
 	u.push_puppet("Duck")
-	BattleEventRenderer.render(u.engine as BattleEngine)   # T4：无 scene step，手动 drain 分发
+	BattleEventRenderer.render(u.engine as BattleEngine, {u: actor})   # T4：无 scene step，手动 drain 分发
 	assert_true(buff.on_added_client_count >= 1, "use_puppet 应重跑 buff on_added_client")
 	actor.queue_free()

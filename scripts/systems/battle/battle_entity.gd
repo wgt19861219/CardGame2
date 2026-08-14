@@ -18,8 +18,7 @@ var direction: int = 1
 var frozen_model: bool = false
 var frozen_actor: bool = false
 var terminated: bool = false
-var actor: Variant = null  # View 层 Actor 引用（Phase 4）；Logic 不用
-var engine: Variant = null  # engine 引用注入（set_position/is_out_of_stage 读其 stage_rect）
+var engine: Variant = null  # engine 引用注入（set_position/is_out_of_stage 读其 stage_rect；T4-B7：actor View 桥字段退役，映射归 battle_scene）
 
 
 func update(dt: float) -> void:

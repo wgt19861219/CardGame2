@@ -22,7 +22,7 @@ static func sync(scene: Node) -> void:
 	for proj in engine.projectile_list:
 		if bool(proj.terminated):
 			continue
-		var actor: Variant = proj.actor
+		var actor: Variant = scene._actors_by_unit.get(proj)
 		if actor != null:
 			continue
 		var new_actor: Node2D = null
@@ -31,6 +31,6 @@ static func sync(scene: Node) -> void:
 		else:
 			new_actor = ProjectileActor.new()
 		new_actor.setup(proj)
-		proj.actor = new_actor
+		scene._actors_by_unit[proj] = new_actor
 		main_layer.add_child(new_actor)
 		actor_list.append(new_actor)
