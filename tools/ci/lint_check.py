@@ -40,6 +40,12 @@ RULE_TOO_LONG = "LINT005"
 MAGIC_WHITELIST: frozenset[float] = frozenset({-1.0, 0.0, 1.0})
 LOGIC_MAX_LINES = 300
 SCENE_MAX_LINES = 400
+# T6 双门槛（审查报告-架构评估与重构方案-2026-08-14 阶段一）：代码行（上方原门槛）之外加总行数
+# 门槛（含注释/空行），治注释膨胀压线——battle_scene.gd 曾总 539 行/lint 计数恰 400 压线通过
+# （139 行文档注释不计）。定档依据 2026-08-14 实测：全库最大总行 battle_scene.gd 539 /
+# player_data.gd 440，全部通过，仅防继续膨胀。
+LOGIC_TOTAL_MAX_LINES = 450
+SCENE_TOTAL_MAX_LINES = 550
 # 这些引擎虚函数回调允许缺省返回类型（约定 -> void，但 body 可空）
 # 行数检查扩展目录：scenes/scripts/ui/scripts/view 是 View 层（≤400），
 # scripts/autoload 是 Logic 层入口（≤300，含 player_data/game_data 等核心）。
@@ -187,6 +193,31 @@ def _max_lines_for(rel: str) -> int:
     return SCENE_MAX_LINES
 
 
+def count_total_lines(root: str, rel: str) -> int:
+    """文件总行数（含注释与空行；T6 防注释膨胀压线）。"""
+    with open(os.path.join(root, rel), "r", encoding="utf-8") as handle:
+        return len(handle.readlines())
+
+
+def _total_max_lines_for(rel: str) -> int:
+    """总行数上限：与代码行同源分档（Logic 450 / View 550）。"""
+    return LOGIC_TOTAL_MAX_LINES if _max_lines_for(rel) == LOGIC_MAX_LINES else SCENE_TOTAL_MAX_LINES
+
+
+def _check_line_limits(root: str, rel: str, violations: list[Violation]) -> None:
+    """LINT005 双门槛：代码行上限 + 总行数上限（T6）。"""
+    actual = count_code_lines(root, rel)
+    max_lines = _max_lines_for(rel)
+    if actual > max_lines:
+        violations.append(Violation(rel, 0, RULE_TOO_LONG, f"代码 {actual} 行超过上限 {max_lines}"))
+    total = count_total_lines(root, rel)
+    total_max = _total_max_lines_for(rel)
+    if total > total_max:
+        violations.append(
+            Violation(rel, 0, RULE_TOO_LONG, f"总行数 {total} 行超过上限 {total_max}（含注释，防注释膨胀压线）")
+        )
+
+
 def _find_root_level_gds(root: str) -> list[str]:
     """收集项目根目录（非子目录）下的 .gd 文件相对路径。
 
@@ -220,24 +251,14 @@ def run(root: str) -> list[Violation]:
         for line, name in collect_untyped_params(tree):
             violations.append(Violation(rel, line, RULE_UNTYPED_PARAM, f"参数 '{name}' 缺少类型注解"))
 
-        max_lines = _max_lines_for(rel)
-        actual = count_code_lines(root, rel)
-        if actual > max_lines:
-            violations.append(
-                Violation(rel, 0, RULE_TOO_LONG, f"代码 {actual} 行超过上限 {max_lines}")
-            )
+        _check_line_limits(root, rel, violations)
     # P2-4：scenes/autoload 只查 LINT005 行数（UI 胶水层不查类型/魔法数，避噪音）
     # P2-门禁2026：根目录 .gd 也纳入行数扫描（mcp_bridge.gd 曾 1460 行漏报）
     root_level_gds = _find_root_level_gds(root)
     for rel in find_gd_files(root, LINE_COUNT_DIRS) + root_level_gds:
         if os.path.basename(rel.replace("\\", "/")) in _LINE_COUNT_EXEMPT:
             continue  # 上游/开发工具豁免
-        max_lines = _max_lines_for(rel)
-        actual = count_code_lines(root, rel)
-        if actual > max_lines:
-            violations.append(
-                Violation(rel, 0, RULE_TOO_LONG, f"代码 {actual} 行超过上限 {max_lines}")
-            )
+        _check_line_limits(root, rel, violations)
     return violations
 
 

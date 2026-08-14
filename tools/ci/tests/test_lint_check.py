@@ -137,6 +137,44 @@ class LintLineCountTest(unittest.TestCase):
             rules = {v.rule for v in lint_check.run(root)}
             self.assertIn(lint_check.RULE_TOO_LONG, rules, "根目录 .gd 超 400 行应被 LINT005 捕获")
 
+    # ---- T6 双门槛（阶段一）：总行数门槛（含注释，防注释膨胀压线）----
+
+    def test_total_max_lines_for_tiers(self) -> None:
+        self.assertEqual(lint_check._total_max_lines_for("scripts/systems/foo.gd"), lint_check.LOGIC_TOTAL_MAX_LINES)
+        self.assertEqual(lint_check._total_max_lines_for("scripts/data/foo.gd"), lint_check.LOGIC_TOTAL_MAX_LINES)
+        self.assertEqual(lint_check._total_max_lines_for("scripts/ui/foo.gd"), lint_check.SCENE_TOTAL_MAX_LINES)
+        self.assertEqual(lint_check._total_max_lines_for("scripts/view/battle/foo.gd"), lint_check.SCENE_TOTAL_MAX_LINES)
+
+    def test_logic_comment_bloat_over_total_limit(self) -> None:
+        # T6：Logic 代码行 2（< 300）但注释膨胀总行 451 > 450 应报（battle_scene 压线同型）
+        with tempfile.TemporaryDirectory() as root:
+            sys_dir = os.path.join(root, "scripts", "systems")
+            os.makedirs(sys_dir)
+            with open(os.path.join(sys_dir, "fat.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends RefCounted\n")
+                for i in range(450):
+                    handle.write(f"# 文档注释膨胀行 {i}\n")
+            msgs = [v.message for v in lint_check.run(root) if v.rule == lint_check.RULE_TOO_LONG]
+            self.assertTrue(any("总行数" in m for m in msgs), f"总行数门槛应触发: {msgs}")
+            self.assertFalse(any(m.startswith("代码") for m in msgs), f"代码行未超不应报: {msgs}")
+
+    def test_view_comment_bloat_over_total_limit(self) -> None:
+        # T6：View 代码行 1（< 400）但总行 551 > 550 应报
+        with tempfile.TemporaryDirectory() as root:
+            view_dir = os.path.join(root, "scripts", "ui")
+            os.makedirs(view_dir)
+            with open(os.path.join(view_dir, "fat_panel.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends Control\n")
+                for i in range(550):
+                    handle.write(f"# 文档注释膨胀行 {i}\n")
+            msgs = [v.message for v in lint_check.run(root) if v.rule == lint_check.RULE_TOO_LONG]
+            self.assertTrue(any("总行数" in m for m in msgs), f"总行数门槛应触发: {msgs}")
+
+    def test_battle_scene_current_size_passes(self) -> None:
+        # T6 定档依据：当前最大 battle_scene.gd 总 537 行（T5 后）< 550 应通过（防门槛立刻打脸现状）
+        self.assertLess(lint_check.SCENE_TOTAL_MAX_LINES, 560)
+        self.assertGreaterEqual(lint_check.SCENE_TOTAL_MAX_LINES, 537)
+
     def test_root_level_exempt_not_caught(self) -> None:
         # 门禁-2026-07-10：豁免清单中的上游/开发工具脚本跳过行数检查
         with tempfile.TemporaryDirectory() as root:
