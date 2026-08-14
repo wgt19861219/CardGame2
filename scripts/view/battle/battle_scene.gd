@@ -39,7 +39,6 @@ const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_le
 const BIG_HP_POS: Vector2 = Vector2(455.0, 120.0)  # 原 to_godot(375,440)=(375+80,560-440)，Boss 血条 HUD 原生坐标
 const RETURN_BTN_POS: Vector2 = Vector2(870.0, 20.0)   # 暂停键贴右上角（用户布局，贴图70×69，右边距20）
 
-signal battle_exited
 signal next_wave_requested
 
 var engine: Variant = null
@@ -393,7 +392,7 @@ func create_pause_layer() -> void:
 
 
 func _on_pause_exit() -> void:
-	_clear_pause_layer(); pause_locks["pauseButton"] = false; is_paused = pause_locks.values().has(true); battle_exited.emit()
+	_clear_pause_layer(); pause_locks["pauseButton"] = false; is_paused = pause_locks.values().has(true)
 
 
 func _on_pause_resume() -> void:
