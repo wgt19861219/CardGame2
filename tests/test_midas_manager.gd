@@ -54,3 +54,20 @@ func test_ratio_affects_money() -> void:
 		ratios_seen[ratio] = int(a.get("money", 0))
 	# 至少应有 ratio=1（75% 概率，20 次几乎必出现）
 	assert_true(ratios_seen.has(1), "20 次抽样必出现 ratio=1")
+
+
+# T2 存档标脏钩子：exchange 成功触发 save_hook（治"兑换不持久化"缺口），失败不触发，缺省不崩。
+func test_exchange_save_hook() -> void:
+	var pd := PlayerData.new(cm)
+	pd.diamond = 1000
+	var mgr := MidasManager.new(cm)
+	var dirty: Array[int] = []
+	mgr.save_hook = func() -> void: dirty.append(1)
+	assert_true(bool(mgr.exchange(pd, 1)["ok"]), "兑换成功")
+	assert_eq(dirty.size(), 1, "成功触发一次 save_hook")
+	pd.diamond = 0
+	assert_false(bool(mgr.exchange(pd, 1)["ok"]), "钻石不足失败")
+	assert_eq(dirty.size(), 1, "失败不触发 save_hook")
+	var mgr_no_hook := MidasManager.new(cm)   # 缺省 Callable（headless 无注入）
+	pd.diamond = 1000
+	assert_true(bool(mgr_no_hook.exchange(pd, 1)["ok"]), "缺省 hook 不崩且成功")

@@ -138,8 +138,7 @@ func _on_vitality_plus() -> void:
 		Toast.show_message("今日购买体力次数已达上限")
 		return
 	if p.buy_vitality():
-		GameData.mark_save_dirty()
-		Toast.show_message("购买体力 +120")
+		Toast.show_message("购买体力 +120")   # 存档标脏已内聚 buy_vitality（save_hook，T2）
 		_refresh_status()
 	else:
 		Toast.show_message("钻石不足")

@@ -75,6 +75,8 @@ var stage_reset_times: Dictionary = {}
 var cm: ConfigManager
 # EventBus 可选注入（check_unlocks 发 feature_unlocked 信号用；null 时仅 set record 不发信号，headless 可测）。
 var events: EventBus = null
+# 存档标脏钩子（GameData 注入 mark_save_dirty；缺省 Callable 时静默跳过，headless 可测）。
+var save_hook: Callable = Callable()
 
 func _init(p_cm: ConfigManager) -> void:
 	cm = p_cm
@@ -168,13 +170,12 @@ func can_buy_vitality() -> bool:
 ## 扣 50 钻 + 体力+120 + today_buy++（受 VIP["Buy Vit Max"] 上限）。返是否成功。
 func buy_vitality() -> bool:
 	var limit: int = int(VipData.get_vip_field(vip_level, "Buy Vit Max", cm))
-	if limit > 0 and vitality_today_buy >= limit:
-		return false   # 超 VIP 当日上限
+	if limit > 0 and vitality_today_buy >= limit: return false   # 超 VIP 当日上限
 	if diamond < BUY_VIT_COST:
 		return false
 	diamond -= BUY_VIT_COST
-	vitality = min(vitality + BUY_VIT_AMOUNT, BUY_VIT_HARD_CAP)
-	vitality_today_buy += 1
+	vitality = min(vitality + BUY_VIT_AMOUNT, BUY_VIT_HARD_CAP); vitality_today_buy += 1
+	if save_hook.is_valid(): save_hook.call()   # 写操作自动标脏（存档调度内聚 Logic，T2）
 	return true
 
 

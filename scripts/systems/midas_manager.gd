@@ -5,8 +5,8 @@ extends RefCounted
 ## 成本 GradientPrice[累计次数].Midas（梯度递增）+ 产出 floor(PlayerLevel[level].Midas Money × Midas[idx].Yield)。
 ## P0-忠实-7 修正：照源 :1868-1883 按 Prob 1..4 加权抽样暴击档位（×1/×2/×3/×10），非只用 Yield 1。
 ## 钻石不足 totalCost → {ok:false}（源 :1887 空 acquire）。源无每日次数限制（旧版 DAILY_LIMIT=5 是魔改，删）。
-## midas_times 累计决定 costIdx（梯度档位）；持久化：player_data_serde 已序列化 midas.to_dict()，
-## 但 GameData.save() 零调用致实际不持久化（项目级存档集成缺口，见 MEMORY project-save-game-not-integrated）。
+## midas_times 累计决定 costIdx（梯度档位）；持久化：serde 序列化 midas.to_dict() + exchange 成功经
+## save_hook 标脏（GameData 注入；T2 治"兑换不持久化"缺口——此前 View 层无任何标脏调用点）。
 
 const DEFAULT_MIDAS_MONEY: int = 5000
 const DEFAULT_YIELD: float = 1.0
@@ -15,6 +15,8 @@ const RATIO_COUNT: int = 4
 
 var config: ConfigManager
 var midas_times: int = 0   # 累计兑换次数（源 player.getMidasTimes，决定 GradientPrice/Midas costIdx）
+# 存档标脏钩子（GameData 注入 mark_save_dirty；缺省 Callable 时静默跳过，headless 可测）。
+var save_hook: Callable = Callable()
 
 
 func _init(cm: ConfigManager) -> void:
@@ -41,6 +43,7 @@ func exchange(player: PlayerData, times: int) -> Dictionary:
 		return {"ok": false, "acquired": [], "cost": total_cost}
 	player.diamond -= total_cost
 	midas_times += times
+	if save_hook.is_valid(): save_hook.call()   # 写操作自动标脏（T2 治兑换不持久化缺口）
 	return {"ok": true, "acquired": acquired, "cost": total_cost}
 
 

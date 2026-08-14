@@ -30,6 +30,9 @@ func _ready() -> void:
 	config.load_all()
 	player = _load_or_new_player()
 	player.events = Events.bus  # 注入 EventBus（check_unlocks 升级解锁发 feature_unlocked → main_scene 弹公告）
+	# T2 依赖倒置：Logic 写操作自动标脏（buy_vitality/midas exchange 等；缺省 Callable headless 可测）。
+	player.save_hook = mark_save_dirty
+	player.midas.save_hook = mark_save_dirty
 	skills = SkillLibrary.new(config)
 	skill_groups = SkillGroupData.new(config)
 	_start_autosave_timer()

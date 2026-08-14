@@ -60,3 +60,20 @@ func test_can_buy_vitality_at_vip_limit() -> void:
 	assert_false(pd.can_buy_vitality(), "today_buy=limit 达 VIP 上限 → 不可买")
 	pd.vitality_today_buy = limit - 1
 	assert_true(pd.can_buy_vitality(), "today_buy=limit-1 → 可买")
+
+
+# T2 存档标脏钩子：buy_vitality 成功触发 save_hook，失败不触发，缺省 Callable 不崩。
+func test_buy_vitality_save_hook() -> void:
+	var pd := PlayerData.new(cm)
+	var dirty: Array[int] = []
+	pd.save_hook = func() -> void: dirty.append(1)
+	pd.diamond = 100
+	assert_true(pd.buy_vitality(), "买体力成功")
+	assert_eq(dirty.size(), 1, "成功触发一次 save_hook（存档标脏内聚 Logic）")
+	pd.vitality_today_buy = 0   # 重置 VIP 次数限制
+	pd.diamond = 10
+	assert_false(pd.buy_vitality(), "钻石不足失败")
+	assert_eq(dirty.size(), 1, "失败不触发 save_hook")
+	var pd_no_hook := PlayerData.new(cm)   # 缺省 Callable（headless 无注入）
+	pd_no_hook.diamond = 100
+	assert_true(pd_no_hook.buy_vitality(), "缺省 hook 不崩且成功")
