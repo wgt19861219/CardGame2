@@ -36,7 +36,14 @@ func update_view(_dt: float = 0.0) -> void:
 func on_start_new_action() -> void:
 	if puppet == null or model == null:
 		return
-	puppet.play_action(String(model.action_name), bool(model.action_loop))
+	apply_action_named(String(model.action_name), bool(model.action_loop))
+
+
+## T4 事件分发入口（动作来自事件快照，见 battle_actor.apply_action_named 注）。
+func apply_action_named(action: String, loop: bool) -> void:
+	if puppet == null:
+		return
+	puppet.play_action(action, loop)
 
 
 func on_npc_death() -> void:

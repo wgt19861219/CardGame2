@@ -336,5 +336,4 @@ func remove_puppet(puppet_id: int) -> void:
 	use_puppet()
 
 func use_puppet() -> void:
-	if actor != null and actor.has_method("use_puppet"):
-		actor.use_puppet()
+	emit_puppet(action_name, action_loop)   # 发射时动作快照（切换后恢复，防 drain 时读到终态）

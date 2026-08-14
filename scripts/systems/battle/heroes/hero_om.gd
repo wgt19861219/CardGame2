@@ -95,8 +95,5 @@ func _atk3_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Arra
 
 func _show_multicast_popup(skill: Variant, times: int) -> void:
 	var str_text: String = "multicast_x" + str(times)
-	var actor: Variant = skill.caster.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "red" if int(skill.caster.camp) == BattleEngine.CAMP_PLAYER else "blue"
-	actor.spawn_popup(str_text, color, false, "text")
+	skill.caster.emit_popup(str_text, color, false, "text")

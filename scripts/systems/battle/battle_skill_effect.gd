@@ -46,12 +46,10 @@ static func take_effect_at(skill: BattleSkill, location: Vector2, src: Variant =
 				take_effect_on(skill, unit, null)
 	else:
 		take_effect_on(skill, skill.target, src)
-	# 经 caster.actor.play_effect 转发（actor 有 scene 父链查找桥，三层分离）
+	# 经 BattleEvent 队列转发到 View（T4；旧路 caster.actor.play_effect 直调已退役）
 	var point_eff: String = String(info.get("Point Effect", ""))
 	if point_eff != "":
-		var c_actor: Variant = caster.get("actor")
-		if c_actor != null and c_actor.has_method("play_effect"):
-			c_actor.play_effect(point_eff, origin, 1.0, 0.0, int(info.get("Point Zorder", 0)))
+		caster.emit_play_effect(point_eff, origin, 1.0, 0.0, int(info.get("Point Zorder", 0)))
 
 ## power = Plus Ratio × caster.attribs[Plus Attr] + Basic Num（源 :534 用 caster，非 source）；
 ## crit_mod = info CRIT%/100（默认 100→1.0，源 :536 info["CRIT%"]/100 or 1）。
@@ -142,23 +140,20 @@ static func take_effect_on(skill: BattleSkill, p_target: Variant, src: Variant =
 
 
 static func _show_dodge_popup(target: Variant) -> void:
-	var actor: Variant = target.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
+	if target == null:
 		return
 	var color: String = "red" if int(target.camp) == BattleEngine.CAMP_ENEMY else "blue"
-	actor.spawn_popup("dodge", color, false, "text")
+	target.emit_popup("dodge", color, false, "text")
 
 
 static func _show_buff_resist_popup(target: Variant, reason: String) -> void:
-	var actor: Variant = target.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
+	if target == null:
 		return
 	var text: String = "resist" if reason == "resist" else "miss"
 	var color: String = "red" if int(target.camp) == BattleEngine.CAMP_ENEMY else "blue"
-	actor.spawn_popup(text, color, false, "text")
+	target.emit_popup(text, color, false, "text")
 
 
 static func _play_puppet_effect(target: Variant, effect_name: String, zorder: int) -> void:
-	var actor: Variant = target.get("actor")
-	if actor != null and actor.has_method("add_effect"):
-		actor.add_effect(effect_name, zorder)
+	if target != null:
+		target.emit_add_effect(effect_name, zorder)

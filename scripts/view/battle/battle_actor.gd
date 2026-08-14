@@ -173,7 +173,12 @@ func play_voice(unit_name: String, suffix: String) -> void:
 func on_start_new_action() -> void:
 	if puppet == null or model == null:
 		return
-	var action: String = String(model.action_name)
+	apply_action_named(String(model.action_name), bool(model.action_loop))
+
+
+## T4 事件分发入口：动作来自事件快照（非 drain 时 model 现值——die 移除傀儡后置 Death 的时序下，
+## PUPPET 恢复必须用发射时动作，否则 play_death 双触发重复连信号）。
+func apply_action_named(action: String, loop: bool) -> void:
 	match action:
 		"Death":
 			puppet.play_death()
@@ -188,7 +193,7 @@ func on_start_new_action() -> void:
 		"Idle", "":
 			puppet.play_action("Idle", true)
 		_:
-			puppet.play_action(action, bool(model.action_loop))
+			puppet.play_action(action, loop)
 
 
 # hero hook 鸭子调 caster.actor.add_effect(name, zorder) / target.actor.add_effect(name, zorder)。
@@ -277,7 +282,7 @@ func _apply_top_shader() -> void:
 			puppet.tint(c.r, c.g, c.b)
 
 
-func use_puppet() -> void:
+func use_puppet(p_action: String = "", p_loop: bool = false) -> void:
 	if model == null or puppet == null:
 		return
 	var stack: Array = model.puppet_stack
@@ -297,8 +302,11 @@ func use_puppet() -> void:
 	_shader_stack.clear()
 	# 切模型
 	puppet.switch_puppet(resource, p_scale, flip_x)
-	# 恢复当前 action（照源 :1627-1629 setAction + setLoop）
-	on_start_new_action()
+	# 恢复 action（照源 :1627-1629 setAction + setLoop）；事件路径用发射时快照（T4），直调默认现值
+	if p_action != "":
+		apply_action_named(p_action, p_loop)
+	else:
+		on_start_new_action()
 	# 重跑所有 buff 的 onAddedClient（照源 :1632，在新 puppet 上重建 effect/shader）
 	for buff in model.buff_list:
 		if buff.has_method("on_added_client"):

@@ -33,8 +33,8 @@ func _ult_start(skill: Variant, target: Variant) -> void:
 	_origin = skill.target.position
 	skill._select_target(target)
 	var caster: Variant = skill.caster
-	if caster != null and caster.actor != null and caster.actor.has_method("play_effect"):
-		caster.actor.play_effect("effect/eff_launch_AV_ult", _origin, 1.0, 0.0, -1)
+	if caster != null:
+		caster.emit_play_effect("effect/eff_launch_AV_ult", _origin, 1.0, 0.0, -1)
 	skill._start_default(target)
 
 

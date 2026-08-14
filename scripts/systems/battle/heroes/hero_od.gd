@@ -17,8 +17,5 @@ func _take_effect_on(skill: Variant, target: Variant, src: Variant) -> Array:
 
 
 func _show_immune_popup(target: Variant) -> void:
-	var actor: Variant = target.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "red" if int(target.camp) == BattleEngine.CAMP_ENEMY else "blue"
-	actor.spawn_popup("immune", color, false, "text")
+	target.emit_popup("immune", color, false, "text")

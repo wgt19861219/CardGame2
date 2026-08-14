@@ -32,8 +32,5 @@ func _on_damaged(buff: Variant, damage: float, _damage_type: String) -> float:
 
 
 func _show_funeral_popup(owner_unit: Variant) -> void:
-	var actor: Variant = owner_unit.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "blue" if int(owner_unit.camp) == BattleEngine.CAMP_PLAYER else "red"
-	actor.spawn_popup("funeral", color, false, "text")
+	owner_unit.emit_popup("funeral", color, false, "text")

@@ -49,8 +49,5 @@ func _will_cast(skill: Variant) -> bool:
 
 
 func _show_culling_popup(target: Variant) -> void:
-	var actor: Variant = target.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "blue" if int(target.camp) == BattleEngine.CAMP_ENEMY else "red"
-	actor.spawn_popup("culling", color, true, "text")
+	target.emit_popup("culling", color, true, "text")

@@ -263,7 +263,8 @@ func test_unit_knockup_launches_actor() -> void:
 	scene.step(0.033)
 	var actor: Variant = scene.actor_list[0]
 	p.actor = actor   # Logic→View 引用（源 unit.actor）
-	p.knockup(0.4, Vector2(50.0, 0.0))   # 源 knockup → actor.launch(0.4)
+	p.knockup(0.4, Vector2(50.0, 0.0))   # 源 knockup → LAUNCH 事件 → actor.launch(0.4)
+	BattleEventRenderer.render(eng)   # T4：drain 事件分发（生产路径为 scene.step 内同帧 drain）
 	assert_almost_eq(float(actor._z_speed), 360.0, 1.0, "knockup(0.4) → actor.launch → zSpeed=0.4*1800*0.5=360")
 	scene.queue_free()
 

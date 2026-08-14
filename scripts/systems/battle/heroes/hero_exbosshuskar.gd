@@ -84,7 +84,4 @@ func _show_self_hurt_popup(unit: Variant, hurt: float) -> void:
 	var str_text: String = "-" + str(int(round(hurt)))
 	if str_text == "-0":
 		return
-	var actor: Variant = unit.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
-	actor.spawn_popup(str_text, "orange", false, "damage")
+	unit.emit_popup(str_text, "orange", false, "damage")

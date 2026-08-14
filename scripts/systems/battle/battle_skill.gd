@@ -154,9 +154,7 @@ func _start_default(p_target: Variant) -> void:
 	caster.set_mp(float(caster.mp) - float(info.get("Cost MP", 0.0)) * (1.0 - cdr))
 	var launch_eff: String = String(info.get("Launch Effect", ""))
 	if launch_eff != "":
-		var actor: Variant = caster.get("actor")
-		if actor != null and actor.has_method("add_effect"):
-			actor.add_effect(launch_eff, -1)
+		caster.emit_add_effect(launch_eff, -1)
 
 func _select_target(default_t: Variant) -> Variant:
 	var h: Callable = hero_hooks.get("selectTarget", Callable())

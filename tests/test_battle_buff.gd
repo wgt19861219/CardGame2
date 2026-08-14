@@ -1,9 +1,9 @@
 extends GutTest
+const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # Phase 2.3 buff（照源 buff.lua 重翻，2026-06-30）。
 # MockOwner duck-type 契约（attribs/buff_effects/config/hp/dPSStatisticsRatio/dmg_statistics/camp/engine/remove_buff/push_puppet/remove_puppet）。
 
-class MockOwner:
-	extends RefCounted
+class MockOwner extends EmitStub:
 	var attribs: Dictionary = {"AD": 100, "HP": 1000}
 	var buff_effects: Dictionary = {}
 	var config: Dictionary = {"hp_mod": 1.0}
@@ -11,7 +11,6 @@ class MockOwner:
 	var dPSStatisticsRatio: float = 1.0  # 源 :208 驼峰（与 BattleUnit 一致；蛇形 get 大小写敏感失效）
 	var dmg_statistics: float = 0.0  # 源 buff.lua:40 浮点累加记入 caster
 	var camp: int = 1
-	var engine: Variant = null
 	var removed_buffs: Array = []
 	var pushed_puppets: Array = []
 	func remove_buff(b: Variant) -> void:

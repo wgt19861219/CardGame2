@@ -19,13 +19,14 @@ enum Type {
 	SHAKE,          # 镜头震动：value(max_h)/value2(time)/value3(num)
 	GOLD_DROP,      # 金币掉落演出
 	LAUNCH,         # 单位 launch 演出：value(time)
-	NEW_ACTION,     # 新动作开始（actor/npc 各自实现）
-	PUPPET,         # 傀儡态切换
+	NEW_ACTION,     # 新动作开始：text(action)/flag(loop)（发射时快照，防 drain 时 model 已变）
+	PUPPET,         # 傀儡态切换：text(action)/flag(loop)（切换后恢复动作用发射时快照）
 	NPC_DEATH,      # NPC 死亡演出（NpcActor）
+	ZSPEED,         # 离地速度状态写入（DOTsr atk2 振荡弹跳；View 侧 z_speed/zSpeed 双属性名兼容）
 }
 
 var type: int = Type.POPUP
-var unit: BattleEntity = null
+var unit: Variant = null  # BattleEntity 或测试 EmitStub（duck：actor/engine）
 var text: String = ""
 var text2: String = ""
 var color: String = ""
@@ -39,7 +40,7 @@ var value2: float = 0.0
 var value3: float = 0.0
 
 
-static func popup(unit: BattleEntity, p_text: String, p_color: String, crit: bool = false, style: String = "damage") -> BattleEvent:
+static func popup(unit: Variant, p_text: String, p_color: String, crit: bool = false, style: String = "damage") -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.POPUP
 	e.unit = unit
@@ -50,7 +51,7 @@ static func popup(unit: BattleEntity, p_text: String, p_color: String, crit: boo
 	return e
 
 
-static func add_effect(unit: BattleEntity, effect_name: String, zorder: int = 0) -> BattleEvent:
+static func add_effect(unit: Variant, effect_name: String, zorder: int = 0) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.ADD_EFFECT
 	e.unit = unit
@@ -59,7 +60,7 @@ static func add_effect(unit: BattleEntity, effect_name: String, zorder: int = 0)
 	return e
 
 
-static func remove_effect(unit: BattleEntity, effect_name: String) -> BattleEvent:
+static func remove_effect(unit: Variant, effect_name: String) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.REMOVE_EFFECT
 	e.unit = unit
@@ -67,7 +68,7 @@ static func remove_effect(unit: BattleEntity, effect_name: String) -> BattleEven
 	return e
 
 
-static func play_effect(unit: BattleEntity, effect_name: String, at: Vector2, p_scale: float = 1.0, p_height: float = 0.0, zorder: int = 0) -> BattleEvent:
+static func play_effect(unit: Variant, effect_name: String, at: Vector2, p_scale: float = 1.0, p_height: float = 0.0, zorder: int = 0) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.PLAY_EFFECT
 	e.unit = unit
@@ -79,7 +80,7 @@ static func play_effect(unit: BattleEntity, effect_name: String, at: Vector2, p_
 	return e
 
 
-static func tint(unit: BattleEntity, p_rgb: Vector3) -> BattleEvent:
+static func tint(unit: Variant, p_rgb: Vector3) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.TINT
 	e.unit = unit
@@ -87,7 +88,7 @@ static func tint(unit: BattleEntity, p_rgb: Vector3) -> BattleEvent:
 	return e
 
 
-static func voice(unit: BattleEntity, unit_name: String, suffix: String) -> BattleEvent:
+static func voice(unit: Variant, unit_name: String, suffix: String) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.VOICE
 	e.unit = unit
@@ -96,7 +97,7 @@ static func voice(unit: BattleEntity, unit_name: String, suffix: String) -> Batt
 	return e
 
 
-static func shader_push(unit: BattleEntity, token: int, shader_name: String) -> BattleEvent:
+static func shader_push(unit: Variant, token: int, shader_name: String) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.SHADER_PUSH
 	e.unit = unit
@@ -105,7 +106,7 @@ static func shader_push(unit: BattleEntity, token: int, shader_name: String) -> 
 	return e
 
 
-static func shader_remove(unit: BattleEntity, token: int) -> BattleEvent:
+static func shader_remove(unit: Variant, token: int) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.SHADER_REMOVE
 	e.unit = unit
@@ -113,7 +114,7 @@ static func shader_remove(unit: BattleEntity, token: int) -> BattleEvent:
 	return e
 
 
-static func shake(unit: BattleEntity, max_height: float, shake_time: float, shake_num: int) -> BattleEvent:
+static func shake(unit: Variant, max_height: float, shake_time: float, shake_num: int) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.SHAKE
 	e.unit = unit
@@ -123,14 +124,14 @@ static func shake(unit: BattleEntity, max_height: float, shake_time: float, shak
 	return e
 
 
-static func gold_drop(unit: BattleEntity) -> BattleEvent:
+static func gold_drop(unit: Variant) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.GOLD_DROP
 	e.unit = unit
 	return e
 
 
-static func launch(unit: BattleEntity, time: float) -> BattleEvent:
+static func launch(unit: Variant, time: float) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.LAUNCH
 	e.unit = unit
@@ -138,22 +139,34 @@ static func launch(unit: BattleEntity, time: float) -> BattleEvent:
 	return e
 
 
-static func new_action(unit: BattleEntity) -> BattleEvent:
+static func new_action(unit: Variant, action: String, loop: bool) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.NEW_ACTION
 	e.unit = unit
+	e.text = action
+	e.flag = loop
 	return e
 
 
-static func puppet(unit: BattleEntity) -> BattleEvent:
+static func puppet(unit: Variant, action: String, loop: bool) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.PUPPET
 	e.unit = unit
+	e.text = action
+	e.flag = loop
 	return e
 
 
-static func npc_death(unit: BattleEntity) -> BattleEvent:
+static func npc_death(unit: Variant) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.NPC_DEATH
 	e.unit = unit
+	return e
+
+
+static func zspeed(unit: Variant, v: float) -> BattleEvent:
+	var e := BattleEvent.new()
+	e.type = Type.ZSPEED
+	e.unit = unit
+	e.value = v
 	return e

@@ -48,10 +48,10 @@ func _create_projectile(skill: Variant) -> Variant:
 	return projectile
 
 
-# actor 转发 scene==null 自动跳过（等价 run_with_scene 守卫）。
+# 表现走 BattleEvent 队列（T4；scene==null 时静默，等价 run_with_scene 守卫）。
 func _atk2_take_effect_at(skill: Variant, location: Vector2, src: Variant) -> void:
 	BattleSkillEffect.take_effect_at(skill, location, src)  # basefunc
-	skill.caster.actor.start_camera_shake_animation_y(ATK2_SHAKE_MAX, ATK2_SHAKE_TIME, ATK2_SHAKE_NUM)
+	skill.caster.emit_shake(ATK2_SHAKE_MAX, ATK2_SHAKE_TIME, ATK2_SHAKE_NUM)
 
 
 func _start(skill: Variant, _target: Variant) -> void:

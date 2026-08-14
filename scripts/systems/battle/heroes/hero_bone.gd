@@ -52,8 +52,5 @@ func _on_attack_frame(skill: Variant) -> void:
 
 
 func _show_devour_popup(caster: Variant, target: Variant) -> void:
-	var actor: Variant = target.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "blue" if int(caster.camp) == BattleEngine.CAMP_PLAYER else "red"
-	actor.spawn_popup("devour", color, false, "text")
+	target.emit_popup("devour", color, false, "text")

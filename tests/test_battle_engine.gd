@@ -1,11 +1,11 @@
 extends GutTest
+const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # Phase 2.1 战斗引擎核心（照源 battle_engine.lua 重翻，2026-06-30）。
 # 单位用 MockUnit（duck-type 契约：is_alive/update/die/camp/position/config/...）。
 # 覆盖：add_unit 计数 / tick 推进 / 胜负判定 / foreach / freeze。
 
 # duck-type 单位桩（Phase 2.2 翻真单位前的测试契约）
-class MockUnit:
-	extends RefCounted
+class MockUnit extends EmitStub:
 	var camp: int
 	var position: Vector2 = Vector2.ZERO
 	var previous_position: Vector2 = Vector2.ZERO

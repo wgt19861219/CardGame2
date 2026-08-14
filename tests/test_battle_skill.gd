@@ -1,4 +1,5 @@
 extends GutTest
+const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # Phase 2.4 skill（照源 skill.lua 重翻，2026-06-30）。
 # MockCaster/MockTarget/MockEngine duck-type 契约（照源 skill 协作者）。
 # 伤害数值/暴击公式在单位侧 take_damage（Phase 2.2续，源 unit.lua:1252），此处 MockTarget.take_damage 桩返回 amount。
@@ -21,8 +22,7 @@ class MockEngine:
 	func add_chain(_c: Variant) -> void:
 		pass  # Phase 2.6
 
-class MockCaster:
-	extends RefCounted
+class MockCaster extends EmitStub:
 	var info: Dictionary = {}
 	var attribs: Dictionary = {"AD": 100, "AP": 80, "HEAL": 0, "HIT": 0, "LFS": 0, "INT": 50, "HP": 1000, "CDR": 0}
 	var buff_effects: Dictionary = {}
@@ -36,7 +36,6 @@ class MockCaster:
 	var manually_casting: bool = false
 	var current_skill: Variant = null
 	var global_cd: float = 0.0
-	var engine: Variant = null
 	var set_mp_log: Array = []
 	var healed: Array = []
 	func set_mp(v: float) -> void:
@@ -53,8 +52,7 @@ class MockCaster:
 	func is_out_of_stage() -> bool:
 		return false
 
-class MockTarget:
-	extends RefCounted
+class MockTarget extends EmitStub:
 	var attribs: Dictionary = {"AD": 50, "AP": 50, "ARM": 0, "MR": 0, "DODG": 0, "HP": 500}
 	var buff_effects: Dictionary = {}
 	var position: Vector2 = Vector2(300, 0)

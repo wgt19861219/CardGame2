@@ -80,8 +80,7 @@ func die() -> void:
 	set_action("Death", false, true)
 	engine.on_npc_die(self)
 	state = STATE_DYING
-	if actor != null and actor.has_method("on_npc_death"):
-		actor.on_npc_death()
+	emit_npc_death()
 
 
 func set_action(action_name: String, loop: bool, interrupt: bool) -> void:
@@ -95,8 +94,7 @@ func set_action(action_name: String, loop: bool, interrupt: bool) -> void:
 		action_duration = 0.0
 	else:
 		action_duration = 0.0
-	if actor != null and actor.has_method("on_start_new_action"):
-		actor.on_start_new_action()
+	emit_new_action(action_name, loop)
 
 
 func set_flip_x(flip: bool) -> void:

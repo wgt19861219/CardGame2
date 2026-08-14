@@ -27,6 +27,9 @@ class _MockNpc extends RefCounted:
 
 
 class _MockEngine extends RefCounted:
+	var events: Array = []   # T4：表现事件队列
+	func emit_event(e: Variant) -> void:
+		events.append(e)
 	var ticks: int = 0
 	var npcs: Array = []
 	func foreach_npc() -> Array:
@@ -93,11 +96,11 @@ func test_sync_actors_skips_empty_engine() -> void:
 func test_battle_npc_die_bridges_actor() -> void:
 	var engine := _MockEngine.new()
 	var npc := BattleNpc.new({"Position X": 0.0, "Position Y": 0.0, "Puppet": "x"}, engine, false)
-	var actor := _MockActor.new()
-	npc.actor = actor
 	npc.die()
-	assert_eq(actor.death_count, 1, "die → actor.on_npc_death 调用 1 次（源 :87-89）")
-	assert_eq(actor.start_count, 1, "die setAction(Death) → actor.on_start_new_action 调用 1 次（源 :110-112）")
+	var deaths: Array = engine.events.filter(func(e): return e.type == BattleEvent.Type.NPC_DEATH)
+	var actions: Array = engine.events.filter(func(e): return e.type == BattleEvent.Type.NEW_ACTION)
+	assert_eq(deaths.size(), 1, "die → NPC_DEATH 事件 1 条（源 :87-89）")
+	assert_eq(actions.size(), 1, "die setAction(Death) → NEW_ACTION 事件 1 条（源 :110-112）")
 	assert_eq(npc.state, BattleNpc.STATE_DYING, "die 后 state = STATE_DYING")
 
 

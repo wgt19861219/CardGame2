@@ -31,6 +31,9 @@ var impact_effect_zorder: int = 0
 var puppet_id: int = 0  # View（Phase 4）
 var effect_id: int = 0
 var shader_id: int = 0
+static var _shader_token_seq: int = 0  # T4：shader 关联 token 序列（View 侧按 token 映射栈槽）
+
+
 var hero_hooks: Dictionary = {}  # 英雄 hook（源 override 等价）：onRemoved/onDamaged/update（Phase 2.7）
 var custom_data: Dictionary = {}  # 运行时自定义（源 Lua 动态加 buff.XXX；英雄 hook 用，如 Spider timeTag / DP attack_timer）
 
@@ -136,21 +139,19 @@ func on_added_server() -> void:
 
 
 func on_added_client() -> void:
-	if owner == null or owner.actor == null:
+	if owner == null:
 		return
-	var actor: Variant = owner.actor
-	if not actor.has_method("add_effect"):
-		return
-	# Effect → addEffect（.cha FCA 特效）
+	# Effect → addEffect（.cha FCA 特效）；表现经 BattleEvent 队列（T4，headless 静默累积）
 	var eff: String = str(info.get("Effect", ""))
 	if eff != "":
 		var z: int = int(info.get("Effect Zorder", 0))
-		actor.add_effect(eff, z)
+		owner.emit_add_effect(eff, z)
 		effect_id = 1  # 标记有 effect（name-keyed，on_removed 按 info.Effect 名清）
-	# Shader → pushShader（modulate 降级）
+	# Shader → pushShader（modulate 降级）；Logic 侧 token 关联 PUSH/REMOVE（T4）
 	var shader: String = str(info.get("Shader", ""))
-	if shader != "" and actor.has_method("push_shader"):
-		shader_id = actor.push_shader(shader)
+	if shader != "":
+		shader_id = _take_shader_token()
+		owner.emit_shader_push(shader_id, shader)
 	# 飘字优先级链（AD→ARM→HAST→Popup Text，后者覆盖前者；源是 if/if 串行非 elseif）
 	var str_text: String = ""; var color: String = ""
 	var is_player: bool = int(owner.camp) == 0  # ed.emCampPlayer
@@ -173,8 +174,8 @@ func on_added_client() -> void:
 	if popup_text != "":
 		str_text = popup_text
 		color = "blue" if (caster != null and int(caster.camp) == 0) else "red"
-	if str_text != "" and color != "" and actor.has_method("spawn_popup"):
-		actor.spawn_popup(str_text, color, false, "text")
+	if str_text != "" and color != "":
+		owner.emit_popup(str_text, color, false, "text")
 
 
 func on_removed() -> void:
@@ -187,18 +188,17 @@ func on_removed() -> void:
 func _on_removed_default() -> void:
 	if puppet_id != 0 and owner != null and owner.has_method("remove_puppet"):
 		owner.remove_puppet(puppet_id); puppet_id = 0
-	if owner == null or owner.actor == null:
+	if owner == null:
 		return
-	var actor: Variant = owner.actor
 	# 清 effect（name-keyed，照源 onRemoved removeEffectWithID）
 	if effect_id != 0:
 		var eff: String = str(info.get("Effect", ""))
-		if eff != "" and actor.has_method("remove_effect"):
-			actor.remove_effect(eff)
+		if eff != "":
+			owner.emit_remove_effect(eff)
 		effect_id = 0
-	# 清 shader（照源 onRemoved removeShader）
-	if shader_id != 0 and actor.has_method("remove_shader"):
-		actor.remove_shader(shader_id); shader_id = 0
+	# 清 shader（照源 onRemoved removeShader；token 关联，见 on_added_client）
+	if shader_id != 0:
+		owner.emit_shader_remove(shader_id); shader_id = 0
 
 
 func on_damaged(damage: float, damage_type: String) -> float:
@@ -224,12 +224,11 @@ func _on_damaged_default(damage: float, damage_type: String) -> float:
 func _show_shield_immune_popup(owner_unit: Variant, stype: String) -> void:
 	if owner_unit == null:
 		return
-	var actor: Variant = owner_unit.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
+	if owner_unit == null:
 		return
 	var color: String = "blue" if int(owner_unit.camp) == BattleEngine.CAMP_PLAYER else "red"
 	var str_map: Dictionary = {"AD": "physical_immune", "AP": "magic_immune", "all": "immune"}
-	actor.spawn_popup(str(str_map.get(stype, "immune")), color, false, "text")
+	owner_unit.emit_popup(str(str_map.get(stype, "immune")), color, false, "text")
 
 
 static func _check_level(buff_info: Dictionary, skill_level: float, target_level: float, rng: BattleRng) -> bool:
@@ -260,3 +259,7 @@ static func check_add_buff(buff_info: Dictionary, skill_level: float, target_lev
 	if not _check_level(buff_info, skill_level, target_level, rng):
 		return [false, ""]  # 等级不足 → miss（源 :310-311 return false 无 reason）
 	return _check_resist_attribute(buff_info, attribs, rng)
+
+static func _take_shader_token() -> int:
+	_shader_token_seq += 1
+	return _shader_token_seq

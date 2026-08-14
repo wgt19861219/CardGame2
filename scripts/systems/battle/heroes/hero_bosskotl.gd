@@ -58,9 +58,9 @@ func _atk2_take_effect_on(skill: Variant, target: Variant, src: Variant) -> Arra
 		var dmg: float = (float(target.hp) - KILL_HP_OFFSET) / float(caster.attribs.get("PDM", 1.0))
 		target.take_damage({"amount": dmg, "damage_type": "Holy", "field": "hp", "source": caster})
 	var eff_name: Variant = skill.info.get("Impact Effect", null)
-	if eff_name != null and target.actor != null:
+	if eff_name != null:
 		var eff_z: int = int(skill.info.get("Impact Zorder", 0))
-		target.actor.add_effect(String(eff_name), eff_z)
+		target.emit_add_effect(String(eff_name), eff_z)
 	return [true, 0.0]
 
 

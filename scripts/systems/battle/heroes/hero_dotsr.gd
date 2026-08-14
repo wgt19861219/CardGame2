@@ -28,17 +28,10 @@ func _buff_update(buff: Variant, dt: float) -> void:
 	buff._update_default(dt)  # basefunc（源 :3 basefunc(buff, dt) 在前）
 	var time: float = float(buff.timer)
 	var owner: Variant = buff.owner
-	if owner == null or owner.actor == null:
+	if owner == null:
 		return
-	var actor: Variant = owner.actor
 	if time > SPLIT_TIME:
-		if "z_speed" in actor:
-			actor.z_speed = ZSPEED_HIGH
-		elif "zSpeed" in actor:
-			actor.zSpeed = ZSPEED_HIGH
+		owner.emit_zspeed(ZSPEED_HIGH)
 	else:
 		var oscillate: float = ZSPEED_AMP * sin(deg_to_rad(time * FREQ_DEG)) + ZSPEED_BASE
-		if "z_speed" in actor:
-			actor.z_speed = oscillate
-		elif "zSpeed" in actor:
-			actor.zSpeed = oscillate
+		owner.emit_zspeed(oscillate)

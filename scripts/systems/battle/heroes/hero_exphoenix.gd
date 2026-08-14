@@ -229,7 +229,4 @@ func apply(hero: Variant) -> void:
 
 
 func _show_egg_hurt_popup(unit: Variant) -> void:
-	var actor: Variant = unit.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
-	actor.spawn_popup("-1", "orange", true, "damage")
+	unit.emit_popup("-1", "orange", true, "damage")

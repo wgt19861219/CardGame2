@@ -42,10 +42,15 @@ static func _dispatch(e: BattleEvent) -> void:
 		BattleEvent.Type.LAUNCH:
 			actor.launch(e.value)
 		BattleEvent.Type.NEW_ACTION:
-			if actor.has_method("on_start_new_action"):
-				actor.on_start_new_action()
+			if actor.has_method("apply_action_named"):
+				actor.apply_action_named(e.text, e.flag)
 		BattleEvent.Type.PUPPET:
-			actor.use_puppet()
+			actor.use_puppet(e.text, e.flag)
 		BattleEvent.Type.NPC_DEATH:
 			if actor.has_method("on_npc_death"):
 				actor.on_npc_death()
+		BattleEvent.Type.ZSPEED:
+			if "z_speed" in actor:
+				actor.z_speed = e.value
+			elif "zSpeed" in actor:
+				actor.zSpeed = e.value

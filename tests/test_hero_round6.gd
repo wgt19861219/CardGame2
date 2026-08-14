@@ -1,4 +1,5 @@
 extends GutTest
+const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # 第六轮复刻忠实度 P1 修复回归（照源 BossCoco/Huskar/KOTL/Sil/TB.lua + Luna.lua + ExBossSpider.lua）。
 # 核心修复：4 Boss startScalingAction/endScalingAction 配对（Logic 层缩放标志，源 unit.lua:1487-1490）
 #   + BossSil S1 删跨英雄泄露 is_action_stage_change_by_manual（源 BB.lua:76 非 BossSil）
@@ -42,8 +43,7 @@ class MockActor:
 		add_effect_calls.append([p_name, p_z])
 
 
-class MockCaster:
-	extends RefCounted
+class MockCaster extends EmitStub:
 	var cm: Variant = null
 	var config: Dictionary = {}
 	var skills: Dictionary = {}
@@ -72,8 +72,7 @@ class MockCaster:
 		return 0.0
 
 
-class MockHero:
-	extends RefCounted
+class MockHero extends EmitStub:
 	var skills: Dictionary = {}
 	var hero_hooks: Dictionary = {}
 	var info: Dictionary = {}
@@ -162,11 +161,11 @@ func test_bosskotl_atk2_impact_effect() -> void:
 	BattleHeroScripts.apply("battle/heroes/BossKOTL", hero)
 	var target := MockCaster.new()
 	target.hp = 100
-	target.actor = MockActor.new()
 	skill2.hero_hooks["takeEffectOn"].call(skill2, target, null)
-	assert_eq(target.actor.add_effect_calls.size(), 1, "K4 Impact Effect 触发（源 :64-68）")
-	assert_eq(target.actor.add_effect_calls[0][0], "eff_test.cha", "K4 effect 名")
-	assert_eq(target.actor.add_effect_calls[0][1], 5, "K4 effect zorder")
+	var evs: Array = target.events.filter(func(e): return e.type == BattleEvent.Type.ADD_EFFECT)
+	assert_eq(evs.size(), 1, "K4 Impact Effect 触发（源 :64-68，T4 起 ADD_EFFECT 事件）")
+	assert_eq(evs[0].text, "eff_test.cha", "K4 effect 名")
+	assert_eq(int(evs[0].value), 5, "K4 effect zorder")
 
 
 # BossSil S1 不设 is_action_stage_change_by_manual（源 BB.lua:76 非 BossSil）+ S2 scaling 对。

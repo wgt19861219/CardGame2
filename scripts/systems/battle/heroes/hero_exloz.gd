@@ -174,7 +174,4 @@ func apply(hero: Variant) -> void:
 
 
 func _show_zero_popup(unit: Variant) -> void:
-	var actor: Variant = unit.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
-	actor.spawn_popup("-0", "orange", false, "damage")
+	unit.emit_popup("-0", "orange", false, "damage")

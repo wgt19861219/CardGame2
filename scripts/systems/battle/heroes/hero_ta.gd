@@ -147,9 +147,6 @@ func _skill4_power(skill: Variant, src: Variant, target: Variant) -> Array:
 
 
 func _show_refract_immune_popup(owner_unit: Variant, stype: String) -> void:
-	var actor: Variant = owner_unit.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "blue" if int(owner_unit.camp) == BattleEngine.CAMP_PLAYER else "red"
 	var str_map: Dictionary = {"AD": "physical_immune", "AP": "magic_immune", "all": "immune"}
-	actor.spawn_popup(str(str_map.get(stype, "immune")), color, false, "text")
+	owner_unit.emit_popup(str(str_map.get(stype, "immune")), color, false, "text")

@@ -1,10 +1,11 @@
 extends GutTest
+const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # Phase 2.7 英雄 hook 基础设施验证。
 # 验证 BattleHeroScripts 分发（阶段三 T2 前为 BattleHeroRegistry） + 英雄脚本 apply 注册 hero_hooks + wrapper 行为（OD INT 免疫）。
 
 
-class MockSkill:
-	extends RefCounted
+class MockSkill extends EmitStub:
+	var camp: int = 1   # T4：OD 免疫飘字读 target.camp + target.emit_popup（stub 供事件契约）
 	var info: Dictionary = {}
 	var hero_hooks: Dictionary = {}
 	var target: Variant = null
@@ -15,8 +16,7 @@ class MockSkill:
 		start_default_arg = p_target
 
 
-class MockHero:
-	extends RefCounted
+class MockHero extends EmitStub:
 	var skills: Dictionary = {}
 	var hero_hooks: Dictionary = {}  # 单位级 hook（SNK die/update/onActionFinished）
 	var config: Dictionary = {"dps_mod": 1.0}  # SilverDragon dps_mod 缩放
@@ -29,7 +29,6 @@ class MockHero:
 	var info: Dictionary = {}  # TB apply hero.info.mDuration
 	var custom_data: Dictionary = {}  # TitanHead apply 存 npc_up/down/atk2damage/maxDamage/heroindex
 	var proto: Dictionary = {}  # protoAwake 英雄 apply 读 proto（Lina/OK/TH/Ursa/Naga）
-	var engine: Variant = null  # TitanHead apply create_npc + rng / Kael apply engine 引用
 	# —— Kael apply 设字段（energy_ball_manager/skill_condition/delivered_balls/ai_mode/...）——
 	var camp: int = 1
 	var energy_ball_manager: Variant = null

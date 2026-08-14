@@ -85,11 +85,8 @@ static func take_damage(u: Variant, params: Dictionary) -> float:
 	return lost
 
 
-# actor==null（headless 无 scene）守卫，等价源 ed.run_with_scene。
+# 表现走 BattleEvent 队列（T4，headless 无消费者时静默累积），等价源 ed.run_with_scene 守卫。
 static func _show_immune_popup(u: Variant) -> void:
-	var actor: Variant = u.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var color: String = "red" if int(u.camp) == BattleEngine.CAMP_ENEMY else "blue"
 	var adimm: bool = float(u.attribs.get("PIMU", 0.0)) >= IMMUNITY_FULL
 	var apimm: bool = float(u.attribs.get("MIMU", 0.0)) >= IMMUNITY_FULL
@@ -100,13 +97,10 @@ static func _show_immune_popup(u: Variant) -> void:
 		str_text = "physical_immune"
 	else:
 		str_text = "magic_immune"
-	actor.spawn_popup(str_text, color, false, "text")
+	u.emit_popup(str_text, color, false, "text")
 
 
 static func _show_damage_popup(u: Variant, lost: float, field: String, b_crit: bool) -> void:
-	var actor: Variant = u.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
 	var str_text: String = "-" + str(int(round(lost)))
 	if str_text == "-0":
 		return
@@ -117,16 +111,13 @@ static func _show_damage_popup(u: Variant, lost: float, field: String, b_crit: b
 		color = "red"
 	else:
 		color = "orange"
-	actor.spawn_popup(str_text, color, b_crit, "damage")
+	u.emit_popup(str_text, color, b_crit, "damage")
 
 
 # engine.on_unit_die 调（battle_engine 超 300 行，提取至此控行数）。kill_mp_bonus 透传 engine 常量。
 static func on_hero_kill(killer: Variant, kill_mp_bonus: int) -> void:
 	killer.set_mp(int(killer.mp) + kill_mp_bonus)
-	var actor: Variant = killer.get("actor")
-	if actor == null or not actor.has_method("spawn_popup"):
-		return
-	actor.spawn_popup("kill", "blue" if int(killer.camp) == BattleEngine.CAMP_PLAYER else "red", false, "text")
+	killer.emit_popup("kill", "blue" if int(killer.camp) == BattleEngine.CAMP_PLAYER else "red", false, "text")
 
 
 static func _try_hurt(u: Variant, lost: float) -> void:
@@ -152,9 +143,8 @@ static func die(u: Variant, killer: Variant) -> void:
 	if not bool(u.is_alive()):
 		return
 	var death_name: String = String(u.name).to_upper()
-	var voice_actor: Variant = u.get("actor")
-	if death_name != "" and voice_actor != null and voice_actor.has_method("play_voice"):
-		voice_actor.play_voice(death_name, "_DEATH")
+	if death_name != "":
+		u.emit_voice(death_name, "_DEATH")
 	u.remove_signed_buffer()
 	if bool(u.manually_casting):
 		u.manually_casting = false
@@ -181,9 +171,7 @@ static func die(u: Variant, killer: Variant) -> void:
 		var foe_camp: int = BattleEngine.CAMP_ENEMY if int(u.camp) == BattleEngine.CAMP_PLAYER else BattleEngine.CAMP_PLAYER
 		for unit in u.engine.foreach_alive_unit(foe_camp):
 			unit.rebuild()
-	var actor: Variant = u.get("actor")
-	if actor != null and actor.has_method("play_gold_drop_effect"):
-		actor.play_gold_drop_effect()
+	u.emit_gold_drop()
 
 
 static func hurt(u: Variant) -> void:
@@ -210,9 +198,7 @@ static func set_action(u: Variant, action_name: String, loop: bool, interrupt: b
 		u.action_duration = _lookup_anim_duration(u, action_name)
 	else:
 		u.action_duration = 0.0
-	var actor: Variant = u.get("actor")
-	if actor != null and actor.has_method("on_start_new_action"):
-		actor.on_start_new_action()
+	u.emit_new_action(action_name, loop)
 
 
 # phase 时序接入（BattleSkillPhase 同表查询）：action_duration>0 才触发 on_action_finished → on_phase_finished，skill 不卡 casting。
@@ -252,11 +238,9 @@ static func take_heal(u: Variant, amount: float, p_type: String, source: Variant
 		is_add_point = false
 	u.unfreeze_actor()
 	if is_add_point and amount > 1.0:
-		var actor: Variant = u.get("actor")
-		if actor != null and actor.has_method("spawn_popup"):
-			var str_text: String = "+" + str(int(round(amount)))
-			var color: String = "yellow" if p_type == "mp" else "green"
-			actor.spawn_popup(str_text, color, false, "heal")
+		var str_text: String = "+" + str(int(round(amount)))
+		var color: String = "yellow" if p_type == "mp" else "green"
+		u.emit_popup(str_text, color, false, "heal")
 
 
 static func knockup(u: Variant, time: float, distance: Vector2) -> void:
@@ -264,9 +248,7 @@ static func knockup(u: Variant, time: float, distance: Vector2) -> void:
 		return
 	u.knockup_time = time
 	u.knockup_v = Vector2(distance.x / time, distance.y / time) if time != 0.0 else Vector2.ZERO
-	var actor: Variant = u.get("actor")
-	if actor != null and actor.has_method("launch"):
-		actor.launch(time)
+	u.emit_launch(time)
 
 
 static func start_scaling_action(u: Variant, scale_x: float, duration: float) -> void:

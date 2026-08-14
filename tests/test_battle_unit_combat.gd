@@ -1,4 +1,5 @@
 extends GutTest
+const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # Phase 2.2续-A 伤害闭环（照源 unit.lua:1252 takeDamage 等翻译，2026-07-01）。
 # MockUnit/MockSource/MockEngine/MockRng/MockBuff duck-type 契约（照源 unit 协作者）。
 # 伤害公式精确数值校验（AD/AP/Holy/防御减伤/暴击/免疫/buff onDamaged/致死/hurt/mp_gain）。
@@ -25,13 +26,15 @@ class MockEngine:
 	var rng: Variant = null
 	var mp_bonus: float = 1.0
 	var on_die_calls: Array = []
+	var events: Array = []   # T4：表现事件队列（emit_event 收口）
 	func foreach_alive_unit(_camp: int) -> Array:
 		return []
 	func on_unit_die(u: Variant, killer: Variant) -> void:
 		on_die_calls.append([u, killer])
+	func emit_event(e: Variant) -> void:
+		events.append(e)
 
-class MockUnit:
-	extends RefCounted
+class MockUnit extends EmitStub:
 	var attribs: Dictionary = {"ARM": 0, "MR": 0, "PIMU": 0, "MIMU": 0, "HP": 1000}
 	var buff_list: Array = []
 	var buff_effects: Dictionary = {}
@@ -42,7 +45,6 @@ class MockUnit:
 	var camp: int = 1
 	var state: int = 0  # BattleUnit.State.IDLE
 	var current_skill: Variant = null
-	var engine: Variant = null
 	var dmg_statistics: float = 0.0
 	var dPSStatisticsRatio: float = 1.0
 	var isDeathWithEffect: bool = false
@@ -58,7 +60,6 @@ class MockUnit:
 	var aura_skill_list: Array = []
 	var effect_enemy_aura_skill_list: Array = []
 	var name: String = ""        # 源 unit.name（单位代号，音效拼路径 unit.lua:1113/1158）
-	var actor: Variant = null    # 源 unit.actor（View 桥，音效/飘字/特效鸭子调）
 	func set_hp(v: int) -> int:
 		hp = clamp(v, 0, int(attribs.get("HP", 999999)))
 		return hp
@@ -75,12 +76,7 @@ class MockUnit:
 		pass
 
 
-# die/cast_manual_skill 音效桥 mock actor（Logic→actor.play_voice，照 spawn_popup 同鸭子模式）。
-class MockVoiceActor:
-	extends RefCounted
-	var voice_calls: Array = []
-	func play_voice(unit_name: String, suffix: String) -> void:
-		voice_calls.append([unit_name, suffix])
+# die/cast_manual_skill 音效（T4 起走 BattleEvent.VOICE 事件，断言 engine.events）。
 
 
 func _make_unit() -> MockUnit:
@@ -225,26 +221,24 @@ func test_die() -> void:
 	assert_eq(u.mp, 0, "mp=0")
 	assert_eq(u.engine.on_die_calls.size(), 1, "on_unit_die")
 
-# 源 die :1155-1159 死亡音效（Logic→actor.play_voice 桥）：name 非空 + actor 有 play_voice → 调用。
+# 源 die :1155-1159 死亡音效（T4 起 VOICE 事件）：name 非空 → engine.events 产 VOICE。
 func test_die_plays_death_voice() -> void:
 	var u := _make_unit()
 	u.hp = 100
 	u.name = "AM"
-	var voice := MockVoiceActor.new()
-	u.actor = voice
 	BattleUnitCombat.die(u, null)
-	assert_eq(voice.voice_calls.size(), 1, "die 调 play_voice")
-	assert_eq(voice.voice_calls[0][0], "AM", "name 大写透传")
-	assert_eq(voice.voice_calls[0][1], "_DEATH", "suffix _DEATH")
+	var voices: Array = u.engine.events.filter(func(e): return e.type == BattleEvent.Type.VOICE)
+	assert_eq(voices.size(), 1, "die 产 1 条 VOICE 事件")
+	assert_eq(voices[0].text, "AM", "name 大写透传")
+	assert_eq(voices[0].text2, "_DEATH", "suffix _DEATH")
 
-# 源 die :1156 name 空 → 音效桥跳过（heroName=nil 不播，源 if heroName then）。
+# 源 die :1156 name 空 → 音效跳过（heroName=nil 不播，源 if heroName then）。
 func test_die_no_voice_when_name_empty() -> void:
 	var u := _make_unit()
 	u.hp = 100
-	var voice := MockVoiceActor.new()
-	u.actor = voice
 	BattleUnitCombat.die(u, null)
-	assert_eq(voice.voice_calls.size(), 0, "name 空 不调 play_voice")
+	var voices: Array = u.engine.events.filter(func(e): return e.type == BattleEvent.Type.VOICE)
+	assert_eq(voices.size(), 0, "name 空 不产 VOICE 事件")
 
 # —— takeHeal ——
 

@@ -94,16 +94,20 @@ func emit_launch(time: float) -> void:
 	emit_event(BattleEvent.launch(self, time))
 
 
-func emit_new_action() -> void:
-	emit_event(BattleEvent.new_action(self))
+func emit_new_action(action: String, loop: bool) -> void:
+	emit_event(BattleEvent.new_action(self, action, loop))
 
 
-func emit_puppet() -> void:
-	emit_event(BattleEvent.puppet(self))
+func emit_puppet(action: String, loop: bool) -> void:
+	emit_event(BattleEvent.puppet(self, action, loop))
 
 
 func emit_npc_death() -> void:
 	emit_event(BattleEvent.npc_death(self))
+
+
+func emit_zspeed(v: float) -> void:
+	emit_event(BattleEvent.zspeed(self, v))
 
 
 func terminate() -> void:
@@ -114,8 +118,7 @@ func freeze() -> void:
 	frozen_model = true
 	if not frozen_actor:
 		frozen_actor = true
-		if actor != null and actor.has_method("tint"):
-			actor.tint(FREEZE_TINT, FREEZE_TINT, FREEZE_TINT)
+		emit_tint(FREEZE_TINT, FREEZE_TINT, FREEZE_TINT)
 
 
 func unfreeze() -> void:
@@ -126,8 +129,7 @@ func unfreeze() -> void:
 func unfreeze_actor() -> void:
 	if frozen_actor:
 		frozen_actor = false
-		if actor != null and actor.has_method("tint"):
-			actor.tint(UNFREEZE_TINT, UNFREEZE_TINT, UNFREEZE_TINT)  # UnitSprite.tint clamp 到 1.0=WHITE
+		emit_tint(UNFREEZE_TINT, UNFREEZE_TINT, UNFREEZE_TINT)  # UnitSprite.tint clamp 到 1.0=WHITE
 
 
 func set_position(pos: Vector2) -> Vector2:

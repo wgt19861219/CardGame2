@@ -30,6 +30,10 @@ func _make_unit() -> BattleUnit:
 	return u
 
 
+func _puppet_events(u: BattleUnit) -> Array:
+	return (u.engine as BattleEngine).events.filter(func(e): return e.type == BattleEvent.Type.PUPPET)
+
+
 func test_push_puppet_changes_stack() -> void:
 	var u := _make_unit()
 	var initial_size := u.puppet_stack.size()
@@ -58,21 +62,17 @@ func test_remove_puppet_pops_stack() -> void:
 
 func test_push_puppet_calls_use_puppet() -> void:
 	var u := _make_unit()
-	var actor := MockActor.new()
-	u.actor = actor
-	assert_eq(actor.use_puppet_count, 0, "初始 0 次")
+	assert_eq(_puppet_events(u).size(), 0, "初始 0 条")
 	u.push_puppet("Duck")
-	assert_eq(actor.use_puppet_count, 1, "push 应触发 1 次 use_puppet")
+	assert_eq(_puppet_events(u).size(), 1, "push 应产 1 条 PUPPET 事件（T4 起 use_puppet 走队列）")
 
 
 func test_remove_puppet_calls_use_puppet() -> void:
 	var u := _make_unit()
-	var actor := MockActor.new()
-	u.actor = actor
 	var pid: int = u.push_puppet("Duck")
-	actor.use_puppet_count = 0  # 重置
+	(u.engine as BattleEngine).drain_events()  # 重置
 	u.remove_puppet(pid)
-	assert_eq(actor.use_puppet_count, 1, "remove 应触发 1 次 use_puppet")
+	assert_eq(_puppet_events(u).size(), 1, "remove 应产 1 条 PUPPET 事件")
 
 
 func test_switch_puppet_loads_ani() -> void:
@@ -116,5 +116,6 @@ func test_use_puppet_reruns_buff_on_added_client() -> void:
 	# push puppet 触发 use_puppet
 	u.actor = actor
 	u.push_puppet("Duck")
+	BattleEventRenderer.render(u.engine as BattleEngine)   # T4：无 scene step，手动 drain 分发
 	assert_true(buff.on_added_client_count >= 1, "use_puppet 应重跑 buff on_added_client")
 	actor.queue_free()

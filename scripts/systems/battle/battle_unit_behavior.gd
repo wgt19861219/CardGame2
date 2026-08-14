@@ -62,9 +62,8 @@ static func cast_manual_skill(u: Variant) -> void:
 		u.current_skill.interrupt()
 	cast_skill(u, u.manual_skill, u.ai.target)
 	var ult_name: String = String(u.name).to_upper()
-	var ult_actor: Variant = u.get("actor")
-	if ult_name != "" and ult_actor != null and ult_actor.has_method("play_voice"):
-		ult_actor.play_voice(ult_name, "_ULT")
+	if ult_name != "":
+		u.emit_voice(ult_name, "_ULT")
 	u.manually_casting = true
 	u.engine.freeze()
 	u.unfreeze()
