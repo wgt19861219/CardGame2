@@ -1,9 +1,11 @@
-[gd_resource type="Theme" load_steps=10 format=3]
+[gd_resource type="Theme" load_steps=14 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="3_detailp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="4_commentbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="5_upg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png" id="6_upgm"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -32,6 +34,23 @@ texture_margin_bottom = 33.0
 ; 无 patch 等比整体缩放（182x44 → 142x34.4 = ÷CS），按钮 rect 须等于显示尺寸防变形。
 [sub_resource type="StyleBoxTexture" id="SB_comment"]
 texture = ExtResource("4_commentbg")
+
+; equip_strengthen 强化按钮底（批 1 Task 5）：源 createStrenButton:867-880 stren/faststren
+; Scale9 herodetail-upgrade capInsets CCRectMake(20,20,53,29)（贴图像素空间，97x67 →
+; margin right=97-20-53=24 / bottom=67-20-29=18，口径同 SB_detail_n）。
+[sub_resource type="StyleBoxTexture" id="SB_upgrade_n"]
+texture = ExtResource("5_upg")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 24.0
+texture_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxTexture" id="SB_upgrade_p"]
+texture = ExtResource("6_upgm")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 24.0
+texture_margin_bottom = 18.0
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -271,3 +290,71 @@ StoneDetailOkButton/styles/normal = SubResource("SB_detail_n")
 StoneDetailOkButton/styles/hover = SubResource("SB_detail_n")
 StoneDetailOkButton/styles/pressed = SubResource("SB_detail_p")
 StoneDetailOkButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── equip_strengthen 两件套（批 1 Task 5，2026-08-15）──
+; 通用 18 号白+黑阴影(0,2)（源 :817-866 no_cost/money/rmb/no_fastcost + :1456-1473 装备名同规格）
+EquipStrenLabel18/base_type = &"Label"
+EquipStrenLabel18/colors/font_color = Color(1, 1, 1, 1)
+EquipStrenLabel18/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenLabel18/constants/shadow_offset_x = 0
+EquipStrenLabel18/constants/shadow_offset_y = 2
+EquipStrenLabel18/font_sizes/font_size = 18
+; 源 :1145-1171 b_lv/n_lv size18 ccc3(146,0,9) 阴影(0,1)
+EquipStrenBarLevelLabel/base_type = &"Label"
+EquipStrenBarLevelLabel/colors/font_color = Color(0.572549, 0, 0.035294, 1)
+EquipStrenBarLevelLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenBarLevelLabel/constants/shadow_offset_x = 0
+EquipStrenBarLevelLabel/constants/shadow_offset_y = 1
+EquipStrenBarLevelLabel/font_sizes/font_size = 18
+; 源 :1203-1217 ehc size16 stroke(0,0,0,2)
+EquipStrenEhcLabel/base_type = &"Label"
+EquipStrenEhcLabel/colors/font_color = Color(1, 1, 1, 1)
+EquipStrenEhcLabel/colors/font_outline_color = Color(0, 0, 0, 1)
+EquipStrenEhcLabel/constants/outline_size = 2
+EquipStrenEhcLabel/font_sizes/font_size = 16
+; 源 :1475-1492 附魔等级 size18 ccc3(255,120,0) 阴影(0,1)
+EquipStrenAttLevelLabel/base_type = &"Label"
+EquipStrenAttLevelLabel/colors/font_color = Color(1, 0.470588, 0, 1)
+EquipStrenAttLevelLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenAttLevelLabel/constants/shadow_offset_x = 0
+EquipStrenAttLevelLabel/constants/shadow_offset_y = 1
+EquipStrenAttLevelLabel/font_sizes/font_size = 18
+; 源 :2126-2145 material_label size22 白
+EquipStrenMaterialLabel/base_type = &"Label"
+EquipStrenMaterialLabel/colors/font_color = Color(1, 1, 1, 1)
+EquipStrenMaterialLabel/font_sizes/font_size = 22
+; 源 :26-32 talk label size18 白（左对齐/autowrap 走节点属性）
+EquipStrenTalkLabel/base_type = &"Label"
+EquipStrenTalkLabel/colors/font_color = Color(1, 1, 1, 1)
+EquipStrenTalkLabel/font_sizes/font_size = 18
+; 源 createAttList:1366-1414 属性四列 size18 + 阴影(0,1)：pre 白 / att (255,0,0) / add (0,255,0) / suf 黑
+EquipStrenAttPreLabel/base_type = &"Label"
+EquipStrenAttPreLabel/colors/font_color = Color(1, 1, 1, 1)
+EquipStrenAttPreLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenAttPreLabel/constants/shadow_offset_x = 0
+EquipStrenAttPreLabel/constants/shadow_offset_y = 1
+EquipStrenAttPreLabel/font_sizes/font_size = 18
+EquipStrenAttValLabel/base_type = &"Label"
+EquipStrenAttValLabel/colors/font_color = Color(1, 0, 0, 1)
+EquipStrenAttValLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenAttValLabel/constants/shadow_offset_x = 0
+EquipStrenAttValLabel/constants/shadow_offset_y = 1
+EquipStrenAttValLabel/font_sizes/font_size = 18
+EquipStrenAttAddLabel/base_type = &"Label"
+EquipStrenAttAddLabel/colors/font_color = Color(0, 1, 0, 1)
+EquipStrenAttAddLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenAttAddLabel/constants/shadow_offset_x = 0
+EquipStrenAttAddLabel/constants/shadow_offset_y = 1
+EquipStrenAttAddLabel/font_sizes/font_size = 18
+EquipStrenAttSufLabel/base_type = &"Label"
+EquipStrenAttSufLabel/colors/font_color = Color(0, 0, 0, 1)
+EquipStrenAttSufLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipStrenAttSufLabel/constants/shadow_offset_x = 0
+EquipStrenAttSufLabel/constants/shadow_offset_y = 1
+EquipStrenAttSufLabel/font_sizes/font_size = 18
+; 强化按钮（源 stren/faststren Scale9 同贴图同 cap；label 走 BtnLabel 子节点 variation）
+EquipStrenButton/base_type = &"Button"
+EquipStrenButton/styles/normal = SubResource("SB_upgrade_n")
+EquipStrenButton/styles/hover = SubResource("SB_upgrade_n")
+EquipStrenButton/styles/pressed = SubResource("SB_upgrade_p")
+EquipStrenButton/styles/disabled = SubResource("SB_upgrade_n")
+EquipStrenButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")

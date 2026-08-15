@@ -2,22 +2,17 @@ class_name EquipStrengthenPanel
 extends PopWindow
 
 ## 装备强化面板（View 层主类）— 照源 ui/equipstrengthen.lua（2176 行）。
-## 重构拆分：装备槽/属性/经验条/cost → EquipStrengthenAtt；材料列表/网格/飘字 → EquipStrengthenMaterial；
-## NPC 对话/强化动画 → EquipStrengthenAnim（static helper 照 battle_unit_combat.gd 模式，第一参 panel）。
-## 本类保留：装配骨架 + select_slot 编排 + 强化流程（do_click_*/perform_*/_on_enhance_done）+ EE 接线
-## + 单测访问的私有转发（_add_material/_delete_material/_do_talk/_do_speak/_hide_talk/_set_talk_text/_get_equip_pos）。
+## 拆分：属性/经验条/费用 fill → EquipStrengthenAtt；材料网格/飘字 → EquipStrengthenMaterial；
+## NPC 对话/强化动画 → EquipStrengthenAnim（static helper 第一参 panel，照 battle_unit_combat.gd）。
+## 本类保留：装配骨架 + select_slot 编排 + 强化流程（do_click_*/perform_*/_on_enhance_done）+ EE 接线。
 ## 单机化：从 HeroDetailPanel 进（hero 已定），跳过源选英雄流程（doChangeHero:1720）。
-## Phase A 静态化（2026-07-17）：bg/frame/hero_icon/close/stren/faststren/钻石 cost label
-## 从 procedural 改 instantiate equip_strengthen_content.tscn（位置/size 编辑器可视化，照 hero_detail 范式）。
-## att（属性四列）/material（材料）子组件保留 procedural 挂 container（本批只静态化 panel 层）。
+##
+## 两件套范式（批 1 Task 5，2026-08-15）：静态结构全在 equip_strengthen_content.tscn
+## （框架/NPC 对话/经验条/属性底板/按钮/裁剪层/槽 host，零静态节点构造）；本文件只做业务、
+## 信号 connect、fill（%Xxx 取节点填动态数据）。静态色/字号走 EquipStren* variation。
 
 # 静态 panel 层子场景（位置/size 在 .tscn 可视化）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equip_strengthen_content.tscn")
-# Scale9 按钮样式（.tscn 普通 Button 套用，源 stren/faststren capInsets CCRectMake(20,20,53,29)）。
-const STREN_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
-const STREN_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
-const SCALE9_CAP: Rect2 = Rect2(20.0, 20.0, 53.0, 29.0)
-const BTN_LABEL_COLOR: Color = Color(0.918, 0.882, 0.804)
 const SELECT_FADE_DUR: float = 0.2
 # 提示文案 LSTR key（源 equipstrengthen.lua 各处 T(LSTR(...))，运行时 cm.get_lstr 解析为当前语言）。
 # 单机化降级项：TEXT_DIAMOND_SHORT（源 upFastStren:706 showHandyDialog toRecharge 充值弹窗省略，无对应 LSTR → fallback 中文）。
@@ -36,7 +31,7 @@ var hero: HeroInstance = null
 var cm: Variant = null
 var pd: PlayerData = null
 var _selected_slot: int = -1
-var _equip_icons: Array = []        # 6 槽 Control（源 self.equips[i]）
+var _equip_icons: Array = []        # 6 槽 icon/空位引用（源 self.equips[i].icon）
 var _talk_container: Control = null
 var _talk_frame: NinePatchRect = null
 var _talk_label: Label = null
@@ -47,14 +42,13 @@ var _mt_nodes: Array = []
 var _addmt_info: Dictionary = {}
 var _ori_exp: float = 0.0
 var _target_exp: float = 0.0
-var _cost_label: Label = null
 var _stren_btn: Button = null
 var _faststren_btn: Button = null
-var _diamond_cost_label: Label = null
+var _diamond_cost_label: Label = null   # %RmbLabel（源 strenui.rmb 钻石花费数字）
+var _material_label: Label = null
 var _pre_enhance_level: int = -1   # 强化前装备等级（缓存，供 _on_enhance_done 算升级差播 playEnhanceAnim）
 var _exp_bar_tween: Tween = null
-var _material_bg: NinePatchRect = null
-var _material_label: Label = null
+var _content: Control = null       # .tscn 根（fill 节点入口）
 
 
 func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -> void:
@@ -74,24 +68,50 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -
 	select_slot(0)   # 默认选槽 0（源 create:2163 doSelectSlot）+ emit EEclickEquip/EEopenMaterial
 
 
-# Phase A：panel 层静态节点从 .tscn instantiate（bg/frame/hero_icon/close/stren/faststren/钻石 label），
-# 位置/size .tscn 固化。Scale9 样式 + LSTR 文字 + 信号绑定运行时补（.tscn 普通 Button 无九宫格）。
-# att/material 子组件保留 procedural 挂 container（本批只静态化 panel 层）。
+# 绑 .tscn 静态节点 + fill 静态文案（动态数据走 helper fill 函数）。零静态节点构造。
 func _build_content() -> void:
-	var content: Control = CONTENT_SCENE.instantiate() as Control
-	container.add_child(content)
-	# .tscn 普通 Button 套 Scale9 StyleBoxTexture（源 herodetail-upgrade cap 20,20,53,29，照 hero_detail 范式）。
-	_stren_btn = content.get_node("%StrenBtn") as Button
-	UiScale9Button.apply_with_label(_stren_btn, STREN_BTN_RES, STREN_BTN_PRESS_RES, SCALE9_CAP, _T(TEXT_ENCHANT_KEY), BTN_LABEL_COLOR)
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	# 普通强化按钮（源 createStrenButton :899-912 label LSTR ENCHANTING）
+	_stren_btn = _content.get_node("%StrenBtn") as Button
 	_stren_btn.pressed.connect(do_click_stren)
-	_faststren_btn = content.get_node("%FastStrenBtn") as Button
-	UiScale9Button.apply_with_label(_faststren_btn, STREN_BTN_RES, STREN_BTN_PRESS_RES, SCALE9_CAP, _T(TEXT_ONECLICK_KEY), BTN_LABEL_COLOR)
+	(_stren_btn.get_child(0) as Label).text = _T(TEXT_ENCHANT_KEY)
+	# 一键强化按钮（源 :1009-1023 label LSTR ONECLICK_ENCHANTING）
+	_faststren_btn = _content.get_node("%FastStrenBtn") as Button
 	_faststren_btn.pressed.connect(do_click_fast_stren)
-	_diamond_cost_label = content.get_node("%DiamondCostLabel") as Label
-	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	(_faststren_btn.get_child(0) as Label).text = _T(TEXT_ONECLICK_KEY)
+	# 钻石花费数字（源 :961-977 rmb label）
+	_diamond_cost_label = _content.get_node("%RmbLabel") as Label
+	# 材料区提示（源 :2126-2145 material_label）
+	_material_label = _content.get_node("%MaterialLabel") as Label
+	# NPC 对话三件（源 createnpcTalk :11-42，静态进 tscn）
+	_talk_container = _content.get_node("%TalkContainer") as Control
+	_npc_sprite = _content.get_node("%NpcSprite") as TextureRect
+	_talk_frame = _content.get_node("%TalkFrame") as NinePatchRect
+	_talk_label = _content.get_node("%TalkLabel") as Label
+	# 返回按钮（源 doClickBack :1861）
+	var close_btn: TextureButton = _content.get_node("%CloseBtn") as TextureButton
 	close_btn.pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")
 		remove_window())
+	# 6 槽 host gui_input 绑定（一次性；fill 逻辑在 EquipStrengthenAtt.show_equips）
+	for i in EquipStrengthenAtt.SLOT_COUNT:
+		var host: Control = _content.get_node("%EquipSlot" + str(i)) as Control
+		host.gui_input.connect(_make_slot_handler(i))
+	_fill_hero_head()
+
+
+# 英雄头像 + 名字（源 setHeroIcon:1728-1776：readhero.createIcon 替换 heroIcon 框
+# + createHeroName 名字；单机化 hero 已定 → setup 即 fill，贴图名降级 Label）。
+func _fill_hero_head() -> void:
+	if hero == null:
+		return
+	var head := ReadheroIcon.new()
+	head.setup({"id": int(hero.tid), "rank": int(hero.rank), "stars": int(hero.stars)}, cm)
+	var head_host: Control = _content.get_node("%HeroHeadHost") as Control
+	head_host.add_child(head)   # Node2D 默认 (0,0)=Host 左上，104×104 恰铺满 Host
+	(_content.get_node("HeroIcon") as TextureRect).visible = false   # 源 :1741 框被替换
+	(_content.get_node("%HeroName") as Label).text = HeroDetailFills.get_display_name(hero, cm)
 
 
 func _maybe_start_ee() -> void:
@@ -105,7 +125,7 @@ func _maybe_start_ee() -> void:
 	Events.bus.emit_tutorial_step(&"EEselectHero")   # 推进到 EEclickEquip 等 select_slot
 
 
-# 槽点击 handler（Att.show_equips gui_input.connect 用）。
+# 槽点击 handler（EquipSlot host gui_input.connect 用）。
 func _make_slot_handler(slot: int) -> Callable:
 	return func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
@@ -192,10 +212,16 @@ func is_talk_visible() -> bool:
 	return _talk_container.modulate.a > 0.0
 
 
+# 清动态 fill 节点（meta 标记：att 属性行 / mt 材料格），静态 .tscn 节点不带 meta 不受影响。
 func _clear_meta_children(meta_key: String) -> void:
-	for child in container.get_children():
+	_clear_meta_recursive(_content, meta_key)
+
+
+func _clear_meta_recursive(node: Node, meta_key: String) -> void:
+	for child in node.get_children():
 		if child.has_meta(meta_key):
 			child.queue_free()
+		_clear_meta_recursive(child, meta_key)
 
 
 func get_addmt_info() -> Dictionary:

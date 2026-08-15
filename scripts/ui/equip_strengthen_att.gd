@@ -1,34 +1,39 @@
 class_name EquipStrengthenAtt
 extends RefCounted
 
-## equipstrengthen 装备槽/属性/经验条/cost 显示（View helper）— 从 EquipStrengthenPanel 拆出控 ≤300。
-## static 方法第一参 panel（EquipStrengthenPanel 实例，鸭子类型避循环引用），照 battle_unit_combat.gd 静态拆分。
-## + createExpBar:1109 + refreshExpBar:1061 + refreshStrenCost:504 + getUnitMoney:1289 + checkMaxLevel:1306。
+## equipstrengthen 装备槽 fill/属性 fill/经验条 fill/费用 fill + 查询（View helper）。
+## 两件套范式（批 1 Task 5，2026-08-15）：静态结构（槽 host/名条底板/经验条六件/
+## 金币钻石区/材料区背景）在 equip_strengthen_content.tscn；本类纯 fill 动态数据 +
+## 数据查询，禁建静态节点/禁样式 override（金币不足红字为动态状态色，eatexp 先例）。
+## static 方法第一参 panel（EquipStrengthenPanel 实例，鸭子类型避循环引用）。
+## + 源对照：createEquip:1576 + createEquipAtt:1416 + createAttList:1366 +
+## createExpBar:1109 + refreshExpBar:1061 + refreshStrenCost:504 + getUnitMoney:1289 + checkMaxLevel:1306。
 
 const SLOT_COUNT: int = 6
-const EQUIP_OX: float = 235.0
-const EQUIP_OY_COCOS: float = 405.0
-const EQUIP_DX: float = 72.0
-const EQUIP_DY: float = 72.0
-const HALF: float = 0.5              # 中心定位偏移（icon.size*0.5，源 cocos 锚点 0.5/0.5 等价）
-const EMPTY_SLOT_SIZE: Vector2 = Vector2(70.0, 70.0)
 const SLOT_DIM_ALPHA: float = 75.0 / 255.0
-const ATT_TOP: float = 380.0
-const ATT_LINE: float = 26.0
-const ATT_LEFT: float = 340.0
-const EXP_BAR_POS: Vector2 = Vector2(340.0, 415.0)
-const EXP_BAR_SIZE: Vector2 = Vector2(280.0, 22.0)
-const COST_LABEL_POS: Vector2 = Vector2(340.0, 350.0)
-# 金币区装饰（源 equipstrengthen.lua:817-866）：money_bg 框 + goldicon + 金币 Label。
-# 源 money_bg = pvp_price_bg（ PvP 价位框，复用作金币栏底纹）；money icon = goldicon。
-const MONEY_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_price_bg.png"
-const GOLDICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon.png"
-const MONEY_BG_SIZE: Vector2 = Vector2(150.0, 26.0)
-const GOLDICON_SIZE: Vector2 = Vector2(20.0, 20.0)
-const GOLDICON_OFFSET: Vector2 = Vector2(6.0, 3.0)   # icon 在 money_bg 内左缘偏移
-const COST_LABEL_OFFSET: Vector2 = Vector2(30.0, 3.0)   # label 相对 money_bg 左缘
+# 属性动态行（源 createAttList :1366-1414 + refreshAttListPos :1334-1364）：
+# 首行左端 x=347+80=427（源 ox=347），行距=att label 内容高（源 :1362 y -= att.height）。
+const ATT_LIST_LEFT: float = 427.0
+const ATT_LIST_TOP: float = 205.0   # 源 oy=355 → 560-355
+const ATT_PRE_GAP: float = 5.0      # 源 :1352 pre→att 间隔 5
+# 经验条（源 createExpBar :1109-1223）：progress_1/2 原始 842x24，显示=÷CS；
+# bar 左中 (72,213)→(152,347) 高 18（源 textureRect 高 18），满宽=底条显示宽。
+const BAR_TEX_SIZE: Vector2 = Vector2(842.0, 24.0)
+const BAR_DISP_W: float = 657.17   # 842/CS，与 BarBg 同宽
 const EXP_BAR_SPEED: float = 60.0
 const EXP_BAR_MIN_DUR: float = 0.1
+# 材料区背景两态（源 doShowmbPrompt :1959-1982）：宽 bottom_bg 660x154@(400,120)
+# cap(10,10,640,146)（858x216 贴图 → margin right=208/bottom=60）；窄 material_bg
+# 520x154@(335,120) cap(10,10,480,144)（650x214 → right=160/bottom=60）。
+const MATERIAL_BG_WIDE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_bottom_bg.png"
+const MATERIAL_BG_NARROW_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_material_bg.png"
+const MATERIAL_BG_WIDE_RECT: Rect2 = Rect2(150.0, 363.0, 660.0, 154.0)
+const MATERIAL_BG_NARROW_RECT: Rect2 = Rect2(155.0, 363.0, 520.0, 154.0)
+const MATERIAL_BG_WIDE_MARGIN: Vector2i = Vector2i(208, 60)
+const MATERIAL_BG_NARROW_MARGIN: Vector2i = Vector2i(160, 60)
+# 费用区动态色（源 refreshStrenCost :526-529 红/白切换）
+const COST_COLOR_SHORT: Color = Color(1.0, 0.0, 0.0)
+const COST_COLOR_OK: Color = Color(1.0, 1.0, 1.0)
 # 提示文案 LSTR key（源 T(LSTR(...))，panel.cm.get_lstr 解析）。
 const TEXT_UNENCHANTED_KEY: String = "EQUIPINFO.UNENCHANTED"
 const TEXT_MAX_LEVEL_KEY: String = "EQUIPSTRENGTHEN.YOUR_ENCHANTING_LEVEL_HAS_BEEN_MAXED_OUT"
@@ -36,60 +41,38 @@ const TEXT_ADD_MATERIAL_KEY: String = "EQUIPSTRENGTHEN.NO_MATERIAL_ADDED"
 const TEXT_MONEY_SHORT_KEY: String = "EQUIPSTRENGTHEN.YOUR_MONEY_IS_NOT_ENOUGH"
 const TEXT_MATERIAL_HINT_KEY: String = "EQUIPSTRENGTHEN.CLICK_HERE_TO_OPEN_THE_PACK\\N_YOU_CAN_USE_ANY_EQUIPMENT_TO_ENCHANT"
 const ATT_FADE_DUR: float = 0.2
-# 材料区背景宽窄切换（源 doShowmbPrompt:1959-1982）
-const MATERIAL_BG_WIDE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_bottom_bg.png"
-const MATERIAL_BG_NARROW_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_material_bg.png"
-const MATERIAL_BG_WIDE_SIZE: Vector2 = Vector2(660.0, 154.0)
-const MATERIAL_BG_NARROW_SIZE: Vector2 = Vector2(520.0, 154.0)
-const MATERIAL_BG_WIDE_COCOS: Vector2 = Vector2(400.0, 120.0)
-const MATERIAL_BG_NARROW_COCOS: Vector2 = Vector2(335.0, 120.0)
-const MATERIAL_BG_CAP: int = 10
-const ATT_LIST_LEFT: float = 427.0
-const ATT_LIST_TOP: float = 205.0
-const ATT_PRE_W: float = 70.0          # pre 列宽（源 content size 累加，估）
-const ATT_ATT_W: float = 50.0
-const ATT_ADD_W: float = 50.0
-const ATT_FONT_SIZE: int = 18
-const NAME_BG_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_item_name_bg.png"
-const NAME_BG_COCOS: Vector2 = Vector2(345.0, 415.0)
-const NAME_BG_SIZE: Vector2 = Vector2(200.0, 30.0)    # 估
 
 
-# i 是 0-based（本项目），源 1-based → ix=i%2, iy=i/2 等价源 (i-1)%2/floor((i-1)/2)。
-static func get_equip_pos(i: int) -> Vector2:
-	var ix: int = i % 2
-	var iy: int = int(i / 2)
-	var cocos_x: float = EQUIP_OX + EQUIP_DX * ix
-	var cocos_y: float = EQUIP_OY_COCOS - EQUIP_DY * iy
-	return Vector2(cocos_x + 80.0, 560.0 - cocos_y)
-
-
+# 6 槽 fill（源 createEquip :1576-1638）：host 常驻 tscn，fill 塞装备 icon 或显示 gocha 空位。
+# _equip_icons 存 icon（有装备，供星动画 refresh_stars）或 EmptyRect（空槽照源参与淡入淡出）。
 static func show_equips(panel) -> void:
 	if panel.hero == null:
 		return
+	panel._equip_icons.clear()
 	for i in SLOT_COUNT:
+		var host: Control = panel._content.get_node("%EquipSlot" + str(i)) as Control
+		var empty: TextureRect = host.get_node("EmptyRect") as TextureRect
+		for c in host.get_children():
+			if c != empty and c.has_meta("equip_icon"):
+				c.queue_free()
 		var item_id: int = int(panel.hero.equip_slots[i])
-		var icon: Control
+		var icon: Control = empty
 		if item_id > 0:
 			var lvl: int = int(ReadequipData.get_equip_level(item_id, float(panel.hero.equip_exp[i]), panel.cm).get("level", 0))
 			icon = ReadequipIcon.create_icon(item_id, 1, panel.cm, lvl, true)
+			icon.position = (host.size - icon.size) * 0.5   # 源 icon 中心锚 → host 居中
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE   # 点击由 host gui_input 接管
+			icon.set_meta("slot", i)
+			icon.set_meta("equip_icon", true)
+			empty.visible = false
+			host.add_child(icon)
 		else:
-			icon = create_empty_slot()
-		icon.position = get_equip_pos(i) - icon.size * HALF
-		icon.mouse_filter = Control.MOUSE_FILTER_STOP
-		icon.set_meta("slot", i)
-		icon.gui_input.connect(panel._make_slot_handler(i))
-		panel.container.add_child(icon)
+			empty.visible = true   # 源 :1595/1615 gocha 空位
 		panel._equip_icons.append(icon)
 
 
-static func create_empty_slot() -> Control:
-	var p := Panel.new()
-	p.size = EMPTY_SLOT_SIZE
-	return p
-
-
-# 装备属性（源 initEquipAtt:1225 + getEquipName:1260 + getEquipLevel:1278 + getLevelText:1325）。
+# 装备属性 fill（源 createEquipAtt:1416 + getEquipName:1260 + getEquipLevel:1278 + getLevelText:1325）。
+# 名条底板/名/等级 label 静态在 tscn；att list 动态行（数量随装备属性变化）fill 挂 AttHost。
 static func show_equip_att(panel, slot: int) -> void:
 	panel._clear_meta_children("att")
 	var item_id: int = int(panel.hero.equip_slots[slot])
@@ -99,13 +82,14 @@ static func show_equip_att(panel, slot: int) -> void:
 	var lvl_info: Dictionary = ReadequipData.get_equip_level(item_id, float(panel.hero.equip_exp[slot]), panel.cm)
 	var level: int = int(lvl_info["level"])
 	var is_max: bool = level >= int(lvl_info["max_level"]) and int(lvl_info["exp_in_level"]) >= int(lvl_info["level_total"])
-	_add_att_texture(panel, NAME_BG_RES, NAME_BG_COCOS, NAME_BG_SIZE)
-	add_att_label(panel, panel.cm.get_lstr(String(equip_row.get("Name", "equip"))), ATT_TOP)
+	var att_host: Control = panel._content.get_node("AttHost") as Control
+	(att_host.get_node("%AttNameLabel") as Label).text = String(panel.cm.get_lstr(String(equip_row.get("Name", "equip"))))
+	var level_label: Label = att_host.get_node("%AttLevelLabel") as Label
 	if is_max:
-		add_att_label(panel, _L(panel, TEXT_MAX_LEVEL_KEY), ATT_TOP - ATT_LINE)
+		level_label.text = _L(panel, TEXT_MAX_LEVEL_KEY)
 	else:
 		var lvl_text: String = _L(panel, TEXT_UNENCHANTED_KEY) if level == 0 else BaseresData.get_enhance_level_text(level, panel.cm)
-		add_att_label(panel, lvl_text + "  " + str(int(lvl_info["exp_in_level"])) + "/" + str(int(lvl_info["level_total"])), ATT_TOP - ATT_LINE)
+		level_label.text = lvl_text + "  " + str(int(lvl_info["exp_in_level"])) + "/" + str(int(lvl_info["level_total"]))
 	create_att_list(panel, slot)
 	_fade_in_att(panel)
 
@@ -113,99 +97,70 @@ static func show_equip_att(panel, slot: int) -> void:
 static func _fade_in_att(panel) -> void:
 	if not panel.is_inside_tree():
 		return
-	for child in panel.container.get_children():
+	for child in panel._content.get_node("AttHost").get_children():
 		if child.has_meta("att"):
 			child.modulate.a = 0.0
 			var tw: Tween = panel.create_tween()
 			tw.tween_property(child, "modulate:a", 1.0, ATT_FADE_DUR)
 
 
-static func add_att_label(panel, text: String, y: float) -> void:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.position = Vector2(ATT_LEFT, y)
-	lbl.set_meta("att", true)
-	panel.container.add_child(lbl)
-
-
-# 未选(slot<0)→宽背景 660×154 + label 隐。setup_panel 初次调建背景(z 底)，select_slot 调更新属性。
-# 列宽固定（源 refreshAttListPos 用 content size 累加，本项目估列宽近似）。
+# 属性动态行（源 createAttList :1366-1414 四列 label + refreshAttListPos :1334-1364 内容宽拼接）：
+# pre 左端 427 → pre 右端+5 → att → add → suf（列间按文字实际宽累加，源 :1339-1361 等价左端拼接）。
+# 行距 = att label 内容高（源 :1362）。headless 未入树 variation 回落 16 号宽（AGENTS 沉淀），入树后准确。
 static func create_att_list(panel, slot: int) -> void:
 	var item_id: int = int(panel.hero.equip_slots[slot])
 	var att: Dictionary = ReadequipData.get_att_list(item_id, panel.cm)
 	var add: Dictionary = ReadequipData.get_add_att_list(item_id, get_slot_level(panel, slot), panel.cm)
+	var host: Control = panel._content.get_node("AttHost") as Control
 	var y: float = ATT_LIST_TOP
 	for key in BaseresData.ATT_NAME:
 		if not att.has(key):
 			continue
 		var x: float = ATT_LIST_LEFT
-		_make_att_label(panel, BaseresData.get_att_pre(key, panel.cm), x, y, Color.WHITE)
-		x += ATT_PRE_W
-		_make_att_label(panel, str(int(att[key])), x, y, Color(1.0, 0.0, 0.0))
-		x += ATT_ATT_W
+		var pre: Label = _make_att_label(panel, host, BaseresData.get_att_pre(key, panel.cm), x, y, &"EquipStrenAttPreLabel")
+		x += pre.get_combined_minimum_size().x + ATT_PRE_GAP
+		var val: Label = _make_att_label(panel, host, str(int(att[key])), x, y, &"EquipStrenAttValLabel")
+		x += val.get_combined_minimum_size().x
 		var add_val: int = int(add.get(key, 0))
-		_make_att_label(panel, ("+" + str(add_val)) if add_val > 0 else "", x, y, Color(0.0, 1.0, 0.0))
-		x += ATT_ADD_W
-		_make_att_label(panel, BaseresData.get_att_suffix(key), x, y, Color.BLACK)
-		y += ATT_LINE
+		var add_lbl: Label = _make_att_label(panel, host, ("+" + str(add_val)) if add_val > 0 else "", x, y, &"EquipStrenAttAddLabel")
+		x += add_lbl.get_combined_minimum_size().x
+		_make_att_label(panel, host, BaseresData.get_att_suffix(key), x, y, &"EquipStrenAttSufLabel")
+		y += val.get_combined_minimum_size().y
 
 
-static func _make_att_label(panel, text: String, x: float, y: float, col: Color) -> Label:
+# 动态属性行 label（variation 承载色/字号/阴影，meta "att" 供清理）。
+static func _make_att_label(panel, host: Control, text: String, x: float, y: float, variation: StringName) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.position = Vector2(x, y)
-	lbl.modulate = col
-	lbl.add_theme_font_size_override("font_size", ATT_FONT_SIZE)
+	lbl.theme_type_variation = variation
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lbl.set_meta("att", true)
-	panel.container.add_child(lbl)
+	host.add_child(lbl)
 	return lbl
 
 
-static func _add_att_texture(panel, path: String, cocos_pos: Vector2, sz: Vector2) -> void:
-	if not ResourceLoader.exists(path):
-		return
-	var tr := TextureRect.new()
-	tr.texture = load(path)
-	tr.size = sz
-	tr.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - sz.y * 0.5)   # Cocos→Godot：X+80，Y 翻 560（源 anchor 0,0.5）
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.set_meta("att", true)
-	panel.container.add_child(tr)
-
-
+# 材料区背景两态 fill（源 doShowmbPrompt :1959-1982）：未选槽=宽背景+提示隐；
+# 选槽=窄背景+提示显（满级文案或 CLICK_HERE）。
 static func show_material_bg(panel, slot: int) -> void:
 	var narrow: bool = slot >= 0
-	var res_path: String = MATERIAL_BG_NARROW_RES if narrow else MATERIAL_BG_WIDE_RES
-	var size: Vector2 = MATERIAL_BG_NARROW_SIZE if narrow else MATERIAL_BG_WIDE_SIZE
-	var cocos_pos: Vector2 = MATERIAL_BG_NARROW_COCOS if narrow else MATERIAL_BG_WIDE_COCOS
-	if panel._material_bg == null or not is_instance_valid(panel._material_bg):
-		panel._material_bg = NinePatchRect.new()
-		panel._material_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel._material_bg.patch_margin_left = MATERIAL_BG_CAP
-		panel._material_bg.patch_margin_top = MATERIAL_BG_CAP
-		panel._material_bg.patch_margin_right = MATERIAL_BG_CAP
-		panel._material_bg.patch_margin_bottom = MATERIAL_BG_CAP
-		panel._material_bg.set_meta("mbg", true)
-		panel.container.add_child(panel._material_bg)
-	var tex := load(res_path)
+	var bg: NinePatchRect = panel._content.get_node("%MaterialBg") as NinePatchRect
+	var rect: Rect2 = MATERIAL_BG_NARROW_RECT if narrow else MATERIAL_BG_WIDE_RECT
+	var margin: Vector2i = MATERIAL_BG_NARROW_MARGIN if narrow else MATERIAL_BG_WIDE_MARGIN
+	var tex: Texture2D = load(MATERIAL_BG_NARROW_RES if narrow else MATERIAL_BG_WIDE_RES) as Texture2D
 	if tex != null:
-		panel._material_bg.texture = tex
-	panel._material_bg.size = size
-	panel._material_bg.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - size.y)
-	if panel._material_label == null or not is_instance_valid(panel._material_label):
-		panel._material_label = Label.new()
-		panel._material_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		panel._material_label.add_theme_font_size_override("font_size", 16)
-		panel._material_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel._material_label.set_meta("mbg", true)
-		panel.container.add_child(panel._material_label)
+		bg.texture = tex
+	bg.patch_margin_left = 10
+	bg.patch_margin_top = 10
+	bg.patch_margin_right = margin.x
+	bg.patch_margin_bottom = margin.y
+	bg.offset_left = rect.position.x
+	bg.offset_top = rect.position.y
+	bg.offset_right = rect.position.x + rect.size.x
+	bg.offset_bottom = rect.position.y + rect.size.y
 	panel._material_label.visible = narrow
 	if narrow:
 		panel._material_label.text = _L(panel, TEXT_MAX_LEVEL_KEY) if is_max_level_current(panel) else _L(panel, TEXT_MATERIAL_HINT_KEY)
-		panel._material_label.size = Vector2(size.x, 30.0)
-		panel._material_label.position = Vector2(cocos_pos.x + 80.0, 560.0 - cocos_pos.y - size.y * 0.5 - 15.0)
 
 
 # LSTR 解析包装（源 T(LSTR(key))；panel.cm 缺失时返空串）。
@@ -215,116 +170,152 @@ static func _L(panel, key: String) -> String:
 	return String(panel.cm.get_lstr(key))
 
 
-# 经验条（源 createExpBar:1109 精灵图，本项目 ProgressBar 适配）。
+# 经验条 fill（源 createExpBar :1109-1223 + initBar :1043-1059）：
+# Bar 显示已确认值（equip_exp），AnimBar 预览值（refreshExpBar 隐 bar 显 anim_bar）。
 static func show_exp_bar(panel, slot: int) -> void:
-	panel._clear_meta_children("bar")
 	var item_id: int = int(panel.hero.equip_slots[slot])
+	var bar_host: Control = panel._content.get_node("BarHost") as Control
 	if item_id <= 0:
+		bar_host.visible = false   # 源 :1114-1116 空槽移除容器
 		return
+	bar_host.visible = true
 	var lvl_info: Dictionary = ReadequipData.get_equip_level(item_id, float(panel.hero.equip_exp[slot]), panel.cm)
-	var bar := ProgressBar.new()
-	bar.position = EXP_BAR_POS
-	bar.size = EXP_BAR_SIZE
-	bar.set_meta("bar", true)
+	var level: int = int(lvl_info["level"])
+	var max_level: int = int(lvl_info["max_level"])
+	var anim: TextureRect = bar_host.get_node("%AnimBar") as TextureRect
+	anim.visible = false   # 源 :1055 anim_bar 隐
+	_apply_bar_ratio(panel, bar_host.get_node("%Bar") as TextureRect, _bar_ratio(lvl_info))
+	(bar_host.get_node("%BarLevelLabel") as Label).text = BaseresData.get_enhance_level_text(level, panel.cm)
+	(bar_host.get_node("%NextLevelLabel") as Label).text = BaseresData.get_enhance_level_text(mini(level + 1, max_level), panel.cm)
+	_fill_ehc_label(panel, lvl_info)
+
+
+static func _bar_ratio(lvl_info: Dictionary) -> float:
 	var total: int = int(lvl_info["level_total"])
-	bar.max_value = total if total > 0 else 1
-	bar.value = int(lvl_info["exp_in_level"])
-	panel.container.add_child(bar)
+	if total <= 0:
+		return 0.0
+	return clampf(float(int(lvl_info["exp_in_level"])) / float(total), 0.0, 1.0)
 
 
-# Tween 模拟：时长 = |target-cur|/60，min 0.1，kill 旧避叠加；is_inside_tree 守护。
+# 条填充：AtlasTexture.region 裁剪宽随 ratio（源 setTextureRect(0,0,655*e/m,18) 裁剪语义，非拉伸；
+# 本引擎 TextureRect 无 region 属性，AtlasTexture 等价——.tscn 两条独立实例）。
+static func _apply_bar_ratio(panel, bar: TextureRect, ratio: float) -> void:
+	var atlas: AtlasTexture = bar.texture as AtlasTexture
+	if atlas != null:
+		atlas.region = Rect2(0.0, 0.0, BAR_TEX_SIZE.x * ratio, BAR_TEX_SIZE.y)
+	bar.offset_right = bar.offset_left + BAR_DISP_W * ratio
+
+
+static func _bar_ratio_of(bar: TextureRect) -> float:
+	var atlas: AtlasTexture = bar.texture as AtlasTexture
+	if atlas == null or BAR_TEX_SIZE.x <= 0.0:
+		return 0.0
+	return atlas.region.size.x / BAR_TEX_SIZE.x
+
+
+static func _fill_ehc_label(panel, lvl_info: Dictionary) -> void:
+	var bar_host: Control = panel._content.get_node("BarHost") as Control
+	(bar_host.get_node("%EhcLabel") as Label).text = "%d/%d" % [int(lvl_info["exp_in_level"]), int(lvl_info["level_total"])]
+
+
+# 预览动画（源 refreshExpBar :1061-1101）：bar 隐 anim_bar 显，值向 targetExp 平滑（速度 60/s），
+# 回落到实际值时切回 bar（源 :1081-1084）；等级/数字文字随预览终态更新（源 :1089-1094 逐帧的终值等价）。
 static func refresh_exp_bar_preview(panel) -> void:
 	if panel.hero == null or panel._selected_slot < 0:
 		return
 	var item_id: int = int(panel.hero.equip_slots[panel._selected_slot])
 	if item_id <= 0:
 		return
-	for child in panel.container.get_children():
-		if child.has_meta("bar"):
-			var bar: ProgressBar = child as ProgressBar
-			var lvl_info: Dictionary = ReadequipData.get_equip_level(item_id, panel._target_exp, panel.cm)
-			var total: int = int(lvl_info["level_total"])
-			bar.max_value = total if total > 0 else 1
-			var target_val: float = float(lvl_info["exp_in_level"])
-			var cur_val: float = bar.value
-			if panel.is_inside_tree():   # 面板未入树时直接设值（同 select_slot 守护）
-				if panel._exp_bar_tween != null and panel._exp_bar_tween.is_valid():
-					panel._exp_bar_tween.kill()
-				var dur: float = max(EXP_BAR_MIN_DUR, abs(target_val - cur_val) / EXP_BAR_SPEED)
-				panel._exp_bar_tween = panel.create_tween()
-				panel._exp_bar_tween.tween_property(bar, "value", target_val, dur)
-			else:
-				bar.value = target_val
-			return
+	var bar_host: Control = panel._content.get_node("BarHost") as Control
+	var bar: TextureRect = bar_host.get_node("%Bar") as TextureRect
+	var anim: TextureRect = bar_host.get_node("%AnimBar") as TextureRect
+	bar.visible = false
+	anim.visible = true
+	var lvl_info: Dictionary = ReadequipData.get_equip_level(item_id, panel._target_exp, panel.cm)
+	var target_ratio: float = _bar_ratio(lvl_info)
+	var cur_ratio: float = _bar_ratio_of(anim)
+	_fill_ehc_label(panel, lvl_info)
+	# 等级文字随预览（源 :1089-1093 l 变化时更新 b_lv/n_lv）
+	var preview_level: int = int(lvl_info["level"])
+	(bar_host.get_node("%BarLevelLabel") as Label).text = BaseresData.get_enhance_level_text(preview_level, panel.cm)
+	(bar_host.get_node("%NextLevelLabel") as Label).text = BaseresData.get_enhance_level_text(mini(preview_level + 1, int(lvl_info["max_level"])), panel.cm)
+	if not panel.is_inside_tree():   # 面板未入树时直接设值（同 select_slot 守护）
+		_apply_bar_ratio(panel, anim, target_ratio)
+		return
+	if panel._exp_bar_tween != null and panel._exp_bar_tween.is_valid():
+		panel._exp_bar_tween.kill()
+	var dur: float = max(EXP_BAR_MIN_DUR, abs(target_ratio - cur_ratio) * BAR_DISP_W / EXP_BAR_SPEED)
+	panel._exp_bar_tween = panel.create_tween()
+	var anim_ref: TextureRect = anim
+	panel._exp_bar_tween.tween_method(
+		func(r: float) -> void:
+			if is_instance_valid(anim_ref):   # 面板提前销毁时 tween 已失效，防御 freed 访问
+				_apply_bar_ratio(panel, anim_ref, r),
+		cur_ratio, target_ratio, dur)
+	if panel._target_exp == float(panel.hero.equip_exp[panel._selected_slot]):
+		# 预览回落到实际值 → 动画结束切回 bar（源 :1081-1084 exp==getItemExp）
+		var bar_ref: TextureRect = bar
+		panel._exp_bar_tween.tween_callback(func() -> void:
+			if not is_instance_valid(anim_ref) or not is_instance_valid(bar_ref):
+				return
+			anim_ref.visible = false
+			bar_ref.visible = true
+			_apply_bar_ratio(panel, bar_ref, target_ratio))
 
 
+# 金币区 fill（源 refreshStrenCost :504-533）：无材料 no_cost 显/icon+money 隐；
+# 有材料反转 + money 纯数字（源 :515）+ 不足红字/充足白字（:526-529）。
 static func refresh_stren_cost(panel) -> void:
-	_ensure_money_area(panel)
+	var no_cost: Label = panel._content.get_node("%NoCostLabel") as Label
+	var icon: TextureRect = panel._content.get_node("%MoneyIcon") as TextureRect
+	var money: Label = panel._content.get_node("%MoneyLabel") as Label
 	var has_mt: bool = false
 	for k in panel._addmt_info:
 		if int(panel._addmt_info[k]) > 0:
 			has_mt = true
 			break
 	if not has_mt:
-		panel._cost_label.text = _L(panel, TEXT_ADD_MATERIAL_KEY)
-		panel._cost_label.modulate = Color.WHITE
+		no_cost.visible = true
+		icon.visible = false
+		money.visible = false
 		return
+	no_cost.visible = false
+	icon.visible = true
+	money.visible = true
 	var total_exp: float = get_total_exp(panel, panel._selected_slot)
 	var target: float = max(min(panel._target_exp, total_exp), 0.0)
 	var cost: int = int(get_unit_money(panel, panel._selected_slot) * (target - panel._ori_exp))
-	# 保留"金币"前缀：源 equipstrengthen.lua:817-866 icon+数字，本项目保留前缀冗余作为可读性双保险
-	# （既有测试 test_refresh_stren_cost_shows_gold 断言 find("金币")>=0）。
-	panel._cost_label.text = "金币 " + str(cost)
+	money.text = str(cost)   # 源 :515 纯数字（goldicon_small 表意，迁移期"金币"前缀已删）
 	if panel.pd != null and cost > panel.pd.hero_manager.gold:
-		panel._cost_label.modulate = Color.RED
+		money.add_theme_color_override("font_color", COST_COLOR_SHORT)
 		EquipStrengthenAnim.do_speak(panel, _L(panel, TEXT_MONEY_SHORT_KEY))
 	else:
-		panel._cost_label.modulate = Color.WHITE
+		money.add_theme_color_override("font_color", COST_COLOR_OK)
 
 
-# 金币区容器（源 equipstrengthen.lua:817-866）：money_bg 框 + goldicon + Label。
-# 仅首次调用时建容器，后续 refresh_stren_cost 复用 panel._cost_label（label 引用保留）。
-# 装饰节点 mouse_filter=IGNORE 避免拦截 slot/gui_input（红线：装饰节点必须 IGNORE）。
-static func _ensure_money_area(panel) -> void:
-	if panel._cost_label != null:
-		return   # 已建过容器，复用
-	var host: Control = panel.container
-	# money_bg：pvp_price_bg 框（NinePatchRect 不用，框是平铺纹理即可，照范成 TextureRect）。
-	var bg := TextureRect.new()
-	bg.texture = load(MONEY_BG_RES) as Texture2D
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = MONEY_BG_SIZE
-	bg.position = COST_LABEL_POS
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.set_meta("cost_bg", true)
-	host.add_child(bg)
-	# goldicon：金币图标（bg 内左侧）。
-	var icon := TextureRect.new()
-	icon.texture = load(GOLDICON_RES) as Texture2D
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.size = GOLDICON_SIZE
-	icon.position = COST_LABEL_POS + GOLDICON_OFFSET
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.set_meta("cost_icon", true)
-	host.add_child(icon)
-	# label：金币数（bg 内 icon 右侧）。
-	panel._cost_label = Label.new()
-	panel._cost_label.position = COST_LABEL_POS + COST_LABEL_OFFSET
-	panel._cost_label.size = Vector2(MONEY_BG_SIZE.x - COST_LABEL_OFFSET.x - 4.0, 20.0)
-	panel._cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel._cost_label.set_meta("cost", true)
-	host.add_child(panel._cost_label)
-
-
+# 钻石区 fill（源 initStrenButton :476-478 + doShowMaxLevel :1924-1927）：
+# cost>0 → icon+rmb 数字显；满级 cost=0 → 隐 + no_fastcost 提示。
 static func refresh_fast_stren_cost(panel) -> void:
-	if panel._diamond_cost_label == null or panel.hero == null or panel._selected_slot < 0:
+	if panel.hero == null or panel._selected_slot < 0:
 		return
+	var rmb: Label = panel._content.get_node("%RmbLabel") as Label
+	var icon: TextureRect = panel._content.get_node("%RmbIcon") as TextureRect
+	var no_fast: Label = panel._content.get_node("%NoFastCostLabel") as Label
 	var item_id: int = int(panel.hero.equip_slots[panel._selected_slot])
 	if item_id <= 0:
-		panel._diamond_cost_label.text = ""
+		rmb.text = ""
+		icon.visible = false
 		return
 	var cost: int = ReadequipData.get_fast_stren_cost(item_id, panel._ori_exp, panel.cm)
-	panel._diamond_cost_label.text = "钻石 " + str(cost) if cost > 0 else ""   # 满级 cost=0 隐
+	if cost > 0:
+		rmb.text = str(cost)
+		rmb.visible = true
+		icon.visible = true
+		no_fast.text = ""
+	else:
+		rmb.visible = false
+		icon.visible = false
+		no_fast.text = _L(panel, TEXT_MAX_LEVEL_KEY) if is_max_level_current(panel) else ""
 
 
 static func get_total_exp(panel, slot: int) -> float:

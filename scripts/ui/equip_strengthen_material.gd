@@ -1,19 +1,34 @@
 class_name EquipStrengthenMaterial
 extends RefCounted
 
-## equipstrengthen 材料列表/网格/add-delete/飘字（View helper）— 从 EquipStrengthenPanel 拆出控 ≤300。
+## equipstrengthen 材料网格 fill/add-delete/飘字（View helper）。
+## 两件套范式（批 1 Task 5，2026-08-15）：裁剪层 %MtClip 静态在 content.tscn
+## （源 ClippingNode + draglist cliprect），材料格为动态数据行 fill 挂裁剪层下；
+## 本批补漏译：ehcBg 数量底（源 createmt :127-132）+ minus 贴图按钮
+#（源 createMinusIcon :195-209 skill_material_delete 双态）+ 材料格中心锚修正。
 ## static 方法第一参 panel，照 battle_unit_combat.gd 静态拆分。
-## + createMinusIcon:195 + removeMinusIcon:211 + playAddmtAnim:218 + playAddExpAnim:246。
-## 主类 _add_material/_delete_material 转发本类（单测 panel._add_material 不变）。
+## + 源对照：createmt:110 + createMinusIcon:195 + removeMinusIcon:211 + playAddmtAnim:218 + playAddExpAnim:246。
 
-# 材料网格（源 createmt:110 ox=140,oy=155 dx=80,dy=75；本项目坐标适配）
-const MT_ORIGIN: Vector2 = Vector2(220.0, 405.0)
+# 材料网格（源 createmt:110-113 ox=140,oy=155 dx=80,dy=75 中心锚）：
+# 源第一格中心 cocos(140,155) → 全屏 (220,405)；裁剪层 rect (178,363) → 局部中心 (42,42)。
+const MT_CLIP_ORIGIN: Vector2 = Vector2(42.0, 42.0)
 const MT_DX: float = 80.0
 const MT_DY: float = 75.0
 const MT_PER_ROW: int = 6
-const MT_AMOUNT_OFFSET: Vector2 = Vector2(36.0, 20.0)
-const MT_MINUS_OFFSET: Vector2 = Vector2(40.0, 40.0)
-const MT_MINUS_SIZE: Vector2 = Vector2(30.0, 30.0)
+# 数量底/数量字（源 :127-137：ehcBg @(36,18) z=-1 + aLabel @(36,20) 中心锚（相对 icon 中心
+# (72,72) 基准 → Godot 局部 (72, 72-18=54) / (72, 72-20=52)；数量字 18 号白）
+const EHC_BG_ATT_RES: String = "res://assets/ui/alpha/HVGA/skill_material_att_bg.png"
+const EHC_BG_FRAG_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_fragment_bg.png"
+const EHC_BG_SIZE: Vector2 = Vector2(60.88, 21.85)   # skill_material_att_bg 78x28 ÷CS
+const EHC_BG_FRAG_SIZE: Vector2 = Vector2(60.88, 22.63)   # fragment_bg 78x29 ÷CS
+const EHC_BG_CENTER: Vector2 = Vector2(72.0, 54.0)
+const AMOUNT_CENTER: Vector2 = Vector2(72.0, 52.0)
+# 减号按钮（源 createMinusIcon :195-209 skill_material_delete(+_down) @(68,65) 中心锚
+# → icon 局部中心 (72+... 即 (36+68, 36-65)=(104,-29) 右上角外）
+const MINUS_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/skill_material_delete.png"
+const MINUS_PRESS_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/skill_material_delete_down.png"
+const MINUS_SIZE: Vector2 = Vector2(27.32, 29.66)   # 35x38 ÷CS
+const MINUS_CENTER: Vector2 = Vector2(104.0, -29.0)
 # 过滤键（源 readequip.lua:346 getMaterialList + :357 checkValid；本项目 Equip.json 用 LSTR 键）
 const CAT_SOUL_STONE: String = "EQUIP.SOUL_STONE"
 const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"
@@ -23,16 +38,19 @@ const NAME_UNIVERSAL_DEBRIS: String = "EQUIP.UNIVERSAL_DEBRIS"
 # 提示文案 LSTR key（源 T(LSTR(...))，panel.cm.get_lstr 解析）。
 const TEXT_EXP_MAXED_KEY: String = "EQUIPSTRENGTHEN.EXPERIENCE_MAXED_OUT"
 const TEXT_MATERIAL_USED_UP_KEY: String = "EQUIPSTRENGTHEN.THIS_MATERIAL_HAS_BEEN_USED_UP"
-const PANEL_HEIGHT: float = 560.0   # Cocos(800×480,左下)→Godot(960×640,左上) Y 翻转基准（480+80）
 # 材料层滑入（源 createmtListLayer:407 runLayerAction 0.2s fade+move EaseSineOut）
 const MT_LAYER_SLIDE_OFFSET: float = 20.0
 const MT_LAYER_FADE_DUR: float = 0.2
-# 材料添加飘字（源 :218 playAddmtAnim + :246 playAddExpAnim）
-const ADDMT_END: Vector2 = Vector2(400.0, 212.0)
+# 材料添加飘字（源 :218 playAddmtAnim + :246 playAddExpAnim）：终点全屏坐标（挂 %FxHost）
+const ADDMT_END: Vector2 = Vector2(480.0, 348.0)   # 源 epos (400,212) → _g
 const ADDMT_DURATION: float = 0.2
 const ADDMT_SCALE: float = 0.5
-const ADDEXP_POS: Vector2 = Vector2(380.0, 235.0)
+const ADDEXP_POS: Vector2 = Vector2(460.0, 325.0)   # 源 (380,235) → _g
 const ADDEXP_RISE: float = 50.0
+const ADDEXP_FONT_SIZE: int = 24
+const ADDEXP_COLOR: Color = Color("65cfff")
+# 材料格显示尺寸（ReadequipIcon.ICON_SIZE）
+const MT_ICON_SIZE: Vector2 = Vector2(72.0, 72.0)
 
 
 static func build_material_list(panel) -> Array:
@@ -77,7 +95,10 @@ static func cmp_material(a: Dictionary, b: Dictionary) -> bool:
 	return int(a["ehc"]) < int(b["ehc"])
 
 
+# 材料网格 fill（源 createmt :110-149）：挂 %MtClip 裁剪层下（源 draglist addItem + ClippingNode），
+# 每格 = ReadequipIcon 工厂 + ehcBg 数量底（z 底）+ 数量字；中心锚定位（源 setPosition 中心语义）。
 static func show_materials(panel) -> void:
+	var clip: Control = panel._content.get_node("%MtClip") as Control
 	panel._clear_meta_children("mt")
 	panel._mt_nodes.clear()
 	var slide_targets: Array = []   # 滑入动画目标（源 createmtListLayer:407）
@@ -86,16 +107,18 @@ static func show_materials(panel) -> void:
 		var icon: Control = ReadequipIcon.create_icon(int(info["id"]), 1, panel.cm)
 		var col: int = i % MT_PER_ROW
 		var row_idx: int = i / MT_PER_ROW
-		var target_y: float = MT_ORIGIN.y + MT_DY * row_idx
-		icon.position = Vector2(MT_ORIGIN.x + MT_DX * col, target_y)
-		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		var center: Vector2 = Vector2(MT_CLIP_ORIGIN.x + MT_DX * col, MT_CLIP_ORIGIN.y + MT_DY * row_idx)
+		icon.position = center - icon.size * 0.5   # 源 icon 中心锚 → 裁剪层局部居中
 		icon.set_meta("mt", true)
+		_add_ehc_bg(icon, String(info["category"]))
 		var amount_label := Label.new()
 		amount_label.text = str(int(info["amount"]))
-		amount_label.position = MT_AMOUNT_OFFSET
+		amount_label.theme_type_variation = &"EquipStrenLabel18"
+		amount_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon.add_child(amount_label)
+		_center_on(amount_label, AMOUNT_CENTER)
 		icon.gui_input.connect(make_mt_handler(panel, i, false))
-		panel.container.add_child(icon)
+		clip.add_child(icon)
 		panel._mt_nodes.append({
 			"icon": icon,
 			"amount_label": amount_label,
@@ -103,8 +126,33 @@ static func show_materials(panel) -> void:
 			"add": 0,
 			"minus": null,
 		})
-		slide_targets.append({"icon": icon, "target_y": target_y})
+		slide_targets.append({"icon": icon, "target_y": icon.position.y})
 	_play_layer_slide(panel, slide_targets)
+
+
+# 数量底（源 createmt :127-132：fragment 类 equipupgrade_fragment_bg / 其他 skill_material_att_bg
+# @(36,18) z=-1）；迁移期漏译，本批补全。置 icon 子序最底（z=-1 等价）。
+static func _add_ehc_bg(icon: Control, category: String) -> void:
+	var is_frag: bool = category == CAT_FRAGMENT
+	var res_path: String = EHC_BG_FRAG_RES if is_frag else EHC_BG_ATT_RES
+	var size: Vector2 = EHC_BG_FRAG_SIZE if is_frag else EHC_BG_SIZE
+	var bg := TextureRect.new()
+	bg.name = "EhcBg"
+	bg.texture = load(res_path) as Texture2D
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.size = size
+	bg.position = EHC_BG_CENTER - size * 0.5
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.add_child(bg)
+	icon.move_child(bg, 0)   # 源 z=-1 置底
+
+
+# 子节点中心锚定位（源 cocos 子元素默认 anchor(0.5,0.5)，position=中心点）。
+# Label 未入树 size=0，须先 reset_size 取 minimum size（headless 16 号回落宽度，入树后略偏，可接受）。
+static func _center_on(child: Control, center: Vector2) -> void:
+	child.reset_size()
+	child.size = child.get_combined_minimum_size()
+	child.position = center - child.size * 0.5
 
 
 static func _play_layer_slide(panel, targets: Array) -> void:
@@ -173,15 +221,20 @@ static func delete_material(panel, idx: int) -> void:
 		remove_minus_icon(panel, idx)
 
 
+# 减号按钮（源 createMinusIcon :195-209：skill_material_delete + minusPress 双态贴图
+# @(68,65) 右上角外；迁移期 Button 文字降级本批改贴图双态照源）。
 static func ensure_minus_icon(panel, idx: int) -> void:
 	var node: Dictionary = panel._mt_nodes[idx]
 	var cur = node["minus"]
 	if cur != null and is_instance_valid(cur):
 		return
-	var minus := Button.new()
-	minus.text = "−"
-	minus.position = MT_MINUS_OFFSET
-	minus.size = MT_MINUS_SIZE
+	var minus := TextureButton.new()
+	minus.name = "Minus"
+	minus.texture_normal = load(MINUS_NORMAL_RES) as Texture2D
+	minus.texture_pressed = load(MINUS_PRESS_RES) as Texture2D
+	minus.ignore_texture_size = true
+	minus.size = MINUS_SIZE
+	minus.position = MINUS_CENTER - MINUS_SIZE * 0.5
 	minus.set_meta("mt", true)
 	minus.pressed.connect(EquipStrengthenMaterial.delete_material.bind(panel, idx))
 	(node["icon"] as Control).add_child(minus)
@@ -212,37 +265,42 @@ static func reset_material_selection(panel) -> void:
 		node["minus"] = null
 
 
+# 材料拖影（源 playAddmtAnim :218-244：icon 拖到经验条 (400,212)→(480,348) 缩小淡出）；
+# 挂 %FxHost（content 局部坐标 = 裁剪层 offset + icon 局部）。
 static func play_addmt_anim(panel, idx: int) -> void:
 	if idx < 0 or idx >= panel._mt_nodes.size():
 		return
+	var clip: Control = panel._content.get_node("%MtClip") as Control
+	var fx_host: Control = panel._content.get_node("%FxHost") as Control
 	var node: Dictionary = panel._mt_nodes[idx]
 	var icon: Control = node["icon"]
 	var info: Dictionary = node["info"]
 	var ti: Control = ReadequipIcon.create_icon(int(info["id"]), 1, panel.cm)
-	ti.position = icon.position
+	ti.position = Vector2(clip.offset_left + icon.position.x, clip.offset_top + icon.position.y)
 	ti.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.container.add_child(ti)
-	var end_pos: Vector2 = Vector2(ADDMT_END.x + 80.0, PANEL_HEIGHT - ADDMT_END.y)
+	fx_host.add_child(ti)
 	var tw: Tween = panel.create_tween()
-	tw.tween_property(ti, "position", end_pos, ADDMT_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_property(ti, "position", ADDMT_END, ADDMT_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(ti, "scale", Vector2(ADDMT_SCALE, ADDMT_SCALE), ADDMT_DURATION)
 	tw.tween_property(ti, "modulate:a", 0.0, ADDMT_DURATION)
 	tw.tween_callback(ti.queue_free)
 
 
+# 加经验飘字（源 playAddExpAnim :246-274："+ehc" 24 号 (101,207,255) 描边黑 1 @(380,235)→(460,325)）。
 static func play_add_exp_anim(panel, idx: int) -> void:
 	if idx < 0 or idx >= panel._mt_nodes.size():
 		return
+	var fx_host: Control = panel._content.get_node("%FxHost") as Control
 	var node: Dictionary = panel._mt_nodes[idx]
 	var info: Dictionary = node["info"]
 	var ehc: int = int(info["ehc"])
 	var label := Label.new()
 	label.text = "+" + str(ehc)
-	label.add_theme_font_size_override("font_size", 24)
-	label.modulate = Color("65cfff")
-	label.position = Vector2(ADDEXP_POS.x + 80.0, PANEL_HEIGHT - ADDEXP_POS.y)
+	label.add_theme_font_size_override("font_size", ADDEXP_FONT_SIZE)
+	label.modulate = ADDEXP_COLOR
+	label.position = ADDEXP_POS
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.container.add_child(label)
+	fx_host.add_child(label)
 	label.modulate.a = 0.0
 	var tw: Tween = panel.create_tween()
 	tw.tween_property(label, "modulate:a", 1.0, ADDMT_DURATION)

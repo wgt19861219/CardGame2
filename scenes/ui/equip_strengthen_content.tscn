@@ -1,10 +1,41 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_frame.png" id="2_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/hero_icon_frame_1.png" id="3_heroicon"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="4_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="5_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/gocha.png" id="6_gocha"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_item_name_bg.png" id="7_namebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_progress_bg.png" id="8_barbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_progress_1.png" id="9_bar1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_progress_2.png" id="10_bar2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_price_bg.png" id="11_price"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="12_goldsm"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="13_rmb"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_npc_head.png" id="14_npc"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/skill_talk_bg_down.png" id="15_talk"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_bottom_bg.png" id="16_mbgwide"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_material_bg.png" id="17_mbgnarrow"]
+
+; 进度条裁剪（源 setTextureRect(0,0,655*e/m,18) 裁剪语义）：本引擎 TextureRect 无 region 属性，
+; 用 AtlasTexture.region 等价（fill 改 region + offset_right，两条独立实例避免共享）
+[sub_resource type="AtlasTexture" id="AtlasBar"]
+atlas = ExtResource("9_bar1")
+region = Rect2(0, 0, 0, 24)
+
+[sub_resource type="AtlasTexture" id="AtlasAnimBar"]
+atlas = ExtResource("10_bar2")
+region = Rect2(0, 0, 0, 24)
+
+; equip_strengthen 装备强化两件套静态树（批 1 Task 5，2026-08-15）。框架照源
+; equipstrengthen.lua create(:1994-2158) + createnpcTalk(:11-42) + createStrenButton(:789-1028)
+; + createExpBar(:1109-1223) + createEquipAtt(:1416-1503) + doShowmbPrompt(:1959-1982)
+; + createmtListLayer(:393-412) 直译；坐标 cocos(800x480 左下) → godot(960x640 左上)
+; via (x+80, 560-y)，显示尺寸=纹理像素÷CS(1.28125)，readnode 默认中心锚=(0.5,0.5)。
+; 单机化裁剪（既有决策）：select_hero 选英雄按钮组 + nohead 未选占位不入树
+; （从 HeroDetailPanel 进 hero 已定）。z 序：bg < frame < 头像/槽 < att < bar <
+; 材料区 < 按钮区 < close < talk(z50 源) < fx 飘字层。fill 见 equip_strengthen_panel.gd。
 
 [node name="EquipStrengthenContent" type="Control"]
 layout_mode = 3
@@ -13,6 +44,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 全屏底图（源 :1996-2005 bg.jpg 512x308 与 800x480 同比例，等比全屏拉伸）
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
 anchors_preset = 15
@@ -22,60 +54,556 @@ texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
+; 框（源 :2007-2016 equipupgrade_frame 916x580 at (400,230) 中心锚 → 中心 (480,330)）
 [node name="Frame" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 80.0
-offset_top = 80.0
-offset_right = 880.0
-offset_bottom = 580.0
+offset_left = 122.54
+offset_top = 103.66
+offset_right = 837.46
+offset_bottom = 556.34
 texture = ExtResource("2_frame")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="HeroIcon" type="TextureRect" parent="."]
+; 英雄头像宿主（源 setHeroIcon:1740-1749 readhero.createIcon 替换 heroIcon，
+; 单机化 hero 已定 → fill 即挂；104=ReadheroIcon CONTAINER_SIZE）
+[node name="HeroHeadHost" type="Control" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
 offset_left = 163.0
 offset_top = 168.0
 offset_right = 267.0
 offset_bottom = 272.0
+mouse_filter = 2
+
+; 头像框（源 :2018-2027 hero_icon_frame_1 106x106 at (135,340) 中心锚 → 82.73 显示；
+; fill 头像后 visible=false 照源 :1741 removeFromParent）
+[node name="HeroIcon" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 173.63
+offset_top = 178.63
+offset_right = 256.37
+offset_bottom = 261.37
 texture = ExtResource("3_heroicon")
 expand_mode = 1
 mouse_filter = 2
 
+; 英雄名（源 :1753-1760 createHeroName anchor(0,0.5) at (130-min(w,120)/2, 395)
+; → 名字中心 x≈130+80=210 中心 y=165；贴图字降级 Label，规格同 EatexpHeroNameLabel）
+[node name="HeroName" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 145.0
+offset_top = 153.0
+offset_right = 275.0
+offset_bottom = 177.0
+theme_type_variation = &"EatexpHeroNameLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "英雄名"
+
+; 6 装备槽（源 getEquipPos:1566 ox=235 oy=405 dx=dy=72，2 列 3 行中心
+; (315/387, 155/227/299)；EmptyRect=源 gocha.png 94x95 空位占位 :1595/1615）
+[node name="EquipSlot0" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 277.0
+offset_top = 117.0
+offset_right = 353.0
+offset_bottom = 193.0
+mouse_filter = 0
+
+[node name="EmptyRect" type="TextureRect" parent="EquipSlot0"]
+layout_mode = 3
+offset_left = 1.32
+offset_top = 0.93
+offset_right = 74.69
+offset_bottom = 75.08
+texture = ExtResource("6_gocha")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EquipSlot1" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 349.0
+offset_top = 117.0
+offset_right = 425.0
+offset_bottom = 193.0
+mouse_filter = 0
+
+[node name="EmptyRect" type="TextureRect" parent="EquipSlot1"]
+layout_mode = 3
+offset_left = 1.32
+offset_top = 0.93
+offset_right = 74.69
+offset_bottom = 75.08
+texture = ExtResource("6_gocha")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EquipSlot2" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 277.0
+offset_top = 189.0
+offset_right = 353.0
+offset_bottom = 265.0
+mouse_filter = 0
+
+[node name="EmptyRect" type="TextureRect" parent="EquipSlot2"]
+layout_mode = 3
+offset_left = 1.32
+offset_top = 0.93
+offset_right = 74.69
+offset_bottom = 75.08
+texture = ExtResource("6_gocha")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EquipSlot3" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 349.0
+offset_top = 189.0
+offset_right = 425.0
+offset_bottom = 265.0
+mouse_filter = 0
+
+[node name="EmptyRect" type="TextureRect" parent="EquipSlot3"]
+layout_mode = 3
+offset_left = 1.32
+offset_top = 0.93
+offset_right = 74.69
+offset_bottom = 75.08
+texture = ExtResource("6_gocha")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EquipSlot4" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 277.0
+offset_top = 261.0
+offset_right = 353.0
+offset_bottom = 337.0
+mouse_filter = 0
+
+[node name="EmptyRect" type="TextureRect" parent="EquipSlot4"]
+layout_mode = 3
+offset_left = 1.32
+offset_top = 0.93
+offset_right = 74.69
+offset_bottom = 75.08
+texture = ExtResource("6_gocha")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EquipSlot5" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 349.0
+offset_top = 261.0
+offset_right = 425.0
+offset_bottom = 337.0
+mouse_filter = 0
+
+[node name="EmptyRect" type="TextureRect" parent="EquipSlot5"]
+layout_mode = 3
+offset_left = 1.32
+offset_top = 0.93
+offset_right = 74.69
+offset_bottom = 75.08
+texture = ExtResource("6_gocha")
+expand_mode = 1
+mouse_filter = 2
+
+; 装备属性区宿主（动态属性行 fill 挂此，源 attContainer）
+[node name="AttHost" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; 名字底（源 :1444-1455 equipupgrade_item_name_bg 197x41 at (345,415) anchor(0,0.5)
+; → 左中 (425,145)，显示 153.76x32.0）
+[node name="AttNameBg" type="TextureRect" parent="AttHost"]
+layout_mode = 3
+offset_left = 425.0
+offset_top = 129.0
+offset_right = 578.76
+offset_bottom = 161.0
+texture = ExtResource("7_namebg")
+expand_mode = 1
+mouse_filter = 2
+
+; 装备名（源 :1456-1473 size18 阴影(0,2) at (347,415) anchor(0,0.5) → 左端 427 中心 y145）
+[node name="AttNameLabel" type="Label" parent="AttHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 427.0
+offset_top = 135.0
+offset_right = 627.0
+offset_bottom = 155.0
+theme_type_variation = &"EquipStrenLabel18"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 附魔等级（源 :1474-1492 size18 ccc3(255,120,0) at (347,385) anchor(0,0.5) → 中心 y175）
+[node name="AttLevelLabel" type="Label" parent="AttHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 427.0
+offset_top = 165.0
+offset_right = 627.0
+offset_bottom = 185.0
+theme_type_variation = &"EquipStrenAttLevelLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 经验条区宿主（源 barContainer）
+[node name="BarHost" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; 条底（源 :1128-1137 equipupgrade_progress_bg 842x24 at (400,212) 中心锚 → 中心 (480,348)）
+[node name="BarBg" type="TextureRect" parent="BarHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 151.42
+offset_top = 338.63
+offset_right = 808.58
+offset_bottom = 357.37
+texture = ExtResource("8_barbg")
+expand_mode = 1
+mouse_filter = 2
+
+; 实际值条（源 :1173-1185 progress_1 at (72,213) anchor(0,0.5) textureRect(0,0,655*e/m,18)
+; → 左中 (152,347) 高 18；region 裁剪宽随值，fill 设 region_rect+offset_right）
+[node name="Bar" type="TextureRect" parent="BarHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 152.0
+offset_top = 338.0
+offset_right = 809.17
+offset_bottom = 356.0
+texture = SubResource("AtlasBar")
+expand_mode = 1
+mouse_filter = 2
+
+; 预览动画条（源 :1186-1200 progress_2 同位，visible=false，refreshExpBar :1068 显）
+[node name="AnimBar" type="TextureRect" parent="BarHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 152.0
+offset_top = 338.0
+offset_right = 809.17
+offset_bottom = 356.0
+texture = SubResource("AtlasAnimBar")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+; 当前等级（源 :1138-1156 b_lv size18 ccc3(146,0,9) at (75,235) anchor(0,0.5) → 左端 155 中心 y325）
+[node name="BarLevelLabel" type="Label" parent="BarHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 155.0
+offset_top = 315.0
+offset_right = 355.0
+offset_bottom = 335.0
+theme_type_variation = &"EquipStrenBarLevelLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 下一等级（源 :1158-1171 n_lv anchor(1,0.5) at (725,235) → 右端 805 中心 y325）
+[node name="NextLevelLabel" type="Label" parent="BarHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 605.0
+offset_top = 315.0
+offset_right = 805.0
+offset_bottom = 335.0
+theme_type_variation = &"EquipStrenBarLevelLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
+; 经验数字（源 :1202-1217 ehc size16 stroke(0,0,0,2) at (400,212) 中心 → (480,348)）
+[node name="EhcLabel" type="Label" parent="BarHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 380.0
+offset_top = 338.0
+offset_right = 580.0
+offset_bottom = 358.0
+theme_type_variation = &"EquipStrenEhcLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; 材料区背景（源 doShowmbPrompt:1959-1982 宽窄两态切换：宽 bottom_bg 660x154 @(400,120)
+; / 窄 material_bg 520x154 @(335,120)；cap(10,10,640,146)/(10,10,480,144) 贴图像素空间，
+; fill 切 texture/patch_margin/offsets；初始宽态照源 create :2112-2125）
+[node name="MaterialBg" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 363.0
+offset_right = 810.0
+offset_bottom = 517.0
+texture = ExtResource("16_mbgwide")
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 208
+patch_margin_bottom = 60
+mouse_filter = 2
+
+; 材料区提示（源 :2126-2145 material_label size22 白 at (325,120) 中心锚 → (405,440)，默认隐）
+[node name="MaterialLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 255.0
+offset_top = 425.0
+offset_right = 555.0
+offset_bottom = 455.0
+theme_type_variation = &"EquipStrenMaterialLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+visible = false
+
+; 材料网格裁剪层（源 createmtListLayer:395 cliprect CCRectMake(98,42,500,155) + ClippingNode
+; stencil 800x155@(0,42) → clip_contents rect (178,363)-(678,518)；材料格 fill 挂此）
+[node name="MtClip" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 178.0
+offset_top = 363.0
+offset_right = 678.0
+offset_bottom = 518.0
+mouse_filter = 2
+clip_contents = true
+
+; 金币区（源 createStrenButton:805-866 money_bg(665,185)/no_cost(665,185)/
+; money_icon goldicon_small(615,183)/money(715,183) 右中锚；no_cost 显 icon/money 隐初始）
+[node name="MoneyBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 683.34
+offset_top = 358.61
+offset_right = 806.66
+offset_bottom = 391.39
+texture = ExtResource("11_price")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="NoCostLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 683.34
+offset_top = 365.0
+offset_right = 806.66
+offset_bottom = 385.0
+theme_type_variation = &"EquipStrenLabel18"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "未添加材料"
+
+[node name="MoneyIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 678.22
+offset_top = 361.39
+offset_right = 711.78
+offset_bottom = 392.61
+texture = ExtResource("12_goldsm")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="MoneyLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 695.0
+offset_top = 367.0
+offset_right = 795.0
+offset_bottom = 387.0
+theme_type_variation = &"EquipStrenLabel18"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+visible = false
+
+; 普通强化按钮（源 :867-912 stren Scale9 herodetail-upgrade cap(20,20,53,29) 125x45
+; at (666,145) 中心锚 → 中心 (746,415)；样式 EquipStrenButton variation，文字 BtnLabel 子节点）
+[node name="StrenBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 683.5
+offset_top = 392.5
+offset_right = 808.5
+offset_bottom = 437.5
+theme_type_variation = &"EquipStrenButton"
+mouse_filter = 0
+
+[node name="StrenBtnLabel" type="Label" parent="StrenBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"BtnLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "附魔"
+
+; 钻石区（源 :920-977 fsContainer rmb_bg(665,102)/no_fastcost(665,100)/
+; rmb_icon task_rmb_icon_2(620,100)/rmb(715,100) 右中锚）
+[node name="RmbBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 683.34
+offset_top = 441.61
+offset_right = 806.66
+offset_bottom = 474.39
+texture = ExtResource("11_price")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="NoFastCostLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 683.34
+offset_top = 450.0
+offset_right = 806.66
+offset_bottom = 470.0
+theme_type_variation = &"EquipStrenLabel18"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+
+[node name="RmbIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 686.34
+offset_top = 447.12
+offset_right = 713.66
+offset_bottom = 472.88
+texture = ExtResource("13_rmb")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="RmbLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 695.0
+offset_top = 450.0
+offset_right = 795.0
+offset_bottom = 470.0
+theme_type_variation = &"EquipStrenLabel18"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
+; 一键强化按钮（源 :978-1023 faststren 同 stren 125x45 at (666,60) → 中心 (746,500)）
+[node name="FastStrenBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 683.5
+offset_top = 477.5
+offset_right = 808.5
+offset_bottom = 522.5
+theme_type_variation = &"EquipStrenButton"
+mouse_filter = 0
+
+[node name="FastStrenBtnLabel" type="Label" parent="FastStrenBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"BtnLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "一键附魔"
+
+; 返回按钮（源 :2087-2110 back 74x75 at (65,430) 中心锚 → 中心 (145,130)）
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 20.0
-offset_top = 15.0
-offset_right = 100.0
-offset_bottom = 55.0
+offset_left = 116.12
+offset_top = 100.73
+offset_right = 173.88
+offset_bottom = 159.27
 texture_normal = ExtResource("4_back")
 texture_pressed = ExtResource("5_backp")
 ignore_texture_size = true
 
-[node name="StrenBtn" type="Button" parent="."]
+; NPC 对话层（源 createnpcTalk:11-42 container z=50 cascade opacity → modulate 级联，
+; 初始透明等 doTalk/doSpeak；NPC 头像 readnode 中心锚 (638,378) → 中心 (718,182)
+; —— 三坑#2：勿当左下；气泡 cap CCRectMake(30,30,145,20) 贴图像素 266x98 → right 91/bottom 48）
+[node name="TalkContainer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 620.0
-offset_top = 540.0
-offset_right = 750.0
-offset_bottom = 580.0
-mouse_filter = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+modulate = Color(1, 1, 1, 0)
+mouse_filter = 2
 
-[node name="FastStrenBtn" type="Button" parent="."]
+[node name="NpcSprite" type="TextureRect" parent="TalkContainer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 620.0
-offset_top = 585.0
-offset_right = 750.0
-offset_bottom = 625.0
-mouse_filter = 0
+offset_left = 613.8
+offset_top = 97.7
+offset_right = 822.2
+offset_bottom = 266.3
+texture = ExtResource("14_npc")
+expand_mode = 1
+mouse_filter = 2
 
-[node name="DiamondCostLabel" type="Label" parent="."]
+[node name="TalkFrame" type="NinePatchRect" parent="TalkContainer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 620.0
-offset_top = 510.0
-offset_right = 760.0
-offset_bottom = 535.0
+offset_left = 613.0
+offset_top = 255.0
+offset_right = 837.0
+offset_bottom = 331.0
+texture = ExtResource("15_talk")
+patch_margin_left = 30
+patch_margin_top = 30
+patch_margin_right = 91
+patch_margin_bottom = 48
+mouse_filter = 2
+
+; 对话文字（源 :26-32 size18 左对齐 200 宽自动换行 anchor(0.5,1) at (645,282) → 顶中 (725,278)）
+[node name="TalkLabel" type="Label" parent="TalkContainer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 625.0
+offset_top = 278.0
+offset_right = 825.0
+offset_bottom = 308.0
+theme_type_variation = &"EquipStrenTalkLabel"
+mouse_filter = 2
+horizontal_alignment = 0
+vertical_alignment = 0
+autowrap_mode = 3
+
+; 特效层（源 playAddmtAnim/playAddExpAnim 飘字挂 container，z 序 talk 之下；
+; 强化光效挂装备 icon 本体）
+[node name="FxHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 mouse_filter = 2
