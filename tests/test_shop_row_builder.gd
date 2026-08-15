@@ -50,6 +50,14 @@ func test_item_texts_filled() -> void:
 	item.free()
 
 
+# Task 5 三轮：NameLabel/PriceLabel 走 theme variation（源 size 20、name 色 ccc3(69,59,56)、price 白字黑影）。
+func test_item_label_variations() -> void:
+	var item: Control = _make_item({"id": 371, "type": "gold", "price": 100, "amount": 1})
+	assert_eq(String((item.get_node("%NameLabel") as Label).theme_type_variation), "ShopItemNameLabel", "NameLabel 走 ShopItemNameLabel variation")
+	assert_eq(String((item.get_node("%PriceLabel") as Label).theme_type_variation), "ShopItemPriceLabel", "PriceLabel 走 ShopItemPriceLabel variation")
+	item.free()
+
+
 func test_sale_badge_visible_when_is_sale() -> void:
 	var item: Control = _make_item({"id": 371, "type": "gold", "price": 100, "amount": 1, "is_sale": 1})
 	var badge: Label = item.get_node("%SaleBadge") as Label

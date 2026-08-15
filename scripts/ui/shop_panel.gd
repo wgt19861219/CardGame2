@@ -2,11 +2,11 @@ class_name ShopPanel
 extends PopWindow
 
 ## 商店主面板（View 层）— 照源 ui/market/shop.lua create(764-917) + createCommon(325-510)。
-## 重构（2026-07-17）：base 层（frame/title/head/refresh/time/talk/close/money + bg.jpg）静态化进
+## 重构（2026-07-17）：base 层（frame/title/head/refresh/time/talk/close + bg.jpg）静态化进
 ## shop_content.tscn（位置/size 编辑器可视化调）。
 ## 两件套范式（2026-08-14）：静态结构在 shop_content.tscn + shop_item.tscn 模板；
 ## 本文件只做业务 + 信号 + fill（fill 归 panel，旧 builder 退役；商品行 ShopRowBuilder）。
-## 底框 + NPC 头像 + 标题 + 刷新按钮 + 商品列表（两行 getItemPos）+ 购买闭环。
+## 底框 + NPC 头像 + 标题底图/标题 + 刷新按钮 + 商品列表（两行 getItemPos）+ 购买闭环。
 ## 单机化：源 net shop_* → ShopManager Logic；NPC 对话 + 自动刷新时刻照源。
 ## 坐标：源 cocos(800×480 左下)→Godot(960×640 左上) via (cx+80, 560-cy)；
 ## PanelLayer 作 frame sprite Godot 等价（左上原点 = to_godot(framePos) - frame_size/2），子元素坐标相对 PanelLayer。
@@ -28,8 +28,6 @@ var rng: BattleRng
 var _config: Dictionary = {}
 var _panel_layer: Control
 var _item_layer: Control
-var _money_label: Label
-var _refresh_cost_label: Label
 var _talk_label: Label             # NPC 对话气泡（照源 shop.lua:19 showTalk）
 var _next_refresh_label: Label     # 下次自动刷新时刻（照源 getShopNextAutoRefreshPointDesc）
 var _head_touch: Control           # NPC 头像触摸层（点头像→Touch，源 shop.lua:940 head_button）
@@ -77,17 +75,14 @@ func _build_content() -> void:
 	_head_touch.gui_input.connect(func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
 			_show_talk("Touch"))
-	# 动态数据节点引用
-	_money_label = _panel_layer.get_node("%MoneyLabel") as Label
-	_refresh_cost_label = _panel_layer.get_node("%RefreshCostLabel") as Label
+	# 动态数据节点引用（Task 5 三轮：源无 MoneyLabel/RefreshCostLabel——货币走 HUD、
+	# 刷新花费走确认弹窗，迁移期发明元素已删）
 	_talk_label = _panel_layer.get_node("%TalkLabel") as Label
 	_talk_label.modulate.a = 0.0   # 初始隐藏（淡入时设 a=1）
 	_talk_bg = _panel_layer.get_node("%TalkBg") as NinePatchRect   # TalkBg 已静态化进 .tscn
 	_next_refresh_label = _panel_layer.get_node("%TimeLabel") as Label
 	_item_layer = _panel_layer.get_node("%ItemLayer") as Control
-	_refresh_money()
 	_build_goods()
-	_update_refresh_label()
 	_update_next_refresh_label()
 	# HudOverlay 切 identity=shop。
 
@@ -213,18 +208,7 @@ func _on_refresh_confirmed() -> void:
 
 func _rebuild() -> void:
 	_build_goods()
-	_update_refresh_label()
 	_update_next_refresh_label()
-	_refresh_money()
-
-
-func _refresh_money() -> void:
-	_money_label.text = "金币:%d 钻石:%d" % [pd.hero_manager.gold, pd.diamond]
-
-
-func _update_refresh_label() -> void:
-	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
-	_refresh_cost_label.text = "%d钻" % cost
 
 
 func _update_next_refresh_label() -> void:
@@ -252,6 +236,8 @@ func _show_talk(key: String) -> void:
 	_talk_label.modulate.a = 1.0
 	if _talk_bg != null:
 		_talk_bg.modulate.a = 1.0   # 气泡背景与文字同步显隐
+		# 源 talkBg 宽 = label 宽 + 30（Scale9 动态拉宽）；label 左距 20 → bg 宽 = label + 20 + 右余量
+		_talk_bg.size.x = _talk_label.get_combined_minimum_size().x + 20.0
 	if is_inside_tree():   # 未入树（setup 早期）只显示不动画，避 create_tween 失效
 		_talk_tween = create_tween()
 		_talk_tween.tween_interval(2.5)

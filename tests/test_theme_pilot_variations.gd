@@ -11,16 +11,18 @@ func _theme() -> Theme:
 
 func test_shop_label_variations_exist() -> void:
 	var t: Theme = _theme()
-	for v in ["ShopTitleLabel", "ShopCostLabel", "ShopTalkLabel", "ShopTimeLabel"]:
+	for v in ["ShopTitleLabel", "ShopTalkLabel", "ShopTimeLabel", "ShopItemNameLabel", "ShopItemPriceLabel"]:
 		assert_true(v in t.get_type_variation_list("Label"), "%s 应注册为 Label variation" % v)
+	assert_false("ShopCostLabel" in t.get_type_variation_list("Label"), "ShopCostLabel 已删（Task 5 三轮：源无刷新花费 label）")
 
 
 func test_shop_label_sizes() -> void:
 	var t: Theme = _theme()
 	assert_eq(t.get_font_size("font_size", "ShopTitleLabel"), 24, "标题 24（shop_content.tscn 原 override 值）")
-	assert_eq(t.get_font_size("font_size", "ShopCostLabel"), 14, "刷新花费 14")
-	assert_eq(t.get_font_size("font_size", "ShopTalkLabel"), 16, "NPC 对话 16")
-	assert_eq(t.get_font_size("font_size", "ShopTimeLabel"), 13, "刷新时刻 13")
+	assert_eq(t.get_font_size("font_size", "ShopTalkLabel"), 20, "NPC 对话 20（源 shop.lua size 20）")
+	assert_eq(t.get_font_size("font_size", "ShopTimeLabel"), 16, "刷新时刻 16（源 time label 16）")
+	assert_eq(t.get_font_size("font_size", "ShopItemNameLabel"), 20, "商品名 20（源 size 20）")
+	assert_eq(t.get_font_size("font_size", "ShopItemPriceLabel"), 20, "商品价格 20（源 size 20）")
 
 
 func test_hero_detail_button_variations_exist() -> void:

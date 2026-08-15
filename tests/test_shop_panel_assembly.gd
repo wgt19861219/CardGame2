@@ -190,3 +190,28 @@ func test_close_btn_screen_corner() -> void:
 	assert_almost_eq(btn.global_position.x, 20.0, 0.5, "CloseBtn 屏幕左上 x=20")
 	assert_almost_eq(btn.global_position.y, 15.0, 0.5, "CloseBtn 屏幕左上 y=15")
 	content.free()
+
+
+# Task 5 三轮：框顶照源重建。TitleBg 存在 + 中心 (351,32)（源 titlePos(400,405) → to_godot-(129,123)）；
+# TimeLabel 中心 (351,87)（源 ccp(400,350)，标题下方居中与刷新按钮同行）；
+# TalkLabel 中心 y=77（源 anchor(0,0.5) frame 中线 (190,360) → panel-local y=77）。
+func test_top_bar_sourced_layout() -> void:
+	var content: Control = (load("res://scenes/ui/shop_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var pl: Control = content.get_node("%PanelLayer") as Control
+	# 迁移发明元素已删（源无对应物：货币走 HUD、刷新花费走确认弹窗）
+	assert_null(pl.get_node_or_null("RefreshCostLabel"), "RefreshCostLabel 已删（源无）")
+	assert_null(pl.get_node_or_null("MoneyLabel"), "MoneyLabel 已删（源无，货币走 HudOverlay）")
+	var title_bg: TextureRect = pl.get_node("TitleBg") as TextureRect
+	assert_not_null(title_bg, "TitleBg 存在（源 titleBgRes map-title-bg.png）")
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 351.0, 1.0, "TitleBg 中心 x=351")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 32.0, 1.0, "TitleBg 中心 y=32")
+	var title: Label = pl.get_node("Title") as Label
+	assert_almost_eq(title.position.x + title.size.x * 0.5, 351.0, 1.0, "Title 中心 x=351（Label 降级保位）")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, 32.0, 1.0, "Title 中心 y=32")
+	var time_label: Label = pl.get_node("TimeLabel") as Label
+	assert_almost_eq(time_label.position.x + time_label.size.x * 0.5, 351.0, 1.0, "TimeLabel 中心 x=351（源 ccp(400,350)）")
+	assert_almost_eq(time_label.position.y + time_label.size.y * 0.5, 87.0, 1.0, "TimeLabel 中心 y=87（与刷新按钮同行）")
+	var talk_label: Label = pl.get_node("TalkLabel") as Label
+	assert_almost_eq(talk_label.position.y + talk_label.size.y * 0.5, 77.0, 1.0, "TalkLabel 中心 y=77（源 frame 中线）")
+	content.free()
