@@ -68,7 +68,8 @@ func _build_content() -> void:
 	_panel_layer = content.get_node("%PanelLayer") as Control
 	_setup_panel_layer()
 	# 绑定 .tscn 静态按钮/区域
-	(_panel_layer.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
+	# CloseBtn 挂场景根（屏幕左上 20,15，项目惯例 crusade/dungeon 同款；挂 PanelLayer 内会压 NPC 头像）。
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_close_popup_window")
 		remove_window())
 	(_panel_layer.get_node("%RefreshBtn") as BaseButton).pressed.connect(_on_refresh)

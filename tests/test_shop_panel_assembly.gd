@@ -180,3 +180,13 @@ func test_panel_layer_rect_static() -> void:
 	assert_almost_eq(item_layer.global_position.x, 145.0, 0.5, "裁剪区 x=145（源 clip 65+80）")
 	assert_almost_eq(item_layer.global_position.y, 200.0, 0.5, "裁剪区 y=200（源 560-360）")
 	panel.free()
+
+
+# Task 5 二轮：CloseBtn 对齐项目惯例（屏幕左上 20,15，crusade/dungeon 同款）。
+func test_close_btn_screen_corner() -> void:
+	var content: Control = (load("res://scenes/ui/shop_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	assert_almost_eq(btn.global_position.x, 20.0, 0.5, "CloseBtn 屏幕左上 x=20")
+	assert_almost_eq(btn.global_position.y, 15.0, 0.5, "CloseBtn 屏幕左上 y=15")
+	content.free()

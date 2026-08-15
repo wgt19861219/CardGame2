@@ -25,6 +25,17 @@ texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.8
+offset_bottom = 73.6
+texture_normal = ExtResource("4_back")
+texture_pressed = ExtResource("5_backp")
+ignore_texture_size = true
+
 [node name="PanelLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -63,17 +74,6 @@ offset_right = 540.0
 offset_bottom = 42.0
 theme_type_variation = &"ShopTitleLabel"
 mouse_filter = 2
-
-[node name="CloseBtn" type="TextureButton" parent="PanelLayer"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 20.0
-offset_top = 15.0
-offset_right = 60.0
-offset_bottom = 47.0
-texture_normal = ExtResource("4_back")
-texture_pressed = ExtResource("5_backp")
-ignore_texture_size = true
 
 [node name="RefreshBtn" type="TextureButton" parent="PanelLayer"]
 unique_name_in_owner = true

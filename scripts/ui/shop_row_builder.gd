@@ -18,7 +18,7 @@ const ITEM_SIZE: Vector2 = Vector2(204.0, 146.0)
 # 源 shop.lua createListLayer cliprect CCRectMake(65,35,670,325) → to_godot 左上 (145,200)，ItemLayer 裁剪层原点。
 const LIST_CLIP_ORIGIN: Vector2 = Vector2(145.0, 200.0)
 const UNKNOWN_NAME: String = "???"
-const SOLDOUT_OPACITY: float = 0.5
+const SOLDOUT_OPACITY: float = 120.0 / 255.0   # 源 shop.lua refreshGoods setOpacity(120)
 # C7（2026-07-23）照源 shop.lua:468-486：saleIcon 打折标 + tagIcon hot/old 标（资源缺 Label 降级文案/配色）。
 const SALE_TEXT: String = "SALE"
 const SALE_COLOR: Color = Color(1.0, 0.3, 0.3)
@@ -67,8 +67,10 @@ static func _create_item(g: Dictionary, top_left: Vector2, config: Dictionary, p
 	var icon: Control = ReadequipIcon.create_icon(int(g["id"]), int(g.get("amount", 1)), p_cm)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	(item.get_node("%IconHost") as Control).add_child(icon)
+	# 源 createNode 锚点 (0.5,0.5) 中心语义：图标中心对齐 IconHost 锚点（ccp(100,75)）。
+	icon.position = -icon.size * 0.5
 	(item.get_node("%NameLabel") as Label).text = String(p_cm.get_lstr(String(equip_row.get("Name", UNKNOWN_NAME))))
-	_add_texture(item.get_node("%CoinHost") as Control, UI_DIR + MarketConfig.get_coin_res(String(g["type"])))
+	_add_texture(item.get_node("%CoinHost") as Control, UI_DIR + MarketConfig.get_coin_res(String(g["type"])), true)
 	(item.get_node("%PriceLabel") as Label).text = str(int(g["price"]))
 	_fill_badge(item.get_node("%SaleBadge") as Label, SALE_TEXT, SALE_COLOR, int(g.get("is_sale", 0)) == 1)
 	var tag_str: String = String(g.get("tag", ""))
@@ -78,6 +80,10 @@ static func _create_item(g: Dictionary, top_left: Vector2, config: Dictionary, p
 		var sold: Label = item.get_node("%SoldoutLabel") as Label
 		sold.modulate = Color.RED
 		sold.visible = true
+		# 源 shop.lua refreshGoods(:108-125)：售罄隐藏 icon/coinIcon/costLabel（name 不隐藏）。
+		(item.get_node("%IconHost") as Control).visible = false
+		(item.get_node("%CoinHost") as Control).visible = false
+		(item.get_node("%PriceLabel") as Label).visible = false
 		item.modulate.a = SOLDOUT_OPACITY
 	return item
 
@@ -91,7 +97,8 @@ static func _fill_badge(badge: Label, text: String, color: Color, show: bool) ->
 
 
 # CS 校正（源 CCSprite 显示=纹理/CS，hello.lua:311 CS=1.28125）：size = 纹理 / CS。
-static func _add_texture(parent: Control, path: String) -> void:
+# centered=true 时贴图中心对齐宿主锚点（源锚点 (0.5,0.5) 中心语义，如 coinIcon ccp(40,25)）。
+static func _add_texture(parent: Control, path: String, centered: bool = false) -> void:
 	if not ResourceLoader.exists(path):
 		return
 	var tex: Texture2D = load(path) as Texture2D
@@ -102,4 +109,6 @@ static func _add_texture(parent: Control, path: String) -> void:
 	tr.size = TexDisplaySize.display_size(path)
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if centered:
+		tr.position = -tr.size * 0.5
 	parent.add_child(tr)

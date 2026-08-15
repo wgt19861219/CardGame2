@@ -39,6 +39,14 @@ func test_item_texts_filled() -> void:
 	var item: Control = _make_item({"id": 371, "type": "gold", "price": 100, "amount": 1})
 	assert_eq((item.get_node("%PriceLabel") as Label).text, "100", "价格 fill")
 	assert_true((item.get_node("%IconHost") as Control).get_child_count() >= 1, "装备图标挂 IconHost")
+	# Task 5 二轮：源 createNode 锚点 (0.5,0.5) 中心语义，元素中心 = ccp 源坐标（四锚同点+对称 offsets）。
+	add_child(item)
+	var price: Label = item.get_node("%PriceLabel") as Label
+	assert_almost_eq(price.global_position.x + price.size.x * 0.5, item.global_position.x + 110.0, 1.5, "PriceLabel 中心 x=110（源 costLabel ccp(110,25)→Godot 121）")
+	assert_almost_eq(price.global_position.y + price.size.y * 0.5, item.global_position.y + 121.0, 1.5, "PriceLabel 中心 y=121")
+	var icon: Control = (item.get_node("%IconHost") as Control).get_child(0) as Control
+	assert_almost_eq(icon.global_position.x + icon.size.x * 0.5, item.global_position.x + 100.0, 1.5, "icon 中心 x=100（源 icon ccp(100,75)）")
+	assert_almost_eq(icon.global_position.y + icon.size.y * 0.5, item.global_position.y + 71.0, 1.5, "icon 中心 y=71")
 	item.free()
 
 
@@ -81,7 +89,11 @@ func test_both_sale_and_tag() -> void:
 func test_soldout_label_and_opacity() -> void:
 	var item: Control = _make_item({"id": 371, "type": "gold", "price": 100, "amount": 0})
 	assert_true((item.get_node("%SoldoutLabel") as Label).visible, "amount=0 → 售罄显示")
-	assert_almost_eq(item.modulate.a, 0.5, 0.01, "售罄行整体半透明（源 soldout 降透明）")
+	assert_almost_eq(item.modulate.a, 120.0 / 255.0, 0.01, "售罄行整体半透明（源 shop.lua refreshGoods setOpacity(120)）")
+	# 源 :108-125 售罄隐藏 icon/coinIcon/costLabel（name 不隐藏）。
+	assert_false((item.get_node("%IconHost") as Control).visible, "售罄隐藏 icon")
+	assert_false((item.get_node("%CoinHost") as Control).visible, "售罄隐藏 coinIcon")
+	assert_false((item.get_node("%PriceLabel") as Label).visible, "售罄隐藏 costLabel")
 	item.free()
 
 
