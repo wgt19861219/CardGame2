@@ -124,9 +124,9 @@ func test_item_mark_rect_aspect() -> void:
 	assert_almost_eq(mark.offset_bottom - mark.offset_top, 59.0 / CS * 0.8, 0.1, "mark 高=59/CS×0.8 等比")
 
 
-# 白名单式 .new() 断言：HeroPackageItem.new（自身工厂）+ ReadheroIcon（head 动态工厂）+
-# TextureRect（plusSign/equip icon 动态数据图标，源运行时按槽位状态创建）。静态结构（bg/slot/bar 组）零 .new()。
+# 白名单式 .new( 断言：HeroPackageItem.new（自身工厂）+ ReadheroIcon（head 动态工厂）+
+# TextureRect（plusSign/equip icon 动态数据图标，源运行时按槽位状态创建）。静态结构（bg/slot/bar 组）零 .new(。
 func test_item_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_package_item.gd")
-	assert_eq(text.count(".new()"), text.count("HeroPackageItem.new()") + text.count("ReadheroIcon.new()")
-		+ text.count("TextureRect.new()"), "静态节点零 .new()，仅工厂与动态图标白名单")
+	assert_eq(text.count(".new("), text.count("HeroPackageItem.new(") + text.count("ReadheroIcon.new(")
+		+ text.count("TextureRect.new("), "静态节点零 .new(，仅工厂与动态图标白名单")

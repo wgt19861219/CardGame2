@@ -264,12 +264,13 @@ func test_list_line_position_follows_source() -> void:
 	root.queue_free()
 
 
-# 两件套红线：静态结构零 .new()（herosplit/listLine/占位 spacer 全静态或模板 instantiate）。
+# 两件套红线：静态结构零 .new(（herosplit/listLine/占位 spacer 全静态或模板 instantiate）。
 # 白名单 = 3 个业务弹窗工厂（HeroDetailPanel/StoneDetailPanel/HeroSplitWindow）。
+# 计数用 ".new("（带参构造 HeroDetailPanel.new("id") 不含 ".new()" 字面，旧写法漏检）。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_package_panel.gd")
-	assert_eq(text.count(".new()"), text.count("HeroDetailPanel.new()") + text.count("StoneDetailPanel.new()")
-		+ text.count("HeroSplitWindow.new()"), "静态节点零 .new()，仅 3 弹窗工厂白名单")
+	assert_eq(text.count(".new("), text.count("HeroDetailPanel.new(") + text.count("StoneDetailPanel.new(")
+		+ text.count("HeroSplitWindow.new("), "静态节点零 .new(，仅 3 弹窗工厂白名单")
 
 
 # herosplit 按钮 → HeroSplitWindow（2026-07-19 接线，本批静态化后行为保持）。
