@@ -659,6 +659,9 @@ func test_stren_buttons_layout_follows_source() -> void:
 	var money_icon: TextureRect = inst.get_node("%MoneyIcon") as TextureRect
 	assert_almost_eq(_center_of(money_icon).x, 695.0, 0.5, "money_icon 中心 x=695（源 615）")
 	assert_almost_eq(_center_of(money_icon).y, 377.0, 0.5, "money_icon 中心 y=377（源 183）")
+	# 审查修复 Minor 1：源 :844 fix_size=CCSizeMake(27,25) 显式显示尺寸（readnode:197-199 不÷CS 直译）
+	assert_almost_eq(money_icon.offset_right - money_icon.offset_left, 27.0, 0.5, "money_icon 宽=27（源 fix_size 直译）")
+	assert_almost_eq(money_icon.offset_bottom - money_icon.offset_top, 25.0, 0.5, "money_icon 高=25（源 fix_size 直译）")
 	var money_lbl: Label = inst.get_node("%MoneyLabel") as Label
 	assert_almost_eq(money_lbl.offset_right, 795.0, 0.5, "money 右端 x=795（源 715 右中锚）")
 	assert_almost_eq((money_lbl.offset_top + money_lbl.offset_bottom) / 2.0, 377.0, 0.5, "money 中心 y=377")
@@ -730,6 +733,11 @@ func test_material_area_layout_follows_source() -> void:
 	assert_almost_eq(clip.offset_right, 678.0, 0.5, "裁剪层右=178+500")
 	assert_almost_eq(clip.offset_bottom, 518.0, 0.5, "裁剪层底=560-42")
 	assert_true(clip.clip_contents, "裁剪层 clip_contents（源 ClippingNode）")
+	# 审查修复 Important 1：源 draglist canDragY 连续滚动 → ScrollContainer + 内容层
+	assert_true(clip is ScrollContainer, "MtClip 为 ScrollContainer（源 draglist canDragY 滚动）")
+	var mt_host: Control = inst.get_node("%MtListHost") as Control
+	assert_almost_eq(mt_host.size.x, 500.0, 0.5, "内容层宽=源 cliprect 宽 500")
+	assert_eq(clip.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "水平滚动禁用（源仅纵向 canDragY）")
 
 
 # 源 createEquip:1576-1638 + getEquipPos:1566（2列3行 中心 235..387/155..299 → godot 315..387/155..299）
@@ -869,7 +877,8 @@ func test_fill_att_labels_and_list_row() -> void:
 	root.queue_free()
 
 
-# fill 行为：材料格挂裁剪层 + ehcBg（源 createmt :127-132 漏译本批补）
+# fill 行为：材料格挂内容层 + ehcBg（源 createmt :127-132 漏译本批补；
+# 审查修复后挂 %MtListHost 内容层，非 %MtClip 直接子——ScrollContainer 直接子含引擎滚动条）
 func test_fill_material_icons_clipped_with_ehc_bg() -> void:
 	var parts_id: int = _find_category_equip("EQUIP.PARTS")
 	var eid: int = _find_enchantable_equip()
@@ -885,14 +894,108 @@ func test_fill_material_icons_clipped_with_ehc_bg() -> void:
 	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
 	panel.setup_panel(hero, cm, pd)
 	panel.show_window(root)
-	var clip: Control = panel._content.get_node("%MtClip")
-	assert_gt(clip.get_child_count(), 0, "材料格挂裁剪层")
-	var icon: Control = clip.get_child(0) as Control
+	var host: Control = panel._content.get_node("%MtListHost")
+	assert_gt(host.get_child_count(), 0, "材料格挂内容层 %MtListHost")
+	var icon: Control = host.get_child(0) as Control
 	var has_ehc_bg: bool = false
 	for c in icon.get_children():
 		if (c as Node).get("texture") != null and String((c as Node).name).find("EhcBg") >= 0:
 			has_ehc_bg = true
 	assert_true(has_ehc_bg, "材料格带 ehcBg 数量底（源 :127-132）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 审查修复 Important 1 守卫：源 draglist canDragY 连续滚动（createmtListLayer:398-401）——
+# 持有超 12 种材料时第 13+ 条须可滚可见（Equip 表实测 576 种可入选，玩法缺口）
+func test_material_list_scrollable_beyond_12() -> void:
+	var eid: int = _find_enchantable_equip()
+	var mat_ids: Array = _collect_material_ids(13)
+	if eid == 0 or mat_ids.size() < 13:
+		pass_test("数据表缺可附魔装备或不足 13 种可入选材料，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	for mid in mat_ids:
+		pd.add_item(int(mid), 1)
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.equip_slots[0] = eid
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm, pd)
+	panel.show_window(root)
+	assert_true(panel._materials.size() >= 13, "13+ 种材料在列")
+	var clip: ScrollContainer = panel._content.get_node("%MtClip") as ScrollContainer
+	var host: Control = panel._content.get_node("%MtListHost") as Control
+	var icon13: Control = (panel._mt_nodes[12]["icon"] as Control)
+	# 视口高 155（源 cliprect 高）；第 13 格在第 3 行（中心 42+75*2=192）底缘 228 > 155 初始不可见
+	assert_gt(host.custom_minimum_size.y, clip.size.y, "内容高超视口（源 initListHeight 75*plies）")
+	assert_gt(icon13.position.y + 36.0, clip.size.y, "第 13 格初始在视口外（需滚动）")
+	# 滚动可达：等排序帧后滚动条 max>0，滚到底第 13 格底缘进入视口
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var vs: VScrollBar = clip.get_v_scroll_bar()
+	assert_gt(vs.max_value, 0.0, "垂直滚动条有滚动范围（源 canDragY）")
+	clip.scroll_vertical = vs.max_value
+	await get_tree().process_frame   # 滚动偏移经排序帧应用到内容层 position
+	var bottom_y: float = host.position.y + icon13.position.y + 36.0
+	assert_lt(bottom_y, clip.size.y + 0.5, "滚到底后第 13 格底缘进入视口（可达可选）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 收集 n 个通过材料过滤（源 readequip.lua:346/357 同款）的 item id
+func _collect_material_ids(n: int) -> Array:
+	var et: Dictionary = cm.get_raw_table(&"Equip")
+	var ids: Array = []
+	for id in et:
+		var row: Dictionary = et[id]
+		if bool(row.get("Invisible", false)):
+			continue
+		var category: String = String(row.get("Category", ""))
+		if category == "EQUIP.SOUL_STONE":
+			continue
+		var ct: String = String(row.get("Consume Type", ""))
+		if category == "EQUIP.CONSUMABLES" and ct != "EQUIP.ENCHANTING":
+			continue
+		if category == "EQUIP.FRAGMENT" and String(row.get("Name", "")) == "EQUIP.UNIVERSAL_DEBRIS":
+			continue
+		if int(row.get("Enhance Value", 0)) <= 0:
+			continue
+		ids.append(int(id))
+		if ids.size() >= n:
+			break
+	return ids
+
+
+# 审查修复 Important 2 守卫：源 :1198 anim_bar 初始纹理即当前 exp（textureRect(0,0,655*exp/mexp,18)），
+# refreshExpBar(:1063-1072) 从当前值动画到 target → show_exp_bar 后 AnimBar region=当前等级比例
+func test_show_exp_bar_resets_anim_bar_start() -> void:
+	var eid: int = _find_enchantable_equip()
+	if eid == 0:
+		pass_test("数据表无可附魔装备，跳过")
+		return
+	var le: Array = ReadequipData.get_equip_level_exp(eid, cm)["le"]
+	if le.is_empty() or float(le[0]) <= 0.0:
+		pass_test("装备等级表缺失，跳过")
+		return
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.equip_slots[0] = eid
+	hero.equip_exp[0] = float(le[0]) * 0.5   # 第 1 级一半 → 比例 0.5
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var bar_host: Control = panel._content.get_node("BarHost") as Control
+	var anim: TextureRect = bar_host.get_node("%AnimBar") as TextureRect
+	var atlas: AtlasTexture = anim.texture as AtlasTexture
+	assert_almost_eq(atlas.region.size.x / 842.0, 0.5, 0.001, "show_exp_bar 后 AnimBar 起点=当前比例 0.5（源 :1198）")
+	# 切槽残留场景：污染 AnimBar 至满比例后再 show_exp_bar（切槽同路径）→ 起点重置回当前值
+	EquipStrengthenAtt._apply_bar_ratio(panel, anim, 1.0)
+	EquipStrengthenAtt.show_exp_bar(panel, 0)
+	var atlas2: AtlasTexture = (bar_host.get_node("%AnimBar") as TextureRect).texture as AtlasTexture
+	assert_almost_eq(atlas2.region.size.x / 842.0, 0.5, 0.001, "重入后 AnimBar 起点重置（切槽不残留上次预览比例）")
 	panel.remove_window()
 	root.queue_free()
 

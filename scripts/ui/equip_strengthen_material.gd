@@ -2,8 +2,9 @@ class_name EquipStrengthenMaterial
 extends RefCounted
 
 ## equipstrengthen 材料网格 fill/add-delete/飘字（View helper）。
-## 两件套范式（批 1 Task 5，2026-08-15）：裁剪层 %MtClip 静态在 content.tscn
-## （源 ClippingNode + draglist cliprect），材料格为动态数据行 fill 挂裁剪层下；
+## 两件套范式（批 1 Task 5，2026-08-15）：滚动层 %MtClip(ScrollContainer) + 内容层
+## %MtListHost 静态在 content.tscn（源 draglist canDragY 连续滚动 + cliprect 裁剪，
+## 审查修复补滚动能力），材料格为动态数据行 fill 挂内容层下；
 ## 本批补漏译：ehcBg 数量底（源 createmt :127-132）+ minus 贴图按钮
 #（源 createMinusIcon :195-209 skill_material_delete 双态）+ 材料格中心锚修正。
 ## static 方法第一参 panel，照 battle_unit_combat.gd 静态拆分。
@@ -15,6 +16,10 @@ const MT_CLIP_ORIGIN: Vector2 = Vector2(42.0, 42.0)
 const MT_DX: float = 80.0
 const MT_DY: float = 75.0
 const MT_PER_ROW: int = 6
+# 滚动视口/内容高（源 draglist cliprect 宽 500 + createmtList:188 initListHeight(75*plies)）：
+# 内容高 = 首行中心 42 + 行距×(plies-1) + 半格 36 + 底余量 6（末行底缘可滚入视口，源 maxy 等价）
+const MT_CLIP_W: float = 500.0
+const MT_LIST_H_TAIL: float = 84.0
 # 数量底/数量字（源 :127-137：ehcBg @(36,18) z=-1 + aLabel @(36,20) 中心锚（相对 icon 中心
 # (72,72) 基准 → Godot 局部 (72, 72-18=54) / (72, 72-20=52)；数量字 18 号白）
 const EHC_BG_ATT_RES: String = "res://assets/ui/alpha/HVGA/skill_material_att_bg.png"
@@ -95,12 +100,18 @@ static func cmp_material(a: Dictionary, b: Dictionary) -> bool:
 	return int(a["ehc"]) < int(b["ehc"])
 
 
-# 材料网格 fill（源 createmt :110-149）：挂 %MtClip 裁剪层下（源 draglist addItem + ClippingNode），
-# 每格 = ReadequipIcon 工厂 + ehcBg 数量底（z 底）+ 数量字；中心锚定位（源 setPosition 中心语义）。
+# 材料网格 fill（源 createmt :110-149）：挂 %MtListHost 内容层（源 draglist addItem 挂 listLayer，
+# 视口 %MtClip 为 ScrollContainer，审查修复补滚动能力），每格 = ReadequipIcon 工厂 +
+# ehcBg 数量底（z 底）+ 数量字；中心锚定位（源 setPosition 中心语义）。
 static func show_materials(panel) -> void:
-	var clip: Control = panel._content.get_node("%MtClip") as Control
+	var clip: ScrollContainer = panel._content.get_node("%MtClip") as ScrollContainer
+	var host: Control = panel._content.get_node("%MtListHost") as Control
 	panel._clear_meta_children("mt")
 	panel._mt_nodes.clear()
+	# 内容高照源 initListHeight(75*plies) 语义（:188）→ ScrollContainer 滚动范围自管
+	var plies: int = int(ceil(float(panel._materials.size()) / float(MT_PER_ROW)))
+	host.custom_minimum_size = Vector2(MT_CLIP_W, MT_LIST_H_TAIL + MT_DY * float(plies - 1))
+	clip.scroll_vertical = 0.0   # 重建回顶（源 refreshmtList 重建网格同语义）
 	var slide_targets: Array = []   # 滑入动画目标（源 createmtListLayer:407）
 	for i in panel._materials.size():
 		var info: Dictionary = panel._materials[i]
@@ -108,7 +119,7 @@ static func show_materials(panel) -> void:
 		var col: int = i % MT_PER_ROW
 		var row_idx: int = i / MT_PER_ROW
 		var center: Vector2 = Vector2(MT_CLIP_ORIGIN.x + MT_DX * col, MT_CLIP_ORIGIN.y + MT_DY * row_idx)
-		icon.position = center - icon.size * 0.5   # 源 icon 中心锚 → 裁剪层局部居中
+		icon.position = center - icon.size * 0.5   # 源 icon 中心锚 → 内容层局部居中
 		icon.set_meta("mt", true)
 		_add_ehc_bg(icon, String(info["category"]))
 		var amount_label := Label.new()
@@ -118,7 +129,7 @@ static func show_materials(panel) -> void:
 		icon.add_child(amount_label)
 		_center_on(amount_label, AMOUNT_CENTER)
 		icon.gui_input.connect(make_mt_handler(panel, i, false))
-		clip.add_child(icon)
+		host.add_child(icon)
 		panel._mt_nodes.append({
 			"icon": icon,
 			"amount_label": amount_label,
@@ -266,17 +277,21 @@ static func reset_material_selection(panel) -> void:
 
 
 # 材料拖影（源 playAddmtAnim :218-244：icon 拖到经验条 (400,212)→(480,348) 缩小淡出）；
-# 挂 %FxHost（content 局部坐标 = 裁剪层 offset + icon 局部）。
+# 挂 %FxHost（content 局部坐标 = 裁剪层 offset + 内容层 position（含滚动偏移，ScrollContainer
+# 滚动时移动子层 position）+ icon 局部）。
 static func play_addmt_anim(panel, idx: int) -> void:
 	if idx < 0 or idx >= panel._mt_nodes.size():
 		return
 	var clip: Control = panel._content.get_node("%MtClip") as Control
+	var host: Control = panel._content.get_node("%MtListHost") as Control
 	var fx_host: Control = panel._content.get_node("%FxHost") as Control
 	var node: Dictionary = panel._mt_nodes[idx]
 	var icon: Control = node["icon"]
 	var info: Dictionary = node["info"]
 	var ti: Control = ReadequipIcon.create_icon(int(info["id"]), 1, panel.cm)
-	ti.position = Vector2(clip.offset_left + icon.position.x, clip.offset_top + icon.position.y)
+	ti.position = Vector2(
+		clip.offset_left + host.position.x + icon.position.x,
+		clip.offset_top + host.position.y + icon.position.y)
 	ti.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fx_host.add_child(ti)
 	var tw: Tween = panel.create_tween()

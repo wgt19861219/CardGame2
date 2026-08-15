@@ -378,17 +378,29 @@ horizontal_alignment = 1
 vertical_alignment = 1
 visible = false
 
-; 材料网格裁剪层（源 createmtListLayer:395 cliprect CCRectMake(98,42,500,155) + ClippingNode
-; stencil 800x155@(0,42) → clip_contents rect (178,363)-(678,518)；材料格 fill 挂此）
-[node name="MtClip" type="Control" parent="."]
+; 材料网格滚动层（源 createmtListLayer:395 cliprect CCRectMake(98,42,500,155) + draglist
+; canDragY 连续滚动 → Godot ScrollContainer 照 eatexp ScrollHost 先例；滚动条受控偏离：
+; 源自绘滚动条 bar bglen=145 bgpos=ccp(88,122) 简化为引擎默认滚动条，见 task-5-report 审查修复）
+[node name="MtClip" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 178.0
 offset_top = 363.0
 offset_right = 678.0
 offset_bottom = 518.0
-mouse_filter = 2
+mouse_filter = 1
 clip_contents = true
+horizontal_scroll_mode = 0
+
+; 滚动内容层（源 draglist listLayer，材料格 fill 挂此）：初始 min=视口 500x155，
+; 内容高度由 panel fill 照源 createmtList:188 initListHeight(75*plies) 语义设置
+[node name="MtListHost" type="Control" parent="MtClip"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 500.0
+offset_bottom = 155.0
+custom_minimum_size = Vector2(500, 155)
+mouse_filter = 2
 
 ; 金币区（源 createStrenButton:805-866 money_bg(665,185)/no_cost(665,185)/
 ; money_icon goldicon_small(615,183)/money(715,183) 右中锚；no_cost 显 icon/money 隐初始）
@@ -416,13 +428,14 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text = "未添加材料"
 
+; money_icon 27x25（源 :844 fix_size=CCSizeMake(27,25) 显式显示尺寸，不÷CS 直译）
 [node name="MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 678.22
-offset_top = 361.39
-offset_right = 711.78
-offset_bottom = 392.61
+offset_left = 681.5
+offset_top = 364.5
+offset_right = 708.5
+offset_bottom = 389.5
 texture = ExtResource("12_goldsm")
 expand_mode = 1
 mouse_filter = 2

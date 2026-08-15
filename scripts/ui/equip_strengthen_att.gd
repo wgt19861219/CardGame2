@@ -184,6 +184,9 @@ static func show_exp_bar(panel, slot: int) -> void:
 	var max_level: int = int(lvl_info["max_level"])
 	var anim: TextureRect = bar_host.get_node("%AnimBar") as TextureRect
 	anim.visible = false   # 源 :1055 anim_bar 隐
+	# 源 :1198 anim_bar 初始纹理即当前 exp（textureRect(0,0,655*exp/mexp,18)）：
+	# 同步重置预览起点，首次预览从当前值涨、切槽不残留上次比例（审查修复）
+	_apply_bar_ratio(panel, anim, _bar_ratio(lvl_info))
 	_apply_bar_ratio(panel, bar_host.get_node("%Bar") as TextureRect, _bar_ratio(lvl_info))
 	(bar_host.get_node("%BarLevelLabel") as Label).text = BaseresData.get_enhance_level_text(level, panel.cm)
 	(bar_host.get_node("%NextLevelLabel") as Label).text = BaseresData.get_enhance_level_text(mini(level + 1, max_level), panel.cm)
