@@ -84,3 +84,49 @@ static func _collect_controls(node: Node, out: Array) -> void:
 		if c is Control:
 			out.append(c)
 			_collect_controls(c, out)
+
+
+# ── 两件套守卫（批 1 Task 9，2026-08-15）：theme variation 接线 + mark 等比 + 零静态 .new() 白名单 ──
+
+const CS: float = 1.28125
+
+
+# item 内容场景实例（.tscn 直查静态树）。
+func _instantiate_item_content() -> Control:
+	var scene: PackedScene = load("res://scenes/ui/hero_package_item_content.tscn") as PackedScene
+	var inst: Control = scene.instantiate() as Control
+	add_child_autofree(inst)
+	return inst
+
+
+# 名字/后缀走 HeroPackageNameLabel variation（源 heroitem.lua:32 size20 白+黑阴影(0,2)，
+# readhero.createHeroNameByInfo 同规格），tscn 不再 theme_override_*。
+# 石头进度文字走 HeroPackageStoneLabel size18（源 :151 createttf(text,18)，旧 14 随手值修正）。
+func test_item_theme_variations() -> void:
+	var inst: Control = _instantiate_item_content()
+	var name_lbl: Label = inst.get_node("%NameHost/NameLabel") as Label
+	assert_eq(name_lbl.theme_type_variation, &"HeroPackageNameLabel", "NameLabel 走 variation")
+	assert_false(name_lbl.has_theme_font_size_override("font_size"), "NameLabel 无字号 override")
+	assert_false(name_lbl.has_theme_color_override("font_shadow_color"), "NameLabel 无阴影色 override")
+	var suffix_lbl: Label = inst.get_node("%NameHost/SuffixLabel") as Label
+	assert_eq(suffix_lbl.theme_type_variation, &"HeroPackageNameLabel", "SuffixLabel 走 variation（色 fill 动态 override）")
+	var stone_lbl: Label = inst.get_node("%StoneGroup/StoneLabel") as Label
+	assert_eq(stone_lbl.theme_type_variation, &"HeroPackageStoneLabel", "StoneLabel 走 variation")
+	assert_false(stone_lbl.has_theme_font_size_override("font_size"), "StoneLabel 无字号 override")
+
+
+# mark 等比（源 heroitem.lua:38-42 markIcon scale 0.8 等比）：纹理 59×59 → 显示 59/CS×0.8=36.8 方形。
+# 旧 tscn 37×32 非等比拉伸变形 → 本批修正为等比（位置保留 d50674d 照源验收值）。
+func test_item_mark_rect_aspect() -> void:
+	var inst: Control = _instantiate_item_content()
+	var mark: TextureRect = inst.get_node("%MarkRect") as TextureRect
+	assert_almost_eq(mark.offset_right - mark.offset_left, 59.0 / CS * 0.8, 0.1, "mark 宽=59/CS×0.8 等比")
+	assert_almost_eq(mark.offset_bottom - mark.offset_top, 59.0 / CS * 0.8, 0.1, "mark 高=59/CS×0.8 等比")
+
+
+# 白名单式 .new() 断言：HeroPackageItem.new（自身工厂）+ ReadheroIcon（head 动态工厂）+
+# TextureRect（plusSign/equip icon 动态数据图标，源运行时按槽位状态创建）。静态结构（bg/slot/bar 组）零 .new()。
+func test_item_no_static_construction() -> void:
+	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_package_item.gd")
+	assert_eq(text.count(".new()"), text.count("HeroPackageItem.new()") + text.count("ReadheroIcon.new()")
+		+ text.count("TextureRect.new()"), "静态节点零 .new()，仅工厂与动态图标白名单")

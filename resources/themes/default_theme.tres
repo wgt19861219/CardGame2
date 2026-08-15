@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=28 format=3]
+[gd_resource type="Theme" load_steps=32 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -11,6 +11,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="9_sellp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button.png" id="10_taskn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button_press.png" id="11_taskp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtn.png" id="12_classbtn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtnselected.png" id="13_classbtnsel"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -58,6 +60,23 @@ texture_margin_left = 14.06
 texture_margin_top = 15.63
 texture_margin_right = 33.31
 texture_margin_bottom = 34.18
+
+; ── hero_package（批 1 Task 9，2026-08-15）── herosplit 按钮 Scale9 三态
+; （源 heropackage.lua:680-710 classbtn(134x75)/classbtnselected(145x75) cap CCRectMake(40,25,40,25)
+; 纹理像素直译：left=40 top=25 right=134-40-40=54 bottom=75-25-25=25，口径同 SB_upgrade_n）
+[sub_resource type="StyleBoxTexture" id="SB_hp_split_n"]
+texture = ExtResource("12_classbtn")
+texture_margin_left = 40.0
+texture_margin_top = 25.0
+texture_margin_right = 54.0
+texture_margin_bottom = 25.0
+
+[sub_resource type="StyleBoxTexture" id="SB_hp_split_p"]
+texture = ExtResource("13_classbtnsel")
+texture_margin_left = 40.0
+texture_margin_top = 25.0
+texture_margin_right = 65.0
+texture_margin_bottom = 25.0
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_n"]
 texture = ExtResource("1_detailn")
@@ -554,4 +573,43 @@ HeroSplitExplainTitleLabel/font_sizes/font_size = 24
 HeroSplitExplainBodyLabel/base_type = &"Label"
 HeroSplitExplainBodyLabel/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
 HeroSplitExplainBodyLabel/font_sizes/font_size = 16
+; ── hero_package 两件套（批 1 Task 9，2026-08-15）──
+; tab 标签（源 heropackage.lua:535-548 fontinfo ui_normal_button + size=20：
+; 17 号白+阴影(63,5,0)偏移(0,2)，size 被 20 覆盖）
+HeroPackageTabLabel/base_type = &"Label"
+HeroPackageTabLabel/colors/font_color = Color(1, 1, 1, 1)
+HeroPackageTabLabel/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+HeroPackageTabLabel/constants/shadow_offset_x = 0
+HeroPackageTabLabel/constants/shadow_offset_y = 2
+HeroPackageTabLabel/font_sizes/font_size = 20
+; herosplit 按钮文字（源 :723-741 size24 白 + shadow(42,31,22) offset(0,2)）
+HeroPackageSplitLabel/base_type = &"Label"
+HeroPackageSplitLabel/colors/font_color = Color(1, 1, 1, 1)
+HeroPackageSplitLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+HeroPackageSplitLabel/constants/shadow_offset_x = 0
+HeroPackageSplitLabel/constants/shadow_offset_y = 2
+HeroPackageSplitLabel/font_sizes/font_size = 24
+; herosplit 按钮（源 :680-710 Scale9 classbtn cap(40,25,40,25) + press 层 → 三态）
+HeroPackageSplitBtn/base_type = &"Button"
+HeroPackageSplitBtn/styles/normal = SubResource("SB_hp_split_n")
+HeroPackageSplitBtn/styles/hover = SubResource("SB_hp_split_n")
+HeroPackageSplitBtn/styles/pressed = SubResource("SB_hp_split_p")
+HeroPackageSplitBtn/styles/disabled = SubResource("SB_hp_split_n")
+HeroPackageSplitBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; listLine 分隔线标题（源 prepareLoad:407-409 size20 ccc3(231,206,19)）
+HeroPackageListLineLabel/base_type = &"Label"
+HeroPackageListLineLabel/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+HeroPackageListLineLabel/font_sizes/font_size = 20
+; item 名字+星后缀（源 heroitem.lua:32 size20 白+黑阴影(0,2)，createHeroNameByInfo 同规格；
+; 后缀色 fill 动态 override）
+HeroPackageNameLabel/base_type = &"Label"
+HeroPackageNameLabel/colors/font_color = Color(1, 1, 1, 1)
+HeroPackageNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+HeroPackageNameLabel/constants/shadow_offset_x = 0
+HeroPackageNameLabel/constants/shadow_offset_y = 2
+HeroPackageNameLabel/font_sizes/font_size = 20
+; item 石头进度文字（源 heroitem.lua:151 createttf(text,18) 无色配置→白；旧 14 随手值修正）
+HeroPackageStoneLabel/base_type = &"Label"
+HeroPackageStoneLabel/colors/font_color = Color(1, 1, 1, 1)
+HeroPackageStoneLabel/font_sizes/font_size = 18
 

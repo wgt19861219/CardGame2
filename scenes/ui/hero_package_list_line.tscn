@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_title_bg.png" id="1_titlebg"]
+
+; hero_package 未召唤分隔线行模板（批 1 Task 9，2026-08-15）。照源 heropackage.lua
+; prepareLoad(:398-411)：line 300x16 容器 + equip_detail_title_bg(388x22) 中心 (150,8) +
+; "以下英雄尚未召唤" size20 ccc3(231,206,19) 中心 (150,8)。纹理显示 302.83x17.18（388/22 ÷ CS
+; 1.28125）直接作模板根（源两层 line+icon 简化合一，图标即条本体）；定位由 panel fill：
+; 中心 = GridHost 局部 (260, 已拥有末行底)（源 getLinepos:306 x=365 全屏=中缝）。
+; 文本由 panel fill（LSTR HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED）。
+
+[node name="ListLine" type="Control"]
+layout_mode = 3
+offset_right = 302.83
+offset_bottom = 17.18
+mouse_filter = 2
+
+; 标题底条（源 lineicon equip_detail_title_bg）
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_right = 302.83
+offset_bottom = 17.18
+texture = ExtResource("1_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+; 标题文字（源 lineTitle size20 ccc3(231,206,19) 中心对齐；色/字号走 variation）
+[node name="LineLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 302.83
+offset_bottom = 17.18
+theme_type_variation = &"HeroPackageListLineLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1

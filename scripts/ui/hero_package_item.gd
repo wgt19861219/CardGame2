@@ -12,6 +12,9 @@ extends Control
 ## stone bar）静态化进 hero_package_item_content.tscn（instantiate + fill），位置/size 编辑器可视化调。
 ## 两形态（拥有/未拥有）EquipGroup/StoneGroup visible 切换（坑 5）。fill 动态：head/名字/装备图标/plus sign/
 ## 进度/光效/头像灰化。坐标照源 _place 烘焙进 .tscn（BG_OFFSET + cocos→godot 翻转）。
+## 两件套接线收口（批 1 Task 9，2026-08-15）：name/suffix/stone 文字走 HeroPackage* variation
+## （theme 管，删运行时 override）；mark 尺寸修等比 36.8（源 scale0.8 等比，旧 37×32 变形）。
+## plusSign/equip 图标节点白名单（动态数据图标，源运行时按槽位状态创建）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_package_item_content.tscn")
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 资源档）：cocos sprite contentSize=纹理/CS，position 不变。
@@ -43,7 +46,6 @@ const NAME_CENTER_X: float = 177.0
 const NAME_POS_Y: float = 72.0
 const NAME_MAX_W: float = 100.0
 const NAME_FALLBACK: String = "?"
-const NAME_COLOR_DEFAULT: Color = Color(1.0, 1.0, 1.0, 1.0)
 const GRAY_MODULATE: Color = Color(0.5, 0.5, 0.5, 1.0)
 const CLIP_PREFIX: String = "UI/"
 const CLIP_REPLACE: String = "res://assets/ui/"
@@ -143,13 +145,13 @@ func _fill_head() -> void:
 	(_content.get_node("%HeadHost") as Control).add_child(head)
 
 
-# name 与 suffix 两 Label 横向拼接；suffix 按 rank 段着色。名字本身默认色，阴影 ccc3(0,0,2)（.tscn 已固化）。
+# name 与 suffix 两 Label 横向拼接；suffix 按 rank 段着色（fill 动态 override）。
+# 名字默认白/阴影走 HeroPackageNameLabel variation（theme 管，禁运行时样式 override）。
 func _fill_name() -> void:
 	var disp_name: String = cm.get_lstr(_unit_str(&"Display Name", NAME_FALLBACK))
 	var rank: int = _rank()
 	var star: int = ReadheroHandbook.get_hero_star_by_rank(rank)
 	_name_lbl.text = disp_name
-	_name_lbl.add_theme_color_override("font_color", NAME_COLOR_DEFAULT)
 	var name_size: Vector2 = _name_lbl.get_minimum_size()
 	var total_w: float = name_size.x
 	var suffix_w: float = 0.0

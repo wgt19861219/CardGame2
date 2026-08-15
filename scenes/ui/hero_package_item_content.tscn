@@ -36,13 +36,15 @@ offset_right = -19.5
 offset_bottom = -1.5
 mouse_filter = 2
 
+; mark 属性图标（源 heroitem.lua:38-42 icon_str/agi/int scale0.8 等比；位置为 d50674d 照源验收值，
+; 尺寸本批修等比 59/CS×0.8=36.8 方形，旧 37×32 拉伸变形）
 [node name="MarkRect" type="TextureRect" parent="." unique_id=1984512238]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 119.0
 offset_top = 2.0
-offset_right = 156.0
-offset_bottom = 34.0
+offset_right = 155.8
+offset_bottom = 38.8
 mouse_filter = 2
 expand_mode = 1
 
@@ -60,18 +62,14 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_right = 118.0
 offset_bottom = 28.0
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroPackageNameLabel"
 horizontal_alignment = 1
 
 [node name="SuffixLabel" type="Label" parent="NameHost" unique_id=1441676602]
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"HeroPackageNameLabel"
 horizontal_alignment = 1
 
 [node name="EquipGroup" type="Control" parent="." unique_id=1553999783]
@@ -195,10 +193,11 @@ mouse_filter = 2
 texture = ExtResource("5_prog")
 expand_mode = 1
 
+; 石头进度文字（源 heroitem.lua:151 createttf(text,18) 无色配置→白；fill 按条宽动态居中定位）
 [node name="StoneLabel" type="Label" parent="StoneGroup" unique_id=377176750]
 unique_name_in_owner = true
 layout_mode = 0
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"HeroPackageStoneLabel"
 
 [node name="SummonLight" type="TextureRect" parent="StoneGroup" unique_id=1444349091]
 unique_name_in_owner = true

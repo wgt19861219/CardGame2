@@ -2,18 +2,19 @@ class_name HeroPackagePanel
 extends PopWindow
 
 ## 英雄背包（View 层）— 照源 heropackage.lua 完整重建（P0-1 整行卡片）。
-## list_bg 背景 + 4 class tab（all/front/middle/back 切换，classbtn/classbtnselected）+
-## ScrollContainer 英雄网格（HeroPackageItem 整行卡片：头像+名字+mark+装备槽/灵魂石条，2 列 260×100）+
-## 未召唤英雄分隔线（listLine：equip_detail_title_bg + "尚未召唤" 文字）+ close 按钮。
-## tab 分类委托 ReadheroHandbook.classify_handbook（Logic 层，含未召唤英雄 + 按位置分）。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+OFFSET_X+80, 560-cy)，OFFSET_X=-20（源 :486 self.offsetx）。
-## 残留：close 按钮使用 framework statusbar backbtn（源 heroPackage 无 close，framework 注入返回）。
+## list_bg 背景 + 4 class tab（all/front/middle/back 切换）+ ScrollContainer 英雄网格
+## （HeroPackageItem 整行卡片，2 列 260×100）+ 未召唤分隔线（list_line 行模板）+
+## herosplit 分解按钮 + close 按钮。tab 分类委托 ReadheroHandbook.classify_handbook。
 ##
-## Phase A 重构（2026-07-17）：base 层（list_bg + 4 class tab + close + ScrollContainer）静态化进
-## hero_package_content.tscn（instantiate + fill），位置/size 编辑器可视化调，照 hero_detail 范式。
+## 两件套范式（批 1 Task 9，2026-08-15）：静态结构全进 hero_package_content.tscn
+## （base 层 + herosplit 按钮 + z 序）+ hero_package_list_line.tscn（分隔线行模板）；
+## 本文件只做业务、信号 connect、fill（零静态节点构造，3 个弹窗工厂白名单）。
+## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(x+80, 560-y)，offsetx=-20 只作用于
+## 源 position 显式 +offsetx 的元素（list_bg/tab/label/draglist；herosplit 无）。
+## 残留：close 按钮使用 framework statusbar backbtn（源 heroPackage 无 close，framework 注入返回）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_package_content.tscn")
-const OFFSET_X: float = -20.0
+const LIST_LINE_SCENE: PackedScene = preload("res://scenes/ui/hero_package_list_line.tscn")
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const TAB_KEYS: Array[String] = ["all", "front", "middle", "back"]
@@ -24,14 +25,17 @@ const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # c
 const TAB_BTN_NAMES: Array[String] = ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn"]
 const TAB_LBL_NAMES: Array[String] = ["TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
-const LIST_LINE_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_detail_title_bg.png"
 const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"
 const LIST_LINE_FALLBACK: String = "以下英雄尚未召唤"   # cm=null fallback（= 源 LSTR_zh-CN 值）
-# herosplit 按钮装饰（源 heropackage.lua:712-753）：equip_soulstone_tag 图标 + main_deal_tag 角标。
-# main_deal_tag 源 isShowTag 由可分解英雄数驱动；本项目未做该判断，默认隐藏 visible=false。
-const HEROSPLIT_ICON_RES: String = "res://assets/ui/alpha/HVGA/equip_soulstone_tag.png"
-const HEROSPLIT_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"
-const HEROSPLIT_ICON_TARGET_W: float = 22.0   # 图标缩放后宽（适配 120×75 按钮左侧）
+# 源 refreshHeroList getLinepos(:306-313)：分隔线中心 x=365 全屏 → GridHost 局部 (365+80-185)=260（两列中缝）。
+const LIST_LINE_CENTER_X: float = 260.0
+# 源 getpos(:318-319)：preLineAmount>0 时未拥有段 toy-30 整体下移 30；分隔线在 gap 中点（边界+15）。
+const MISS_GAP: float = 30.0
+# 源 createHeroList(:298)：initListHeight = 100*ceil(ta/2)+40（40 = gap 30 + 尾余量 10）。
+const LIST_TAIL_H: float = 40.0
+# herosplit 按钮文字（源 :727 heropackage.1.10.1.001，cm=null fallback）。
+const HEROSPLIT_LSTR_KEY: String = "heropackage.1.10.1.001"
+const HEROSPLIT_FALLBACK: String = "分解"
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -42,10 +46,6 @@ var _tab_labels: Dictionary = {}   # key -> Label
 var _scroll: ScrollContainer = null
 var _grid: Control = null
 var _hero_by_class: Dictionary = {}   # clid -> Array[Variant]（HeroInstance 或 {tid,miss} dict）
-
-
-static func _to_godot(cocos: Vector2) -> Vector2:
-	return Vector2(cocos.x + OFFSET_X + 80.0, 560.0 - cocos.y)
 
 
 func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData = null) -> void:
@@ -62,8 +62,7 @@ func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData =
 	_refresh_list()
 
 
-# Phase A 重构：base 层从 hero_package_content.tscn instantiate（位置/size 可视化）。
-# .tscn 已固化：list_bg + 4 tab + 4 label + close + ScrollContainer + GridHost。
+# 两件套范式：base 层 + herosplit 组从 hero_package_content.tscn instantiate（位置/size/z 已固化）。
 # 本函数取节点引用 + fill 动态 LSTR 文本 + 绑定 pressed 信号。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
@@ -71,7 +70,7 @@ func _build_content() -> void:
 	for i in range(TAB_KEYS.size()):
 		var key: String = TAB_KEYS[i]
 		var btn: TextureButton = content.get_node("%" + TAB_BTN_NAMES[i]) as TextureButton
-		# stretch_mode 强制 SCALE：ignore_texture_size=true 时默认 KEEP（纹理原尺寸 145×75 溢出 button 框），
+		# stretch_mode 强制 SCALE：ignore_texture_size=true 时默认 KEEP（纹理原尺寸溢出 button 框），
 		# 致纹理 center 偏离 button center（字偏左上）+ 纹理 75 高重叠。SCALE 让纹理缩到 /CS 后的 button size。
 		btn.stretch_mode = TextureButton.STRETCH_SCALE
 		btn.pressed.connect(_on_tab_pressed.bind(key))
@@ -85,75 +84,13 @@ func _build_content() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	_scroll = content.get_node("%HeroScroll") as ScrollContainer
 	_grid = content.get_node("%GridHost") as Control
-	# tab z 动态切在 _update_tab_visual（选中 3 / 未选中 1）。照源运行时 setZOrder（源即运行时设）。
-	(content.get_node("ListBg") as TextureRect).z_index = 2
-	_scroll.z_index = 10
-	for key in _tab_labels:
-		var lbl: Label = _tab_labels[key] as Label
-		lbl.z_index = 4
-		# label 框运行时对齐 button（.tscn label offset 仅作编辑器预览），内部 halign/valign CENTER → 文字几何居中
-		var btn: TextureButton = _tabs[key] as TextureButton
-		# -3：字精确居中 button 几何中心(195)后视觉略偏下（椭圆主体 center 194.5 + 中文字视觉重心），
-		# 上移 3px 落到 ~192，相对椭圆主体略偏上，视觉正中。
-		lbl.position = Vector2(btn.offset_left, btn.offset_top - 3.0)
-		lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
 	_update_tab_visual()
-	# 分解按钮（2026-07-19 接线完成）：HeroSplitWindow 务实方案——内联英雄网格 + 返还预览 + 二次确认。
-	_add_herosplit_button(content)
-	# HudOverlay 切 identity=heropackage。
-
-
-
-
-func _add_herosplit_button(content: Control) -> void:
-	var btn_pos: Vector2 = _to_godot(Vector2(695.0, 60.0))
-	var btn := UiScale9Button.make(
-		CLASSBTN_RES, CLASSBTN_RES,
-		btn_pos, Vector2(120.0, 75.0),
-		Rect2(40.0, 25.0, 40.0, 25.0),
-		cm.get_lstr(&"heropackage.1.10.1.001") if cm != null else "分解",
-		Color.WHITE)
-	btn.pressed.connect(_on_herosplit_pressed)
-	content.add_child(btn)
-	# 装饰图标（源 heropackage.lua:712-753）：按钮左侧 equip_soulstone_tag 提示分解得魂石。
-	_add_herosplit_decoration(btn)
-
-
-# herosplit 按钮装饰：equip_soulstone_tag 图标（左侧，呼吸存在感）+ main_deal_tag 角标（默认隐藏，
-# 源由 isShowTag 判可分解英雄驱动，本项目暂未做该状态判断，按 visible=false 占位照源声明节点）。
-# 装饰节点 mouse_filter=IGNORE 避免拦截按钮 pressed（红线：装饰节点必须 IGNORE）。
-func _add_herosplit_decoration(btn: Button) -> void:
-	var icon_tex: Texture2D = load(HEROSPLIT_ICON_RES) as Texture2D
-	if icon_tex != null:
-		var icon := TextureRect.new()
-		icon.texture = icon_tex
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		var orig_w: float = float(icon_tex.get_width())
-		var scale_val: float = HEROSPLIT_ICON_TARGET_W / orig_w if orig_w > 0.0 else 1.0
-		var tex_w: float = float(icon_tex.get_width()) * scale_val
-		var tex_h: float = float(icon_tex.get_height()) * scale_val
-		icon.size = Vector2(tex_w, tex_h)
-		# 左侧垂直居中：x 距按钮左缘 8px，y 居中（按钮 75 高）。
-		icon.position = Vector2(8.0, (75.0 - tex_h) * 0.5)
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		btn.add_child(icon)
-	# main_deal_tag 角标：源 isShowTag 判驱动，本项目无状态来源故 visible=false 占位（保证节点存在，
-	# 后续接Logic即可只切 visible 不重建）。
-	var tag_tex: Texture2D = load(HEROSPLIT_TAG_RES) as Texture2D
-	if tag_tex != null:
-		var tag := TextureRect.new()
-		tag.texture = tag_tex
-		tag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		var tag_orig_w: float = float(tag_tex.get_width())
-		var tag_scale: float = 24.0 / tag_orig_w if tag_orig_w > 0.0 else 1.0
-		var tag_w: float = float(tag_tex.get_width()) * tag_scale
-		var tag_h: float = float(tag_tex.get_height()) * tag_scale
-		tag.size = Vector2(tag_w, tag_h)
-		# 右上角徽章（源 :730-740 ccp 105,0 位置 → 按钮本地右上）。
-		tag.position = Vector2(120.0 - tag_w - 4.0, -tag_h * 0.3)
-		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tag.visible = false
-		btn.add_child(tag)
+	# herosplit 分解按钮（Task 9 静态化）：结构/9 宫格/坐标全在 .tscn，fill 只接信号 + LSTR 文本。
+	# ⚠️源 refreshSplitButton endPoint=0 永假默认隐藏；本项目作为 HeroSplitWindow 唯一入口常驻（受控偏离）。
+	var split_btn: Button = content.get_node("%HerosplitBtn") as Button
+	split_btn.pressed.connect(_on_herosplit_pressed)
+	(split_btn.get_node("%HerosplitLabel") as Label).text = \
+		cm.get_lstr(HEROSPLIT_LSTR_KEY) if cm != null else HEROSPLIT_FALLBACK
 
 
 func _on_herosplit_pressed() -> void:
@@ -185,38 +122,37 @@ func _classify_heroes() -> void:
 
 
 # 已拥有→未拥有分界处插 listLine 分隔线（源 prepareLoad listLine + refreshHeroList setVisible 分界）。
-# _grid 为 .tscn %GridHost（Control，非 GridContainer 避免子节点 scale reset，2026-07-16 实测）。
+# _grid 为 .tscn %GridHost（Control，非 GridContainer 避免子节点 scale reset，2026-07-16 实测）；
+# 手动绝对定位（col/row 计数器），空位不建占位节点。
 func _refresh_list() -> void:
 	for c in _grid.get_children():
 		c.free()
 	var list: Array = _hero_by_class.get(_clid, [])
 	var col := 0
 	var row := 0
+	var miss_gap: float = 0.0   # 源 getpos toy-30：分界后未拥有段整体下移 30
 	for i in range(list.size()):
 		var entry: Variant = list[i]
-		if _is_handbook_boundary(list, i):
-			if col == 1:
-				var fill := Control.new()
-				fill.custom_minimum_size = CELL_SIZE
-				fill.position = Vector2(CELL_SIZE.x, row * CELL_SIZE.y)
-				fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				_grid.add_child(fill)
-				col = 0
-				row += 1
-			_add_list_line_at(0, row)
-			row += 1
 		var item := HeroPackageItem.create_from_entry(entry, cm, _hero_mgr, pd)
-		item.position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y)
+		item.position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y + miss_gap)
 		item.gui_input.connect(_on_item_gui_input.bind(entry))
 		_grid.add_child(item)
 		col += 1
 		if col >= 2:
 			col = 0
 			row += 1
+		# 边界检查在 item[i] 放置后（i = 最后已拥有）：line 位于已拥有段底界下方 gap 中点（源
+		# preLineAmount 补齐偶数行语义 → 边界 = 已占用行数；源旧实现 line 在最后已拥有上方属错位）。
+		if _is_handbook_boundary(list, i):
+			var boundary_row: int = row + (1 if col > 0 else 0)
+			_add_list_line_at(boundary_row)
+			row = boundary_row
+			col = 0
+			miss_gap = MISS_GAP
 	var total_rows := row + (1 if col > 0 else 0)
 	if total_rows < 1:
 		total_rows = 1
-	_grid.custom_minimum_size = Vector2(CELL_SIZE.x * 2.0, CELL_SIZE.y * float(total_rows))
+	_grid.custom_minimum_size = Vector2(CELL_SIZE.x * 2.0, CELL_SIZE.y * float(total_rows) + LIST_TAIL_H)
 
 
 # 分界：当前是最后一个 HeroInstance 且下一条是 miss dict（已拥有→未拥有过渡，源 refreshHeroList :344 preLineAmount）。
@@ -226,31 +162,18 @@ func _is_handbook_boundary(list: Array, i: int) -> bool:
 	return list[i] is HeroInstance and not (list[i + 1] is HeroInstance)
 
 
-# GridContainer 不支持跨列，分隔线 + 空 cell 占位凑一行（2 列补齐）。
-func _add_list_line_at(col: int, row: int) -> void:
-	var line := Control.new()
-	line.custom_minimum_size = CELL_SIZE
-	line.position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y)
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg := TextureRect.new()
-	bg.texture = load(LIST_LINE_BG_RES)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = Vector2(300.0, 16.0)
-	bg.position = Vector2(0.0, CELL_SIZE.y * 0.5 - 8.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	line.add_child(bg)
-	var lbl := Label.new()
-	lbl.text = cm.get_lstr(LIST_LINE_LSTR_KEY) if cm != null else LIST_LINE_FALLBACK
-	lbl.add_theme_font_size_override("font_size", 16)
-	lbl.position = Vector2(60.0, CELL_SIZE.y * 0.5 - 10.0)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	line.add_child(lbl)
+# 分隔线（源 prepareLoad:398-411 + getLinepos:306-313）：hero_package_list_line.tscn 行模板
+# instantiate + fill 文本 + 定位。中心 x=中缝 260（源 365 全屏）、y=已拥有末行底+15（gap 中点，
+# gap=MISS_GAP 30 由未拥有段下移形成，照源无 bg 重叠）。
+func _add_list_line_at(boundary_row: int) -> void:
+	var line: Control = LIST_LINE_SCENE.instantiate() as Control
+	line.set_meta(&"list_line", true)
+	line.position = Vector2(
+		LIST_LINE_CENTER_X - line.size.x * 0.5,
+		float(boundary_row) * CELL_SIZE.y + MISS_GAP * 0.5 - line.size.y * 0.5)
+	(line.get_node("%LineLabel") as Label).text = \
+		cm.get_lstr(LIST_LINE_LSTR_KEY) if cm != null else LIST_LINE_FALLBACK
 	_grid.add_child(line)
-	var spacer := Control.new()
-	spacer.custom_minimum_size = CELL_SIZE
-	spacer.position = Vector2((col + 1) * CELL_SIZE.x, row * CELL_SIZE.y)
-	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_grid.add_child(spacer)
 
 
 func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
@@ -261,9 +184,6 @@ func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 func _on_close_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	SceneManager.change_scene("res://scenes/main_menu/main_scene.tscn")
-
-
-# 碎片合成入口源 heropackage.lua 无（grep 确认只有 herosplit 分解 + classbtn tab，无 fragment），
 
 
 func _on_entry_clicked(entry: Variant) -> void:
