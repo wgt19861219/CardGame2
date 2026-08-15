@@ -162,3 +162,21 @@ func test_shop_builder_retired() -> void:
 	var panel_text: String = FileAccess.get_file_as_string("res://scripts/ui/shop_panel.gd")
 	assert_true(panel_text.find("ShopBuilder") == -1, "panel 不再引用 ShopBuilder")
 	assert_false(ResourceLoader.exists("res://scripts/ui/shop_builder.gd"), "shop_builder.gd 已删")
+
+
+# Task 5 修复回归：PanelLayer rect 纯 tscn 静态（不被运行时重定位拖偏）。
+func test_panel_layer_rect_static() -> void:
+	var pd := PlayerData.new(cm)
+	var panel := ShopPanel.new("shop", {})
+	add_child(panel)
+	panel.setup_panel(1, ShopManager.new(cm), pd, BattleRng.new(1))
+	var pl: Control = panel.get("_panel_layer") as Control
+	assert_almost_eq(pl.position.x, 129.0, 0.5, "PanelLayer x=129（tscn 静态，702×424=900×543÷CS 中心 to_godot(400,225)）")
+	assert_almost_eq(pl.position.y, 123.0, 0.5, "PanelLayer y=123")
+	assert_almost_eq(pl.size.x, 702.0, 1.0, "宽 702")
+	assert_almost_eq(pl.size.y, 424.0, 1.0, "高 424")
+	var item_layer: Control = panel.get("_item_layer") as Control
+	assert_true(item_layer.clip_contents, "ItemLayer 裁剪层（源 draglist cliprect）")
+	assert_almost_eq(item_layer.global_position.x, 145.0, 0.5, "裁剪区 x=145（源 clip 65+80）")
+	assert_almost_eq(item_layer.global_position.y, 200.0, 0.5, "裁剪区 y=200（源 560-360）")
+	panel.free()

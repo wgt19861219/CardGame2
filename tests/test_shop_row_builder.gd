@@ -101,6 +101,8 @@ func test_goods_two_rows_layout() -> void:
 	]
 	var items: Array = ShopRowBuilder.build_goods(layer, goods, MarketConfig.get_type_config(1), cm)
 	assert_eq(items.size(), 4, "4 商品 4 行")
+	assert_almost_eq((items[0] as Control).position.x, 18.0, 0.5, "item0 top-left x=18（to_godot(185,256) 265-102-145 裁剪层原点）")
+	assert_almost_eq((items[0] as Control).position.y, 31.0, 0.5, "item0 top-left y=31（304-73-200）")
 	assert_almost_eq((items[1] as Control).position.x - (items[0] as Control).position.x, 205.0, 0.5, "上排相邻列 dx=205（源 getItemPos）")
 	assert_almost_eq((items[2] as Control).position.y - (items[0] as Control).position.y, 150.0, 0.5, "上排比下排高 dy=150（Godot y-down 上排 y 小，简报原断言符号反）")
 	assert_eq(int((items[0] as Control).get_meta(&"shop_slot", -1)), 0, "shop_slot meta 标记（panel 连信号用）")

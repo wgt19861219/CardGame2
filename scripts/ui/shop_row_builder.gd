@@ -15,6 +15,8 @@ const LIST_DX: float = 205.0
 const LIST_OY: float = 256.0
 const LIST_DY: float = 150.0
 const ITEM_SIZE: Vector2 = Vector2(204.0, 146.0)
+# 源 shop.lua createListLayer cliprect CCRectMake(65,35,670,325) → to_godot 左上 (145,200)，ItemLayer 裁剪层原点。
+const LIST_CLIP_ORIGIN: Vector2 = Vector2(145.0, 200.0)
 const UNKNOWN_NAME: String = "???"
 const SOLDOUT_OPACITY: float = 0.5
 # C7（2026-07-23）照源 shop.lua:468-486：saleIcon 打折标 + tagIcon hot/old 标（资源缺 Label 降级文案/配色）。
@@ -37,7 +39,7 @@ static func build_goods(item_layer: Control, goods: Array, config: Dictionary, p
 	for i in goods.size():
 		var g: Dictionary = goods[i]
 		var cocos_pos: Vector2 = _get_item_pos(i + 1, line_count)
-		var top_left: Vector2 = to_godot(cocos_pos.x, cocos_pos.y) - ITEM_SIZE * 0.5
+		var top_left: Vector2 = to_godot(cocos_pos.x, cocos_pos.y) - ITEM_SIZE * 0.5 - LIST_CLIP_ORIGIN
 		var item: Control = _create_item(g, top_left, config, p_cm)
 		item.set_meta(&"shop_slot", i)
 		item_layer.add_child(item)

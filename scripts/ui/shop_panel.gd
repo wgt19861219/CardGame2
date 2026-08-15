@@ -16,11 +16,6 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_content.tscn")
 const AUTO_REFRESH_CHECK_INTERVAL: float = 1.0   # _process 自动刷新轮询间隔（秒，源客户端 auto_refresh 轮询）
 # 两件套范式（2026-08-14）：fill 归 panel，builder 退役。坐标换算照源 cocos(800×480 左下)→Godot(960×640 左上)。
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
-# 源 marketconfig.lua framePos（shop.lua:786 readNode）：id=1 普通商人 ccp(400,225)，sprite anchor 0.5 中心。
-const FRAME_COCOS_CENTER: Vector2 = Vector2(400.0, 225.0)
-const FRAME_FALLBACK_SIZE: Vector2 = Vector2(702.0, 424.0)   # shop_bg.png 900×543 / CS
 # 源 shop.lua:198 商品按下 setScale(0.95)。
 const ITEM_PRESS_SCALE: Vector2 = Vector2(0.95, 0.95)
 const ITEM_PRESS_SEC: float = 0.1
@@ -288,27 +283,12 @@ func _on_expire() -> void:
 	call_deferred("remove_window")
 
 
-# PanelLayer 动态位置（依 frameRes display size）+ Bg/Head/Title fill（默认贴图已烘 .tscn，此处按 shop 类型覆盖）。
+# 两件套：PanelLayer rect 纯 tscn 静态（三型商店 frameRes 均为 shop_bg.png，源无逐型定位）；
+# 运行时只按 shop 类型填贴图/文字。
 func _setup_panel_layer() -> void:
-	var frame_path: String = UI_DIR + String(_config["frameRes"])
-	var frame_size: Vector2 = _frame_display_size(frame_path)
-	_panel_layer.position = _to_godot(FRAME_COCOS_CENTER.x, FRAME_COCOS_CENTER.y) - frame_size * 0.5
-	_panel_layer.size = frame_size
-	_fill_texture(_panel_layer.get_node("%Bg") as TextureRect, frame_path)
+	_fill_texture(_panel_layer.get_node("%Bg") as TextureRect, UI_DIR + String(_config["frameRes"]))
 	_fill_texture(_panel_layer.get_node("%Head") as TextureRect, UI_DIR + String(_config.get("headRes", "")))
 	(_panel_layer.get_node("%Title") as Label).text = String(_config.get("titleText", ""))
-
-
-func _to_godot(cx: float, cy: float) -> Vector2:
-	return Vector2(cx + OFFSET_X, BASE_Y - cy)
-
-
-# frame sprite display size = 纹理/CS（源 CCSprite 无 fix_size）。
-func _frame_display_size(frame_path: String) -> Vector2:
-	if not ResourceLoader.exists(frame_path):
-		return FRAME_FALLBACK_SIZE
-	var size: Vector2 = TexDisplaySize.display_size(frame_path)
-	return size if size.x > 0.0 and size.y > 0.0 else FRAME_FALLBACK_SIZE
 
 
 func _fill_texture(rect: TextureRect, path: String) -> void:

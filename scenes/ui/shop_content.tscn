@@ -160,10 +160,12 @@ offset_bottom = 140.0
 theme_type_variation = &"ShopTimeLabel"
 mouse_filter = 2
 
-[node name="ItemLayer" type="Control" parent="PanelLayer"]
+[node name="ItemLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+offset_left = 145.0
+offset_top = 200.0
+offset_right = 815.0
+offset_bottom = 525.0
+clip_contents = true
 mouse_filter = 2
