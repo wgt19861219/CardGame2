@@ -1,0 +1,95 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_craft_getway_board.png" id="1_board"]
+
+; 获取途径行模板（批 1 Task 2，2026-08-15）。静态结构照源 stonedetail.lua createList
+; （:279-360 board/stage icon/title/elite/name）+ refreshGetwayLimit（:374-450 limit）；
+; builder（stone_detail_panel._build_one_getway）只定位行 + 填动态数据，禁建静态结构。
+; 坐标换算：board 逻辑 contentSize 311x67（y-up 原点左下）→ Godot 显示 242.7x52.3
+; （311x67 ÷ CS 1.28125，y-down 原点左上）：gx = x/CS，gy = 52.3 - y/CS。
+; 源行内锚点：icon (35,25) 中心 / title (65,35) anchor(0,0.5) / name (68,12) anchor(0,0.5)；
+; elite/limit 是 right2 动态定位项（跟在前驱右缘），默认隐藏由 fill 定位后显示。
+
+[node name="GetwayItem" type="Control"]
+layout_mode = 3
+offset_right = 242.7
+offset_bottom = 52.3
+mouse_filter = 0
+
+; board 底板（源 :279-291 equip_craft_getway_board，isCascadeOpacity）
+[node name="Board" type="TextureRect" parent="."]
+layout_mode = 3
+offset_right = 242.7
+offset_bottom = 52.3
+texture = ExtResource("1_board")
+expand_mode = 1
+mouse_filter = 2
+
+; stage 图标（源 :299-308 getStageIcon(id) at (35,25) 中心锚 fix_height=75）：
+; 中心 (27.3, 52.3-19.5=32.8) 四锚同点定位，显示高 75/CS=58.5；fill 按贴图等比重设对称 offsets。
+[node name="StageIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = -1
+anchor_left = 0.11253
+anchor_top = 0.62696
+anchor_right = 0.11253
+anchor_bottom = 0.62696
+offset_left = -32.3
+offset_top = -29.25
+offset_right = 32.3
+offset_bottom = 29.25
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+mouse_filter = 2
+
+; title（源 :309-324 "第X章" LSTR._CHAPTER__D size18 ccc3(182,65,21) at (65,35)）：
+; 左端 65/CS=50.7，中心 y 52.3-35/CS=25.0
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 50.7
+offset_top = 12.5
+offset_right = 174.7
+offset_bottom = 37.5
+theme_type_variation = &"StoneDetailBoardLabel"
+mouse_filter = 2
+
+; elite（源 :325-344 "精英" size18 ccc3(255,0,0) right2 title offset=6）：right2 动态定位
+[node name="EliteLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 180.0
+offset_top = 12.5
+offset_right = 210.0
+offset_bottom = 37.5
+theme_type_variation = &"StoneDetailEliteLabel"
+mouse_filter = 2
+text = "精英"
+
+; name（源 :345-360 Stage Name size18 ccc3(182,65,21) at (68,12) max_width=160）：
+; 左端 68/CS=53.1，中心 y 52.3-12/CS=42.9（title 上行 name 下行，源 y-up 翻转）
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 53.1
+offset_top = 30.4
+offset_right = 213.1
+offset_bottom = 55.4
+theme_type_variation = &"StoneDetailBoardLabel"
+mouse_filter = 2
+
+; limit（源 refreshGetwayLimit :374-450 "(count/limit)" 或 "（未开放）" size16 ec/nc，
+; right2 elite）：right2 动态定位；色 ec 棕走 variation，红态 fill font_color override
+[node name="LimitLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 215.0
+offset_top = 12.5
+offset_right = 242.7
+offset_bottom = 37.5
+theme_type_variation = &"StoneAmountLabel"
+mouse_filter = 2

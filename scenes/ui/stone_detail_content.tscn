@@ -1,11 +1,18 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Texture2D" uid="uid://d22pnaaje7gwc" path="res://assets/ui/alpha/HVGA/fragment_compose_bg.png" id="1_bg"]
-[ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
-[ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="3_closep"]
-[ext_resource type="Texture2D" uid="uid://dnvf7mnrt2p2i" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="4_okn"]
-[ext_resource type="Texture2D" uid="uid://gy856ao3m0in" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="5_oknp"]
-[ext_resource type="Texture2D" uid="uid://cvyb6adggywt1" path="res://assets/ui/alpha/HVGA/equip_craft_getway_board.png" id="6_board"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/fragment_compose_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="4_okn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="5_oknp"]
+
+; stone_detail 两件套静态树（批 1 Task 2，2026-08-15）。框架照源 stonedetail.lua create
+; （:479-618）直译：frame(fragment_compose_bg)/name/close/ok + infoContainer 内标签层；
+; 获取途径行模板另立 stone_detail_getway_item.tscn（动态数据行走行模板 instantiate）。
+; 蒙层不进 tscn：PopWindow 基类 shade_layer 同源 mainLayer ccc4(0,0,0,150)。
+; 坐标换算：cocos(800x480 左下) → godot(960x640 左上)；infoContainer 源 (400,242)
+; size(285,388) anchor(0.5,0.5) → 全屏原点 (337.5,512)，子节点 local(cx,cy) →
+; 全屏 (337.5+cx, 512-cy)；贴图显示尺寸 = 纹理像素 ÷ CS(1.28125)。
 
 [node name="StoneDetailContent" type="Control"]
 layout_mode = 3
@@ -14,6 +21,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; frame 底板（源 :500-509 fragment_compose_bg at (400,242) 中心锚）：
+; 显示 288x385 = 369x493 ÷ CS，rect (336,126)-(624,511)
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
 offset_left = 336.0
@@ -24,6 +33,9 @@ texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
+; 关闭按钮（源 :532-555 close at (290,358) 中心锚 + close_press）：
+; 中心 _g(290,358)=(627.5,154)，显示 51x51 = 65x66 ÷ CS；双态 TextureButton
+; （批 1 Task 2 修正：按下态原误用 ok 按钮贴图 detail-pressed-n，照源改 close-p）
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -35,6 +47,8 @@ texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
 
+; 英雄名（源 :518-531 name size18 ccc3(184,6,6) at (142,350) 中心锚）：
+; 中心 _g(142,350)=(479.5,162)，静态色/字号走 StoneDetailNameLabel variation
 [node name="NameLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -42,20 +56,25 @@ offset_left = 380.0
 offset_top = 151.0
 offset_right = 580.0
 offset_bottom = 173.0
-theme_override_colors/font_color = Color(0.721569, 0.0235294, 0.0235294, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"StoneDetailNameLabel"
+mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
 
+; 碎片图标挂点（源 createIcon :147-175 readequip.createIcon(sid) at (60,290) 中心锚）：
+; 动态数据（品质框+数量角标随 player 数据）保留 builder 挂 host，零尺寸点定位
 [node name="StoneIconHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = -1
+anchor_left = 0.41406
+anchor_top = 0.34688
+anchor_right = 0.41406
+anchor_bottom = 0.34688
 mouse_filter = 2
 
+; 获得途径标题（源 :157-174 gw_title size20 ccc3(155,34,14) at (100,300) anchor(0,0.5)）：
+; 左端 437.5、中心 y 212；静态色/字号走 StoneDetailWayTitleLabel variation
 [node name="WayTitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -63,10 +82,12 @@ offset_left = 437.5
 offset_top = 201.0
 offset_right = 580.0
 offset_bottom = 223.0
-theme_override_colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"StoneDetailWayTitleLabel"
 mouse_filter = 2
 
+; 拥有量/需求三段（源 createStoneAmount :82-145 size16 ccc3 ec(169,91,28)/nc(226,18,18)，
+; pre at (100,275) anchor(0,0.5) + amount/need right2 右缘相接）：fill 按 right2 链重排 x
+; 并以 font_color override 切红/棕（源直设颜色，非乘法 modulate）
 [node name="AmountLParen" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -98,14 +119,21 @@ offset_bottom = 248.0
 theme_type_variation = &"StoneAmountLabel"
 mouse_filter = 2
 
-[node name="GetwayHost" type="Control" parent="."]
+; 获取途径裁剪层（源 createListLayer :238-251 draglist cliprect CCRectMake(0,85,800,165)
+; infoContainer 局部，noshade）→ 全屏 (337.5,262)-(622.5,427)：水平取面板宽 285
+; （源宽 800=不裁水平），垂直照源 165 高；行模板实例挂本层（局部 y = 全屏 y - 262）
+[node name="GetwayClip" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+offset_left = 337.5
+offset_top = 262.0
+offset_right = 622.5
+offset_bottom = 427.0
+clip_contents = true
 mouse_filter = 2
 
+; 空掉落提示（源 createEmptyPrompt :452-478 size18 ccc3(109,62,0) at (142,180) 中心锚
+; dimension 240x0 自动换行）：中心 _g(142,180)=(479.5,332)，宽 240，autowrap 照源
 [node name="EmptyPromptLabel" type="Label" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -114,12 +142,15 @@ offset_left = 359.5
 offset_top = 314.0
 offset_right = 599.5
 offset_bottom = 350.0
-theme_override_colors/font_color = Color(0.427451, 0.243137, 0, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"StoneDetailEmptyLabel"
+mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
+autowrap_mode = 3
 
+; 返回按钮（源 :556-600 ok Scale9 herodetail-detail-n cap(15,15,138,19) scaleSize 200x49
+; at (142,43) 中心锚 + ok_label "返回" fontinfo ui_normal_button）：
+; rect (379.5,444.5)-(579.5,493.5)；Scale9 三态+字号 17+阴影走 StoneDetailOkButton variation
 [node name="OkBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -127,4 +158,6 @@ offset_left = 379.5
 offset_top = 444.5
 offset_right = 579.5
 offset_bottom = 493.5
+theme_type_variation = &"StoneDetailOkButton"
 mouse_filter = 0
+text = "返回"

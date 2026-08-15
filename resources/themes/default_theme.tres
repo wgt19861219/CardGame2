@@ -211,3 +211,37 @@ ExerciseEntryButton/styles/hover = SubResource("SB_comment")
 ExerciseEntryButton/styles/pressed = SubResource("SB_comment")
 ExerciseEntryButton/styles/disabled = SubResource("SB_comment")
 ExerciseEntryButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── stone_detail 两件套（批 1 Task 2，2026-08-15）──
+; 英雄名（源 stonedetail.lua:518-531 size18 ccc3(184,6,6)）
+StoneDetailNameLabel/base_type = &"Label"
+StoneDetailNameLabel/colors/font_color = Color(0.721569, 0.023529, 0.023529, 1)
+StoneDetailNameLabel/font_sizes/font_size = 18
+; 获得途径标题（源 :157-174 size20 ccc3(155,34,14)）
+StoneDetailWayTitleLabel/base_type = &"Label"
+StoneDetailWayTitleLabel/colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
+StoneDetailWayTitleLabel/font_sizes/font_size = 20
+; 空掉落提示（源 :452-478 size18 ccc3(109,62,0)）
+StoneDetailEmptyLabel/base_type = &"Label"
+StoneDetailEmptyLabel/colors/font_color = Color(0.427451, 0.243137, 0, 1)
+StoneDetailEmptyLabel/font_sizes/font_size = 18
+; 获取途径行 title/name（源 :309-360 size18 ccc3(182,65,21)）
+StoneDetailBoardLabel/base_type = &"Label"
+StoneDetailBoardLabel/colors/font_color = Color(0.713725, 0.254902, 0.082353, 1)
+StoneDetailBoardLabel/font_sizes/font_size = 18
+; 获取途径行精英标（源 :325-344 size18 ccc3(255,0,0)）
+StoneDetailEliteLabel/base_type = &"Label"
+StoneDetailEliteLabel/colors/font_color = Color(1, 0, 0, 1)
+StoneDetailEliteLabel/font_sizes/font_size = 18
+; 返回按钮（源 :556-600 ok Scale9 herodetail-detail-n cap(15,15,138,19) → 复用
+; SB_detail_n/SB_detail_p 同贴图同 cap + ok_label fontinfo ui_normal_button
+; 17 号白字 + 阴影(63,5,0) 偏移(0,2)）
+StoneDetailOkButton/base_type = &"Button"
+StoneDetailOkButton/colors/font_color = Color(1, 1, 1, 1)
+StoneDetailOkButton/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+StoneDetailOkButton/constants/shadow_offset_x = 0
+StoneDetailOkButton/constants/shadow_offset_y = 2
+StoneDetailOkButton/font_sizes/font_size = 17
+StoneDetailOkButton/styles/normal = SubResource("SB_detail_n")
+StoneDetailOkButton/styles/hover = SubResource("SB_detail_n")
+StoneDetailOkButton/styles/pressed = SubResource("SB_detail_p")
+StoneDetailOkButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
