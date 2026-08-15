@@ -78,19 +78,21 @@
 
 按用途三轨、每轨唯一绑定方式（基线 76 tscn = 69 + 4 + 3）：**A** content 底板无脚本（builder instantiate + fill，主体范式）｜**B** 战斗完整场景绑远端 `scripts/view/battle/*.gd`（4 个）｜**C** 入口场景绑同目录本地脚本（3 个，固定不再增）。禁 content tscn 绑脚本；panel 脚本归位 battle 专属进 `scripts/view/battle/`、跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui）；`scenes/` 只放 tscn 资产与入口脚本。详见 AGENTS.md 同名节。
 
-### UI 子场景 .tscn 范式（2026-07-17 hero_detail 首立，位置/size 编辑器可视化调）
+### UI 两件套范式 SOP（2026-08-15 试点 shop+hero_detail 定稿，取代 2026-07-17 三件套范式）
 
-procedural UI（动态建节点 + 硬编码坐标）反复试错（坐标试 4 轮、size 试 3 轮）时，把位置/size 静态化进 `.tscn` 子场景，Godot 编辑器 2D 视图可视化调：
+每个功能 panel = **完整静态 `*_content.tscn`（无脚本）+ `*_panel.gd`（业务+信号+fill）** 两个文件；builder 层退役（`scripts/ui/` 下 `_builder.gd` 随批次消亡，试点前 10 个→9 个）。位置/贴图/字号全进 tscn+theme，编辑器所见即所得，调布局只动 tscn 一个文件。
 
-- **instantiate + fill**：panel `preload(.tscn).instantiate()` + `container.add_child` + `get_node("%...")` 取节点；builder `fill_*` 往节点填动态数据（texture/text/visible），**位置/size 留 .tscn 固化**（用户编辑器拖 offset 调，Ctrl+S 持久化）。
-- **Scale9 按钮**：.tscn 普通 `Button`（位置可视化），builder 运行时套 `StyleBoxTexture`（`_apply_detail_style`/`set_tab_selected`）补九宫格图保视觉等价（勿建无图普通 Button 致降级）。
-- **unique_name_in_owner**：被 `get_node("%Name")` 引用的节点必须开；**同名节点不能都开**（scene 内 unique name 须唯一，冲突致 engine warning → GUT 报失败）。静态背景节点（不被代码引用）不开。
-- **visible 切换**（多 tab 内容）：tab view 常驻 .tscn，`_tab_views[k].visible = (k==key)` 切换，不再 free+重建；动态内容 fill 一次到各 host（`%XxxHost`），切 tab 只切 visible。
-- **strict 类型**：`instantiate()`/`get_node()` 返回 Node，赋 Control/Label/Dictionary 字段必须 `as`（strict 编译报）。
-- **测试扫描深度**：.tscn instantiate 多一层 content（container→content→%BaseLayer→节点），扫 base/tab 子树改递归（`_count_meta_recursive`/`_count_if_recursive`）；扫特定 view 用 `_tab_views[k]` 锚定避开其他层（如 portrait FCA 的 Sprite2D）。测试用公共字段/Logic 层时不需改（如 ranklist 只测 RanklistManager）。
-- **.tscn 禁 `#` 注释**：tscn 格式不支持 `#`（报 `Parse Error: Expected '['`），注释用 `;`，但样板无注释照删不补。
-- **子组件保留 procedural 挂 host**：panel 层静态化进 .tscn，子组件（att/material/tree/box 等）保留 procedural 挂 `%XxxHost`（pos=0,0 保持子组件局部坐标系不变），后续可单独静态化。
-- **带 size rect 坐标照源翻译**（avatar 第六批坑）：procedural 代码里 `_g(cx,cy)` 对带 size 的 rect 节点（ScrollContainer 等）漏减 size.y 是**翻译 bug**非源逻辑，静态化时照源 `CCRect` 正确翻译——Cocos `CCRect(x,y,w,h)` 的 (x,y) 是**左下角**（左下原点），转 Godot（左上原点）左上角 `offset_top = 560-(cy+h)`、底边 `560-cy`，**勿把 `560-cy`（底边）当 offset_top**。子代理易照搬 procedural 的错误坐标值，须读源 rect 重算（avatar ScrollContainer / package 同类坑，主代理 merge 后补修）。
+- **content tscn**：完整静态节点树。被引用节点开 `unique_name_in_owner`（同名节点不能都开）；静态背景节点不开；`.tscn` 禁 `#` 注释用 `;`；ext_resource 不写 uid。
+- **panel.gd**：只做业务、信号 connect、fill（`get_node("%Xxx")` 取节点填动态数据）。fill 并入后逼近 View 550 行门槛时，fill 函数下沉独立 fills helper（如 `hero_detail_fills.gd`：纯数据绑定，禁建静态节点/禁样式 override）。
+- **动态行**（商品格/邮件行/任务行）：行模板 `*_item.tscn`（行内静态结构模板化）+ 轻量 `*_row_builder.gd`（只定位行+填数据+徽标切换，禁建静态结构）。
+- **theme 优先**：字号/颜色/描边走 `theme_type_variation`（`resources/themes/default_theme.tres`，试点后 41 个 variation）；按钮 Scale9 样式走 Button variation（normal/hover/pressed 三态入 theme），**禁**运行时 `add_theme_stylebox_override` 套样式（滚动条等 Godot 引擎缺口例外）。
+- **坐标照源直译**（Cocos 800×480 左下原点 → Godot 960×640 左上）：`to_godot(x,y)=(x+80, 560-y)`；带尺寸 `CCRect(x,y,w,h)` 左下角 → `offset_top=560-(cy+h)`；**贴图显示尺寸=纹理÷CS(1.28125)**，勿用原始像素。
+- **坐标系三坑（Task 5 三轮修复教训，全批次必查）**：① 源里元素坐标多为**场景空间**（含 draglist 子层），塞进面板局部空间必须减面板/裁剪层原点（shop 商品行曾整体偏移一个面板原点）；② 源 `createNode` 元素默认锚点 **(0.5,0.5)=中心**，tscn 中心定位用四锚同点+grow both（单侧锚点写法会钉死左上）；③ 可滚动列表源用 cliprect 裁剪 → Godot 用场景级裁剪层（`clip_contents=true`，rect=源 cliprect 的 to_godot 映射）。
+- **迁移发明元素要甄别**：源里没有的 UI（如 shop 的常驻花费标签/面板内货币行）删（受控裁剪，记录进验收记录），别当资产保留。
+- **主题链红线**：临时预览/测试场景**根节点必须 Control**——Control 主题解析沿 Control 祖先上溯，普通 Node 断链 → 回落引擎默认灰样式（曾致预览误判"按钮灰扁平"）。
+- **visible 切换**（多 tab）：tab view 常驻 .tscn，`_tab_views[k].visible = (k==key)`；tab 选中态用 `theme_type_variation` 字符串切换（两 variation 方案，见 hero_detail）。
+- **strict 类型**：`instantiate()`/`get_node()` 返回 Node，赋具体类型必须 `as`。
+- **测试**：断言走 `%` 唯一名；tscn instantiate 多层扫描用递归；每 panel 改造配守卫测试（builder 退役 grep 断言/静态 rect 断言）。
 
 ## 开发协议
 
