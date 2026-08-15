@@ -48,7 +48,7 @@ theme_override_styles/panel = SubResource("sb_frame")
 
 ; 详情组（源 detail_container Layer 78.13x78.13 anchor(0,0) at (351.17,223.83)，
 ; create 后 setVisible(false) → fill 选中英雄后显示）
-[node name="DetailContainer" type="Control" parent="."]
+[node name="DetailContainer" type="Control" parent="Frame"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
@@ -60,7 +60,7 @@ mouse_filter = 2
 
 ; 详情标题条（源 task_title_bg fix_wh 506.25x34.38 中心 (80.47,189.84) Scale9
 ; cap(78.13,0,69.53,11.72) → patch_margin 直译，detail 局部 gy=78.13-189.84）
-[node name="TitleBg" type="NinePatchRect" parent="DetailContainer"]
+[node name="TitleBg" type="NinePatchRect" parent="Frame/DetailContainer"]
 layout_mode = 0
 offset_left = -172.66
 offset_top = -128.9
@@ -75,7 +75,7 @@ mouse_filter = 2
 
 ; 列表底板（源 list_bg equipupgrade_bottom_bg scaleSize 511.72x167.97 中心 (75,-67.97)
 ; Scale9 cap(14.06,15.63,640.63,136.72)，纹理 858x216 → gy=78.13+67.97）
-[node name="ListBg" type="NinePatchRect" parent="DetailContainer"]
+[node name="ListBg" type="NinePatchRect" parent="Frame/DetailContainer"]
 layout_mode = 0
 offset_left = -180.86
 offset_top = 62.11
@@ -89,7 +89,7 @@ patch_margin_bottom = 64
 mouse_filter = 2
 
 ; 分隔线（源 delimeter chat_delimeter fix_wh 455x2.34 中心 (74.22,68.75)）
-[node name="Delimeter" type="TextureRect" parent="DetailContainer"]
+[node name="Delimeter" type="TextureRect" parent="Frame/DetailContainer"]
 layout_mode = 0
 offset_left = -153.28
 offset_top = 8.21
@@ -100,7 +100,7 @@ expand_mode = 1
 mouse_filter = 2
 
 ; 详情标题（源 title_label size23 白 中心 (80.47,189.84)，text fill"分解详情"）
-[node name="TitleLabel" type="Label" parent="DetailContainer"]
+[node name="TitleLabel" type="Label" parent="Frame/DetailContainer"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = -19.53
@@ -115,7 +115,7 @@ text = "分解详情"
 
 ; 你将获得标签（源 title_2 size19 ccc3(57,44,36) anchor(0,0.5) at (-153.13,55.47)；
 ; title_1"你将失去："单机化无失去列表不入树）
-[node name="Title2" type="Label" parent="DetailContainer"]
+[node name="Title2" type="Label" parent="Frame/DetailContainer"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = -153.13
@@ -128,7 +128,7 @@ text = "你将获得："
 
 ; 分解按钮（源 split_button task_button scaleSize 128.91x49.22 中心 (264.06,-179.69)
 ; labelConfig(254,244,16) size22 → HeroSplitTaskButton，text fill"分解"）
-[node name="SplitBtn" type="Button" parent="DetailContainer"]
+[node name="SplitBtn" type="Button" parent="Frame/DetailContainer"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 199.61
@@ -140,7 +140,7 @@ text = "分解"
 
 ; 返还预览挂点（源 scrollview 返还列表区 cliprect DGRectMake(232,95,632,208)
 ; ×0.78125=(181.25,74.22,493.75,162.5) frame 局部 → detail 局部平移；碎片 icon fill）
-[node name="ReturnHost" type="Control" parent="DetailContainer"]
+[node name="ReturnHost" type="Control" parent="Frame/DetailContainer"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = -169.92
@@ -151,7 +151,7 @@ mouse_filter = 2
 
 ; 内联英雄网格（单机化迁移发明：源选英雄走 selectwindow 弹窗（不入树），网格
 ; 常驻承载选择交互；位置取源详情标题条下方"你将失去"列表区 frame 局部）
-[node name="HeroScroll" type="ScrollContainer" parent="."]
+[node name="HeroScroll" type="ScrollContainer" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 155.0
@@ -161,7 +161,7 @@ offset_bottom = 200.0
 mouse_filter = 1
 horizontal_scroll_mode = 0
 
-[node name="GridHost" type="GridContainer" parent="HeroScroll"]
+[node name="GridHost" type="GridContainer" parent="Frame/HeroScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -172,7 +172,7 @@ mouse_filter = 2
 
 ; 说明按钮（源 explain_button sell_number scaleSize 128.13x53.13 中心 (83.98,44.14)
 ; labelConfig(234,225,205) size22 → HeroSplitSellButton，text fill"详细规则"）
-[node name="ExplainBtn" type="Button" parent="."]
+[node name="ExplainBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 19.92
@@ -184,7 +184,7 @@ text = "详细规则"
 
 ; 关闭按钮（源 close_button fix_wh 57.81x58.59 中心 (679.3,419.92) → gy=447.66-419.92，
 ; 顶缘 -1.56 骑 frame 顶边照源原生）
-[node name="CloseBtn" type="TextureButton" parent="."]
+[node name="CloseBtn" type="TextureButton" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 650.4

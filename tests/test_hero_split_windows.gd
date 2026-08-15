@@ -57,6 +57,25 @@ func test_window_layout_follows_source() -> void:
 	assert_almost_eq(detail.offset_left, 351.17, 0.5, "detail 容器左=源 Layer pos x")
 	assert_almost_eq(detail.offset_bottom, 223.83, 0.5, "detail 容器底=源 Layer pos y（y 翻转）")
 	assert_almost_eq(detail.offset_right - detail.offset_left, 78.13, 0.5, "detail 容器宽=源 scaleSize 78.13")
+	# 审查修复守卫（2026-08-15 Critical）：close/explain/detail/hero_scroll 4 节点曾误挂
+	# root，offset 是 frame 局部值 → 整体位移 frame 原点 (131.17,95.54)——close 落屏幕
+	# 顶缘、explain 探出 frame 左界 111px。offset 比对只验算术，补 global 级断言验布局。
+	assert_eq(close.get_parent(), frame, "close 挂 Frame（防 parenting 回归）")
+	assert_eq(explain.get_parent(), frame, "explain 挂 Frame（防 parenting 回归）")
+	assert_eq(detail.get_parent(), frame, "detail 挂 Frame（防 parenting 回归）")
+	var hero_scroll: ScrollContainer = inst.get_node("%HeroScroll") as ScrollContainer
+	assert_eq(hero_scroll.get_parent(), frame, "hero_scroll 挂 Frame（防 parenting 回归）")
+	assert_almost_eq(frame.global_position.x, 131.17, 0.5, "frame 全局左=131.17")
+	assert_almost_eq(frame.global_position.y, 95.54, 0.5, "frame 全局顶=95.54")
+	assert_almost_eq(close.global_position.y, 95.54 - 1.56, 0.5, "close 全局顶=frame 顶-1.56（骑 frame 顶边照源）")
+	assert_almost_eq(close.global_position.x, 131.17 + 650.4, 0.5, "close 全局左=frame 左+650.4")
+	assert_true(explain.global_position.x > frame.global_position.x, "explain 全局左在 frame 左界内（误挂 root 时探出 111px）")
+	assert_almost_eq(detail.global_position.x, 131.17 + 351.17, 0.5, "detail 全局左=frame 左+351.17")
+	assert_almost_eq(frame.get_global_rect().end.y - detail.get_global_rect().end.y, 223.83, 0.5,
+		"detail 全局底=frame 底-223.83（源 Layer anchor(0,0) at y-up 223.83）")
+	assert_true(frame.get_global_rect().encloses(detail.get_global_rect()), "detail 容器整体在 frame 内")
+	assert_almost_eq(hero_scroll.global_position.x, 131.17 + 155.0, 0.5, "hero_scroll 全局左=frame 左+155")
+	assert_almost_eq(hero_scroll.global_position.y, 95.54 + 60.0, 0.5, "hero_scroll 全局顶=frame 顶+60")
 
 
 # DetailContainer 内照源（detail 局部坐标，容器高 78.13 → gy=78.13-y）：
@@ -88,6 +107,17 @@ func test_window_detail_layout_follows_source() -> void:
 	assert_almost_eq((split.offset_top + split.offset_bottom) / 2.0, 78.13 + 179.69, 0.5,
 		"分解按钮中心 y=78.13+179.69（源 y=-179.69 越界挂载）")
 	assert_almost_eq(split.offset_right - split.offset_left, 128.91, 0.5, "分解按钮宽=源 scaleSize 128.91")
+	# 审查修复守卫（2026-08-15 Important）：detail 子树随 DetailContainer 挂 Frame 后的
+	# global 级验证——子节点全局位置 = frame 原点 + detail 局部（防 parenting 回归连带偏移）。
+	assert_almost_eq(detail.global_position.x, 131.17 + 351.17, 0.5, "detail 全局左=frame 内 351.17")
+	assert_almost_eq(title_bg.global_position.x - detail.global_position.x, -172.66, 0.5,
+		"title_bg 全局=detail 局部 -172.66（源负坐标）")
+	assert_almost_eq(title_bg.global_position.y - detail.global_position.y, -128.9, 0.5,
+		"title_bg 全局=detail 局部 -128.9（detail 局部 gy=78.13-189.84 顶缘）")
+	assert_almost_eq(split.global_position.x - detail.global_position.x, 199.61, 0.5,
+		"分解按钮全局=detail 局部 199.61")
+	assert_almost_eq(split.global_position.y - detail.global_position.y, 233.2, 0.5,
+		"分解按钮全局=detail 局部 233.2（源 y=-179.69 越界挂载）")
 
 
 # Scale9 九宫格 capInsets（纹理像素）→ NinePatchRect patch_margin 直译。
