@@ -1,7 +1,21 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_title_bg.png" id="3_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_bottom_bg.png" id="4_listbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/chat/chat_delimeter.png" id="5_delimeter"]
+
+; hero_split 分解窗口两件套静态树（批 1 Task 8，2026-08-15）。框架照源
+; uieditor/herosplit.lua 声明表（ed.editorui root=裸 Layer 场景空间）直译：
+; frame fix_wh(702.34x447.66) 中心 (402.34,240.63)（hero_resolve_frame.png 源项目
+; 缺贴图 → StyleBoxFlat 降级，rect 照源）→ 全屏 (131.17,95.54)-(833.51,543.20)。
+; frame 子节点 = frame 显示矩形局部空间（原点左下角 y-up，Task 6 坑#1 口径）
+; → Godot Frame 容器内 (x, 447.66-y)；DetailContainer 照源 Layer 78.13x78.13
+; anchor(0,0) at (351.17,223.83)（=frame 中心），子节点照源负坐标越界直译。
+; 单机化裁剪不入树（equip_strengthen select_hero 组同款决策）：select_hero/
+; select_stone 按钮组 + convert_arrow（选英雄内联网格替代）、gold row、
+; head/name 挂点（网格 cell 承担）。fill 见 hero_split_window.gd。
 
 [sub_resource type="StyleBoxFlat" id="sb_frame"]
 bg_color = Color(0.12, 0.1, 0.08, 0.96)
@@ -22,102 +36,161 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 框（源 frame fix_wh 702.34x447.66 中心 (402.34,240.63)，贴图缺失 StyleBox 降级）
 [node name="Frame" type="Panel" parent="."]
 layout_mode = 0
-offset_left = 131.0
-offset_top = 96.0
-offset_right = 833.0
-offset_bottom = 543.0
+offset_left = 131.17
+offset_top = 95.54
+offset_right = 833.51
+offset_bottom = 543.2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("sb_frame")
 
-[node name="TitleLabel" type="Label" parent="Frame"]
+; 详情组（源 detail_container Layer 78.13x78.13 anchor(0,0) at (351.17,223.83)，
+; create 后 setVisible(false) → fill 选中英雄后显示）
+[node name="DetailContainer" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
 layout_mode = 0
-offset_left = 421.0
-offset_top = 110.0
-offset_right = 543.0
-offset_bottom = 138.0
+offset_left = 351.17
+offset_top = 145.7
+offset_right = 429.3
+offset_bottom = 223.83
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.89, 0.52, 1)
-theme_override_font_sizes/font_size = 22
-text = "分解英雄"
-horizontal_alignment = 1
 
-[node name="CloseBtn" type="TextureButton" parent="Frame"]
+; 详情标题条（源 task_title_bg fix_wh 506.25x34.38 中心 (80.47,189.84) Scale9
+; cap(78.13,0,69.53,11.72) → patch_margin 直译，detail 局部 gy=78.13-189.84）
+[node name="TitleBg" type="NinePatchRect" parent="DetailContainer"]
+layout_mode = 0
+offset_left = -172.66
+offset_top = -128.9
+offset_right = 333.59
+offset_bottom = -94.52
+texture = ExtResource("3_titlebg")
+patch_margin_left = 78
+patch_margin_top = 0
+patch_margin_right = 141
+patch_margin_bottom = 3
+mouse_filter = 2
+
+; 列表底板（源 list_bg equipupgrade_bottom_bg scaleSize 511.72x167.97 中心 (75,-67.97)
+; Scale9 cap(14.06,15.63,640.63,136.72)，纹理 858x216 → gy=78.13+67.97）
+[node name="ListBg" type="NinePatchRect" parent="DetailContainer"]
+layout_mode = 0
+offset_left = -180.86
+offset_top = 62.11
+offset_right = 330.86
+offset_bottom = 230.08
+texture = ExtResource("4_listbg")
+patch_margin_left = 14
+patch_margin_top = 16
+patch_margin_right = 203
+patch_margin_bottom = 64
+mouse_filter = 2
+
+; 分隔线（源 delimeter chat_delimeter fix_wh 455x2.34 中心 (74.22,68.75)）
+[node name="Delimeter" type="TextureRect" parent="DetailContainer"]
+layout_mode = 0
+offset_left = -153.28
+offset_top = 8.21
+offset_right = 301.72
+offset_bottom = 10.55
+texture = ExtResource("5_delimeter")
+expand_mode = 1
+mouse_filter = 2
+
+; 详情标题（源 title_label size23 白 中心 (80.47,189.84)，text fill"分解详情"）
+[node name="TitleLabel" type="Label" parent="DetailContainer"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 762.0
-offset_top = 100.0
-offset_right = 818.0
-offset_bottom = 156.0
-texture_normal = ExtResource("1_close")
-texture_pressed = ExtResource("2_closep")
-ignore_texture_size = true
-stretch_mode = 1
+offset_left = -19.53
+offset_top = -127.71
+offset_right = 180.47
+offset_bottom = -95.71
+theme_type_variation = &"HeroSplitTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "分解详情"
 
-[node name="HeroScroll" type="ScrollContainer" parent="Frame"]
+; 你将获得标签（源 title_2 size19 ccc3(57,44,36) anchor(0,0.5) at (-153.13,55.47)；
+; title_1"你将失去："单机化无失去列表不入树）
+[node name="Title2" type="Label" parent="DetailContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -153.13
+offset_top = 9.66
+offset_right = -33.13
+offset_bottom = 35.66
+theme_type_variation = &"HeroSplitSectionLabel"
+mouse_filter = 2
+text = "你将获得："
+
+; 分解按钮（源 split_button task_button scaleSize 128.91x49.22 中心 (264.06,-179.69)
+; labelConfig(254,244,16) size22 → HeroSplitTaskButton，text fill"分解"）
+[node name="SplitBtn" type="Button" parent="DetailContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 199.61
+offset_top = 233.2
+offset_right = 328.52
+offset_bottom = 282.42
+theme_type_variation = &"HeroSplitTaskButton"
+text = "分解"
+
+; 返还预览挂点（源 scrollview 返还列表区 cliprect DGRectMake(232,95,632,208)
+; ×0.78125=(181.25,74.22,493.75,162.5) frame 局部 → detail 局部平移；碎片 icon fill）
+[node name="ReturnHost" type="Control" parent="DetailContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -169.92
+offset_top = 65.24
+offset_right = 323.83
+offset_bottom = 227.74
+mouse_filter = 2
+
+; 内联英雄网格（单机化迁移发明：源选英雄走 selectwindow 弹窗（不入树），网格
+; 常驻承载选择交互；位置取源详情标题条下方"你将失去"列表区 frame 局部）
+[node name="HeroScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 155.0
-offset_top = 150.0
-offset_right = 600.0
-offset_bottom = 390.0
+offset_top = 60.0
+offset_right = 705.0
+offset_bottom = 200.0
+mouse_filter = 1
+horizontal_scroll_mode = 0
 
-[node name="GridHost" type="GridContainer" parent="Frame/HeroScroll"]
+[node name="GridHost" type="GridContainer" parent="HeroScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 4
-
-[node name="DetailTitleLabel" type="Label" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 165.0
-offset_top = 398.0
-offset_right = 365.0
-offset_bottom = 424.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.89, 0.52, 1)
-theme_override_font_sizes/font_size = 20
-text = "分解详情"
-
-[node name="GainLabel" type="Label" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 165.0
-offset_top = 430.0
-offset_right = 365.0
-offset_bottom = 456.0
-mouse_filter = 2
-theme_override_font_sizes/font_size = 18
-text = "你将获得："
-
-[node name="ReturnHost" type="Control" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 345.0
-offset_top = 410.0
-offset_right = 600.0
-offset_bottom = 530.0
 mouse_filter = 2
 
-[node name="ExplainBtn" type="Button" parent="Frame"]
+; 说明按钮（源 explain_button sell_number scaleSize 128.13x53.13 中心 (83.98,44.14)
+; labelConfig(234,225,205) size22 → HeroSplitSellButton，text fill"详细规则"）
+[node name="ExplainBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 150.0
-offset_top = 470.0
-offset_right = 290.0
-offset_bottom = 525.0
+offset_left = 19.92
+offset_top = 376.96
+offset_right = 148.05
+offset_bottom = 430.09
+theme_type_variation = &"HeroSplitSellButton"
 text = "详细规则"
 
-[node name="SplitBtn" type="Button" parent="Frame"]
+; 关闭按钮（源 close_button fix_wh 57.81x58.59 中心 (679.3,419.92) → gy=447.66-419.92，
+; 顶缘 -1.56 骑 frame 顶边照源原生）
+[node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 670.0
-offset_top = 470.0
-offset_right = 810.0
-offset_bottom = 525.0
-text = "分解"
-disabled = true
+offset_left = 650.4
+offset_top = -1.56
+offset_right = 708.2
+offset_bottom = 57.03
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true

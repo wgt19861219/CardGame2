@@ -1,4 +1,20 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_alert_bg.png" id="1_alert"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-title-mark.png" id="2_titlemark"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="4_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/player_levelup_arrow.png" id="5_arrow"]
+
+; hero_split 分解确认两件套静态树（批 1 Task 8，2026-08-15）。框架照源
+; uieditor/herosplitconfirm.lua 声明表（splitconfirm 二次确认窗）直译：
+; frame common_alert_bg Scale9 scaleSize 462.5x329.69 中心 (403.13,233.59)
+; cap(58.59,85.94,339.84,15.63)（纹理 593x252）→ 全屏 (251.88,161.57)-(714.38,491.26)；
+; 子节点 frame 局部空间（原点左下角 y-up）→ Godot (x, 329.69-y)。
+; icon 挂点/文字行照源 confirm.lua initWindow（DGccp ×0.78125 → 显示空间）。
+; 单机化：firstConfirm 的 popConfirmDialog 环节并入本窗（一次确认），文字行
+; 常驻 tscn 由 fill 填 name。迁移发明的 CancelBtn 删（源 splitconfirm 无取消）。
+; fill 见 hero_split_confirm.gd。
 
 [node name="HeroSplitConfirmContent" type="Control"]
 layout_mode = 3
@@ -15,38 +31,127 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0.5)
 
-[node name="Frame" type="Panel" parent="."]
-layout_mode = 3
-offset_left = 330.0
-offset_top = 250.0
-offset_right = 630.0
-offset_bottom = 380.0
+; 框（源 frame Scale9 common_alert_bg 462.5x329.69 中心 (403.13,233.59)）
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 251.88
+offset_top = 161.57
+offset_right = 714.38
+offset_bottom = 491.26
+texture = ExtResource("1_alert")
+patch_margin_left = 59
+patch_margin_top = 86
+patch_margin_right = 195
+patch_margin_bottom = 150
 mouse_filter = 2
 
-[node name="MsgLabel" type="Label" parent="Frame"]
+; 标题条（源 title_bg herodetail-title-mark Scale9 359.38x11.72 中心 (229.69,288.28)
+; cap(78.13,0,69.53,11.72)（纹理 289x15）→ gy=329.69-288.28）
+[node name="TitleBg" type="NinePatchRect" parent="Frame"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 35.55
+offset_right = 409.38
+offset_bottom = 47.27
+texture = ExtResource("2_titlemark")
+patch_margin_left = 78
+patch_margin_top = 0
+patch_margin_right = 141
+patch_margin_bottom = 3
+mouse_filter = 2
+
+; 标题（源 title size22 ccc3(255,222,16) 中心 (231.25,289.06)，text fill"分解提醒"）
+[node name="TitleLabel" type="Label" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 25.0
-offset_right = 300.0
-offset_bottom = 55.0
+layout_mode = 0
+offset_left = 131.25
+offset_top = 25.63
+offset_right = 331.25
+offset_bottom = 55.63
+theme_type_variation = &"HeroSplitConfirmTitleLabel"
+mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "确认分解该英雄？"
+text = "分解提醒"
 
-[node name="CancelBtn" type="Button" parent="Frame"]
+; 警示行 1（源 ChaosNode 行 1 confirm.1.10.1.001 size20 ccc3(255,227,133)，
+; 块左上 DGccp(138,186)=(107.81,145.31) anchor(0,1) → gy=329.69-145.31）
+[node name="WarnLabel" type="Label" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 40.0
-offset_top = 75.0
-offset_right = 130.0
-offset_bottom = 110.0
+layout_mode = 0
+offset_left = 107.81
+offset_top = 184.38
+offset_right = 554.69
+offset_bottom = 212.38
+theme_type_variation = &"HeroSplitConfirmWarnLabel"
+mouse_filter = 2
+text = "分解英雄后无法撤消！！"
 
+; 确认行（源 ChaosNode 行 2 confirm.1.10.1.002 + name + "？"三段同排；
+; name 白色分色降级单色（受控偏离见任务报告），text fill）
+[node name="AskLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 107.81
+offset_top = 212.38
+offset_right = 554.69
+offset_bottom = 240.38
+theme_type_variation = &"HeroSplitConfirmWarnLabel"
+mouse_filter = 2
+text = "是否确认分解英雄"
+
+; 转化箭头（源 arrow player_levelup_arrow fix_wh 28.91x27.34 中心 (230.47,207.81)）
+[node name="Arrow" type="TextureRect" parent="Frame"]
+layout_mode = 0
+offset_left = 216.02
+offset_top = 108.21
+offset_right = 244.92
+offset_bottom = 135.55
+texture = ExtResource("5_arrow")
+expand_mode = 1
+mouse_filter = 2
+
+; 左 icon 挂点（源 initWindow icon DGccp(195,262)=(152.34,204.69) 当前态，
+; 零尺寸点 + fill 负半偏移居中挂 ReadheroIcon，fragment_compose 同款）
+[node name="IconHostL" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 152.34
+offset_top = 125.0
+offset_right = 152.34
+offset_bottom = 125.0
+mouse_filter = 2
+
+; 右 icon 挂点（源 icon DGccp(400,262)=(312.5,204.69) 分解后初始态 rank1/星/级1）
+[node name="IconHostR" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 312.5
+offset_top = 125.0
+offset_right = 312.5
+offset_bottom = 125.0
+mouse_filter = 2
+
+; 确认按钮（源 ok_button sell_number Scale9 118.75x52.34 中心 (231.25,50.78)
+; cap(14.06,15.63,15.63,17.19) labelConfig 白 size22 → HeroSplitConfirmOkButton）
 [node name="OkBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 170.0
-offset_top = 75.0
-offset_right = 260.0
-offset_bottom = 110.0
+layout_mode = 0
+offset_left = 171.88
+offset_top = 252.74
+offset_right = 290.63
+offset_bottom = 305.08
+theme_type_variation = &"HeroSplitConfirmOkButton"
+text = "确认"
+
+; 关闭按钮（源 close_button fix_wh 49.22x52.34 中心 (430.47,294.53) → gy=329.69-294.53）
+[node name="CloseBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 405.86
+offset_top = 8.99
+offset_right = 455.08
+offset_bottom = 61.33
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true

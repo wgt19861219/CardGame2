@@ -1,35 +1,30 @@
 class_name HeroSplitWindow
 extends PopWindow
 
-## 英雄分解主窗口（View 层）— 务实方案（2026-07-19）。
-## ① 选英雄不弹通用 selectwindow（目标侧缺失基建），改 HeroScroll 内联可分解英雄网格（Control cell 包 ReadheroIcon）
-## ② 选碎片环节跳过（源联机 split_return 在 local_server 空壳；hero_manager.split 固定返还 Convert Fragments 专属碎片）
-## ③ 联机 split_data/split_return/split_hero → 本地 hero_manager.preview_split/split
-## frame 背景 hero_resolve_frame.png 源项目缺 → 降级 Panel + StyleBoxFlat。
-## 流程：选英雄 → 显示返还碎片预览 → 分解按钮 → HeroSplitConfirm 二次确认（补 name）→ split → toast + 刷新。
+## 英雄分解主窗口（View 层）— 两件套范式（批 1 Task 8，2026-08-15）。
+## 静态树在 hero_split_window_content.tscn（照源 uieditor/herosplit.lua 声明表直译，
+## 换算见 tscn 头注），本文件只做业务、信号 connect、fill。
+## 单机化决策（2026-07-19 既有 + 本批裁剪清单见任务报告）：
+## ① 选英雄不弹通用 selectwindow（基建缺失），改 HeroScroll 内联可分解英雄网格；
+## ② 选碎片环节跳过（源联机 split_return 空壳；hero_manager.split 固定返还专属碎片）；
+## ③ 详情组 visible 照源（未选隐藏 detail_container，选中显示）；
+## ④ frame 贴图 hero_resolve_frame.png 源项目缺 → StyleBoxFlat 降级（rect 照源）。
+## 流程：选英雄 → 详情组显示返还碎片预览 → 分解按钮 → HeroSplitConfirm（splitconfirm
+## 语义）确认 → split → toast + 刷新 + split_done。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_split_window_content.tscn")
 const HERO_CELL_SIZE: Vector2 = Vector2(104.0, 104.0)   # ReadheroIcon CONTAINER_SIZE（源 readhero.lua:326）
-# 按钮 Scale9（源 uieditor/herosplit：sell_number_button/task_button + capInsets 照源）。
-const BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
-const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
-const BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 19.53)
-const SPLIT_BTN_RES: String = "res://assets/ui/alpha/HVGA/task_button.png"
-const SPLIT_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/task_button_press.png"
-const SPLIT_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 39.06, 15.63)
-const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
+# 文本（源 LSTR key，运行时 cm.get_lstr 解析）
 const DETAIL_TITLE_KEY: String = "herosplit.1.10.1.003"
 const GAIN_KEY: String = "herosplit.1.10.1.005"
 const EXPLAIN_BTN_KEY: String = "herosplit.1.10.1.001"
 const SPLIT_BTN_KEY: String = "heropackage.1.10.1.001"
-const CONFIRM_MSG_KEY: String = "window.1.10.1.003"
 const PLEASE_HERO_KEY: String = "EQUIPSTRENGTHEN.PLEASE_SELECT_HERO"
 const SPLIT_DONE_KEY: String = "window.1.10.1.004"
 const DETAIL_TITLE_FALLBACK: String = "分解详情"
 const GAIN_FALLBACK: String = "你将获得："
 const EXPLAIN_BTN_FALLBACK: String = "详细规则"
 const SPLIT_BTN_FALLBACK: String = "分解"
-const CONFIRM_MSG_FALLBACK: String = "是否确认分解英雄%s？"
 const PLEASE_HERO_FALLBACK: String = "请选择英雄"
 const SPLIT_DONE_FALLBACK: String = "分解成功"
 
@@ -39,9 +34,11 @@ var cm: Variant = null
 var pd: PlayerData = null
 var _hero_mgr: HeroManager = null
 var _selected: HeroInstance = null
+var _content: Control = null
 var _grid: GridContainer = null
 var _return_host: Control = null
 var _split_btn: Button = null
+var _detail: Control = null
 
 
 func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData = null) -> void:
@@ -53,22 +50,21 @@ func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData =
 	_fill_hero_grid()
 
 
+# 绑定 .tscn 静态节点 + fill 静态文案（按钮三态样式走 theme variation，无运行时套样式）。
 func _build_content() -> void:
-	var content: Control = CONTENT_SCENE.instantiate() as Control
-	container.add_child(content)
-	_grid = content.get_node("%GridHost") as GridContainer
-	_return_host = content.get_node("%ReturnHost") as Control
-	_split_btn = content.get_node("%SplitBtn") as Button
-	# 按钮 Scale9（.tscn 普通 Button，运行时套 StyleBox 补九宫格图，照 hero_package 范式）。
-	UiScale9Button.apply_with_label(_split_btn, SPLIT_BTN_RES, SPLIT_BTN_PRESS_RES, SPLIT_BTN_CAP, _lstr(SPLIT_BTN_KEY, SPLIT_BTN_FALLBACK), BTN_LABEL_COLOR)
-	var explain_btn: Button = content.get_node("%ExplainBtn") as Button
-	UiScale9Button.apply_with_label(explain_btn, BTN_RES, BTN_PRESS_RES, BTN_CAP, _lstr(EXPLAIN_BTN_KEY, EXPLAIN_BTN_FALLBACK), BTN_LABEL_COLOR)
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	_grid = _content.get_node("%GridHost") as GridContainer
+	_return_host = _content.get_node("%ReturnHost") as Control
+	_split_btn = _content.get_node("%DetailContainer/%SplitBtn") as Button
+	_detail = _content.get_node("%DetailContainer") as Control
+	(_content.get_node("%DetailContainer/TitleLabel") as Label).text = _lstr(DETAIL_TITLE_KEY, DETAIL_TITLE_FALLBACK)
+	(_content.get_node("%DetailContainer/%Title2") as Label).text = _lstr(GAIN_KEY, GAIN_FALLBACK)
+	(_content.get_node("%ExplainBtn") as Button).text = _lstr(EXPLAIN_BTN_KEY, EXPLAIN_BTN_FALLBACK)
+	_split_btn.text = _lstr(SPLIT_BTN_KEY, SPLIT_BTN_FALLBACK)
 	_split_btn.pressed.connect(_on_split_pressed)
-	explain_btn.pressed.connect(_on_explain_pressed)
-	_split_btn.disabled = true   # 未选英雄禁用（源 firstConfirm 无 hid 守卫）
-	(content.get_node("%CloseBtn") as TextureButton).pressed.connect(_on_close_pressed)
-	(content.get_node("%DetailTitleLabel") as Label).text = _lstr(DETAIL_TITLE_KEY, DETAIL_TITLE_FALLBACK)
-	(content.get_node("%GainLabel") as Label).text = _lstr(GAIN_KEY, GAIN_FALLBACK)
+	(_content.get_node("%ExplainBtn") as Button).pressed.connect(_on_explain_pressed)
+	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)
 
 
 func _fill_hero_grid() -> void:
@@ -97,28 +93,36 @@ func _on_hero_icon_gui_input(event: InputEvent, hero: HeroInstance) -> void:
 func _select_hero(hero: HeroInstance) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_selected = hero
+	_detail.visible = true   # 源 setSplitStone detail_container:setVisible(true)
 	_refresh_return_preview()
-	_split_btn.disabled = false
+
+
+# 返还预览（单机化 preview_split 固定返还专属碎片）；未选/清选时详情组隐藏照源。
+# icon 位置照源 scrollview oriPosition DGccp(240,200) → 裁剪区局部 (6.25,80.47)。
+const RETURN_ICON_POS: Vector2 = Vector2(6.25, 80.47)
 
 
 func _refresh_return_preview() -> void:
 	for c in _return_host.get_children():
 		c.free()
 	if _selected == null:
+		_detail.visible = false
 		return
 	var preview: Dictionary = _hero_mgr.preview_split(_selected.inst_id)
 	var frag_id: int = int(preview.get("fragment_id", 0))
 	var count: int = int(preview.get("count", 0))
-	_return_host.add_child(ReadequipIcon.create_hero_stone_icon(frag_id, count, cm))
+	var icon: Control = ReadequipIcon.create_hero_stone_icon(frag_id, count, cm)
+	icon.position = RETURN_ICON_POS
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_return_host.add_child(icon)
 
 
 func _on_split_pressed() -> void:
 	if _selected == null:
 		Toast.show_message(_lstr(PLEASE_HERO_KEY, PLEASE_HERO_FALLBACK))
 		return
-	var msg: String = _lstr(CONFIRM_MSG_KEY, CONFIRM_MSG_FALLBACK) % _hero_display_name(_selected)
 	var confirm := HeroSplitConfirm.new()
-	confirm.set_message(msg)
+	confirm.setup(_selected, cm)
 	confirm.confirmed.connect(_perform_split)
 	get_parent().add_child(confirm)   # HeroSplitConfirm 是 Control（自带 shade），挂同 parent
 
@@ -132,7 +136,6 @@ func _perform_split() -> void:
 		_selected = null
 		_fill_hero_grid()
 		_refresh_return_preview()
-		_split_btn.disabled = true
 		split_done.emit()
 
 
@@ -144,7 +147,7 @@ func _on_explain_pressed() -> void:
 
 
 func _on_close_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
+	AudioPlayer.play_sfx("common_close_popup_window")
 	remove_window()
 
 

@@ -1,19 +1,23 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_vit"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_title_bg.png" id="2_pvptitle"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="4_closep"]
 
-[sub_resource type="StyleBoxFlat" id="sb_explain"]
-bg_color = Color(0.12, 0.1, 0.08, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.85, 0.7, 0.35, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_left = 6
-corner_radius_bottom_right = 6
+; hero_split 分解规则说明两件套静态树（批 1 Task 8，2026-08-15）。框架照源
+; uieditor/explainwindow.lua 通用说明窗（herosplit/explain.lua 继承，只填文本）：
+; window_container Layer 156.25x156.25 anchor(0,0) at (183.59,398.44) 场景空间，
+; 子节点 window_container 局部 → 本树直接用场景空间换算（to_godot=(x+80,560-y)）：
+; frame main_vit_tips Scale9 548.44x378.91 anchor(0,1) at (-58.59,31.25)
+; → 世界左上 (125,429.69) → 全屏 (205,130.31)-(753.44,509.22)
+; cap(17.19,17.19,46.88,15.63)（纹理 103x61）；title_bg pvp_tip_title_bg
+; 480.47x39.06 中心 (214.84,-8.59) → 世界 (398.44,389.84)；close 中心 (475.78,11.72)
+; → 世界 (659.38,410.16)；title 中心 (212.5,-8.59)。滚动区照源 explainwindow
+; createListLayer cliprect DGRectMake(200,98,622,362) ×0.78125
+; =(156.25,76.56,485.94,282.81) 场景空间。4 行文本（explain.lua text_list）
+; 逐行 Label 常驻 VBox（源逐行 label dy=3 堆叠 + label_dimensions 612x0 → 宽 478.13
+; autowrap），text 由 panel fill。fill 见 hero_split_explain.gd。
 
 [node name="HeroSplitExplainContent" type="Control"]
 layout_mode = 3
@@ -30,50 +34,122 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0.5)
 
-[node name="Frame" type="Panel" parent="."]
+; 框（源 frame main_vit_tips Scale9 548.44x378.91 anchor(0,1) 世界左上 (125,429.69)）
+[node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 180.0
-offset_top = 120.0
-offset_right = 780.0
-offset_bottom = 520.0
+offset_left = 205.0
+offset_top = 130.31
+offset_right = 753.44
+offset_bottom = 509.22
+texture = ExtResource("1_vit")
+patch_margin_left = 17
+patch_margin_top = 17
+patch_margin_right = 39
+patch_margin_bottom = 28
 mouse_filter = 2
-theme_override_styles/panel = SubResource("sb_explain")
 
-[node name="TitleLabel" type="Label" parent="Frame"]
+; 标题条（源 title_bg pvp_tip_title_bg Scale9 480.47x39.06 中心世界 (398.44,389.84)
+; cap(109.38,0,156.25,34.38)（纹理 474x44））
+[node name="TitleBg" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 430.0
-offset_top = 130.0
-offset_right = 530.0
-offset_bottom = 158.0
+offset_left = 238.2
+offset_top = 150.63
+offset_right = 718.67
+offset_bottom = 189.69
+texture = ExtResource("2_pvptitle")
+patch_margin_left = 109
+patch_margin_top = 0
+patch_margin_right = 208
+patch_margin_bottom = 10
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.89, 0.52, 1)
-theme_override_font_sizes/font_size = 22
-text = "详细规则"
-horizontal_alignment = 1
 
-[node name="CloseBtn" type="TextureButton" parent="Frame"]
+; 标题（源 title size24 ccc3(234,171,41) 中心世界 (396.09,389.84)，text fill"规则说明"）
+[node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 720.0
-offset_top = 125.0
-offset_right = 776.0
-offset_bottom = 181.0
-texture_normal = ExtResource("1_close")
-texture_pressed = ExtResource("2_closep")
-ignore_texture_size = true
-stretch_mode = 1
+offset_left = 326.09
+offset_top = 155.16
+offset_right = 626.09
+offset_bottom = 185.16
+theme_type_variation = &"HeroSplitExplainTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "规则说明"
 
-[node name="Scroll" type="ScrollContainer" parent="Frame"]
+; 关闭按钮（源 close_button fix_wh 49.22x52.34 中心世界 (659.38,410.16)，骑框右上边）
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 200.0
-offset_top = 165.0
-offset_right = 760.0
-offset_bottom = 500.0
+offset_left = 714.77
+offset_top = 123.67
+offset_right = 763.99
+offset_bottom = 176.01
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
 
-[node name="ExplainLabel" type="Label" parent="Frame/Scroll"]
+; 滚动区（源 draglist cliprect (156.25,76.56,485.94,282.81) 场景空间 → 全屏
+; (236.25,200.63)-(722.19,483.44)，纵向滚动）
+[node name="ScrollHost" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 236.25
+offset_top = 200.63
+offset_right = 722.19
+offset_bottom = 483.44
+mouse_filter = 1
+horizontal_scroll_mode = 0
+
+; 文本列表层（源 listLayer + 逐行 label：left_x=160/top_y=350 场景 → 滚动区局部
+; (3.75,9.37)；4 行 LSTR fill，宽=源 label_dimensions 612x0 ×0.78125=478.13 autowrap）
+[node name="ListHost" type="VBoxContainer" parent="ScrollHost"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
+offset_left = 3.75
+offset_top = 9.37
+offset_right = 481.88
+offset_bottom = 9.37
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="ExplainRow1" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"HeroSplitExplainBodyLabel"
+mouse_filter = 2
 autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = ""
+
+[node name="ExplainRow2" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"HeroSplitExplainBodyLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = ""
+
+[node name="ExplainRow3" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"HeroSplitExplainBodyLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = ""
+
+[node name="ExplainRow4" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"HeroSplitExplainBodyLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
 text = ""

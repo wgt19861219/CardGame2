@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=18 format=3]
+[gd_resource type="Theme" load_steps=28 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -7,8 +7,57 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="5_upg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png" id="6_upgm"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_panel_bg.png" id="7_edpanel"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="8_selln"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="9_sellp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button.png" id="10_taskn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button_press.png" id="11_taskp"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
+
+; ── hero_split 三件套（批 1 Task 8，2026-08-15）── sell_number/task 按钮 Scale9 三态
+; （源 uieditor/herosplit.lua capInsets 纹理像素直译；confirm ok cap(14.06,15.63,...) 与
+; window 按钮 cap(15.63,15.63,...) 不同 margin 故独立 StyleBox）
+[sub_resource type="StyleBoxTexture" id="SB_hs_sell_n"]
+texture = ExtResource("8_selln")
+texture_margin_left = 15.63
+texture_margin_top = 15.63
+texture_margin_right = 27.84
+texture_margin_bottom = 31.84
+
+[sub_resource type="StyleBoxTexture" id="SB_hs_sell_p"]
+texture = ExtResource("9_sellp")
+texture_margin_left = 15.63
+texture_margin_top = 15.63
+texture_margin_right = 27.84
+texture_margin_bottom = 31.84
+
+[sub_resource type="StyleBoxTexture" id="SB_hs_task_n"]
+texture = ExtResource("10_taskn")
+texture_margin_left = 15.63
+texture_margin_top = 15.63
+texture_margin_right = 41.31
+texture_margin_bottom = 31.74
+
+[sub_resource type="StyleBoxTexture" id="SB_hs_task_p"]
+texture = ExtResource("11_taskp")
+texture_margin_left = 15.63
+texture_margin_top = 15.63
+texture_margin_right = 41.31
+texture_margin_bottom = 31.74
+
+[sub_resource type="StyleBoxTexture" id="SB_hs_ok_n"]
+texture = ExtResource("8_selln")
+texture_margin_left = 14.06
+texture_margin_top = 15.63
+texture_margin_right = 33.31
+texture_margin_bottom = 34.18
+
+[sub_resource type="StyleBoxTexture" id="SB_hs_ok_p"]
+texture = ExtResource("9_sellp")
+texture_margin_left = 14.06
+texture_margin_top = 15.63
+texture_margin_right = 33.31
+texture_margin_bottom = 34.18
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_n"]
 texture = ExtResource("1_detailn")
@@ -451,3 +500,58 @@ EquipDetailAmountLabel/font_sizes/font_size = 18
 ; 段面板底（源 Scale9 equip_detail_panel_bg → PanelContainer stylebox）
 EquipDetailPanelBox/base_type = &"PanelContainer"
 EquipDetailPanelBox/styles/panel = SubResource("SB_equip_detail_panel")
+; ── hero_split 三件套（批 1 Task 8，2026-08-15）──
+; 详情标题（源 uieditor/herosplit title_label size23 ccc3(255,255,255)）
+HeroSplitTitleLabel/base_type = &"Label"
+HeroSplitTitleLabel/colors/font_color = Color(1, 1, 1, 1)
+HeroSplitTitleLabel/font_sizes/font_size = 23
+; 分区标签（源 title_2"你将获得：" size19 ccc3(57,44,36)）
+HeroSplitSectionLabel/base_type = &"Label"
+HeroSplitSectionLabel/colors/font_color = Color(0.223529, 0.172549, 0.141176, 1)
+HeroSplitSectionLabel/font_sizes/font_size = 19
+; 说明按钮（源 explain_button sell_number cap(15.63,15.63,19.53,19.53)
+; labelConfig ccc3(234,225,205) size22）
+HeroSplitSellButton/base_type = &"Button"
+HeroSplitSellButton/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+HeroSplitSellButton/font_sizes/font_size = 22
+HeroSplitSellButton/styles/normal = SubResource("SB_hs_sell_n")
+HeroSplitSellButton/styles/hover = SubResource("SB_hs_sell_n")
+HeroSplitSellButton/styles/pressed = SubResource("SB_hs_sell_p")
+HeroSplitSellButton/styles/disabled = SubResource("SB_hs_sell_n")
+HeroSplitSellButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 分解按钮（源 split_button task_button cap(15.63,15.63,39.06,15.63)
+; labelConfig ccc3(254,244,16) size22）
+HeroSplitTaskButton/base_type = &"Button"
+HeroSplitTaskButton/colors/font_color = Color(0.996078, 0.956863, 0.062745, 1)
+HeroSplitTaskButton/font_sizes/font_size = 22
+HeroSplitTaskButton/styles/normal = SubResource("SB_hs_task_n")
+HeroSplitTaskButton/styles/hover = SubResource("SB_hs_task_n")
+HeroSplitTaskButton/styles/pressed = SubResource("SB_hs_task_p")
+HeroSplitTaskButton/styles/disabled = SubResource("SB_hs_task_n")
+HeroSplitTaskButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; confirm 标题（源 uieditor/herosplitconfirm title size22 ccc3(255,222,16)）
+HeroSplitConfirmTitleLabel/base_type = &"Label"
+HeroSplitConfirmTitleLabel/colors/font_color = Color(1, 0.870588, 0.062745, 1)
+HeroSplitConfirmTitleLabel/font_sizes/font_size = 22
+; confirm 警示行（源 confirm.lua ChaosNode 两行 size20 ccc3(255,227,133)）
+HeroSplitConfirmWarnLabel/base_type = &"Label"
+HeroSplitConfirmWarnLabel/colors/font_color = Color(1, 0.890196, 0.521569, 1)
+HeroSplitConfirmWarnLabel/font_sizes/font_size = 20
+; confirm 确认按钮（源 ok_button sell_number cap(14.06,15.63,15.63,17.19)
+; labelConfig ccc3(255,255,255) size22）
+HeroSplitConfirmOkButton/base_type = &"Button"
+HeroSplitConfirmOkButton/colors/font_color = Color(1, 1, 1, 1)
+HeroSplitConfirmOkButton/font_sizes/font_size = 22
+HeroSplitConfirmOkButton/styles/normal = SubResource("SB_hs_ok_n")
+HeroSplitConfirmOkButton/styles/hover = SubResource("SB_hs_ok_n")
+HeroSplitConfirmOkButton/styles/pressed = SubResource("SB_hs_ok_p")
+HeroSplitConfirmOkButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; explain 标题（源 uieditor/explainwindow title size24 ccc3(234,171,41)）
+HeroSplitExplainTitleLabel/base_type = &"Label"
+HeroSplitExplainTitleLabel/colors/font_color = Color(0.917647, 0.670588, 0.160784, 1)
+HeroSplitExplainTitleLabel/font_sizes/font_size = 24
+; explain 正文行（源 explain.lua label size16 ccc3(238,204,119)）
+HeroSplitExplainBodyLabel/base_type = &"Label"
+HeroSplitExplainBodyLabel/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
+HeroSplitExplainBodyLabel/font_sizes/font_size = 16
+
