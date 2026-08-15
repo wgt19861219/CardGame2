@@ -73,7 +73,7 @@ func test_hero_detail_content_uses_variations() -> void:
 	content.free()
 
 
-func test_hero_detail_builder_style_code_retired() -> void:
-	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_builder.gd")
+func test_hero_detail_fills_style_code_retired() -> void:
+	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_fills.gd")
 	for dead in ["_apply_detail_style", "_make_stylebox", "_make_tab_stylebox", "add_theme_stylebox_override"]:
 		assert_true(text.find(dead) == -1, "%s 已退役（样式进 theme/tscn）" % dead)
