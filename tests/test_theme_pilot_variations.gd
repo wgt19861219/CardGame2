@@ -59,3 +59,21 @@ func test_hero_detail_tab_label_variation() -> void:
 	assert_eq(t.get_color("font_color", "HeroDetailTabLabel"), Color(0, 0, 0, 1), "黑字（源按钮文字 BLACK）")
 	assert_eq(t.get_color("font_outline_color", "HeroDetailTabLabel"), Color(1, 1, 1, 1), "白描边（源按钮描边 WHITE）")
 	assert_eq(t.get_constant("outline_size", "HeroDetailTabLabel"), 2, "描边宽 2")
+
+
+func test_hero_detail_content_uses_variations() -> void:
+	var content: Control = (load("res://scenes/ui/hero_detail_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var base: Control = content.get_node("%BaseLayer")
+	for btn_name in ["TabDetailBtn", "TabCardBtn", "TabSkillBtn", "UpgradeRankBtn"]:
+		var btn: Button = base.get_node("%" + btn_name) as Button
+		assert_eq(String(btn.theme_type_variation), "HeroDetailTab", "%s 走 HeroDetailTab variation" % btn_name)
+	var tab_label: Label = base.get_node("%TabDetailBtn/%TabDetailLabel") as Label
+	assert_eq(String(tab_label.theme_type_variation), "HeroDetailTabLabel", "tab 文字走 HeroDetailTabLabel")
+	content.free()
+
+
+func test_hero_detail_builder_style_code_retired() -> void:
+	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_builder.gd")
+	for dead in ["_apply_detail_style", "_make_stylebox", "_make_tab_stylebox", "add_theme_stylebox_override"]:
+		assert_true(text.find(dead) == -1, "%s 已退役（样式进 theme/tscn）" % dead)

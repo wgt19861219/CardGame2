@@ -9,14 +9,6 @@ extends RefCounted
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
 
-# ---- base 按钮 Scale9 样式（.tscn 普通 Button 套用，源 detail-n capInsets 15,15,138,19）----
-const DETAIL_N_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-n.png"
-const DETAIL_N_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png"
-const DETAIL_N_CAP: Rect2 = Rect2(15.0, 15.0, 138.0, 19.0)
-const TAB_N_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-n.png"
-const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-a.png"
-const TAB_CAP: Rect2 = Rect2(15.0, 15.0, 138.0, 19.0)
-
 # ---- name_frame 名条品质边框（源 player.lua:2121 name_frames 表 + getIconNameFrameByRank:2149）----
 # rank 1-22 → 帧编号（含重复条目保源语义：rank 10/11 同图、12-19 同图、20-22 同图）。
 const NAME_FRAME_DIR: String = "res://assets/ui/alpha/HVGA/herodetail_name_frame_"
@@ -45,7 +37,7 @@ static func setup_base(base: Control, hero: HeroInstance, cm: Variant) -> Dictio
 	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), base.get_node_or_null("%NameFrame"), hero, cm)
 	fill_stars(_collect_yellow_stars(base), hero.stars)
 	var gs_label: Label = fill_info_board(base, hero, cm)
-	fill_action_buttons(base, hero, cm)
+	fill_action_labels(base, hero, cm)
 	var tab_buttons: Dictionary = collect_tab_buttons(base)
 	fill_tab_labels(tab_buttons, cm)
 	for key in tab_buttons:
@@ -183,12 +175,12 @@ static func fill_info_board(base: Control, hero: HeroInstance, cm: Variant) -> L
 	return gs_lbl
 
 
-# fill 1 action button（%UpgradeRankBtn）Scale9 样式 + LSTR text。
+# fill 1 action button（%UpgradeRankBtn）LSTR text。
 # ⚠️偏离源：evolve 文字按钮已删（用户简化决策 2026-07-18），升星由 %GetStoneBtn +号按钮触发。
 # UpgradeRankBtn 用独立 Label 子节点 %UpgradeRankLabel 居中（Button.text 内嵌 label 受 stylebox
 # content_margin 干扰致字体偏左上，改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1
-# 稳定居中，范式同 tab 按钮 fill_tab_labels）。
-static func fill_action_buttons(base: Control, hero: HeroInstance, cm: Variant) -> void:
+# 稳定居中，范式同 tab 按钮 fill_tab_labels）。按钮样式走 theme variation（HeroDetailTab，tscn 已接线）。
+static func fill_action_labels(base: Control, hero: HeroInstance, cm: Variant) -> void:
 	var labels: Dictionary = {
 		"UpgradeRankBtn": String(cm.get_lstr(&"HERODETAIL.ADVANCE_")) if cm != null else "进阶",
 	}
@@ -199,23 +191,11 @@ static func fill_action_buttons(base: Control, hero: HeroInstance, cm: Variant) 
 		if btn_name == "UpgradeRankBtn" and hero != null and hero.rank >= HeroManager.MAX_EQUIP_RANK:
 			btn.visible = false
 			continue
-		_apply_detail_style(btn)
 		# fill 独立 Label 子节点（.tscn 已建 %XxxLabel），不 fill Button.text
 		var label_key: String = btn_name.replace("Btn", "Label")
 		var lbl: Label = btn.get_node_or_null("%" + label_key)
 		if lbl != null:
 			lbl.text = labels[btn_name]
-
-
-# .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=detail-n，pressed=detail-pressed-n），
-# 视觉等价原 UiScale9Button。源 action button 文字 BLACK + WHITE 描边 outline_size 2。
-static func _apply_detail_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", _make_stylebox(DETAIL_N_RES))
-	btn.add_theme_stylebox_override("hover", _make_stylebox(DETAIL_N_RES))
-	btn.add_theme_stylebox_override("pressed", _make_stylebox(DETAIL_N_PRESS_RES))
-	btn.add_theme_color_override("font_color", Color.BLACK)
-	btn.add_theme_color_override("font_outline_color", Color.WHITE)
-	btn.add_theme_constant_override("outline_size", 2)
 
 
 # sa/sn 来自 ReadheroHandbook.get_stone_amount/get_stone_need；is_max_star 时 label 变「已进化到顶级」+ 隐藏 stone_bar/get_stone/evolve 按钮。
@@ -245,18 +225,6 @@ static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_
 	bar.offset_right = STONE_BAR_OFFSET_X + STONE_BAR_W * ratio
 
 
-static func _make_stylebox(res_path: String) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res_path) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = DETAIL_N_CAP.position.x
-	sb.texture_margin_top = DETAIL_N_CAP.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - DETAIL_N_CAP.position.x - DETAIL_N_CAP.size.x
-		sb.texture_margin_bottom = tex.get_height() - DETAIL_N_CAP.position.y - DETAIL_N_CAP.size.y
-	return sb
-
-
 # 收集 3 tab 按钮（%TabDetailBtn/%TabCardBtn/%TabSkillBtn）→ {key: Button}。
 static func collect_tab_buttons(base: Control) -> Dictionary:
 	return {
@@ -267,7 +235,7 @@ static func collect_tab_buttons(base: Control) -> Dictionary:
 
 
 # fill 3 tab LSTR text（源 :1468/:1545/:1622 HERODETAIL.DETAILED_PROPERTIES / ILLUSTRATIONS / TODOLIST.SKILLS_UPGRADING）。
-# 套 detail-n stylebox（normal+hover）+ detail-pressed-n（pressed，防 Button 默认 pressed 位移变形）。
+# 按钮样式走 theme variation（HeroDetailTab/HeroDetailTabActive，tscn 接线 + panel 切选中态）。
 # 文字 fill 到独立 Label 子节点 %TabXxxLabel（Button.text 内嵌 label 受 stylebox content_margin 干扰致字体偏左上，
 # 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_package tab）。
 static func fill_tab_labels(tab_buttons: Dictionary, cm: Variant) -> void:
@@ -278,36 +246,8 @@ static func fill_tab_labels(tab_buttons: Dictionary, cm: Variant) -> void:
 	}
 	for key in tab_buttons:
 		var btn: Button = tab_buttons[key] as Button
-		# StyleBox 覆盖 normal/hover/pressed 三态
-		var sb_normal: StyleBoxTexture = _make_tab_stylebox(TAB_N_RES)
-		var sb_pressed: StyleBoxTexture = _make_tab_stylebox("res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png")
-		btn.add_theme_stylebox_override("normal", sb_normal)
-		btn.add_theme_stylebox_override("hover", sb_normal)
-		btn.add_theme_stylebox_override("pressed", sb_pressed)
 		# fill 独立 Label 子节点（.tscn 已建 %TabXxxLabel，命名规则 Tab{Key}Label）
 		var label_name: String = "Tab" + key.capitalize() + "Label"
 		var lbl: Label = btn.get_node_or_null("%" + label_name)
 		if lbl != null:
 			lbl.text = labels[key]
-
-
-# 切 tab 选中态：选中 → detail-a stylebox，未选 → detail-n（源 :321-323 切 _select visible）。
-static func set_tab_selected(buttons: Dictionary, selected_key: String) -> void:
-	for key in buttons:
-		var res_path: String = TAB_A_RES if key == selected_key else TAB_N_RES
-		var sb: StyleBoxTexture = _make_tab_stylebox(res_path)
-		var btn: Button = buttons[key]
-		btn.add_theme_stylebox_override("normal", sb)
-		btn.add_theme_stylebox_override("hover", sb)
-
-
-static func _make_tab_stylebox(res_path: String) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res_path) as Texture2D
-	sb.texture = tex
-	sb.texture_margin_left = TAB_CAP.position.x
-	sb.texture_margin_top = TAB_CAP.position.y
-	if tex != null:
-		sb.texture_margin_right = tex.get_width() - TAB_CAP.position.x - TAB_CAP.size.x
-		sb.texture_margin_bottom = tex.get_height() - TAB_CAP.position.y - TAB_CAP.size.y
-	return sb

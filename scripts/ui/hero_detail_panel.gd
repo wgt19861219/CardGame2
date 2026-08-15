@@ -1,8 +1,7 @@
 class_name HeroDetailPanel
 extends PopWindow
 
-## 英雄详情面板（View 层）— 属性 + 装备槽 + 升星/进阶按钮（信号）。
-## base + tab view 静态化进 hero_detail_content.tscn；绘制 fill 外迁 HeroDetailAttribs/Tabs/EquipSlots/UpgradeFx；本文件留 setup/build/refresh/signal 绑定/tab 切换/perform 信号封装。
+## 英雄详情面板（View 层）— 属性 + 装备槽 + 升星/进阶按钮（信号）。内容静态化进 hero_detail_content.tscn，绘制 fill 外迁各模块，本文件留 setup/build/refresh/信号绑定/tab 切换/perform 封装。
 signal evolve_requested
 signal upgrade_rank_requested              # 进阶（rank+1，6 槽穿齐 Hero_equip[rank] 配方）
 signal upgrade_skill_requested(idx: int)   # 技能升级（idx 0-3）
@@ -41,6 +40,9 @@ const CARD_POP_DURATION: float = 0.2
 const LSTR_MAX_RANK: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
 const LSTR_NEED_EQUIP: StringName = &"HERODETAIL.HERO_NEEDS_TO_WEAR_COMPLETE_EQUIPMENTS_FOR_ADVANCE"
 const LSTR_ADVANCE_FAIL: StringName = &"HERODETAIL.ADVANCE_FAILED"
+# tab 选中态 variation 切换（样式全在 default_theme，源 :321-323 切 _select visible）。
+const TAB_VARIATION: StringName = &"HeroDetailTab"
+const TAB_VARIATION_ACTIVE: StringName = &"HeroDetailTabActive"
 
 var hero: HeroInstance = null
 var cm: Variant = null
@@ -83,8 +85,7 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		HeroDetailBuilder.fill_stone_bar(_base_layer, hero, cm, hero_manager)
 	_pre_gs = hero.gs if hero != null else -1
 	_bind_signals()
-	# 装备槽外迁 HeroDetailEquipSlots（on_open 包装 open_equip_craft + 接口契约参数）
-	# pd 传入供 get_hero_equip_state 判定 wear/cannotwear 角标
+	# 装备槽外迁 HeroDetailEquipSlots（open_equip_craft 契约参数；pd 供 wear/cannotwear 角标判定）
 	HeroDetailEquipSlots.show_equips(hero, cm, pd, _base_layer,
 			func(slot: int) -> void:
 				HeroDetailEquipSlots.open_equip_craft(slot, hero, cm, pd,
@@ -96,13 +97,11 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		"detail": content.get_node("%TabDetailView") as Control,
 		"skill": content.get_node("%TabSkillView") as Control,
 	}
-	# tab view z_index 由 .tscn 决定（TabCardView z=2 盖 BaseLayer，让 Art 立绘显在 bg 之上；
-	# TabDetailView/SkillView z=-1 自带 PopupBg 背景）。先前循环强制 z=-1 是 bug（盖住了 Art）。
+	# tab view z_index 由 .tscn 决定（CardView z=2 让 Art 显在 bg 上，其余 z=-1；先前循环强制 z=-1 是 bug）。
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
 	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
 	_fill_card_view()
-	# 隐藏 AttribListHost 垂直滚动条视觉（StyleBoxEmpty 覆盖；visible=false 禁用滚动）。
-	# 滚轮事件 gui_input 收不到（ScrollContainer accept_event 后不冒泡），改由 _input 接管。
+	# 隐藏 AttribListHost 垂直滚动条视觉（StyleBoxEmpty 覆盖；visible=false 禁用滚动）。滚轮改由 _input 接管。
 	var detail_host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
 	var detail_v_scroll := detail_host.get_node_or_null("_v_scroll") as Control
 	if detail_v_scroll != null:
@@ -225,19 +224,15 @@ func _fill_card_view() -> void:
 		close_btn.pressed.connect(_close_panel)
 
 
-# skillstren.lua createSkill + createSkillIcon + createSkillUnlockLabel。
-# 每槽：技能图标（SkillGroup.Icon + equip_frame_white 边框）+ Display Name。
-# rank < SkillGroup[slot].Unlock → 灰显图标 + "rank X 解锁"（:442-451）。
-# 否则：lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。等级 = skill_levels - InitLevel + 1。
+# skillstren.lua createSkill 等：每槽技能图标+边框+Display Name；rank 未达解锁 → 灰显 + "rank X 解锁"。
+# 否则 lv.X 显示等级 + 升级按钮（:452 createSkillLevelBoard）。等级 = skill_levels - InitLevel + 1。
 # 技能升级按钮回调（源 skillstren.lua:345 升级按钮 pressHandler：tutorial + upgrade 信号）。
 func _on_skill_upgrade_clicked(idx: int) -> void:
 	Events.bus.emit_tutorial_step(&"SUclickLevelup")   # Phase 8 SU（技能升级 → tutorial try_complete）
 	upgrade_skill_requested.emit(idx)
 
 
-# detail tab 滚轮接管：ScrollContainer accept_event 后不冒泡，host.gui_input 收不到 WHEEL。
-# 改走 _input，仅当 detail tab 激活 + 鼠标落在 AttribListHost 上时改 scroll_vertical（一格 50px）。
-# 兼容触控板：PanGesture 按 delta.y 滚。
+# detail tab 滚轮接管：ScrollContainer accept_event 后不冒泡，改走 _input + 鼠标命中 AttribListHost 时改 scroll_vertical（一格 50px，兼容触控板 PanGesture）。
 func _input(event: InputEvent) -> void:
 	_handle_scroll_event(event)
 
@@ -271,9 +266,7 @@ func _handle_scroll_event(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-# window.lua:170-191 refreshgsAfterWear：gs 变了 → 更新文本 + 锚点居中 + scale 1.2→1
-# （EASE_BACK_OUT）+ 还原锚点左中。本项目调 hero_manager.calc_gs 重算（源读 hero._gs，
-# 本项目重算语义等价，第二十七轮）。
+# window.lua:170-191 refreshgsAfterWear：gs 变 → 更新文本 + 居中 scale 1.2→1（EASE_BACK_OUT）+ 还原锚点左中。本项目 hero_manager.calc_gs 重算（语义等价）。
 func refresh_gs_after_wear() -> void:
 	if hero == null or hero_manager == null or _gs_label == null:
 		return
@@ -325,7 +318,7 @@ func _on_tab_pressed(key: String) -> void:
 # setOpenMode：切 tab visible + base 右移让位 + 切选中态（Phase B visible 切换）。
 func _show_tab_content(key: String) -> void:
 	_current_tab = key
-	HeroDetailBuilder.set_tab_selected(_tab_buttons, key)
+	_set_tab_selected(key)
 	_slide_base_to(BASE_SLIDE_OFFSET)
 	# tab layer pop CCMoveTo(-200,0)：tab 内容从左滑入（止态 -75，在树时从 +400 屏幕外滑入）
 	for k in _tab_views:
@@ -347,6 +340,13 @@ func _show_tab_content(key: String) -> void:
 	# 进入 card tab 时播 CardFrame 旋转入场（源 card.lua:17 doPopCard CCRotateTo 90°）。
 	if key == TAB_CARD:
 		_play_card_pop_rotation()
+
+
+# 切 tab 选中态 variation：选中 → HeroDetailTabActive，未选 → HeroDetailTab。
+func _set_tab_selected(selected_key: String) -> void:
+	for key in _tab_buttons:
+		var btn: Button = _tab_buttons[key] as Button
+		btn.theme_type_variation = TAB_VARIATION_ACTIVE if key == selected_key else TAB_VARIATION
 
 
 # CardFrame 旋转入场：90° 旋回 0°（0.2s）。pivot 居中（.tscn offset 固化 size 315×545；layout 未结算时回退常量）。
@@ -371,7 +371,7 @@ func _slide_base_to(target_x: float) -> void:
 # setOpenMode(nil) → doMoveBack（window.lua:289-296 base 回 (0,0)）+ destroyXLayer。
 func _close_tab() -> void:
 	_current_tab = ""
-	HeroDetailBuilder.set_tab_selected(_tab_buttons, "")
+	_set_tab_selected("")
 	_slide_base_to(0.0)
 	for k in _tab_views:
 		(_tab_views[k] as CanvasItem).visible = false

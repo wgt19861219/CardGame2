@@ -399,6 +399,7 @@ stretch_mode = 0
 
 [node name="UpgradeRankBtn" type="Button" parent="BaseLayer" unique_id=686800647]
 unique_name_in_owner = true
+theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
 offset_left = 608.0
 offset_top = 376.0
@@ -413,7 +414,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_type_variation = &"HeroTabLabel"
+theme_type_variation = &"HeroDetailTabLabel"
 text = "进阶"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -442,6 +443,7 @@ vertical_alignment = 1
 
 [node name="TabDetailBtn" type="Button" parent="BaseLayer" unique_id=643380600]
 unique_name_in_owner = true
+theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
 offset_left = 253.0
 offset_top = 526.0
@@ -456,13 +458,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_type_variation = &"HeroTabLabel"
+theme_type_variation = &"HeroDetailTabLabel"
 text = "详细属性"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="TabCardBtn" type="Button" parent="BaseLayer" unique_id=1105052158]
 unique_name_in_owner = true
+theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
 offset_left = 414.0
 offset_top = 525.0
@@ -477,13 +480,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_type_variation = &"HeroTabLabel"
+theme_type_variation = &"HeroDetailTabLabel"
 text = "图鉴"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="TabSkillBtn" type="Button" parent="BaseLayer" unique_id=1554135451]
 unique_name_in_owner = true
+theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
 offset_left = 588.0
 offset_top = 529.0
@@ -498,7 +502,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_type_variation = &"HeroTabLabel"
+theme_type_variation = &"HeroDetailTabLabel"
 text = "技能升级"
 horizontal_alignment = 1
 vertical_alignment = 1
