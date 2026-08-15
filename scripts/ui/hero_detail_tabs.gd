@@ -5,7 +5,7 @@ extends RefCounted
 ## 含 card 基础结构（frame/art/name，源 card.lua:127-140）+ card 图标/星数（readhero.lua:1069-1158）+
 ## skill 行绘制（图标+升级按钮，源 skillstren.lua:424-451）+ 技能描述弹板（skillstren.lua:14）。
 ## 不含 panel 状态，全 static + 参数化，panel 传 host + on_click Callable。
-## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback + HeroDetailBuilder.to_godot（避 class_name 循环）。
+## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback + HeroDetailFills.to_godot（避 class_name 循环）。
 
 # 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
 const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center 世界 cocos（container center = frame center）
@@ -101,7 +101,7 @@ static func _fill_card_art(host: Control, hero: HeroInstance, cm: Variant) -> vo
 # Unit "Art Name" LSTR key）+ %CardNameBgLine 底纹条（源 readhero.lua:1141-1148 按 name 像素宽选 short/long）。
 # name_label = 主名 Label；art_label = 称号小字 Label；bg_line = 名字底纹 TextureRect。
 static func _fill_card_name(name_label: Label, art_label: Label, bg_line: TextureRect, hero: HeroInstance, cm: Variant) -> void:
-	var display_name: String = HeroDetailBuilder.get_display_name(hero, cm)
+	var display_name: String = HeroDetailFills.get_display_name(hero, cm)
 	name_label.text = display_name
 	# 称号（Art Name 字段，LSTR key → 本地化）。可能为空（部分英雄无称号），art_label.text 留空。
 	var art_key: String = String(cm.lookup("Unit", "Art Name", int(hero.tid)))

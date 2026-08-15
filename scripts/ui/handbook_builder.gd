@@ -5,7 +5,7 @@ extends RefCounted
 ## getTagPosition :298-350 + getIconPosition :412-421 + 常量 :13-22)。
 ## 重构(2026-07-17):静态节点(背景三层/12 tag 按钮+label/箭头/back/pageLabel)进 handbook_content.tscn,
 ## 本类只 collect .tscn 已建 tag + fill LSTR text + 动态建装备 cell(翻页/切 tag 重建)。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上):(cx+80, 560-cy)(同 hero_package/HeroDetailBuilder 范式)。
+## 坐标源 cocos(800×480 左下) → Godot(960×640 左上):(cx+80, 560-cy)(同 hero_package/HeroDetailFills 范式)。
 
 # (源 pushScene),不用 popup 居中(cx+80),改全屏缩放铺满. SC=640/480,OFFSET_X=400×SC-480(横向居中).
 const SCREEN_SCALE: float = 1.3333

@@ -78,11 +78,11 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
 	_base_layer = content.get_node("%BaseLayer") as Control
-	var result: Dictionary = HeroDetailBuilder.setup_base(_base_layer, hero, cm)
+	var result: Dictionary = HeroDetailFills.setup_base(_base_layer, hero, cm)
 	_gs_label = result["gs_label"] as Label
 	_tab_buttons = result["tab_buttons"] as Dictionary
 	if hero_manager != null:
-		HeroDetailBuilder.fill_stone_bar(_base_layer, hero, cm, hero_manager)
+		HeroDetailFills.fill_stone_bar(_base_layer, hero, cm, hero_manager)
 	_pre_gs = hero.gs if hero != null else -1
 	_bind_signals()
 	# 装备槽外迁 HeroDetailEquipSlots（open_equip_craft 契约参数；pd 供 wear/cannotwear 角标判定）

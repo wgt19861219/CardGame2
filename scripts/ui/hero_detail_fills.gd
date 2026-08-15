@@ -1,10 +1,9 @@
-class_name HeroDetailBuilder
+class_name HeroDetailFills
 extends RefCounted
 
-## HeroDetailPanel 视觉工厂（Phase A+B 重构 2026-07-17 + builder P2 拆分 2026-07-20）。
-## base 层 fill（portrait/name board/stars/info/action/stone bar）+ tab 按钮 Scale9 样式。
-## base 层 + tab view 位置+size 静态化进 hero_detail_content.tscn（编辑器可视化调）。
-## card 基础（frame/art/name）+ skill 行绘制 + desc board 已外迁 HeroDetailTabs（P2 拆分）。
+## HeroDetailPanel 纯数据填充（两件套范式 2026-08-14）。
+## 只做动态 fill：FCA 立绘/名条品质边框/星级/信息板/进阶按钮文字/碎片进度条。
+## 静态结构与样式归 hero_detail_content.tscn + default_theme（禁建静态节点、禁样式 override）。
 
 const OFFSET_X: float = 80.0
 const BASE_Y: float = 560.0
