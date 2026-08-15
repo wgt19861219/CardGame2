@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=16 format=3]
+[gd_resource type="Theme" load_steps=18 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="4_commentbg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="5_upg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png" id="6_upgm"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_panel_bg.png" id="7_edpanel"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -68,6 +69,22 @@ texture_margin_left = 20.0
 texture_margin_top = 20.0
 texture_margin_right = 57.0
 texture_margin_bottom = 27.0
+
+; equip_detail 段面板底（批 1 Task 7）：源 equipdetail.lua :152/188/228
+; createScale9Sprite equip_detail_panel_bg capInsets CCRectMake(10,30,400,65)
+; （贴图 533x175，rect 左上原点 → left=10 top=30 right=533-410=123
+; bottom=175-95=80）；content margin 照源网格位（面板 560 宽 - 两列 260=520 →
+; 左右 20；行高 55 公式 15+55r → 顶/底 7.5）。
+[sub_resource type="StyleBoxTexture" id="SB_equip_detail_panel"]
+texture = ExtResource("7_edpanel")
+texture_margin_left = 10.0
+texture_margin_top = 30.0
+texture_margin_right = 123.0
+texture_margin_bottom = 80.0
+content_margin_left = 20.0
+content_margin_top = 7.5
+content_margin_right = 20.0
+content_margin_bottom = 7.5
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -407,3 +424,30 @@ FragmentComposeOkButton/styles/normal = SubResource("SB_fc_ok_n")
 FragmentComposeOkButton/styles/hover = SubResource("SB_fc_ok_n")
 FragmentComposeOkButton/styles/pressed = SubResource("SB_fc_ok_p")
 FragmentComposeOkButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── equip_detail 两件套（批 1 Task 7，2026-08-15）──
+; 三段标题（源 :146/182/223 createttf 24 号 ccc3(250,205,16)）
+EquipDetailSectionTitle/base_type = &"Label"
+EquipDetailSectionTitle/colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
+EquipDetailSectionTitle/font_sizes/font_size = 24
+; 三段行名（源 :167/207/260 createttf 20 号 ccc3(60,60,60)）
+EquipDetailItemName/base_type = &"Label"
+EquipDetailItemName/colors/font_color = Color(0.235294, 0.235294, 0.235294, 1)
+EquipDetailItemName/font_sizes/font_size = 20
+; How To Get 文本（源 :272-287 size18 ccc3(238,204,119) dimension 240x0 换行
+; + shadow ccc3(0,0,0) offset(0,2)）
+EquipDetailHowLabel/base_type = &"Label"
+EquipDetailHowLabel/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
+EquipDetailHowLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipDetailHowLabel/constants/shadow_offset_x = 0
+EquipDetailHowLabel/constants/shadow_offset_y = 2
+EquipDetailHowLabel/font_sizes/font_size = 18
+; 拥有数量（源 :308-316 size18 直设绿 ccc3(0,200,0)/红 ccc3(255,0,0) 由 fill
+; font_color override 切换 + setLabelShadow ccc3(0,0,0) offset(0,1)）
+EquipDetailAmountLabel/base_type = &"Label"
+EquipDetailAmountLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipDetailAmountLabel/constants/shadow_offset_x = 0
+EquipDetailAmountLabel/constants/shadow_offset_y = 1
+EquipDetailAmountLabel/font_sizes/font_size = 18
+; 段面板底（源 Scale9 equip_detail_panel_bg → PanelContainer stylebox）
+EquipDetailPanelBox/base_type = &"PanelContainer"
+EquipDetailPanelBox/styles/panel = SubResource("SB_equip_detail_panel")

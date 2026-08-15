@@ -1,0 +1,64 @@
+[gd_scene format=3]
+
+; equipdetail 三段通用行模板（批 1 Task 7，2026-08-15）。静态结构照源
+; equipdetail.lua createDetail 行布局（:161-175 装备 / :196-217 英雄 /
+; :254-267 获取途径，三段同构：icon 中心 x=200+260*col（相对面板左缘 120 →
+; 行内 80）、name 左端 230+260*col（行内 110）、行高 55 两列）；
+; panel（equipdetail_panel._add_item_cell/_add_get_way_cell）只 instantiate
+; + 填动态数据（icon 工厂挂 IconHost / 关卡贴图进 WayIcon / name 文本+
+; 超宽缩放），禁建静态结构。
+; 行坐标（源场景空间直换行局部）：行 260x55 y-down 左上原点，icon 中心
+; (80,27.5) 垂直居中，name 左端 110 宽上限 195（源 :171/213/264 超宽等比缩）。
+
+[node name="EquipdetailItemCell" type="Control"]
+custom_minimum_size = Vector2(260, 55)
+layout_mode = 3
+offset_right = 260.0
+offset_bottom = 55.0
+mouse_filter = 2
+
+; 工厂图标挂点（装备段 readequip.createIcon(id,40) 缩 40/72 / 英雄段
+; readhero.getIcon({id,rank,length=40}) 缩 40/104）：零尺寸点居中锚
+; （中心 (80,27.5)），fill 负半偏移居中挂（stone_detail 同款）
+[node name="IconHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = -1
+anchor_left = 0.30769
+anchor_top = 0.5
+anchor_right = 0.30769
+anchor_bottom = 0.5
+mouse_filter = 2
+
+; 获取途径关卡图标（源 :256-259 createSprite(way.res) setScale(60/w) 宽恒 60
+; 等比）：默认隐藏，fill 赋贴图后按等比显示尺寸重设对称 offsets
+[node name="WayIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = -1
+anchor_left = 0.30769
+anchor_top = 0.5
+anchor_right = 0.30769
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -30.0
+offset_right = 30.0
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+mouse_filter = 2
+
+; 行名（源 :167/207/260 createttf 20 号 ccc3(60,60,60) anchor(0,0.5) 左端
+; x=110）：字号/色走 EquipDetailItemName variation；>195 宽 fill 等比缩
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 110.0
+offset_top = 14.5
+offset_right = 305.0
+offset_bottom = 40.5
+theme_type_variation = &"EquipDetailItemName"
+mouse_filter = 2
+vertical_alignment = 1

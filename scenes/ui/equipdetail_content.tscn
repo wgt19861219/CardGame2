@@ -1,8 +1,18 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_bg.png" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_title_bg.png" id="4_titlebg"]
+
+; equipdetail 装备详情两件套静态树（批 1 Task 7，2026-08-15）。框架照源
+; equipdetail.lua create(:337-395) 直译（readnode root=layer 场景空间，
+; CCLayer 忽略锚点 → 子坐标即 800x480 左下原点场景坐标）；3 段滚动结构照
+; createDetail(:135-296) 静态化（标题条+panel_bg 面板+双列网格），行进
+; equipdetail_item_cell.tscn（动态数据行模板 instantiate）。
+; 坐标换算：cocos(800x480 左下) → godot(960x640 左上) via (x+80, 560-y)，
+; 中心锚元素 = 中心点映射后取对称 offsets；贴图显示尺寸 = 纹理像素 ÷ CS(1.28125)。
+; 蒙层不进 tscn：PopWindow 基类 shade_layer 同源 mainLayer ccc4(0,0,0,150)。
 
 [node name="EquipdetailContent" type="Control"]
 layout_mode = 3
@@ -11,6 +21,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 弹窗底板（源 :353-361 bg equip_detail_bg 827x535 at (400,240) 中心锚）：
+; 显示 645.3x417.6 = 827x535 ÷ CS，中心 _g(400,240)=(480,320)
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
 offset_left = 160.0
@@ -21,25 +33,9 @@ texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="IconHost" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 140.0
-offset_top = 180.0
-offset_right = 180.0
-offset_bottom = 220.0
-mouse_filter = 2
-
-[node name="AmountLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 185.0
-offset_top = 250.0
-offset_right = 320.0
-offset_bottom = 278.0
-theme_override_font_sizes/font_size = 18
-mouse_filter = 2
-
+; 关闭按钮（源 :362-384 close at (700,420) 中心锚 + closePress 挂 close 下
+; (700,410) 局部坐标（源 bug 跑飞）→ 双态合并 TextureButton，批内通行做法）：
+; 中心 _g(700,420)=(780,140)，显示 65x66（源贴图 1:1）
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -51,16 +47,213 @@ texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+; 装备图标挂点（源 createIcon :298-305 readequip.createIcon(id) at (80,360)
+; 中心锚）：中心 _g(80,360)=(160,200)，40x40 容器（工厂 icon fill 挂此）
+[node name="IconHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 210.0
+offset_left = 140.0
+offset_top = 180.0
+offset_right = 180.0
+offset_bottom = 220.0
+mouse_filter = 2
+
+; 拥有数量（源 :307-317 "x"+amount size18 at (105,300) anchor(0,0.5) + 绿/红
+; 直设色 + 黑影(0,1)）：左端 _g(105,300).x=185、中心 y=260；字号/影走
+; EquipDetailAmountLabel variation，色 fill font_color override（源直设色）
+[node name="AmountLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 185.0
+offset_top = 246.0
+offset_right = 320.0
+offset_bottom = 274.0
+theme_type_variation = &"EquipDetailAmountLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 3 段滚动区（源 createList :321-336 draglist：cliprect CCRectMake(0,47,740,387)
+; 场景空间 → 垂直可视界 y 47..434 → godot 126..513；水平源 740 为「不裁水平」
+; 宽泛值，取内容面板 560 宽（源 rect(130,47,540,387) 是触摸热区非可视区）。
+; canDragY 连续滚动 → ScrollContainer 照 eatexp/equip_strengthen 先例；
+; 源自绘左置滚动条（bgpos x=117）→ 引擎默认右侧滚动条，受控偏离。
+[node name="ScrollClip" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 200.0
 offset_top = 126.0
-offset_right = 750.0
+offset_right = 760.0
 offset_bottom = 513.0
+mouse_filter = 1
 horizontal_scroll_mode = 0
 
-[node name="ScrollVBox" type="VBoxContainer" parent="ScrollContainer"]
-unique_name_in_owner = true
+; 滚动内容（源 listLayer 高度=initListHeight(height) 累计）：源 height 初值 15
+; → 顶部余量 15；3 段垂直流式（源 gap=20 → VBox separation 20）
+[node name="SectionsMargin" type="MarginContainer" parent="ScrollClip"]
+layout_mode = 3
+mouse_filter = 2
+theme_override_constants/margin_top = 15
+
+[node name="SectionsVBox" type="VBoxContainer" parent="ScrollClip/SectionsMargin"]
 layout_mode = 3
 size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+; ── 段 1：可合成装备（源 :142-177，#equipList>0 才建 → visible fill 切换）──
+[node name="EquipSection" type="VBoxContainer" parent="ScrollClip/SectionsMargin/SectionsVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+; 标题条（源 :143-149 equip_detail_title_bg 388x22 at (400,435-h-22/2/CS) 中心
+; + 24 号金字同中心）：显示 302.93x17.17 = 388x22 ÷ CS，条贴段宽 560 居中
+[node name="EquipTitleBar" type="Control" parent="ScrollClip/SectionsMargin/SectionsVBox/EquipSection"]
+layout_mode = 3
+offset_right = 560.0
+offset_bottom = 17.17
+mouse_filter = 2
+
+[node name="TitleBg" type="TextureRect" parent="ScrollClip/SectionsMargin/SectionsVBox/EquipSection/EquipTitleBar"]
+layout_mode = 3
+offset_left = 128.54
+offset_right = 431.46
+offset_bottom = 17.17
+texture = ExtResource("4_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="EquipTitleLabel" type="Label" parent="ScrollClip/SectionsMargin/SectionsVBox/EquipSection/EquipTitleBar"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 560.0
+offset_bottom = 17.17
+theme_type_variation = &"EquipDetailSectionTitle"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; 段面板（源 :152-158 equip_detail_panel_bg Scale9 560x max(60,15+55r)）：
+; stylebox/九宫/content margin 走 EquipDetailPanelBox variation；行 fill 进网格
+[node name="EquipPanel" type="PanelContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/EquipSection"]
+unique_name_in_owner = true
+layout_mode = 3
+custom_minimum_size = Vector2(0, 60)
+mouse_filter = 2
+theme_type_variation = &"EquipDetailPanelBox"
+
+; 双列网格（源 :161-175 列距 260 两列、行高 55）：行模板 260x55 fill instantiate
+[node name="EquipGrid" type="GridContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/EquipSection/EquipPanel"]
+unique_name_in_owner = true
+layout_mode = 3
+columns = 2
+
+; ── 段 2：可装备英雄（源 :178-219，#heroList>0 才建 → visible fill 切换）──
+[node name="HeroSection" type="VBoxContainer" parent="ScrollClip/SectionsMargin/SectionsVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="HeroTitleBar" type="Control" parent="ScrollClip/SectionsMargin/SectionsVBox/HeroSection"]
+layout_mode = 3
+offset_right = 560.0
+offset_bottom = 17.17
+mouse_filter = 2
+
+[node name="TitleBg" type="TextureRect" parent="ScrollClip/SectionsMargin/SectionsVBox/HeroSection/HeroTitleBar"]
+layout_mode = 3
+offset_left = 128.54
+offset_right = 431.46
+offset_bottom = 17.17
+texture = ExtResource("4_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="HeroTitleLabel" type="Label" parent="ScrollClip/SectionsMargin/SectionsVBox/HeroSection/HeroTitleBar"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 560.0
+offset_bottom = 17.17
+theme_type_variation = &"EquipDetailSectionTitle"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroPanel" type="PanelContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/HeroSection"]
+unique_name_in_owner = true
+layout_mode = 3
+custom_minimum_size = Vector2(0, 60)
+mouse_filter = 2
+theme_type_variation = &"EquipDetailPanelBox"
+
+[node name="HeroGrid" type="GridContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/HeroSection/HeroPanel"]
+unique_name_in_owner = true
+layout_mode = 3
+columns = 2
+
+; ── 段 3：获得途径（源 :220-294，恒显）：标题 + 面板 + 双列行 + How To Get ──
+[node name="GetSection" type="VBoxContainer" parent="ScrollClip/SectionsMargin/SectionsVBox"]
+unique_name_in_owner = true
+layout_mode = 3
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="GetTitleBar" type="Control" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection"]
+layout_mode = 3
+offset_right = 560.0
+offset_bottom = 17.17
+mouse_filter = 2
+
+[node name="TitleBg" type="TextureRect" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection/GetTitleBar"]
+layout_mode = 3
+offset_left = 128.54
+offset_right = 431.46
+offset_bottom = 17.17
+texture = ExtResource("4_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="GetTitleLabel" type="Label" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection/GetTitleBar"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 560.0
+offset_bottom = 17.17
+theme_type_variation = &"EquipDetailSectionTitle"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GetPanel" type="PanelContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection"]
+unique_name_in_owner = true
+layout_mode = 3
+custom_minimum_size = Vector2(0, 60)
+mouse_filter = 2
+theme_type_variation = &"EquipDetailPanelBox"
+
+; 面板内两层（源 :254 网格 + :270-289 How 文本在网格下方）
+[node name="GetVBox" type="VBoxContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection/GetPanel"]
+layout_mode = 3
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="GetGrid" type="GridContainer" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection/GetPanel/GetVBox"]
+unique_name_in_owner = true
+layout_mode = 3
+columns = 2
+
+; How To Get 文本（源 :270-289 size18 ccc3(238,204,119) anchor(0.5,1) 顶部中心
+; + dimension CCSizeMake(240,0) 自动换行 + 黑影(0,2)）：面板中心居中宽 240，
+; 行高随文本；有 How To Get 数据才显示（fill visible 切换）
+[node name="HowLabel" type="Label" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection/GetPanel/GetVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+custom_minimum_size = Vector2(240, 0)
+size_flags_horizontal = 4
+theme_type_variation = &"EquipDetailHowLabel"
+mouse_filter = 2
+autowrap_mode = 3
