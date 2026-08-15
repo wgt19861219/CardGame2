@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=14 format=3]
+[gd_resource type="Theme" load_steps=16 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -51,6 +51,23 @@ texture_margin_left = 20.0
 texture_margin_top = 20.0
 texture_margin_right = 24.0
 texture_margin_bottom = 18.0
+
+; fragment_compose 合成按钮底（批 1 Task 6）：源 fragmentcompose.lua:426-465 ok/ok_down
+; Scale9 herodetail-upgrade capInsets CCRectMake(20,20,20,20)（贴图 97x67 →
+; margin right=97-40=57 / bottom=67-40=27；cap 与 EquipStrenButton(53,29) 不同故独立）。
+[sub_resource type="StyleBoxTexture" id="SB_fc_ok_n"]
+texture = ExtResource("5_upg")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 57.0
+texture_margin_bottom = 27.0
+
+[sub_resource type="StyleBoxTexture" id="SB_fc_ok_p"]
+texture = ExtResource("6_upgm")
+texture_margin_left = 20.0
+texture_margin_top = 20.0
+texture_margin_right = 57.0
+texture_margin_bottom = 27.0
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -358,3 +375,35 @@ EquipStrenButton/styles/hover = SubResource("SB_upgrade_n")
 EquipStrenButton/styles/pressed = SubResource("SB_upgrade_p")
 EquipStrenButton/styles/disabled = SubResource("SB_upgrade_n")
 EquipStrenButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── fragment_compose 两件套（批 1 Task 6，2026-08-15）──
+; name 标题（源 :273-281 size18 ccc3(184,6,6)）
+FragmentComposeNameLabel/base_type = &"Label"
+FragmentComposeNameLabel/colors/font_color = Color(0.721569, 0.023529, 0.023529, 1)
+FragmentComposeNameLabel/font_sizes/font_size = 18
+; 棕 18（源 :334 "/need" 与 :377 cost_title 同规格 ccc3(50,41,31) 共用）
+FragmentComposeLabel18Brown/base_type = &"Label"
+FragmentComposeLabel18Brown/colors/font_color = Color(0.196078, 0.160784, 0.121569, 1)
+FragmentComposeLabel18Brown/font_sizes/font_size = 18
+; 动态色 18（源 :319 amount / :402 cost 初始色均被运行时刷新覆盖：
+; amount getInformation :241-245 / cost refreshCostColor :108-119 → fill
+; add_theme_color_override 控色，variation 只定号）
+FragmentComposeDynLabel18/base_type = &"Label"
+FragmentComposeDynLabel18/colors/font_color = Color(1, 1, 1, 1)
+FragmentComposeDynLabel18/font_sizes/font_size = 18
+; 通用碎片提示（源 :341-350 size20 ccc3(182,65,21)）
+FragmentComposeUniversalLabel/base_type = &"Label"
+FragmentComposeUniversalLabel/colors/font_color = Color(0.713726, 0.254902, 0.082353, 1)
+FragmentComposeUniversalLabel/font_sizes/font_size = 20
+; 合成按钮（源 :426-465 ok/ok_down Scale9 herodetail-upgrade cap(20,20,20,20)
+; + :455-465 ok_label fontinfo ui_normal_button 17 号白+阴影(63,5,0) 偏移(0,2)，
+; 配置同 StoneDetailOkButton 仅 StyleBox cap 不同）
+FragmentComposeOkButton/base_type = &"Button"
+FragmentComposeOkButton/colors/font_color = Color(1, 1, 1, 1)
+FragmentComposeOkButton/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+FragmentComposeOkButton/constants/shadow_offset_x = 0
+FragmentComposeOkButton/constants/shadow_offset_y = 2
+FragmentComposeOkButton/font_sizes/font_size = 17
+FragmentComposeOkButton/styles/normal = SubResource("SB_fc_ok_n")
+FragmentComposeOkButton/styles/hover = SubResource("SB_fc_ok_n")
+FragmentComposeOkButton/styles/pressed = SubResource("SB_fc_ok_p")
+FragmentComposeOkButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")

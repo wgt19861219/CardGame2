@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/fragment_compose_bg.png" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/fragment_compose_arrow.png" id="2_arrow"]
@@ -6,8 +6,15 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon.png" id="4_gold"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="5_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="6_closep"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="7_ok"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png" id="8_okp"]
+
+; fragment_compose 两件套静态树（批 1 Task 6 核对级，2026-08-15）。
+; 框架照源 fragmentcompose.lua create(:252-484)：mainLayer 遮罩由 PopWindow 基类
+; shade 承担；源 readnode root = bg sprite（:467 readnode.create(self.bg, ...)），
+; 子节点 position 是 bg 局部空间（原点=bg 纹理左下角）——坐标系坑 #1，
+; 本树用 PanelLayer 容器承载（exercise PanelLayer / stone_detail 原点偏移同款）：
+; bg 369x493 中心 ccp(400,240) → 显示 288x385（÷CS 1.28125），左上 (336,127.5)。
+; PanelLayer 下子节点中心 = 源局部 p 的 (p.x, 385-p.y)；贴图显示尺寸=像素÷CS，
+; fix_size/scaleSize 显式尺寸直译不÷CS。fill 见 fragment_compose_panel.gd。
 
 [node name="FragmentComposeContent" type="Control"]
 layout_mode = 3
@@ -16,155 +23,185 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Bg" type="TextureRect" parent="."]
+; 面板层 = 源 bg 矩形（局部空间容器，子节点用 bg 局部坐标直放）
+[node name="PanelLayer" type="Control" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
 offset_left = 336.0
 offset_top = 127.5
 offset_right = 624.0
 offset_bottom = 512.5
+mouse_filter = 2
+
+; 面板底图（源 :261 bg 369x493 at (400,240) 中心锚 → 全屏中心 (480,320)）
+[node name="Bg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_right = 288.0
+offset_bottom = 385.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="Arrow" type="TextureRect" parent="."]
+; name 标题（源 :273-281 size18 ccc3(184,6,6) at (142,348) 中心锚）
+[node name="NameLabel" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
 layout_mode = 3
-offset_left = 210.55
-offset_top = 319.05
-offset_right = 239.45
-offset_bottom = 340.95
+offset_left = 32.0
+offset_top = 25.0
+offset_right = 252.0
+offset_bottom = 49.0
+theme_type_variation = &"FragmentComposeNameLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; 箭头（源 :298-306 fragment_compose_arrow 37x28 at (145,230) 中心锚 → 28.9x21.9）
+[node name="Arrow" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 130.55
+offset_top = 144.05
+offset_right = 159.45
+offset_bottom = 165.95
 texture = ExtResource("2_arrow")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="CostBg" type="TextureRect" parent="."]
+; 持有量（源 :307-321 anchor(1,0.5) at (78,178)：右缘 x=78，色 fill 动态红/棕）
+[node name="AmountLabel" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
 layout_mode = 3
-offset_left = 92.0
-offset_top = 449.0
-offset_right = 352.0
-offset_bottom = 481.0
+offset_left = 28.0
+offset_top = 195.0
+offset_right = 78.0
+offset_bottom = 219.0
+theme_type_variation = &"FragmentComposeDynLabel18"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+
+; 需求量（源 :322-336 anchor(0,0.5) at (78,178)：左缘 x=78 与数字右缘相接，
+; size18 ccc3(50,41,31)）
+[node name="AmountNeedLabel" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 78.0
+offset_top = 195.0
+offset_right = 128.0
+offset_bottom = 219.0
+theme_type_variation = &"FragmentComposeLabel18Brown"
+mouse_filter = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+
+; 通用碎片提示（源 :337-351 size20 ccc3(182,65,21) at (145,130) 中心锚，
+; visible=专属碎片不足时，text=源 lackText——fill 控制，默认隐）
+[node name="UniversalLabel" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 45.0
+offset_top = 243.0
+offset_right = 245.0
+offset_bottom = 267.0
+theme_type_variation = &"FragmentComposeUniversalLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; 金币条底（源 :352-364 equip_craft_money_bg at (142,95) 中心锚，
+; fix_size CCSizeMake(260,32) 显式尺寸直译不÷CS）
+[node name="CostBg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 12.0
+offset_top = 274.0
+offset_right = 272.0
+offset_bottom = 306.0
 texture = ExtResource("3_costbg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="CostIcon" type="TextureRect" parent="."]
+; 费用标题（源 :365-378 size18 ccc3(50,41,31) at (72,94) 中心锚）
+[node name="CostTitleLabel" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
 layout_mode = 3
-offset_left = 204.7
-offset_top = 439.6
-offset_right = 259.3
-offset_bottom = 490.4
+offset_left = 22.0
+offset_top = 279.0
+offset_right = 122.0
+offset_bottom = 303.0
+theme_type_variation = &"FragmentComposeLabel18Brown"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 金币图标（源 :379-389 goldicon 70x65 at (152,95) 中心锚 → 54.6x50.8，
+; scale 0.8 以 rect 中心缩）
+[node name="CostIcon" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 124.7
+offset_top = 264.6
+offset_right = 179.3
+offset_bottom = 315.4
 texture = ExtResource("4_gold")
 expand_mode = 1
 scale = Vector2(0.8, 0.8)
 mouse_filter = 2
 
-[node name="FragmentIconHost" type="Control" parent="."]
+; 费用数字（源 :390-404 size18 ccc3(155,34,14) 初始 + refreshCostColor 覆盖，
+; anchor(0,0.5) at (180,94)：左缘 x=180，色 fill 动态）
+[node name="CostLabel" type="Label" parent="PanelLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+offset_left = 180.0
+offset_top = 279.0
+offset_right = 240.0
+offset_bottom = 303.0
+theme_type_variation = &"FragmentComposeDynLabel18"
 mouse_filter = 2
-
-[node name="MakeIconHost" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="NameLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 112.0
-offset_top = 200.0
-offset_right = 332.0
-offset_bottom = 224.0
-theme_override_colors/font_color = Color(0.721569, 0.0235294, 0.0235294, 1)
-theme_override_font_sizes/font_size = 18
-horizontal_alignment = 1
-vertical_alignment = 1
-mouse_filter = 2
-
-[node name="AmountLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 108.0
-offset_top = 370.0
-offset_right = 158.0
-offset_bottom = 394.0
-theme_override_font_sizes/font_size = 18
-horizontal_alignment = 2
-vertical_alignment = 1
-mouse_filter = 2
-
-[node name="AmountNeedLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 158.0
-offset_top = 370.0
-offset_right = 208.0
-offset_bottom = 394.0
-theme_override_colors/font_color = Color(0.196078, 0.160784, 0.121569, 1)
-theme_override_font_sizes/font_size = 18
 horizontal_alignment = 0
 vertical_alignment = 1
-mouse_filter = 2
 
-[node name="UniversalLabel" type="Label" parent="."]
-unique_name_in_owner = true
-visible = false
-layout_mode = 3
-offset_left = 125.0
-offset_top = 418.0
-offset_right = 325.0
-offset_bottom = 442.0
-theme_override_colors/font_color = Color(0.713726, 0.254902, 0.0823529, 1)
-theme_override_font_sizes/font_size = 20
-horizontal_alignment = 1
-vertical_alignment = 1
-mouse_filter = 2
-
-[node name="CostTitleLabel" type="Label" parent="."]
+; 关闭按钮（源 :405-425 close/close_down at (280,375) 中心锚 → 双态合并
+; TextureButton；中心 y=10 顶缘越出面板顶 15.75px——源原生骑右上边）
+[node name="CloseBtn" type="TextureButton" parent="PanelLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 102.0
-offset_top = 453.0
-offset_right = 202.0
-offset_bottom = 477.0
-theme_override_colors/font_color = Color(0.196078, 0.160784, 0.121569, 1)
-theme_override_font_sizes/font_size = 18
-mouse_filter = 2
-
-[node name="CostLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 260.0
-offset_top = 454.0
-offset_right = 320.0
-offset_bottom = 478.0
-theme_override_colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
-theme_override_font_sizes/font_size = 18
-horizontal_alignment = 0
-vertical_alignment = 1
-mouse_filter = 2
-
-[node name="CloseBtn" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 334.6
-offset_top = 159.25
-offset_right = 385.4
-offset_bottom = 210.75
+offset_left = 254.6
+offset_top = -15.75
+offset_right = 305.4
+offset_bottom = 35.75
 texture_normal = ExtResource("5_close")
 texture_pressed = ExtResource("6_closep")
 ignore_texture_size = true
 
-[node name="OkBtn" type="Button" parent="."]
+; 合成按钮（源 :426-465 ok/ok_down Scale9 herodetail-upgrade cap(20,20,20,20)
+; at (145,45) 中心锚 scaleSize 250x49 → 三态+字号走 FragmentComposeOkButton
+; variation，text fill 设 LSTR 确认合成）
+[node name="OkBtn" type="Button" parent="PanelLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 100.0
-offset_top = 490.5
-offset_right = 350.0
-offset_bottom = 539.5
+offset_left = 20.0
+offset_top = 315.5
+offset_right = 270.0
+offset_bottom = 364.5
+theme_type_variation = &"FragmentComposeOkButton"
 mouse_filter = 0
+
+; 碎片图标挂点（源 :469-472 createFragment at (78,230) 中心锚）：零尺寸点置
+; 图标中心，icon 挂后负半偏移居中（stone_detail/shop 同款）
+[node name="FragmentIconHost" type="Control" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 78.0
+offset_top = 155.0
+offset_right = 78.0
+offset_bottom = 155.0
+mouse_filter = 2
+
+; 产物图标挂点（源 :473-476 createIcon(makeId) at (212,230) 中心锚）
+[node name="MakeIconHost" type="Control" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 212.0
+offset_top = 155.0
+offset_right = 212.0
+offset_bottom = 155.0
+mouse_filter = 2
