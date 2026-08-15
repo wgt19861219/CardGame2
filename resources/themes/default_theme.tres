@@ -56,6 +56,32 @@ DialogLabel/base_type = &"Label"
 DialogLabel/colors/font_color = Color(1, 1, 1, 1)
 DialogLabel/colors/font_outline_color = Color(0, 0, 0, 1)
 DialogLabel/constants/outline_size = 3
+; eatexp 吃经验弹窗（批 1 Task 3，2026-08-15）：title 源 eatexplist.lua:57-72 size24 ccc3(250,205,16)
+; + fontinfo ui_normal_button（17 号白+阴影(63,5,0)偏移(0,2)，size 被 24 覆盖）。
+EatexpTitleLabel/base_type = &"Label"
+EatexpTitleLabel/colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
+EatexpTitleLabel/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+EatexpTitleLabel/constants/shadow_offset_x = 0
+EatexpTitleLabel/constants/shadow_offset_y = 2
+EatexpTitleLabel/font_sizes/font_size = 24
+; 源 :176-185 prompt size20 无色配置（白）
+EatexpPromptLabel/base_type = &"Label"
+EatexpPromptLabel/font_sizes/font_size = 20
+; 源 :225-238 行内 level size16 ccc3(68,51,51)
+EatexpHeroLevelLabel/base_type = &"Label"
+EatexpHeroLevelLabel/colors/font_color = Color(0.266667, 0.2, 0.2, 1)
+EatexpHeroLevelLabel/font_sizes/font_size = 16
+; 源 readhero.lua:939-985 createttf size20 白 + 黑阴影(0,2)（rank 星后缀色 fill 动态 override）
+EatexpHeroNameLabel/base_type = &"Label"
+EatexpHeroNameLabel/colors/font_color = Color(1, 1, 1, 1)
+EatexpHeroNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EatexpHeroNameLabel/constants/shadow_offset_x = 0
+EatexpHeroNameLabel/constants/shadow_offset_y = 2
+EatexpHeroNameLabel/font_sizes/font_size = 20
+; 源 :424-436 满级 shade 标签 size22 ccc3(255,148,62)
+EatexpShadeLabel/base_type = &"Label"
+EatexpShadeLabel/colors/font_color = Color(1, 0.580392, 0.243137, 1)
+EatexpShadeLabel/font_sizes/font_size = 22
 GhostButton/base_type = &"Button"
 GhostButton/styles/normal = SubResource("StyleBoxEmpty_0oxu6")
 GhostButton/styles/hover = SubResource("StyleBoxEmpty_0oxu6")

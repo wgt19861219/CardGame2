@@ -6,6 +6,13 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade_title_short_bg.png" id="5_titlebg1"]
 
+; eatexp 吃经验弹窗两件套静态树（批 1 Task 3，2026-08-15）。框架照源 eatexplist.lua
+; create(:33-111) 直译；坐标 cocos(800x480 左下) → godot(960x640 左上) via (x+80, 560-y)，
+; 中心锚元素 = 中心点映射后取对称 offsets；显示尺寸 = 纹理像素 ÷ CS(1.28125)。
+; 源 z 序：frame(0)/title_bg(0) < close(1) < title_bg_1(10) < title(11) → 子节点顺序照排。
+; 列表层（draglist）→ ScrollHost + ListHost（源 listLayer）+ Grid 两列；
+; 英雄行结构在 eatexp_item.tscn（行模板，源 createHero :204-302）。
+
 [node name="EatexpContent" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -13,81 +20,117 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; frame 底板（源 :73-85 package_herolist_bg 700x485 at (400,215) fix_wh={h=345}）：
+; readnode setConfig(:215-218) fix_wh 只 setScaleY → 宽不变=700/CS=546.3、高=345，
+; 中心 _g(400,215)=(480,345) → rect (206.83,172.5)-(753.17,517.5)
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 195.0
+offset_left = 206.83
 offset_top = 172.5
-offset_right = 765.0
+offset_right = 753.17
 offset_bottom = 517.5
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
+; 标题长底（源 :34-44 equip_detail_title_bg 388x22 at (400,399) 中心锚）：
+; 显示 302.8x17.2，中心 _g(400,399)=(480,161)
 [node name="TitleBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 195.0
-offset_top = 172.5
-offset_right = 765.0
-offset_bottom = 208.5
+offset_left = 328.58
+offset_top = 152.41
+offset_right = 631.42
+offset_bottom = 169.59
 texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="TitleBg1" type="TextureRect" parent="TitleBg"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -100.0
-offset_right = 100.0
-offset_top = -20.0
-offset_bottom = 56.0
-grow_horizontal = 2
-texture = ExtResource("5_titlebg1")
-expand_mode = 1
-mouse_filter = 2
-
-[node name="TitleLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 385.0
-offset_top = 180.5
-offset_right = 565.0
-offset_bottom = 210.5
-theme_override_colors/font_color = Color(0.980392, 0.803922, 0.0627451, 1)
-theme_override_font_sizes/font_size = 24
-mouse_filter = 2
-horizontal_alignment = 1
-text = "选择英雄"
-
+; 关闭按钮（源 :87-110 close 65x66 at (668,360) 中心锚 + closePress 按下态）：
+; 显示 50.7x51.5，中心 _g(668,360)=(748,200)；双态 TextureButton
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 710.0
-offset_top = 177.5
-offset_right = 761.0
-offset_bottom = 228.5
+offset_left = 722.63
+offset_top = 174.24
+offset_right = 773.37
+offset_bottom = 225.76
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
 
+; 标题短底（源 :45-56 crusade_title_short_bg 445x79 at (400,379) 中心锚 z=10）：
+; 显示 347.3x61.7，中心 _g(400,379)=(480,181)
+[node name="TitleBg1" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 306.34
+offset_top = 150.16
+offset_right = 653.66
+offset_bottom = 211.84
+texture = ExtResource("5_titlebg1")
+expand_mode = 1
+mouse_filter = 2
+
+; 标题（源 :57-72 "选择英雄" size24 ccc3(250,205,16) fontinfo ui_normal_button z=11
+; at (400,379) 中心锚）：色/字号/阴影走 EatexpTitleLabel variation，text 由 panel fill
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 380.0
+offset_top = 166.0
+offset_right = 580.0
+offset_bottom = 196.0
+theme_type_variation = &"EatexpTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "选择英雄"
+
+; 列表滚动宿主（源 createListLayer :152-170 draglist：cliprect CCRectMake(0,55,800,320)
+; 场景空间 → 垂直裁剪界 y 185..505；rect CCRectMake(120,55,570,320) 触摸响应区 →
+; x 200..770。源宽 800=全宽不裁水平语义，取触摸 rect 作 Godot 实际区域（视觉/交互一致）。
 [node name="ScrollHost" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 215.0
-offset_top = 217.5
-offset_right = 745.0
-offset_bottom = 507.5
+offset_left = 200.0
+offset_top = 185.0
+offset_right = 770.0
+offset_bottom = 505.0
 mouse_filter = 1
 horizontal_scroll_mode = 0
 
-[node name="Grid" type="GridContainer" parent="ScrollHost"]
+; 滚动内容层（源 listLayer）：高度由 panel fill 照源 initListHeight(:199) 设置
+[node name="ListHost" type="Control" parent="ScrollHost"]
 unique_name_in_owner = true
 layout_mode = 3
-theme_override_constants/h_separation = 0
-theme_override_constants/v_separation = 0
-columns = 2
-size_flags_horizontal = 3
+offset_right = 570.0
+offset_bottom = 135.0
 mouse_filter = 2
-custom_minimum_size = Vector2(530, 0)
+
+; 顶部提示行（源 :176-185 "长按英雄头像即可快速使用经验丹 <物品名>" size20 at (400,330)
+; 中心锚 → 全屏 (480,230) → host 局部中心 (280,45)）：text 由 panel fill（含物品名）
+[node name="PromptLabel" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = -10.0
+offset_top = 35.0
+offset_right = 570.0
+offset_bottom = 55.0
+theme_type_variation = &"EatexpPromptLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; 英雄行两列网格（源 createList :193 列中心 278/523（列距 245）行中心距 100）：
+; 行宽 244.4 → h_sep=0.6；行高 96 → v_sep=4；grid 左缘=行1左缘 235.85-200=35.85、
+; 顶=首行顶（行1中心 y 298 全屏 → 顶 250 → host 局部 65）
+[node name="Grid" type="GridContainer" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 35.85
+offset_top = 65.0
+offset_right = 525.63
+offset_bottom = 161.0
+theme_override_constants/h_separation = 1
+theme_override_constants/v_separation = 4
+columns = 2
+mouse_filter = 2

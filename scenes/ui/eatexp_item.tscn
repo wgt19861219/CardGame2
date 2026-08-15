@@ -1,0 +1,155 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_hero_bg.png" id="1_herobg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_exp_bar_bg.png" id="2_barbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_exp_bar.png" id="3_bar"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/heroxp-progress-full.png" id="4_full"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_hero_shade.png" id="5_shade"]
+
+; eatexp 英雄行模板（批 1 Task 3，2026-08-15）。静态结构照源 eatexplist.lua createHero
+; （:204-302）直译；panel（eatexp_panel._build_one_row）只 instantiate + 填动态数据
+; （head/名字/等级/mark/经验比例/满级切换），禁建静态结构。
+; 坐标换算：bg 逻辑 244.4x96（313x123 ÷ CS 1.28125，cocos y-up 左下原点）→
+; Godot 行局部 y-down 左上原点：gx = x，gy = 96 - y。
+; 源行内锚点：head anchor(0,0) at (7,9)；level anchor(0,0.5) at (96,40)；name 右端 178
+; 中心 y72（fill 定位）；mark 中心 (110,72) scale0.8；expBarBg 中心 (162,20)；
+; expBar anchor(0,0.5) at (93.5,20) scalexy；满级 setExpMax(:397-437) 三件默认隐藏。
+
+[node name="EatexpItem" type="Control"]
+custom_minimum_size = Vector2(244.39, 96)
+layout_mode = 3
+offset_right = 244.39
+offset_bottom = 96.0
+mouse_filter = 0
+
+; 行底板（源 :205 createSprite package_hero_bg）
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_right = 244.39
+offset_bottom = 96.0
+texture = ExtResource("1_herobg")
+expand_mode = 1
+mouse_filter = 2
+
+; 头像挂点（源 :214-224 readhero icon 104x104 anchor(0,0) at (7,9) → 左上 (7, 96-9-104)）
+[node name="HeadHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 7.0
+offset_top = -17.0
+offset_right = 111.0
+offset_bottom = 87.0
+mouse_filter = 2
+
+; 经验条底（源 :264-266 中心 (162,20) → 中心 (162,76)，显示 138.9x16.4）
+[node name="ExpBarBg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 92.53
+offset_top = 67.8
+offset_right = 231.47
+offset_bottom = 84.2
+texture = ExtResource("2_barbg")
+expand_mode = 1
+mouse_filter = 2
+
+; 经验条（源 :287-299 anchor(0,0.5) at (93.5,20) scalexy x=exp/maxExp →
+; pivot 左端，fill 设 scale.x）
+[node name="ExpBar" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 93.5
+offset_top = 67.8
+offset_right = 232.43
+offset_bottom = 84.2
+pivot_offset = Vector2(0, 8.2)
+texture = ExtResource("3_bar")
+expand_mode = 1
+mouse_filter = 2
+
+; 满级经验条（源 setExpMax :402-414 heroxp-progress-full fix_size CCSizeMake(145,20)
+; anchor(0,0.5) at (90,20)，普通态隐藏，满级 fill 切换）
+[node name="ExpFullBar" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 90.0
+offset_top = 66.0
+offset_right = 235.0
+offset_bottom = 86.0
+texture = ExtResource("4_full")
+expand_mode = 1
+mouse_filter = 2
+
+; 等级（源 :225-238 "LV:%d" size16 ccc3(68,51,51) anchor(0,0.5) at (96,40) →
+; 左端 96 中心 y 56；色/字号走 EatexpHeroLevelLabel variation）
+[node name="LevelLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 96.0
+offset_top = 44.0
+offset_right = 166.0
+offset_bottom = 68.0
+theme_type_variation = &"EatexpHeroLevelLabel"
+mouse_filter = 2
+
+; 名字（源 :239-247 createHeroNameByInfo size20 白+黑阴影(0,2)，右端 178 中心 y72
+; → 中心 y 24；fill 按 name+suffix 拼宽右对齐 178 定位，超宽等比缩 min(ow=100,w)）
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 78.0
+offset_top = 12.0
+offset_right = 178.0
+offset_bottom = 36.0
+theme_type_variation = &"EatexpHeroNameLabel"
+mouse_filter = 2
+
+; rank 星后缀（源 readhero.lua:959-972 "+N" 色=getHeroNameColorByRank(rank)）：
+; fill 定位+动态色 override，star<=0 隐藏
+[node name="SuffixLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 178.0
+offset_top = 12.0
+offset_right = 228.0
+offset_bottom = 36.0
+theme_type_variation = &"EatexpHeroNameLabel"
+mouse_filter = 2
+
+; 属性 mark（源 :248-260 icon_str/agi/int 中心 (110,72) scale0.8 → 中心 (110,24)
+; 显示 46x46*0.8=36.8；fill 按 Unit.Main Attrib 选图，无对应隐藏）
+[node name="MarkRect" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 91.58
+offset_top = 5.58
+offset_right = 128.42
+offset_bottom = 42.42
+expand_mode = 1
+mouse_filter = 2
+
+; 满级整行遮暗（源 :415-423 package_hero_shade anchor(0,0) at (0,0) 整行覆盖）
+[node name="MaxShade" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_right = 244.39
+offset_bottom = 96.0
+texture = ExtResource("5_shade")
+expand_mode = 1
+mouse_filter = 2
+
+; 满级标签（源 :424-436 "经验已满" size22 ccc3(255,148,62) at (190,42) → 中心 (190,54)）
+[node name="ShadeLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 140.0
+offset_top = 42.0
+offset_right = 240.0
+offset_bottom = 66.0
+theme_type_variation = &"EatexpShadeLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
