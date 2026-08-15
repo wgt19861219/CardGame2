@@ -1,7 +1,14 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="3_vittips"]
+
+; exercise 两件套静态树（批 1 Task 1，2026-08-15）。框架照源 degreeWindow.create 直译
+; （CardGameAxmol ui/exercise.lua:694-786）：蒙层/9patch 底框/标题/关闭；7 入口按钮为
+; 聚合层发明（源主场景为 FCA 动画入口，无按钮对应物，决策见 exercise_panel.gd 头注）。
+; 坐标换算：cocos(800x480 左下) → godot(960x640 左上) via (x+80, 560-y)；
+; 贴图显示尺寸 = 纹理像素 / CS(1.28125)。
 
 [node name="ExerciseContent" type="Control"]
 layout_mode = 3
@@ -10,43 +17,131 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 蒙层照源 mainLayer CCLayerColor ccc4(0,0,0,150)（exercise.lua:697）。
 [node name="Bg" type="ColorRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.1, 0.1, 0.15, 0.95)
+color = Color(0, 0, 0, 0.588)
 mouse_filter = 2
 
-[node name="Title" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 20.0
-offset_right = 800.0
-offset_bottom = 50.0
-theme_override_font_sizes/font_size = 24
-mouse_filter = 2
-horizontal_alignment = 1
-text = "试炼"
-
+; 关闭按钮照源 close（exercise.lua:723-731）中心 ccp(750,350)；贴图 65x66 ÷CS = 50.7x51.5。
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 797.0
-offset_top = 177.0
-offset_right = 862.0
-offset_bottom = 243.0
+offset_left = 804.6
+offset_top = 184.2
+offset_right = 855.4
+offset_bottom = 235.8
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")
 ignore_texture_size = true
 
-[node name="EntryGrid" type="GridContainer" parent="."]
+; 面板层照源 frame（exercise.lua:708-720）Scale9 main_vit_tips capInsets(10,10,58,26)
+; scaleSize 705x300 中心 ccp(400,220) → 左上 to_godot(400,220) - (705/2, 300/2) = (127.5,190)。
+[node name="PanelLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 200.0
-offset_top = 80.0
-offset_right = 600.0
-offset_bottom = 380.0
-columns = 2
+offset_left = 127.5
+offset_top = 190.0
+offset_right = 832.5
+offset_bottom = 490.0
+mouse_filter = 2
 
+[node name="Frame" type="NinePatchRect" parent="PanelLayer"]
+layout_mode = 3
+offset_right = 705.0
+offset_bottom = 300.0
+texture = ExtResource("3_vittips")
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 35
+patch_margin_bottom = 25
+mouse_filter = 2
+
+; 标题照源 title（exercise.lua:763-776）readnode 默认中心锚，场景(399.5,342) → PanelLayer
+; 局部中心 (352,28)；字号/颜色走 ExerciseTitleLabel variation（源 ui_normal_button 17 号
+; + 阴影(63,5,0) 偏移(0,2) + config 金色(231,206,19)）。
+[node name="Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.093333
+anchor_right = 0.5
+anchor_bottom = 0.093333
+offset_left = -80.0
+offset_top = -12.0
+offset_right = 80.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"ExerciseTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "试炼"
+
+; 入口网格：行 1 中心 y=165 / 行 2 中心 y=235（行距 70 ≈ 源难度按钮行 y=140 与 vit 行 y=45 的节奏）。
+; 按钮显示尺寸 142x34.4 = act_comment_bg 182x44 ÷CS（variation 等比缩放底图）。
+[node name="EntryGrid" type="GridContainer" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 56.5
+offset_top = 147.8
+offset_right = 648.5
+offset_bottom = 252.2
+theme_override_constants/v_separation = 36
+columns = 4
+mouse_filter = 2
+
+[node name="EmBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "英雄副本"
+
+[node name="EquipBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "装备副本"
+
+[node name="ExpBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "经验试炼"
+
+[node name="MoneyBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "金币试炼"
+
+[node name="IntBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "智力试炼"
+
+[node name="AgiBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "敏捷试炼"
+
+[node name="StrBtn" type="Button" parent="PanelLayer/EntryGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 34.4)
+layout_mode = 2
+theme_type_variation = &"ExerciseEntryButton"
+text = "力量试炼"

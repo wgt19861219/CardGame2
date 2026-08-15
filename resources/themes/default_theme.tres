@@ -1,8 +1,9 @@
-[gd_resource type="Theme" load_steps=8 format=3]
+[gd_resource type="Theme" load_steps=10 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="3_detailp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="4_commentbg"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -26,6 +27,11 @@ texture_margin_left = 15.0
 texture_margin_top = 15.0
 texture_margin_right = 66.0
 texture_margin_bottom = 33.0
+
+; exercise 入口按钮底（批 1 Task 1）：act_comment_bg 源语义即文字行底图（vit 行/advise 行），
+; 无 patch 等比整体缩放（182x44 → 142x34.4 = ÷CS），按钮 rect 须等于显示尺寸防变形。
+[sub_resource type="StyleBoxTexture" id="SB_comment"]
+texture = ExtResource("4_commentbg")
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -186,3 +192,22 @@ BattlePrepareTabLabel/font_sizes/font_size = 20
 StoneAmountLabel/base_type = &"Label"
 StoneAmountLabel/colors/font_color = Color(0.663, 0.357, 0.110, 1)
 StoneAmountLabel/font_sizes/font_size = 16
+; ── exercise 两件套（批 1 Task 1，2026-08-15）──
+; 标题照源 exercise.lua:764-776 title：fontinfo ui_normal_button（17 号 + 阴影(63,5,0) 偏移(0,2)）
+; + config color ccc3(231,206,19)。
+ExerciseTitleLabel/base_type = &"Label"
+ExerciseTitleLabel/colors/font_color = Color(0.906, 0.808, 0.075, 1)
+ExerciseTitleLabel/colors/font_shadow_color = Color(0.247, 0.02, 0, 1)
+ExerciseTitleLabel/constants/shadow_offset_x = 0
+ExerciseTitleLabel/constants/shadow_offset_y = 2
+ExerciseTitleLabel/font_sizes/font_size = 17
+; 入口按钮（聚合层发明，源无对应按钮贴图）：act_comment_bg 文字底条，文字色照源 dungeon
+; 入口标签 ccc3(233,214,181)。
+ExerciseEntryButton/base_type = &"Button"
+ExerciseEntryButton/colors/font_color = Color(0.914, 0.839, 0.710, 1)
+ExerciseEntryButton/font_sizes/font_size = 18
+ExerciseEntryButton/styles/normal = SubResource("SB_comment")
+ExerciseEntryButton/styles/hover = SubResource("SB_comment")
+ExerciseEntryButton/styles/pressed = SubResource("SB_comment")
+ExerciseEntryButton/styles/disabled = SubResource("SB_comment")
+ExerciseEntryButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
