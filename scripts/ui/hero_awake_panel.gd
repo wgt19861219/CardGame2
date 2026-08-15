@@ -1,13 +1,15 @@
 class_name HeroAwakePanel
 extends PopWindow
 
-## 觉醒展示弹窗（View 层）— 照源 ui/popwindow/popheroawake.lua 翻译。
+## 觉醒展示弹窗（View 层）— 照源 ui/popwindow/popheroawake.lua 两件套改造（批 1 Task 4，
+## 2026-08-15）。静态树（bg 居中底板/light 光圈/FCA 双宿主/卡宿主）全在
+## hero_awake_content.tscn；本文件只做 bg 三色 fill、卡实例挂载、动画时序、点击关闭。
 ## 动画序列（源 showCardui :9-47）：
 ##   1. bg CCFadeIn(0.4)（:147）
 ##   2. light CCFadeIn(0.4) → CCRotateBy(5,360)×CCRepeat×3（:11-18，360° 旋转 3 圈共 15s）
 ##   3. cardui CCDelayTime(0.4) → CCFadeIn(0.2) + add bubble FCA（:21-36）
 ##   4. add card_<color> FCA at z=10 scale=1.5（:38-44）
-##   5. registerTouchHandler + 点击任意处关闭（:45-46 + doClickLayer :49-72）
+##   5. 点击任意处关闭（:45-46 + doClickLayer :49-72；觉醒恒单卡，源多卡残留分支不迁移）
 ## FCA 资源 eff_UI_tavern_bubble / eff_UI_tavern_card_<color> 在 assets/anim_frames/effect/。
 
 signal awake_shown   # 展示动画启动（点击关闭前的视觉完成节点）
@@ -16,16 +18,12 @@ signal closed        # 用户点击关闭
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_awake_content.tscn")
 const CARD_SCENE: PackedScene = preload("res://scenes/ui/hero_detail_card_tab.tscn")
 
-const CENTER_COCOS: Vector2 = Vector2(400.0, 240.0)   # bg/cardui center
-const LIGHT_COCOS: Vector2 = Vector2(400.0, 550.0)    # light
-const LIGHT_SCALE: float = 6.0
 const LIGHT_ROTATE_SEC: float = 5.0
 const LIGHT_REPEAT: int = 3
 const FADE_IN_SEC: float = 0.4
 const CARD_FADE_SEC: float = 0.2
 const CARD_FADE_DELAY: float = 0.4
-const FCA_SCALE: float = 1.5
-const CARD_HOST_SHIFT_X: float = 200.0                # card_tab 原居左，右移 200 让 CardFrame center 落屏幕 (480,320)
+const CARD_HOST_SHIFT_X: float = 200.0   # card_tab 原居左，设 offset 200 让 CardFrame center 落屏幕 (480,320)
 
 const BG_RES_MAP: Dictionary = {
 	"red": "res://assets/ui/alpha/HVGA/tavern_get_hero_bg_red.jpg",
@@ -46,23 +44,18 @@ var _content: Control = null
 var _bg: TextureRect = null
 var _light: Sprite2D = null
 var _card_host: Control = null
-var _fca_host: Control = null
+var _bubble_host: Node2D = null
+var _card_fca_host: Node2D = null
 var _close_handler: Callable = Callable()
 
 
-static func to_godot(cx: float, cy: float) -> Vector2:
-	return Vector2(cx + 80.0, 560.0 - cy)
-
-
-# 本项目单机化直接调 _build_content + show_window 后开动画（无 announce 中介）。
+# 本项目单机化直接调 setup_awake + show_window 后开动画（无 announce 中介）。
 func setup_awake(hero: HeroInstance, cm: Variant) -> void:
+	transparent_shade = true   # 源 noShade=true（shade 全透不吞点击，基类 T4 样板字段）
 	_hero = hero
 	_cm = cm
 	_color = _resolve_color(cm, hero)
-	set_swallow(false)
 	setup()
-	# shade 透明（源 noShade=true 等价：不可见但仍占全屏接收点击）
-	shade_layer.color = Color(0.0, 0.0, 0.0, 0.0)
 	_build_content()
 
 
@@ -73,37 +66,23 @@ func _resolve_color(cm: Variant, hero: HeroInstance) -> String:
 	return c if BG_RES_MAP.has(c) else "red"
 
 
+# 绑定 .tscn 静态节点 + fill bg 三色贴图（源 :146 res=bg_res[color] 运行时选图；
+# _resolve_color 已兜底 red，三图齐备无降级路径——原迁移期 fallback 循环删除，见任务报告）。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
 	_bg = _content.get_node("%BgRect") as TextureRect
 	_light = _content.get_node("%LightSprite") as Sprite2D
 	_card_host = _content.get_node("%CardHost") as Control
-	_fca_host = _content.get_node("%FcaHost") as Control
-	var bg_res: String = _resolve_bg_res()
-	if not bg_res.is_empty() and ResourceLoader.exists(bg_res):
-		_bg.texture = load(bg_res) as Texture2D
-	_bg.modulate.a = 0.0
-	_light.scale = Vector2(LIGHT_SCALE, LIGHT_SCALE)
-	_light.modulate.a = 0.0
+	_bubble_host = _content.get_node("%FcaBubbleHost") as Node2D
+	_card_fca_host = _content.get_node("%FcaCardHost") as Node2D
+	_bg.texture = load(String(BG_RES_MAP[_color])) as Texture2D
 	_build_hero_card()
-
-
-func _resolve_bg_res() -> String:
-	var res: String = BG_RES_MAP.get(_color, "")
-	if ResourceLoader.exists(res):
-		return res
-	# 缺降级：依次试 red/blue/green 占位
-	for color in ["red", "blue", "green"]:
-		var fallback: String = BG_RES_MAP[color]
-		if ResourceLoader.exists(fallback):
-			return fallback
-	return ""
 
 
 # 卡牌视觉（源 :136 ed.readhero.getHeroCard(hid, {disableswap=true, showAwake=true}).container）。
 # 复用 hero_detail_card_tab.tscn（CardFrame + Art + Name + stars + type icon，HeroDetailTabs.fill_card_view 填数据）。
-# card_tab 原为 hero_detail 设计（CardFrame center 280,320），觉醒弹窗居中需右移 200 → center (480,320)。
+# card_tab 原为 hero_detail 设计（CardFrame center 205,320），觉醒弹窗居中需 offset 200 → center (480,320)。
 func _build_hero_card() -> void:
 	if _hero == null or _cm == null:
 		return
@@ -111,7 +90,7 @@ func _build_hero_card() -> void:
 	card.visible = true   # .tscn 默认 visible=false，强制显示
 	card.offset_left = CARD_HOST_SHIFT_X
 	card.offset_right = CARD_HOST_SHIFT_X
-	card.modulate.a = 0.0
+	card.modulate.a = 0.0   # 源 :142 config opacity=0（外部场景实例，初始态由 fill 设）
 	_card_host.add_child(card)
 	HeroDetailTabs.fill_card_view(card, _hero, _cm)
 
@@ -156,17 +135,17 @@ func _play_card_fade() -> void:
 
 
 func _add_bubble_fca() -> void:
-	_add_fca(BUBBLE_RES)
+	_add_fca(BUBBLE_RES, _bubble_host)
 
 
 func _add_card_fca() -> void:
-	_add_fca(CARD_FCA_PREFIX + _color)
+	_add_fca(CARD_FCA_PREFIX + _color, _card_fca_host)
 
 
 # 加 FCA 光效（.abc zip 在 effect/ 子目录，atlas.load_atlas_from_ani 路径含 effect/ 前缀）。
-# 缺资源静默跳过（照源 xpcall 容错 + 项目 .abc 加载失败降级范式）。
-func _add_fca(resource: String) -> void:
-	if _fca_host == null:
+# 挂静态宿主（位置/scale 已进 tscn）；缺资源静默跳过（照源 xpcall 容错 + 项目 .abc 加载失败降级范式）。
+func _add_fca(resource: String, host: Node2D) -> void:
+	if host == null:
 		return
 	var zip_path: String = FCA_BASE_DIR + resource + ".abc"
 	if not FileAccess.file_exists(zip_path):
@@ -177,11 +156,7 @@ func _add_fca(resource: String) -> void:
 	var fca := FcaAnimation.new()
 	if not fca.load_from_ani(resource, atlas):
 		return
-	var parts := Node2D.new()
-	parts.position = to_godot(CENTER_COCOS.x, CENTER_COCOS.y)
-	parts.scale = Vector2(FCA_SCALE, FCA_SCALE)
-	parts.add_child(fca)
-	_fca_host.add_child(parts)
+	host.add_child(fca)
 	var actions: PackedStringArray = fca.get_action_names()
 	if actions.size() > 0:
 		fca.play(actions[0], true)
