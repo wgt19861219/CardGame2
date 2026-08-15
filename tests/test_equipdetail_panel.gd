@@ -247,6 +247,25 @@ func test_item_rows_use_cell_template() -> void:
 	panel.remove_window()
 
 
+# 行内水平 rect 守卫（审查修复：防行组整组右偏 60px 复发）。源 :8
+# offsetX=-40；行内公式（:164/:169 装备，:204/:212 英雄，:257/:262 获取
+# 同构）icon 中心/name 左端 x=200/230+260*col-40（col0 即 160/190）；面板
+# :154/158 中心 440-40=400 anchor(0.5,1) 宽 560 → 左缘 120 → icon 中心距
+# 面板左缘 40、name 左端距 70；再减 SB_equip_detail_panel content_margin_
+# left 20 → 行内 icon 中心 20、name 左端 50（col1 列内相对不变）。
+func test_item_cell_row_horizontal_rect() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipdetail_item_cell.tscn")
+	var cell: Control = scene.instantiate() as Control
+	add_child_autofree(cell)
+	var host: Control = cell.get_node("%IconHost") as Control
+	assert_almost_eq(host.position.x, 20.0, 0.5, "icon 中心行内 20（源 160-面板左缘 120-余 20）")
+	var way: TextureRect = cell.get_node("%WayIcon") as TextureRect
+	assert_almost_eq(way.position.x + way.size.x * 0.5, 20.0, 0.5,
+		"WayIcon 中心行内 20（源 :257 同公式与 icon 同列）")
+	var name_lbl: Label = cell.get_node("%NameLabel") as Label
+	assert_almost_eq(name_lbl.position.x, 50.0, 0.5, "name 左端行内 50（源 190-120-20）")
+
+
 # 英雄段 icon 照源 :198 readhero.getIcon({id,rank,length=40})（rank 框 104 容器
 # 缩放 40/104）——旧版误用装备 icon 工厂，本 task 照源归位。
 func test_hero_rows_use_readhero_icon() -> void:
