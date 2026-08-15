@@ -630,7 +630,9 @@ func test_npc_and_talk_layout_follows_source() -> void:
 	assert_almost_eq(frame.offset_top, 255.0, 0.5, "气泡顶 y=255（源 :23 anchor(0.5,1) 305）")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 224.0, 0.5, "气泡宽 224（源 :21）")
 	assert_eq(frame.patch_margin_left, 30, "气泡 cap left=30（源 :20）")
+	assert_eq(frame.patch_margin_top, 48, "气泡 cap top=98-30-20（cap 左下原点，终审必修 1）")
 	assert_eq(frame.patch_margin_right, 91, "气泡 cap right=266-30-145")
+	assert_eq(frame.patch_margin_bottom, 30, "气泡 cap bottom=源 cap.y=30（终审必修 1）")
 	var talk_lbl: Label = inst.get_node("%TalkLabel") as Label
 	assert_almost_eq(talk_lbl.offset_left, 625.0, 0.5, "对话文字左 x=625（725-200/2）")
 	assert_almost_eq(talk_lbl.offset_top, 278.0, 0.5, "对话文字顶 y=278（源 :28 anchor(0.5,1) 282）")
@@ -1018,11 +1020,12 @@ func test_fill_hero_head_and_name() -> void:
 
 
 # 两件套红线：panel 静态结构零 .new()（白名单式；静态节点全在 content tscn，
-# ReadheroIcon=头像数据工厂，eatexp ReadheroIcon 同款白名单先例）
+# ReadheroIcon=头像数据工厂，eatexp ReadheroIcon 同款白名单先例。
+# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检））
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/equip_strengthen_panel.gd")
-	assert_eq(text.count(".new()"), text.count("ReadheroIcon.new()"),
-		"panel 静态节点零 .new()，仅头像工厂白名单")
+	assert_eq(text.count(".new("), text.count("ReadheroIcon.new("),
+		"panel 静态节点零 .new(，仅头像工厂白名单")
 
 
 # 源 refreshStrenCost:527 YOUR_MONEY_IS_NOT_ENOUGH 不足提示（金币不足路径）

@@ -58,8 +58,10 @@ offset_right = 429.3
 offset_bottom = 223.83
 mouse_filter = 2
 
-; 详情标题条（源 task_title_bg fix_wh 506.25x34.38 中心 (80.47,189.84) Scale9
-; cap(78.13,0,69.53,11.72) → patch_margin 直译，detail 局部 gy=78.13-189.84）
+; 详情标题条（源 herosplit.lua:245-253 task_title_bg 为纯 Sprite fix_wh 506.25x34.38
+; 中心 (80.47,189.84) 无 capInsets；NinePatch 端饰 margin 借用 confirm title-mark
+; cap(78.13,0,69.53,11.72)@289x15 的正确公式换算：top=15-11.72=3.28→3 bottom=y=0，
+; 水平 78/141 照旧，detail 局部 gy=78.13-189.84）
 [node name="TitleBg" type="NinePatchRect" parent="Frame/DetailContainer"]
 layout_mode = 0
 offset_left = -172.66
@@ -68,13 +70,14 @@ offset_right = 333.59
 offset_bottom = -94.52
 texture = ExtResource("3_titlebg")
 patch_margin_left = 78
-patch_margin_top = 0
+patch_margin_top = 3
 patch_margin_right = 141
-patch_margin_bottom = 3
+patch_margin_bottom = 0
 mouse_filter = 2
 
 ; 列表底板（源 list_bg equipupgrade_bottom_bg scaleSize 511.72x167.97 中心 (75,-67.97)
-; Scale9 cap(14.06,15.63,640.63,136.72)，纹理 858x216 → gy=78.13+67.97）
+; Scale9 cap(14.06,15.63,640.63,136.72)@858x216（top=216-15.63-136.72=63.65→64
+; bottom=15.63→16），gy=78.13+67.97）
 [node name="ListBg" type="NinePatchRect" parent="Frame/DetailContainer"]
 layout_mode = 0
 offset_left = -180.86
@@ -83,9 +86,9 @@ offset_right = 330.86
 offset_bottom = 230.08
 texture = ExtResource("4_listbg")
 patch_margin_left = 14
-patch_margin_top = 16
+patch_margin_top = 64
 patch_margin_right = 203
-patch_margin_bottom = 64
+patch_margin_bottom = 16
 mouse_filter = 2
 
 ; 分隔线（源 delimeter chat_delimeter fix_wh 455x2.34 中心 (74.22,68.75)）

@@ -40,7 +40,8 @@ func test_hero_detail_tab_styleboxes_set() -> void:
 
 ## 锁实测值：类型 + texture + margins。assert_not_null 会命中 Godot theme fallback
 ## （未注册回落 StyleBoxEmpty 非 null），无防护力，故必须锁死具体类型与数值
-## （margins 依据 herodetail-detail-*.png 219×67、cap 15,15,138,19 实测推导）。
+## （margins 依据 herodetail-detail-*.png 219×67、cap 15,15,138,19 实测推导，
+## cap 左下原点 → top=H-y-h=33 / bottom=y=15，批 1 终审必修 1 修正垂直互换）。
 func _assert_detail_stylebox(sb: StyleBox, label: String) -> void:
 	assert_true(sb is StyleBoxTexture, "%s 应为 StyleBoxTexture（防 fallback 空 box 蒙混）" % label)
 	if not (sb is StyleBoxTexture):
@@ -48,9 +49,9 @@ func _assert_detail_stylebox(sb: StyleBox, label: String) -> void:
 	var sbt := sb as StyleBoxTexture
 	assert_not_null(sbt.texture, "%s texture 非空" % label)
 	assert_eq(sbt.texture_margin_left, 15.0, "%s margin_left=15（cap x）" % label)
-	assert_eq(sbt.texture_margin_top, 15.0, "%s margin_top=15（cap y）" % label)
+	assert_eq(sbt.texture_margin_top, 33.0, "%s margin_top=33（67-15-19）" % label)
 	assert_eq(sbt.texture_margin_right, 66.0, "%s margin_right=66（219-15-138）" % label)
-	assert_eq(sbt.texture_margin_bottom, 33.0, "%s margin_bottom=33（67-15-19）" % label)
+	assert_eq(sbt.texture_margin_bottom, 15.0, "%s margin_bottom=15（cap y）" % label)
 
 
 func test_hero_detail_tab_label_variation() -> void:

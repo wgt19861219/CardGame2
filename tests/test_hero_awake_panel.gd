@@ -146,9 +146,10 @@ func test_panel_no_static_construction() -> void:
 	# 两件套红线：静态结构零 .new()（bg/light/宿主全在 tscn）。
 	# 白名单：AtlasSprite（RefCounted 图集加载器）+ FcaAnimation（FCA 播放器工厂，
 	# 源 createFcaNode 运行时创建等价）。
+	# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检）。
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_awake_panel.gd")
-	assert_eq(text.count(".new()"), text.count("AtlasSprite.new()") + text.count("FcaAnimation.new()"),
-		"静态节点零 .new()，仅 FCA 工厂白名单")
+	assert_eq(text.count(".new("), text.count("AtlasSprite.new(") + text.count("FcaAnimation.new("),
+		"静态节点零 .new(，仅 FCA 工厂白名单")
 
 
 func test_fca_loaded_into_static_hosts() -> void:

@@ -299,9 +299,10 @@ func test_getway_item_template_static_tree() -> void:
 
 func test_panel_no_static_construction() -> void:
 	# 两件套红线：panel 零静态 .new()（获取途径行走行模板 instantiate；碎片图标走
-	# ReadequipIcon.create_icon 工厂）。禁 .new() 计数式白名单数字，恒断 0。
+	# ReadequipIcon.create_icon 工厂）。禁计数式白名单数字，恒断 0。
+	# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检）。
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/stone_detail_panel.gd")
-	assert_eq(text.count(".new()"), 0, "stone_detail_panel 零 .new()（动态行/图标全走模板与工厂）")
+	assert_eq(text.count(".new("), 0, "stone_detail_panel 零 .new(（动态行/图标全走模板与工厂）")
 
 
 func test_theme_stone_detail_entries() -> void:

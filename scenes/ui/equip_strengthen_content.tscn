@@ -348,7 +348,8 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 ; 材料区背景（源 doShowmbPrompt:1959-1982 宽窄两态切换：宽 bottom_bg 660x154 @(400,120)
-; / 窄 material_bg 520x154 @(335,120)；cap(10,10,640,146)/(10,10,480,144) 贴图像素空间，
+; / 窄 material_bg 520x154 @(335,120)；cap(10,10,640,146)@858x216 / (10,10,480,144)@650x214
+; 贴图像素空间（top=H-10-h / bottom=10：宽态 216-156=60，窄态 214-154=60），
 ; fill 切 texture/patch_margin/offsets；初始宽态照源 create :2112-2125）
 [node name="MaterialBg" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
@@ -359,9 +360,9 @@ offset_right = 810.0
 offset_bottom = 517.0
 texture = ExtResource("16_mbgwide")
 patch_margin_left = 10
-patch_margin_top = 10
+patch_margin_top = 60
 patch_margin_right = 208
-patch_margin_bottom = 60
+patch_margin_bottom = 10
 mouse_filter = 2
 
 ; 材料区提示（源 :2126-2145 material_label size22 白 at (325,120) 中心锚 → (405,440)，默认隐）
@@ -592,9 +593,9 @@ offset_right = 837.0
 offset_bottom = 331.0
 texture = ExtResource("15_talk")
 patch_margin_left = 30
-patch_margin_top = 30
+patch_margin_top = 48
 patch_margin_right = 91
-patch_margin_bottom = 48
+patch_margin_bottom = 30
 mouse_filter = 2
 
 ; 对话文字（源 :26-32 size18 左对齐 200 宽自动换行 anchor(0.5,1) at (645,282) → 顶中 (725,278)）

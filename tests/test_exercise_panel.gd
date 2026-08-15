@@ -35,6 +35,8 @@ func test_content_static_tree() -> void:
 	var frame: NinePatchRect = layer.get_node("Frame") as NinePatchRect
 	assert_not_null(frame, "Frame（main_vit_tips 九宫格底）常驻 tscn")
 	assert_not_null(frame.texture, "Frame 贴图已接线")
+	assert_eq(frame.patch_margin_top, 25, "frame cap top=61-10-26（cap 左下原点，终审必修 1）")
+	assert_eq(frame.patch_margin_bottom, 10, "frame cap bottom=源 cap.y=10（终审必修 1）")
 	var bg: ColorRect = inst.get_node("Bg") as ColorRect
 	assert_almost_eq(bg.color.a, 150.0 / 255.0, 0.01, "蒙层 alpha 照源 ccc4(0,0,0,150)")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
@@ -78,9 +80,10 @@ func test_content_entry_buttons_static() -> void:
 
 func test_panel_no_static_construction() -> void:
 	# 两件套红线：panel 零静态 .new()（仅动态立绘 AtlasSprite/FcaAnimation 白名单）。
+	# 计数用 ".new(" 宽口径（带参构造 Xxx.new("arg") 不含 ".new()" 字面，窄口径漏检）。
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/exercise_panel.gd")
-	assert_eq(text.count(".new()"), text.count("AtlasSprite.new()") + text.count("FcaAnimation.new()"),
-		"静态节点零 .new()，仅动态立绘白名单")
+	assert_eq(text.count(".new("), text.count("AtlasSprite.new(") + text.count("FcaAnimation.new("),
+		"静态节点零 .new(，仅动态立绘白名单")
 
 
 func test_entry_keys_complete() -> void:

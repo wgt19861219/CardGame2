@@ -19,51 +19,57 @@
 ; ── hero_split 三件套（批 1 Task 8，2026-08-15）── sell_number/task 按钮 Scale9 三态
 ; （源 uieditor/herosplit.lua capInsets 纹理像素直译；confirm ok cap(14.06,15.63,...) 与
 ; window 按钮 cap(15.63,15.63,...) 不同 margin 故独立 StyleBox）
+; cap 换算（批 1 终审必修 1 修正）：cap CCRectMake(x,y,w,h) 为左下原点 UI 坐标直传 Cocos，
+; StyleBox margin_left=x / margin_top=H-y-h / margin_right=W-x-w / margin_bottom=y。
+; sell_number(63x67) cap(15.63,15.63,19.53,19.53)：top=67-15.63-19.53=31.84 bottom=15.63；
+; task_button(96x63) cap(15.63,15.63,39.06,15.63)：top=63-31.26=31.74 bottom=15.63；
+; confirm ok(63x67) cap(14.06,15.63,15.63,17.19)：top=67-32.82=34.18 bottom=15.63。
 [sub_resource type="StyleBoxTexture" id="SB_hs_sell_n"]
 texture = ExtResource("8_selln")
 texture_margin_left = 15.63
-texture_margin_top = 15.63
+texture_margin_top = 31.84
 texture_margin_right = 27.84
-texture_margin_bottom = 31.84
+texture_margin_bottom = 15.63
 
 [sub_resource type="StyleBoxTexture" id="SB_hs_sell_p"]
 texture = ExtResource("9_sellp")
 texture_margin_left = 15.63
-texture_margin_top = 15.63
+texture_margin_top = 31.84
 texture_margin_right = 27.84
-texture_margin_bottom = 31.84
+texture_margin_bottom = 15.63
 
 [sub_resource type="StyleBoxTexture" id="SB_hs_task_n"]
 texture = ExtResource("10_taskn")
 texture_margin_left = 15.63
-texture_margin_top = 15.63
+texture_margin_top = 31.74
 texture_margin_right = 41.31
-texture_margin_bottom = 31.74
+texture_margin_bottom = 15.63
 
 [sub_resource type="StyleBoxTexture" id="SB_hs_task_p"]
 texture = ExtResource("11_taskp")
 texture_margin_left = 15.63
-texture_margin_top = 15.63
+texture_margin_top = 31.74
 texture_margin_right = 41.31
-texture_margin_bottom = 31.74
+texture_margin_bottom = 15.63
 
 [sub_resource type="StyleBoxTexture" id="SB_hs_ok_n"]
 texture = ExtResource("8_selln")
 texture_margin_left = 14.06
-texture_margin_top = 15.63
+texture_margin_top = 34.18
 texture_margin_right = 33.31
-texture_margin_bottom = 34.18
+texture_margin_bottom = 15.63
 
 [sub_resource type="StyleBoxTexture" id="SB_hs_ok_p"]
 texture = ExtResource("9_sellp")
 texture_margin_left = 14.06
-texture_margin_top = 15.63
+texture_margin_top = 34.18
 texture_margin_right = 33.31
-texture_margin_bottom = 34.18
+texture_margin_bottom = 15.63
 
 ; ── hero_package（批 1 Task 9，2026-08-15）── herosplit 按钮 Scale9 三态
 ; （源 heropackage.lua:680-710 classbtn(134x75)/classbtnselected(145x75) cap CCRectMake(40,25,40,25)
-; 纹理像素直译：left=40 top=25 right=134-40-40=54 bottom=75-25-25=25，口径同 SB_upgrade_n）
+; 纹理像素直译（top=H-y-h/bottom=y）：left=40 top=75-50=25 right=134-80=54 bottom=25（垂直对称）；
+; pressed 右=145-80=65，口径同 SB_upgrade_n）
 [sub_resource type="StyleBoxTexture" id="SB_hp_split_n"]
 texture = ExtResource("12_classbtn")
 texture_margin_left = 40.0
@@ -78,26 +84,29 @@ texture_margin_top = 25.0
 texture_margin_right = 65.0
 texture_margin_bottom = 25.0
 
+; hero_detail tab 底（试点遗留，批 1 终审必修 1 顺带修正公式）：herodetail-detail-*.png
+; 219x67，cap CCRectMake(15,15,138,19)（stonedetail.lua:561 / herodetail/window.lua:1406）
+; → left=15 top=67-15-19=33 right=219-15-138=66 bottom=15（top/bottom 曾按 y/H-y-h 误写互换）。
 [sub_resource type="StyleBoxTexture" id="SB_detail_n"]
 texture = ExtResource("1_detailn")
 texture_margin_left = 15.0
-texture_margin_top = 15.0
+texture_margin_top = 33.0
 texture_margin_right = 66.0
-texture_margin_bottom = 33.0
+texture_margin_bottom = 15.0
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_a"]
 texture = ExtResource("2_detaila")
 texture_margin_left = 15.0
-texture_margin_top = 15.0
+texture_margin_top = 33.0
 texture_margin_right = 66.0
-texture_margin_bottom = 33.0
+texture_margin_bottom = 15.0
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_p"]
 texture = ExtResource("3_detailp")
 texture_margin_left = 15.0
-texture_margin_top = 15.0
+texture_margin_top = 33.0
 texture_margin_right = 66.0
-texture_margin_bottom = 33.0
+texture_margin_bottom = 15.0
 
 ; exercise 入口按钮底（批 1 Task 1）：act_comment_bg 源语义即文字行底图（vit 行/advise 行），
 ; 无 patch 等比整体缩放（182x44 → 142x34.4 = ÷CS），按钮 rect 须等于显示尺寸防变形。
@@ -106,49 +115,49 @@ texture = ExtResource("4_commentbg")
 
 ; equip_strengthen 强化按钮底（批 1 Task 5）：源 createStrenButton:867-880 stren/faststren
 ; Scale9 herodetail-upgrade capInsets CCRectMake(20,20,53,29)（贴图像素空间，97x67 →
-; margin right=97-20-53=24 / bottom=67-20-29=18，口径同 SB_detail_n）。
+; top=67-20-29=18 / bottom=y=20，口径同 SB_detail_n）。
 [sub_resource type="StyleBoxTexture" id="SB_upgrade_n"]
 texture = ExtResource("5_upg")
 texture_margin_left = 20.0
-texture_margin_top = 20.0
+texture_margin_top = 18.0
 texture_margin_right = 24.0
-texture_margin_bottom = 18.0
+texture_margin_bottom = 20.0
 
 [sub_resource type="StyleBoxTexture" id="SB_upgrade_p"]
 texture = ExtResource("6_upgm")
 texture_margin_left = 20.0
-texture_margin_top = 20.0
+texture_margin_top = 18.0
 texture_margin_right = 24.0
-texture_margin_bottom = 18.0
+texture_margin_bottom = 20.0
 
 ; fragment_compose 合成按钮底（批 1 Task 6）：源 fragmentcompose.lua:426-465 ok/ok_down
 ; Scale9 herodetail-upgrade capInsets CCRectMake(20,20,20,20)（贴图 97x67 →
-; margin right=97-40=57 / bottom=67-40=27；cap 与 EquipStrenButton(53,29) 不同故独立）。
+; top=67-40=27 / bottom=y=20；cap 与 EquipStrenButton(53,29) 不同故独立）。
 [sub_resource type="StyleBoxTexture" id="SB_fc_ok_n"]
 texture = ExtResource("5_upg")
 texture_margin_left = 20.0
-texture_margin_top = 20.0
+texture_margin_top = 27.0
 texture_margin_right = 57.0
-texture_margin_bottom = 27.0
+texture_margin_bottom = 20.0
 
 [sub_resource type="StyleBoxTexture" id="SB_fc_ok_p"]
 texture = ExtResource("6_upgm")
 texture_margin_left = 20.0
-texture_margin_top = 20.0
+texture_margin_top = 27.0
 texture_margin_right = 57.0
-texture_margin_bottom = 27.0
+texture_margin_bottom = 20.0
 
 ; equip_detail 段面板底（批 1 Task 7）：源 equipdetail.lua :152/188/228
 ; createScale9Sprite equip_detail_panel_bg capInsets CCRectMake(10,30,400,65)
-; （贴图 533x175，rect 左上原点 → left=10 top=30 right=533-410=123
-; bottom=175-95=80）；content margin 照源网格位（面板 560 宽 - 两列 260=520 →
+; （贴图 533x175，cap 左下原点 → left=10 top=175-30-65=80 right=533-410=123
+; bottom=y=30）；content margin 照源网格位（面板 560 宽 - 两列 260=520 →
 ; 左右 20；行高 55 公式 15+55r → 顶/底 7.5）。
 [sub_resource type="StyleBoxTexture" id="SB_equip_detail_panel"]
 texture = ExtResource("7_edpanel")
 texture_margin_left = 10.0
-texture_margin_top = 30.0
+texture_margin_top = 80.0
 texture_margin_right = 123.0
-texture_margin_bottom = 80.0
+texture_margin_bottom = 30.0
 content_margin_left = 20.0
 content_margin_top = 7.5
 content_margin_right = 20.0

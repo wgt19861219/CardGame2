@@ -123,12 +123,13 @@ func test_panel_bg_texture_assembled() -> void:
 	var tex: StyleBoxTexture = sb as StyleBoxTexture
 	assert_not_null(tex.texture, "stylebox 贴图非空")
 	assert_true(String(tex.texture.resource_path).find("equip_detail_panel_bg") >= 0, "panel_bg 贴图 equip_detail_panel_bg")
-	# texture margins 照源 capInsets CCRectMake(10,30,400,65)（贴图 533x175）：
-	# left=10 top=30 right=533-410=123 bottom=175-95=80（4.7 属性名 texture_margin_*）
+	# texture margins 照源 capInsets CCRectMake(10,30,400,65)（贴图 533x175，cap 左下
+	# 原点 → top=H-y-h / bottom=y，批 1 终审必修 1 修正垂直互换）：
+	# left=10 top=175-30-65=80 right=533-410=123 bottom=30（4.7 属性名 texture_margin_*）
 	assert_eq(tex.texture_margin_left, 10.0, "capInsets left=10")
-	assert_eq(tex.texture_margin_top, 30.0, "capInsets top=30")
+	assert_eq(tex.texture_margin_top, 80.0, "capInsets top=175-30-65")
 	assert_eq(tex.texture_margin_right, 123.0, "capInsets right=533-10-400")
-	assert_eq(tex.texture_margin_bottom, 80.0, "capInsets bottom=175-30-65")
+	assert_eq(tex.texture_margin_bottom, 30.0, "capInsets bottom=30")
 	# content margin 照源网格位（面板 560-两列 520 → 左右 20；行高公式 15+55r → 顶底 7.5）
 	assert_eq(tex.content_margin_left, 20.0, "网格左右余 20")
 	assert_eq(tex.content_margin_top, 7.5, "网格顶 7.5")
@@ -320,7 +321,8 @@ func test_amount_label_fill() -> void:
 # 两件套红线：panel 零静态 .new()（12 处全数归位：段结构进 tscn、行走行模板
 # instantiate、装备 icon/关卡贴图走工厂/模板静态 WayIcon）。白名单仅
 # ReadheroIcon.new()（源 readhero.getIcon 工厂构造，无静态工厂入口）。
+# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检）。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/equipdetail_panel.gd")
-	assert_eq(text.count(".new()"), text.count("ReadheroIcon.new()"),
-		"零静态 .new()，仅 ReadheroIcon 工厂构造白名单")
+	assert_eq(text.count(".new("), text.count("ReadheroIcon.new("),
+		"零静态 .new(，仅 ReadheroIcon 工厂构造白名单")

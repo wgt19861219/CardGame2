@@ -636,6 +636,20 @@ func test_content_static_labels_use_variations() -> void:
 	assert_true(tres.contains("EquipCraftAttLabel/colors/font_color = Color(0.251, 0.247, 0.247, 1)"), "att 行色 ccc3(64,63,63)")
 
 
+# way title 两段式守卫（批 1 终审必修 3）：①tres 表项存在（base_type/字号/色）；
+# ②equip_craft_tree.gd 源码含接线字符串（tree 动态建 Label，运行时断言只能走源码文本）。
+# 数值依据源 equipcraft.lua:1141-1144：createttf(..., 20) + setLabelColor ccc3(155,34,14)。
+func test_way_title_label_variation_wired() -> void:
+	var tres: String = FileAccess.get_file_as_string("res://resources/themes/default_theme.tres")
+	assert_true(tres.contains("EquipCraftWayTitleLabel/base_type = &\"Label\""), "way title variation base_type=Label")
+	assert_true(tres.contains("EquipCraftWayTitleLabel/font_sizes/font_size = 20"), "way title 20 号（源 equipcraft.lua:1141）")
+	assert_true(tres.contains("EquipCraftWayTitleLabel/colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)"),
+		"way title 色 ccc3(155,34,14)（源 equipcraft.lua:1144）")
+	var tree_src: String = FileAccess.get_file_as_string("res://scripts/ui/equip_craft_tree.gd")
+	assert_true(tree_src.contains("theme_type_variation = &\"EquipCraftWayTitleLabel\""),
+		"tree way title Label 接线 EquipCraftWayTitleLabel variation")
+
+
 # HistoryClip 照源 draglist cliprect CCRectMake(12,300,265,80)（equipcraft.lua:804，bg 局部）
 # → CraftWindow 中心空间 _gl 映射：left=12-184.5=-172.5 / top=246.5-380=-133.5 /
 # right=277-184.5=92.5 / bottom=246.5-300=-53.5

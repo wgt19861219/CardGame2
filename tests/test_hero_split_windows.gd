@@ -120,19 +120,21 @@ func test_window_detail_layout_follows_source() -> void:
 		"分解按钮全局=detail 局部 233.2（源 y=-179.69 越界挂载）")
 
 
-# Scale9 九宫格 capInsets（纹理像素）→ NinePatchRect patch_margin 直译。
+# Scale9 九宫格 capInsets（纹理像素，cap 左下原点 → top=H-y-h/bottom=y）→
+# NinePatchRect patch_margin 直译（批 1 终审必修 1 修正垂直互换）。
 func test_window_ninepatch_margins_follow_source() -> void:
 	var scene: PackedScene = load("res://scenes/ui/hero_split_window_content.tscn") as PackedScene
 	var inst: Control = scene.instantiate() as Control
 	add_child_autofree(inst)
 	var list_bg: NinePatchRect = inst.get_node("%DetailContainer/ListBg") as NinePatchRect
 	assert_almost_eq(list_bg.patch_margin_left, 14.06, 0.5, "list_bg 左 margin=源 cap.x")
-	assert_almost_eq(list_bg.patch_margin_top, 15.63, 0.5, "list_bg 顶 margin=源 cap.y")
+	assert_almost_eq(list_bg.patch_margin_top, 216.0 - 15.63 - 136.72, 0.5, "list_bg 顶 margin=纹高-cap")
 	assert_almost_eq(list_bg.patch_margin_right, 858.0 - 14.06 - 640.63, 0.5, "list_bg 右 margin=纹宽-cap")
-	assert_almost_eq(list_bg.patch_margin_bottom, 216.0 - 15.63 - 136.72, 0.5, "list_bg 底 margin=纹高-cap")
+	assert_almost_eq(list_bg.patch_margin_bottom, 15.63, 0.5, "list_bg 底 margin=源 cap.y")
 	var title_bg: NinePatchRect = inst.get_node("%DetailContainer/TitleBg") as NinePatchRect
 	assert_almost_eq(title_bg.patch_margin_left, 78.13, 0.5, "title_bg 左 margin=源 cap.x")
-	assert_almost_eq(title_bg.patch_margin_bottom, 15.0 - 11.72, 0.5, "title_bg 底 margin=纹高-cap")
+	assert_almost_eq(title_bg.patch_margin_top, 15.0 - 11.72, 0.5, "title_bg 顶 margin=纹高-cap")
+	assert_almost_eq(title_bg.patch_margin_bottom, 0.0, 0.5, "title_bg 底 margin=源 cap.y=0")
 
 
 # 贴图接线（close 双态 + Scale9 贴图）。
@@ -286,11 +288,12 @@ func test_split_without_selection_no_op() -> void:
 
 
 # 两件套红线：静态结构零 .new()（白名单：网格 cell Control + 两个子弹窗构造 + icon 工厂）。
+# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检）。
 func test_window_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_split_window.gd")
-	assert_eq(text.count(".new()"),
-		text.count("Control.new()") + text.count("HeroSplitConfirm.new()") + text.count("HeroSplitExplain.new()"),
-		"静态节点零 .new()，仅网格 cell/子弹窗/icon 工厂白名单")
+	assert_eq(text.count(".new("),
+		text.count("Control.new(") + text.count("HeroSplitConfirm.new(") + text.count("HeroSplitExplain.new("),
+		"静态节点零 .new(，仅网格 cell/子弹窗/icon 工厂白名单")
 
 
 # ══ 件 2：hero_split_confirm（源 uieditor/herosplitconfirm.lua splitconfirm 窗）══
@@ -308,12 +311,15 @@ func test_confirm_layout_follows_source() -> void:
 	assert_almost_eq(frame.offset_right - frame.offset_left, 462.5, 0.5, "frame 宽=源 scaleSize 462.5")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 329.69, 0.5, "frame 高=源 scaleSize 329.69")
 	assert_almost_eq(frame.patch_margin_left, 58.59, 0.5, "frame 左 margin=源 cap.x")
-	assert_almost_eq(frame.patch_margin_top, 85.94, 0.5, "frame 顶 margin=源 cap.y")
+	assert_almost_eq(frame.patch_margin_top, 252.0 - 85.94 - 15.63, 0.5, "frame 顶 margin=纹高-cap")
+	assert_almost_eq(frame.patch_margin_bottom, 85.94, 0.5, "frame 底 margin=源 cap.y")
 	var title_bg: NinePatchRect = frame.get_node("TitleBg") as NinePatchRect
 	assert_almost_eq((title_bg.offset_left + title_bg.offset_right) / 2.0, 229.69, 0.5, "title_bg 中心 x=229.69（frame 局部）")
 	assert_almost_eq((title_bg.offset_top + title_bg.offset_bottom) / 2.0, 329.69 - 288.28, 0.5,
 		"title_bg 中心 y=329.69-288.28")
 	assert_almost_eq(title_bg.offset_right - title_bg.offset_left, 359.38, 0.5, "title_bg 宽=源 scaleSize 359.38")
+	assert_almost_eq(title_bg.patch_margin_top, 15.0 - 11.72, 0.5, "title_bg 顶 margin=纹高-cap")
+	assert_almost_eq(title_bg.patch_margin_bottom, 0.0, 0.5, "title_bg 底 margin=源 cap.y=0")
 	var close: TextureButton = frame.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 430.47, 0.5, "close 中心 x=430.47")
 	assert_almost_eq((close.offset_top + close.offset_bottom) / 2.0, 329.69 - 294.53, 0.5, "close 中心 y=329.69-294.53")
@@ -418,10 +424,14 @@ func test_explain_layout_follows_source() -> void:
 	assert_almost_eq(frame.offset_right - frame.offset_left, 548.44, 0.5, "frame 宽=源 scaleSize 548.44")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 378.91, 0.5, "frame 高=源 scaleSize 378.91")
 	assert_almost_eq(frame.patch_margin_left, 17.19, 0.5, "frame 左 margin=源 cap.x")
+	assert_almost_eq(frame.patch_margin_top, 61.0 - 17.19 - 15.63, 0.5, "frame 顶 margin=纹高-cap")
+	assert_almost_eq(frame.patch_margin_bottom, 17.19, 0.5, "frame 底 margin=源 cap.y")
 	var title_bg: NinePatchRect = inst.get_node("TitleBg") as NinePatchRect
 	assert_almost_eq((title_bg.offset_left + title_bg.offset_right) / 2.0, 398.44 + 80.0, 0.5,
 		"title_bg 中心 x=478.44（世界）")
 	assert_almost_eq(title_bg.offset_right - title_bg.offset_left, 480.47, 0.5, "title_bg 宽=源 scaleSize 480.47")
+	assert_almost_eq(title_bg.patch_margin_top, 44.0 - 34.38, 0.5, "title_bg 顶 margin=纹高-cap")
+	assert_almost_eq(title_bg.patch_margin_bottom, 0.0, 0.5, "title_bg 底 margin=源 cap.y=0")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 659.38 + 80.0, 0.5, "close 中心 x=739.38（世界）")
 	assert_almost_eq(close.offset_right - close.offset_left, 49.22, 0.5, "close 宽=源 fix_wh 49.22")

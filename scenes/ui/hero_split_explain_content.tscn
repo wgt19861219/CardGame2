@@ -34,7 +34,8 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0.5)
 
-; 框（源 frame main_vit_tips Scale9 548.44x378.91 anchor(0,1) 世界左上 (125,429.69)）
+; 框（源 frame main_vit_tips Scale9 548.44x378.91 anchor(0,1) 世界左上 (125,429.69)；
+; explainwindow.lua:35 cap(17.19,17.19,46.88,15.63)@103x61 → top=61-32.82=28.19→28 bottom=17）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 0
 offset_left = 205.0
@@ -43,13 +44,13 @@ offset_right = 753.44
 offset_bottom = 509.22
 texture = ExtResource("1_vit")
 patch_margin_left = 17
-patch_margin_top = 17
+patch_margin_top = 28
 patch_margin_right = 39
-patch_margin_bottom = 28
+patch_margin_bottom = 17
 mouse_filter = 2
 
 ; 标题条（源 title_bg pvp_tip_title_bg Scale9 480.47x39.06 中心世界 (398.44,389.84)
-; cap(109.38,0,156.25,34.38)（纹理 474x44））
+; cap(109.38,0,156.25,34.38)@474x44 → top=44-34.38=9.62→10 bottom=y=0）
 [node name="TitleBg" type="NinePatchRect" parent="."]
 layout_mode = 0
 offset_left = 238.2
@@ -58,9 +59,9 @@ offset_right = 718.67
 offset_bottom = 189.69
 texture = ExtResource("2_pvptitle")
 patch_margin_left = 109
-patch_margin_top = 0
+patch_margin_top = 10
 patch_margin_right = 208
-patch_margin_bottom = 10
+patch_margin_bottom = 0
 mouse_filter = 2
 
 ; 标题（源 title size24 ccc3(234,171,41) 中心世界 (396.09,389.84)，text fill"规则说明"）

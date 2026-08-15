@@ -23,8 +23,10 @@ const BAR_DISP_W: float = 657.17   # 842/CS，与 BarBg 同宽
 const EXP_BAR_SPEED: float = 60.0
 const EXP_BAR_MIN_DUR: float = 0.1
 # 材料区背景两态（源 doShowmbPrompt :1959-1982）：宽 bottom_bg 660x154@(400,120)
-# cap(10,10,640,146)（858x216 贴图 → margin right=208/bottom=60）；窄 material_bg
-# 520x154@(335,120) cap(10,10,480,144)（650x214 → right=160/bottom=60）。
+# cap(10,10,640,146)（858x216 贴图 → margin right=208/top=216-156=60）；窄 material_bg
+# 520x154@(335,120) cap(10,10,480,144)（650x214 → right=160/top=214-154=60）。
+# cap 换算（批 1 终审必修 1）：top=H-y-h / bottom=y，两态 bottom 恒=10。
+# MARGIN 语义=(right, top)，fill 处 left/bottom 恒 10。
 const MATERIAL_BG_WIDE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_bottom_bg.png"
 const MATERIAL_BG_NARROW_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_material_bg.png"
 const MATERIAL_BG_WIDE_RECT: Rect2 = Rect2(150.0, 363.0, 660.0, 154.0)
@@ -151,9 +153,9 @@ static func show_material_bg(panel, slot: int) -> void:
 	if tex != null:
 		bg.texture = tex
 	bg.patch_margin_left = 10
-	bg.patch_margin_top = 10
+	bg.patch_margin_top = margin.y
 	bg.patch_margin_right = margin.x
-	bg.patch_margin_bottom = margin.y
+	bg.patch_margin_bottom = 10
 	bg.offset_left = rect.position.x
 	bg.offset_top = rect.position.y
 	bg.offset_right = rect.position.x + rect.size.x

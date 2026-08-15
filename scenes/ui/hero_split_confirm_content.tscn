@@ -9,7 +9,8 @@
 ; hero_split 分解确认两件套静态树（批 1 Task 8，2026-08-15）。框架照源
 ; uieditor/herosplitconfirm.lua 声明表（splitconfirm 二次确认窗）直译：
 ; frame common_alert_bg Scale9 scaleSize 462.5x329.69 中心 (403.13,233.59)
-; cap(58.59,85.94,339.84,15.63)（纹理 593x252）→ 全屏 (251.88,161.57)-(714.38,491.26)；
+; cap(58.59,85.94,339.84,15.63)@593x252（top=252-85.94-15.63=150.43→150 bottom=85.94→86）
+; → 全屏 (251.88,161.57)-(714.38,491.26)；
 ; 子节点 frame 局部空间（原点左下角 y-up）→ Godot (x, 329.69-y)。
 ; icon 挂点/文字行照源 confirm.lua initWindow（DGccp ×0.78125 → 显示空间）。
 ; 单机化：firstConfirm 的 popConfirmDialog 环节并入本窗（一次确认），文字行
@@ -40,13 +41,13 @@ offset_right = 714.38
 offset_bottom = 491.26
 texture = ExtResource("1_alert")
 patch_margin_left = 59
-patch_margin_top = 86
+patch_margin_top = 150
 patch_margin_right = 195
-patch_margin_bottom = 150
+patch_margin_bottom = 86
 mouse_filter = 2
 
 ; 标题条（源 title_bg herodetail-title-mark Scale9 359.38x11.72 中心 (229.69,288.28)
-; cap(78.13,0,69.53,11.72)（纹理 289x15）→ gy=329.69-288.28）
+; cap(78.13,0,69.53,11.72)@289x15（top=15-11.72=3.28→3 bottom=0）→ gy=329.69-288.28）
 [node name="TitleBg" type="NinePatchRect" parent="Frame"]
 layout_mode = 0
 offset_left = 50.0
@@ -55,9 +56,9 @@ offset_right = 409.38
 offset_bottom = 47.27
 texture = ExtResource("2_titlemark")
 patch_margin_left = 78
-patch_margin_top = 0
+patch_margin_top = 3
 patch_margin_right = 141
-patch_margin_bottom = 3
+patch_margin_bottom = 0
 mouse_filter = 2
 
 ; 标题（源 title size22 ccc3(255,222,16) 中心 (231.25,289.06)，text fill"分解提醒"）

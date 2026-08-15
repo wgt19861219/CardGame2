@@ -426,9 +426,10 @@ func test_eat_amount_label_x_count() -> void:
 func test_panel_no_static_construction() -> void:
 	# 两件套红线：静态结构零 .new()（行结构在 eatexp_item.tscn）。
 	# 白名单：ReadheroIcon（head 动态数据工厂）+ Label（吃经验 xN 飘字，源运行时创建销毁）。
+	# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检）。
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/eatexp_panel.gd")
-	assert_eq(text.count(".new()"), text.count("ReadheroIcon.new()") + text.count("Label.new()"),
-		"静态节点零 .new()，仅 head 工厂与飘字白名单")
+	assert_eq(text.count(".new("), text.count("ReadheroIcon.new(") + text.count("Label.new("),
+		"静态节点零 .new(，仅 head 工厂与飘字白名单")
 
 
 func test_theme_eatexp_entries() -> void:

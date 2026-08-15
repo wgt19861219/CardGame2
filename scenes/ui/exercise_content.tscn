@@ -39,7 +39,8 @@ texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")
 ignore_texture_size = true
 
-; 面板层照源 frame（exercise.lua:708-720）Scale9 main_vit_tips capInsets(10,10,58,26)
+; 面板层照源 frame（exercise.lua:708-720 / cap 出处 :1045）Scale9 main_vit_tips
+; capInsets(10,10,58,26)（贴图 103x61，cap 左下原点 → top=61-10-26=25 bottom=y=10）
 ; scaleSize 705x300 中心 ccp(400,220) → 左上 to_godot(400,220) - (705/2, 300/2) = (127.5,190)。
 [node name="PanelLayer" type="Control" parent="."]
 unique_name_in_owner = true
@@ -56,9 +57,9 @@ offset_right = 705.0
 offset_bottom = 300.0
 texture = ExtResource("3_vittips")
 patch_margin_left = 10
-patch_margin_top = 10
+patch_margin_top = 25
 patch_margin_right = 35
-patch_margin_bottom = 25
+patch_margin_bottom = 10
 mouse_filter = 2
 
 ; 标题照源 title（exercise.lua:763-776）readnode 默认中心锚，场景(399.5,342) → PanelLayer
