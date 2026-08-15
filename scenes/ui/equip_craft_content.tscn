@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="1_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="2_backp"]
@@ -62,8 +62,7 @@ offset_left = 92.0
 offset_top = 30.0
 offset_right = 280.0
 offset_bottom = 60.0
-theme_override_colors/font_color = Color(0.259, 0.176, 0.11, 1)
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"EquipCraftNameLabel"
 vertical_alignment = 1
 
 [node name="AmountLabel" type="Label" parent="EquipLayer"]
@@ -73,8 +72,7 @@ offset_left = 92.0
 offset_top = 68.0
 offset_right = 280.0
 offset_bottom = 92.0
-theme_override_colors/font_color = Color(0.263, 0.231, 0.22, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"EquipCraftHaveLabel"
 vertical_alignment = 1
 
 [node name="AttBg" type="TextureRect" parent="EquipLayer"]
@@ -121,6 +119,18 @@ unique_name_in_owner = true
 layout_mode = 3
 mouse_filter = 2
 
+; 历史栏裁剪层（源 equipcraft.lua:799-816 draglist cliprect CCRectMake(12,300,265,80)，bg 局部
+; → CraftWindow 中心空间：left=12-184.5 / top=246.5-380 / right=277-184.5 / bottom=246.5-300）
+[node name="HistoryClip" type="Control" parent="CraftWindow"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = -172.5
+offset_top = -133.5
+offset_right = 92.5
+offset_bottom = -53.5
+clip_contents = true
+mouse_filter = 2
+
 [node name="InfoButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -153,5 +163,5 @@ offset_right = 602.0
 offset_bottom = 443.0
 horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"EquipCraftRemarkLabel"
 mouse_filter = 2

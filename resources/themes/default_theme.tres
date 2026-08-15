@@ -612,4 +612,47 @@ HeroPackageNameLabel/font_sizes/font_size = 20
 HeroPackageStoneLabel/base_type = &"Label"
 HeroPackageStoneLabel/colors/font_color = Color(1, 1, 1, 1)
 HeroPackageStoneLabel/font_sizes/font_size = 18
+; ── equip_craft 两件套（批 1 Task 10，2026-08-15）──
+; 装备名（源 equipboard/board.lua:323-337 size24 ccc3(66,45,28)+shadow(0,2)）
+EquipCraftNameLabel/base_type = &"Label"
+EquipCraftNameLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
+EquipCraftNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipCraftNameLabel/constants/shadow_offset_x = 0
+EquipCraftNameLabel/constants/shadow_offset_y = 2
+EquipCraftNameLabel/font_sizes/font_size = 24
+; 拥有数量行（源 board.lua:55-70 amount_title size20 ccc3(67,59,56)；旧实现 18 号照源修 20）
+EquipCraftHaveLabel/base_type = &"Label"
+EquipCraftHaveLabel/colors/font_color = Color(0.263, 0.231, 0.22, 1)
+EquipCraftHaveLabel/font_sizes/font_size = 20
+; infoButton remark（源 equipcraft.lua:671-681 size18 动态色绿/红 → fill modulate 控色，variation 只定号）
+EquipCraftRemarkLabel/base_type = &"Label"
+EquipCraftRemarkLabel/colors/font_color = Color(1, 1, 1, 1)
+EquipCraftRemarkLabel/font_sizes/font_size = 18
+; 属性动态行（源 board.lua:142-159 att size18 ccc3(64,63,63)+shadow(0,2)）
+EquipCraftAttLabel/base_type = &"Label"
+EquipCraftAttLabel/colors/font_color = Color(0.251, 0.247, 0.247, 1)
+EquipCraftAttLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipCraftAttLabel/constants/shadow_offset_x = 0
+EquipCraftAttLabel/constants/shadow_offset_y = 2
+EquipCraftAttLabel/font_sizes/font_size = 18
+; 合成树装备名/精英标（源 equipcraft.lua:994-1002 name size18 ccc3(255,0,0) / :1185-1189 elite 同规格）
+EquipCraftRedLabel18/base_type = &"Label"
+EquipCraftRedLabel18/colors/font_color = Color(1, 0, 0, 1)
+EquipCraftRedLabel18/font_sizes/font_size = 18
+; 树棕 18（源 :1105-1108 need / :1115-1118 costTitle / :1102 EQUIPPED 同规格 ccc3(50,41,31)）
+EquipCraftBrownLabel18/base_type = &"Label"
+EquipCraftBrownLabel18/colors/font_color = Color(0.196078, 0.160784, 0.121569, 1)
+EquipCraftBrownLabel18/font_sizes/font_size = 18
+; 树动态色 18（源 :1087-1094 amount 红/棕 + :1122-1127 cost 深红/红 运行时刷新 → fill modulate，variation 只定号）
+EquipCraftDynLabel18/base_type = &"Label"
+EquipCraftDynLabel18/colors/font_color = Color(1, 1, 1, 1)
+EquipCraftDynLabel18/font_sizes/font_size = 18
+; 获取途径标题（源 :1139-1143 size20 ccc3(155,34,14)）
+EquipCraftWayTitleLabel/base_type = &"Label"
+EquipCraftWayTitleLabel/colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
+EquipCraftWayTitleLabel/font_sizes/font_size = 20
+; 获取途径 board 行 title/name（源 :1179-1183 / :1191-1199 size18 ccc3(182,65,21)）
+EquipCraftBoardLabel/base_type = &"Label"
+EquipCraftBoardLabel/colors/font_color = Color(0.713725, 0.254902, 0.082353, 1)
+EquipCraftBoardLabel/font_sizes/font_size = 18
 

@@ -601,6 +601,196 @@ func test_helper_get_judge_level() -> void:
 	root.queue_free()
 
 
+# ===== 两件套守卫（批 1 Task 10，2026-08-15）：theme variation 接线 + HistoryClip 裁剪层 + fills 下沉 + 裸 key 本地化 =====
+
+func _instantiate_content() -> Control:
+	var scene: PackedScene = load("res://scenes/ui/equip_craft_content.tscn") as PackedScene
+	var inst: Control = scene.instantiate() as Control
+	add_child_autofree(inst)
+	return inst
+
+
+# tscn 静态 label variation（源 board.lua:323-337 name size24 ccc3(66,45,28)+shadow(0,2) /
+# board.lua:55-70 amount_title size20 ccc3(67,59,56) / equipcraft.lua:671-681 remark size18 动态色）。
+# GUT 节点级不解析 variation 字号 → 数值断言读 default_theme.tres 文本表项（批 1 方法学）。
+func test_content_static_labels_use_variations() -> void:
+	var inst: Control = _instantiate_content()
+	var name_lbl: Label = inst.get_node("%NameLabel") as Label
+	assert_eq(name_lbl.theme_type_variation, &"EquipCraftNameLabel", "NameLabel 走 variation")
+	assert_false(name_lbl.has_theme_color_override("font_color"), "NameLabel 无色 override")
+	assert_false(name_lbl.has_theme_font_size_override("font_size"), "NameLabel 无字号 override")
+	var amount_lbl: Label = inst.get_node("%AmountLabel") as Label
+	assert_eq(amount_lbl.theme_type_variation, &"EquipCraftHaveLabel", "AmountLabel 走 variation")
+	assert_false(amount_lbl.has_theme_color_override("font_color"), "AmountLabel 无色 override")
+	assert_false(amount_lbl.has_theme_font_size_override("font_size"), "AmountLabel 无字号 override")
+	var remark_lbl: Label = inst.get_node("%InfoRemark") as Label
+	assert_eq(remark_lbl.theme_type_variation, &"EquipCraftRemarkLabel", "InfoRemark 走 variation（动态色 fill modulate）")
+	assert_false(remark_lbl.has_theme_font_size_override("font_size"), "InfoRemark 无字号 override")
+	var tres: String = FileAccess.get_file_as_string("res://resources/themes/default_theme.tres")
+	assert_true(tres.contains("EquipCraftNameLabel/font_sizes/font_size = 24"), "name 24 号（源 board.lua:325）")
+	assert_true(tres.contains("EquipCraftNameLabel/colors/font_shadow_color"), "name 阴影（源 shadow(0,2)）")
+	assert_true(tres.contains("EquipCraftHaveLabel/font_sizes/font_size = 20"), "have 20 号（源 board.lua:61）")
+	assert_true(tres.contains("EquipCraftHaveLabel/colors/font_color = Color(0.263, 0.231, 0.22, 1)"), "have 色 ccc3(67,59,56)")
+	assert_true(tres.contains("EquipCraftRemarkLabel/font_sizes/font_size = 18"), "remark 18 号（源 equipcraft.lua:675）")
+	assert_true(tres.contains("EquipCraftAttLabel/font_sizes/font_size = 18"), "att 行 18 号（源 board.lua:147）")
+	assert_true(tres.contains("EquipCraftAttLabel/colors/font_color = Color(0.251, 0.247, 0.247, 1)"), "att 行色 ccc3(64,63,63)")
+
+
+# HistoryClip 照源 draglist cliprect CCRectMake(12,300,265,80)（equipcraft.lua:804，bg 局部）
+# → CraftWindow 中心空间 _gl 映射：left=12-184.5=-172.5 / top=246.5-380=-133.5 /
+# right=277-184.5=92.5 / bottom=246.5-300=-53.5
+func test_content_history_clip_follows_source() -> void:
+	var inst: Control = _instantiate_content()
+	var clip: Control = inst.get_node_or_null("%HistoryClip") as Control
+	assert_not_null(clip, "HistoryClip 常驻 tscn（源 cliprect :804）")
+	if clip == null:
+		return
+	assert_true(clip.clip_contents, "clip_contents=true（源 draglist 裁剪）")
+	assert_almost_eq(clip.offset_left, -172.5, 0.1, "clip left（bg 局部 x12 → 中心空间）")
+	assert_almost_eq(clip.offset_top, -133.5, 0.1, "clip top（bg 局部 y380 → 中心空间）")
+	assert_almost_eq(clip.offset_right, 92.5, 0.1, "clip right（bg 局部 x277）")
+	assert_almost_eq(clip.offset_bottom, -53.5, 0.1, "clip bottom（bg 局部 y300）")
+
+
+# history layer 挂 %HistoryClip（裁剪生效），origin 相对 clip 原点（源 icon@listLayer (43+58*len,50)）
+func test_history_layer_inside_clip() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	var nodeid: Array = panel._craft_window_data.get("nodeid", [])
+	if nodeid.is_empty() or int(nodeid[0]) <= 0:
+		pass_test("配方无 Component1，跳过")
+		panel.remove_window()
+		return
+	panel._set_history(0, int(nodeid[0]))
+	assert_not_null(panel._history_layer, "history layer 已建")
+	var clip: Control = panel._content.get_node("%HistoryClip") as Control
+	assert_eq(panel._history_layer.get_parent(), clip, "history layer 挂 %HistoryClip（源 draglist 裁剪域）")
+	assert_almost_eq(panel._history_layer.position.x, 43.0, 0.5, "origin x=55-12（源 listLayer 局部 43）")
+	assert_almost_eq(panel._history_layer.position.y, 30.0, 0.5, "origin y=80-50（源 listLayer 局部 50，顶起）")
+	panel.remove_window()
+
+
+# att 动态行（源 board.lua:142-159 size18 ccc3(64,63,63) shadow(0,2)）→ variation，无运行时 override
+func test_att_rows_use_variation() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	var checked: int = 0
+	for c in panel._att_host.get_children():
+		if c is Label:
+			checked += 1
+			assert_eq((c as Label).theme_type_variation, &"EquipCraftAttLabel", "att 行走 variation")
+			assert_false((c as Label).has_theme_font_size_override("font_size"), "att 行无字号 override")
+			assert_false((c as Label).has_theme_color_override("font_color"), "att 行无色 override")
+	if checked == 0:
+		pass_test("该装备无属性行，跳过")
+	panel.remove_window()
+
+
+# tree 动态 Label variation（源 :994 name 18 红 / :1087 amount 18 动态 / :1105 need 18 棕 /
+# :1115 costTitle 18 棕 / :1122 cost 18 动态）——动态结构保留 procedural，样式走 variation
+func test_tree_labels_use_variations() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	assert_eq((panel._tree_data["name"] as Label).theme_type_variation, &"EquipCraftRedLabel18", "tree name 18 红（源 :994-1002）")
+	assert_eq((panel._tree_data["costTitle"] as Label).theme_type_variation, &"EquipCraftBrownLabel18", "costTitle 18 棕（源 :1115-1118）")
+	assert_eq((panel._tree_data["cost"] as Label).theme_type_variation, &"EquipCraftDynLabel18", "cost 18 动态色（源 :1122-1127）")
+	var amount_labels: Array = panel._tree_data.get("amountLabel", [])
+	if not amount_labels.is_empty():
+		assert_eq((amount_labels[0] as Label).theme_type_variation, &"EquipCraftDynLabel18", "amount 18 动态色（源 :1087-1094）")
+	panel.remove_window()
+
+
+# 获取途径分支 label variation（源 :1139 way_title 20 深红(155,34,14) / :1179 title 18(182,65,21) /
+# :1185 elite 18 红 / :1191 name 18(182,65,21)）
+func test_getway_labels_use_variations() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var panel := _make_panel(eid)
+	if panel._get_way_buttons.is_empty():
+		pass_test("该装备无获取途径，跳过")
+		panel.remove_window()
+		return
+	var checked: int = 0
+	for board in panel._get_way_buttons:
+		for c in (board as Control).get_children():
+			if c is Label:
+				checked += 1
+				var v: StringName = (c as Label).theme_type_variation
+				assert_true(v == &"EquipCraftBoardLabel" or v == &"EquipCraftRedLabel18",
+					"board label 走 variation（title/name=Board18，elite=Red18）")
+	assert_gt(checked, 0, "至少一个 board label 被检查")
+	panel.remove_window()
+
+
+# 源 :1191 board name = row["Stage Name"]——Stage Name 存 LSTR key（stage_detail_panel:79 口径
+# 508/535 是 key），需 get_lstr 本地化（同 stone_detail_panel:205 / stage_select_panel:333，裸 key 修复）
+func test_getway_board_name_localized() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var panel := _make_panel(eid)
+	var ids: Array = panel._get_way_ids
+	if ids.is_empty():
+		pass_test("该装备无获取途径，跳过")
+		panel.remove_window()
+		return
+	var texts: Array = []
+	for board in panel._get_way_buttons:
+		for c in (board as Control).get_children():
+			if c is Label:
+				texts.append((c as Label).text)
+	var stage_table: Dictionary = cm.get_raw_table("Stage")
+	var all_localized: bool = true
+	var any_key: bool = false
+	for sid in ids:
+		var s: int = int(sid)
+		if s >= 10000:
+			s = int(stage_table.get(str(s), {}).get("Stage Group", s))
+		var raw: String = String(stage_table.get(str(s), {}).get("Stage Name", ""))
+		var loc: String = String(cm.get_lstr(raw))
+		if loc == raw:
+			continue
+		any_key = true
+		if not texts.has(loc):
+			all_localized = false
+	if not any_key:
+		pass_test("该装备途径关卡 Stage Name 均非 LSTR key，跳过")
+	else:
+		assert_true(all_localized, "board name 全部 get_lstr 本地化（裸 key 修复）")
+	panel.remove_window()
+
+
+# panel 零静态 .new(（icon/att 行/history 构建下沉 equip_craft_fills）+ 零运行时 theme override
+#（att 行 2 处转 EquipCraftAttLabel variation，HBox separation 走全局 HBoxContainer/separation=8）
+func test_panel_source_zero_news_and_overrides() -> void:
+	var text: String = FileAccess.get_file_as_string("res://scripts/ui/equip_craft_panel.gd")
+	assert_eq(text.count(".new("), 0, "panel 零 .new(（动态 fill 全下沉 fills）")
+	assert_eq(text.count("add_theme_"), 0, "panel 零 add_theme_（3 处运行时 override 转 variation/全局）")
+
+
+# fills 下沉守卫：文件存在 + 纯数据绑定（禁样式 override，对齐 hero_detail_fills 范式）
+func test_fills_exists_and_no_override() -> void:
+	var path: String = "res://scripts/ui/equip_craft_fills.gd"
+	assert_true(ResourceLoader.exists(path) or FileAccess.file_exists("res://scripts/ui/equip_craft_fills.gd"), "equip_craft_fills.gd 存在")
+	if not FileAccess.file_exists(path):
+		return
+	var text: String = FileAccess.get_file_as_string(path)
+	assert_true(text.contains("class_name EquipCraftFills"), "fills class_name 声明")
+	assert_eq(text.count("add_theme_"), 0, "fills 零 theme override（variation 管）")
+
+
 # 源 self.isEquiped helper（EquipCraftInfoBtn._is_equipped）：slot 已装目标 → true
 func test_helper_is_equipped() -> void:
 	var rec: Dictionary = _find_recipe_equip()

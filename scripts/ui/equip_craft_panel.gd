@@ -3,47 +3,27 @@ extends PopWindow
 
 ## Step 1+2+3：骨架 + 主面板 + 合成窗口 + createCraftTree 合成树 + craftEquip 合成执行闭环。
 ## Step 4（playCraftEffect 特效 + history 历史记录）/ Step 5（入口集成 + 音效）。
-## 坐标：全屏元素（_craft_window/_equip_layer/infoButton）走 _g(BattleViewCoords.to_godot)；
-## 拆分：EquipCraftTree 控合成树构建；EquipCraftInfoBtn 控 infoButton/puton/playPutonEffect 闭环。
+## 两件套（批 1 Task 10）：静态结构/样式归 equip_craft_content.tscn + default_theme；
+## 动态 fill 归 EquipCraftFills（装备详情/历史栏动态行）；合成树构建归 EquipCraftTree（真动态数据
+## 结构：components 1-4 + getway 0-3 board 全数据驱动，保留 procedural 挂 %TreeHost）；
+## infoButton/puton/playCraftEffect 闭环归 EquipCraftInfoBtn（节点已在 tscn，helper 纯 fill/流程）。
 
 signal equipped_changed   # 穿戴后通知调用方刷新（HeroDetailPanel 接 → refresh_content 装备槽）
 signal jump_to_stage(stage_id: int)   # P1-10：获取途径跳转
 
 # panel 层静态化进 equip_craft_content.tscn（CloseBtn + EquipLayer + CraftWindow.Bg + TreeHost
-# + InfoButton/InfoButtonLabel + InfoRemark）。位置/size 可视化，运行时 fill 动态数据/连接信号。
-# 合成树（EquipCraftTree）+ 历史栏 procedural 挂 %TreeHost（_craft_window 子层，坐标系不变）。
+# + HistoryClip + InfoButton/InfoButtonLabel + InfoRemark）。位置/size 可视化，运行时 fill 动态数据/连接信号。
+# 合成树（EquipCraftTree）procedural 挂 %TreeHost；历史栏动态行（EquipCraftFills）挂 %HistoryClip。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equip_craft_content.tscn")
 
-
-# 纯 Sprite（CCSprite / ed.createSprite 无 fix_size）→ Godot 需 EXPAND_IGNORE_SIZE + size=tex/CS 等价。
-const CONTENT_SCALE: float = 1.28125
-const CRAFT_WINDOW_POS: Vector2 = Vector2(548.0, 240.0)
-const EQUIP_LAYER_POS: Vector2 = Vector2(252.0, 240.0)
-const CLOSE_BTN_POS: Vector2 = Vector2(20.0, 15.0)  # 左上角留小边（用户偏好更靠左上角）
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/backbtn.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/backbtn-disabled.png"
-const ROOT_ICON_SCALE: float = 60.0 / 72.0
-const CRAFT_BG_PATH: String = "res://assets/ui/alpha/HVGA/equip_craft_bg.png"
-const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
-# 装备详情面板 fill 常量（照 equipboard_panel 范式 A，源 equipboard board.lua 校准）
-const ICON_POS: Vector2 = Vector2(14.0, 21.0)
-const ATT_TOP: float = 98.0
-const LSTR_HAVE: String = "EQUIPINFO.HAVE"
-const LSTR_ITEM: String = "EQUIPINFO.ITEM"
-const ATT_LABEL_COLOR: Color = Color(0.251, 0.247, 0.247, 1)
 # ── LSTR key──
 const LSTR_SYNTHESIS_SUCCESS: String = "EQUIPCRAFT.SYNTHESIS_SUCCESS"
 const LSTR_SYNTHESIS_FAILURE: String = "EQUIPCRAFT.SYNTHESIS_FAILURE"
 const LSTR_NO_MATERIAL: String = "EQUIPCRAFT.NO_SUITABLE_MATERIAL_GO_TO_COLLECT_SOME"
 const LSTR_NEED_CRAFT_FIRST: String = "EQUIPCRAFT.THIS_PIECE_OF_EQUIPMENT_NEED_TO_BE_SYNTHESIZED_FIRST"
 const LSTR_CHAPTER_YET_TO_OPEN: String = "EQUIPCRAFT.CHAPTER_YET_TO_OPEN"
-# ── Step 4 常量（history + playCraftEffect）──
-const HISTORY_ORIGIN: Vector2 = Vector2(55.0, 350.0)
-const HISTORY_ICON_SCALE: float = 40.0 / 72.0
-const HISTORY_ARROW_PATH: String = "res://assets/ui/alpha/HVGA/view_history_arrow.png"
 # 历史选中态高亮（源 equipcraft.lua:887-892）：当前 cursor 位置 icon 上叠 equip_craft_select 框。
 const HISTORY_CURSOR_RES: String = "res://assets/ui/alpha/HVGA/equip_craft_select.png"
-const PROMPT_BG_PATH: String = "res://assets/ui/alpha/HVGA/craft_promt_bg.png"
 # craft panel 弹性滑入（源 equipcraft.lua:1256-1266 EaseBackOut position.y 从 -h 到 0）。
 const PANEL_SLIDE_DUR: float = 0.25
 
@@ -83,11 +63,6 @@ var _info_button_label: Label = null
 var _info_remark: Label = null
 var _is_open: bool = false
 var _has_play_puton_effect: bool = false
-
-
-# 用于全屏元素（_craft_window/_equip_layer/infoButton，add container）。
-func _g(pos: Vector2) -> Vector2:
-	return BattleViewCoords.to_godot(pos.x, pos.y)
 
 
 func setup_panel(p_target_id: int, p_cm: Variant, p_pd: PlayerData, p_hero: HeroInstance = null, p_context: String = "heroDetail", p_sid: int = 0) -> void:
@@ -135,34 +110,9 @@ func _on_close_pressed() -> void:
 	remove_window()
 
 
+# 装备详情 fill（icon/名/拥有量/属性行）下沉 EquipCraftFills（两件套范式，行数治理）。
 func _refresh_amount() -> void:
-	if _equip_layer == null:
-		return
-	# 图标挂 %IconHost（照 equipboard_panel _fill_icon 范式，ICON_POS 相对 EquipLayer 左上角）
-	for c in _icon_host.get_children():
-		c.free()
-	if _target_id > 0:
-		var icon: Control = ReadequipIcon.create_icon(_target_id, _get_amount(_target_id), cm)
-		icon.scale = Vector2(ROOT_ICON_SCALE, ROOT_ICON_SCALE)
-		icon.position = ICON_POS
-		_icon_host.add_child(icon)
-	# 装备名（照 equipboard_panel:165，_equip_name 取 Equip.Name 的 LSTR）
-	_name_label.text = _equip_name(_target_id)
-	# 拥有数量（照 equipboard_panel:166-167，"拥有 X 个" 格式）
-	var amt: int = _get_amount(_target_id)
-	_amount_label.text = "%s %d %s" % [String(cm.get_lstr(LSTR_HAVE)), amt, String(cm.get_lstr(LSTR_ITEM))]
-	# 属性介绍（照 equipboard_panel _fill_att，ReadequipData.get_description 多行 VBox）
-	for c in _att_host.get_children():
-		c.free()
-	var rows: Array = ReadequipData.get_description(_target_id, 0, cm)
-	for row in rows:
-		var r: Dictionary = row as Dictionary
-		var lbl := Label.new()
-		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
-		lbl.add_theme_font_size_override("font_size", 18)
-		lbl.add_theme_color_override("font_color", ATT_LABEL_COLOR)
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_att_host.add_child(lbl)
+	EquipCraftFills.fill_equip_layer(self)
 
 
 # bg 已在 .tscn（%CraftWindow.%Bg，位置/size 静态化），本函数保留 stub 兼容旧调用（仅委托 _create_craft_tree）。
@@ -332,14 +282,9 @@ func _init_history() -> void:
 	_history_id = 0
 
 
+# 历史栏容器构建下沉 EquipCraftFills（挂 %HistoryClip 裁剪域，源 draglist cliprect）。
 func _create_history_layer() -> Control:
-	if _history_layer != null and is_instance_valid(_history_layer):
-		return _history_layer
-	_history_layer = HBoxContainer.new()
-	_history_layer.position = EquipCraftTree._gl(HISTORY_ORIGIN)
-	_history_layer.add_theme_constant_override("separation", 8)
-	_tree_host.add_child(_history_layer)
-	return _history_layer
+	return EquipCraftFills.create_history_layer(self)
 
 
 func _set_history(index: int, id: int) -> void:
@@ -347,17 +292,7 @@ func _set_history(index: int, id: int) -> void:
 	var len_: int = _history.size()
 	if index == 0 or index > len_:
 		_history_id = len_ + 1
-		var icon_bg: Control = ReadequipIcon.create_icon(id, 0, cm)
-		icon_bg.scale = Vector2(HISTORY_ICON_SCALE, HISTORY_ICON_SCALE)
-		if len_ > 0:
-			# HBoxContainer 管子节点 layout，须用 custom_minimum_size（非 size）分配空间 + EXPAND_IGNORE_SIZE 让纹理 stretch 入框。
-			var arrow := TextureRect.new()
-			arrow.texture = load(HISTORY_ARROW_PATH)
-			arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			arrow.custom_minimum_size = TexDisplaySize.display_size(HISTORY_ARROW_PATH)
-			arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			container_layer.add_child(arrow)
-		container_layer.add_child(icon_bg)
+		var icon_bg: Control = EquipCraftFills.append_history_node(self, container_layer, id)
 		icon_bg.gui_input.connect(_make_history_handler(len_ + 1))
 		_history.append({"id": id, "iconBg": icon_bg})
 	elif index <= len_:

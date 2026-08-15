@@ -50,11 +50,10 @@ const CRAFT_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_d
 const ROOT_ICON_SCALE: float = 60.0 / 72.0
 const CHILD_ICON_SCALE: float = 45.0 / 72.0
 const ROOT_ICON_NO_RECIPE_SCALE: float = 0.6
-# ── 颜色（源 ccc3）──
+# ── 颜色（源 ccc3；静态色走 default_theme variation，动态切换色 fill modulate）──
 const COLOR_RED: Color = Color(1.0, 0.0, 0.0)
 const COLOR_DARK_RED: Color = Color(155.0 / 255.0, 34.0 / 255.0, 14.0 / 255.0)
-const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
-const COLOR_TITLE: Color = Color(182.0 / 255.0, 65.0 / 255.0, 21.0 / 255.0)
+const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)   # amount 动态二态足态色（源 :1091）
 const COLOR_WHITE: Color = Color(1.0, 1.0, 1.0)
 # ── LSTR key（源 LSTR 宏，panel.cm.get_lstr 取实际值）──
 const LSTR_RETURN: String = "EQUIPCRAFT.RETURN"
@@ -100,6 +99,7 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 	panel._tree_host.add_child(tree)
 	var name_lbl := Label.new()
 	name_lbl.text = panel._equip_name(id)
+	name_lbl.theme_type_variation = &"EquipCraftRedLabel18"
 	name_lbl.position = _gl(NAME_LABEL_POS)
 	tree.add_child(name_lbl)
 	panel._tree_data["name"] = name_lbl
@@ -170,20 +170,21 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 		if amount < 10000:
 			var lbl := Label.new()
 			lbl.text = str(amount)
+			lbl.theme_type_variation = &"EquipCraftDynLabel18"
 			lbl.position = _gl(Vector2(children_pos[i].x - 20.0, AMOUNT_LABEL_Y))
 			lbl.modulate = COLOR_RED if amount < int(node_need[i]) else COLOR_BROWN
 			tree.add_child(lbl)
 			amount_labels.append(lbl)
 			var need_lbl := Label.new()
 			need_lbl.text = "/" + str(int(node_need[i]))
+			need_lbl.theme_type_variation = &"EquipCraftBrownLabel18"
 			need_lbl.position = _gl(Vector2(children_pos[i].x + AMOUNT_NEED_OFFSET, AMOUNT_LABEL_Y))
-			need_lbl.modulate = COLOR_BROWN
 			tree.add_child(need_lbl)
 		else:
 			var eq_lbl := Label.new()
 			eq_lbl.text = panel.cm.get_lstr(LSTR_EQUIPPED)
+			eq_lbl.theme_type_variation = &"EquipCraftBrownLabel18"
 			eq_lbl.position = _gl(Vector2(children_pos[i].x, AMOUNT_LABEL_Y))
-			eq_lbl.modulate = COLOR_BROWN
 			tree.add_child(eq_lbl)
 	panel._tree_data["children"] = children_icons
 	panel._tree_data["amountLabel"] = amount_labels
@@ -208,12 +209,13 @@ static func _build_cost(panel, tree: Control, expense: int) -> void:
 	tree.add_child(gold_icon)
 	var cost_title := Label.new()
 	cost_title.text = panel.cm.get_lstr(LSTR_SYNTHESIS_COST)
+	cost_title.theme_type_variation = &"EquipCraftBrownLabel18"
 	cost_title.position = _gl(COST_TITLE_POS)
-	cost_title.modulate = COLOR_BROWN
 	tree.add_child(cost_title)
 	panel._tree_data["costTitle"] = cost_title
 	var cost_lbl := Label.new()
 	cost_lbl.text = str(expense)
+	cost_lbl.theme_type_variation = &"EquipCraftDynLabel18"
 	cost_lbl.position = _gl(COST_POS)
 	var money: int = panel._player_money()
 	cost_lbl.modulate = COLOR_DARK_RED if expense <= money else COLOR_RED
@@ -287,8 +289,8 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 	tree.add_child(bg)
 	var label := Label.new()
 	label.text = panel.cm.get_lstr(LSTR_WAY_TO_GET)
+	label.theme_type_variation = &"EquipCraftWayTitleLabel"
 	label.position = _gl(GETWAY_LABEL_POS)
-	label.modulate = COLOR_DARK_RED
 	tree.add_child(label)
 	var equip_info: Dictionary = panel.cm.get_raw_table("Equip").get(str(id), {})
 	var stage_table: Dictionary = panel.cm.get_raw_table("Stage")
@@ -333,19 +335,21 @@ static func _build_one_getway(panel, tree: Control, stage_table: Dictionary, raw
 		board.add_child(icon)
 	var title := Label.new()
 	title.text = panel.cm.get_lstr(LSTR_CHAPTER_D) % int(stage_row.get("Chapter ID", 0))
+	title.theme_type_variation = &"EquipCraftBoardLabel"
 	title.position = BOARD_TITLE_POS
-	title.modulate = COLOR_TITLE
 	board.add_child(title)
 	if is_elite:
 		var elite := Label.new()
 		elite.text = panel.cm.get_lstr(LSTR_ELITE)
+		elite.theme_type_variation = &"EquipCraftRedLabel18"
 		elite.position = Vector2(BOARD_TITLE_POS.x + title.get_combined_minimum_size().x + 4.0, BOARD_TITLE_POS.y)
-		elite.modulate = COLOR_RED
 		board.add_child(elite)
 	var name_lbl := Label.new()
-	name_lbl.text = String(stage_row.get("Stage Name", ""))
+	# Stage Name 存 LSTR key（stage_detail_panel:79 口径 508/535 是 key）→ get_lstr 本地化
+	#（同 stone_detail_panel:205 / stage_select_panel:333；裸 key 直接上屏是 Task 2 审查同款问题）
+	name_lbl.text = panel.cm.get_lstr(String(stage_row.get("Stage Name", "")))
+	name_lbl.theme_type_variation = &"EquipCraftBoardLabel"
 	name_lbl.position = BOARD_NAME_POS
-	name_lbl.modulate = COLOR_TITLE
 	board.add_child(name_lbl)
 	var name_w: float = name_lbl.get_combined_minimum_size().x
 	if name_w > BOARD_NAME_MAX_W:
