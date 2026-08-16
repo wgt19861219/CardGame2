@@ -1,10 +1,26 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_bg.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_craft_money_bg.png" id="2_titlebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_delimeter.png" id="3_split"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="4_ok"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="5_okp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_addon_bg.png" id="4_attachbg"]
+
+; 邮件详情静态树（批 2 Task 5 两件套化，2026-08-16）。照源 mail/content.lua create:385-481：
+; frame mailbox_letter_bg(421x541px) 中心 ccp(400,240) → 显示 328.59x422.24 中心 (480,320)。
+; readnode root=frame（原点=frame 左下角 (235.71,28.88)），frame 局部左下原点 y-up →
+; Godot frame 内 (x, 422.24-y)：title_bg Scale9 equip_craft_money_bg cap(10,10,217,6)
+; 中心 (165,380) → NinePatchRect（308x34px：top=34-10-6=18 right=308-10-217=81）宽 300
+; 高动态（源 setContentSize(300, title高+10)，单行标题取 34）；title 中心 (165,380)
+; dimension 290 size18 ccc3(172,75,30)；body anchor(0.5,1) 中心 x=165 dimension 250
+; size16 ccc3(162,88,41) 左对齐 autowrap（顶部 y=380-title 高，固定布局取 62）；
+; from anchor(1,0.5) 右缘 x=300 size16；split_line 中心 x=165 visible=附件时 fill 显示；
+; ok sell_number_button Scale9 cap(15,22,15,25) 165x45 中心 (162,42) → Button theme
+; variation MailDetailOkBtn（SB_pkg_hb 同图同 cap 复用）；ok_label fontinfo
+; ui_normal_button 17 号 ccc3(236,222,209) → Button.text 承载。
+; 附件区（源 createAttach:216-275）：attach_bg Scale9 mailbox_letter_addon_bg
+; cap(5,5,16,16) 300x动态高（34x34px：top=13 right=13）+ attach_title"附件"
+; size18 ccc3(152,98,34) @ (30,y-15)；静态化 visible=false，fill 设高/显示。
+; 货币行 mail_currency_item.tscn fill 挂 %AttachHost；物品 icon fill 挂（4 列网格）。
 
 [node name="MailDetailContent" type="Control"]
 layout_mode = 3
@@ -23,52 +39,56 @@ texture = ExtResource("1_frame")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="TitleBg" type="TextureRect" parent="Frame"]
+; title_bg（源 Scale9 → NinePatch，宽 300 拉伸 1.25x 保角）
+[node name="TitleBg" type="NinePatchRect" parent="Frame"]
 layout_mode = 3
-offset_left = 14.2917
-offset_top = 26.0
-offset_right = 314.2917
-offset_bottom = 54.0
+offset_left = 14.29
+offset_top = 25.24
+offset_right = 314.29
+offset_bottom = 59.24
 texture = ExtResource("2_titlebg")
-expand_mode = 1
+patch_margin_left = 10
+patch_margin_top = 18
+patch_margin_right = 81
+patch_margin_bottom = 10
 mouse_filter = 2
 
 [node name="Title" type="Label" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 30.0
-offset_top = 30.0
-offset_right = 298.5834
-offset_bottom = 56.0
-theme_override_colors/font_color = Color(0.67451, 0.29412, 0.11765, 1)
-theme_override_font_sizes/font_size = 18
+offset_left = 20.0
+offset_top = 30.24
+offset_right = 310.0
+offset_bottom = 54.24
+theme_type_variation = &"MailDetailTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
+vertical_alignment = 1
 text = "标题"
 
 [node name="Body" type="Label" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 30.0
+offset_left = 40.0
 offset_top = 62.0
-offset_right = 298.5834
+offset_right = 290.0
 offset_bottom = 142.0
-theme_override_colors/font_color = Color(0.63529, 0.3451, 0.16078, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"MailDetailTextLabel"
 mouse_filter = 2
 autowrap_mode = 3
 text = "正文"
 
+; from（源 anchor(1,0.5) @ x=300 右对齐）
 [node name="From" type="Label" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 30.0
+offset_left = 40.0
 offset_top = 150.0
-offset_right = 298.5834
+offset_right = 300.0
 offset_bottom = 170.0
-theme_override_colors/font_color = Color(0.63529, 0.3451, 0.16078, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"MailDetailTextLabel"
 mouse_filter = 2
+horizontal_alignment = 2
 text = "发件人"
 
 [node name="SplitLine" type="TextureRect" parent="Frame"]
@@ -83,26 +103,15 @@ texture = ExtResource("3_split")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="OkBtn" type="TextureButton" parent="Frame"]
+; ok 按钮（源 Scale9 sell_number_button cap(15,22,15,25) 165x45 中心 frame 局部 (162,42)）
+[node name="OkBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 82.2917
-offset_top = 362.0439
-offset_right = 247.2917
-offset_bottom = 407.0439
-texture_normal = ExtResource("4_ok")
-texture_pressed = ExtResource("5_okp")
-ignore_texture_size = true
-
-[node name="OkLabel" type="Label" parent="Frame/OkBtn"]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = 79.5
+offset_top = 357.64
+offset_right = 244.5
+offset_bottom = 402.64
+theme_type_variation = &"MailDetailOkBtn"
 text = "领取"
 
 [node name="AttachHost" type="Control" parent="Frame"]
@@ -112,3 +121,33 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+
+; attach_bg（源 Scale9 → NinePatch，宽 300 高 fill 动态；默认 96 为占位）
+[node name="AttachBg" type="NinePatchRect" parent="Frame/AttachHost"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 20.0
+offset_top = 204.0
+offset_right = 320.0
+offset_bottom = 300.0
+texture = ExtResource("4_attachbg")
+patch_margin_left = 5
+patch_margin_top = 13
+patch_margin_right = 13
+patch_margin_bottom = 5
+mouse_filter = 2
+
+; attach_title「附件」（源 @ (30,y-15) 垂直中心 y-15 → godot 中心 204+15=219）
+[node name="AttachTitle" type="Label" parent="Frame/AttachHost"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 30.0
+offset_top = 209.0
+offset_right = 130.0
+offset_bottom = 229.0
+theme_type_variation = &"MailAttachTitleLabel"
+mouse_filter = 2
+vertical_alignment = 1
+text = "附件"

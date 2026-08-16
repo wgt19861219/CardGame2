@@ -5,6 +5,7 @@ extends GutTest
 # 结构：静态树守卫（rect 照源直译）+ fill 行为 + 零静态构造白名单。
 
 var cm: ConfigManager
+var _panel: StarShopPanel   # 顺手修（批 2 Task 5 滚清单）：_make_window 建的宿主面板，用例结尾统一 free
 
 
 func before_all() -> void:
@@ -20,6 +21,7 @@ func _make_window(p_items: Dictionary = {}) -> StarShopBuyWindow:
 	var mgr := ShopManager.new(cm)
 	var panel := StarShopPanel.new("starshop", {})
 	add_child(panel)
+	_panel = panel
 	panel.setup_panel(mgr, pd, BattleRng.new(1))
 	var win := StarShopBuyWindow.new("starshopbuy", {})
 	add_child(win)
@@ -34,6 +36,7 @@ func test_buy_window_assembles_9_source_nodes() -> void:
 	var frame: Control = win._frame
 	for w in ["Line", "%CancelBtn", "%OkBtn", "%Title1Label", "%IconContainer", "%AmountLabel", "%Title2Label", "%NameLabel"]:
 		assert_true(frame.has_node(w), "声明表子节点存在: " + w)
+	_panel.free()
 	win.free()
 
 
@@ -54,6 +57,7 @@ func test_window_fill_texts() -> void:
 	assert_eq(String(cancel.text), cm.get_lstr("CHATCONFIG.CANCEL"), "cancel 显 LSTR CHATCONFIG.CANCEL")
 	var ok: Button = frame.get_node("%OkBtn") as Button
 	assert_eq(String(ok.text), cm.get_lstr("CHATCONFIG.CONFIRM"), "ok 显 LSTR CHATCONFIG.CONFIRM")
+	_panel.free()
 	win.free()
 
 
@@ -116,6 +120,7 @@ func test_frame_global_position_guard() -> void:
 	var frame: Control = win._frame
 	assert_almost_eq(frame.global_position.x, 256.18, 0.5, "Frame 全局 x = 409.38-233.20+80")
 	assert_almost_eq(frame.global_position.y, 215.08, 0.5, "Frame 全局 y = 560-200-144.92")
+	_panel.free()
 	win.free()
 
 

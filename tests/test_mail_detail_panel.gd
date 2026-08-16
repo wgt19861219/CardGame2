@@ -1,8 +1,15 @@
 extends GutTest
 
 ## MailDetailPanel UI 装配验证（P1-4：title_bg/attach_bg 装饰背景 + attach_common 7 货币忠实路径）。
-# headless 逻辑视觉验收：节点结构断言替 bridge 交互截图。
-# C10/C11（2026-07-23）：_on_ok 三分支（未读+附件/未读无附件/已读）行为验证。
+## headless 逻辑视觉验收：节点结构断言替 bridge 交互截图。
+## C10/C11（2026-07-23）：_on_ok 三分支（未读+附件/未读无附件/已读）行为验证。
+## 2026-08-16 批 2 Task 5 两件套改造：TitleBg/AttachBg Scale9 → NinePatchRect 守卫 +
+## OkBtn TextureButton → Button theme variation + 静态树 + 零静态构造白名单。
+
+const CONTENT_PATH := "res://scenes/ui/mail_detail_content.tscn"
+const CURRENCY_ITEM_PATH := "res://scenes/ui/mail_currency_item.tscn"
+const PANEL_PATH := "res://scripts/ui/mail_detail_panel.gd"
+const THEME_PATH := "res://resources/themes/default_theme.tres"
 
 
 # P1-4：title_bg（equip_craft_money_bg，源 createTitle :9-20）装配。
@@ -33,10 +40,12 @@ func test_panel_currency_icons_match_attach_common() -> void:
 	panel.free()
 
 
-# 递归查 TextureRect by resource_path。
+# 递归查 TextureRect/NinePatchRect by resource_path（NinePatchRect 直接继承 Control
+# 而非 TextureRect，须并列检查；texture 属性两者同名）。
 func _has_tex(node: Node, path: String) -> bool:
-	if node is TextureRect and node.texture != null and node.texture.resource_path == path:
-		return true
+	if (node is TextureRect or node is NinePatchRect) and node.get("texture") != null:
+		if String((node.get("texture") as Texture2D).resource_path) == path:
+			return true
 	for c in node.get_children():
 		if _has_tex(c, path):
 			return true
@@ -44,18 +53,16 @@ func _has_tex(node: Node, path: String) -> bool:
 
 
 # P1（2026-07-16）：UI 文案 LSTR 化验证（ok label CLAIM + attach title 走 GameData.config）。
-# mail 1 welcome：unread + attached → ok label = CLAIM（源 content.lua:463）。
+# mail 1 welcome：unread + attached → ok = CLAIM（源 content.lua:463）。
+# 批 2：ok 按钮 TextureButton+子 Label → Button + theme variation（文字走 Button.text）。
 func test_panel_ok_label_uses_lstr() -> void:
 	var panel := MailDetailPanel.new("mail_detail", {})
 	panel.setup_panel(GameData.player, 1, Callable())
 	var cfg: ConfigManager = GameData.config
-	var ok_btns: Array = panel.find_children("*", "TextureButton", true, false)
-	assert_eq(ok_btns.size(), 1, "1 个 ok 按钮")
-	var lbl_text: String = ""
-	for c in ok_btns[0].get_children():
-		if c is Label:
-			lbl_text = String(c.text)
-	assert_eq(lbl_text, cfg.get_lstr("MAILBOX.CLAIM"), "ok label = LSTR MAILBOX.CLAIM（mail 1 unread+attached）")
+	var ok_btns: Array = panel.find_children("*", "Button", true, false)
+	assert_eq(ok_btns.size(), 1, "1 个 ok 按钮（Button variation 承载文字）")
+	assert_eq(String((ok_btns[0] as Button).text), cfg.get_lstr("MAILBOX.CLAIM"),
+		"ok 文字 = LSTR MAILBOX.CLAIM（mail 1 unread+attached）")
 	assert_true(_has_label_text(panel, cfg.get_lstr("MAILBOX.ATTACHMENTS_")), "attach title 走 LSTR MAILBOX.ATTACHMENTS_")
 	panel.free()
 
@@ -125,3 +132,94 @@ func test_on_ok_read_closes_panel() -> void:
 	assert_ne(pd.mailbox.get_mail(200), {}, "已读点 ok 不 erase（源 doClickRead else destroy 不移除 raw）")
 	assert_true(closed[0], "已读点 ok 触发 _close（源 destroy callback）")
 	panel.free()
+
+
+# ══════════ 批 2 两件套守卫（2026-08-16，mail/content.lua 直译）══════════
+
+# chrome 静态树（mail_detail_content.tscn）：frame/ok 坐标照源直译。
+# frame mailbox_letter_bg(421x541px) 中心 ccp(400,240) → 显示 328.59x422.24 中心
+# to_godot(400,240)=(480,320)；ok（readnode root=frame，原点=frame 左下角
+# (235.71,28.88)）sell_number_button Scale9 cap(15,22,15,25) 165x45 中心
+# frame 局部 (162,42) → frame 内 godot 中心 (162.00,380.14)。
+func test_content_static_tree() -> void:
+	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	var frame: TextureRect = inst.get_node("Frame") as TextureRect
+	assert_almost_eq(frame.size.x, 328.59, 0.5, "Frame 宽 = 421px/CS")
+	assert_almost_eq(frame.size.y, 422.24, 0.5, "Frame 高 = 541px/CS")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 0.5, "Frame 中心 x = 400+80")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 320.0, 0.5, "Frame 中心 y = 560-240")
+	var ok_btn: Button = frame.get_node("%OkBtn") as Button
+	assert_almost_eq(ok_btn.size.x, 165.0, 0.5, "OkBtn 宽 = scaleSize 165")
+	assert_almost_eq(ok_btn.size.y, 45.0, 0.5, "OkBtn 高 = scaleSize 45")
+	assert_almost_eq(ok_btn.position.x + ok_btn.size.x * 0.5, 162.0, 0.5, "OkBtn 中心 x = 235.71+162+80-315.71")
+	assert_almost_eq(ok_btn.position.y + ok_btn.size.y * 0.5, 380.14, 0.5, "OkBtn 中心 y = frame 内直译")
+	# 旧 TextureButton+子 OkLabel 双层结构退役（Button.text 承载）
+	assert_eq(frame.find_children("OkLabel", "Control", true, false).size(), 0,
+		"OkLabel 退役（Button.text 承载文字）")
+
+
+# title_bg/attach_bg 源均为 Scale9Sprite（content.lua:10-14 cap(10,10,217,6) +
+# :226-228 cap(5,5,16,16)）→ NinePatchRect 化（批 2 公式：纹理像素直读，
+# top=H-y-h/bottom=y/left=x/right=W-x-w）。
+# equip_craft_money_bg(308x34) cap(10,10,217,6)：top=34-10-6=18 right=308-10-217=81；
+# mailbox_letter_addon_bg(34x34) cap(5,5,16,16)：top=34-5-16=13 right=13。
+func test_attach_bg_ninepatch_margins() -> void:
+	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	var title_bg: NinePatchRect = (inst.get_node("Frame") as Control).get_node("TitleBg") as NinePatchRect
+	assert_not_null(title_bg, "TitleBg 是 NinePatchRect（源 Scale9 cap(10,10,217,6)）")
+	assert_almost_eq(title_bg.patch_margin_left, 10.0, 0.1, "TitleBg left = cap x")
+	assert_almost_eq(title_bg.patch_margin_top, 18.0, 0.1, "TitleBg top = 34-10-6")
+	assert_almost_eq(title_bg.patch_margin_right, 81.0, 0.1, "TitleBg right = 308-10-217")
+	assert_almost_eq(title_bg.patch_margin_bottom, 10.0, 0.1, "TitleBg bottom = cap y")
+	var attach_bg: NinePatchRect = ((inst.get_node("Frame") as Control).get_node("%AttachHost") as Control).get_node("AttachBg") as NinePatchRect
+	assert_not_null(attach_bg, "AttachBg 是 NinePatchRect（源 Scale9 cap(5,5,16,16)）")
+	assert_almost_eq(attach_bg.patch_margin_left, 5.0, 0.1, "AttachBg left = cap x")
+	assert_almost_eq(attach_bg.patch_margin_top, 13.0, 0.1, "AttachBg top = 34-5-16")
+	assert_almost_eq(attach_bg.patch_margin_right, 13.0, 0.1, "AttachBg right = 34-5-16")
+	assert_almost_eq(attach_bg.patch_margin_bottom, 5.0, 0.1, "AttachBg bottom = cap y")
+	assert_almost_eq(attach_bg.size.x, 300.0, 0.5, "AttachBg 宽 = 源 setContentSize 300")
+	assert_false(attach_bg.visible, "AttachBg 默认隐藏（有附件 fill 显示）")
+
+
+# 货币附件行模板（mail_currency_item.tscn，源 createCommonAttach :162-214）：
+# icon fix_height=25（readnode:201-204 等比缩放，非强拉）+ amount right2 icon+20。
+func test_currency_item_template_static_tree() -> void:
+	var inst: Control = (load(CURRENCY_ITEM_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	var icon: TextureRect = inst.get_node("%Icon") as TextureRect
+	assert_almost_eq(icon.position.x, 40.0, 0.5, "Icon x = 40（anchor(0,1) at (40,y)）")
+	assert_almost_eq(icon.size.y, 25.0, 0.5, "Icon 高 = fix_height 25")
+	var amount: Label = inst.get_node("%Amount") as Label
+	assert_almost_eq(amount.position.x, 85.0, 0.5, "Amount x = 40+25+20（right2 offset=20）")
+	assert_almost_eq(inst.size.y, 30.0, 0.5, "行高 30（源逐行 y-30）")
+
+
+# panel 零静态构造（宽口径白名单）：货币行走 mail_currency_item.tscn 模板 +
+# TitleBg/AttachBg/AttachTitle 静态化，仅溢满弹窗工厂 1 处 .new(。
+func test_panel_no_static_construction() -> void:
+	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_eq(text.count("MailOverfullPopup.new("), 1, "仅 1 处溢满弹窗工厂 MailOverfullPopup.new(")
+	assert_eq(text.count(".new("), 1, "宽口径 .new( 总数 = 白名单之和")
+
+
+# theme variation 接线（读 tres 文本表项）。
+# 源字号/色：title size18 ccc3(172,75,30)（:23-35）；body/from size16 ccc3(162,88,41)；
+# attach_title size18 ccc3(152,98,34)；amount size18 ccc3(129,61,22)；
+# ok_label fontinfo ui_normal_button 17 号 + config 色 ccc3(236,222,209)。
+func test_theme_variations_wired() -> void:
+	var t: String = FileAccess.get_file_as_string(THEME_PATH)
+	assert_true(t.contains("MailDetailTitleLabel/font_sizes/font_size = 18"), "title 字号 18")
+	assert_true(t.contains("MailDetailTitleLabel/colors/font_color = Color(0.67451, 0.294118, 0.117647, 1)"),
+		"title 色 = ccc3(172,75,30)")
+	assert_true(t.contains("MailDetailTextLabel/font_sizes/font_size = 16"), "body/from 字号 16")
+	assert_true(t.contains("MailDetailTextLabel/colors/font_color = Color(0.635294, 0.345098, 0.160784, 1)"),
+		"body/from 色 = ccc3(162,88,41)")
+	assert_true(t.contains("MailAttachTitleLabel/colors/font_color = Color(0.596078, 0.384314, 0.133333, 1)"),
+		"attach_title 色 = ccc3(152,98,34)")
+	assert_true(t.contains("MailAttachAmountLabel/colors/font_color = Color(0.505882, 0.239216, 0.086275, 1)"),
+		"amount 色 = ccc3(129,61,22)")
+	assert_true(t.contains("MailDetailOkBtn/styles/normal = SubResource(\"SB_pkg_hb_n\")"),
+		"ok 按钮三态复用 SB_pkg_hb（同图同 cap(15,22,15,25)）")
+	assert_true(t.contains("MailDetailOkBtn/font_sizes/font_size = 17"), "ok 字号 17（ui_normal_button）")

@@ -1,9 +1,21 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_frame.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_title_bg.png" id="2_titlebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_mask_up.png" id="5_maskup"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_mask_down.png" id="6_maskdown"]
+
+; 信箱主列表静态树（批 2 Task 5 两件套化，2026-08-16）。照源 ui/mailbox.lua create:594-684：
+; frame mailbox_frame(508x571px) 中心 ccp(400,240) → 显示 396.49x445.66 中心 (480,320)；
+; readnode root=frame（原点=frame 左下角 (201.75,17.17)）：close(65x66px) @(395,420) →
+; 中心 (596.75,437.17)；title_bg(421x44px) @(200,410) → 中心 (401.75,427.17)。
+; draglist cliprect CCRectMake(20,20,360,370)（:253）frame 局部 → 场景 (221.75,37.17)
+; → Godot (301.75,152.83)-(661.75,522.83)；bar 滚动条走 Godot ScrollContainer 引擎
+; 自带（引擎缺口例外惯例）。upShade/downShade（:257-258）→ TopMask/BottomMask
+; 静态贴 scroll 顶/底（461x26px/CS=359.80x20.29，宽铺满 scroll 360）。
+; 邮件行模板 mail_item.tscn fill 挂 %MailList（VBox separation 10：行高 90+10=源 dy 100）。
 
 [node name="MailContent" type="Control"]
 layout_mode = 3
@@ -38,8 +50,7 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
-theme_override_font_sizes/font_size = 26
+theme_type_variation = &"MailTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -55,14 +66,15 @@ offset_bottom = 148.61
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="MailScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 301.75
-offset_top = 152.86
+offset_top = 152.83
 offset_right = 661.75
-offset_bottom = 522.86
+offset_bottom = 522.83
 horizontal_scroll_mode = 0
 
 [node name="MailList" type="VBoxContainer" parent="MailScroll"]
@@ -71,3 +83,27 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 10
+
+; 顶渐变遮罩（源 :257 upShade mailbox_mask_up，贴 scroll 顶）
+[node name="TopMask" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 301.75
+offset_top = 152.83
+offset_right = 661.75
+offset_bottom = 173.12
+texture = ExtResource("5_maskup")
+expand_mode = 1
+mouse_filter = 2
+
+; 底渐变遮罩（源 :258 downShade 复用 mask_up 是源笔误，本项目用 mask_down 资产修正）
+[node name="BottomMask" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 301.75
+offset_top = 502.54
+offset_right = 661.75
+offset_bottom = 522.83
+texture = ExtResource("6_maskdown")
+expand_mode = 1
+mouse_filter = 2

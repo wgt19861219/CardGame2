@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=40 format=3]
+[gd_resource type="Theme" load_steps=42 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -226,6 +226,24 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_left = 6
 corner_radius_bottom_right = 6
+
+; mail overfull 按钮（批 2 Task 5）：源 uieditor/mailoverfull.lua DGButton
+; sell_number_button(63x67) cap CCRectMake(15.63,15.63,19.53,15.63) 纹理像素直译
+; （批 1 公式：left=15.63 top=67-15.63-15.63=35.74 right=63-15.63-19.53=27.84
+; bottom=15.63），press 层 sell_number_button_down 同 cap。
+[sub_resource type="StyleBoxTexture" id="SB_mo_btn_n"]
+texture = ExtResource("8_selln")
+texture_margin_left = 15.63
+texture_margin_top = 35.74
+texture_margin_right = 27.84
+texture_margin_bottom = 15.63
+
+[sub_resource type="StyleBoxTexture" id="SB_mo_btn_p"]
+texture = ExtResource("9_sellp")
+texture_margin_left = 15.63
+texture_margin_top = 35.74
+texture_margin_right = 27.84
+texture_margin_bottom = 15.63
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -827,3 +845,73 @@ StarShopBuyBtn/styles/hover = SubResource("SB_ssbuy_n")
 StarShopBuyBtn/styles/pressed = SubResource("SB_ssbuy_p")
 StarShopBuyBtn/styles/disabled = SubResource("SB_ssbuy_n")
 StarShopBuyBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+
+; ── mail 三件两件套（批 2 Task 5，2026-08-16）──
+; 主列表标题（源 mailbox.lua:659-671 size26 ccc3(251,206,16)）
+MailTitleLabel/base_type = &"Label"
+MailTitleLabel/colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
+MailTitleLabel/font_sizes/font_size = 26
+; 行内标题（源 :491-503 size20 ccc3(67,59,56)）
+MailRowNameLabel/base_type = &"Label"
+MailRowNameLabel/colors/font_color = Color(0.262745, 0.231373, 0.219608, 1)
+MailRowNameLabel/font_sizes/font_size = 20
+; 行内发件人前缀（源 :505-518 size18 ccc3(67,59,56)）
+MailRowFromTitleLabel/base_type = &"Label"
+MailRowFromTitleLabel/colors/font_color = Color(0.262745, 0.231373, 0.219608, 1)
+MailRowFromTitleLabel/font_sizes/font_size = 18
+; 行内发件人（源 :520-533 size18 ccc3(138,56,1)）
+MailRowFromLabel/base_type = &"Label"
+MailRowFromLabel/colors/font_color = Color(0.541176, 0.219608, 0.003922, 1)
+MailRowFromLabel/font_sizes/font_size = 18
+; 行内日期（源 :535-549 size18 ccc3(157,117,89)）
+MailRowDateLabel/base_type = &"Label"
+MailRowDateLabel/colors/font_color = Color(0.615686, 0.458824, 0.34902, 1)
+MailRowDateLabel/font_sizes/font_size = 18
+; 详情标题（源 content.lua:23-35 size18 ccc3(172,75,30)）
+MailDetailTitleLabel/base_type = &"Label"
+MailDetailTitleLabel/colors/font_color = Color(0.67451, 0.294118, 0.117647, 1)
+MailDetailTitleLabel/font_sizes/font_size = 18
+; 详情正文/发件人（源 :51-68 + :89-112 size16 ccc3(162,88,41) 同规格共用）
+MailDetailTextLabel/base_type = &"Label"
+MailDetailTextLabel/colors/font_color = Color(0.635294, 0.345098, 0.160784, 1)
+MailDetailTextLabel/font_sizes/font_size = 16
+; 附件标题（源 :235-249 size18 ccc3(152,98,34)）
+MailAttachTitleLabel/base_type = &"Label"
+MailAttachTitleLabel/colors/font_color = Color(0.596078, 0.384314, 0.133333, 1)
+MailAttachTitleLabel/font_sizes/font_size = 18
+; 附件数量（源 :190-208 size18 ccc3(129,61,22)）
+MailAttachAmountLabel/base_type = &"Label"
+MailAttachAmountLabel/colors/font_color = Color(0.505882, 0.239216, 0.086275, 1)
+MailAttachAmountLabel/font_sizes/font_size = 18
+; overfull 标题（源声明表 size23 ccc3(253,215,17)）
+MailOverfullTitleLabel/base_type = &"Label"
+MailOverfullTitleLabel/colors/font_color = Color(0.992157, 0.843137, 0.066667, 1)
+MailOverfullTitleLabel/font_sizes/font_size = 23
+; overfull 3 段说明（源 overfull.lua:40-97 size18 ccc3(243,194,113) 共用）
+MailOverfullDescLabel/base_type = &"Label"
+MailOverfullDescLabel/colors/font_color = Color(0.952941, 0.760784, 0.443137, 1)
+MailOverfullDescLabel/font_sizes/font_size = 18
+; overfull 双按钮（源 DGButton 声明表 size20 labelConfig ccc3(239,230,209)
+; + sell_number cap(15.63,15.63,19.53,15.63) 三态 → SB_mo_btn_n/p）
+MailOverfullBtn/base_type = &"Button"
+MailOverfullBtn/colors/font_color = Color(0.937255, 0.901961, 0.819608, 1)
+MailOverfullBtn/font_sizes/font_size = 20
+MailOverfullBtn/styles/normal = SubResource("SB_mo_btn_n")
+MailOverfullBtn/styles/hover = SubResource("SB_mo_btn_n")
+MailOverfullBtn/styles/pressed = SubResource("SB_mo_btn_p")
+MailOverfullBtn/styles/disabled = SubResource("SB_mo_btn_n")
+MailOverfullBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 详情 ok 按钮（源 content.lua:429-473 Scale9 sell_number_button cap(15,22,15,25)
+; 与 package 图鉴按钮同图同 cap → 复用 SB_pkg_hb_n/p；ok_label fontinfo
+; ui_normal_button 17 号 + config 色 ccc3(236,222,209) + 阴影(63,5,0) 偏移(0,2)）
+MailDetailOkBtn/base_type = &"Button"
+MailDetailOkBtn/colors/font_color = Color(0.92549, 0.870588, 0.819608, 1)
+MailDetailOkBtn/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+MailDetailOkBtn/constants/shadow_offset_x = 0
+MailDetailOkBtn/constants/shadow_offset_y = 2
+MailDetailOkBtn/font_sizes/font_size = 17
+MailDetailOkBtn/styles/normal = SubResource("SB_pkg_hb_n")
+MailDetailOkBtn/styles/hover = SubResource("SB_pkg_hb_n")
+MailDetailOkBtn/styles/pressed = SubResource("SB_pkg_hb_p")
+MailDetailOkBtn/styles/disabled = SubResource("SB_pkg_hb_n")
+MailDetailOkBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")

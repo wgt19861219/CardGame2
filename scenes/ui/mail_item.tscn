@@ -1,0 +1,125 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_unread_bg.png" id="1_rowbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_icon_bg.png" id="2_iconbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/gocha.png" id="3_iconframe"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_letter_icon.png" id="4_letter"]
+
+; 邮件行模板（批 2 Task 5，2026-08-16）。照源 ui/mailbox.lua createMail:445-592 直译：
+; board CCSprite 340x90（:450-451），bg Sprite mediate 填满 board（unread/read fill 换
+; texture_normal）→ root TextureButton 整拉（源 Sprite 非九宫格，本就整图拉伸）。
+; 行内坐标左下原点 y-up → Godot (x, 90-y)：icon_bg 中心 (45,45)（:484-487，默认
+; task_icon_bg 94x101px/CS=73.37x78.83 等比 fill 换图）；icon_frame gocha 中心 (45,46)
+; （:564-570，73.37x74.15，iconres 分支 fill 显示）；letter icon 中心 (45,47)
+; （:576-583，78x78px/CS=60.88，unread letter/open fill 换图）；装备 icon 中心 (45,46)
+; （:558-562，ReadequipIcon 72px 基准 scale 0.65≈源 createIcon）；name @ (95,70)
+; anchor(0,0.5) 宽上限 200（:552-554 超宽 scale）；from_title @ (95,40)（:505-518）；
+; from right2 from_title 宽上限 180（:555-557）；date @ (95,15)（:535-549）。
+; pivot (170,45) 居中：源 board 中心 setScale(0.95) press 反馈（:126-132）。
+
+[node name="MailItem" type="TextureButton"]
+custom_minimum_size = Vector2(340, 90)
+layout_mode = 0
+offset_right = 340.0
+offset_bottom = 90.0
+pivot_offset = Vector2(170, 45)
+texture_normal = ExtResource("1_rowbg")
+ignore_texture_size = true
+stretch_mode = 0
+
+; icon_bg（默认 task_icon_bg 显示 73.37x78.83 等比；装备邮件 fill 换 getShapeFrameRes 框）
+[node name="IconBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 8.32
+offset_top = 5.59
+offset_right = 81.69
+offset_bottom = 84.42
+texture = ExtResource("2_iconbg")
+expand_mode = 1
+mouse_filter = 2
+
+; icon_frame gocha（iconres 分支显示，装备 iconid 分支隐藏）
+[node name="IconFrame" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 8.32
+offset_top = 6.93
+offset_right = 81.69
+offset_bottom = 81.08
+texture = ExtResource("3_iconframe")
+expand_mode = 1
+mouse_filter = 2
+
+; letter icon（iconres 分支显示，纹理 fill：unread letter / read letter_open）
+[node name="LetterIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 14.56
+offset_top = 12.56
+offset_right = 75.44
+offset_bottom = 73.44
+texture = ExtResource("4_letter")
+expand_mode = 1
+mouse_filter = 2
+
+; 装备 icon 宿主（iconid 分支 fill 挂 ReadequipIcon，中心 (45,44)）
+[node name="EquipHost" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 21.6
+offset_top = 20.6
+offset_right = 68.4
+offset_bottom = 67.4
+mouse_filter = 2
+
+; name size20 ccc3(67,59,56) 宽上限 200
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 95.0
+offset_top = 8.0
+offset_right = 295.0
+offset_bottom = 32.0
+theme_type_variation = &"MailRowNameLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; from_title size18 ccc3(67,59,56)，文案 fill LSTR MAILBOX.FROM_
+[node name="FromTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 95.0
+offset_top = 37.5
+offset_right = 195.0
+offset_bottom = 62.5
+theme_type_variation = &"MailRowFromTitleLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; from size18 ccc3(138,56,1) 紧接 from_title 右（源 right2 排列）
+[node name="From" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 199.0
+offset_top = 37.5
+offset_right = 340.0
+offset_bottom = 62.5
+theme_type_variation = &"MailRowFromLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; date size18 ccc3(157,117,89)
+[node name="Date" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 95.0
+offset_top = 63.0
+offset_right = 295.0
+offset_bottom = 87.0
+theme_type_variation = &"MailRowDateLabel"
+mouse_filter = 2
+vertical_alignment = 1

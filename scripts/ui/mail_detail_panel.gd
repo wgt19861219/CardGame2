@@ -5,12 +5,18 @@ extends PopWindow
 ## frame（mailbox_letter_bg）+ ok 按钮（领取/关闭）+ title/body/from + splitLine + attach（common 货币）。
 ## ok 点击：未读+有附件 → claim_attach；未读无附件 → mark_read；已读 → 关闭。单机化裁源 read_mail 联机。
 ##
-## 重构（2026-07-18，hero_detail 范式）：chrome（frame/title_bg/title/body/from/split/ok）静态化进
-## scenes/ui/mail_detail_content.tscn（位置/size 编辑器可视化调）；附件区（attach_bg/currency/items）
-## 数量随邮件变，保留 procedural 挂 %AttachHost（pos=0,0 保持 frame 局部坐标系不变）。
-## setContentScaleFactor(615/480)=1.28125，无 fix 时），frame size/位置已预计算固化进 .tscn。
+## 批 2 两件套改造（2026-08-16，star_shop 范式）：chrome（frame/title_bg/title/body/from/
+## split/ok/attach_bg/attach_title）静态化进 scenes/ui/mail_detail_content.tscn——title_bg/
+## attach_bg 源 Scale9Sprite → NinePatchRect（cap 纹理像素直译），ok 按钮 TextureButton 整拉
+## → Button theme variation（SB_pkg_hb 同图同 cap 复用，文字 Button.text 承载）。
+## 货币附件行走 mail_currency_item.tscn 行模板；物品 icon 保留 ReadequipIcon 动态挂
+## %AttachHost（pos=0,0 保持 frame 局部坐标系）。源 cocos(800×480 左下)→Godot(960×640 左上)，
+## 显示尺寸=纹理px/CS(1.28125)。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_detail_content.tscn")
+const CURRENCY_ITEM_SCENE: PackedScene = preload("res://scenes/ui/mail_currency_item.tscn")
+# 显示尺寸换算 CS（源 setContentScaleFactor(615/480)）
+const CS: float = 1.28125
 # P1-2026-07-10：照源 content.lua:162-171 createCommonAttach 7 种货币图标映射
 const CURRENCY_ICONS: Dictionary = {
 	"Gold": "res://assets/ui/alpha/HVGA/goldicon_small.png",
@@ -31,18 +37,16 @@ const LSTR_CLAIM_KEY: String = "MAILBOX.CLAIM"
 const CLAIM_FALLBACK: String = "领取"
 const LSTR_CLOSE_KEY: String = "MAILBOX.CLOSE"
 const CLOSE_FALLBACK: String = "关闭"
-const BODY_FONT: int = 16
-# P1-4：照源 content.lua 装饰背景 + 文字颜色（ccc3→from_rgba8 忠实 0-255 色值）
-const ATTACH_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_addon_bg.png"
 # title_bg 装饰背景路径（测试引用）；纹理已静态化进 .tscn TitleBg。
 const TITLE_BG_TEX: String = "res://assets/ui/alpha/HVGA/equip_craft_money_bg.png"
-const ATTACH_TITLE_COLOR: Color = Color(152.0 / 255.0, 98.0 / 255.0, 34.0 / 255.0)
-const AMOUNT_COLOR: Color = Color(129.0 / 255.0, 61.0 / 255.0, 22.0 / 255.0)
+const ATTACH_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter_addon_bg.png"
+# 货币 icon 显示高（源 createCommonAttach config fix_height=25，readnode 等比缩放）
 const CURRENCY_ICON_H: float = 25.0
-const AMOUNT_FONT: int = 18
 const ATTACH_BG_W: float = 300.0
 # 附件区起始 y（源 _add_content 计算：from y=150 + 30 + split 后 24 = 204，frame 局部）。
 const ATTACH_TOP_Y: float = 204.0
+# 货币行间距（源 :211 逐行 y-30）与行首偏移（源 createAttach y-30 后起排）
+const CURRENCY_ROW_DY: float = 30.0
 
 var pd: PlayerData
 var _mail_id: int = 0
@@ -67,8 +71,8 @@ func setup_panel(p_pd: PlayerData, mail_id: int, on_closed: Callable) -> void:
 	_build_ui()
 
 
-# 建 UI：chrome 从 .tscn instantiate（位置/size 可视化），fill 动态文本/visible/信号；
-# 附件区 procedural 挂 %AttachHost。源 create:385 + createContent:277。
+# 建 UI：chrome 从 .tscn instantiate，fill 动态文本/visible/信号；附件区挂 %AttachHost。
+# 源 create:385 + createContent:277。
 func _build_ui() -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
@@ -77,40 +81,27 @@ func _build_ui() -> void:
 	(content.get_node("%From") as Label).text = str(_mail.get("from", ""))
 	var has_attach: bool = bool(_mail.get("attached", false))
 	(content.get_node("%SplitLine") as CanvasItem).visible = has_attach
-	var ok_btn: TextureButton = content.get_node("%OkBtn") as TextureButton
+	var ok_btn: Button = content.get_node("%OkBtn") as Button
 	ok_btn.pressed.connect(_on_ok)
 	var is_unread: bool = str(_mail.get("status", "")) == "unread"
 	var ok_text: String = _lstr(LSTR_CLAIM_KEY, CLAIM_FALLBACK) if (is_unread and has_attach) else _lstr(LSTR_CLOSE_KEY, CLOSE_FALLBACK)
-	(content.get_node("%OkLabel") as Label).text = ok_text
+	ok_btn.text = ok_text
 	_attach_host = content.get_node("%AttachHost") as Control
 	if has_attach:
 		_add_attach()
 
 
 # 附件区（照源 createAttach:216-275 + createCommonAttach:162-214 + createItemAttach:135-160）。
-# P1-4：attach_bg 装饰背景 + attach_common 数组忠实源数据结构（type 查 7 货币图标）。
-# 挂 %AttachHost（pos=0,0 = frame 局部坐标系不变）。
+# attach_bg/attach_title 静态化进 .tscn（visible fill 显示）；货币行走行模板；
+# 物品 icon 动态挂。挂 %AttachHost（pos=0,0 = frame 局部坐标系不变）。
 func _add_attach() -> void:
-	var y: float = ATTACH_TOP_Y
-	# attach_bg（源 createAttach :221-234 mailbox_letter_addon_bg @20,y width 300），先 add z 低
-	var attach_bg := TextureRect.new()
-	attach_bg.texture = load(ATTACH_BG_TEX)
-	attach_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	attach_bg.position = Vector2(20.0, y)
-	attach_bg.size = Vector2(ATTACH_BG_W, 0.0)   # 高度待设（源 :273 setContentSize(300, bh)）
-	attach_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_attach_host.add_child(attach_bg)
-	var top_y: float = y
-	# attach_title（源 :235-249 "附件" @30,y-15 color ATTACH_TITLE_COLOR）
-	var head := Label.new()
+	var attach_bg: NinePatchRect = _attach_host.get_node("%AttachBg") as NinePatchRect
+	attach_bg.visible = true
+	var head: Label = _attach_host.get_node("%AttachTitle") as Label
+	head.visible = true
 	head.text = _lstr(LSTR_ATTACH_KEY, ATTACH_FALLBACK)
-	head.position = Vector2(30, y + 2.0)
-	head.size = Vector2(100, 20)
-	head.add_theme_font_size_override("font", BODY_FONT)
-	head.add_theme_color_override("font_color", ATTACH_TITLE_COLOR)
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_attach_host.add_child(head)
-	var cy: float = y + 30.0
+	var top_y: float = ATTACH_TOP_Y
+	var cy: float = ATTACH_TOP_Y + CURRENCY_ROW_DY
 	# 货币附件（源 createCommonAttach :162-214，遍历 attach_common 按 type 查 CURRENCY_ICONS）
 	for entry in _mail.get("attach_common", []):
 		var ctype: String = str(entry.get("type", ""))
@@ -118,12 +109,31 @@ func _add_attach() -> void:
 		if camount <= 0:
 			continue
 		var icon_path: String = CURRENCY_ICONS.get(ctype, GOLD_ICON)
-		cy = _add_currency(cy, icon_path, camount)
+		_add_currency_row(cy, icon_path, camount)
+		cy += CURRENCY_ROW_DY
 	# 装备/物品附件（源 createItemAttach :135-160，4 列网格）
 	var items: Array = _mail.get("items", [])
 	if not items.is_empty():
 		cy = _add_item_attach(cy, items)
 	attach_bg.size = Vector2(ATTACH_BG_W, cy - top_y)
+
+
+# 货币附件行（mail_currency_item.tscn 模板 fill：icon 等比高 25 + x{amount}）。
+func _add_currency_row(y: float, icon_path: String, amount: int) -> void:
+	var row: Control = CURRENCY_ITEM_SCENE.instantiate() as Control
+	row.position = Vector2(0.0, y)
+	var icon: TextureRect = row.get_node("%Icon") as TextureRect
+	icon.texture = load(icon_path) as Texture2D
+	var icon_w: float = CURRENCY_ICON_H
+	if icon.texture != null:
+		var ts: Vector2 = icon.texture.get_size()
+		if ts.y > 0.0:
+			icon_w = CURRENCY_ICON_H * ts.x / ts.y
+	icon.size = Vector2(icon_w, CURRENCY_ICON_H)
+	var lbl: Label = row.get_node("%Amount") as Label
+	lbl.text = "x%d" % amount
+	lbl.position = Vector2(40.0 + icon_w + 20.0, 0.0)
+	_attach_host.add_child(row)
 
 
 func _add_item_attach(y: float, items: Array) -> float:
@@ -134,33 +144,13 @@ func _add_item_attach(y: float, items: Array) -> float:
 		if item_id == 0:
 			continue
 		var col: int = i % ITEM_ICON_COLS
-		var row: int = int(i / ITEM_ICON_COLS)
+		var row_i: int = int(i / ITEM_ICON_COLS)
 		var icon: Control = ReadequipIcon.create_icon(item_id, amount, pd.cm)
 		icon.scale = Vector2(0.85, 0.85)
-		icon.position = Vector2(34.0 + float(col) * ITEM_ICON_SIZE, y + float(row) * ITEM_ICON_SIZE)
+		icon.position = Vector2(34.0 + float(col) * ITEM_ICON_SIZE, y + float(row_i) * ITEM_ICON_SIZE)
 		_attach_host.add_child(icon)
 	var rows: int = ceili(float(items.size()) / float(ITEM_ICON_COLS))
 	return y + float(rows) * ITEM_ICON_SIZE
-
-
-func _add_currency(y: float, icon_path: String, amount: int) -> float:
-	var icon := TextureRect.new()
-	icon.texture = load(icon_path)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.size = Vector2(CURRENCY_ICON_H, CURRENCY_ICON_H)
-	icon.position = Vector2(40, y)
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_attach_host.add_child(icon)
-	var lbl := Label.new()
-	lbl.text = "x%d" % amount
-	lbl.position = Vector2(40.0 + CURRENCY_ICON_H + 8.0, y)
-	lbl.size = Vector2(100, CURRENCY_ICON_H)
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font", AMOUNT_FONT)
-	lbl.add_theme_color_override("font_color", AMOUNT_COLOR)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_attach_host.add_child(lbl)
-	return y + 30.0
 
 
 # ok（照 doClickRead:483 + doReadMail:494-531）：未读+附件 → claim（+overfull 检查）；未读无附件 → mark_read+erase；已读 → 关闭。
