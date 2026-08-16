@@ -16,9 +16,11 @@
 ; left/right DGButton sell_number_button cap(15.63,15.63,19.53,15.63) scaleSize
 ; 121.09x54.69 中心 (311.72,88.28)/(487.5,89.06) → Button theme variation
 ; MailOverfullBtn（旧运行时 UiScale9Button.apply_with_label 退役，text 承载文案）。
-; desc 滚动区源 cliprect DGRectMake(65,130,455,230)（readnode:14-17 ×0.78125 →
-; 场景 (50.78,101.56,355.47,179.69)）noshade → ScrollContainer (130.78,278.75)-
-; (486.25,458.44)；内容 ChaosNode offset=3 垂直流 → DescVBox separation 3
+; desc 滚动区源 cliprect DGRectMake(65,130,455,230)（readnode:13-17 ×0.78125 →
+; (50.78,101.56,355.47,179.69)）——C1 修正：cliprect 是 frame 局部坐标（draglist
+; container=self.ui.frame，原点=frame 左下角 (169.14,34.77) y-up），非场景空间；
+; +frame 原点再 to_godot → ScrollContainer (299.92,243.98)-(655.39,423.67)；
+; 内容 ChaosNode offset=3 垂直流 → DescVBox separation 3
 ; （desc1 宽 DGSizeMake(400,0)=312.5 左对齐 autowrap；grid 4 列源 :68-70 静态化，
 ; fill 只挂溢出物品 icon；desc2 在前 desc3 在后照源 ChaosNode 顺序）。
 
@@ -100,14 +102,15 @@ offset_bottom = 498.28
 theme_type_variation = &"MailOverfullBtn"
 text = "稍后领取"
 
-; desc 滚动区（源 draglist cliprect DG×0.78125 直译，noshade 无渐变遮罩）
+; desc 滚动区（源 draglist cliprect DG×0.78125 + frame 左下角原点 (169.14,34.77)，
+; frame 局部 y-up → to_godot 翻转；noshade 无渐变遮罩）
 [node name="DescScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 130.78
-offset_top = 278.75
-offset_right = 486.25
-offset_bottom = 458.44
+offset_left = 299.92
+offset_top = 243.98
+offset_right = 655.39
+offset_bottom = 423.67
 horizontal_scroll_mode = 0
 
 [node name="DescVBox" type="VBoxContainer" parent="DescScroll"]

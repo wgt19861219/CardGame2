@@ -30,6 +30,9 @@ const CURRENCY_ICONS: Dictionary = {
 const GOLD_ICON: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const ITEM_ICON_COLS: int = 4
 const ITEM_ICON_SIZE: float = 65.0
+# 物品附件 icon 缩放（源 content.lua:141 createIconWithAmount(id, 60, amount)：
+# ReadequipIcon 72px 基准 → 60/72，M1 对齐 overfull 侧同源值）
+const ICON_SCALE: float = 60.0 / 72.0
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
 const LSTR_ATTACH_KEY: String = "MAILBOX.ATTACHMENTS_"
 const ATTACH_FALLBACK: String = "附件"
@@ -43,8 +46,10 @@ const ATTACH_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_letter
 # 货币 icon 显示高（源 createCommonAttach config fix_height=25，readnode 等比缩放）
 const CURRENCY_ICON_H: float = 25.0
 const ATTACH_BG_W: float = 300.0
-# 附件区起始 y（源 _add_content 计算：from y=150 + 30 + split 后 24 = 204，frame 局部）。
-const ATTACH_TOP_Y: float = 204.0
+# 附件区起始 y（源 _add_content 计算：from y=150 + 30 + split 后 24 = 204，frame 局部
+# y-up；M2 修正：照 tscn 公式 (x, 422.24-y) 翻转 → 422.24-204=218.24，货币行/物品行
+# y 均由此派生自动联动 +14.24）。
+const ATTACH_TOP_Y: float = 218.24
 # 货币行间距（源 :211 逐行 y-30）与行首偏移（源 createAttach y-30 后起排）
 const CURRENCY_ROW_DY: float = 30.0
 
@@ -146,7 +151,7 @@ func _add_item_attach(y: float, items: Array) -> float:
 		var col: int = i % ITEM_ICON_COLS
 		var row_i: int = int(i / ITEM_ICON_COLS)
 		var icon: Control = ReadequipIcon.create_icon(item_id, amount, pd.cm)
-		icon.scale = Vector2(0.85, 0.85)
+		icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
 		icon.position = Vector2(34.0 + float(col) * ITEM_ICON_SIZE, y + float(row_i) * ITEM_ICON_SIZE)
 		_attach_host.add_child(icon)
 	var rows: int = ceili(float(items.size()) / float(ITEM_ICON_COLS))

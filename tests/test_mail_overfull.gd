@@ -107,8 +107,11 @@ func test_frame_ninepatch_margins() -> void:
 # frame 463.28x363.28 中心 (400.78,216.41)；title_bg 359.38x11.72 中心 (400,355.47)；
 # title size23 ccc3(253,215,17) 中心 (400,357.03)；left_button 121.09x54.69 中心
 # (311.72,88.28)；right_button 同尺寸 中心 (487.5,89.06)。
-# desc 滚动区源 overfull.lua:30 cliprect DGRectMake(65,130,455,230)（readnode:14-17
-# ×0.78125 → 场景 (50.78,101.56,355.47,179.69)）→ Godot (130.78,278.75)-(486.25,458.44)。
+# desc 滚动区源 overfull.lua:30 cliprect DGRectMake(65,130,455,230)（readnode:13-17
+# ×0.78125 → (50.78,101.56,355.47,179.69)）——C1 修正：cliprect 是 frame 局部坐标
+# （draglist container=self.ui.frame，原点=frame 左下角场景 (169.14,34.77) y-up，
+# frame=463.28x363.28 中心(400.78,216.41)），+frame 原点再 to_godot 翻转 →
+# Godot (299.92,243.98)-(655.39,423.67)。旧值误当场景空间直译致滚动区偏出 frame。
 func test_content_static_tree() -> void:
 	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
 	add_child_autofree(inst)
@@ -130,10 +133,10 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(right_btn.position.x + right_btn.size.x * 0.5, 567.5, 0.5, "RightBtn 中心 x = 487.5+80")
 	assert_almost_eq(right_btn.position.y + right_btn.size.y * 0.5, 470.94, 0.5, "RightBtn 中心 y = 560-89.06")
 	var scroll: ScrollContainer = inst.get_node("%DescScroll") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 130.78, 0.5, "DescScroll 左 = DG(65)+80（×0.78125）")
-	assert_almost_eq(scroll.offset_top, 278.75, 0.5, "DescScroll 顶 = 560-(DG(130)+DG(230))")
-	assert_almost_eq(scroll.offset_right, 486.25, 0.5, "DescScroll 右 = 130.78+DG(455)")
-	assert_almost_eq(scroll.offset_bottom, 458.44, 0.5, "DescScroll 底 = 560-DG(130)")
+	assert_almost_eq(scroll.offset_left, 299.92, 0.5, "DescScroll 左 = frame左下169.14+DG(65)+80（frame 局部+原点）")
+	assert_almost_eq(scroll.offset_top, 243.98, 0.5, "DescScroll 顶 = 560-(34.77+DG(130)+DG(230))")
+	assert_almost_eq(scroll.offset_right, 655.39, 0.5, "DescScroll 右 = 299.92+DG(455)")
+	assert_almost_eq(scroll.offset_bottom, 423.67, 0.5, "DescScroll 底 = 560-(34.77+DG(130))")
 	# desc1 源 dimension DGSizeMake(400,0) = 312.5 宽（readnode:19-22 ×0.78125）
 	var vbox: VBoxContainer = scroll.get_node("DescVBox") as VBoxContainer
 	var desc1: Label = vbox.get_node("Desc1Label") as Label
