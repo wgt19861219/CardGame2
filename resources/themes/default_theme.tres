@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=34 format=3]
+[gd_resource type="Theme" load_steps=38 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -13,6 +13,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button_press.png" id="11_taskp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtn.png" id="12_classbtn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtnselected.png" id="13_classbtnsel"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="14_dlbtn1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="15_dlbtn2"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -181,6 +183,23 @@ texture_margin_top = 20.0
 texture_margin_right = 33.0
 texture_margin_bottom = 22.0
 
+; daily_login 奖励说明按钮（批 2 Task 3）：源 dailylogin.lua:827-857 explain/explain_press
+; Scale9Sprite tavern_button_normal(166x63) cap CCRectMake(20,15,88,19) 纹理像素直译
+; （批 1 公式：left=20 top=63-15-19=29 right=166-20-88=58 bottom=15），press 层同 cap。
+[sub_resource type="StyleBoxTexture" id="SB_dl_explain_n"]
+texture = ExtResource("14_dlbtn1")
+texture_margin_left = 20.0
+texture_margin_top = 29.0
+texture_margin_right = 58.0
+texture_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxTexture" id="SB_dl_explain_p"]
+texture = ExtResource("15_dlbtn2")
+texture_margin_left = 20.0
+texture_margin_top = 29.0
+texture_margin_right = 58.0
+texture_margin_bottom = 15.0
+
 [resource]
 AmountLabel/base_type = &"Label"
 AmountLabel/colors/font_color = Color(0.608, 0.161, 0.055, 1)
@@ -200,6 +219,40 @@ BtnLabel/colors/font_color = Color(0.918, 0.882, 0.804, 1)
 BtnLabel/colors/font_outline_color = Color(0, 0, 0, 1)
 BtnLabel/constants/outline_size = 2
 Button/styles/normal = SubResource("StyleBoxEmpty_0oxu6")
+; ── daily_login 月签到（批 2 Task 3，2026-08-16）── 源 dailylogin.lua：
+; title :813-826 size18 ccc3(231,206,19)（源无 stroke，删迁移发明的黑描边）；
+; explain_label :858-873 size18 ccc3(225,209,186)；subhead :653-720 size16
+; pre ccc3(238,204,119) / num 白（WhiteLabel16 通用）/ suf ccc3(255,204,91)；
+; amount :356-375 size24 白 stroke ccc3(95,64,43) size2；vip num size14 ccc3(231,206,19) 黑描边 1。
+DailyLoginTitleLabel/base_type = &"Label"
+DailyLoginTitleLabel/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+DailyLoginTitleLabel/font_sizes/font_size = 18
+DailyLoginExplainLabel/base_type = &"Label"
+DailyLoginExplainLabel/colors/font_color = Color(0.882353, 0.819608, 0.729412, 1)
+DailyLoginExplainLabel/font_sizes/font_size = 18
+DailyLoginSubheadPreLabel/base_type = &"Label"
+DailyLoginSubheadPreLabel/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
+DailyLoginSubheadPreLabel/font_sizes/font_size = 16
+DailyLoginSubheadSufLabel/base_type = &"Label"
+DailyLoginSubheadSufLabel/colors/font_color = Color(1, 0.8, 0.356863, 1)
+DailyLoginSubheadSufLabel/font_sizes/font_size = 16
+DailyLoginAmountLabel/base_type = &"Label"
+DailyLoginAmountLabel/colors/font_color = Color(1, 1, 1, 1)
+DailyLoginAmountLabel/colors/font_outline_color = Color(0.372549, 0.25098, 0.168627, 1)
+DailyLoginAmountLabel/constants/outline_size = 2
+DailyLoginAmountLabel/font_sizes/font_size = 24
+DailyLoginVipNum/base_type = &"Label"
+DailyLoginVipNum/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+DailyLoginVipNum/colors/font_outline_color = Color(0, 0, 0, 1)
+DailyLoginVipNum/constants/outline_size = 1
+DailyLoginVipNum/font_sizes/font_size = 14
+; 奖励说明按钮三态（源 :827-857 explain + explain_press down 层 → SB_dl_explain_n/p）
+DailyLoginExplainBtn/base_type = &"Button"
+DailyLoginExplainBtn/styles/normal = SubResource("SB_dl_explain_n")
+DailyLoginExplainBtn/styles/hover = SubResource("SB_dl_explain_n")
+DailyLoginExplainBtn/styles/pressed = SubResource("SB_dl_explain_p")
+DailyLoginExplainBtn/styles/disabled = SubResource("SB_dl_explain_n")
+DailyLoginExplainBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 DialogLabel/base_type = &"Label"
 DialogLabel/colors/font_color = Color(1, 1, 1, 1)
 DialogLabel/colors/font_outline_color = Color(0, 0, 0, 1)

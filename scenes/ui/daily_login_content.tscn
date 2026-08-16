@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_frame.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade_title_short_bg.png" id="2_titlebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_popup_bg.png" id="3_actbg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="4_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="5_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_reward_bg.png" id="6_rewardbg"]
 
 [node name="DailyLoginContent" type="Control"]
 layout_mode = 3
@@ -13,6 +14,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; frame 源 :750-763：中心 ccp(400,240) scaleSize 578x420，纹理 752x202 cap(50,50,478,50)
+; → top=202-50-50=102 bottom=50（批 2 修正旧 tscn top/bottom 互换）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 3
 offset_left = 191.0
@@ -21,11 +24,12 @@ offset_right = 769.0
 offset_bottom = 530.0
 texture = ExtResource("1_frame")
 patch_margin_left = 50
-patch_margin_top = 50
+patch_margin_top = 102
 patch_margin_right = 224
-patch_margin_bottom = 102
+patch_margin_bottom = 50
 mouse_filter = 2
 
+; title_bg 源 :764-774：中心 ccp(400,441)，445x79 ÷CS=347.32x61.66
 [node name="TitleBg" type="TextureRect" parent="."]
 layout_mode = 3
 offset_left = 306.34
@@ -36,6 +40,7 @@ texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
 
+; act_bg 源 :800-812：中心 ccp(400,420) fix_size(0,35)（宽 734÷CS 保持，高 35 直译）
 [node name="ActBg" type="TextureRect" parent="."]
 layout_mode = 3
 offset_left = 193.42
@@ -46,6 +51,7 @@ texture = ExtResource("3_actbg")
 expand_mode = 1
 mouse_filter = 2
 
+; close 源 :776-799：中心 ccp(675,440)，65x66 ÷CS=50.73x51.51；stretch=SCALE 修正 KEEP 原尺寸溢出
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -56,7 +62,9 @@ offset_bottom = 145.75
 texture_normal = ExtResource("4_close")
 texture_pressed = ExtResource("5_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
+; title 源 :813-826：中心 ccp(400,444) size18 ccc3(231,206,19)（源无 stroke）
 [node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -64,15 +72,13 @@ offset_left = 430.0
 offset_top = 106.0
 offset_right = 530.0
 offset_bottom = 126.0
-theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"DailyLoginTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "X月签到奖励"
 
+; explain 源 :827-874：Scale9 中心 ccp(190,400) scaleSize 105x50 → theme 三态接管（批 2）
 [node name="ExplainBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -80,8 +86,22 @@ offset_left = 217.5
 offset_top = 135.0
 offset_right = 322.5
 offset_bottom = 185.0
+theme_type_variation = &"DailyLoginExplainBtn"
+
+; explain_label 源 :858-873：explain 局部 (53,24) size18 ccc3(225,209,186) → 全铺居中
+[node name="ExplainLabel" type="Label" parent="ExplainBtn"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"DailyLoginExplainLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 text = "奖励说明"
 
+; subhead 3 label 源 createSubhead :653-720：容器中心 ccp(400,386)，pre anchor(0,0.5) (0,10)
 [node name="SubheadPreLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -89,8 +109,7 @@ offset_left = 480.0
 offset_top = 154.0
 offset_right = 680.0
 offset_bottom = 174.0
-theme_override_colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"DailyLoginSubheadPreLabel"
 mouse_filter = 2
 vertical_alignment = 1
 text = "本月已累计签到"
@@ -114,12 +133,12 @@ offset_left = 750.0
 offset_top = 154.0
 offset_right = 790.0
 offset_bottom = 174.0
-theme_override_colors/font_color = Color(1, 0.8, 0.356863, 1)
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"DailyLoginSubheadSufLabel"
 mouse_filter = 2
 vertical_alignment = 1
 text = "次"
 
+; draglist 源 createListLayer :634-652：rect CCRectMake(140,40,520,335) → 220~740 x 185~520
 [node name="GridScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -129,3 +148,21 @@ offset_right = 740.0
 offset_bottom = 520.0
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 1
+
+; 网格宿主常驻（fill 只设尺寸+挂 cell；源 createList :380-420 board 容器）
+[node name="GridContent" type="Control" parent="GridScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+; board 底板 源 :396-413：Scale9 reward_bg 71x71 cap(15,15,24,25)
+; → left=15 top=71-15-25=31 right=71-15-24=32 bottom=15（批 1 公式）
+[node name="RewardBg" type="NinePatchRect" parent="GridScroll/GridContent"]
+unique_name_in_owner = true
+layout_mode = 3
+texture = ExtResource("6_rewardbg")
+patch_margin_left = 15
+patch_margin_top = 31
+patch_margin_right = 32
+patch_margin_bottom = 15
+mouse_filter = 2
