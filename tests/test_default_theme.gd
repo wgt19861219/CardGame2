@@ -231,10 +231,10 @@ func test_stage_title_label_has_gold_color() -> void:
 	var color: Color = theme.get_color("font_color", "StageTitleLabel")
 	assert_color_approx(color, Color(0.980392, 0.803922, 0.062745, 1), "StageTitleLabel font_color")
 
-func test_stage_title_label_has_size_18() -> void:
+func test_stage_title_label_has_size_17() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var size: int = theme.get_font_size("font_size", "StageTitleLabel")
-	assert_eq(size, 18, "StageTitleLabel font_size = 18")
+	assert_eq(size, 17, "StageTitleLabel font_size = 17（源 fontconfigs ui_normal_button，批3 批末勘误）")
 
 func test_stage_title_label_has_shadow() -> void:
 	var theme: Theme = ThemeManager.get_theme()

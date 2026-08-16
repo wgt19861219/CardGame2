@@ -355,14 +355,14 @@ BtnLabel/constants/outline_size = 2
 Button/styles/normal = SubResource("StyleBoxEmpty_0oxu6")
 ; ── stage_select 章节标题（批 3 Task 5，2026-08-16）── 源 stageselect.lua:861-883
 ; createTitleText：fontinfo ui_normal_button（fontconfigs.lua：size17 白 + shadow
-; ccc3(63,5,0) offset(0,2)，stroke 源注释未启用）+ layout 覆盖 size18、color ccc3(250,205,16)。
+; ccc3(63,5,0) offset(0,2)，stroke 源注释未启用）+ color ccc3(250,205,16)。size=17：源 stageselect.lua createTitleText 仅 fontinfo=ui_normal_button（layout 无 size 能力），fontconfigs.lua:24 size=17（批3 批末勘误，原 18 系错套 mode toggle 值）。
 ; 旧实现黑描边 2 是迁移发明（源 stroke 被注释），variation 化时删。
 StageTitleLabel/base_type = &"Label"
 StageTitleLabel/colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
 StageTitleLabel/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
 StageTitleLabel/constants/shadow_offset_x = 0
 StageTitleLabel/constants/shadow_offset_y = 2
-StageTitleLabel/font_sizes/font_size = 18
+StageTitleLabel/font_sizes/font_size = 17
 ; ── daily_login 月签到（批 2 Task 3，2026-08-16）── 源 dailylogin.lua：
 ; title :813-826 size18 ccc3(231,206,19)（源无 stroke，删迁移发明的黑描边）；
 ; explain_label :858-873 size18 ccc3(225,209,186)；subhead :653-720 size16
