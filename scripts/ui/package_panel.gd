@@ -1,14 +1,12 @@
 class_name PackagePanel
 extends PopWindow
 
-const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
-
 ## 玩家背包（View 层）— 照源 ui/package.lua（721 行，两 identity 多 tab 4 列网格）。
 ## identity="package" 装备/物品包（5 tab）/ "fragment" 碎片包（3 tab）。
 ## Logic 走 EquipmentClassifier.classify（双容器适配，第 22 段交付）。
-## 本段主壳：panel 层（bg.jpg/equipbg/close/handbook button/tab/scroll）静态化进
-## package_content.tscn（instantiate + fill），物品 cell 动态 fill 挂 %Grid。
-## cell 点击 emit cell_clicked（第 24 段接 equipboard 浮层）。
+## 批 2 两件套（2026-08-16 核对级）：主壳静态化进 package_content.tscn（bg/equipbg/close/
+## handbook/tab/scroll/grid 位置贴图字号全在 tscn+theme），panel 只做业务+信号 connect+fill；
+## 物品 cell 动态 fill 挂 %Grid。cell 点击 emit cell_clicked（接 equipboard 浮层）。
 ## 单机化：去掉 lsr 统计上报 + framework statusbar 返回（自带关闭按钮，源 close 注释掉靠 framework）。
 
 # ── identity（源 create(identity)）──
@@ -20,7 +18,7 @@ const TABS_PACKAGE: Array[String] = ["all", "equip", "scroll", "stone", "consume
 const TABS_FRAGMENT: Array[String] = ["all", "equip", "scroll"]
 const TAB_NAMES: Dictionary = {
 	"all": "全部", "equip": "装备", "scroll": "卷轴",
-	"stone": "魂石", "consume": "消耗品",
+	"stone": "灵魂石", "consume": "消耗品",
 }
 # .tscn 5 tab 满集（fragment 隐藏 stone/consume）。
 const TAB_ALL_KEYS: Array[String] = ["all", "equip", "scroll", "stone", "consume"]
@@ -30,14 +28,9 @@ const TAB_LSTR_KEYS: Array[String] = [
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 
-# panel 层子场景（位置/size 静态化进 .tscn 编辑器可视化调）。
+# panel 层子场景（位置/size/贴图/字号全静态化进 .tscn + theme variation）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/package_content.tscn")
 
-# ── Scale9 handbook button 样式（.tscn 普通 Button 运行时套 StyleBoxTexture）──
-const HANDBOOK_BTN_CAP: Rect2 = Rect2(15.0, 22.0, 15.0, 25.0)
-const HANDBOOK_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
-const HANDBOOK_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
-const HANDBOOK_ICON_RES: String = "res://assets/ui/alpha/HVGA/package_handbook_icon.png"
 const HANDBOOK_LABEL_KEY: String = "HERODETAIL.BOOK"
 
 signal cell_clicked(cell_data: Dictionary)   # 第 24 段接 equipboard 浮层（源 doSelectEquip → equipboard）
@@ -56,12 +49,13 @@ var _content: Control = null        # .tscn instantiate 根节点（cleanup 引�
 var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipLayer，点 cell refresh 非重建）
 
 
-# 决定 tab 集 + classify 输出取 prop/fragment。调用：PackagePanel.new("package"/"fragment", {}).setup_panel(cm, pd)。
+# 决定 tab 集 + classify 输出取 prop/fragment。构造 PackagePanel 实例传 identity，
+# 再调 setup_panel(cm, pd)。
 func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
-	hud_identity = _identity   # T4：原 apply/remove override 样板上收基类（identity 构造传入）
 	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	_identity = identity
+	hud_identity = _identity   # T4：身份切换上收基类（须在 _identity 赋值后取，先取恒空串）
 	cm = p_cm
 	pd = p_pd
 	_tabs = TABS_PACKAGE if _identity == IDENTITY_PACKAGE else TABS_FRAGMENT
@@ -75,7 +69,7 @@ func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	cell_clicked.connect(_on_cell_clicked)
 
 
-# panel 层从 .tscn instantiate（位置/size 可视化）+ fill 动态数据 + 绑定信号。
+# panel 层从 .tscn instantiate（位置/贴图/字号全在 tscn+theme）+ fill 动态数据 + 绑定信号。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
@@ -85,45 +79,28 @@ func _build_content() -> void:
 	_grid = _content.get_node("%Grid") as GridContainer
 
 
-# .tscn %HandbookBtn 常驻，fragment 时 visible=false；package 时套 Scale9 style + fill icon/label。
+# %HandbookBtn 常驻 tscn（三态/字号走 theme variation），fragment 时 visible=false；
+# package 时 fill icon/label 文案并绑点击。
 func _setup_handbook_button() -> void:
 	var btn: Button = _content.get_node("%HandbookBtn") as Button
 	if _identity != IDENTITY_PACKAGE:
 		btn.visible = false
 		return
-	_apply_handbook_style(btn)
-	var icon_rect: TextureRect = btn.get_node("HandbookIcon") as TextureRect
-	if ResourceLoader.exists(HANDBOOK_ICON_RES):
-		icon_rect.texture = load(HANDBOOK_ICON_RES) as Texture2D
 	var lbl: Label = btn.get_node("HandbookLabel") as Label
 	lbl.text = String(cm.get_lstr(HANDBOOK_LABEL_KEY))
 	btn.pressed.connect(_on_handbook_pressed)
 
 
-# .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=sell_number_button, pressed=sell_number_button_down）。
-# 视觉等价源 Scale9Sprite sell_number_button + press mask sell_number_button_down。
-func _apply_handbook_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(HANDBOOK_BTN_RES, HANDBOOK_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(HANDBOOK_BTN_PRESS_RES, HANDBOOK_BTN_CAP))
-
-
-# .tscn 5 tab 常驻（位置可视化），按 identity 隐藏不用的（fragment 隐 stone/consume）。
+# .tscn 5 tab 常驻（rect/stretch/variation 静态化），按 identity 隐藏不用的（fragment 隐 stone/consume）。
 func _setup_tab_buttons() -> void:
 	for i in range(TAB_ALL_KEYS.size()):
 		var key: String = TAB_ALL_KEYS[i]
 		var btn: TextureButton = _content.get_node("%Tab" + key.capitalize() + "Btn") as TextureButton
 		var lbl: Label = _content.get_node("%Tab" + key.capitalize() + "Label") as Label
 		if _tabs.has(key):
-			# stretch_mode 强制 SCALE（ignore_texture_size=true 默认 KEEP 纹理原尺寸溢出，同 hero_package 范式）。
-			btn.stretch_mode = TextureButton.STRETCH_SCALE
 			btn.pressed.connect(_select_tab.bind(key))
 			_tab_buttons[key] = btn
 			lbl.text = str(cm.get_lstr(TAB_LSTR_KEYS[i])) if cm != null else String(TAB_NAMES.get(key, key))
-			lbl.z_index = 24
-			# label 框运行时对齐 button（.tscn offset 仅预览），上移 3px 视觉居中（同 hero_package）。
-			lbl.position = Vector2(btn.offset_left, btn.offset_top - 3.0)
-			lbl.size = Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
 			_tab_labels[key] = lbl
 		else:
 			btn.visible = false

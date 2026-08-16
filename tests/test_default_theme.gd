@@ -298,15 +298,8 @@ func test_white_label_18_has_outline_2() -> void:
 	var outline: int = theme.get_constant("outline_size", "WhiteLabel18")
 	assert_eq(outline, 2, "WhiteLabel18 outline_size = 2")
 
-func test_white_label_20_has_white_color() -> void:
-	var theme: Theme = ThemeManager.get_theme()
-	var color: Color = theme.get_color("font_color", "WhiteLabel20")
-	assert_color_approx(color, Color(1, 1, 1, 1), "WhiteLabel20 font_color")
-
-func test_white_label_20_has_size_20() -> void:
-	var theme: Theme = ThemeManager.get_theme()
-	var size: int = theme.get_font_size("font_size", "WhiteLabel20")
-	assert_eq(size, 20, "WhiteLabel20 font_size = 20")
+# WhiteLabel20 两用例已删（批 2 Task 2）：package tab label 迁往 PackageTabLabel 后
+# WhiteLabel20 成孤儿 variation 同步删除（守卫规约 1，死用例随资源退役）。
 
 func test_battle_prepare_tab_label_has_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()

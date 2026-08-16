@@ -237,3 +237,164 @@ func test_status_bar_built_on_fragment_identity_too() -> void:
 	assert_true(status_refs.has("vitality"), "fragment identity 也建货币条（源 framework common）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# hud_identity 接线（show_window 切 HudOverlay 的前提）：setup_panel 后 hud_identity=identity。
+# 曾有顺序 bug：hud_identity 在 _identity 赋值前取值，首次恒空串 → HudOverlay 不切换。
+func test_hud_identity_wired() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	assert_eq(panel.hud_identity, "package", "setup_panel 后 hud_identity=package（顺序正确）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ══════════ 批 2 两件套守卫（2026-08-16，核对级照源 package.lua/packageres.lua）══════════
+
+const CONTENT_PATH := "res://scenes/ui/package_content.tscn"
+const PANEL_PATH := "res://scripts/ui/package_panel.gd"
+const THEME_PATH := "res://resources/themes/default_theme.tres"
+
+
+# 静态树：主壳节点常驻 tscn，rect 照源换算（CCRect 中心锚点 / ÷CS 显示尺寸）。
+# 源 package.lua: equipbg 中心 ccp(500,213)（:612-626）；tab ox,oy=706,363 dy=60（:378-462）；
+# handbook 中心 ccp(716,55) scaleSize 92x58（:463-538）；draglist rect CCRectMake(355,35,295,355)（:350-368）。
+func test_content_static_tree() -> void:
+	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	# equipbg（439x491 ÷CS=342.63x383.22，中心 to_godot(500,213)=(580,347)）
+	var bg: TextureRect = inst.get_node("Bg") as TextureRect
+	assert_almost_eq(bg.offset_left, 408.68, 0.1, "Bg 左 = 580-342.63/2")
+	assert_almost_eq(bg.offset_top, 155.39, 0.1, "Bg 顶 = 347-383.22/2")
+	assert_almost_eq(bg.size.x, 342.63, 0.1, "Bg 宽 = 439/CS")
+	assert_almost_eq(bg.size.y, 383.22, 0.1, "Bg 高 = 491/CS")
+	# CloseBtn（backbtn 74x75 ÷CS=57.76x58.54，位置照批 1 惯例 (20,15)，源靠 framework 返回）
+	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
+	assert_almost_eq(close_btn.offset_left, 20.0, 0.01, "CloseBtn 左=20（批1惯例）")
+	assert_almost_eq(close_btn.offset_top, 15.0, 0.01, "CloseBtn 顶=15")
+	assert_almost_eq(close_btn.size.x, 57.76, 0.01, "CloseBtn 宽 = 74/CS（非旧 80 拉伸变形）")
+	assert_almost_eq(close_btn.size.y, 58.54, 0.01, "CloseBtn 高 = 75/CS")
+	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch=SCALE（纹理缩到 /CS 尺寸）")
+	# tab 按钮（classbtn 134x75 ÷CS=104.61x58.54；press 中心 (786,197+60k)）
+	var tab_all: TextureButton = inst.get_node("%TabAllBtn") as TextureButton
+	assert_almost_eq(tab_all.offset_left, 733.7, 0.1, "TabAllBtn 左 = 786-104.61/2")
+	assert_almost_eq(tab_all.offset_top, 167.73, 0.1, "TabAllBtn 顶 = 197-58.54/2")
+	assert_almost_eq(tab_all.size.x, 104.61, 0.1, "TabAllBtn 宽 = 134/CS（非旧 90 压缩）")
+	assert_almost_eq(tab_all.size.y, 58.54, 0.1, "TabAllBtn 高 = 75/CS")
+	assert_eq(tab_all.stretch_mode, TextureButton.STRETCH_SCALE, "tab stretch=SCALE（tscn 自足，非运行时设置）")
+	var tab_stone: TextureButton = inst.get_node("%TabStoneBtn") as TextureButton
+	assert_almost_eq(tab_stone.offset_top, 347.73, 0.1, "TabStoneBtn 顶 = 197+180-58.54/2（dy=60 第4行）")
+	# tab label（源 label 中心 x=ox+5 → 791，y 与 press 同 197+60k；size20 shadow(42,31,22)）
+	var lbl_all: Label = inst.get_node("%TabAllLabel") as Label
+	assert_almost_eq(lbl_all.offset_left, 741.0, 0.1, "TabAllLabel 左 = 791-100/2（照源 ox+5 右偏 5）")
+	assert_almost_eq(lbl_all.offset_top, 182.0, 0.1, "TabAllLabel 顶 = 197-30/2")
+	assert_almost_eq(lbl_all.size.x, 100.0, 0.1, "TabAllLabel 宽 100")
+	assert_almost_eq(lbl_all.size.y, 30.0, 0.1, "TabAllLabel 高 30")
+	var lbl_consume: Label = inst.get_node("%TabConsumeLabel") as Label
+	assert_almost_eq(lbl_consume.offset_top, 422.0, 0.1, "TabConsumeLabel 顶 = 437-30/2（第5行）")
+	assert_eq(String(lbl_all.theme_type_variation), "PackageTabLabel", "tab label 走 PackageTabLabel variation")
+	# handbook 按钮（Scale9 scaleSize 92x58 中心 to_godot(716,55)=(796,505)）
+	var hb: Button = inst.get_node("%HandbookBtn") as Button
+	assert_almost_eq(hb.offset_left, 750.0, 0.01, "HandbookBtn 左 = 796-92/2")
+	assert_almost_eq(hb.offset_top, 476.0, 0.01, "HandbookBtn 顶 = 505-58/2")
+	assert_almost_eq(hb.size.x, 92.0, 0.01, "HandbookBtn 宽照源 scaleSize 92")
+	assert_almost_eq(hb.size.y, 58.0, 0.01, "HandbookBtn 高照源 scaleSize 58")
+	assert_eq(String(hb.theme_type_variation), "PackageHandbookBtn", "handbook 走 PackageHandbookBtn 三态 variation")
+	# handbook 图标（19x25 ÷CS=14.83x19.51，btn 局部中心 (18,58-31=27)）
+	var hb_icon: TextureRect = inst.get_node("%HandbookBtn/HandbookIcon") as TextureRect
+	assert_almost_eq(hb_icon.size.x, 14.83, 0.01, "HandbookIcon 宽 = 19/CS（非旧 19 原像素）")
+	assert_almost_eq(hb_icon.size.y, 19.51, 0.01, "HandbookIcon 高 = 25/CS")
+	assert_almost_eq(hb_icon.position.x + hb_icon.size.x * 0.5, 18.0, 0.01, "HandbookIcon 中心 x=18（照源局部 ccp(18,31)）")
+	assert_almost_eq(hb_icon.position.y + hb_icon.size.y * 0.5, 27.0, 0.01, "HandbookIcon 中心 y=58-31（局部 y 翻转）")
+	# 滚动区（draglist rect CCRectMake(355,35,295,355) → 435~730 x 170~525）
+	var scroll: ScrollContainer = inst.get_node("%ScrollHost") as ScrollContainer
+	assert_almost_eq(scroll.offset_left, 435.0, 0.1, "ScrollHost 左 = 355+80")
+	assert_almost_eq(scroll.offset_top, 170.0, 0.1, "ScrollHost 顶 = 560-(35+355)")
+	assert_almost_eq(scroll.offset_right, 730.0, 0.1, "ScrollHost 右 = 650+80")
+	assert_almost_eq(scroll.offset_bottom, 525.0, 0.1, "ScrollHost 底 = 560-35")
+	assert_true(scroll.clip_contents, "ScrollHost 裁剪（源 cliprect 等价）")
+	# 网格（cell 72x72 中心 dx=75/dy=80 → 起点局部 (2,11) 由 MarginHost 承载 + separation 3/8；
+	# ScrollContainer 强制子节点贴 (0,0)，Grid 直接 offset 会被容器布局覆盖——批 2 实测）
+	var grid: GridContainer = inst.get_node("%Grid") as GridContainer
+	assert_eq(grid.columns, 4, "Grid 4 列照源")
+	var margin_host: MarginContainer = grid.get_parent() as MarginContainer
+	assert_not_null(margin_host, "Grid 挂 MarginHost（ScrollHost>MarginHost>Grid 层级）")
+	assert_eq(margin_host.get_theme_constant(&"margin_left"), 2, "MarginHost 左 = 473-435-36（源首格中心 393）")
+	assert_eq(margin_host.get_theme_constant(&"margin_top"), 11, "MarginHost 顶 = 217-170-36（源首行中心 343）")
+	assert_eq(String(grid.theme_type_variation), "PackageGrid", "Grid separation 走 PackageGrid variation")
+	# 迁移发明清理：StatusHost 死节点已删（HudOverlay 接管货币条）
+	assert_false(inst.has_node("%StatusHost"), "StatusHost 已删（HudOverlay 接管，防复发）")
+
+
+# panel 零静态构造（宽口径白名单）：仅动态弹窗 HandbookPanel/EquipboardPanel 允许 .new(。
+func test_panel_no_static_construction() -> void:
+	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_eq(text.count(".new("), text.count("HandbookPanel.new(") + text.count("EquipboardPanel.new("),
+		"静态节点零 .new(，仅动态弹窗白名单")
+
+
+# theme variation 接线（GUT 下节点级不解析 variation，读 tres 文本表项）。
+# 源字号/色：tab label size20 白 shadow ccc3(42,31,22)(0,2)（package.lua:418-437）；
+# handbook label fontinfo ui_normal_button → size17 白 shadow ccc3(63,5,0)(0,2)（fontconfigs.lua:23-30，
+# 无 size 覆盖 → 17 非旧 20）；handbook 按钮源 cap CCRectMake(15,22,15,25)（63x67 纹理）→
+# margin left=15 top=67-22-25=20 right=63-30=33 bottom=22（Task 1 公式）。
+func test_theme_variations_wired() -> void:
+	var t: String = FileAccess.get_file_as_string(THEME_PATH)
+	assert_true(t.contains("PackageTabLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)"),
+		"PackageTabLabel shadow=ccc3(42,31,22)（42/255,31/255,22/255）")
+	assert_true(t.contains("PackageTabLabel/font_sizes/font_size = 20"), "PackageTabLabel 字号 20")
+	assert_true(t.contains("PackageHandbookLabel/font_sizes/font_size = 17"),
+		"PackageHandbookLabel 字号 17（fontinfo 默认，无 size 覆盖）")
+	assert_true(t.contains("PackageHandbookLabel/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)"),
+		"PackageHandbookLabel shadow=ccc3(63,5,0)（fontinfo 默认）")
+	assert_true(t.contains("PackageHandbookBtn/styles/pressed = SubResource(\"SB_pkg_hb_p\")"),
+		"PackageHandbookBtn pressed=SB_pkg_hb_p（sell_number_button_down）")
+	var sb_n: int = t.find("SB_pkg_hb_n")
+	assert_gt(sb_n, 0, "SB_pkg_hb_n sub_resource 存在")
+	var sb_block: String = t.substr(sb_n - 40, 400)
+	assert_true(sb_block.contains("texture_margin_left = 15.0"), "SB margin left=源 cap.x=15")
+	assert_true(sb_block.contains("texture_margin_top = 20.0"), "SB margin top=67-22-25=20（Task 1 公式）")
+	assert_true(sb_block.contains("texture_margin_right = 33.0"), "SB margin right=63-15-15=33")
+	assert_true(sb_block.contains("texture_margin_bottom = 22.0"), "SB margin bottom=源 cap.y=22")
+	assert_true(t.contains("PackageGrid/constants/h_separation = 3"), "PackageGrid h_sep=dx-cell=75-72=3")
+	assert_true(t.contains("PackageGrid/constants/v_separation = 8"), "PackageGrid v_sep=dy-cell=80-72=8")
+
+
+# fill 语义：handbook 按钮文案 LSTR 填充；fragment identity 隐藏 handbook + stone/consume tab。
+func test_fill_semantics() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	var hb_label: Label = (panel._content.get_node("%HandbookBtn/HandbookLabel") as Label)
+	assert_eq(hb_label.text, "图鉴", "HandbookLabel text=HERODETAIL.BOOK")
+	var stone_lbl: Label = panel._tab_labels["stone"] as Label
+	assert_eq(stone_lbl.text, "灵魂石", "stone tab label=EQUIP.SOUL_STONE（LSTR fill 非硬编码）")
+	panel.remove_window()
+	# fragment：handbook 隐藏（源 createHandbookButton 仅 package :526-528）+ stone/consume tab 隐藏
+	var panel2 := _make_panel("fragment", pd)
+	panel2.show_window(root)
+	assert_false((panel2._content.get_node("%HandbookBtn") as Button).visible, "fragment 隐藏 handbook 按钮")
+	assert_false((panel2._content.get_node("%TabStoneBtn") as TextureButton).visible, "fragment 隐藏 stone tab")
+	assert_false((panel2._content.get_node("%TabConsumeBtn") as TextureButton).visible, "fragment 隐藏 consume tab")
+	panel2.remove_window()
+	root.queue_free()
+
+
+# parenting 回归守卫：show_window 后静态 rect 即 global 坐标（PopWindow 全屏 anchor 链）。
+func test_tab_global_position() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	var tab_all: TextureButton = panel._tab_buttons["all"] as TextureButton
+	assert_almost_eq(tab_all.global_position.x, 733.7, 0.5, "TabAllBtn global x（防 parenting 错位）")
+	assert_almost_eq(tab_all.global_position.y, 167.73, 0.5, "TabAllBtn global y")
+	var hb: Button = panel._content.get_node("%HandbookBtn") as Button
+	assert_almost_eq(hb.global_position.x, 750.0, 0.5, "HandbookBtn global x")
+	panel.remove_window()
+	root.queue_free()

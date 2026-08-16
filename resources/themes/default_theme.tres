@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=32 format=3]
+[gd_resource type="Theme" load_steps=34 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -162,6 +162,24 @@ content_margin_left = 20.0
 content_margin_top = 7.5
 content_margin_right = 20.0
 content_margin_bottom = 7.5
+
+; package 图鉴按钮（批 2 Task 2）：源 package.lua:466-497 handbook Scale9Sprite
+; sell_number_button(63x67) cap CCRectMake(15,22,15,25) 纹理像素直译
+; （Task 1 公式：left=15 top=67-22-25=20 right=63-15-15=33 bottom=22），
+; press 层 sell_number_button_down 同 cap。
+[sub_resource type="StyleBoxTexture" id="SB_pkg_hb_n"]
+texture = ExtResource("8_selln")
+texture_margin_left = 15.0
+texture_margin_top = 20.0
+texture_margin_right = 33.0
+texture_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxTexture" id="SB_pkg_hb_p"]
+texture = ExtResource("9_sellp")
+texture_margin_left = 15.0
+texture_margin_top = 20.0
+texture_margin_right = 33.0
+texture_margin_bottom = 22.0
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -336,9 +354,7 @@ WhiteLabel18/base_type = &"Label"
 WhiteLabel18/colors/font_color = Color(1, 1, 1, 1)
 WhiteLabel18/constants/outline_size = 2
 WhiteLabel18/font_sizes/font_size = 18
-WhiteLabel20/base_type = &"Label"
-WhiteLabel20/colors/font_color = Color(1, 1, 1, 1)
-WhiteLabel20/font_sizes/font_size = 20
+; WhiteLabel20 已删（批 2 Task 2）：package tab label 迁往 PackageTabLabel 后无使用者（孤儿 variation 清理）
 BattlePrepareTabLabel/base_type = &"Label"
 BattlePrepareTabLabel/colors/font_color = Color(0.769, 0.733, 0.667, 1)
 BattlePrepareTabLabel/colors/font_shadow_color = Color(0.165, 0.122, 0.086, 1)
@@ -665,3 +681,32 @@ EquipCraftBoardLabel/base_type = &"Label"
 EquipCraftBoardLabel/colors/font_color = Color(0.713725, 0.254902, 0.082353, 1)
 EquipCraftBoardLabel/font_sizes/font_size = 18
 
+
+; ── package 两件套（批 2 Task 2，2026-08-16）──
+; tab 文字（源 package.lua:418-437 fontinfo ui_normal_button size20 白 +
+; config shadow ccc3(42,31,22) offset(0,2) 显式覆盖 fontinfo 默认 (63,5,0)）
+PackageTabLabel/base_type = &"Label"
+PackageTabLabel/colors/font_color = Color(1, 1, 1, 1)
+PackageTabLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+PackageTabLabel/constants/shadow_offset_x = 0
+PackageTabLabel/constants/shadow_offset_y = 2
+PackageTabLabel/font_sizes/font_size = 20
+; 图鉴按钮文字（源 :510-524 fontinfo ui_normal_button 无 size 覆盖 → 默认 17，
+; config 裸 ccc3(255,255,255) 为无效写法被忽略；shadow 用 fontinfo 默认 ccc3(63,5,0)）
+PackageHandbookLabel/base_type = &"Label"
+PackageHandbookLabel/colors/font_color = Color(1, 1, 1, 1)
+PackageHandbookLabel/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+PackageHandbookLabel/constants/shadow_offset_x = 0
+PackageHandbookLabel/constants/shadow_offset_y = 2
+PackageHandbookLabel/font_sizes/font_size = 17
+; 图鉴按钮三态（源 :466-497 Scale9 sell_number_button + press down 层 → SB_pkg_hb_n/p）
+PackageHandbookBtn/base_type = &"Button"
+PackageHandbookBtn/styles/normal = SubResource("SB_pkg_hb_n")
+PackageHandbookBtn/styles/hover = SubResource("SB_pkg_hb_n")
+PackageHandbookBtn/styles/pressed = SubResource("SB_pkg_hb_p")
+PackageHandbookBtn/styles/disabled = SubResource("SB_pkg_hb_n")
+PackageHandbookBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 背包网格间距（源 :251-276 refreshList cell 中心 dx=75/dy=80，cell 72x72 → 3/8）
+PackageGrid/base_type = &"GridContainer"
+PackageGrid/constants/h_separation = 3
+PackageGrid/constants/v_separation = 8

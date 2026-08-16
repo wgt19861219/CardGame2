@@ -41,12 +41,16 @@ unique_name_in_owner = true
 layout_mode = 3
 offset_left = 20.0
 offset_top = 15.0
-offset_right = 100.0
-offset_bottom = 55.0
+offset_right = 77.76
+offset_bottom = 73.54
 texture_normal = ExtResource("3_back")
 texture_pressed = ExtResource("4_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
+; 图鉴按钮（源 package.lua:463-538 Scale9 sell_number_button cap(15,22,15,25) scaleSize 92x58
+; 中心 ccp(716,55) → (796,505)；三态走 PackageHandbookBtn variation（theme SB_pkg_hb_n/p）。
+; 仅 identity=package 显示（源 :526-528），fragment 时 panel 隐藏。
 [node name="HandbookBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -54,19 +58,23 @@ offset_left = 750.0
 offset_top = 476.0
 offset_right = 842.0
 offset_bottom = 534.0
+theme_type_variation = &"PackageHandbookBtn"
 mouse_filter = 0
 
+; 图鉴图标（源 :499-509 父局部中心 ccp(18,31) → y 翻转 58-31=27；19x25 ÷CS=14.83x19.51）
 [node name="HandbookIcon" type="TextureRect" parent="HandbookBtn"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 8.5
-offset_top = 14.5
-offset_right = 27.5
-offset_bottom = 39.5
+offset_left = 10.585
+offset_top = 17.244
+offset_right = 25.415
+offset_bottom = 36.756
 mouse_filter = 2
 texture = ExtResource("7_icon")
 expand_mode = 1
 
+; 图鉴文字（源 :510-524 fontinfo ui_normal_button 无 size 覆盖 → 17 号白 +
+; shadow ccc3(63,5,0)(0,2)；父局部中心 ccp(50,29)；text 由 panel fill HERODETAIL.BOOK）
 [node name="HandbookLabel" type="Label" parent="HandbookBtn"]
 unique_name_in_owner = true
 layout_mode = 0
@@ -74,85 +82,86 @@ offset_left = 20.0
 offset_top = 0.0
 offset_right = 80.0
 offset_bottom = 58.0
+theme_type_variation = &"PackageHandbookLabel"
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "图鉴"
 
+; 5 个分类 tab（源 :378-462 createListButton ox,oy=706,363 dy=60；normal/press 双 sprite
+; 合一 TextureButton 两态（受控偏离），rect=classbtn 134x75 ÷CS=104.61x58.54 中心取 press
+; to_godot(706,363-60k)=(786,197+60k)；选中态 panel 运行时切 texture_normal）。
 [node name="TabAllBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 741.0
-offset_top = 172.0
-offset_right = 831.0
-offset_bottom = 222.0
+offset_left = 733.696
+offset_top = 167.732
+offset_right = 838.304
+offset_bottom = 226.268
 texture_normal = ExtResource("8_classbtn")
 texture_pressed = ExtResource("9_classbtnsel")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
 [node name="TabEquipBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 741.0
-offset_top = 232.0
-offset_right = 831.0
-offset_bottom = 282.0
+offset_left = 733.696
+offset_top = 227.732
+offset_right = 838.304
+offset_bottom = 286.268
 texture_normal = ExtResource("8_classbtn")
 texture_pressed = ExtResource("9_classbtnsel")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
 [node name="TabScrollBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 741.0
-offset_top = 292.0
-offset_right = 831.0
-offset_bottom = 342.0
+offset_left = 733.696
+offset_top = 287.732
+offset_right = 838.304
+offset_bottom = 346.268
 texture_normal = ExtResource("8_classbtn")
 texture_pressed = ExtResource("9_classbtnsel")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
 [node name="TabStoneBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 741.0
-offset_top = 352.0
-offset_right = 831.0
-offset_bottom = 402.0
+offset_left = 733.696
+offset_top = 347.732
+offset_right = 838.304
+offset_bottom = 406.268
 texture_normal = ExtResource("8_classbtn")
 texture_pressed = ExtResource("9_classbtnsel")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
 [node name="TabConsumeBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 741.0
-offset_top = 412.0
-offset_right = 831.0
-offset_bottom = 462.0
+offset_left = 733.696
+offset_top = 407.732
+offset_right = 838.304
+offset_bottom = 466.268
 texture_normal = ExtResource("8_classbtn")
 texture_pressed = ExtResource("9_classbtnsel")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
+; tab 文字（源 :418-437 label 中心 x=ox+5 → 791（照源右偏 5），y 与 press 同 197+60k；
+; size20 白 shadow ccc3(42,31,22)(0,2) 走 PackageTabLabel variation；text 由 panel fill LSTR）
 [node name="TabAllLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 741.0
-offset_top = 169.0
-offset_right = 831.0
-offset_bottom = 219.0
+offset_top = 182.0
+offset_right = 841.0
+offset_bottom = 212.0
 mouse_filter = 2
-theme_type_variation = &"WhiteLabel20"
+theme_type_variation = &"PackageTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "全部"
@@ -161,11 +170,11 @@ text = "全部"
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 741.0
-offset_top = 229.0
-offset_right = 831.0
-offset_bottom = 279.0
+offset_top = 242.0
+offset_right = 841.0
+offset_bottom = 272.0
 mouse_filter = 2
-theme_type_variation = &"WhiteLabel20"
+theme_type_variation = &"PackageTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "装备"
@@ -174,11 +183,11 @@ text = "装备"
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 741.0
-offset_top = 289.0
-offset_right = 831.0
-offset_bottom = 339.0
+offset_top = 302.0
+offset_right = 841.0
+offset_bottom = 332.0
 mouse_filter = 2
-theme_type_variation = &"WhiteLabel20"
+theme_type_variation = &"PackageTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "卷轴"
@@ -187,32 +196,34 @@ text = "卷轴"
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 741.0
-offset_top = 349.0
-offset_right = 831.0
-offset_bottom = 399.0
+offset_top = 362.0
+offset_right = 841.0
+offset_bottom = 392.0
 mouse_filter = 2
-theme_type_variation = &"WhiteLabel20"
+theme_type_variation = &"PackageTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "魂石"
+text = "灵魂石"
 
 [node name="TabConsumeLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 741.0
-offset_top = 409.0
-offset_right = 831.0
-offset_bottom = 459.0
+offset_top = 422.0
+offset_right = 841.0
+offset_bottom = 452.0
 mouse_filter = 2
-theme_type_variation = &"WhiteLabel20"
+theme_type_variation = &"PackageTabLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "消耗品"
 
+; 滚动区（源 :350-368 draglist rect CCRectMake(355,35,295,355) 触摸/可视区 → 435~730 x 170~525；
+; zorder=10；源 cliprect 全屏宽(0,35,800,355) 与 cell 实际范围(357~654) 无实质差异 → 取 rect（受控偏离））
 [node name="ScrollHost" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_index = 3
+z_index = 10.0
 offset_left = 435.0
 offset_top = 170.0
 offset_right = 730.0
@@ -221,17 +232,20 @@ mouse_filter = 0
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 1
 
-[node name="Grid" type="GridContainer" parent="ScrollHost"]
+; 4 列网格（源 :251-276 refreshList cell 72x72 中心 dx=75/dy=80、首格中心 (393,343) →
+; 局部起点 (473-435-36, 217-170-36)=(2,11)；间距 75-72=3 / 80-72=8 走 PackageGrid variation；
+; ScrollContainer 强制子节点贴 (0,0) → MarginHost 承载起点偏移；cell 动态 fill（ReadequipIcon），
+; 列宽 4x72+3x3=297 > 视口 295 右缘裁 2px 照源同款）
+[node name="MarginHost" type="MarginContainer" parent="ScrollHost"]
 unique_name_in_owner = true
 layout_mode = 2
-z_index = 3
-columns = 4
+theme_override_constants/margin_left = 2
+theme_override_constants/margin_top = 11
 mouse_filter = 2
 
-[node name="StatusHost" type="Control" parent="."]
+[node name="Grid" type="GridContainer" parent="ScrollHost/MarginHost"]
 unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+layout_mode = 2
+theme_type_variation = &"PackageGrid"
+columns = 4
 mouse_filter = 2
