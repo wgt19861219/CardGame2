@@ -3,7 +3,7 @@ extends PopWindow
 
 ## 抽卡面板（View 层）——两件套范式（批2 Task 7，2026-08-16）。
 ## 静态结构全在 tavern_content.tscn：3 卡池 board（bronze/gold/magic）×
-## container(206×320) > BoardBg/TitleImage/TitleLabel + Clip(裁剪) > Scroll（卡池内容，
+## container(206×320) > BoardBg/TitleImage/TitleArt + Clip(裁剪) > Scroll（卡池内容，
 ## 源 createBaseBoard:594 + createCommonLayer:653 / createMagicLayer:949 静态化）。
 ## 原 procedural board 工厂（336 行）退役；panel 只做业务 + 信号 connect + fill
 ## （LSTR 文案/费用数值）+ 滑动 tween（源 doClickCheck:1576 上滑 320 / doClickArrow:1584）。

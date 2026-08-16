@@ -394,3 +394,92 @@ func test_cost_label_right_edge() -> void:
 		assert_true(label.offset_right <= frame.offset_right,
 			"%s 右缘 %.0f ≤ 费用框右缘 %.0f（文本不溢出费用框）" % [tag, label.offset_right, frame.offset_right])
 	content.queue_free()
+
+
+# ── 缺图接线守卫（批2 Task 10，2026-08-16：英文资源区 7 图归位）──
+
+# board_title 图归位：源 createBaseBoard:594 board_title ccp(160,355) → Godot board 局部
+# 中心 (103,10)（公式 center=(cx-57,365-cy)，TitleImage/board_bg 现值双点验证）；
+# 显示尺寸 312×106÷CS(1.28125)=243.51×82.73（TextureConfig 无条目）；降级 TitleLabel 随图消亡。
+func test_board_title_art() -> void:
+	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	var title_res: Dictionary = {
+		"BronzeBoard": "res://assets/ui/alpha/HVGA/tavern_title_1.png",
+		"GoldBoard": "res://assets/ui/alpha/HVGA/tavern_title_3.png",
+		"MagicBoard": "res://assets/ui/alpha/HVGA/tavern_title_4.png",
+	}
+	for board_name: String in title_res.keys():
+		var board: Control = content.get_node("%BoardHost/" + board_name) as Control
+		var art: TextureRect = board.get_node("TitleArt") as TextureRect
+		assert_not_null(art, "%s TitleArt 静态存在（图版标题归位）" % board_name)
+		assert_eq(art.texture.resource_path, title_res[board_name],
+			"%s TitleArt 纹理照源 tavernres.board_title" % board_name)
+		assert_almost_eq((art.offset_left + art.offset_right) * 0.5, 103.0, 0.01,
+			"%s TitleArt 中心 x=103（源 ccp x=160-57）" % board_name)
+		assert_almost_eq((art.offset_top + art.offset_bottom) * 0.5, 10.0, 0.01,
+			"%s TitleArt 中心 y=10（源 ccp y=355→365-355）" % board_name)
+		assert_almost_eq(art.offset_right - art.offset_left, 243.51, 0.02,
+			"%s TitleArt 宽=312÷CS" % board_name)
+		assert_almost_eq(art.offset_bottom - art.offset_top, 82.73, 0.02,
+			"%s TitleArt 高=106÷CS" % board_name)
+		assert_null(board.get_node_or_null("TitleLabel"),
+			"%s 降级 TitleLabel 已随图消亡（迁移发明清理）" % board_name)
+	content.queue_free()
+
+
+# 广告图归位：源 createCommonLayer:691 ad ccp(109,175) / createMagicLayer:1001 ad ccp(110,230)
+# → scroll 局部中心 (109,145)/(110,90)（公式 center=(cx,320-cy)）；常驻 common_ad 系
+# （首抽 first_ad bronze=ad_1/gold=ad_3 未拷，简化记录；magic 首抽/常驻同图 ad_13 无损）。
+func test_board_ad_images() -> void:
+	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	var cases: Array = [
+		["BronzeBoard", "res://assets/ui/alpha/HVGA/tavern_ad_4.png", 109.0, 145.0],
+		["GoldBoard", "res://assets/ui/alpha/HVGA/tavern_ad_6.png", 109.0, 145.0],
+		["MagicBoard", "res://assets/ui/alpha/HVGA/tavern_ad_13.png", 110.0, 90.0],
+	]
+	for c: Array in cases:
+		var ad: TextureRect = content.get_node(
+			"BoardHost/%s/Clip/Scroll/Ad" % c[0]) as TextureRect
+		assert_not_null(ad, "%s Ad 静态存在（广告图归位）" % c[0])
+		assert_eq(ad.texture.resource_path, c[1], "%s Ad 纹理照源 common_ad_res" % c[0])
+		assert_almost_eq((ad.offset_left + ad.offset_right) * 0.5, c[2], 0.01,
+			"%s Ad 中心 x=%.0f（源 ccp x）" % [c[0], c[2]])
+		assert_almost_eq((ad.offset_top + ad.offset_bottom) * 0.5, c[3], 0.01,
+			"%s Ad 中心 y=%.0f（源 320-cy）" % [c[0], c[3]])
+		assert_almost_eq(ad.offset_right - ad.offset_left, 194.34, 0.02,
+			"%s Ad 宽=249÷CS" % c[0])
+		assert_almost_eq(ad.offset_bottom - ad.offset_top, 93.66, 0.02,
+			"%s Ad 高=120÷CS" % c[0])
+	content.queue_free()
+
+
+# 十连折扣角标：源 tavern.lua:923 ad_discount 挂 createCommonLayer ten_buy 内 anchor(0,0)
+# ccp(1,2)（左下角锚定：距父左缘 1px/底缘 2px）——仅 common 层（bronze/gold）有，
+# createMagicLayer ten_buy 无该节点；父按钮 129.56×49.17 → bottom=47.17。
+func test_ten_buy_ad_discount() -> void:
+	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	for board_name: String in ["BronzeBoard", "GoldBoard"]:
+		var btn: Control = content.get_node(
+			"BoardHost/%s/Clip/Scroll/TenBuyBtn" % board_name) as Control
+		var disc: TextureRect = btn.get_node("AdDiscount") as TextureRect
+		assert_not_null(disc, "%s AdDiscount 静态存在（ten_buy 折扣角标归位）" % board_name)
+		assert_eq(disc.texture.resource_path,
+			"res://assets/ui/alpha/HVGA/tavern_ad_discount.png",
+			"%s AdDiscount 纹理照源" % board_name)
+		assert_almost_eq(disc.offset_left, 1.0, 0.01,
+			"%s AdDiscount 距父左缘 1（源 ccp x=1）" % board_name)
+		assert_almost_eq(btn.size.y - disc.offset_bottom, 2.0, 0.01,
+			"%s AdDiscount 距父底缘 2（源 ccp y=2 左下角锚定）" % board_name)
+		assert_almost_eq(disc.offset_bottom - disc.offset_top, 49.95, 0.02,
+			"%s AdDiscount 高=64÷CS" % board_name)
+	var magic_btn: Control = content.get_node(
+		"BoardHost/MagicBoard/Clip/Scroll/TenBuyBtn") as Control
+	assert_null(magic_btn.get_node_or_null("AdDiscount"),
+		"magic TenBuyBtn 无 AdDiscount（源 createMagicLayer 无该节点）")
+	content.queue_free()

@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=31 format=3]
 
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
@@ -24,6 +24,13 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="21_goldicon"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="22_rmbicon"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_hero_bg.png" id="23_herobg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_1.png" id="24_title1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_3.png" id="25_title3"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_4.png" id="26_title4"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_4.png" id="27_ad4"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_6.png" id="28_ad6"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_13.png" id="29_ad13"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_discount.png" id="30_addisc"]
 
 [node name="TavernContent" type="Control"]
 layout_mode = 3
@@ -140,17 +147,15 @@ texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="BoardHost/BronzeBoard"]
+[node name="TitleArt" type="TextureRect" parent="BoardHost/BronzeBoard"]
 layout_mode = 3
-offset_left = 0.0
-offset_top = -2.0
-offset_right = 206.0
-offset_bottom = 22.0
-theme_type_variation = &"TitleLabel"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = -18.76
+offset_top = -31.37
+offset_right = 224.76
+offset_bottom = 51.37
+texture = ExtResource("24_title1")
+expand_mode = 1
 mouse_filter = 2
-text = "青铜酒馆"
 
 [node name="Clip" type="Control" parent="BoardHost/BronzeBoard"]
 layout_mode = 3
@@ -170,6 +175,16 @@ offset_top = -6.2
 offset_right = 169.88
 offset_bottom = 106.2
 texture = ExtResource("8_brchest")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Ad" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 11.83
+offset_top = 98.17
+offset_right = 206.17
+offset_bottom = 191.83
+texture = ExtResource("27_ad4")
 expand_mode = 1
 mouse_filter = 2
 
@@ -334,6 +349,16 @@ vertical_alignment = 1
 mouse_filter = 2
 text = "购买10个"
 
+[node name="AdDiscount" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll/TenBuyBtn"]
+layout_mode = 3
+offset_left = 1.0
+offset_top = -2.79
+offset_right = 50.17
+offset_bottom = 47.16
+texture = ExtResource("30_addisc")
+expand_mode = 1
+mouse_filter = 2
+
 
 [node name="GoldBoard" type="Control" parent="BoardHost"]
 unique_name_in_owner = true
@@ -364,17 +389,15 @@ texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="BoardHost/GoldBoard"]
+[node name="TitleArt" type="TextureRect" parent="BoardHost/GoldBoard"]
 layout_mode = 3
-offset_left = 0.0
-offset_top = -2.0
-offset_right = 206.0
-offset_bottom = 22.0
-theme_type_variation = &"TitleLabel"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = -18.76
+offset_top = -31.37
+offset_right = 224.76
+offset_bottom = 51.37
+texture = ExtResource("25_title3")
+expand_mode = 1
 mouse_filter = 2
-text = "黄金酒馆"
 
 [node name="Clip" type="Control" parent="BoardHost/GoldBoard"]
 layout_mode = 3
@@ -404,6 +427,16 @@ offset_top = -6.2
 offset_right = 169.88
 offset_bottom = 106.2
 texture = ExtResource("9_gochest")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Ad" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 11.83
+offset_top = 98.17
+offset_right = 206.17
+offset_bottom = 191.83
+texture = ExtResource("28_ad6")
 expand_mode = 1
 mouse_filter = 2
 
@@ -568,6 +601,16 @@ vertical_alignment = 1
 mouse_filter = 2
 text = "购买10个"
 
+[node name="AdDiscount" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll/TenBuyBtn"]
+layout_mode = 3
+offset_left = 1.0
+offset_top = -2.79
+offset_right = 50.17
+offset_bottom = 47.16
+texture = ExtResource("30_addisc")
+expand_mode = 1
+mouse_filter = 2
+
 
 [node name="MagicBoard" type="Control" parent="BoardHost"]
 unique_name_in_owner = true
@@ -598,17 +641,15 @@ texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="BoardHost/MagicBoard"]
+[node name="TitleArt" type="TextureRect" parent="BoardHost/MagicBoard"]
 layout_mode = 3
-offset_left = 0.0
-offset_top = -2.0
-offset_right = 206.0
-offset_bottom = 22.0
-theme_type_variation = &"TitleLabel"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = -18.76
+offset_top = -31.37
+offset_right = 224.76
+offset_bottom = 51.37
+texture = ExtResource("26_title4")
+expand_mode = 1
 mouse_filter = 2
-text = "魂匣"
 
 [node name="Clip" type="Control" parent="BoardHost/MagicBoard"]
 layout_mode = 3
@@ -648,6 +689,16 @@ offset_top = -10.34
 offset_right = 149.42
 offset_bottom = 90.34
 texture = ExtResource("10_machest")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Ad" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 12.83
+offset_top = 43.17
+offset_right = 207.17
+offset_bottom = 136.83
+texture = ExtResource("29_ad13")
 expand_mode = 1
 mouse_filter = 2
 
