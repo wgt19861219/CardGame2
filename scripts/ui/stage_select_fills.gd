@@ -1,13 +1,21 @@
-class_name StageSelectBuilder
 extends RefCounted
 
-## 关卡选择 View 工厂（照源 stageselect.lua createMap/createStage/createModeButton/
-## createChapterButton/createDot/createFrame/createTitle 翻译）。
-## 重构（2026-07-17）：base 静态元素（bg/close/mode toggle/箭头）进 stage_select_content.tscn，
-## 本类只 fill mode toggle 纹理/文本 + procedural 建动态层（map_layer、frame/title、dots）。
-## 坐标系：源 cocos(800×480 左下原点) → Godot(960×640 左上原点) = (cx+80, 560-cy)。
+## 关卡选择动态层构造器（stage_select_panel 的 fills helper，批3 Task 5 两件套，2026-08-16）。
+## 由 stage_select_builder.gd（317 行）退役归并：静态底板（bg/mode toggle/箭头/close/挂载层）
+## 在 stage_select_content.tscn；本类只建数据驱动动态行与 crossfade 动画节点：
+##   - map layer（章节 bg/route/stage 圆点/stars/pointer/key mask，随章节与进度重建）
+##   - frame/title_bg/title label（mode/章节切换 crossfade 依赖节点重建，照源
+##     createFrame:944/createTitle:885 的重建+fade 模式，静态单节点换纹理无法表达交叉淡化）
+##   - chapter dots（数量 1-13 随进度）
+## 贴图口径（批3 Task 4/5 定稿）：显示 = 像素÷CS×条目CS（Prescaled=true 才施加）——
+## stageselect_map_bg 系条目 Prescaled=true CS=2 → 468×254px → 730.54×396.49；
+## stage-map-frame 条目 Prescaled=false 不施加 → 936×507px → 730.34×395.61；其余无条目只 ÷CS。
+## 坐标系：源 cocos(800×480 左下原点) → Godot = (cx+80, 560-cy)。
 
 const StageSelectMapClass = preload("res://scripts/systems/stage_select_map.gd")
+const TexSize = preload("res://scripts/ui/tex_display_size.gd")
+
+const CONTENT_SCALE: float = 1.28125
 
 const FRAME_NORMAL: String = "res://assets/ui/alpha/HVGA/stage-map-frame.png"
 const FRAME_ELITE: String = "res://assets/ui/alpha/HVGA/stage-map-elite-frame.png"
@@ -22,45 +30,54 @@ const DOT_CURRENT: String = "res://assets/ui/alpha/HVGA/stageselect_chapter_curs
 const POINTER: String = "res://assets/ui/alpha/HVGA/stagepointer.png"
 const STAR_BG: String = "res://assets/ui/alpha/HVGA/stageselect_star_bg.png"
 const STAR: String = "res://assets/ui/alpha/HVGA/stageselect_star.png"
-# 用户偏好（2026-07-20）：标题栏移到 frame 上边框附近（跨边框稍下，源 titleBg 在 frame top 下方 65）。
-const TITLE_POS: Vector2 = Vector2(477.0, 117.0)
+
+# 源 clipStencil 712×372 @ cocos(44,20)（stageselect.lua:1610-1612）→ godot rect(124,168)。
+# 2026-07-20 clip 903×471 系偏大口径（base×cs 漏÷CS）补偿，随口径修正一并撤销。
+const CLIP_RECT: Rect2 = Rect2(124.0, 168.0, 712.0, 372.0)
+const CLIP_OFFSET: Vector2 = Vector2(124.0, 168.0)
+# title（源 createTitleBg:939 titleBg ccp(397,393)、createTitleText:874 label 同位）
+# → godot 中心 (477,167)；2026-07-20 上移 117 系偏大 frame 补偿（frame top 101.5），
+# 修正后源 frame top 157.2，167 天然满足"frame 上边框附近跨边框稍下"偏好，恢复源位。
+const TITLE_CENTER: Vector2 = Vector2(477.0, 167.0)
+# 星级布局（源 createStage spos :1242-1255，相对 star_bg 中心，cocos 中心锚 y 上正）
+const STAR_POS_SN: Array = [
+	[Vector2(37.0, 15.0)],
+	[Vector2(26.0, 18.0), Vector2(48.0, 18.0)],
+	[Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.0, 18.0)],
+]
+# dots（源 stageselectres.lua:1493-1495：gap_x 20 / normal y 40 / elite y 45 → godot 520/515）
 const DOT_CENTER_X: float = 480.0
 const DOT_GAP_X: float = 20.0
 const DOT_NORMAL_Y: float = 520.0
 const DOT_ELITE_Y: float = 515.0
-# 星级布局（源 createStage spos :1242-1255，相对 star_bg 局部）
-const STAR_POS_1: Array = [Vector2(37.0, 15.0)]
-const STAR_POS_2: Array = [Vector2(26.0, 18.0), Vector2(48.0, 18.0)]
-const STAR_POS_3: Array = [Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.0, 18.0)]
 
-# frame png 936×507 实测（PIL alpha + ascii）：简单**细线矩形框**，边框线 16-19px + 四角加粗，
-# 中间镂空透明区 903×471 @ godot (28,120.5)，**无任何内部装饰**。
-# 936×508（cs=2）只显示中间 712×372、周围 ~95px 大片空白（用户反馈"非常小"）。
-# bg clip 改 frame 边框线内沿镂空区（用户偏好 2026-07-20"按 frame 宽拉伸"+"不盖边框"）：
-# bg display 936×508 铺满镂空区 903×471 + frame 16-19px 细边框围绕。偏离源 clipStencil 712，
-# 但 bg display 本为铺满 frame 设计（cs=2），符合 frame 视觉结构。
-const CLIP_RECT: Rect2 = Rect2(28.0, 120.5, 903.0, 471.0)
-const CLIP_OFFSET: Vector2 = Vector2(28.0, 120.5)   # layer 局部坐标系偏移：子节点 position 减此值
-# 用户偏好（2026-07-20）：bg clip 712→903 拉伸后圆点/pointer 跟拉伸（bg 铺满后圆点照源 cocos 挤中央）。
-# bg/route display 936（cs=2）已铺满 clip 903 不动；圆点放大 1.268 about clipStencil center cocos(400,206)
-# 后到 clip 903 边缘，仍在 route 路径线上（路径铺满 route 图，放大后对应路径其他段）。
-const STRETCH_SCALE: float = 1.268   # 903/712（bg clip 拉伸比）
-const STRETCH_CENTER: Vector2 = Vector2(400.0, 206.0)
-# panel/builder 共享 meta key（stage_select_panel 切换动画识别 frame/title/pointer 节点用）。
+# panel/builder 共享 meta key（panel 切换动画识别 frame/title/pointer/mask 节点用）。
 const META_FRAME: StringName = &"ss_frame"
 const META_TITLE: StringName = &"ss_title"
 const META_POINTER: StringName = &"ss_pointer"
-const META_MASK: StringName = &"ss_mask"   # 钥匙关 current/passed 闪烁遮罩（源 stageselect.lua:1229-1238 FadeTo 循环）
+const META_MASK: StringName = &"ss_mask"   # 钥匙关 current/passed 闪烁遮罩（源 :1229-1238 FadeTo 循环）
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + 80.0, 560.0 - cy)
 
 
-# fill .tscn %ModeNormalBtn/EliteBtn/GuildBtn 纹理（selected=elitetoggle-s 否则 ns）+ Label LSTR 文本。
-# 切 _press visible + label color。本项目位置/size .tscn 固化，此处只切纹理 + 填文本（TextureButton
-# normal 双态简化，源 Sprite+press 切 visible 等价）。
-# guild=LSTR("STAGESELECT.RAID")="团队"。fontinfo "ui_normal_button" size=18（:773,:809,:845）。
+## 显示尺寸（批3定稿通用公式）：像素÷CS×条目CS（content_scale_of 已封装
+## "Prescaled=true 且 CS≠0 才施加"）。map_bg 系 Prescaled=true CS=2 与 frame 系
+## Prescaled=false 在此公式下自动分轨，勿用 TexDisplaySize.display_size（base×cs 漏÷CS 偏大）。
+static func display_size(res: String) -> Vector2:
+	if res.is_empty() or not ResourceLoader.exists(res):
+		return Vector2.ZERO
+	var tex: Texture2D = load(res) as Texture2D
+	if tex == null:
+		return Vector2.ZERO
+	return tex.get_size() / CONTENT_SCALE * TexSize.content_scale_of(res)
+
+
+## fill .tscn %ModeNormalBtn/EliteBtn/GuildBtn 纹理（selected=elitetoggle-s 否则 ns）+ Label
+## LSTR 文本（源 doModeButtonTouch :347-362 press 切换 + updateModeButtonState :292-318）。
+## 位置/size/stretch_mode 已固化 .tscn，此处只切纹理 + 填文本（TextureButton normal 双态
+## 简化，源 Sprite+press 切 visible 等价）。fontinfo "ui_normal_button" size=18。
 static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Variant) -> void:
 	var lstr_keys: Dictionary = {
 		"normal": "STAGESELECT.NORMAL",
@@ -69,9 +86,6 @@ static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Vari
 	}
 	for mode in buttons:
 		var btn: TextureButton = buttons[mode]
-		# ignore_texture_size=true 不设 stretch_mode → 默认 KEEP 纹理原尺寸(129×67)溢出 offset(100.6×52.2)致相邻重叠
-		# （[[texture-button-stretch-mode-keep-default]]，同 hero_package tab 根因），强制 SCALE 缩到 offset size
-		btn.stretch_mode = TextureButton.STRETCH_SCALE
 		var selected: bool = mode == current_mode
 		var res_path: String = MODE_TOGGLE_S if selected else MODE_TOGGLE_NS
 		if ResourceLoader.exists(res_path):
@@ -86,10 +100,10 @@ static func fill_mode_toggle(buttons: Dictionary, current_mode: String, cm: Vari
 			lbl.text = String(cm.get_lstr(key)) if cm != null else key
 
 
-# 返回 {node, stage_buttons(sid->TextureButton)}。
-# mapContainer 挂 clipLayer 下，剪掉章节 bg 超出 frame 边框的部分。
-# Godot 等价：layer 自身设 clip_contents=true + rect=(124,168,712,372)，子节点 position 减 CLIP_OFFSET。
-# cocos clipStencil(44,20) → godot (44+80, 560-(20+372)) = (124,168)；712×372 不变（to_godot 不缩放）。
+## 建 map layer（源 createMap:1359 + createStage:1212）：裁剪层 + 章节 bg/route +
+## stage 圆点按钮（含 stars/key mask/pointer）。返回 {node, stage_buttons(sid->TextureButton)}。
+## 子坐标减 CLIP_OFFSET 进 layer 局部空间；mask 与 btn 平级且先声明（源 :1229-1241
+## mask 先 add、icon 后 add 盖 mask，闪烁光圈露边）。
 static func create_map_layer(container: Control, chapter: int, mode: String, cm: Variant, star_of: Callable) -> Dictionary:
 	var layer := Control.new()
 	layer.name = "MapLayer"
@@ -99,8 +113,8 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 	layer.size = CLIP_RECT.size
 	container.add_child(layer)
 	var ch: Dictionary = StageSelectMapClass.get_chapter(chapter)
-	_make_centered_child(layer, StageSelectMapClass.get_bg_res(chapter), ch.get("bg", {}).get("pos", [400, 212]), CLIP_OFFSET)
-	_make_centered_child(layer, StageSelectMapClass.get_route_res(chapter), ch.get("route", {}).get("pos", [400, 212]), CLIP_OFFSET)
+	_make_centered_child(layer, StageSelectMapClass.get_bg_res(chapter), ch.get("bg", {}).get("pos", [400, 212]))
+	_make_centered_child(layer, StageSelectMapClass.get_route_res(chapter), ch.get("route", {}).get("pos", [400, 212]))
 	var tag: int = StageSelectMapClass.get_tag(chapter)
 	var buttons: Dictionary = {}
 	for s in StageSelectMapClass.get_stages(chapter):
@@ -110,22 +124,20 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		if icon_res.is_empty() or not ResourceLoader.exists(icon_res):
 			continue
 		var pos: Array = info.get("pos", [0, 0])
+		var center: Vector2 = to_godot(float(pos[0]), float(pos[1])) - CLIP_OFFSET
+		var dec_type := String(dec["type"])
+		if dec_type != "locked":
+			_add_key_mask(layer, String(dec.get("mask", "")), center)
 		var btn := TextureButton.new()
 		btn.texture_normal = load(icon_res) as Texture2D
 		btn.ignore_texture_size = true
-		btn.size = TexDisplaySize.display_size(icon_res)
-		var _cx: float = STRETCH_CENTER.x + (float(pos[0]) - STRETCH_CENTER.x) * STRETCH_SCALE
-		var _cy: float = STRETCH_CENTER.y + (float(pos[1]) - STRETCH_CENTER.y) * STRETCH_SCALE
-		btn.position = to_godot(_cx, _cy) - btn.size * 0.5 - CLIP_OFFSET
+		btn.size = display_size(icon_res)
+		btn.position = center - btn.size * 0.5
 		btn.set_meta(&"stage_info", info)
-		var dec_type := String(dec["type"])
-		var mask_res: String = String(dec.get("mask", ""))
 		if dec_type == "locked":
 			btn.disabled = true
 		else:
 			_add_stars(btn, info, mode, star_of)
-			# 钥匙关 current/passed mask 闪烁（源 stageselect.lua:1229-1238 FadeTo 循环）
-			_add_key_mask(btn, mask_res)
 		layer.add_child(btn)
 		if dec_type == "current":
 			_add_pointer(layer, info, CLIP_OFFSET)
@@ -136,7 +148,8 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 	return {"node": layer, "stage_buttons": buttons}
 
 
-static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant, offset: Vector2 = Vector2.ZERO) -> void:
+## 章节 bg/route（源 createMap :1386-1393 createSprite pos 直译，中心锚）。
+static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant) -> void:
 	if res.is_empty() or not ResourceLoader.exists(res):
 		return
 	var tex: Texture2D = load(res) as Texture2D
@@ -145,15 +158,15 @@ static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant, 
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# 修 bug：原 tex.get_size()/CS 漏乘 ContentScale，致章节 bg 显示 365×198 偏小（应 730×396 铺满）。
-	var display_size: Vector2 = TexDisplaySize.display_size(res)
-	node.size = display_size
+	node.size = display_size(res)
 	var p: Array = cocos_pos if cocos_pos is Array else [400, 212]
-	node.position = to_godot(float(p[0]), float(p[1])) - display_size * 0.5 - offset
+	node.position = to_godot(float(p[0]), float(p[1])) - node.size * 0.5 - CLIP_OFFSET
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
 
 
+## 星级（源 createStage :1256-1274）：star_bg 挂 icon 下 ccp(82,38)（cocos 子坐标相对
+## 父锚点中心、y 上正 → godot btn 局部 = btn.size/2 + (82,-38)）；star 相对 star_bg 同口径。
 static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_of: Callable) -> void:
 	if mode == "guild":
 		return
@@ -166,56 +179,53 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	var bg := TextureRect.new()
 	bg.texture = load(STAR_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = TexDisplaySize.display_size(STAR_BG)
-	bg.position = Vector2(82.0, 38.0) - bg.size * 0.5
+	bg.size = display_size(STAR_BG)
+	bg.position = btn.size * 0.5 + Vector2(82.0, -38.0) - bg.size * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(bg)
-	var spos: Array = STAR_POS_3 if sn == 3 else (STAR_POS_2 if sn == 2 else STAR_POS_1)
+	var spos: Array = STAR_POS_SN[sn - 1]
 	for i in range(sn):
 		var star := TextureRect.new()
 		star.texture = load(STAR) as Texture2D
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		star.size = TexDisplaySize.display_size(STAR)
-		star.position = spos[i] - star.size * 0.5
+		star.size = display_size(STAR)
+		star.position = bg.size * 0.5 + Vector2((spos[i] as Vector2).x, -(spos[i] as Vector2).y) - star.size * 0.5
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.add_child(star)
 
 
+## 当前关指针（源 :1298-1311 currentTag）：key 关 cpos=(x, y+60)、非 key 关 (x-1, y+30)。
+## set_meta(META_POINTER) 供 panel _bob_all_pointers 启动上下浮动 tween。
 static func _add_pointer(layer: Control, info: Dictionary, offset: Vector2 = Vector2.ZERO) -> void:
 	if not ResourceLoader.exists(POINTER):
 		return
 	var pos: Array = info.get("pos", [0, 0])
-	var cx: float = float(pos[0])
-	var cy: float = float(pos[1])
 	var is_key: bool = info.has("eid")
-	var dx: float = -1.0 if not is_key else 0.0
-	var dy: float = 30.0 if not is_key else 60.0
+	var cx: float = float(pos[0]) - (0.0 if is_key else 1.0)
+	var cy: float = float(pos[1]) + (60.0 if is_key else 30.0)
 	var p := TextureRect.new()
 	p.texture = load(POINTER) as Texture2D
 	p.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	p.size = TexDisplaySize.display_size(POINTER)
-	var _pcx: float = STRETCH_CENTER.x + (cx + dx - STRETCH_CENTER.x) * STRETCH_SCALE
-	var _pcy: float = STRETCH_CENTER.y + (cy + dy - STRETCH_CENTER.y) * STRETCH_SCALE
-	p.position = to_godot(_pcx, _pcy) - p.size * 0.5 - offset
+	p.size = display_size(POINTER)
+	p.position = to_godot(cx, cy) - p.size * 0.5 - offset
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.set_meta(META_POINTER, true)   # panel _bob_all_pointers 识别后启动上下浮动 tween（源 currentTag:1308）
+	p.set_meta(META_POINTER, true)
 	layer.add_child(p)
 
 
-# 钥匙关 current/passed mask（源 stageselect.lua:1229-1238 覆盖在 icon 上，循环 FadeTo 0.3-1.0）。
-# mask 节点挂 btn 下，全屏铺满，set_meta(META_MASK) 供 panel _blink_all_masks 启动 alpha 循环。
-static func _add_key_mask(btn: TextureButton, mask_res: String) -> void:
+## 钥匙关 current/passed mask（源 :1229-1238）：与 icon 平级同位、先声明（icon 盖 mask），
+## set_meta(META_MASK) 供 panel _blink_all_masks 启动 alpha 循环闪烁。
+static func _add_key_mask(layer: Control, mask_res: String, center_local: Vector2) -> void:
 	if mask_res.is_empty() or not ResourceLoader.exists(mask_res):
 		return
 	var mask := TextureRect.new()
 	mask.texture = load(mask_res) as Texture2D
 	mask.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mask.anchors_preset = Control.PRESET_FULL_RECT
-	mask.offset_right = 0.0
-	mask.offset_bottom = 0.0
+	mask.size = display_size(mask_res)
+	mask.position = center_local - mask.size * 0.5
 	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mask.set_meta(META_MASK, true)
-	btn.add_child(mask)
+	layer.add_child(mask)
 
 
 static func _current_sid(info: Dictionary, mode: String) -> int:
@@ -226,48 +236,45 @@ static func _current_sid(info: Dictionary, mode: String) -> int:
 	return int(info.get("id", 0))
 
 
-
-
-# 节点 set_meta(META_FRAME) 供 panel 章节 op 时识别跳过（源 createFrame 仅 create/mode 调，:325/:1618）。
-# z order：frame 先建（z 下）、title_bg 后建（z 上压 frame 上边框，照源 titleBg z=21 压 frame z=5）。
+## frame + title_bg（源 createFrame:944 + createTitleBg:926）：mode 切换 crossfade 由
+## panel 重建驱动。set_meta(META_FRAME) 供 panel 章节 op 识别跳过（源 createFrame 仅
+## create/mode 调，:325/:1618）。z 序：titleBg z=21 压 modeContainer z=20（源 :941），
+## ModeLayer 声明在 FrameLayer 后 → z_index 200 absolute 提到 mode 之上。
 static func create_frame(container: Control, mode: String) -> void:
 	var frame_y: float = 355.0 if mode == "normal" else 353.0
 	var frame: CanvasItem = _make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
 	if frame != null:
 		frame.set_meta(META_FRAME, true)
-	# 用户偏好（2026-07-20）：title_bg 提到 mode 上层（z_index 200 + z_as_relative false 全局），
-	# 避免 mode 按钮（ModeLayer 在 FrameLayer 后 z 上）遮挡 title_bg（"按钮挡住标题栏"）。
-	var title_bg: CanvasItem = _make_centered_at(container, _title_bg_res(mode), TITLE_POS)
+	var title_bg: CanvasItem = _make_centered_at(container, _title_bg_res(mode), TITLE_CENTER)
 	if title_bg != null:
 		title_bg.set_meta(META_FRAME, true)
 		title_bg.z_index = 200
 		title_bg.z_as_relative = false
 
 
+## 章节标题 Label（源 createTitleText:861：Pre Chapter Name + Chapter Name，色
+## ccc3(250,205,16) size18 走 StageTitleLabel variation；章节切换 crossfade 由 panel
+## 重建驱动，set_meta(META_TITLE) 供识别）。
 static func create_title(container: Control, chapter: int, cm: Variant) -> void:
 	var chapter_table: Dictionary = cm.get_raw_table(&"Chapter")
 	var ch_row: Dictionary = chapter_table.get(str(chapter), {})
-	# Chapter Name/Pre Chapter Name 存 LSTR key（如 CHAPTER.NEW_EVIL），需 get_lstr 本地化为中文
-	# （源 lua :863 直接拼因 LSTR 宏已展开；本项目 JSON 存原始 key，不转换会显示英文 key）。
 	var pre: String = _lstr(cm, String(ch_row.get("Pre Chapter Name", "")))
 	var name: String = _lstr(cm, String(ch_row.get("Chapter Name", "")))
 	var lbl := Label.new()
 	lbl.text = pre + "   " + name if not name.is_empty() else ("第 " + str(chapter) + " 章")
-	lbl.add_theme_color_override("font_color", Color(250.0 / 255.0, 205.0 / 255.0, 16.0 / 255.0))
-	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	lbl.add_theme_constant_override("outline_size", 2)
-	lbl.position = TITLE_POS - Vector2(120.0, 12.0)
+	lbl.theme_type_variation = &"StageTitleLabel"
+	lbl.position = TITLE_CENTER - Vector2(120.0, 12.0)
 	lbl.size = Vector2(240.0, 24.0)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# 文字须压在 title_bg（z=200 全局）上面，否则被标题栏背景框盖住、框里看着空白。
 	lbl.z_index = 201
 	lbl.z_as_relative = false
 	lbl.set_meta(META_TITLE, true)
 	container.add_child(lbl)
 
 
-# Chapter/Stage Name 存 LSTR key，get_lstr 本地化（_lang 未初始化时 fallback 查 LSTR_zh-CN 表）。
+## Chapter/Stage Name 存 LSTR key，get_lstr 本地化。
 static func _lstr(cm: Variant, key: String) -> String:
 	if cm == null or key.is_empty():
 		return key
@@ -288,19 +295,18 @@ static func _make_centered_at(parent: Node, res: String, godot_center: Vector2) 
 	var tex: Texture2D = load(res) as Texture2D
 	if tex == null:
 		return null
-	# title_bg/frame 源 createSprite（含 ContentScale；本项目 Normal_title_bg/stage-map-frame 等条目 CS=0 → 返 1，等价）。
-	var display_size := TexDisplaySize.display_size(res)
 	var node := TextureRect.new()
 	node.texture = tex
 	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.size = display_size
-	node.position = godot_center - display_size * 0.5
+	node.size = display_size(res)
+	node.position = godot_center - node.size * 0.5
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(node)
 	return node
 
 
-# panel 持有 %DotContainer，每次 _refresh_view 清空再 procedural 建挂入（数量随 max_chapter 动态）。
+## chapter dots（源 createDot:676 + getDotPos:76）：数量 1..max_chapter 动态，位置
+## x = 480 + gap*(i-center)、y normal 520/elite 515（guild 由 panel 隐藏容器，源 :698-702）。
 static func create_chapter_dots(container: Control, max_chapter: int, current: int, mode: String) -> void:
 	var y: float = DOT_ELITE_Y if mode == "elite" else DOT_NORMAL_Y
 	var center: float = (float(max_chapter) + 1.0) * 0.5
@@ -311,7 +317,7 @@ static func create_chapter_dots(container: Control, max_chapter: int, current: i
 		var dot := TextureRect.new()
 		dot.texture = load(res) as Texture2D
 		dot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		dot.size = TexDisplaySize.display_size(res)
+		dot.size = display_size(res)
 		dot.position = Vector2(DOT_CENTER_X + DOT_GAP_X * (float(i) - center), y) - dot.size * 0.5
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(dot)

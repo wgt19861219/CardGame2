@@ -2,16 +2,16 @@ class_name StageSelectPanel
 extends PopWindow
 
 ## 关卡选择（View 层）— 照源 stageselect.lua 地图式布局翻译。
-## 重构（2026-07-17）：base 静态元素（bg/close/mode toggle/箭头）从 stage_select_content.tscn
-## instantiate（位置/size 编辑器可视化调）。动态层（map_layer 章节 bg+route+stage 圆点、frame/title、
-## chapter dots）procedural 由 StageSelectBuilder 建并挂 %MapLayerHost/%FrameLayer/%DotContainer。
+## 两件套（批3 Task 5，2026-08-16）：静态底板（bg/close/mode toggle/箭头/挂载层）在
+## stage_select_content.tscn；动态层（map layer 章节 bg+route+stage 圆点、frame/title、
+## chapter dots）由 stage_select_fills.gd 构造（原 StageSelectBuilder 317 行退役归并）。
 ## doChangeChapter(:423)/createDot(:676)/createModeButton(:725)/setChapterButtonState(:643)。
-## 切换动画（2026-07-20 补全）：章节切 map slide±720/title fade（frame 章节不重建，照源 createFrame
-## 仅 create/mode 调，行 325/1618）；mode 切 map fadeOut 0.5 + frame/title/dots fade 0.2；
-## 持续 arrow 呼吸(:714-721) + pointer 浮动(:1308-1311)。
+## 切换动画族（2026-07-30/31 补全，Task 5 保留不破坏）：章节切 map slide±720/title fade
+## （frame 章节不重建，照源 createFrame 仅 create/mode 调，行 325/1618）；mode 切 map
+## fadeOut 0.5 + frame/title/dots fade 0.2；持续 arrow 呼吸(:714-721) + pointer 浮动(:1308-1311)。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_select_content.tscn")
-const StageSelectBuilder = preload("res://scripts/ui/stage_select_builder.gd")
+const StageSelectFills = preload("res://scripts/ui/stage_select_fills.gd")
 const StageDetailPanel = preload("res://scripts/ui/stage_detail_panel.gd")
 
 # createFrame:976/createTitle:908/refreshDot:671 CCFadeIn/Out 0.2 / createChapterButton:714 CCMoveTo 1s /
@@ -27,11 +27,11 @@ const POINTER_BOB_DY: float = 10.0
 const MASK_BLINK_TIME: float = 0.6
 const MASK_ALPHA_MIN: float = 0.3
 const MASK_ALPHA_MAX: float = 1.0
-const META_FRAME: StringName = &"ss_frame"
-const META_TITLE: StringName = &"ss_title"
-const META_POINTER: StringName = &"ss_pointer"
+const META_FRAME: StringName = StageSelectFills.META_FRAME
+const META_TITLE: StringName = StageSelectFills.META_TITLE
+const META_POINTER: StringName = StageSelectFills.META_POINTER
 const META_BOBBED: StringName = &"ss_bobbed"
-const META_MASK: StringName = &"ss_mask"
+const META_MASK: StringName = StageSelectFills.META_MASK
 const META_MASK_BLINKED: StringName = &"ss_mask_blinked"
 
 var mgr: StageManager = null
@@ -81,6 +81,8 @@ func _chapter_of_stage(stage_id: int) -> int:
 
 # 建 UI 内容：base 从 .tscn instantiate（位置/size 固化）+ bind signals + fill mode toggle 文本。
 # 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉。
+# 注：2026-07-20 组缩放 0.9/ModeLayer -30 系偏大口径（base×cs 漏÷CS）补偿，随 Task 5
+# 贴图口径修正一并撤销（源 mode 区中心 y=205/210 直译）。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
@@ -94,22 +96,9 @@ func _build_content() -> void:
 		btn.pressed.connect(_on_mode_pressed.bind(mode))
 	(_content.get_node("%PrevArrow") as BaseButton).pressed.connect(_on_prev_chapter)
 	(_content.get_node("%NextArrow") as BaseButton).pressed.connect(_on_next_chapter)
-	StageSelectBuilder.fill_mode_toggle(_mode_buttons, _mode, player.cm)
-	# 用户偏好（2026-07-20）：frame 太大贴屏边 → 所有 frame 内元素 scale 0.9 about frame center(480,355)
-	# （frame+map+mode+dots+箭头 等比缩保相对布局；close 返回键 + FrameworkBg 全屏 bg 不缩）。
-	var _mode_layer: Control = _content.get_node("%ModeLayer") as Control
-	# 难度栏下移 20（避章节标题压 ModeBg；.tscn 已固化 offset_top=-30，此行兜底防误改）。
-	_mode_layer.offset_top = -30.0
-	for t in [_frame_layer, _map_host, _dot_container, _mode_layer]:
-		(t as Control).pivot_offset = Vector2(480.0, 355.0)
-		(t as Control).scale = Vector2(0.9, 0.9)
-	for arrow in [_content.get_node("%PrevArrow"), _content.get_node("%NextArrow")]:
-		var a := arrow as Control
-		a.pivot_offset = Vector2(480.0 - a.offset_left, 355.0 - a.offset_top)
-		a.scale = Vector2(0.9, 0.9)
+	StageSelectFills.fill_mode_toggle(_mode_buttons, _mode, player.cm)
 	_refresh_view("init")
 	# HudOverlay 切 identity=stageselect（强制展开 shortcut + 子场景货币条）。
-
 
 
 
@@ -129,7 +118,7 @@ func _refresh_view(op: String = "init") -> void:
 	if op == "init":
 		_clear_children(_map_host)
 	var old_map: Array = _map_host.get_children() if op != "init" else []
-	var map_layer: Dictionary = StageSelectBuilder.create_map_layer(_map_host, _current_chapter, _mode, cm, star_of)
+	var map_layer: Dictionary = StageSelectFills.create_map_layer(_map_host, _current_chapter, _mode, cm, star_of)
 	_stage_buttons = map_layer["stage_buttons"]
 	for sid in _stage_buttons:
 		(_stage_buttons[sid] as TextureButton).pressed.connect(_on_stage_clicked.bind(sid))
@@ -137,28 +126,30 @@ func _refresh_view(op: String = "init") -> void:
 	# --- frame（源 createFrame:944，章节 skip；init 清+建；mode 重建 fade）---
 	if op == "init":
 		_clear_children(_frame_layer)
-		StageSelectBuilder.create_frame(_frame_layer, _mode)
+		StageSelectFills.create_frame(_frame_layer, _mode)
 	elif op == "mode":
 		var old_frame: Array = _meta_children(_frame_layer, META_FRAME)
-		StageSelectBuilder.create_frame(_frame_layer, _mode)
+		StageSelectFills.create_frame(_frame_layer, _mode)
 		_crossfade_diff(old_frame, _meta_children(_frame_layer, META_FRAME), LAYER_FADE_TIME)
 	# --- title（源 createTitle:885，章节/mode 都 fade；init 直接）---
 	var old_title: Array = _meta_children(_frame_layer, META_TITLE) if op != "init" else []
-	StageSelectBuilder.create_title(_frame_layer, _current_chapter, cm)
+	StageSelectFills.create_title(_frame_layer, _current_chapter, cm)
 	if op != "init":
 		_crossfade_diff(old_title, _meta_children(_frame_layer, META_TITLE), LAYER_FADE_TIME)
 	# --- mode toggle + arrows visibility（源 setChapterButtonState:643 边界隐藏）---
-	StageSelectBuilder.fill_mode_toggle(_mode_buttons, _mode, cm)
+	StageSelectFills.fill_mode_toggle(_mode_buttons, _mode, cm)
 	(_content.get_node("%PrevArrow") as CanvasItem).visible = _current_chapter > 1
 	(_content.get_node("%NextArrow") as CanvasItem).visible = _current_chapter < max_ch
 	# --- dots（源 refreshDot:667/createDot:676，mode fade 0.2；章节/init 无 fade 直接重建，源 createDot:677 移除旧容器）---
 	if op == "mode":
 		var old_dots := _dot_container.get_children()
-		StageSelectBuilder.create_chapter_dots(_dot_container, max_ch, _current_chapter, _mode)
+		StageSelectFills.create_chapter_dots(_dot_container, max_ch, _current_chapter, _mode)
 		_crossfade_diff(old_dots, _dot_container.get_children(), LAYER_FADE_TIME)
 	else:
 		_clear_children(_dot_container)
-		StageSelectBuilder.create_chapter_dots(_dot_container, max_ch, _current_chapter, _mode)
+		StageSelectFills.create_chapter_dots(_dot_container, max_ch, _current_chapter, _mode)
+	# guild 模式 dots 隐藏（源 createDot :698-702 dotContainer:setVisible(false)）
+	_dot_container.visible = _mode != "guild"
 	# 启动新 pointer 浮动（未入树时 _bob_pointer 守卫跳过，_enter_tree 兜底；切换后新 pointer 在此启动）
 	_bob_all_pointers()
 	_blink_all_masks()
@@ -196,7 +187,7 @@ func _play_map_transition(old_maps: Array, new_map: Control, op: String) -> void
 		return
 	if op == "chapter":
 		var dir: float = 1.0 if _current_chapter > _pre_chapter else -1.0
-		var base_x: float = StageSelectBuilder.CLIP_RECT.position.x
+		var base_x: float = StageSelectFills.CLIP_RECT.position.x
 		new_map.position.x = base_x + dir * MAP_SLIDE_DIST
 		var tw := create_tween()
 		tw.tween_property(new_map, "position:x", base_x, MAP_SLIDE_TIME).set_ease(Tween.EASE_OUT)
@@ -253,18 +244,16 @@ func _bob_pointer(p: CanvasItem) -> void:
 
 
 # 钥匙关 current/passed mask 循环 alpha 闪烁（源 stageselect.lua:1229-1238 FadeTo 0.3↔1.0）。
+# mask 与 stage btn 平级挂 map layer（Task 5 照源 :1229-1241 平级直译），遍历 layer 子级。
 func _blink_all_masks() -> void:
 	if _map_host == null:
 		return
 	for layer in _map_host.get_children():
 		if not (layer is Control):
 			continue
-		for btn in (layer as Control).get_children():
-			if not (btn is TextureButton):
-				continue
-			for c in (btn as TextureButton).get_children():
-				if c.has_meta(META_MASK) and not c.get_meta(META_MASK_BLINKED, false):
-					_blink_mask(c as CanvasItem)
+		for c in (layer as Control).get_children():
+			if c.has_meta(META_MASK) and not c.get_meta(META_MASK_BLINKED, false):
+				_blink_mask(c as CanvasItem)
 
 
 func _blink_mask(m: CanvasItem) -> void:
@@ -333,7 +322,7 @@ func _stage_name(sid: int) -> String:
 	return String(player.cm.get_lstr(String(row.get("Stage Name", str(sid)))))
 
 
-# 取当前章节名（Chapter 表 "Pre Chapter Name" + "Chapter Name"，同 StageSelectBuilder.create_title 口径）。
+# 取当前章节名（Chapter 表 "Pre Chapter Name" + "Chapter Name"，同 StageSelectFills.create_title 口径）。
 func _chapter_name() -> String:
 	if player == null:
 		return ""
@@ -351,4 +340,3 @@ func _set_chapter_title_text(t: String) -> void:
 	for c in _meta_children(_frame_layer, META_TITLE):
 		if is_instance_valid(c) and c is Label:
 			(c as Label).text = t
-

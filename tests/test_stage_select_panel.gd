@@ -1,12 +1,50 @@
 extends GutTest
-# Phase 6 UI StageSelectPanel 测试（2026-07-02）。
+# StageSelectPanel 测试（2026-07-02 初版，2026-08-16 批3 Task 5 两件套改造改写）。
+# 照源 ui/stageselect.lua（1678 行）：createMap:1359/createStage:1212/createFrame:944/
+# createTitle:885/createModeButton:725/createChapterButton:705/createDot:676/
+# setChapterButtonState:643/currentTag:1298/createTitleText:861。
+# 两件套形态（Task 5 定稿）：
+#   - 静态底板（bg/mode toggle/箭头/close/挂载层）在 stage_select_content.tscn；
+#   - 动态层（map layer/bg/route/stage 圆点/stars/pointer/mask、frame/title_bg/title
+#     label、chapter dots）是数据驱动动态行 + crossfade 动画节点（mode 切换 frame
+#     crossfade、章节切 title crossfade 均依赖节点重建，照源 createFrame/createTitle
+#     重建+fade 模式），由 stage_select_fills.gd 构造、panel 驱动；
+#   - builder（stage_select_builder.gd）退役删除。
+# 贴图口径（批3定稿，与 Task 4 crusade 系区分）：显示 = 像素÷CS×条目CS
+# （Prescaled=true 才施加）；stageselect_map_bg 系条目 Prescaled=true CS=2 →
+# 468×254px → 730.54×396.49；frame 系 Prescaled=false 不施加 → 936×507px →
+# 730.34×395.61；其余无条目 → 像素÷CS。
+# 几何恢复源直译（撤销 2026-07-20 偏大口径补丁：组缩放 0.9/clip 903×471/
+# STRETCH 1.268/title 117——均系 base×cs 漏÷CS 偏大 1.28× 的补偿）：
+# clip 恢复源 clipStencil 712×372 @ cocos(44,20) → godot(124,168)；
+# titleBg 恢复源 ccp(397,393) → godot(477,167)。
+
+const CONTENT_PATH: String = "res://scenes/ui/stage_select_content.tscn"
+const PANEL_PATH: String = "res://scripts/ui/stage_select_panel.gd"
+const FILLS_PATH: String = "res://scripts/ui/stage_select_fills.gd"
+const BUILDER_PATH: String = "res://scripts/ui/stage_select_builder.gd"
+const CS: float = 1.28125
 
 var cm: ConfigManager
+
+const StageSelectFills = preload("res://scripts/ui/stage_select_fills.gd")
 
 
 func before_all() -> void:
 	cm = ConfigManager.new()
 	cm.load_all()
+
+
+func _make_panel() -> StageSelectPanel:
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	var pd := PlayerData.new(cm)
+	var rng := BattleRng.new(5)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_panel(mgr, pd, rng)
+	panel.show_window(root)
+	return panel
 
 
 func test_panel_assembles() -> void:
@@ -19,7 +57,7 @@ func test_panel_assembles() -> void:
 	panel.setup_panel(mgr, pd, rng)
 	panel.show_window(root)
 	# 重构后 container 只持 1 个 _content（.tscn instantiate），静态节点都在 _content 内（% unique），
-	# 动态层挂 %MapLayerHost/%FrameLayer/%DotContainer（procedural 重建）。
+	# 动态层挂 %MapLayerHost/%FrameLayer/%DotContainer（fills 构造重建）。
 	assert_eq(panel.container.get_child_count(), 1, "container 持有 _content（instantiate 后）")
 	assert_not_null(panel._content.get_node_or_null("%FrameworkBg"), "FrameworkBg 装配")
 	assert_not_null(panel._content.get_node_or_null("%CloseBtn"), "CloseBtn 装配")
@@ -103,18 +141,6 @@ func test_stage_failed_branch() -> void:
 
 # ===== P1-10：setup_by_stage 按指定 stage 定位章（源 stageselect.createByStage）=====
 
-func _make_stage_panel() -> StageSelectPanel:
-	var root := Node.new()
-	add_child(root)
-	var mgr := StageManager.new(cm)
-	var pd := PlayerData.new(cm)
-	var rng := BattleRng.new(1)
-	var panel := StageSelectPanel.new("stageselect", {})
-	panel.setup_panel(mgr, pd, rng)
-	panel.show_window(root)
-	return panel
-
-
 # 普通关 _chapter_of_stage = Stage 表 Chapter ID（源 equipcraft :1166-1168）
 func test_chapter_of_stage_normal() -> void:
 	var st: Dictionary = cm.get_raw_table("Stage")
@@ -127,7 +153,7 @@ func test_chapter_of_stage_normal() -> void:
 	if normal_sid == 0:
 		pass_test("无普通关，跳过")
 		return
-	var panel := _make_stage_panel()
+	var panel := _make_panel()
 	var expect_ch: int = int(st.get(str(normal_sid), {}).get("Chapter ID", 0))
 	assert_eq(panel._chapter_of_stage(normal_sid), expect_ch, "普通关 _chapter_of_stage = Stage Chapter ID")
 	panel.remove_window()
@@ -145,7 +171,7 @@ func test_chapter_of_stage_elite() -> void:
 	if elite_sid == 0:
 		pass_test("无精英关，跳过")
 		return
-	var panel := _make_stage_panel()
+	var panel := _make_panel()
 	var gid: int = int(st.get(str(elite_sid), {}).get("Stage Group", elite_sid))
 	var expect_ch: int = int(st.get(str(gid), {}).get("Chapter ID", 0))
 	assert_eq(panel._chapter_of_stage(elite_sid), expect_ch, "精英关 _chapter_of_stage = Stage Group 的 Chapter ID")
@@ -178,41 +204,38 @@ func test_setup_by_stage_sets_chapter() -> void:
 	root.queue_free()
 
 
-# ===== 照源精修验收（2026-07-16）=====
+# ===== 照源精修验收（2026-07-16，Task 5 改 fills 引用）=====
 
 # 源 createModeButton label：normal=LSTR("STAGESELECT.NORMAL")、elite=LSTR("EQUIPCRAFT.ELITE")、
 # guild=LSTR("STAGESELECT.RAID")="团队"。旧实现硬编码 "团本" 是错值。
-# 重构后 mode toggle 静态化进 .tscn（%ModeNormalBtn/EliteBtn/GuildBtn + Label 子节点），
-# builder.fill_mode_toggle 切纹理 + 填 LSTR text（不再 builder.create_mode_buttons 建节点）。
+# mode toggle 静态化进 .tscn（%ModeNormalBtn/EliteBtn/GuildBtn + Label 子节点），
+# fills.fill_mode_toggle 切纹理 + 填 LSTR text。
 func test_mode_label_uses_lstr() -> void:
-	var content: Control = load("res://scenes/ui/stage_select_content.tscn").instantiate() as Control
+	var content: Control = load(CONTENT_PATH).instantiate() as Control
 	add_child(content)
 	var buttons: Dictionary = {
 		"normal": content.get_node("%ModeNormalBtn"),
 		"elite": content.get_node("%ModeEliteBtn"),
 		"guild": content.get_node("%ModeGuildBtn"),
 	}
-	StageSelectBuilder.fill_mode_toggle(buttons, "normal", cm)
+	StageSelectFills.fill_mode_toggle(buttons, "normal", cm)
 	for mode in ["normal", "elite", "guild"]:
 		assert_true(buttons.has(mode), mode + " toggle 存在")
-	var guild_btn: TextureButton = buttons["guild"]
 	var guild_lbl: Label = null
-	for child in guild_btn.get_children():
+	for child in (buttons["guild"] as TextureButton).get_children():
 		if child is Label:
 			guild_lbl = child
 			break
 	assert_not_null(guild_lbl, "guild toggle 有 label")
 	assert_eq(guild_lbl.text, "团队", "guild label = LSTR STAGESELECT.RAID = '团队'（非旧错值'团本'）")
-	var normal_btn: TextureButton = buttons["normal"]
 	var normal_lbl: Label = null
-	for child in normal_btn.get_children():
+	for child in (buttons["normal"] as TextureButton).get_children():
 		if child is Label:
 			normal_lbl = child
 			break
 	assert_eq(normal_lbl.text, "普通", "normal label = LSTR STAGESELECT.NORMAL = '普通'")
-	var elite_btn: TextureButton = buttons["elite"]
 	var elite_lbl: Label = null
-	for child in elite_btn.get_children():
+	for child in (buttons["elite"] as TextureButton).get_children():
 		if child is Label:
 			elite_lbl = child
 			break
@@ -223,15 +246,8 @@ func test_mode_label_uses_lstr() -> void:
 # 源 ui/main.lua:1351 ed.pushScene(ed.ui.stageselect.create()) —— stageselect 是 pushScene 独立场景，
 # framework.lua:749 自动建全屏 bg.jpg。本项目单机化 pushScene→PopWindow，.tscn %FrameworkBg 补 bg.jpg。
 func test_has_fullscreen_bg() -> void:
-	var root := Node.new()
-	add_child(root)
-	var mgr := StageManager.new(cm)
-	var pd := PlayerData.new(cm)
-	var rng := BattleRng.new(5)
-	var panel := StageSelectPanel.new("stageselect", {})
-	panel.setup_panel(mgr, pd, rng)
-	panel.show_window(root)
-	# 重构后 bg.jpg 静态化进 .tscn %FrameworkBg（container→_content→FrameworkBg）。
+	var panel := _make_panel()
+	# bg.jpg 静态化进 .tscn %FrameworkBg（container→_content→FrameworkBg）。
 	var bg: TextureRect = panel._content.get_node_or_null("%FrameworkBg") as TextureRect
 	assert_not_null(bg, "%FrameworkBg 装配")
 	if bg != null:
@@ -240,47 +256,214 @@ func test_has_fullscreen_bg() -> void:
 		if t != null:
 			assert_true(String(t.resource_path).find("bg.jpg") != -1, "FrameworkBg = bg.jpg（源 pushScene 场景 framework.lua:749 自动加）")
 	panel.remove_window()
-	root.queue_free()
 
 
-# 源 createFrame :967-970 — normal ccp(400,205)→godot 中心 y=355；其他 mode ccp(400,207)→y=353。
+# 源 createFrame :967-970 — normal ccp(400,205)→godot 中心 (480,355)；其他 mode ccp(400,207)→y=353。
+# 尺寸口径（Task 5 修正）：stage-map-frame 936×507px 条目 Prescaled=false 不施加 → 936/CS×507/CS。
 func test_frame_position_matches_source() -> void:
 	var c := Control.new()
-	add_child(c)
-	StageSelectBuilder.create_frame(c, "normal")
-	var frame_center_y: float = -1.0
+	add_child_autofree(c)
+	StageSelectFills.create_frame(c, "normal")
+	var frame: TextureRect = null
 	for child in c.get_children():
-		if child is TextureRect:
-			var tr: TextureRect = child
-			var t: Texture2D = tr.texture
-			if t != null and String(t.resource_path).find("stage-map-frame") != -1:
-				frame_center_y = tr.position.y + tr.size.y * 0.5
-				break
-	assert_almost_eq(frame_center_y, 355.0, 1.5, "normal frame 中心 y≈355（源 ccp(400,205)→godot）")
-	c.queue_free()
+		if child is TextureRect and String((child.texture as Texture2D).resource_path).find("stage-map-frame") != -1:
+			frame = child
+			break
+	assert_not_null(frame, "normal frame 建出（stage-map-frame.png）")
+	if frame != null:
+		assert_almost_eq(frame.position.y + frame.size.y * 0.5, 355.0, 1.5, "normal frame 中心 y≈355（源 ccp(400,205)→godot）")
+		assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 1.5, "normal frame 中心 x=480")
+		assert_almost_eq(frame.size.x, 936.0 / CS, 0.5, "frame 宽 = 936px÷CS（Prescaled=false 条目不施加，偏大补丁撤销）")
+		assert_almost_eq(frame.size.y, 507.0 / CS, 0.5, "frame 高 = 507px÷CS")
 
 
 # 源 :1301-1305 — key 关（info.eid）ccp(pos.x, pos.y+60)；非 key 关 ccp(pos.x-1, pos.y+30)。
+# Task 5 撤销 2026-07-20 STRETCH 1.268 放大（偏大口径补丁），恢复源 pos 直译。
 func test_stage_pointer_key_stage_offset() -> void:
 	var c := Control.new()
-	add_child(c)
+	add_child_autofree(c)
 	var key_info: Dictionary = {"id": 1, "eid": 10001, "pos": [172, 284]}
-	StageSelectBuilder._add_pointer(c, key_info)
+	StageSelectFills._add_pointer(c, key_info)
 	if c.get_child_count() == 0:
 		pass_test("stagepointer.png 资源缺失，跳过")
-		c.queue_free()
 		return
 	var key_ptr: TextureRect = c.get_child(0) as TextureRect
-	# pointer 跟 bg clip 拉移（×1.268 about cocos(400,206)，builder STRETCH）：key 关 cy+60 放大后期望 y。
-	var key_expect_y: float = 560.0 - (206.0 + (284.0 + 60.0 - 206.0) * 1.268)
-	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, key_expect_y, 1.5, "key 关指针 y=放大后 cy+60")
-	c.queue_free()
+	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, 560.0 - 344.0, 1.5,
+		"key 关指针中心 y = to_godot(·,284+60)（源 cy+60 直译，无放大）")
+	assert_almost_eq(key_ptr.position.x + key_ptr.size.x * 0.5, 252.0, 1.5, "key 关指针中心 x = 172+80")
 	var c2 := Control.new()
-	add_child(c2)
+	add_child_autofree(c2)
 	var nonkey_info: Dictionary = {"id": 2, "pos": [217, 200]}
-	StageSelectBuilder._add_pointer(c2, nonkey_info)
+	StageSelectFills._add_pointer(c2, nonkey_info)
 	if c2.get_child_count() > 0:
 		var nk_ptr: TextureRect = c2.get_child(0) as TextureRect
-		var nk_expect_y: float = 560.0 - (206.0 + (200.0 + 30.0 - 206.0) * 1.268)   # 放大后 非 key: cy+30
-		assert_almost_eq(nk_ptr.position.y + nk_ptr.size.y * 0.5, nk_expect_y, 1.5, "非 key 关指针 y=cy+30")
-	c2.queue_free()
+		assert_almost_eq(nk_ptr.position.y + nk_ptr.size.y * 0.5, 560.0 - 230.0, 1.5,
+			"非 key 关指针中心 y = to_godot(·,200+30)（源 cy+30 直译）")
+		assert_almost_eq(nk_ptr.position.x + nk_ptr.size.x * 0.5, 216.0 + 80.0, 1.5, "非 key 关指针中心 x = (217-1)+80")
+
+
+# ===== 两件套守卫（批3 Task 5 新增，2026-08-16）=====
+
+# content tscn 静态树：死占位 FramePlaceholder/TitleBgPlaceholder（运行时被 init 清掉的双头
+# 管理债）删除；TextureButton stretch_mode=0 显式（批2方法论）；mode toggle 含源 setScale(0.9)
+# （refreshModeButtonPosition :245-247）；guild 按钮 visible=false（源 :269-270 禁止团队副本）。
+func test_content_static_tree() -> void:
+	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	assert_null(inst.get_node_or_null("FrameLayer/FramePlaceholder"), "死占位 FramePlaceholder 已删（双头管理债清理）")
+	assert_null(inst.get_node_or_null("FrameLayer/TitleBgPlaceholder"), "死占位 TitleBgPlaceholder 已删")
+	# ModeLayer 无偏好偏移（源 mode 区中心 y=205/210 直译；旧 offset_top=-30 是偏大口径补偿）。
+	var mode_layer: Control = inst.get_node("%ModeLayer") as Control
+	assert_almost_eq(mode_layer.offset_top, 0.0, 0.1, "ModeLayer offset_top=0（偏好补丁撤销）")
+	# ModeBg（源 buttonBg crusade_Button_bg 874×74px÷CS 中心 ccp(400,355)→(480,205)）。
+	var mode_bg: TextureRect = inst.get_node("%ModeLayer/ModeBg") as TextureRect
+	assert_almost_eq(mode_bg.offset_left + (mode_bg.offset_right - mode_bg.offset_left) * 0.5, 480.0, 0.1, "ModeBg 中心 x=480")
+	assert_almost_eq(mode_bg.offset_top + (mode_bg.offset_bottom - mode_bg.offset_top) * 0.5, 205.0, 0.1, "ModeBg 中心 y=560-355")
+	assert_almost_eq(mode_bg.offset_right - mode_bg.offset_left, 874.0 / CS, 0.1, "ModeBg 宽 = 874px÷CS")
+	# mode toggle：129×67px÷CS×0.9（源 setScale(0.9)）；normal(345,350)→(425,210)、
+	# elite(455,350)→(535,210)、guild(489,350)→(569,210)（guild 不可见布局，源 :240-243）。
+	var btn_expect := {
+		"%ModeNormalBtn": Vector2(425.0, 210.0),
+		"%ModeEliteBtn": Vector2(535.0, 210.0),
+		"%ModeGuildBtn": Vector2(569.0, 210.0),
+	}
+	for btn_name in btn_expect:
+		var btn: TextureButton = inst.get_node(btn_name) as TextureButton
+		var center: Vector2 = Vector2(btn.offset_left, btn.offset_top) \
+			+ Vector2(btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top) * 0.5
+		assert_almost_eq(center.x, btn_expect[btn_name].x, 0.1, btn_name + " 中心 x = 源 toggle 位置直译")
+		assert_almost_eq(center.y, btn_expect[btn_name].y, 0.1, btn_name + " 中心 y = 560-350")
+		assert_almost_eq(btn.offset_right - btn.offset_left, 129.0 / CS * 0.9, 0.1, btn_name + " 宽 = 129px÷CS×0.9")
+		assert_almost_eq(btn.offset_bottom - btn.offset_top, 67.0 / CS * 0.9, 0.1, btn_name + " 高 = 67px÷CS×0.9")
+		assert_eq(btn.stretch_mode, TextureButton.STRETCH_SCALE, btn_name + " stretch_mode=0 显式（批2方法论）")
+	assert_false((inst.get_node("%ModeGuildBtn") as CanvasItem).visible, "guild toggle 隐藏（源 :269-270 禁止团队副本）")
+	# 箭头（源 createChapterButton :706-709 prev(78,215)/next(720,215) → godot 中心 (158,345)/(800,345)；
+	# 55×75px÷CS = 42.93×58.54）。
+	var prev: TextureButton = inst.get_node("%PrevArrow") as TextureButton
+	assert_almost_eq(prev.offset_left, 158.0 - 55.0 / CS / 2.0, 0.1, "PrevArrow 中心 x = 78+80")
+	assert_almost_eq(prev.offset_top, 345.0 - 75.0 / CS / 2.0, 0.1, "PrevArrow 中心 y = 560-215")
+	var next: TextureButton = inst.get_node("%NextArrow") as TextureButton
+	assert_almost_eq(next.offset_left, 800.0 - 55.0 / CS / 2.0, 0.1, "NextArrow 中心 x = 720+80")
+	for arrow in [prev, next]:
+		assert_eq(arrow.stretch_mode, TextureButton.STRETCH_SCALE, "箭头 stretch_mode=0 显式")
+	# CloseBtn stretch_mode=0 显式。
+	assert_eq((inst.get_node("%CloseBtn") as TextureButton).stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch_mode=0 显式")
+	# 声明序：MapLayerHost < FrameLayer < ModeLayer（源 map z1 < frame z5 < mode z20，
+	# mode 按钮层盖 map/frame；title z21 由 fills 动态层 z_index 200 压回，见 panel）。
+	assert_true((inst.get_node("%MapLayerHost") as Control).get_index()
+		< (inst.get_node("%FrameLayer") as Control).get_index(), "MapLayerHost 先声明（源 map z=1 底层）")
+	assert_true((inst.get_node("%FrameLayer") as Control).get_index()
+		< (mode_layer).get_index(), "ModeLayer 后声明（源 modeContainer z=20 盖 frame z=5）")
+
+
+# 源 create :1608-1613 clipLayer：clipStencil 712×372 @ cocos(44,20) → godot rect(124,168)。
+# map bg（stageselect_map_bg_1.jpg 468×254px 条目 Prescaled=true CS=2）→ 468/CS×2 =
+# 730.54×396.49（Task 5 通用公式口径，与 Task 4 crusade 系 Prescaled=false 区分）；
+# route（map1.png 468×254px 无条目）→ 365.27×198.24；bg/route 中心 ccp(400,212)→(480,348)。
+func test_map_clip_and_bg_size_source() -> void:
+	var panel := _make_panel()
+	var layer: Control = panel._map_host.get_child(0) as Control
+	assert_almost_eq(layer.position.x, 124.0, 0.1, "MapLayer x = to_godot(44,·).x（源 clipStencil 直译）")
+	assert_almost_eq(layer.position.y, 168.0, 0.1, "MapLayer y = 560-(20+372)（源 clipStencil 直译）")
+	assert_almost_eq(layer.size.x, 712.0, 0.1, "MapLayer 宽 = 源 712（clip 903×471 偏大补丁撤销）")
+	assert_almost_eq(layer.size.y, 372.0, 0.1, "MapLayer 高 = 源 372")
+	assert_true(layer.clip_contents, "MapLayer clip_contents（源 ClippingNode 等价）")
+	var bg: TextureRect = null
+	var route: TextureRect = null
+	for child in layer.get_children():
+		if child is TextureRect:
+			var tr := child as TextureRect
+			var p := String((tr.texture as Texture2D).resource_path)
+			if p.find("stageselect_map_bg") != -1:
+				bg = tr
+			elif p.find("map1.png") != -1 or p.find("map") != -1 and p.find("stageselect") == -1:
+				route = tr
+	assert_not_null(bg, "章节 bg 建出（stageselect_map_bg_1.jpg）")
+	if bg != null:
+		assert_almost_eq(bg.size.x, 468.0 / CS * 2.0, 0.5, "bg 宽 = 468px÷CS×2（Prescaled=true CS=2 通用公式）")
+		assert_almost_eq(bg.size.y, 254.0 / CS * 2.0, 0.5, "bg 高 = 254px÷CS×2")
+		assert_almost_eq(bg.position.x + bg.size.x * 0.5 + layer.position.x, 480.0, 0.5, "bg 中心 x=480（源 pos(400,212)）")
+		assert_almost_eq(bg.position.y + bg.size.y * 0.5 + layer.position.y, 348.0, 0.5, "bg 中心 y=560-212")
+	assert_not_null(route, "route 建出（map1.png）")
+	if route != null:
+		assert_almost_eq(route.size.x, 468.0 / CS * 2.0, 0.5, "route 宽 = 468px÷CS×2（map 系 route 同为 Prescaled=true CS=2 条目）")
+		assert_almost_eq(route.size.y, 254.0 / CS * 2.0, 0.5, "route 高 = 254px÷CS×2（与 bg 同尺寸铺满，叠 bg 上）")
+	panel.remove_window()
+
+
+# 撤销 STRETCH 1.268 守卫：chapter1 stage1 pos(172,284) key 关（eid=10001）新档 → current，
+# icon key_stages/stage-1.png 209×189px÷CS；btn 中心 = to_godot(172,284)=(252,276) 直译
+# （global 级防 parenting）；key mask 照源 :1229-1238 与 icon 平级挂 stageContainer
+# （先 mask 后 icon，icon 盖 mask），中心同 btn。
+func test_stage_button_position_no_stretch() -> void:
+	var panel := _make_panel()
+	var layer: Control = panel._map_host.get_child(0) as Control
+	var btn: TextureButton = panel._stage_buttons[1] as TextureButton
+	assert_almost_eq(btn.global_position.x + btn.size.x * 0.5, 252.0, 0.5,
+		"stage1 btn 中心 x = to_godot(172,·)（STRETCH 放大撤销）")
+	assert_almost_eq(btn.global_position.y + btn.size.y * 0.5, 276.0, 0.5,
+		"stage1 btn 中心 y = to_godot(·,284)（STRETCH 放大撤销）")
+	assert_almost_eq(btn.size.x, 209.0 / CS, 0.5, "stage1 icon 宽 = 209px÷CS（key stage 图）")
+	assert_almost_eq(btn.size.y, 189.0 / CS, 0.5, "stage1 icon 高 = 189px÷CS")
+	var mask: TextureRect = null
+	for child in layer.get_children():
+		if child is TextureRect and child.has_meta(&"ss_mask"):
+			mask = child
+			break
+	assert_not_null(mask, "stage1 current key 关有闪烁 mask（源 :1229-1238）")
+	if mask != null:
+		assert_almost_eq(mask.global_position.x + mask.size.x * 0.5, 252.0, 0.5,
+			"mask 中心与 icon 同位（源 mask:setPosition(t.pos) 平级直译）")
+		assert_almost_eq(mask.size.x, 209.0 / CS, 0.5, "mask 宽 = stage-current 209px÷CS")
+		assert_true(mask.get_index() < btn.get_index(), "mask 先声明（源 icon 后 add 盖 mask，闪烁光圈露边）")
+	panel.remove_window()
+
+
+# 源 createDot :698-702 — guild 模式 dotContainer:setVisible(false)。
+func test_dots_hidden_in_guild() -> void:
+	var panel := _make_panel()
+	assert_true(panel._dot_container.visible, "normal 模式 dots 可见")
+	panel._on_mode_pressed("guild")
+	assert_false(panel._dot_container.visible, "guild 模式 dots 隐藏（源 :698-702 直译补全）")
+	panel.remove_window()
+
+
+# 两件套守卫：builder 退役（文件删 + 无引用）+ fills .new( 白名单恰 10 处（全数据驱动
+# 动态行/crossfade 动画节点，逐一甄别见 Task 5 报告）+ panel .new( 恰 1 处（详情弹窗）。
+func test_builder_retired_and_new_whitelist() -> void:
+	assert_false(ResourceLoader.exists(BUILDER_PATH), "stage_select_builder.gd 已退役删除")
+	assert_false(FileAccess.file_exists(BUILDER_PATH), "builder 文件不存在（含 .uid 残留检查由 git 层）")
+	var panel_src: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_false(panel_src.contains("stage_select_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
+	var fills_src: String = FileAccess.get_file_as_string(FILLS_PATH)
+	var fills_new: PackedStringArray = _collect_new_calls(fills_src)
+	assert_eq(fills_new.size(), 10, "fills .new( 恰 10 处（动态行+动画节点白名单）")
+	var joined: String = "\n".join(fills_new)
+	assert_true(joined.contains("Control.new()"), "MapLayer 裁剪层（章节 slide 动画需新旧并存）在白名单")
+	assert_true(joined.contains("TextureButton.new()"), "stage 圆点按钮（数量/位置随章节数据）在白名单")
+	# TextureRect 共 7 处（bg/route 中心子、star_bg、star、pointer、key mask、frame/title_bg 中心件、dot）
+	var tr_count: int = 0
+	var idx: int = fills_src.find(".new(")
+	while idx != -1:
+		var ls: int = fills_src.rfind("\n", idx) + 1
+		var le: int = fills_src.find("\n", idx)
+		var line: String = fills_src.substr(ls, le - ls).strip_edges()
+		if line.contains("TextureRect.new()"):
+			tr_count += 1
+		idx = fills_src.find(".new(", idx + 1)
+	assert_eq(tr_count, 7, "TextureRect.new() 恰 7 处（bg/route、star_bg、star、pointer、mask、frame/title_bg、dot）")
+	assert_true(joined.contains("Label.new()"), "章节 title Label（章节 crossfade 动画节点）在白名单")
+	var panel_new: PackedStringArray = _collect_new_calls(panel_src)
+	assert_eq(panel_new.size(), 1, "panel .new( 恰 1 处（StageDetailPanel 弹窗构造）")
+	assert_true("\n".join(panel_new).contains("StageDetailPanel.new("), "panel 唯一 .new( 是详情弹窗")
+
+
+static func _collect_new_calls(src: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var idx: int = src.find(".new(")
+	while idx != -1:
+		var ls: int = src.rfind("\n", idx) + 1
+		var le: int = src.find("\n", idx)
+		out.append(src.substr(ls, le - ls).strip_edges())
+		idx = src.find(".new(", idx + 1)
+	return out
