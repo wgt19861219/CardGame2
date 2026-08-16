@@ -1,0 +1,84 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix.png" id="1_matrix"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_checked.png" id="2_checked"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_vip_bg.png" id="3_vipbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_get_item_bg_light_orange.png" id="4_light"]
+
+; 签到单格模板（批 2 Task 3）：照源 createRewardItem :222-378。
+; board 133x130 ÷CS=103.80x101.46，stretch=SCALE（修正 KEEP 原尺寸溢出 1.28x）；
+; 三态贴图 fill 切换（common=yellow / past|future=matrix），故模板默认 matrix。
+[node name="Cell" type="TextureButton"]
+offset_right = 103.8
+offset_bottom = 101.46
+texture_normal = ExtResource("1_matrix")
+ignore_texture_size = true
+stretch_mode = 0
+
+; amount 源 :356-375：size24 白 stroke ccc3(95,64,43) 2，anchor(1,0.5) 局部 (92,22)→(92,79.5)
+; （fill 按 minimum_size 右对齐重定位）
+[node name="AmountLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 52.0
+offset_top = 69.5
+offset_right = 92.0
+offset_bottom = 89.5
+theme_type_variation = &"DailyLoginAmountLabel"
+mouse_filter = 2
+text = "x0"
+
+; vip_bg 源 :337-351：77x80 ÷CS=60.10x62.45，anchor(0,1) 局部 (0,102)→顶=-0.5
+[node name="VipBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = 0.0
+offset_top = -0.5
+offset_right = 60.1
+offset_bottom = 61.94
+texture = ExtResource("3_vipbg")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+; vip num 源 :202-221/335-355：VIP%d size14 ccc3(231,206,19) 黑描边，pos (24,80)→(24,21.5) 旋转 -45°
+[node name="VipNum" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 4.0
+offset_top = 11.5
+offset_right = 44.0
+offset_bottom = 31.5
+theme_type_variation = &"DailyLoginVipNum"
+rotation = -0.785398
+mouse_filter = 2
+text = "VIP0"
+visible = false
+
+; light 源 :297-316：230x231 ÷CS=179.51x180.29，中心局部 (51,51.5)，绕中心 5s/360° 循环（fill 起 tween）
+[node name="Light" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = -38.76
+offset_top = -38.65
+offset_right = 140.75
+offset_bottom = 141.64
+texture = ExtResource("4_light")
+expand_mode = 1
+pivot_offset = Vector2(89.76, 90.15)
+mouse_filter = 2
+visible = false
+
+; icon 宿主 源 :317-334：中心局部 (51,52)→(51,49.5)；Item/Hero 挂 readequip icon，静态类型填 texture
+[node name="IconHost" type="TextureRect" parent="."]
+unique_name_in_owner = true
+expand_mode = 1
+mouse_filter = 2
+
+; checked 源 :277-294：132x130 ÷CS=103.02x101.46 中心=board 中心 z=10（置顶故排最后绘制）
+[node name="CheckedIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = 0.39
+offset_top = 0.0
+offset_right = 103.41
+offset_bottom = 101.46
+texture = ExtResource("2_checked")
+expand_mode = 1
+mouse_filter = 2
+visible = false
