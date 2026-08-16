@@ -1,15 +1,16 @@
 class_name CrusadePanelBuilder
 extends RefCounted
 
-## crusade / dungeon_map 静态美术层 procedural 工厂。
-## 照源 crusadeconfig.lua（dungeonmapconfig.lua 注释"完全照搬远征"）补 5 类缺美术：
+## crusade 静态美术层 procedural 工厂（批3 Task 4 起 dungeon_map 侧已两件套静态化
+## 进 dungeon_map_content.tscn，build_dungeon_map 退役；本文件仅剩 crusade 消费方，
+## crusade panel 两件套改造时（批3 Task 5/6）整体消亡）。
+## 照源 crusadeconfig.lua 补 5 类缺美术：
 ##   1. 三段滚动背景 crusade_detail_bg1/2/3.png（:17/30/43 pos 25/752/1477 scale=2.0）
 ##   2. 外框 crusade_map_frame.png（:919 pos 400,240）
 ##   3. 光效 crusade_map_frame_light1/2.png（:897/908 pos 400,240）
 ##   4. 标题底 crusade_title_bg.png（:930 pos 402,395）
 ##   5. 底部栏 crusade_reset_bg.png（:957 Scale9 560×58 pos 400,55）
-## 资产全在 res://assets/ui/alpha/HVGA/crusade/。.tscn 未建节点（资产存在但缺 TextureRect），
-## 此处 procedural 建以保留滚动联动 + 精确位置。
+## 资产全在 res://assets/ui/alpha/HVGA/crusade/。
 ##
 ## 坐标系：源 cocos(800×480 左下原点) → Godot(960×640 左上原点)：(cx+80, 560-cy)。
 ## 注：bg1/2/3 在滚动内容坐标系（cocos 滚动层），frame/light/title/reset 在视口坐标系。
@@ -31,8 +32,7 @@ const RESET_GODOT_CENTER: Vector2 = Vector2(480.0, 505.0)   # cocos (400,55)
 # reset_bg Scale9 560×58（源 :957）。
 const RESET_BG_SIZE: Vector2 = Vector2(560.0, 58.0)
 # bg 在滚动内容坐标系（cocos），三段水平铺底：源 pos 25/752/1477（三段每段 ~720px 宽，cs=2 拉伸后约 934×508）。
-# bg 在 section 内居中（section 宽 640×350，crusade 三段映射到滚动条目；dungeon_map 各 Sub1/2/3 挂一段）。
-const BG_LOCAL_OFFSET_Y: float = -80.0   # bg 比 section 中心略下移（覆盖底部 map 区，源 bg 中心在地图水平线）
+# bg 在 section 内居中（section 宽 640×350，crusade 三段映射到滚动条目）。
 
 
 ## 为 crusade 场景建静态美术层。
@@ -57,27 +57,6 @@ static func build_crusade(content: Control) -> void:
 	# 4. 标题底。
 	_add_centered(content, TITLE_BG_RES, TITLE_GODOT_CENTER)
 	# 5. 底部栏（Scale9 拉伸到 560×58）。
-	_add_scaled(content, RESET_BG_RES, RESET_GODOT_CENTER, RESET_BG_SIZE)
-
-
-## 为 dungeon_map 场景建静态美术层（与 crusade 完全相同的 5 类美术）。
-## content: dungeon_map_content.tscn 根（含 %FrameworkBg/%Scroll/%Sub1-3）。
-## bg 各挂一段到对应 Sub（section-local 坐标），frame/light/title/reset 挂 content。
-static func build_dungeon_map(content: Control) -> void:
-	if content == null:
-		return
-	# 1. 三段背景挂 Sub1/2/3（每 section 640×350，bg 居中铺底，move 到 0 在 Fog/boss 之下）。
-	_attach_section_bg(content, "%Sub1", BG1_RES)
-	_attach_section_bg(content, "%Sub2", BG2_RES)
-	_attach_section_bg(content, "%Sub3", BG3_RES)
-	# 2. 外框。
-	_add_centered(content, FRAME_RES, FRAME_GODOT_CENTER)
-	# 3. 外框光效。
-	_add_centered(content, LIGHT1_RES, FRAME_GODOT_CENTER)
-	_add_centered(content, LIGHT2_RES, FRAME_GODOT_CENTER)
-	# 4. 标题底。
-	_add_centered(content, TITLE_BG_RES, TITLE_GODOT_CENTER)
-	# 5. 底部栏。
 	_add_scaled(content, RESET_BG_RES, RESET_GODOT_CENTER, RESET_BG_SIZE)
 
 
@@ -111,32 +90,6 @@ static func _add_scroll_bg(scroll: ScrollContainer, res: String, section_idx: in
 	scroll.add_child(node)
 	if move_to_front:
 		scroll.move_child(node, 0)
-
-
-# dungeon_map：bg 挂 Sub 内（section-local 640×350），居中铺底，move 到 0 在 Fog/boss 之下。
-static func _attach_section_bg(content: Control, sub_path: String, res: String) -> void:
-	if not ResourceLoader.exists(res):
-		return
-	var sub: Control = content.get_node(sub_path) as Control
-	if sub == null:
-		return
-	var tex: Texture2D = load(res) as Texture2D
-	if tex == null:
-		return
-	var display_size: Vector2 = TexDisplaySize.display_size(res)
-	if display_size.x <= 0.0 or display_size.y <= 0.0:
-		return
-	# section 内居中（section 640×350）；bg 偏下铺底（源 bg 中心在地图水平线）。
-	var center: Vector2 = sub.size * 0.5 + Vector2(0.0, BG_LOCAL_OFFSET_Y)
-	var node := TextureRect.new()
-	node.name = "SectionBg"
-	node.texture = tex
-	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.size = display_size
-	node.position = center - display_size * 0.5
-	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sub.add_child(node)
-	sub.move_child(node, 0)
 
 
 # content 子：纹理居中铺（用 display_size 自动含 ContentScale）。

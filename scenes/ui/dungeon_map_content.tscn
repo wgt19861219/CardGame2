@@ -1,11 +1,28 @@
-[gd_scene load_steps=7 format=3]
+; dungeon_map 两件套 content 底板（批 3 Task 4，2026-08-16）。
+; 照源 ui/dungeon_map.lua:538-676 + gametable/dungeonmapconfig.lua buildUIRes 静态化：
+;   dragLayer（CCLayer 全屏 800×480）→ %Scroll 视口 (80,80)-(880,560)；
+;   dragContainer → %ScrollContent（内容局部 y=480-cocos_y，宽度 fill 按 boss 延伸）；
+;   bg1-3/sub1-3/fog1-3 挂 dragContainer → 同挂 ScrollContent（声明序 = 源 z 序
+;   bg0 < boss10/box11 < fog20）；mainLayer 静态层挂 content 根（源 mainLayer 盖 dragLayer）。
+; 贴图显示尺寸（crusade 系 TextureConfig 条目全 Prescaled=false → 条目 CS 不施加，
+; 只算显式 scale 累乘）：bg=px/CS×2.0（layout scale）、fog=px/CS×4（setScale）、
+; 其余无条目=px/CS。
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_1.png" id="4_fog1"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_2.png" id="5_fog2"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_3.png" id="6_fog3"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_detail_bg1.png" id="4_bg1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_detail_bg2.png" id="5_bg2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_detail_bg3.png" id="6_bg3"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_map_frame_light1.png" id="7_l1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_map_frame_light2.png" id="8_l2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_map_frame.png" id="9_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_title_bg.png" id="10_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png" id="11_reset"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_1.png" id="12_fog1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_2.png" id="13_fog2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_3.png" id="14_fog3"]
 
 [node name="DungeonMapContent" type="Control"]
 layout_mode = 3
@@ -14,6 +31,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 项目适配（PackagePanel 范式）：pushScene→PopWindow 弹窗化全屏底图（源无对应物）
 [node name="FrameworkBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -23,100 +41,209 @@ texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
+; 源 dragLayer（全屏 800×480 拖拽层 → Godot 横向滚动）
+[node name="Scroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 80.0
+offset_top = 80.0
+offset_right = 880.0
+offset_bottom = 560.0
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 0
+
+; 源 dragContainer（拖动 x∈[min(0,660-maxX),0]；宽度 fill 时 = maxX+140 等价源 calcMaxRight。
+; ScrollContainer 按子项 custom_minimum_size 重排（不尊重显式 size），故尺寸走 min 通道）
+[node name="ScrollContent" type="Control" parent="Scroll"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 800.0
+offset_bottom = 480.0
+custom_minimum_size = Vector2(800, 480)
+mouse_filter = 2
+
+; 源 bg1（crusade_detail_bg1 467×254px/CS×2 = 728.98×396.49，anchor(0,0.5) pos(25,210)）
+[node name="Bg1" type="TextureRect" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 25.0
+offset_top = 71.76
+offset_right = 753.98
+offset_bottom = 468.24
+texture = ExtResource("4_bg1")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Bg2" type="TextureRect" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 752.0
+offset_top = 71.76
+offset_right = 1477.85
+offset_bottom = 468.24
+texture = ExtResource("5_bg2")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Bg3" type="TextureRect" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 1477.0
+offset_top = 71.76
+offset_right = 2020.22
+offset_bottom = 468.24
+texture = ExtResource("6_bg3")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 sub1-3（空容器中心 (25/752/1477,12) → marker 原点 (x, 480-12)=y468；
+; boss/box fill 宿主，Sub 内定位 = (bpos.x-半宽, -(bpos.y+半高))）
+[node name="Sub1" type="Control" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 25.0
+offset_top = 468.0
+offset_right = 25.0
+offset_bottom = 468.0
+mouse_filter = 2
+
+[node name="Sub2" type="Control" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 752.0
+offset_top = 468.0
+offset_right = 752.0
+offset_bottom = 468.0
+mouse_filter = 2
+
+[node name="Sub3" type="Control" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 1477.0
+offset_top = 468.0
+offset_right = 1477.0
+offset_bottom = 468.0
+mouse_filter = 2
+
+; 源 fog1-3（裸 CCSprite+setScale(4.0)：640×127px/CS×4 = 1998.05×396.49，
+; anchor(0,0.5) pos(subOffsetX[s],210) 挂 dragContainer z=20 盖 boss）
+[node name="Fog1" type="TextureRect" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 25.0
+offset_top = 71.76
+offset_right = 2023.05
+offset_bottom = 468.24
+texture = ExtResource("12_fog1")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Fog2" type="TextureRect" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 752.0
+offset_top = 71.76
+offset_right = 2750.05
+offset_bottom = 468.24
+texture = ExtResource("13_fog2")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Fog3" type="TextureRect" parent="Scroll/ScrollContent"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 1477.0
+offset_top = 71.76
+offset_right = 3475.05
+offset_bottom = 468.24
+texture = ExtResource("14_fog3")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 mainLayer：light1（crusade_map_frame_light1 495×260px/CS 中心 to_godot(400,210)=(480,350)）
+[node name="Light1" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 286.78
+offset_top = 248.54
+offset_right = 673.22
+offset_bottom = 451.47
+texture = ExtResource("7_l1")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Light2" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 286.78
+offset_top = 248.54
+offset_right = 673.22
+offset_bottom = 451.47
+texture = ExtResource("8_l2")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 bgframe（crusade_map_frame 1029×566px/CS = 803.12×441.75 中心(480,350)）
+[node name="Frame" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 78.44
+offset_top = 129.13
+offset_right = 881.56
+offset_bottom = 570.88
+texture = ExtResource("9_frame")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 titleBg（crusade_title_bg 510×118px/CS = 398.05×92.10 中心 to_godot(402,395.3)）
+[node name="TitleBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 282.98
+offset_top = 118.65
+offset_right = 681.02
+offset_bottom = 210.75
+texture = ExtResource("10_title")
+expand_mode = 1
+mouse_filter = 2
+
+; 项目适配（弹窗化区分 em/equip 模式文字，叠源 titleBg 中心；源无 Label）
 [node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 30.0
-offset_top = 70.0
-offset_right = 330.0
-offset_bottom = 98.0
-theme_override_font_sizes/font_size = 24
+offset_left = 362.0
+offset_top = 150.7
+offset_right = 602.0
+offset_bottom = 178.7
+theme_type_variation = &"TitleLabel"
+horizontal_alignment = 1
 mouse_filter = 2
 
-[node name="ResultLabel" type="Label" parent="."]
+; 源 bottom(402,55)+bottomframe（crusade_reset_bg 75×75px Scale9 cap(20,20,18,18) scaleSize(560,58)；
+; cap 批 1 公式：L=20 T=75-20-18=37 R=37 B=20）
+[node name="BottomFrame" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 30.0
-offset_top = 420.0
-offset_right = 500.0
-offset_bottom = 448.0
+offset_left = 202.0
+offset_top = 476.0
+offset_right = 762.0
+offset_bottom = 534.0
+texture = ExtResource("11_reset")
+patch_margin_left = 20
+patch_margin_top = 37
+patch_margin_right = 37
+patch_margin_bottom = 20
 mouse_filter = 2
 
+; 项目适配（弹窗化退出途径；源 pushScene 场景无关闭按钮）
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 20.0
 offset_top = 15.0
-offset_right = 100.0
-offset_bottom = 55.0
+offset_right = 77.76
+offset_bottom = 73.54
 texture_normal = ExtResource("2_back")
 texture_pressed = ExtResource("3_backp")
 ignore_texture_size = true
-
-[node name="Scroll" type="ScrollContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 20.0
-offset_top = 120.0
-offset_right = 940.0
-offset_bottom = 400.0
-horizontal_scroll_mode = 1
-vertical_scroll_mode = 0
-mouse_filter = 0
-
-[node name="Sub1" type="Control" parent="Scroll"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 640.0
-offset_bottom = 350.0
-
-[node name="Fog1" type="TextureRect" parent="Scroll/Sub1"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 95.0
-offset_right = 230.0
-offset_bottom = 185.0
-expand_mode = 1
-mouse_filter = 2
-texture = ExtResource("4_fog1")
-
-[node name="Sub2" type="Control" parent="Scroll"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 640.0
-offset_top = 0.0
-offset_right = 1280.0
-offset_bottom = 350.0
-
-[node name="Fog2" type="TextureRect" parent="Scroll/Sub2"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 95.0
-offset_right = 230.0
-offset_bottom = 185.0
-expand_mode = 1
-mouse_filter = 2
-texture = ExtResource("5_fog2")
-
-[node name="Sub3" type="Control" parent="Scroll"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 1280.0
-offset_top = 0.0
-offset_right = 1920.0
-offset_bottom = 350.0
-
-[node name="Fog3" type="TextureRect" parent="Scroll/Sub3"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 95.0
-offset_right = 230.0
-offset_bottom = 185.0
-expand_mode = 1
-mouse_filter = 2
-texture = ExtResource("6_fog3")
+stretch_mode = 0
