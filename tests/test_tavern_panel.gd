@@ -459,7 +459,8 @@ func test_board_ad_images() -> void:
 
 # 十连折扣角标：源 tavern.lua:923 ad_discount 挂 createCommonLayer ten_buy 内 anchor(0,0)
 # ccp(1,2)（左下角锚定：距父左缘 1px/底缘 2px）——仅 common 层（bronze/gold）有，
-# createMagicLayer ten_buy 无该节点；父按钮 129.56×49.17 → bottom=47.17。
+# createMagicLayer ten_buy 无该节点；tscn 父按钮实高 49.16（受控偏离 #4 自洽值）
+# → bottom=49.16-2=47.16。
 func test_ten_buy_ad_discount() -> void:
 	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
 	var content: Control = scene.instantiate() as Control
