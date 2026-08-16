@@ -85,6 +85,23 @@ func test_get_area_unlock_prompt_unlocked_empty() -> void:
 	assert_eq(fl.get_area_unlock_prompt(&"Crusade", 1), "", "默认解锁 → 空文案")
 
 
+# 源 getAreaUnlockvip（playerlimit.lua:88-98）`if vt[index][key] then` 真值判断：
+# 找首个值为 true 的 VIP 等级（VIP.json VIP0 多键显式存 false，实测阈值）。
+func test_get_area_unlock_vip_truthy() -> void:
+	assert_eq(fl.get_area_unlock_vip(&"Raid One Function"), 0, "Raid One Function VIP0 即 true → 0")
+	assert_eq(fl.get_area_unlock_vip(&"Multiple Midas"), 2, "Multiple Midas VIP0/1 false → 首真 VIP2")
+	assert_eq(fl.get_area_unlock_vip(&"Skill Upgrade CD Reset"), 2, "Skill Upgrade CD Reset → VIP2")
+	assert_eq(fl.get_area_unlock_vip(&"Raid Ten Function"), 4, "Raid Ten Function → VIP4")
+	assert_eq(fl.get_area_unlock_vip(&"Item One-Click-Upgrade"), 7, "Item One-Click-Upgrade → VIP7")
+	assert_eq(fl.get_area_unlock_vip(&"Magic Soul Box"), 11, "Magic Soul Box → VIP11")
+
+
+# vip 门禁 check_area_unlock（源 checkAreaUnlock limit<=current）：VIP0 不解锁 Multiple Midas。
+func test_check_area_unlock_vip_threshold() -> void:
+	assert_false(fl.check_area_unlock(&"Multiple Midas", 99, 0), "VIP0 < 阈值 2 → 未解锁")
+	assert_true(fl.check_area_unlock(&"Multiple Midas", 99, 2), "VIP2 = 阈值 → 已解锁")
+
+
 # 源 baselsr.lua:33-45 playerLevelup 11 功能表映射（Step 3 升级钩子用）。
 func test_baselsr_unlock_map_has_11() -> void:
 	assert_eq(FeatureLimit.BASELSR_UNLOCK_MAP.size(), 11, "baselsr 11 功能映射")

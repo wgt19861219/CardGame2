@@ -143,14 +143,16 @@ func test_panel_new_whitelist() -> void:
 	assert_eq(script_text.count("FeatureLimit.new("), 1, "解锁查询唯一构造")
 
 
-# 按钮位置 fill（源 refreshMultiUseButton :1025-1034）：解锁 use 在 (130,50) content 局部。
+# 按钮位置 fill（源 refreshMultiUseButton :1025-1034）：解锁 use (130,50) + multi_use 显，
+# 锁定 use (210,50) + multi_use 隐（真值判断照源 getAreaUnlockvip）。
 func test_use_button_position_fill() -> void:
 	var panel := _make_panel()
-	# VIP0 含 Multiple Midas（VIP.json 实测）→ 默认解锁位
-	assert_almost_eq(panel._use_btn.position.x, 322.5, 0.5, "解锁位 use pos.x = 397.5-150/2")
-	panel._multi_unlocked = false
-	panel._fill_buttons()
+	# 源 VIP0 不含 Multiple Midas（VIP.json false）→ 锁定位 (210,50)
 	assert_almost_eq(panel._use_btn.position.x, 402.5, 0.5, "锁定位 use pos.x = 477.5-150/2（源 :1031）")
+	assert_false(panel._multi_btn.visible, "锁定 multi_use 隐（源 :1032）")
+	panel._multi_unlocked = true
+	panel._fill_buttons()
+	assert_almost_eq(panel._use_btn.position.x, 322.5, 0.5, "解锁位 use pos.x = 397.5-150/2（源 :1030，VIP2+）")
 	panel.free()
 
 

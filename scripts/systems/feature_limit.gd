@@ -96,7 +96,10 @@ func get_area_unlock_vip(key: StringName) -> int:
 	var vt: Dictionary = _cm.get_raw_table("VIP")
 	var index: int = 0
 	while vt.has(str(index)):
-		if vt[str(index)].has(String(key)):
+		# 源 playerlimit.lua:92 `if vt[index][key] then` 是真值判断（仅 false/nil 为假）：
+		# VIP.json VIP0 多键显式存 false（如 "Multiple Midas"），has() 键存在检查会误判已解锁。
+		var value: Variant = vt[str(index)].get(String(key), null)
+		if value != null and value != false:
 			return index
 		index += 1
 	return index

@@ -70,5 +70,7 @@ func test_variation_in_theme() -> void:
 func test_variation_font_sizes_in_theme() -> void:
 	var theme_text: String = FileAccess.get_file_as_string("res://resources/themes/default_theme.tres")
 	assert_true(theme_text.find("MidasNameLabel/font_sizes/font_size = 20") != -1, "NameLabel 20（源 size20）")
+	assert_true(theme_text.find("MidasHistoryLabel/font_sizes/font_size = 20") != -1,
+		"HistoryLabel 20（源 :470/479/501/521 历史 4 label size=20）")
 	assert_true(theme_text.find("MidasDescLabel/font_sizes/font_size = 18") != -1, "DescLabel 18（源 size18）")
 	assert_true(theme_text.find("MidasTimesLabel/font_sizes/font_size = 16") != -1, "TimesLabel 16（源 size16）")
