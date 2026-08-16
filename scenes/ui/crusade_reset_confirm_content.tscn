@@ -1,4 +1,13 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_bg.png" id="1_dlg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_line.png" id="2_line"]
+
+; 源 crusade.lua:660-680 resetBattle → dialog.lua confirmDialog 家族 showDialog
+; （info.sprite 空 CCSprite 存在 → createWithSprite 分支 :339-363，非 createWithText）。
+; 点空间直译：Cocos 子坐标系原点=父 contentSize 左下角，子坐标数值即点值——bg 子树不做整体 ÷CS。
+; bg contentSize=447x283 像素÷CS=348.88x220.88 点，bg 定位照屏中心 (480,320)；
+; bg 内左下原点 (x,y) → Bg 内左上原点 (x, 220.88-y)；贴图显示尺寸=纹理像素÷CS，setContentSize 直译。
 
 [node name="CrusadeResetConfirmContent" type="Control"]
 layout_mode = 3
@@ -7,47 +16,78 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 遮罩（源 :37 CCLayerColor ccc4(0,0,0,150) 全屏；模态拦截在 panel 根 STOP）
 [node name="Shade" type="ColorRect" parent="."]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.5)
+color = Color(0, 0, 0, 0.588235)
 mouse_filter = 2
 
-[node name="Frame" type="Panel" parent="."]
+; bg（源 :40-43 createSprite dialog_bg 中心锚点 ccp(400,240)=屏中心）
+[node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 330.0
-offset_top = 250.0
-offset_right = 630.0
-offset_bottom = 380.0
+offset_left = 305.56
+offset_top = 209.56
+offset_right = 654.44
+offset_bottom = 430.44
+expand_mode = 1
+texture = ExtResource("1_dlg")
 mouse_filter = 2
 
-[node name="Msg" type="Label" parent="Frame"]
-unique_name_in_owner = true
+; line（源 :48-51 dialog_line 403x4 像素÷CS=314.54x3.12 点，bg 局部中心 (172,75) 点）
+[node name="Line" type="TextureRect" parent="Bg"]
 layout_mode = 3
-offset_left = 0.0
-offset_top = 25.0
-offset_right = 300.0
-offset_bottom = 55.0
-horizontal_alignment = 1
+offset_left = 14.73
+offset_top = 144.32
+offset_right = 329.27
+offset_bottom = 147.44
+expand_mode = 1
+texture = ExtResource("2_line")
 mouse_filter = 2
-text = "结束本次远征并重新开始？"
 
-[node name="CancelBtn" type="Button" parent="Frame"]
+; 取消按钮（源 confirmDialog.create :273-277 left Scale9 herodetail-upgrade
+; cap(20,20,40,29) size(120,49) 直译，中心 bg 局部 (100,44) 点；
+; 三态走 DialogConfirmBtn variation；text fill 覆盖）
+[node name="CancelBtn" type="Button" parent="Bg"]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 40.0
-offset_top = 75.0
-offset_right = 130.0
-offset_bottom = 110.0
+offset_top = 152.38
+offset_right = 160.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "取消"
 mouse_filter = 0
 
-[node name="OkBtn" type="Button" parent="Frame"]
+; 确认按钮（源 :292-296 right 同 left 中心 (250,44) 点；文案 crusade.lua:670
+; 显式传 T(LSTR("CHATCONFIG.CONFIRM"))="确定"（非 create 默认 FASTSELL.GOOD））
+[node name="OkBtn" type="Button" parent="Bg"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 170.0
-offset_top = 75.0
-offset_right = 260.0
-offset_bottom = 110.0
+offset_left = 190.0
+offset_top = 152.38
+offset_right = 310.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "确定"
 mouse_filter = 0
+
+; 正文（源 createWithSprite :349-356 spriteLabel 20 号白 dimensions(300,125)
+; 直译左对齐垂直居中，中心 bg 局部 (172,135) 点——createWithSprite 分支 x=172
+; 非 createWithText 的 180；声明序最后=最上层（:357 最后 addChild）；
+; text 为编辑器预览默认，fill 时 LSTR 覆盖；空 sprite(:346) 无视觉受控裁剪不建）
+[node name="Msg" type="Label" parent="Bg"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 22.0
+offset_top = 23.38
+offset_right = 322.0
+offset_bottom = 148.38
+theme_type_variation = &"DialogMsgLabel"
+horizontal_alignment = 0
+vertical_alignment = 1
+autowrap_mode = 3
+text = "是否结束本次远征并重新开始？"
+mouse_filter = 2
