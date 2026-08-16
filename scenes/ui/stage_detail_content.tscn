@@ -63,9 +63,9 @@ expand_mode = 1
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 228.0
-offset_top = 349.0
+offset_top = 199.0
 offset_right = 732.0
-offset_bottom = 361.0
+offset_bottom = 211.0
 mouse_filter = 2
 texture = ExtResource("3_titlebg")
 expand_mode = 1
@@ -88,7 +88,7 @@ offset_left = 150.0
 offset_top = 330.0
 offset_right = 300.0
 offset_bottom = 354.0
-theme_type_variation = &"StageTitleLabel"
+theme_type_variation = &"StageSectionLabel"
 text = "体力消耗"
 
 [node name="PowerNumber" type="Label" parent="." unique_id=1998089572]
@@ -118,7 +118,7 @@ offset_left = 330.0
 offset_top = 330.0
 offset_right = 520.0
 offset_bottom = 354.0
-theme_type_variation = &"StageTitleLabel"
+theme_type_variation = &"StageSectionLabel"
 text = "今日剩余次数:"
 
 [node name="CountNumber" type="Label" parent="." unique_id=1577422641]
@@ -150,6 +150,7 @@ offset_bottom = 343.0
 texture_normal = ExtResource("8_reset")
 texture_pressed = ExtResource("9_resetp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="ResetLabel" type="Label" parent="Reset" unique_id=696834154]
 unique_name_in_owner = true
@@ -169,8 +170,8 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 170.0
-offset_top = 327.0
-offset_right = 710.0
+offset_top = 349.61
+offset_right = 854.49
 offset_bottom = 430.0
 mouse_filter = 2
 texture = ExtResource("5_enemybg")
@@ -183,7 +184,7 @@ offset_left = 150.0
 offset_top = 403.0
 offset_right = 300.0
 offset_bottom = 427.0
-theme_type_variation = &"StageTitleLabel"
+theme_type_variation = &"StageSectionLabel"
 text = "敌方阵容"
 
 [node name="AwardTitle" type="Label" parent="." unique_id=932279193]
@@ -193,18 +194,19 @@ offset_left = 150.0
 offset_top = 483.0
 offset_right = 300.0
 offset_bottom = 507.0
-theme_type_variation = &"StageTitleLabel"
+theme_type_variation = &"StageSectionLabel"
 text = "可能获得"
 
 [node name="GoButton" type="TextureButton" parent="." unique_id=35635508]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 712.0
-offset_top = 450.0
-offset_right = 845.0
-offset_bottom = 510.0
+offset_left = 728.05
+offset_top = 432.0
+offset_right = 827.95
+offset_bottom = 528.0
 texture_normal = ExtResource("6_go")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="GoButtonShade" type="TextureRect" parent="GoButton" unique_id=2144768949]
 unique_name_in_owner = true
@@ -224,11 +226,12 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 20.0
 offset_top = 15.0
-offset_right = 70.0
-offset_bottom = 45.0
+offset_right = 77.76
+offset_bottom = 73.54
 texture_normal = ExtResource("10_back")
 texture_pressed = ExtResource("11_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="StarHBox" type="HBoxContainer" parent="." unique_id=1669370048]
 unique_name_in_owner = true
@@ -308,6 +311,7 @@ offset_left = 7.5
 offset_top = 40.0
 offset_right = 127.5
 offset_bottom = 90.0
+theme_type_variation = &"StageSweepBtn"
 
 [node name="SweepSomeLabel" type="Label" parent="SweepCluster/SweepSomeBtn" unique_id=168729370]
 layout_mode = 0
@@ -325,6 +329,7 @@ offset_left = 7.5
 offset_top = 95.0
 offset_right = 127.5
 offset_bottom = 145.0
+theme_type_variation = &"StageSweepBtn"
 
 [node name="SweepOnceLabel" type="Label" parent="SweepCluster/SweepOnceBtn" unique_id=716694955]
 layout_mode = 0

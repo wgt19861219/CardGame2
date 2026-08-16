@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=48 format=3]
+[gd_resource type="Theme" load_steps=50 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -296,6 +296,24 @@ texture_margin_top = 18.0
 texture_margin_right = 37.0
 texture_margin_bottom = 20.0
 
+; stage_detail 扫荡按钮（批 3 Task 6）：源 stagedetail.lua createRepeatBattle:375-448
+; some/once Scale9Sprite tavern_button_normal(166x63) cap CCRectMake(20,15,90,15)
+; 纹理像素直译（left=20 top=63-15-15=33 right=166-20-90=56 bottom=15），press 层同 cap。
+; 取代 2026-07-30 panel._apply_sweep_btn_style 运行时 stylebox override（范式禁新增）。
+[sub_resource type="StyleBoxTexture" id="SB_sweep_n"]
+texture = ExtResource("14_dlbtn1")
+texture_margin_left = 20.0
+texture_margin_top = 33.0
+texture_margin_right = 56.0
+texture_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxTexture" id="SB_sweep_p"]
+texture = ExtResource("15_dlbtn2")
+texture_margin_left = 20.0
+texture_margin_top = 33.0
+texture_margin_right = 56.0
+texture_margin_bottom = 15.0
+
 [resource]
 AmountLabel/base_type = &"Label"
 AmountLabel/colors/font_color = Color(0.608, 0.161, 0.055, 1)
@@ -493,9 +511,21 @@ ConfigTitleLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
 ConfigTitleLabel/constants/shadow_offset_x = 0
 ConfigTitleLabel/constants/shadow_offset_y = 2
 ConfigTitleLabel/font_sizes/font_size = 20
-StageTitleLabel/base_type = &"Label"
-StageTitleLabel/colors/font_color = Color(0.945, 0.757, 0.443, 1)
-StageTitleLabel/font_sizes/font_size = 22
+; ── stage_detail 区块标题（2026-07-17 立，批 3 Task 6 改名）── 源 stagedetail.lua
+; power_title:1683-1696 / count_title:1726-1740 / enemy_title:1830-1844 /
+; award_title:1845-1859：size22 ccc3(241,193,113)=toccc3(15843697)。
+; 原名 StageTitleLabel 与批 3 Task 5 stage_select 章节标题撞名（tres 同键后定义覆盖
+; 前定义，Task 5 size18 金色被本段 size22 覆盖），改名 StageSectionLabel 让位。
+StageSectionLabel/base_type = &"Label"
+StageSectionLabel/colors/font_color = Color(0.945, 0.757, 0.443, 1)
+StageSectionLabel/font_sizes/font_size = 22
+; stage_detail 扫荡按钮三态（源 :375-448 some/once + *_press down 层 → SB_sweep_n/p）
+StageSweepBtn/base_type = &"Button"
+StageSweepBtn/styles/normal = SubResource("SB_sweep_n")
+StageSweepBtn/styles/hover = SubResource("SB_sweep_n")
+StageSweepBtn/styles/pressed = SubResource("SB_sweep_p")
+StageSweepBtn/styles/disabled = SubResource("SB_sweep_n")
+StageSweepBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 WarnLabel/base_type = &"Label"
 WarnLabel/colors/font_color = Color(0.572549, 0, 0.0156863, 1)
 WarnLabel/font_sizes/font_size = 18

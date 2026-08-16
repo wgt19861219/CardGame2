@@ -1,22 +1,41 @@
 class_name StageDetailPanel
 extends PopWindow
 
-const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
-
 ## 关卡详情（View 层）— 照源 stagedetail.lua create:1536-1934 完整复刻。
-## 重构（2026-07-17）：base 层静态节点位置/size 固化进 stage_detail_content.tscn（instantiate + fill 范式，
-## 同 hero_detail/shop）。本类管数据装配（getInformation :772）+ checkEnabled :785 + go/sweep/reset/close 交互。
-## 本项目单机化 pushScene→PopWindow，shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉。
+## 两件套（2026-08-16 批3 Task 6）：base 层静态节点固化进 stage_detail_content.tscn
+## （编辑器所见即所得），本类只做业务 + 信号 connect + fill（% 取节点填动态数据）
+## + 敌方阵容/奖励/星动态内容（数据驱动建节点）。原独立 builder 构造器文件已退役删除，
+## 其 fill/动态逻辑并入本类。本项目单机化 pushScene→PopWindow，shade 透明 +
+## .tscn %FrameworkBg 补 bg.jpg 还原源视觉。关卡名标题复用父面板章节标题栏
+## （stage_select_panel._on_stage_clicked，2026-07-30 定案，本类不建 Title 节点）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_detail_content.tscn")
 const TEAM_MAX: int = 5
-# 扫荡 Scale9 样式（源 stagedetail.lua:378/392 tavern_button_normal_1/2.png，cap 20,15,90,15）。
-const SWEEP_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
-const SWEEP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
-const SWEEP_BTN_CAP: Rect2 = Rect2(20.0, 15.0, 90.0, 15.0)
 # 扫荡次数上限（源 parameter.lua:20-21 default_normal/elite_sweep_times）。
 const SWEEP_DEFAULT_NORMAL: int = 10
 const SWEEP_DEFAULT_ELITE: int = 3
+
+# 坐标换算（源 cocos 800×480 左下原点 → Godot 960×640 左上原点）。
+const OFFSET_X: float = 80.0
+const BASE_Y: float = 560.0
+# 次数数字色（源 checkEnabled:785-794 toccc3(16114110)/toccc3(16737841)）。
+const C_NUM: Color = Color(245.0 / 255.0, 225.0 / 255.0, 190.0 / 255.0)
+const C_DISABLE: Color = Color(1.0, 102.0 / 255.0, 49.0 / 255.0)
+
+const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
+const BOSS_TAG_RES: String = UI_DIR + "stagedetail_boss_tag.png"
+# boss 标签源点尺寸 77.27×42.93（99×55px÷CS）；Sprite2D 按纹理原像素渲染须 scale 补偿。
+const INV_CS: float = 1.0 / 1.28125
+# 敌方阵容（源 createEnemy:1142-1192）：boss 边长 80 / 普通 70（cocos 点），容器 104。
+const ENEMY_CONTAINER: float = 104.0  # ReadheroIcon.CONTAINER_SIZE.x
+const ENEMY_LEN_NORMAL: float = 70.0
+const ENEMY_LEN_BOSS: float = 80.0
+const ENEMY_BOSS_OX: float = 5.0  # 源 :1169 boss 额外偏移
+# boss 标签源 ccp(52,20)（icon 104×104 局部左下原点）→ Godot 左上 y = 104-20-42.93。
+const BOSS_TAG_POS: Vector2 = Vector2(52.0, 41.07)
+const REWARD_ICON_SCALE: float = 0.7  # 奖励图标缩放（72→~50，对齐源 cocos 80 间距视觉）
+# TitleBg 细条 Scale9 中心直译（源 titlepos ccp(400,355) → godot(480,205)），size 随 stage_type。
+const TITLE_BG_CENTER: Vector2 = Vector2(480.0, 205.0)
 
 var stage_id: int = 0
 var mgr: StageManager = null
@@ -24,10 +43,15 @@ var player: PlayerData = null
 var rng: BattleRng = null
 var _stage_data: StageData = null
 var _enemies: Array[Dictionary] = []
-var _ui: Dictionary = {}
 var _res_info: Dictionary = {}
 var _is_vitality_enabled: bool = false
 var _is_count_enabled: bool = false
+var _go_button: TextureButton = null
+var _go_shade: TextureRect = null
+var _reset_btn: TextureButton = null
+var _count_number: Label = null
+var _power_number: Label = null
+var _sweep_ticket: Label = null
 
 
 func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) -> void:
@@ -39,38 +63,73 @@ func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: B
 	_stage_data = StageData.from_config(player.cm, p_sid)
 	var bd := BattleData.from_config(player.cm, p_sid, 3)
 	_enemies = bd.get_monsters()
-	_res_info = StageDetailBuilder.get_res_info(StageAccount.stage_type(p_sid))
+	_res_info = get_res_info(StageAccount.stage_type(p_sid))
 	setup()
-	# 本项目单机化 pushScene→PopWindow，故 shade 透明（.tscn %FrameworkBg 已铺 bg.jpg 还原源视觉，同 PackagePanel 范式）。
 	_build_content()
 
 
-# 建 UI 内容。base 层从 .tscn instantiate + fill 动态数据/texture；敌人/奖励/星/扫荡挂各 host。
+# 建 UI 内容：.tscn instantiate + fill 动态数据/texture；敌人/奖励/星挂各 host。
 func _build_content() -> void:
 	for c in container.get_children():
 		c.queue_free()
-	var content := CONTENT_SCENE.instantiate()
+	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	var info: Dictionary = _get_stage_info()
-	_ui = StageDetailBuilder.setup_content(content, info, _res_info, player.cm)
-	StageDetailBuilder.create_enemy(content.get_node("%EnemyHBox"), _enemies, player.cm)
+	_fill_content(content, info)
+	create_enemy(content.get_node("%EnemyHBox"), _enemies, player.cm)
 	if _stage_data != null:
-		StageDetailBuilder.create_reward(content.get_node("%RewardHBox"), _stage_data.drops, player.cm)
-	StageDetailBuilder.apply_stars(content.get_node("%StarHBox"), int(info.get("star", 0)))
-	(_ui["go_button"] as TextureButton).pressed.connect(_on_go_pressed)
-	(_ui["reset"] as TextureButton).pressed.connect(_on_reset_pressed)
-	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	if String(info.get("stage_type", "normal")) == "normal":
-		(_ui["count_title"] as Label).visible = false
-		(_ui["count_number"] as Label).visible = false
-		(_ui["total_number"] as Label).visible = false
-	_setup_sweep_cluster(content, int(info.get("star", 0)), String(info.get("stage_type", "normal")))
+		create_reward(content.get_node("%RewardHBox"), _stage_data.drops, player.cm)
+	apply_stars(content.get_node("%StarHBox"), int(info.get("star", 0)))
 	_check_enabled()
 	# 详情是关卡选择的子弹窗（stage_select_panel.gd detail.show_window(get_parent())），
-	# 不碰 HudOverlay identity——遵循项目范式（battle_reward_popup / excavate_team_panel 等子弹窗
-	# 同样不调 apply_identity）。否则关闭详情会把 identity 错误跳回 "main"，使头像/shortcut
-	# 在仍在前台的关卡选择面板之上错误显示。identity 保持父级 stageselect，由 StageSelectPanel
+	# 不碰 HudOverlay identity——遵循项目范式（battle_reward_popup / excavate_team_panel 等
+	# 子弹窗同样不调 apply_identity）。identity 保持父级 stageselect，由 StageSelectPanel
 	# 关闭时恢复 main。
+
+
+# fill base 层动态数据（源 readNode ui_info + checkEnabled 首刷）。
+func _fill_content(content: Control, info: Dictionary) -> void:
+	var cm: Variant = player.cm
+	var left: int = int(info.get("count_limit", 0)) - int(info.get("count", 0))
+	var stage_type: String = String(info.get("stage_type", "normal"))
+	# Frame3 边框随 stage_type 换图（源 :1597-1607 frame3=frameRes）；
+	# 两帧尺寸/位置已 tscn 直译固化（936×507px÷CS 中心(480,355)），撤销 2026-07-20 的
+	# 0.9 缩放偏好补偿（批3 Task 5 同口径恢复源几何直译）。
+	_set_texture(content.get_node("%Frame3") as TextureRect, String(_res_info.get("frame", "")))
+	# TitleBg 细条 scaleSize 随 stage_type（normal 504×12 / 其余 404×12，源 :1608-1618）。
+	var bg_size: Vector2 = Vector2(_res_info.get("title_bg_size", Vector2(504.0, 12.0)))
+	var title_bg: TextureRect = content.get_node("%TitleBg") as TextureRect
+	title_bg.offset_left = TITLE_BG_CENTER.x - bg_size.x * 0.5
+	title_bg.offset_right = TITLE_BG_CENTER.x + bg_size.x * 0.5
+	title_bg.offset_top = TITLE_BG_CENTER.y - bg_size.y * 0.5
+	title_bg.offset_bottom = TITLE_BG_CENTER.y + bg_size.y * 0.5
+	# 文本 fill（LSTR 化硬编码中文，源 :1686/:1730/:1807/:1834/:1848）。
+	var detail_lbl: Label = content.get_node("%Detail") as Label
+	detail_lbl.text = String(info.get("detail", ""))
+	detail_lbl.visible = bool(info.get("is_key_stage", false)) or String(info.get("detail", "")) != ""
+	_power_number = content.get_node("%PowerNumber") as Label
+	_power_number.text = str(info.get("power", 0))
+	_count_number = content.get_node("%CountNumber") as Label
+	_count_number.text = str(left)
+	(content.get_node("%TotalNumber") as Label).text = "/ " + str(info.get("count_limit", "??"))
+	(content.get_node("%PowerTitle") as Label).text = String(cm.get_lstr("STAGEDETAIL.PHYSICAL_EXERTION"))
+	(content.get_node("%CountTitle") as Label).text = String(cm.get_lstr("EXERCISE.REMAINING_TIMES_FOR_TODAY_")) + str(left)
+	(content.get_node("%ResetLabel") as Label).text = String(cm.get_lstr("EQUIPINFO.PURCHASE"))
+	(content.get_node("%EnemyTitle") as Label).text = String(cm.get_lstr("STAGEDETAIL.ENEMY_LINEUP"))
+	(content.get_node("%AwardTitle") as Label).text = String(cm.get_lstr("STAGEDETAIL.MAY_BE_OBTAINED"))
+	# 交互绑定（源 doClickGo/doResetEliteLimit/doCloseButtonTouch）。
+	_go_button = content.get_node("%GoButton") as TextureButton
+	_go_button.pressed.connect(_on_go_pressed)
+	_go_shade = content.get_node("%GoButtonShade") as TextureRect
+	_reset_btn = content.get_node("%Reset") as TextureButton
+	_reset_btn.pressed.connect(_on_reset_pressed)
+	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	# 源 :1906-1910 normal 型（isNormalMode）隐藏次数三件。
+	if stage_type == "normal":
+		(content.get_node("%CountTitle") as Label).visible = false
+		_count_number.visible = false
+		(content.get_node("%TotalNumber") as Label).visible = false
+	_setup_sweep_cluster(content, int(info.get("star", 0)), stage_type)
 
 
 # 项目 StageData 首次访问可能缺 row，"关卡 %d" fallback 是项目适配（源 row 必存在）。
@@ -93,32 +152,50 @@ func _get_stage_info() -> Dictionary:
 	}
 
 
+# 贴图资源信息（源 getResInformation:633-678）：随 stage_type 换边框/标题底/星距/出战按钮位。
+static func get_res_info(stage_type: String) -> Dictionary:
+	match stage_type:
+		"normal":
+			return _pack(UI_DIR + "stage-map-frame.png", UI_DIR + "Normal_title_bg.png", Vector2(504.0, 12.0), 55, Vector2(698.0, 80.0), Vector2(400.0, 205.0))
+		"elite", "dungeon":
+			return _pack(UI_DIR + "stage-map-elite-frame.png", UI_DIR + "Elite_title_bg.png", Vector2(404.0, 12.0), 50, Vector2(678.0, 80.0), Vector2(400.0, 207.0))
+		"raid":
+			return _pack(UI_DIR + "stage_map_guild_frame.png", UI_DIR + "guild_title_bg.png", Vector2(404.0, 12.0), 50, Vector2(678.0, 80.0), Vector2(400.0, 207.0))
+	return _pack(UI_DIR + "stage-map-frame.png", UI_DIR + "Normal_title_bg.png", Vector2(504.0, 12.0), 55, Vector2(698.0, 80.0), Vector2(400.0, 205.0))
+
+
+static func _pack(frame: String, title_bg: String, bg_size: Vector2, star_gap: int, go_btn: Vector2, frame_pos: Vector2) -> Dictionary:
+	return {"frame": frame, "title_bg": title_bg, "title_bg_size": bg_size, "star_gap": star_gap, "go_btn_pos": go_btn, "frame_pos": frame_pos}
+
+
+static func to_godot(cx: float, cy: float) -> Vector2:
+	return Vector2(cx + OFFSET_X, BASE_Y - cy)
+
+
+static func _set_texture(rect: TextureRect, res_path: String) -> void:
+	if rect == null or res_path.is_empty() or not ResourceLoader.exists(res_path):
+		return
+	rect.texture = load(res_path) as Texture2D
+
+
 func _check_enabled() -> void:
 	var left: int = _left_times()
-	var cn: Label = _ui.get("count_number", null) as Label
-	if cn != null:
-		cn.text = str(left)
-		cn.add_theme_color_override("font_color", StageDetailBuilder.C_DISABLE if left < 1 else StageDetailBuilder.C_NUM)
+	if _count_number != null:
+		_count_number.text = str(left)
+		_count_number.add_theme_color_override("font_color", C_DISABLE if left < 1 else C_NUM)
 	var power: int = _stage_data.vitality_cost if _stage_data != null else 0
 	_is_vitality_enabled = player.vitality >= power
 	var count_limit: int = _daily_limit()
 	_is_count_enabled = count_limit > int(player.stage_limit.get(stage_id, 0)) or count_limit <= 0
-	var reset_btn: TextureButton = _ui.get("reset", null) as TextureButton
-	if reset_btn != null:
-		reset_btn.visible = not _is_count_enabled
-	var pn: Label = _ui.get("power_number", null) as Label
-	var gs: TextureRect = _ui.get("go_button_shade", null) as TextureRect
-	if _is_vitality_enabled and _is_count_enabled:
-		if pn != null:
-			pn.add_theme_color_override("font_color", StageDetailBuilder.C_NUM)
-		if gs != null:
-			gs.visible = false
-	elif gs != null:
-		gs.visible = true
+	if _reset_btn != null:
+		_reset_btn.visible = not _is_count_enabled
+	if _power_number != null and _is_vitality_enabled and _is_count_enabled:
+		_power_number.add_theme_color_override("font_color", C_NUM)
+	if _go_shade != null:
+		_go_shade.visible = not (_is_vitality_enabled and _is_count_enabled)
 	# 扫荡集群券计数刷新（扫荡后 player.get_sweep_times 变化）。
-	var ticket: Label = _ui.get("sweep_ticket_count", null) as Label
-	if ticket != null:
-		ticket.text = str(player.get_sweep_times())
+	if _sweep_ticket != null:
+		_sweep_ticket.text = str(player.get_sweep_times())
 
 
 func _left_times() -> int:
@@ -129,11 +206,12 @@ func _daily_limit() -> int:
 	return int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Daily Limit", 0))
 
 
-# 扫荡集群（源 stagedetail.lua createRepeatBattle:266-468）：满 3 星 + normal/elite 才显示。
+# 扫荡集群（源 createRepeatBattle:266-468）：满 3 星 + normal/elite 才显示。
 # %SweepCluster（Panel 底板 main_vit_tips）内含 SweepOnceBtn（扫荡1次）/SweepSomeBtn（扫荡N次）
 # + SweepTicketIcon + SweepTicketCount（券计数）。单机化裁剪：去 VIP 功能解锁（localMode 跳过）；
 # 券不足直接 toast 不暴露钻石扫荡路径（源 doPaySweepConfirm 联机流程）。
-# Button 套 Scale9 stylebox（tavern_button_normal_1/2 cap 20,15,90,15）+ 独立子 Label
+# 按钮底图走 theme StageSweepBtn variation（tavern_button_normal_1/2 cap 20,15,90,15
+# 三态入 theme，2026-08-16 起禁运行时 stylebox override）+ 独立子 Label
 # （Button.text 内嵌 label 受 stylebox content_margin 干扰，范式同 hero_detail）。
 func _setup_sweep_cluster(content: Control, star: int, stage_type: String) -> void:
 	var cluster: Panel = content.get_node("%SweepCluster") as Panel
@@ -143,11 +221,9 @@ func _setup_sweep_cluster(content: Control, star: int, stage_type: String) -> vo
 	cluster.visible = true
 	var cm: Variant = player.cm
 	var once_btn: Button = cluster.get_node("%SweepOnceBtn") as Button
-	_apply_sweep_btn_style(once_btn)
 	(once_btn.get_node("SweepOnceLabel") as Label).text = String(cm.get_lstr("PRIVILEGE.FARM"))
 	once_btn.pressed.connect(_on_sweep_once_pressed)
 	var some_btn: Button = cluster.get_node("%SweepSomeBtn") as Button
-	_apply_sweep_btn_style(some_btn)
 	var n: int = _sweep_some_times(stage_type)
 	var raid_fmt: String = String(cm.get_lstr("STAGEDETAIL.RAID__D_TIMES"))
 	if raid_fmt == "STAGEDETAIL.RAID__D_TIMES":
@@ -158,15 +234,8 @@ func _setup_sweep_cluster(content: Control, star: int, stage_type: String) -> vo
 		some_btn.disabled = true
 	else:
 		some_btn.pressed.connect(_on_sweep_some_pressed.bind(stage_type))
-	(cluster.get_node("SweepTicketCount") as Label).text = str(player.get_sweep_times())
-	_ui["sweep_ticket_count"] = cluster.get_node("SweepTicketCount")
-
-
-func _apply_sweep_btn_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(SWEEP_BTN_RES, SWEEP_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(SWEEP_BTN_PRESS_RES, SWEEP_BTN_CAP))
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	_sweep_ticket = cluster.get_node("SweepTicketCount") as Label
+	_sweep_ticket.text = str(player.get_sweep_times())
 
 
 # 扫荡N次的 N（源 getRepeatInformation:231-265）：min(剩余进入次数, 普通关10/精英关3)。
@@ -277,3 +346,90 @@ func _team_tids() -> Array[int]:
 			if tids.size() >= TEAM_MAX:
 				break
 	return tids
+
+
+# 敌方阵容：照源 createEnemy:1142-1192，容器化（ReadheroIcon 是 Node2D 不能直接进 HBox，
+# 套 Control wrapper + custom_minimum_size，范式同 excavate_team_panel._add_hero_icon）。
+# boss/普通尺寸差异通过 wrapper size + icon scale 处理，坐标交由 %EnemyHBox 自动排版。
+func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
+	# boss 排在小怪后面（用户偏好：详情阵容 boss 在末尾，区别于战斗站位 Boss Position）。
+	var ordered: Array = []
+	var bosses: Array = []
+	for e in enemies:
+		if bool(e.get("is_boss", false)):
+			bosses.append(e)
+		else:
+			ordered.append(e)
+	ordered.append_array(bosses)
+	for e in ordered:
+		var tid: int = int(e.get("tid", 0))
+		if tid == 0:
+			continue
+		var is_boss: bool = bool(e.get("is_boss", false))
+		var icon := ReadheroIcon.new()
+		var rank: int = mini(ExcavateData.hero_level_to_rank(int(e.get("level", 1))), 8)
+		icon.setup({"id": tid, "rank": rank, "stars": int(e.get("stars", 0))}, cm)
+		var length: float = ENEMY_LEN_BOSS if is_boss else ENEMY_LEN_NORMAL
+		var s: float = length / ENEMY_CONTAINER
+		var wrapper := Control.new()
+		wrapper.custom_minimum_size = Vector2(ENEMY_CONTAINER * s + (ENEMY_BOSS_OX if is_boss else 0.0), ENEMY_CONTAINER * s)
+		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.scale = Vector2(s, s)
+		icon.position = Vector2(ENEMY_BOSS_OX if is_boss else 0.0, 0.0)
+		wrapper.add_child(icon)
+		parent.add_child(wrapper)
+		if icon.ori_icon is Sprite2D:
+			(icon.ori_icon as Sprite2D).flip_h = true
+		if is_boss:
+			_add_boss_tag(icon)
+
+
+# boss 标签（源 :1178-1182）：stagedetail_boss_tag.png @ icon 局部 ccp(52,20) z10。
+# 贴图 99×55px（HC multilanguage en-US 补缺，2026-08-16），显示 77.27×42.93 点（÷CS scale 补偿）；
+# 缺图时 Label "BOSS" 红字 fallback（防御路径，源 createSprite 缺图≈nil 不等效故留）。
+func _add_boss_tag(icon: ReadheroIcon) -> void:
+	var host: Node = icon.icon if icon.icon != null else icon
+	if ResourceLoader.exists(BOSS_TAG_RES):
+		var tag := Sprite2D.new()
+		tag.texture = load(BOSS_TAG_RES) as Texture2D
+		tag.centered = false
+		tag.scale = Vector2(INV_CS, INV_CS)
+		tag.position = BOSS_TAG_POS
+		tag.z_index = 10
+		host.add_child(tag)
+	else:
+		var lbl := Label.new()
+		lbl.text = "BOSS"
+		lbl.position = Vector2(20.0, 0.0)
+		lbl.add_theme_color_override("font_color", Color.RED)
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.z_index = 10
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		host.add_child(lbl)
+
+
+# 奖励：照源 createReward:1193-1211，容器化（ReadequipIcon 返回 Control 直接进 %RewardHBox）。
+# ReadequipIcon frame 按纹理原尺寸渲染（94×95px），scale 0.7 补偿对齐源 cocos 80 间距视觉
+# （批2 ReadequipIcon 补偿口径，宽基准 length 语义）。
+func create_reward(parent: Node, drops: Array, cm: Variant) -> void:
+	for d in drops:
+		var item_id: int = int(d.get("item_id", 0))
+		if item_id == 0:
+			continue
+		var icon: Control = ReadequipIcon.create_icon(item_id, 1, cm)
+		icon.scale = Vector2(REWARD_ICON_SCALE, REWARD_ICON_SCALE)
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		parent.add_child(icon)
+
+
+# 星级：照源 createStars:1212-1261，星星已静态化进 .tscn（%StarHBox 下 Star1/2/3）。
+# 按 star_count 切换 3 个 TextureRect 的 texture（detail_star / detail_star_grey）。
+func apply_stars(star_box: Node, star_count: int) -> void:
+	for i in range(3):
+		var star: TextureRect = (star_box.get_child(i)) as TextureRect
+		if star == null:
+			continue
+		var res_path: String = (UI_DIR + "detail_star.png") if i < star_count else (UI_DIR + "detail_star_grey.png")
+		if ResourceLoader.exists(res_path):
+			star.texture = load(res_path) as Texture2D

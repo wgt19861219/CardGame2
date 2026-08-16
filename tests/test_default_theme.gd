@@ -211,15 +211,46 @@ func test_config_title_label_has_shadow_offset() -> void:
 	assert_eq(sx, 0, "ConfigTitleLabel shadow_offset_x = 0")
 	assert_eq(sy, 2, "ConfigTitleLabel shadow_offset_y = 2")
 
+# stage_detail 区块标题（体力消耗/今日剩余/敌方阵容/可能获得，2026-07-17 立原名
+# StageTitleLabel，批 3 Task 6 改名 StageSectionLabel——与 Task 5 stage_select 章节标题
+# 撞名致后定义覆盖前定义，改名让位）。色/号不变。
+func test_stage_section_label_has_section_color() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var color: Color = theme.get_color("font_color", "StageSectionLabel")
+	assert_color_approx(color, Color(0.945, 0.757, 0.443, 1), "StageSectionLabel font_color")
+
+func test_stage_section_label_has_size_22() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var size: int = theme.get_font_size("font_size", "StageSectionLabel")
+	assert_eq(size, 22, "StageSectionLabel font_size = 22")
+
+# stage_select 章节标题（批 3 Task 5）：撞名修复后唯一定义生效，锁定源
+# stageselect.lua createTitleText size18 ccc3(250,205,16) + shadow ccc3(63,5,0)。
 func test_stage_title_label_has_gold_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "StageTitleLabel")
-	assert_color_approx(color, Color(0.945, 0.757, 0.443, 1), "StageTitleLabel font_color")
+	assert_color_approx(color, Color(0.980392, 0.803922, 0.062745, 1), "StageTitleLabel font_color")
 
-func test_stage_title_label_has_size_22() -> void:
+func test_stage_title_label_has_size_18() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var size: int = theme.get_font_size("font_size", "StageTitleLabel")
-	assert_eq(size, 22, "StageTitleLabel font_size = 22")
+	assert_eq(size, 18, "StageTitleLabel font_size = 18")
+
+func test_stage_title_label_has_shadow() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var shadow: Color = theme.get_color("font_shadow_color", "StageTitleLabel")
+	assert_color_approx(shadow, Color(0.247059, 0.019608, 0, 1), "StageTitleLabel font_shadow_color")
+
+# stage_detail 扫荡按钮三态（批 3 Task 6）：SB_sweep_n/p（tavern_button_normal cap 20,15,90,15）。
+func test_stage_sweep_btn_normal_stylebox() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var sb: StyleBox = theme.get_stylebox("normal", "StageSweepBtn")
+	assert_true(sb is StyleBoxTexture, "StageSweepBtn normal 是 StyleBoxTexture")
+	var tex_sb: StyleBoxTexture = sb as StyleBoxTexture
+	assert_ne(tex_sb.texture, null, "扫荡按钮 normal 有底图")
+	assert_eq(tex_sb.texture.resource_path, "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png", "normal 用 tavern_button_normal_1")
+	var psb: StyleBox = theme.get_stylebox("pressed", "StageSweepBtn")
+	assert_eq((psb as StyleBoxTexture).texture.resource_path, "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png", "pressed 用 tavern_button_normal_2")
 
 func test_warn_label_has_warn_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
