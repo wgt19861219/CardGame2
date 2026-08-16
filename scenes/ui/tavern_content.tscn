@@ -239,9 +239,9 @@ mouse_filter = 2
 
 [node name="OneCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
 layout_mode = 3
-offset_left = 124.0
+offset_left = 104.0
 offset_top = 397.0
-offset_right = 164.0
+offset_right = 144.0
 offset_bottom = 417.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 2
@@ -293,9 +293,9 @@ mouse_filter = 2
 
 [node name="TenCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
 layout_mode = 3
-offset_left = 124.0
+offset_left = 104.0
 offset_top = 522.0
-offset_right = 164.0
+offset_right = 144.0
 offset_bottom = 542.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 2
@@ -473,9 +473,9 @@ mouse_filter = 2
 
 [node name="OneCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
 layout_mode = 3
-offset_left = 124.0
+offset_left = 104.0
 offset_top = 397.0
-offset_right = 164.0
+offset_right = 144.0
 offset_bottom = 417.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 2
@@ -527,9 +527,9 @@ mouse_filter = 2
 
 [node name="TenCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
 layout_mode = 3
-offset_left = 124.0
+offset_left = 104.0
 offset_top = 522.0
-offset_right = 164.0
+offset_right = 144.0
 offset_bottom = 542.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 2
@@ -791,9 +791,9 @@ mouse_filter = 2
 
 [node name="TenCostLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
 layout_mode = 3
-offset_left = 124.0
+offset_left = 104.0
 offset_top = 522.0
-offset_right = 164.0
+offset_right = 144.0
 offset_bottom = 542.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 2

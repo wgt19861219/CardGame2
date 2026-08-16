@@ -367,3 +367,30 @@ func test_magic_board_static_diff() -> void:
 		"magic ten_buy 标签照源为 购买1个（BUY__D %% 1）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 审查修复 I1 守卫（2026-08-16）：cost 数值 Label 右缘语义——源 tavern.lua:793-794/:868-869
+# anchor=ccp(1,0.5)+position=ccp(144,·)：x=144 是右缘坐标（非中心）→ tscn offset_right=144、
+# 宽 40 保持，且右缘不得溢出对应费用框（CostFrame）右缘（曾 164 > 159 溢出 5px）。
+func test_cost_label_right_edge() -> void:
+	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	var cases: Array = [
+		["BronzeBoard", "OneCostLabel", "OneCostFrame"],
+		["BronzeBoard", "TenCostLabel", "TenCostFrame"],
+		["GoldBoard", "OneCostLabel", "OneCostFrame"],
+		["GoldBoard", "TenCostLabel", "TenCostFrame"],
+		["MagicBoard", "TenCostLabel", "TenCostFrame"],
+	]
+	for c: Array in cases:
+		var scroll_path: String = "BoardHost/%s/Clip/Scroll" % c[0]
+		var label: Label = content.get_node("%s/%s" % [scroll_path, c[1]]) as Label
+		var frame: Control = content.get_node("%s/%s" % [scroll_path, c[2]]) as Control
+		var tag: String = "%s/%s" % [c[0], c[1]]
+		assert_almost_eq(label.offset_right, 144.0, 0.01,
+			"%s 右缘=144（源 anchor(1,0.5) 右缘语义，非中心）" % tag)
+		assert_almost_eq(label.offset_left, 104.0, 0.01, "%s 左缘=104（宽 40 保持）" % tag)
+		assert_true(label.offset_right <= frame.offset_right,
+			"%s 右缘 %.0f ≤ 费用框右缘 %.0f（文本不溢出费用框）" % [tag, label.offset_right, frame.offset_right])
+	content.queue_free()
