@@ -1,0 +1,90 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_token_icon.png" id="1_token"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="2_gold"]
+
+; 点石成金历史行模板（批 2 Task 6，2026-08-16）。照源 midas.lua initHistoryItemHandler
+; :425-545 直译：HorizontalNode anchor(0,1) 行宽 itemSize DG(435)=339.8≈340 高 DG(35)≈28。
+; 行内 6 节点：USE label(20→14 黄)/cost(蓝)/token icon(fix_height DGLen(30)=23.44)/
+; GET label/金icon(fix_height DGLen(35)=27.34)/acquire(橙)，offset 5/10 → sep5+GetLabel
+; margin5。ratio 图（源 :532-544 DGccp(330,13)=(257.8,10.16) anchor(0,0.5) fix_height 30）
+; 资源缺（assets midas/ 仅数字图）→ RatioHost 宿主 fill 降级 Label ×N!。
+; token 43x41px 等比→24.59x23.44；gold 43x40px→29.39x27.34（fix_height 定高等比宽）。
+
+[node name="MidasHistoryItem" type="Control"]
+layout_mode = 0
+offset_right = 340.0
+offset_bottom = 28.0
+mouse_filter = 2
+
+; 6 节点行（源 HorizontalNode；label 色 tscn modulate 静态直译，字号 variation MidasHistoryLabel）
+[node name="Bar" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 340.0
+offset_bottom = 28.0
+theme_override_constants/separation = 5
+mouse_filter = 2
+
+; USE ccc3(255,246,143)（fill LSTR MIDAS.USE）
+[node name="UseLabel" type="Label" parent="Bar"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasHistoryLabel"
+modulate = Color(1, 0.964706, 0.560784, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; cost ccc3(50,223,253)（fill 数字）
+[node name="CostLabel" type="Label" parent="Bar"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasHistoryLabel"
+modulate = Color(0.196078, 0.87451, 0.992157, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; token icon（源 :487-496 res shop_token_icon fix_height=DGLen(30)）
+[node name="TokenIcon" type="TextureRect" parent="Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24.59, 23.44)
+layout_mode = 2
+texture = ExtResource("1_token")
+expand_mode = 1
+mouse_filter = 2
+size_flags_vertical = 4
+
+; GET ccc3(255,246,143)（fill LSTR ADDEQUIP.GET；源 offset 10 → margin_left 5+sep5）
+[node name="GetLabel" type="Label" parent="Bar"]
+unique_name_in_owner = true
+theme_override_constants/margin_left = 5
+theme_type_variation = &"MidasHistoryLabel"
+modulate = Color(1, 0.964706, 0.560784, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; gold icon（源 :508-517 res goldicon_small fix_height=DGLen(35)）
+[node name="GoldIcon" type="TextureRect" parent="Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(29.39, 27.34)
+layout_mode = 2
+texture = ExtResource("2_gold")
+expand_mode = 1
+mouse_filter = 2
+size_flags_vertical = 4
+
+; acquire ccc3(255,175,52)（fill 数字）
+[node name="AcquireLabel" type="Label" parent="Bar"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasHistoryLabel"
+modulate = Color(1, 0.686275, 0.203922, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; ratio 标记宿主（源 :532-544 图 DGccp(330,13) 行内 anchor(0,0.5) fix_height 30；
+; 中心 y=28-10.16=17.84；fill：图缺降级 Label ×N!）
+[node name="RatioHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 257.8
+offset_top = 2.84
+offset_right = 319.8
+offset_bottom = 32.84
+mouse_filter = 2

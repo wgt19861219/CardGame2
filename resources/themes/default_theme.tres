@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=42 format=3]
+[gd_resource type="Theme" load_steps=48 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -15,6 +15,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/classbtnselected.png" id="13_classbtnsel"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="14_dlbtn1"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="15_dlbtn2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="16_miduse1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="17_miduse2"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -244,6 +246,38 @@ texture_margin_left = 15.63
 texture_margin_top = 35.74
 texture_margin_right = 27.84
 texture_margin_bottom = 15.63
+
+; midas use 按钮（批 2 Task 6）：源 midas.lua:881-893 Scale9Sprite tavern_button_1/2
+; (166x63) cap CCRectMake(10,10,108,29) 纹理像素直译（批 1 公式：
+; left=10 top=63-10-29=24 right=166-10-108=48 bottom=10）。
+[sub_resource type="StyleBoxTexture" id="SB_midas_use_n"]
+texture = ExtResource("16_miduse1")
+texture_margin_left = 10.0
+texture_margin_top = 24.0
+texture_margin_right = 48.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="SB_midas_use_p"]
+texture = ExtResource("17_miduse2")
+texture_margin_left = 10.0
+texture_margin_top = 24.0
+texture_margin_right = 48.0
+texture_margin_bottom = 10.0
+
+; midas multi_use 按钮（源 :936-948 tavern_button_normal_1/2 同 cap(10,10,108,29)）。
+[sub_resource type="StyleBoxTexture" id="SB_midas_multi_n"]
+texture = ExtResource("14_dlbtn1")
+texture_margin_left = 10.0
+texture_margin_top = 24.0
+texture_margin_right = 48.0
+texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="SB_midas_multi_p"]
+texture = ExtResource("15_dlbtn2")
+texture_margin_left = 10.0
+texture_margin_top = 24.0
+texture_margin_right = 48.0
+texture_margin_bottom = 10.0
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -915,3 +949,56 @@ MailDetailOkBtn/styles/hover = SubResource("SB_pkg_hb_n")
 MailDetailOkBtn/styles/pressed = SubResource("SB_pkg_hb_p")
 MailDetailOkBtn/styles/disabled = SubResource("SB_pkg_hb_n")
 MailDetailOkBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ==================== midas（批 2 Task 6，2026-08-16）====================
+; 标题（源 midas.lua:823-835 name size20 无 config.color 默认白）
+MidasNameLabel/base_type = &"Label"
+MidasNameLabel/font_sizes/font_size = 20
+; 描述/用尽提示（源 :837-850 + :864-879 size18 ccc3(231,185,108) 共用）
+MidasDescLabel/base_type = &"Label"
+MidasDescLabel/colors/font_color = Color(0.905882, 0.72549, 0.423529, 1)
+MidasDescLabel/font_sizes/font_size = 18
+; 今日次数行（源 refreshTimesBoard :342-396 size16）
+MidasTimesLabel/base_type = &"Label"
+MidasTimesLabel/font_sizes/font_size = 16
+; 花费数字（源 refreshCostBoard :259-268 size18 ccc3(49,219,255)）
+MidasCostValueLabel/base_type = &"Label"
+MidasCostValueLabel/colors/font_color = Color(0.192157, 0.858824, 1, 1)
+MidasCostValueLabel/font_sizes/font_size = 18
+; 获得数字（源 :288-296 size18 ccc3(255,165,49)）
+MidasAcquireValueLabel/base_type = &"Label"
+MidasAcquireValueLabel/colors/font_color = Color(1, 0.647059, 0.192157, 1)
+MidasAcquireValueLabel/font_sizes/font_size = 18
+; use 按钮字（源 :923-935 fontinfo ui_normal_button ccc3(231,206,19)）
+MidasUseBtnLabel/base_type = &"Label"
+MidasUseBtnLabel/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+MidasUseBtnLabel/font_sizes/font_size = 18
+; multi_use 按钮字（源 :978-990 ccc3(231,231,231)）
+MidasMultiBtnLabel/base_type = &"Label"
+MidasMultiBtnLabel/colors/font_color = Color(0.905882, 0.905882, 0.905882, 1)
+MidasMultiBtnLabel/font_sizes/font_size = 18
+; use/multi 按钮三态（源 :881-921/:936-976 Scale9 三图：normal/press 走 SB，
+; disabled 蒙版 use 是 tavern_button_normal_1 整图 TextureRect；multi disabled 与
+; 底图同图省略（视觉 no-op，受控偏离））
+MidasUseBtn/base_type = &"Button"
+MidasUseBtn/styles/normal = SubResource("SB_midas_use_n")
+MidasUseBtn/styles/hover = SubResource("SB_midas_use_n")
+MidasUseBtn/styles/pressed = SubResource("SB_midas_use_p")
+MidasUseBtn/styles/disabled = SubResource("SB_midas_use_n")
+MidasUseBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+MidasMultiBtn/base_type = &"Button"
+MidasMultiBtn/styles/normal = SubResource("SB_midas_multi_n")
+MidasMultiBtn/styles/hover = SubResource("SB_midas_multi_n")
+MidasMultiBtn/styles/pressed = SubResource("SB_midas_multi_p")
+MidasMultiBtn/styles/disabled = SubResource("SB_midas_multi_n")
+MidasMultiBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 连兑确认弹窗按钮（源 uieditor/confirmdialog.lua DGButton sell_number
+; cap(15.63,15.63,19.53,15.63) → 复用 SB_mo_btn_n/p 同图同 cap；labelConfig
+; ccc3(234,225,205) size18）
+MidasConfirmBtn/base_type = &"Button"
+MidasConfirmBtn/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+MidasConfirmBtn/font_sizes/font_size = 18
+MidasConfirmBtn/styles/normal = SubResource("SB_mo_btn_n")
+MidasConfirmBtn/styles/hover = SubResource("SB_mo_btn_n")
+MidasConfirmBtn/styles/pressed = SubResource("SB_mo_btn_p")
+MidasConfirmBtn/styles/disabled = SubResource("SB_mo_btn_n")
+MidasConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")

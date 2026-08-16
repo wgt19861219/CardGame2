@@ -1,0 +1,170 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_delimiter.png" id="2_delim"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_token_icon.png" id="3_token"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="4_gold"]
+
+; 连兑确认弹窗（批 2 Task 6，2026-08-16）。照源 uieditor/confirmdialog.lua 声明表 +
+; midas.lua createMultiWindow :550-666 直译（独立 PopWindow，源 ed.popConfirmDialog :659）。
+; frame：声明表 (401.56,234.38) 中心 cap(19.53,19.53,46.88,11.72) 纹理 103x61
+; → patch l19.53 r36.59 t29.75 b19.53；initWindow widthMax w=600 → DG size 468.75 x
+; (180+nh*1.28)*0.78125（3 行内容 nh=123 → 263.59）→ godot 中心(481.56,325.62)。
+; 3 行内容 @ frame 局部 DGccp(w/2,135)=(234.4,105.5) 底部中心（块顶距 frame 顶 35.1）；
+; delimeter @ DGccp(300,100)=(234.4,78.1) 宽 371.09*(600/500)=445.31 高 2.34；
+; 双按钮 DGccp(w/7*2|5,58)=(133.9|334.8,45.3) frame 局部 scaleSize(125,54.69)。
+
+[node name="MidasConfirmContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 247.19
+offset_top = 193.82
+offset_right = 715.94
+offset_bottom = 457.41
+texture = ExtResource("1_frame")
+patch_margin_left = 20
+patch_margin_top = 30
+patch_margin_right = 37
+patch_margin_bottom = 20
+mouse_filter = 2
+
+; 分隔线（源 delimeter initWindow DGccp(w/2,100) → frame 局部中心(234.4,185.5)）
+[node name="Delimeter" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 11.72
+offset_top = 184.3
+offset_right = 457.03
+offset_bottom = 186.64
+texture = ExtResource("2_delim")
+expand_mode = 1
+mouse_filter = 2
+
+; 3 行（源 ChaosNode：连兑次数/花费/获得；sep 20=源行 offset 20，行内居中）
+[node name="Rows" type="VBoxContainer" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 0.0
+offset_top = 35.1
+offset_right = 468.75
+offset_bottom = 158.1
+theme_override_constants/separation = 20
+mouse_filter = 2
+
+; 行1 连兑次数（源 :560-592 "连续使用"+"N"+"次"：黄棕/浅黄/黄棕 size18）
+[node name="RowTimes" type="HBoxContainer" parent="Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+theme_override_constants/separation = 5
+mouse_filter = 2
+
+[node name="TimesTextLabel" type="Label" parent="Frame/Rows/RowTimes"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(0.905882, 0.72549, 0.423529, 1)
+mouse_filter = 2
+
+[node name="TimesCountLabel" type="Label" parent="Frame/Rows/RowTimes"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(1, 0.952941, 0.807843, 1)
+mouse_filter = 2
+
+[node name="TimesTailLabel" type="Label" parent="Frame/Rows/RowTimes"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(0.905882, 0.72549, 0.423529, 1)
+mouse_filter = 2
+
+; 行2 总花费（源 :593-624 "花费"+token icon(fix_height 30)+"x{N}" 蓝）
+[node name="RowCost" type="HBoxContainer" parent="Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="CostTitleLabel" type="Label" parent="Frame/Rows/RowCost"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(0.905882, 0.72549, 0.423529, 1)
+mouse_filter = 2
+
+[node name="TokenIcon" type="TextureRect" parent="Frame/Rows/RowCost"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(31.46, 30.0)
+layout_mode = 2
+texture = ExtResource("3_token")
+expand_mode = 1
+mouse_filter = 2
+size_flags_vertical = 4
+
+[node name="CostLabel" type="Label" parent="Frame/Rows/RowCost"]
+unique_name_in_owner = true
+theme_override_constants/margin_left = 10
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(0.196078, 0.745098, 0.87451, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; 行3 总获得（源 :625-656 "获得"+gold icon(fix_height 30)+"x{N}" 橙）
+[node name="RowGain" type="HBoxContainer" parent="Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="GainTitleLabel" type="Label" parent="Frame/Rows/RowGain"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(0.905882, 0.72549, 0.423529, 1)
+mouse_filter = 2
+
+[node name="GoldIcon" type="TextureRect" parent="Frame/Rows/RowGain"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32.25, 30.0)
+layout_mode = 2
+texture = ExtResource("4_gold")
+expand_mode = 1
+mouse_filter = 2
+size_flags_vertical = 4
+
+[node name="GainLabel" type="Label" parent="Frame/Rows/RowGain"]
+unique_name_in_owner = true
+theme_override_constants/margin_left = 10
+theme_type_variation = &"MidasConfirmLabel"
+modulate = Color(1, 0.666667, 0.196078, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; 取消（源声明表 left_button DGButton sell_number cap(15.63,15.63,19.53,15.63)
+; scaleSize(125,54.69) → variation MidasConfirmBtn 复用 SB_mo_btn_n/p 同图同 cap）
+[node name="CancelBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 71.43
+offset_top = 190.94
+offset_right = 196.43
+offset_bottom = 245.63
+theme_type_variation = &"MidasConfirmBtn"
+
+; 确认（源 right_button @ DGccp(w/7*5,58) frame 局部中心(334.8,218.3)）
+[node name="OkBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 272.32
+offset_top = 190.94
+offset_right = 397.32
+offset_bottom = 245.63
+theme_type_variation = &"MidasConfirmBtn"

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
@@ -6,11 +6,17 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_frame_white.png" id="4_iconframe"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/midas_icon.png" id="5_icon"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="6_costbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="7_use"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="8_multi"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="9_rmb"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/player_levelup_arrow.png" id="10_arrow"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="11_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="7_usedis"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="8_rmb"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/player_levelup_arrow.png" id="9_arrow"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="10_gold"]
+
+; 点石成金面板（批 2 Task 6 两件套改造，2026-08-16）。照源 midas.lua create :758-1012
+; 直译：readnode 第二段挂 ui.content（content 原点 cocos(187.5,172.5) = frame 左下角
+; (187.5,182.5) 下移 10），子坐标=content 局部 + 原点 → godot (x+267.5, 387.5-y)。
+; 修正旧版"content 局部当场景空间"的系统性偏移（原点差 187.5/172.5）。
+; frame/close/历史框挂 container 场景空间 → to_godot(x+80,560-y)。
+; 贴图显示尺寸 = 纹理像素÷CS(1.28125)（TextureConfig 无 midas 相关条目）。
 
 [node name="MidasContent" type="Control"]
 layout_mode = 3
@@ -19,6 +25,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; frame（源 :775-787 场景(400,305) 中心 scaleSize 425x245 → godot 中心(480,255)；
+; cap CCRectMake(10,10,58,26) 纹理 103x61 → l10 r35 t25 b10）
 [node name="Frame" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -28,78 +36,118 @@ offset_right = 692.5
 offset_bottom = 377.5
 texture = ExtResource("1_frame")
 patch_margin_left = 10
-patch_margin_top = 10
-patch_margin_right = 10
+patch_margin_top = 25
+patch_margin_right = 35
 patch_margin_bottom = 10
 mouse_filter = 2
 
+; close（源 :992-1000 DGccp(524,305)=(409.4,238.3) content 局部 → 场景(596.9,410.8)
+; → godot 中心(676.9,149.2) 贴 frame 右上角；65x66px/CS=50.73x51.51）
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 579.0
-offset_top = 230.0
-offset_right = 629.0
-offset_bottom = 280.0
+offset_left = 651.5
+offset_top = 123.5
+offset_right = 702.3
+offset_bottom = 175.0
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
+; icon_frame（源 :801-811 content 局部(100,205) 中心 → godot 中心(367.5,182.5)；
+; 94x95px/CS=73.37x74.15）
 [node name="IconFrame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 125.0
-offset_top = 300.0
-offset_right = 235.0
-offset_bottom = 410.0
+offset_left = 330.8
+offset_top = 145.4
+offset_right = 404.2
+offset_bottom = 219.6
 texture = ExtResource("4_iconframe")
 expand_mode = 1
 mouse_filter = 2
 
+; icon（源 :812-822 (100,206) 中心 → godot 中心(367.5,181.5)；95x97px/CS=74.12x75.68）
 [node name="Icon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 130.0
-offset_top = 304.0
-offset_right = 230.0
-offset_bottom = 404.0
+offset_left = 330.4
+offset_top = 143.7
+offset_right = 404.6
+offset_bottom = 219.3
 texture = ExtResource("5_icon")
 expand_mode = 1
 mouse_filter = 2
 
+; name（源 :823-835 (155,225) anchor(0,0.5) → godot 左中(422.5,162.5) size20）
 [node name="NameLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 235.0
-offset_top = 323.0
-offset_right = 435.0
-offset_bottom = 347.0
-theme_override_font_sizes/font_size = 20
+offset_left = 422.5
+offset_top = 150.5
+offset_right = 502.5
+offset_bottom = 174.5
+theme_type_variation = &"MidasNameLabel"
 mouse_filter = 2
 text = "点石成金"
 
+; 今日可用次数行（源 refreshTimesBoard :342-396 独立 HorizontalNode (235,225)
+; anchor(0,0.5) → godot 左中(502.5,162.5)；修正旧版并入 desc 的偏差照源拆出）
+[node name="TimesBoard" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 502.5
+offset_top = 150.5
+offset_right = 662.5
+offset_bottom = 174.5
+mouse_filter = 2
+
+; 文案"今日可用" ccc3(231,185,108)（fill LSTR）
+[node name="TimesTextLabel" type="Label" parent="TimesBoard"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasTimesLabel"
+modulate = Color(0.905882, 0.72549, 0.423529, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; 剩余次数 ccc3(255,0,0)（fill 数字）
+[node name="TimesLeftLabel" type="Label" parent="TimesBoard"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasTimesLabel"
+modulate = Color(1, 0, 0, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; 总数"/max" ccc3(221,203,172)（fill 数字）
+[node name="TimesMaxLabel" type="Label" parent="TimesBoard"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasTimesLabel"
+modulate = Color(0.866667, 0.796078, 0.67451, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+
+; 尾随")" ccc3(231,185,108)（源 :386-392 常驻字符）
+[node name="TimesTailLabel" type="Label" parent="TimesBoard"]
+unique_name_in_owner = true
+theme_type_variation = &"MidasTimesLabel"
+modulate = Color(0.905882, 0.72549, 0.423529, 1)
+mouse_filter = 2
+size_flags_vertical = 4
+text = ")"
+
+; desc（源 :837-850 (155,185) anchor(0,0.5) → godot 左中(422.5,202.5) size18 黄棕）
 [node name="DescLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 235.0
-offset_top = 357.0
-offset_right = 660.0
-offset_bottom = 393.0
-theme_override_colors/font_color = Color(0.905882, 0.72549, 0.423529, 1)
-theme_override_font_sizes/font_size = 18
+offset_left = 422.5
+offset_top = 190.5
+offset_right = 637.5
+offset_bottom = 214.5
+theme_type_variation = &"MidasDescLabel"
 mouse_filter = 2
 
-[node name="PromptLabel" type="Label" parent="."]
-unique_name_in_owner = true
-visible = false
-layout_mode = 3
-offset_left = 150.0
-offset_top = 416.0
-offset_right = 610.0
-offset_bottom = 464.0
-theme_override_colors/font_color = Color(0.905882, 0.72549, 0.423529, 1)
-theme_override_font_sizes/font_size = 18
-mouse_filter = 2
-
+; 花费区互斥容器（源 refreshCost :398-410 prompt/costBoard visible 互斥）
 [node name="CostBoardRoot" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -108,141 +156,177 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; cost_board 底图（源 :851-863 (213,120) 中心 fix_size(425,76) → godot 中心(480.5,267.5)）
 [node name="CostBoardBg" type="TextureRect" parent="CostBoardRoot"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 80.5
-offset_top = 402.0
-offset_right = 505.5
-offset_bottom = 478.0
+offset_left = 268.0
+offset_top = 229.5
+offset_right = 693.0
+offset_bottom = 305.5
 texture = ExtResource("6_costbg")
 expand_mode = 1
 mouse_filter = 2
 
+; 花费条（源 refreshCostBoard :237-301 HorizontalNode (213,120) 中心：
+; rmb_icon + 数字 + 箭头 + 金币icon + 数字；icon÷CS 等比，间隔源 offset 10/20 → sep10+margin10）
 [node name="Bar" type="HBoxContainer" parent="CostBoardRoot"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 413.0
-offset_top = 410.0
-offset_right = 693.0
-offset_bottom = 440.0
-theme_override_constants/separation = 6
+offset_left = 375.5
+offset_top = 252.5
+offset_right = 585.5
+offset_bottom = 282.5
+theme_override_constants/separation = 10
 mouse_filter = 2
 
 [node name="RmbIcon" type="TextureRect" parent="CostBoardRoot/Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(28, 28)
+custom_minimum_size = Vector2(27.32, 25.75)
 layout_mode = 2
-texture = ExtResource("9_rmb")
+texture = ExtResource("8_rmb")
 expand_mode = 1
 mouse_filter = 2
-ignore_texture_size = true
+size_flags_vertical = 4
 
 [node name="CostLabel" type="Label" parent="CostBoardRoot/Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 28)
+custom_minimum_size = Vector2(50, 25.75)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.192157, 0.858824, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"MidasCostValueLabel"
 mouse_filter = 2
+size_flags_vertical = 4
 text = "0"
 
 [node name="Arrow" type="TextureRect" parent="CostBoardRoot/Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(28, 28)
+custom_minimum_size = Vector2(28.88, 27.32)
 layout_mode = 2
-texture = ExtResource("10_arrow")
+theme_override_constants/margin_left = 10
+texture = ExtResource("9_arrow")
 expand_mode = 1
 mouse_filter = 2
-ignore_texture_size = true
+size_flags_vertical = 4
 
 [node name="GoldIcon" type="TextureRect" parent="CostBoardRoot/Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(28, 28)
+custom_minimum_size = Vector2(32.0, 28.88)
 layout_mode = 2
-texture = ExtResource("11_gold")
+theme_override_constants/margin_left = 10
+texture = ExtResource("10_gold")
 expand_mode = 1
 mouse_filter = 2
-ignore_texture_size = true
+size_flags_vertical = 4
 
 [node name="AcquireLabel" type="Label" parent="CostBoardRoot/Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 28)
+custom_minimum_size = Vector2(50, 28.88)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.647059, 0.192157, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"MidasAcquireValueLabel"
 mouse_filter = 2
+size_flags_vertical = 4
 text = "0"
 
-[node name="UseBtn" type="TextureButton" parent="."]
+; 用尽提示（源 :864-879 (70,120) anchor(0,0.5) → godot 左中(337.5,267.5) 左对齐）
+[node name="PromptLabel" type="Label" parent="CostBoardRoot"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 337.5
+offset_top = 249.5
+offset_right = 637.5
+offset_bottom = 285.5
+theme_type_variation = &"MidasDescLabel"
+mouse_filter = 2
+
+; use 按钮（源 :881-935 (130,50)/(210,50) content 局部 中心 scaleSize(150,45)；
+; 三态 variation MidasUseBtn；子 UseDisabled=tavern_button_normal_1 蒙版（源 use_disabled
+; 灰图，修正旧迁移发明 Shade ColorRect）；fill 切解锁位/锁定位 position）
+[node name="UseBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 135.0
-offset_top = 487.5
-offset_right = 285.0
-offset_bottom = 532.5
-texture_normal = ExtResource("7_use")
-ignore_texture_size = true
-stretch_mode = 1
+offset_left = 322.5
+offset_top = 315.0
+offset_right = 472.5
+offset_bottom = 360.0
+theme_type_variation = &"MidasUseBtn"
+mouse_filter = 0
 
-[node name="Shade" type="ColorRect" parent="UseBtn"]
+[node name="UseDisabled" type="TextureRect" parent="UseBtn"]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+texture = ExtResource("7_usedis")
+expand_mode = 1
 mouse_filter = 2
-color = Color(0.3, 0.3, 0.3, 0.5)
-visible = false
 
 [node name="Label" type="Label" parent="UseBtn"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"MidasUseBtnLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "使用"
 
-[node name="MultiBtn" type="TextureButton" parent="."]
+; multi_use 按钮（源 :936-990 (300,50) 中心 150x45 variation MidasMultiBtn；
+; multi_use_disabled 与底图同图省略（源叠加视觉 no-op，受控偏离））
+[node name="MultiBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 305.0
-offset_top = 487.5
-offset_right = 455.0
-offset_bottom = 532.5
-texture_normal = ExtResource("8_multi")
-ignore_texture_size = true
-stretch_mode = 1
-
-[node name="Shade" type="ColorRect" parent="MultiBtn"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-color = Color(0.3, 0.3, 0.3, 0.5)
-visible = false
+offset_left = 492.5
+offset_top = 315.0
+offset_right = 642.5
+offset_bottom = 360.0
+theme_type_variation = &"MidasMultiBtn"
+mouse_filter = 0
 
 [node name="Label" type="Label" parent="MultiBtn"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"MidasMultiBtnLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "连续使用"
 
-[node name="HistoryHost" type="Control" parent="."]
+; 历史框（源 createHistory :710-757 场景(400,115) 中心 scaleSize(425,125) →
+; godot 中心(480,445)；首次兑换才创建 → 初始隐藏 fill 切）
+[node name="HistoryFrame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 267.5
+offset_top = 382.5
+offset_right = 692.5
+offset_bottom = 507.5
+texture = ExtResource("1_frame")
+patch_margin_left = 10
+patch_margin_top = 25
+patch_margin_right = 35
+patch_margin_bottom = 10
+mouse_filter = 2
+
+; 历史滚动区（源 scrollview cliprect DGRectMake(35,10,480,145)=(27.3,7.8,375,113.3)
+; history_frame 局部 → frame 内 offset；direction=v 横向禁滚；行挂 VBox fill）
+[node name="HistoryScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 140.0
-offset_top = 408.0
-offset_right = 780.0
-offset_bottom = 498.0
+offset_left = 294.8
+offset_top = 386.4
+offset_right = 669.8
+offset_bottom = 499.7
+mouse_filter = 2
+horizontal_scroll_mode = 0
+
+[node name="HistoryRows" type="VBoxContainer" parent="HistoryScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2

@@ -3,7 +3,7 @@ extends RefCounted
 
 ## MainScene 入口路由 helper（批次 1 第 4 拆分 2026-07-25）。
 ## 从 main_scene.gd 外迁的 20 个 _open_* 入口函数，全 static + scene: Node 参数化
-## （对齐 task_row_builder/hero_detail_equip_slots/midas_renderer 范式）。
+## （对齐 task_row_builder/hero_detail_equip_slots/midas_fills 范式）。
 ## autoload（GameData/Toast/SceneManager）全局访问；self 经 scene 参数传入。
 ## 不反向引用 main_scene（main_scene 无 class_name，scene 用 Node 弱类型）。
 ## 7 个被 task_query.FAST_ROUTE 反射调的方法，main_scene 留薄包装转发本 helper。

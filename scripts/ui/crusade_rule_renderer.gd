@@ -2,7 +2,7 @@ class_name CrusadeRuleRenderer
 extends RefCounted
 
 ## CrusadePanel 规则页渲染 helper（照源 crusade.lua:543-610 initRuleLayer + crusadeconfig.lua:1535 ruleLayer）。
-## 从 crusade_panel.gd 抽出以控 LINT005 ≤400。全 static + cm: Variant 参数化（对齐 midas_renderer 范式）。
+## 从 crusade_panel.gd 抽出以控 LINT005 ≤400。全 static + cm: Variant 参数化（对齐 midas_fills 范式）。
 ## 不反向引用 CrusadePanel（container/scene 经参数传入）。
 
 const RULE_FRAME_RES: String = "res://assets/ui/alpha/HVGA/main_vit_tips.png"
