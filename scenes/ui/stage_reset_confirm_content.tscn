@@ -1,11 +1,12 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_bg.png" id="1_dlg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_line.png" id="2_line"]
 
 ; 源 dialog.lua confirmDialog（ed.showConfirmDialog，stagedetail.lua:514-535 doPayReset 调用）。
-; 换算：bg 447x283 ÷CS=348.88x220.88 中心 (480,320)；bg 局部左下原点 (x,y) →
-; Bg 内左上原点 (x/CS, 220.88-y/CS)；源点尺寸（scaleSize/dimensions）÷CS 为显示尺寸。
+; 点空间直译：Cocos 子坐标系原点=父 contentSize 左下角，子坐标数值即点值——bg 子树不做整体 ÷CS。
+; bg contentSize=447x283 像素÷CS=348.88x220.88 点（子坐标系即该点空间），bg 定位照屏中心 (480,320)；
+; bg 内左下原点 (x,y) → Bg 内左上原点 (x, 220.88-y)；贴图显示尺寸=纹理像素÷CS，setContentSize 数值直译。
 
 [node name="StageResetConfirmContent" type="Control"]
 layout_mode = 3
@@ -14,7 +15,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-; 遮罩（源 :34 CCLayerColor ccc4(0,0,0,150) 全屏；模态拦截在 panel 根 STOP）
+; 遮罩（源 :37 CCLayerColor ccc4(0,0,0,150) 全屏；模态拦截在 panel 根 STOP）
 [node name="Shade" type="ColorRect" parent="."]
 layout_mode = 3
 anchors_preset = 15
@@ -34,27 +35,54 @@ expand_mode = 1
 texture = ExtResource("1_dlg")
 mouse_filter = 2
 
-; line（源 :48-51 dialog_line 403x4 → 314.54x3.12，bg 局部中心 (172,75)；
-; 源线中心偏左致左端溢出 bg 23px——照源直译不居中修正）
+; line（源 :48-51 dialog_line 403x4 像素÷CS=314.54x3.12 点，bg 局部中心 (172,75) 点；
+; 点空间下左端 14.73/右端 329.27 均在 bg 界内，近居中——旧"左溢出 23px"系口径错误产物已撤销）
 [node name="Line" type="TextureRect" parent="Bg"]
 layout_mode = 3
-offset_left = -23.02
-offset_top = 160.78
-offset_right = 291.51
-offset_bottom = 163.9
+offset_left = 14.73
+offset_top = 144.32
+offset_right = 329.27
+offset_bottom = 147.44
 expand_mode = 1
 texture = ExtResource("2_line")
 mouse_filter = 2
 
-; 正文（源 createWithText :346-356 20 号白 dimensions(300,125) 左对齐垂直居中，
-; 中心 bg 局部 (180,135)；text 为编辑器预览默认，fill 时 setup_msg 覆盖）
+; 取消按钮（源 :273-277 left Scale9 herodetail-upgrade cap(20,20,40,29) size(120,49) 直译，
+; 中心 bg 局部 (100,44) 点；三态走 DialogConfirmBtn variation；text fill 覆盖）
+[node name="CancelBtn" type="Button" parent="Bg"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 40.0
+offset_top = 152.38
+offset_right = 160.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "取消"
+mouse_filter = 0
+
+; 确认按钮（源 :292-296 right 同 left 中心 (250,44) 点；默认文案源 rightText
+; T(LSTR("FASTSELL.GOOD"))="好的"（:304-310），非 CHATCONFIG.CONFIRM）
+[node name="OkBtn" type="Button" parent="Bg"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 190.0
+offset_top = 152.38
+offset_right = 310.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "好的"
+mouse_filter = 0
+
+; 正文（源 createWithText :324-328 20 号白 dimensions(300,125) 直译左对齐垂直居中，
+; 中心 bg 局部 (180,135) 点；声明序最后=最上层（:335 label 最后 addChild）；
+; text 为编辑器预览默认，fill 时 setup_msg 覆盖）
 [node name="Msg" type="Label" parent="Bg"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 23.37
-offset_top = 66.73
-offset_right = 257.51
-offset_bottom = 164.29
+offset_left = 30.0
+offset_top = 23.38
+offset_right = 330.0
+offset_bottom = 148.38
 theme_type_variation = &"DialogMsgLabel"
 horizontal_alignment = 0
 vertical_alignment = 1
@@ -62,29 +90,3 @@ autowrap_mode = 3
 text = "重置关卡进入次数需要花费50钻石.
 是否继续？（今日已重置2次）"
 mouse_filter = 2
-
-; 取消按钮（源 :276-296 left Scale9 herodetail-upgrade cap(20,20,40,29) size(120,49)
-; 中心 bg 局部 (100,44)；三态走 DialogConfirmBtn variation；text fill 覆盖）
-[node name="CancelBtn" type="Button" parent="Bg"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 31.22
-offset_top = 167.41
-offset_right = 124.88
-offset_bottom = 205.66
-theme_type_variation = &"DialogConfirmBtn"
-text = "取消"
-mouse_filter = 0
-
-; 确认按钮（源 :297-317 right 同 left 中心 (250,44)；默认文案源 rightText
-; T(LSTR("FASTSELL.GOOD"))="好的"，非 CHATCONFIG.CONFIRM）
-[node name="OkBtn" type="Button" parent="Bg"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 148.29
-offset_top = 167.41
-offset_right = 241.95
-offset_bottom = 205.66
-theme_type_variation = &"DialogConfirmBtn"
-text = "好的"
-mouse_filter = 0
