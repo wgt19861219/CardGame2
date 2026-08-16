@@ -323,10 +323,12 @@ static func build_skill_desc(hero: HeroInstance, slot: int, cm: Variant) -> Cont
 	var growth: String = ReadheroSkill.get_skill_desc(hero, slot + 1, cm)
 	var bg := NinePatchRect.new()
 	bg.texture = _load_texture(SKILL_TIP_RES)
+	# 源 skillstren.lua:20 capInsets = CCRectMake(20, 52, 200, 5)（左下原点中间拉伸区），
+	# 贴图 345x101：L=x=20 / T=H-y-h=101-52-5=44 / R=W-x-w=345-20-200=125 / B=y=52
 	bg.patch_margin_left = 20
-	bg.patch_margin_top = 52
-	bg.patch_margin_right = 200
-	bg.patch_margin_bottom = 5
+	bg.patch_margin_top = 44
+	bg.patch_margin_right = 125
+	bg.patch_margin_bottom = 52
 	bg.position = SKILL_DESC_POS
 	bg.size = Vector2(280.0, 100.0)
 	var lbl := Label.new()
