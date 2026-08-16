@@ -3,7 +3,7 @@ extends RefCounted
 
 ## 通用 Scale9 功能按钮工厂（照源 Scale9Sprite + press mask + Label）。
 ## Godot Button + StyleBoxTexture（texture_margin 九宫格）+ pressed 切 mask stylebox。
-## capInsets CCRectMake(x,y,w,h) → StyleBoxTexture texture_margin（自动按纹理尺寸算 right/bottom）。
+## capInsets CCRectMake(x,y,w,h) → StyleBoxTexture texture_margin（垂直翻转换算，按纹理尺寸算 right/top）。
 ## Button 自带 pressed 信号 + 文字居中（照源 ok_label）。配套 UiButton（TextureButton 整图 close/动作）。
 ## 适用：合成/领取/确认/重置等 Scale9 功能按钮（herodetail-upgrade 系列）。capInsets 各按钮不同须照源传。
 
@@ -63,15 +63,15 @@ static func _apply_style(btn: Button, res_normal: String, res_pressed: String, c
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
-# Godot StyleBoxTexture texture_margin 四边：left=x, top=y, right=tex.w-x-w, bottom=tex.h-y-h。
+# Godot StyleBoxTexture texture_margin 四边：left=x, top=tex.h-y-h, right=tex.w-x-w, bottom=y（源 CCRect 左下原点，垂直翻转换算）。
 static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
 	var tex: Texture2D = load(res) as Texture2D
 	sb.texture = tex
 	sb.texture_margin_left = cap_insets.position.x
-	sb.texture_margin_top = cap_insets.position.y
+	sb.texture_margin_bottom = cap_insets.position.y
 	if tex != null:
 		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
-		sb.texture_margin_bottom = tex.get_height() - cap_insets.position.y - cap_insets.size.y
+		sb.texture_margin_top = tex.get_height() - cap_insets.position.y - cap_insets.size.y
 	sb.draw_center = true
 	return sb
