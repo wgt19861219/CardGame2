@@ -279,6 +279,23 @@ texture_margin_top = 24.0
 texture_margin_right = 48.0
 texture_margin_bottom = 10.0
 
+; stage_reset_confirm 确认按钮（批 3 Task 1）：源 dialog.lua confirmDialog :276-317
+; 左右按钮 Scale9 herodetail-upgrade/mask cap CCRectMake(20,20,40,29)（97x67 →
+; left=20 top=67-20-29=18 right=97-20-40=37 bottom=20，批 1 公式）。
+[sub_resource type="StyleBoxTexture" id="SB_dialog_confirm_n"]
+texture = ExtResource("5_upg")
+texture_margin_left = 20.0
+texture_margin_top = 18.0
+texture_margin_right = 37.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="SB_dialog_confirm_p"]
+texture = ExtResource("6_upgm")
+texture_margin_left = 20.0
+texture_margin_top = 18.0
+texture_margin_right = 37.0
+texture_margin_bottom = 20.0
+
 [resource]
 AmountLabel/base_type = &"Label"
 AmountLabel/colors/font_color = Color(0.608, 0.161, 0.055, 1)
@@ -1004,3 +1021,22 @@ MidasConfirmBtn/styles/hover = SubResource("SB_mo_btn_n")
 MidasConfirmBtn/styles/pressed = SubResource("SB_mo_btn_p")
 MidasConfirmBtn/styles/disabled = SubResource("SB_mo_btn_n")
 MidasConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── stage_reset_confirm 两件套（批 3 Task 1，2026-08-16）──
+; 确认按钮（源 dialog.lua confirmDialog :276-317：Scale9 herodetail-upgrade
+; cap(20,20,40,29) + label createttf 20 号 ed.selfFont 白 + 阴影 ccc3(63,5,0)(1,2)；
+; 左 right 默认文案 T(LSTR("FASTSELL.GOOD"))）
+DialogConfirmBtn/base_type = &"Button"
+DialogConfirmBtn/colors/font_color = Color(1, 1, 1, 1)
+DialogConfirmBtn/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+DialogConfirmBtn/constants/shadow_offset_x = 1
+DialogConfirmBtn/constants/shadow_offset_y = 2
+DialogConfirmBtn/font_sizes/font_size = 20
+DialogConfirmBtn/styles/normal = SubResource("SB_dialog_confirm_n")
+DialogConfirmBtn/styles/hover = SubResource("SB_dialog_confirm_n")
+DialogConfirmBtn/styles/pressed = SubResource("SB_dialog_confirm_p")
+DialogConfirmBtn/styles/disabled = SubResource("SB_dialog_confirm_n")
+DialogConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 弹窗正文（源 createWithText :346-356 createttf(text,20) 白 左对齐垂直居中）
+DialogMsgLabel/base_type = &"Label"
+DialogMsgLabel/colors/font_color = Color(1, 1, 1, 1)
+DialogMsgLabel/font_sizes/font_size = 20
