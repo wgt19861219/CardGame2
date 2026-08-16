@@ -145,12 +145,16 @@ func _select_tab(key: String) -> void:
 
 
 # 选中 tab texture_normal=classbtnselected z=3 凸出；未选中 classbtn z=1（同 hero_package _update_tab_visual）。
+# z_as_relative=false（审查 F1）：本 panel 挂 PopWindow z=100 absolute，按钮若 relative 累加
+# effective 101/103 > 弹窗兜底 100 会穿透（如 HandbookPanel）；与 .tscn 侧 label 24/ScrollHost 10
+# 同款绝对化，层序保持源值（label 24 > 按钮 1/3 < 100）。
 func _update_tab_visual() -> void:
 	for key in _tab_buttons:
 		var btn: TextureButton = _tab_buttons[key]
 		var selected: bool = key == _cur_tab
 		btn.texture_normal = load(CLASSBTN_SEL_RES if selected else CLASSBTN_RES)
 		btn.z_index = 3 if selected else 1
+		btn.z_as_relative = false
 
 
 # 当前 tab 填充 grid（_select_tab + _on_sold 刷新共用）。

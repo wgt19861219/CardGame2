@@ -394,6 +394,53 @@ func test_tab_labels_z_above_buttons() -> void:
 	root.queue_free()
 
 
+# z 逃逸守卫（审查 F1，2026-08-16）：Cocos zOrder 局部于 mainLayer 兄弟排序；Godot
+# z_as_relative 默认 true 沿祖先累加——content 挂 PackagePanel（PopWindow z=100
+# absolute，pop_window.gd show_window），Tab*Label z=24 曾 effective 124 > 弹窗兜底
+# 100，tab 白字穿透 HandbookPanel（图鉴）。修法=content 全部直接子节点绝对化
+# （effective=源值）。⚠️ z=0 节点（FrameworkBg/CloseBtn/HandbookBtn/Tab*Btn）必须
+# 一并绝对化——若回退 relative 其 effective=100 会反盖绝对化后的 24/10/3 元素
+# （tab 文字/格子区被全屏 bg.jpg 盖住）。
+func test_tab_z_absolute_no_escape() -> void:
+	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	# 带 z 元素绝对化 + 值保持（源序：equipbg 2 :618 / 按钮 1|3 :395 / draglist 10 :355 / label 24 :425）
+	for key in ["All", "Equip", "Scroll", "Stone", "Consume"]:
+		var lbl: Label = inst.get_node("%Tab" + key + "Label") as Label
+		assert_false(lbl.z_as_relative, "Tab%sLabel z_as_relative=false（防 PopWindow z=100 累加逃逸）" % key)
+		assert_eq(int(lbl.z_index), 24, "Tab%sLabel z=24（源 :425）" % key)
+	var scroll: ScrollContainer = inst.get_node("%ScrollHost") as ScrollContainer
+	assert_false(scroll.z_as_relative, "ScrollHost z_as_relative=false（格子区 effective=10 不逃逸）")
+	var bg: TextureRect = inst.get_node("Bg") as TextureRect
+	assert_false(bg.z_as_relative, "Bg z_as_relative=false（equipbg 源 :618 z=2）")
+	# z=0 直接子节点同款绝对化（反盖守卫：relative 会 eff=100 盖过绝对化的 24/10/3）
+	for node_name in ["FrameworkBg", "CloseBtn", "HandbookBtn"]:
+		var zero_node: CanvasItem = inst.get_node(node_name) as CanvasItem
+		assert_false(zero_node.z_as_relative, "%s z_as_relative=false（z=0 基线，防 eff 100 反盖）" % node_name)
+	for key in ["All", "Equip", "Scroll", "Stone", "Consume"]:
+		var btn0: TextureButton = inst.get_node("%Tab" + key + "Btn") as TextureButton
+		assert_false(btn0.z_as_relative, "Tab%sBtn z_as_relative=false（z 由 panel 运行时设 1/3）" % key)
+	# 值序（源序保持）+ 全部 < 弹窗兜底 100
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	var lbl_all: Label = inst.get_node("%TabAllLabel") as Label
+	var all_btn: TextureButton = panel._tab_buttons["all"] as TextureButton
+	var equip_btn: TextureButton = panel._tab_buttons["equip"] as TextureButton
+	assert_false(all_btn.z_as_relative, "运行时按钮 z_as_relative=false（_update_tab_visual 同步设）")
+	assert_eq(int(all_btn.z_index), 3, "选中按钮 z=3（源 :395 i==1）")
+	assert_eq(int(equip_btn.z_index), 1, "未选中按钮 z=1")
+	assert_gt(int(lbl_all.z_index), int(scroll.z_index), "label 24 > ScrollHost 10（源 label 最顶）")
+	assert_gt(int(scroll.z_index), int(all_btn.z_index), "ScrollHost 10 > 按钮 max 3（格子区盖选中凸出）")
+	assert_gt(int(bg.z_index), int(equip_btn.z_index), "Bg 2 > 未选中按钮 1（equipbg 盖 normal 底图）")
+	for zi in [int(lbl_all.z_index), int(scroll.z_index), int(all_btn.z_index), int(bg.z_index), int(equip_btn.z_index)]:
+		assert_lt(zi, 100, "z=%d < 弹窗兜底 100（不穿透 HandbookPanel/EquipboardPanel）" % zi)
+	panel.remove_window()
+	root.queue_free()
+
+
 # cell 显示对齐（task-11 守卫）：源 loadEquip :288 createIconWithAmount(id) 无 length →
 # 显示原点尺寸 ≈ frame 纹理 94×95 ÷CS；ReadequipIcon Sprite2D 按纹理原尺寸渲染（hero_detail
 # 装备槽同口径）→ panel 侧 icon scale=74/95 补偿 + wrapper min size=视觉盒。

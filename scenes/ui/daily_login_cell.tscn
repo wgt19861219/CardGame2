@@ -8,7 +8,12 @@
 ; 签到单格模板（批 2 Task 3）：照源 createRewardItem :222-378。
 ; board 133x130 ÷CS=103.80x101.46，stretch=SCALE（修正 KEEP 原尺寸溢出 1.28x）；
 ; 三态贴图 fill 切换（common=yellow / past|future=matrix），故模板默认 matrix。
+; Cell 根 z_as_relative=false（审查 F1 同款，2026-08-16）：本格挂 DailyLoginPanel
+; （PopWindow z=100 absolute）子树，VipBg/VipNum z=1、CheckedIcon z=2 若 relative
+; 累加 effective 101/102 > 弹窗兜底 100 有逃逸风险。根基线 0 后子节点 effective
+; 0/1/2（内部序不变，源序 light→icon→vip_bg→checked），全部 < 100。
 [node name="Cell" type="TextureButton"]
+z_as_relative = false
 offset_right = 103.8
 offset_bottom = 101.46
 texture_normal = ExtResource("1_matrix")

@@ -376,3 +376,9 @@ func test_cell_z_order_icon_below_vip_below_checked() -> void:
 	var checked: TextureRect = inst.get_node("%CheckedIcon") as TextureRect
 	assert_true(int(vip_bg.z_index) > int(icon_host.z_index), "VipBg z=1 > icon z=0（源 vip 后加盖 icon）")
 	assert_true(int(checked.z_index) > int(vip_bg.z_index), "CheckedIcon z=2 > vip（源 checked z=10 置顶）")
+	# 审查 F1 同款守卫（2026-08-16）：Cell 挂 DailyLoginPanel（PopWindow z=100 absolute）
+	# 子树，vip z=1/checked z=2 若 relative 累加 effective 101/102 > 弹窗兜底 100 会穿透
+	# 后开弹窗。Cell 根 z_as_relative=false 把子树基线下移到 0（内部序不变，全部 < 100）。
+	assert_false(inst.z_as_relative, "Cell 根 z_as_relative=false（子树基线 0，防 PopWindow z=100 累加逃逸）")
+	assert_lt(int(checked.z_index), 100, "CheckedIcon z=2 < 100（不逃逸弹窗兜底层序）")
+	assert_lt(int(vip_bg.z_index), 100, "VipBg z=1 < 100")
