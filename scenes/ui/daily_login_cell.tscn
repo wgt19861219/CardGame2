@@ -8,57 +8,18 @@
 ; 签到单格模板（批 2 Task 3）：照源 createRewardItem :222-378。
 ; board 133x130 ÷CS=103.80x101.46，stretch=SCALE（修正 KEEP 原尺寸溢出 1.28x）；
 ; 三态贴图 fill 切换（common=yellow / past|future=matrix），故模板默认 matrix。
-; Cell 根 z_as_relative=false（审查 F1 同款，2026-08-16）：本格挂 DailyLoginPanel
-; （PopWindow z=100 absolute）子树，VipBg/VipNum z=1、CheckedIcon z=2 若 relative
-; 累加 effective 101/102 > 弹窗兜底 100 有逃逸风险。根基线 0 后子节点 effective
-; 0/1/2（内部序不变，源序 light→icon→vip_bg→checked），全部 < 100。
+; 层序走纯声明序（复审 F1-daily 方案 b，2026-08-16）：全节点不设 z/z_as_relative，
+; effective = 父基线（PopWindow 100）与弹窗兜底同层 → 后开弹窗按树序盖住、无逃逸。
+; 曾用 Cell 根 z_as_relative=false 下移基线 0，但同挂 GridContent 的 RewardBg 保持
+; relative(effective 100) 反盖全部签到格（复审 PIL 实测格子区与底板纹理色一致）。
+; 声明序照源添加序 light→icon→vip_bg→amount，checked 最后声明盖顶（源 :277-294 z=10）。
+; 同 z=0 下 Godot 按声明序绘制：icon 盖 light ✓、vip 盖 icon ✓、checked 盖全部 ✓。
 [node name="Cell" type="TextureButton"]
-z_as_relative = false
 offset_right = 103.8
 offset_bottom = 101.46
 texture_normal = ExtResource("1_matrix")
 ignore_texture_size = true
 stretch_mode = 0
-
-; amount 源 :356-375：size24 白 stroke ccc3(95,64,43) 2，anchor(1,0.5) 局部 (92,22)→(92,79.5)
-; （fill 按 minimum_size 右对齐重定位）
-[node name="AmountLabel" type="Label" parent="."]
-unique_name_in_owner = true
-offset_left = 52.0
-offset_top = 69.5
-offset_right = 92.0
-offset_bottom = 89.5
-theme_type_variation = &"DailyLoginAmountLabel"
-mouse_filter = 2
-text = "x0"
-
-; vip_bg 源 :337-351：77x80 ÷CS=60.10x62.45，anchor(0,1) 局部 (0,102)→顶=-0.5；
-; z_index=1（task-11 修）：源序 light→icon→vip_bg（后加盖上），vip 须盖 Item icon
-[node name="VipBg" type="TextureRect" parent="."]
-unique_name_in_owner = true
-z_index = 1
-offset_left = 0.0
-offset_top = -0.5
-offset_right = 60.1
-offset_bottom = 61.94
-texture = ExtResource("3_vipbg")
-expand_mode = 1
-mouse_filter = 2
-visible = false
-
-; vip num 源 :202-221/335-355：VIP%d size14 ccc3(231,206,19) 黑描边，pos (24,80)→(24,21.5) 旋转 -45°
-[node name="VipNum" type="Label" parent="."]
-unique_name_in_owner = true
-z_index = 1
-offset_left = 4.0
-offset_top = 11.5
-offset_right = 44.0
-offset_bottom = 31.5
-theme_type_variation = &"DailyLoginVipNum"
-rotation = -0.785398
-mouse_filter = 2
-text = "VIP0"
-visible = false
 
 ; light 源 :297-316：230x231 ÷CS=179.51x180.29，中心局部 (51,51.5)，绕中心 5s/360° 循环（fill 起 tween）
 [node name="Light" type="TextureRect" parent="."]
@@ -79,11 +40,48 @@ unique_name_in_owner = true
 expand_mode = 1
 mouse_filter = 2
 
-; checked 源 :277-294：132x130 ÷CS=103.02x101.46 中心=board 中心 z=10（源显式置顶，须盖
-; z=1 的 vip 角标 → 本项目 z_index=2，task-11 修）
+; vip_bg 源 :337-351：77x80 ÷CS=60.10x62.45，anchor(0,1) 局部 (0,102)→顶=-0.5；
+; 源序 light→icon→vip_bg 后加盖上 → vip 后声明盖 icon（方案 b 纯声明序）
+[node name="VipBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = 0.0
+offset_top = -0.5
+offset_right = 60.1
+offset_bottom = 61.94
+texture = ExtResource("3_vipbg")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+; vip num 源 :202-221/335-355：VIP%d size14 ccc3(231,206,19) 黑描边，pos (24,80)→(24,21.5) 旋转 -45°
+[node name="VipNum" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 4.0
+offset_top = 11.5
+offset_right = 44.0
+offset_bottom = 31.5
+theme_type_variation = &"DailyLoginVipNum"
+rotation = -0.785398
+mouse_filter = 2
+text = "VIP0"
+visible = false
+
+; amount 源 :356-375：size24 白 stroke ccc3(95,64,43) 2，anchor(1,0.5) 局部 (92,22)→(92,79.5)
+; （fill 按 minimum_size 右对齐重定位）；源在 vip_bg 之后添加 → 照源声明序排 vip 后
+[node name="AmountLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 52.0
+offset_top = 69.5
+offset_right = 92.0
+offset_bottom = 89.5
+theme_type_variation = &"DailyLoginAmountLabel"
+mouse_filter = 2
+text = "x0"
+
+; checked 源 :277-294：132x130 ÷CS=103.02x101.46 中心=board 中心；源 z=10 显式置顶 →
+; 最后声明=最上层盖全部（方案 b 纯声明序，无 z_index）
 [node name="CheckedIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
-z_index = 2
 offset_left = 0.39
 offset_top = 0.0
 offset_right = 103.41

@@ -366,19 +366,49 @@ func test_item_icon_centered_in_board() -> void:
 	panel.get_parent().queue_free()
 
 
-# cell 内 z 序（task-11 守卫）：源序 light→icon→vip_bg（vip 后加盖 icon）、checked z=10 置顶。
-# 曾因 IconHost 排 VipBg 后声明且无 z：icon 盖 vip（vip 须反过来盖 icon）。
+# cell 内层序（task-11 守卫 → 复审 F1-daily 方案 b 返工 2026-08-16）：
+# 源添加序 light→icon→vip_bg→amount、checked z=10 置顶（dailylogin.lua :297-375/:277-294）。
+# 方案 b：全节点不设 z/z_as_relative，同 z=0 下 Godot 按声明序绘制——声明序即层序。
+# 曾因 IconHost 排 VipBg 后声明且无 z：icon 盖 vip（vip 须反过来盖 icon）；
+# 又曾用 z_index=1/2 + Cell 根 absolute 下移：RewardBg（同宿主保持 relative，eff=100）
+# 反盖 eff=0 的全部签到格（复审 PIL 实测格子区与底板纹理色一致），两版均已返工弃用。
 func test_cell_z_order_icon_below_vip_below_checked() -> void:
 	var inst: TextureButton = (load(CELL_PATH) as PackedScene).instantiate() as TextureButton
 	add_child_autofree(inst)
+	var light: TextureRect = inst.get_node("%Light") as TextureRect
 	var icon_host: TextureRect = inst.get_node("%IconHost") as TextureRect
 	var vip_bg: TextureRect = inst.get_node("%VipBg") as TextureRect
+	var vip_num: Label = inst.get_node("%VipNum") as Label
+	var amount: Label = inst.get_node("%AmountLabel") as Label
 	var checked: TextureRect = inst.get_node("%CheckedIcon") as TextureRect
-	assert_true(int(vip_bg.z_index) > int(icon_host.z_index), "VipBg z=1 > icon z=0（源 vip 后加盖 icon）")
-	assert_true(int(checked.z_index) > int(vip_bg.z_index), "CheckedIcon z=2 > vip（源 checked z=10 置顶）")
-	# 审查 F1 同款守卫（2026-08-16）：Cell 挂 DailyLoginPanel（PopWindow z=100 absolute）
-	# 子树，vip z=1/checked z=2 若 relative 累加 effective 101/102 > 弹窗兜底 100 会穿透
-	# 后开弹窗。Cell 根 z_as_relative=false 把子树基线下移到 0（内部序不变，全部 < 100）。
-	assert_false(inst.z_as_relative, "Cell 根 z_as_relative=false（子树基线 0，防 PopWindow z=100 累加逃逸）")
-	assert_lt(int(checked.z_index), 100, "CheckedIcon z=2 < 100（不逃逸弹窗兜底层序）")
-	assert_lt(int(vip_bg.z_index), 100, "VipBg z=1 < 100")
+	# 声明序照源添加序（同 z 下声明序即绘制序）：light→icon→vip_bg→vip_num→amount→checked
+	assert_true(light.get_index() < icon_host.get_index(), "Light 先声明（icon 盖 light，源 :297-334）")
+	assert_true(icon_host.get_index() < vip_bg.get_index(), "IconHost 先于 VipBg（vip 盖 icon，源 :317-355）")
+	assert_true(vip_bg.get_index() < vip_num.get_index(), "VipBg 先于 VipNum（角标数字贴角标底）")
+	assert_true(vip_num.get_index() < amount.get_index(), "VipNum 先于 AmountLabel（amount 源 :356-375 在 vip 后添加）")
+	assert_true(amount.get_index() < checked.get_index(), "CheckedIcon 最后声明=最上层（源 z=10 置顶）")
+	# 方案 b：Cell 根与子节点全部不设绝对 z（全 relative 基线，与弹窗兜底同层防逃逸/反盖）
+	assert_true(inst.z_as_relative, "Cell 根 z 保持 relative 默认（方案 b：无 z_as_relative=false）")
+	assert_eq(int(inst.z_index), 0, "Cell 根 z_index=0")
+	for n: CanvasItem in [light, icon_host, vip_bg, vip_num, amount, checked]:
+		assert_eq(int(n.z_index), 0, "%s z_index=0（纯声明序排层，无 z 逃逸面）" % n.name)
+		assert_true(n.z_as_relative, "%s z 保持 relative 默认" % n.name)
+
+
+# 复审缺口断言（F1-daily）：签到格须绘制于 RewardBg 底板之上（曾因 Cell 根 absolute
+# 下移基线 0 而 RewardBg 保持 relative(eff=100) 被反盖）。RewardBg 是 content tscn 静态
+# 节点（GridContent 首子 index 0），cell 由 _fill_grid 运行时 add_child 挂同宿主——
+# 两者同为 relative z=0（effective 同基线），树序在后即绘制在上。
+func test_cell_draws_above_reward_bg() -> void:
+	var panel: DailyLoginPanel = _make_panel()
+	var grid_content: Control = panel._grid_content
+	var reward_bg: NinePatchRect = grid_content.get_node("%RewardBg") as NinePatchRect
+	assert_gt(panel._cells.size(), 0, "网格已 fill")
+	for c in panel._cells:
+		assert_eq(c.get_parent(), reward_bg.get_parent(), "cell 与 RewardBg 同宿主 GridContent")
+		assert_gt(c.get_index(), reward_bg.get_index(),
+			"cell 运行时 add → 树序在 RewardBg(index 0) 之后（同基线树序即绘制序 → 盖底板）")
+		# 同基线前提：两者均 relative（无 z_as_relative=false 差异化下移/上移）
+		assert_true(c.z_as_relative and reward_bg.z_as_relative, "cell/RewardBg 均 relative（effective 同基线）")
+	panel.remove_window()
+	panel.get_parent().queue_free()
