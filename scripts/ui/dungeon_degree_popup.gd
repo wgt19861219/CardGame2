@@ -1,31 +1,32 @@
 class_name DungeonDegreePopup
 extends PopWindow
 
-## 副本难度选择弹窗 — 照源 ui/dungeon_map.lua:316-580 showDegreePopup + popupTouchHandler。
-## 单 boss 4 难度（diff 1 普通/2 精英/3 英雄/4 噩梦），点难度 → degree_selected；close/outLayer 关闭。
-## 2026-07-18 重构：panel 层（Frame/TitleLabel/CloseBtn/DegreeHost）静态化进
-## scenes/ui/dungeon_degree_popup_content.tscn（位置/size 编辑器可视化，照 hero_detail 范式）。
-## 难度按钮（数量随 difficulties 变）保留 procedural 挂 %DegreeHost（HBox 容器）。
+## 副本难度选择弹窗 — 照源 ui/dungeon_map.lua:256-438 showDegreePopup + :446-520
+## popupTouchHandler（brief 源对照表"dungeon.lua 367 行"系误配：该文件为副本入口
+## 列表弹窗，非本弹窗；原头注所指 dungeon_map 为真源，2026-08-16 批 3 Task 2 核实）。
+## 2026-08-16 两件套改造：Frame/Title/CloseBtn 静态进 content tscn；难度格（数量随
+## difficulties ≤4）走 dungeon_degree_item.tscn 行模板 + fill。原 7 处动态构造全数消亡
+## （VBox/HBox 容器壳系迁移发明删除，按钮/icon/vit 行静态结构入模板）。
+## 受控偏离：title_bg（源 :305-313 act_popup_bg visible=false 死资产，无运行时切换，裁）；
+## 遮罩与弹出动画收敛 PopWindow 基类（shade 150/255 + play_scale_in EaseBackOut 0.2s，
+## 源 :263/:425-429 等价）；灰态 modulate=0.4+disabled 等价源 setSpriteGray+isUnlock 判定。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/dungeon_degree_popup_content.tscn")
-const FRAME_POS := Vector2(130.0, 170.0)
-const FRAME_SIZE := Vector2(700.0, 300.0)
-const BTN_SIZE := Vector2(130.0, 120.0)
-const ICON_SIZE := Vector2(55.0, 55.0)
-const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
+const ITEM_SCENE: PackedScene = preload("res://scenes/ui/dungeon_degree_item.tscn")
 
-const BTN_BG := "res://assets/ui/alpha/HVGA/act/act_select_bg.png"
-const BTN_BG_CHOSEN := "res://assets/ui/alpha/HVGA/act/act_select_bg_chosen.png"
-const ICON_DIR := "res://assets/ui/alpha/HVGA/act/act_icon_difficulty_"
-const VIT_BG_RES := "res://assets/ui/alpha/HVGA/act/act_comment_bg.png"
-const VIT_ICON_RES := "res://assets/ui/alpha/HVGA/vitalityicon.png"
-const VIT_BG_SIZE := Vector2(60.0, 30.0)
-const VIT_ICON_SIZE := Vector2(30.0, 35.0)
-const VIT_NUM_COLOR := Color(233.0 / 255.0, 214.0 / 255.0, 181.0 / 255.0)
+# 格定位（源 :330-332 ox=97 oy=140 dx=170；格宽 172.49 = act_select_bg 221px/CS）：
+# 格左 = 97-172.49/2；格顶 = 300-140-152.20/2（frame 局部 y'=300-y 点空间直译）。
+const CELL_X0: float = 10.76
+const CELL_DX: float = 170.0
+const CELL_TOP: float = 83.90
+const BTN_DISPLAY_SIZE := Vector2(172.49, 152.20)
+const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
+const ICON_DIR: String = "res://assets/ui/alpha/HVGA/act/act_icon_difficulty_"
+const CONTENT_SCALE: float = 1.28125
 
 var boss_idx: int = 0
-var _content: Control = null              # .tscn 根（%Frame/TitleLabel/CloseBtn/DegreeHost 持有者）
-var _degree_host: HBoxContainer = null    # .tscn %DegreeHost（难度按钮容器）
+var _content: Control = null              # content tscn 根（%Frame/%TitleLabel/%DegreeHost/%CloseBtn 持有者）
+var _degree_host: Control = null          # %DegreeHost（难度格宿主，Frame 全域）
 
 signal degree_selected(p_boss_idx: int, diff_data: Dictionary)
 signal close_requested
@@ -34,96 +35,50 @@ signal close_requested
 func setup_popup(p_boss_idx: int, p_boss_name: String, p_difficulties: Array, p_player_level: int) -> void:
 	boss_idx = p_boss_idx
 	setup()
+	register_on_enter(play_scale_in)
 	_build_content(p_boss_name)
-	_create_degree_buttons(p_difficulties, p_player_level)
-	_play_entrance_scale()
+	_fill_degree_items(p_difficulties, p_player_level)
 
 
-# panel 层从 .tscn instantiate（位置/size .tscn 固化）+ fill title + connect close。
-func _build_content(boss_name: String) -> void:
+# content 静态树 instantiate + fill title（无 fallback，源 :318 text = boss.name or ""）+ connect close。
+func _build_content(p_boss_name: String) -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
-	(_content.get_node("%TitleLabel") as Label).text = boss_name
+	(_content.get_node("%TitleLabel") as Label).text = p_boss_name
 	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close)
-	_degree_host = _content.get_node("%DegreeHost") as HBoxContainer
+	_degree_host = _content.get_node("%DegreeHost") as Control
 
 
-func _create_degree_buttons(difficulties: Array, player_level: int) -> void:
-	for di in range(difficulties.size()):
-		var diff: Dictionary = difficulties[di]
-		var diff_num: int = int(diff["diff"])
-		var unlocked: bool = int(diff["unlock_level"]) <= player_level
-		_degree_host.add_child(_make_degree_button(diff, diff_num, unlocked))
+# 难度格 fill（源 :334-417 循环 ipairs(boss.difficulties)：实例化行模板 + 定位 + 数据）。
+func _fill_degree_items(p_difficulties: Array, p_player_level: int) -> void:
+	for di in range(p_difficulties.size()):
+		var diff: Dictionary = p_difficulties[di]
+		var item: Control = ITEM_SCENE.instantiate() as Control
+		item.position = Vector2(CELL_X0 + CELL_DX * di, CELL_TOP)
+		_degree_host.add_child(item)
+		_fill_item(item, diff, p_player_level)
 
 
-func _make_degree_button(diff: Dictionary, diff_num: int, unlocked: bool) -> VBoxContainer:
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 4)
-	var btn := TextureButton.new()
-	btn.texture_normal = _load_tex(BTN_BG)
-	btn.texture_hover = _load_tex(BTN_BG_CHOSEN)
-	btn.texture_disabled = _load_tex(BTN_BG)
-	btn.custom_minimum_size = BTN_SIZE
-	btn.ignore_texture_size = true
-	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+func _fill_item(p_item: Control, p_diff: Dictionary, p_player_level: int) -> void:
+	var btn: TextureButton = p_item.get_node("%DiffBtn") as TextureButton
+	var icon: TextureRect = p_item.get_node("%DiffIcon") as TextureRect
+	var tex: Texture2D = _load_tex(ICON_DIR + str(int(p_diff["diff"])) + ".png")
+	if tex != null:
+		# 源 :358-366 button_icon mediate 居中不缩放；尺寸 = 贴图像素/CS（diff1-3 128.78 / diff4 135.80）
+		icon.texture = tex
+		var icon_size: Vector2 = tex.get_size() / CONTENT_SCALE
+		icon.size = icon_size
+		icon.position = (BTN_DISPLAY_SIZE - icon_size) * 0.5
+	(p_item.get_node("%VitNum") as Label).text = str(int(p_diff["vit"]))
+	var unlocked: bool = int(p_diff["unlock_level"]) <= p_player_level
 	btn.modulate = GRAY_MODULATE if not unlocked else Color(1, 1, 1)
 	btn.disabled = not unlocked
-	btn.pressed.connect(Callable(self, "_on_degree_pressed").bind(diff))
-	var icon := TextureRect.new()
-	icon.texture = _load_tex(ICON_DIR + str(diff_num) + ".png")
-	icon.position = Vector2((BTN_SIZE.x - ICON_SIZE.x) * 0.5, 10)
-	icon.size = ICON_SIZE
-	icon.ignore_texture_size = true
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(icon)
-	vbox.add_child(btn)
-	vbox.add_child(_make_vit_row(diff, unlocked))
-	return vbox
+	btn.pressed.connect(Callable(self, "_on_degree_pressed").bind(p_diff))
 
 
-## 锁定态颜色由父 btn.modulate=GRAY_MODULATE 统一处理（源 :467-469 setSpriteGray 整 button）。
-func _make_vit_row(diff: Dictionary, _unlocked: bool) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 2)
-	var vit_num := Label.new()
-	vit_num.text = str(int(diff["vit"]))
-	vit_num.add_theme_color_override("font_color", VIT_NUM_COLOR)
-	vit_num.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(vit_num)
-	var vit_bg := TextureRect.new()
-	vit_bg.texture = _load_tex(VIT_BG_RES)
-	vit_bg.custom_minimum_size = VIT_BG_SIZE
-	vit_bg.ignore_texture_size = true
-	vit_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	vit_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(vit_bg)
-	var vit_icon := TextureRect.new()
-	vit_icon.texture = _load_tex(VIT_ICON_RES)
-	vit_icon.custom_minimum_size = VIT_ICON_SIZE
-	vit_icon.ignore_texture_size = true
-	vit_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	vit_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(vit_icon)
-	return row
-
-
-func _play_entrance_scale() -> void:
-	if not is_inside_tree():
-		return
-	container.pivot_offset = FRAME_POS + FRAME_SIZE * 0.5
-	container.scale = Vector2(0.001, 0.001)
-	var tw := create_tween()
-	tw.set_trans(Tween.TRANS_BACK)
-	tw.set_ease(Tween.EASE_OUT)
-	tw.tween_property(container, "scale", Vector2(1, 1), 0.2)
-
-
-func _on_degree_pressed(diff: Dictionary) -> void:
+func _on_degree_pressed(p_diff: Dictionary) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	emit_signal("degree_selected", boss_idx, diff)
+	emit_signal("degree_selected", boss_idx, p_diff)
 	_on_close()
 
 
@@ -132,5 +87,5 @@ func _on_close() -> void:
 	remove_window()
 
 
-static func _load_tex(path: String) -> Variant:
-	return load(path) if ResourceLoader.exists(path) else null
+static func _load_tex(p_path: String) -> Texture2D:
+	return (load(p_path) as Texture2D) if ResourceLoader.exists(p_path) else null

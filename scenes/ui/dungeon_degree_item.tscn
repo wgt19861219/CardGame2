@@ -1,0 +1,75 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_select_bg.png" id="1_btn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_select_bg_chosen.png" id="2_btnp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_icon_difficulty_1.png" id="3_icon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="4_vitbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/vitalityicon.png" id="5_viticon"]
+
+; dungeon_degree_popup 难度格行模板（批 3 Task 2 两件套，2026-08-16）。
+; 照源 dungeon_map.lua:337-401 btn_info（dungeon_degree_popup 真源，brief 表 dungeon.lua 系误配）。
+; 格 = button 行 + vit 行纵向并集（点空间直译，frame 局部左下原点 → 格内左上原点）：
+; button 中心(ox+dx*(di-1),140) 172.49x152.20（221x195 像素/CS）；vit 行中心 y=45（格内 171.10）。
+; 格顶 = 300-140-152.20/2 = 83.90；vit_bg 141.95x34.34（182x44/CS）；
+; vit_number anchor(1,0.5) 右端中心-5；vit_icon anchor(0,0.5) 左端中心+5 fix_height=35
+; （47x63 像素/CS=36.68x49.17，scale=35/49.17 等比 → 显示 26.11x35）。
+
+[node name="DungeonDegreeItem" type="Control"]
+offset_right = 172.49
+offset_bottom = 188.6
+mouse_filter = 2
+
+; 难度按钮（源 button + button_press Sprite visible 切换 → TextureButton 三态等价；
+; 未解锁灰态由 panel fill modulate=0.4+disabled，源 :407-409 setSpriteGray）
+[node name="DiffBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+offset_right = 172.49
+offset_bottom = 152.2
+texture_normal = ExtResource("1_btn")
+texture_pressed = ExtResource("2_btnp")
+ignore_texture_size = true
+stretch_mode = 0
+
+; 难度图标（源 button_icon mediate=true 居中 button；占位 diff1 165x165/CS=128.78，
+; fill 按贴图等比重定位：diff4 174x174/CS=135.80）
+[node name="DiffIcon" type="TextureRect" parent="DiffBtn"]
+unique_name_in_owner = true
+offset_left = 21.85
+offset_top = 11.71
+offset_right = 150.63
+offset_bottom = 140.49
+expand_mode = 1
+texture = ExtResource("3_icon")
+mouse_filter = 2
+
+; vit 行（源 vit_bg/vit_number/vit_icon，中心 y=45 → 格内 171.10，与按钮同列中心 x=86.24）
+[node name="VitBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = 15.27
+offset_top = 153.93
+offset_right = 157.22
+offset_bottom = 188.27
+expand_mode = 1
+texture = ExtResource("4_vitbg")
+mouse_filter = 2
+
+[node name="VitNum" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 41.24
+offset_top = 160.1
+offset_right = 81.24
+offset_bottom = 182.1
+theme_type_variation = &"DungeonVitNumberLabel"
+horizontal_alignment = 2
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="VitIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+offset_left = 91.24
+offset_top = 153.6
+offset_right = 117.35
+offset_bottom = 188.6
+expand_mode = 1
+texture = ExtResource("5_viticon")
+mouse_filter = 2

@@ -353,6 +353,12 @@ DialogLabel/base_type = &"Label"
 DialogLabel/colors/font_color = Color(1, 1, 1, 1)
 DialogLabel/colors/font_outline_color = Color(0, 0, 0, 1)
 DialogLabel/constants/outline_size = 3
+; dungeon_degree_popup（批 3 Task 2，2026-08-16）：vit_number 源 dungeon_map.lua:376-388
+; createttf size=18 + ccc3(233,214,181)；Title 复用 ExerciseTitleLabel（源 fontinfo
+; ui_normal_button 同 exercise :766-776 定稿，17 号金影）。
+DungeonVitNumberLabel/base_type = &"Label"
+DungeonVitNumberLabel/colors/font_color = Color(0.913725, 0.839216, 0.709804, 1)
+DungeonVitNumberLabel/font_sizes/font_size = 18
 ; eatexp 吃经验弹窗（批 1 Task 3，2026-08-15）：title 源 eatexplist.lua:57-72 size24 ccc3(250,205,16)
 ; + fontinfo ui_normal_button（17 号白+阴影(63,5,0)偏移(0,2)，size 被 24 覆盖）。
 EatexpTitleLabel/base_type = &"Label"

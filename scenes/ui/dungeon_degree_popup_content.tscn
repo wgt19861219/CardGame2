@@ -1,7 +1,15 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+
+; dungeon_degree_popup 两件套静态树（批 3 Task 2，2026-08-16）。
+; 照源 dungeon_map.lua:256-438 showDegreePopup（难度弹窗真源；brief 源对照表
+; "dungeon.lua 367 行"系误配，该文件为副本入口列表，panel 头注所指 dungeon_map 正确）。
+; 坐标点空间直译（批 3 Task 1 定稿）：close 是 container 场景空间走 to_godot=(x+80,560-y)；
+; frame 子树是 frame contentSize(705x300) 左下原点点值直译（y'=300-y）；
+; 贴图显示尺寸 = 像素/CS(1.28125)（本弹窗贴图均无 TextureConfig 条目）。
 
 [node name="DungeonDegreeContent" type="Control"]
 layout_mode = 3
@@ -10,43 +18,64 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Frame" type="Panel" parent="."]
+; frame（源 :271-279 Scale9 main_vit_tips cap(10,10,58,26) scaleSize(705,300) 中心(400,220)
+; → Godot (480,340)；cap 批 1 公式（103x61 像素）：L=10 T=61-10-26=25 R=103-10-58=35 B=10）
+[node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
-offset_left = 130.0
-offset_top = 170.0
-offset_right = 830.0
-offset_bottom = 470.0
+offset_left = 127.5
+offset_top = 190.0
+offset_right = 832.5
+offset_bottom = 490.0
+texture = ExtResource("1_frame")
+patch_margin_left = 10
+patch_margin_top = 25
+patch_margin_right = 35
+patch_margin_bottom = 10
 mouse_filter = 2
 
+; 标题（源 :314-323 title frame 局部(352,272) 中心锚 → Frame 内中心(352,28)；
+; fontinfo ui_normal_button + 金(231,206,19) 与 exercise :766-776 同款 → 复用
+; ExerciseTitleLabel（17 号金影）；text 占位，fill boss.name 或 "" 无 fallback）
 [node name="TitleLabel" type="Label" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 0.0
-offset_top = 15.0
-offset_right = 700.0
-offset_bottom = 45.0
-theme_override_colors/font_color = Color(0.905882, 0.807843, 0.074510, 1)
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.093333
+anchor_right = 0.5
+anchor_bottom = 0.093333
+offset_left = -80.0
+offset_top = -12.0
+offset_right = 80.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"ExerciseTitleLabel"
 horizontal_alignment = 1
+vertical_alignment = 1
+text = "难度选择"
 mouse_filter = 2
 
+; 难度格宿主（源按钮 readnode root=ui.frame；panel 循环实例化 dungeon_degree_item.tscn，
+; 格左 = 97-86.24+170*(di-1)，格顶 = 300-140-152.20/2 = 83.90）
+[node name="DegreeHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 705.0
+offset_bottom = 300.0
+mouse_filter = 2
+
+; 关闭按钮（源 :280-298 close 中心(750,350) 场景空间 → (830,210)，65x66/CS=50.73x51.51；
+; close_press Sprite visible 切换 → texture_pressed；声明序后于 Frame 照源）
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 830.0
-offset_top = 360.0
-offset_right = 880.73
-offset_bottom = 411.51
-texture_normal = ExtResource("1_close")
-texture_pressed = ExtResource("2_closep")
+offset_left = 804.63
+offset_top = 184.24
+offset_right = 855.37
+offset_bottom = 235.76
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
-
-[node name="DegreeHost" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 200.0
-offset_top = 250.0
-offset_right = 760.0
-offset_bottom = 430.0
-alignment = 1
-theme_override_constants/separation = 50
-mouse_filter = 2
+stretch_mode = 0
