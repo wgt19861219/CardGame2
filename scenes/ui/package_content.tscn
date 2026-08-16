@@ -152,10 +152,13 @@ ignore_texture_size = true
 stretch_mode = 0
 
 ; tab 文字（源 :418-437 label 中心 x=ox+5 → 791（照源右偏 5），y 与 press 同 197+60k；
-; size20 白 shadow ccc3(42,31,22)(0,2) 走 PackageTabLabel variation；text 由 panel fill LSTR）
+; size20 白 shadow ccc3(42,31,22)(0,2) 走 PackageTabLabel variation；text 由 panel fill LSTR；
+; z_index=24 照源 :424 label z=24 恒居底图（normal z=1/3、press z=20）之上——task-11 修
+; （panel _update_tab_visual 设按钮 z 1/3 后 z=0 的文字被 classbtn 纹理盖住））
 [node name="TabAllLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 24
 offset_left = 741.0
 offset_top = 182.0
 offset_right = 841.0
@@ -169,6 +172,7 @@ text = "全部"
 [node name="TabEquipLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 24
 offset_left = 741.0
 offset_top = 242.0
 offset_right = 841.0
@@ -182,6 +186,7 @@ text = "装备"
 [node name="TabScrollLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 24
 offset_left = 741.0
 offset_top = 302.0
 offset_right = 841.0
@@ -195,6 +200,7 @@ text = "卷轴"
 [node name="TabStoneLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 24
 offset_left = 741.0
 offset_top = 362.0
 offset_right = 841.0
@@ -208,6 +214,7 @@ text = "灵魂石"
 [node name="TabConsumeLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 24
 offset_left = 741.0
 offset_top = 422.0
 offset_right = 841.0
@@ -232,15 +239,18 @@ mouse_filter = 0
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 1
 
-; 4 列网格（源 :251-276 refreshList cell 72x72 中心 dx=75/dy=80、首格中心 (393,343) →
-; 局部起点 (473-435-36, 217-170-36)=(2,11)；间距 75-72=3 / 80-72=8 走 PackageGrid variation；
-; ScrollContainer 强制子节点贴 (0,0) → MarginHost 承载起点偏移；cell 动态 fill（ReadequipIcon），
-; 列宽 4x72+3x3=297 > 视口 295 右缘裁 2px 照源同款）
+; 4 列网格（源 :251-276 refreshList cell 中心 dx=75/dy=80、首格中心 (393,343)；cell 视觉 =
+; frame 纹理 94×95px ×(74/95) = 73.22×74.0（task-11 修，loadEquip 无 length 原点尺寸 ≈÷CS）→
+; 局部起点 = 中心-半视觉尺寸 = (393-36.61+80-435, 560-(343+37)-170)=(1.39, 10.0)——margin 是
+; int constant（1.39 截 1，源 436.39 差 0.39px）；间距 sep 2/6（GridContainer int constant，
+; 步进 73.22+2=75/74+6=80 照源）走 PackageGrid variation；ScrollContainer 强制子节点贴 (0,0)
+; → MarginHost 承载起点偏移；cell 动态 fill（ReadequipIcon 包 wrapper：外层格子 min size，
+; 内层保 scale——GridContainer 会重置直接 child 的 scale），列宽 4x73.22+3x2=297 > 视口 295 右缘裁 2px 照源同款）
 [node name="MarginHost" type="MarginContainer" parent="ScrollHost"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/margin_left = 2
-theme_override_constants/margin_top = 11
+theme_override_constants/margin_left = 1
+theme_override_constants/margin_top = 10
 mouse_filter = 2
 
 [node name="Grid" type="GridContainer" parent="ScrollHost/MarginHost"]

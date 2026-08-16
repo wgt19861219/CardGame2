@@ -27,6 +27,14 @@ const TAB_LSTR_KEYS: Array[String] = [
 ]
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
+# cell 显示尺寸（task-11 修）：源 loadEquip :288 createIconWithAmount(data.id) 无 length →
+# 显示原点尺寸 = frame 纹理 94×95px ÷CS = 73.37×74.13；ReadequipIcon 的 frame Sprite2D 按
+# 纹理原尺寸渲染（hero_detail 装备槽同口径），故 scale 补偿到视觉高 74（94×74/95=73.22 宽，
+# 源 73.37 差 0.15px）。GridContainer separation 是 int theme constant（预览实测 1.63 被截 1）
+# → 取 sep 2/6 + min size=视觉盒，步进 73.22+2=75（int 化）/ 74+6=80 照源 refreshList dx,dy。
+const CELL_SCALE: float = 74.0 / 95.0
+const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
+const CELL_VIS_SIZE: Vector2 = FRAME_TEX_SIZE * CELL_SCALE
 
 # panel 层子场景（位置/size/贴图/字号全静态化进 .tscn + theme variation）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/package_content.tscn")
@@ -176,6 +184,9 @@ func _on_sold(_item_id: int) -> void:
 
 
 # package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
+# 两侧 frame 均为 94×95px 纹理 → 统一 scale=74/95 + wrapper min size=视觉盒（见 FRAME_TEX_SIZE 注释）。
+# GridContainer 的 fit_child_in_rect 会重置直接 child 的 scale（task-11 实测 min 生效 scale 归 1）
+# → 包一层 wrapper：外层承载格子 min size（步进 75/80），内层 icon 保 scale（视觉 73.22×74）。
 func _make_cell(cell_data: Dictionary) -> Control:
 	var amount: int = int(cell_data["amount"])
 	var cell: Control
@@ -183,9 +194,14 @@ func _make_cell(cell_data: Dictionary) -> Control:
 		cell = ReadequipIcon.create_icon_with_tag(int(cell_data["makeId"]), amount, cm, pd)
 	else:
 		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
+	cell.scale = Vector2.ONE * CELL_SCALE
 	cell.mouse_filter = Control.MOUSE_FILTER_STOP
-	cell.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
-	return cell
+	var wrapper := Control.new()
+	wrapper.custom_minimum_size = CELL_VIS_SIZE
+	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
+	wrapper.add_child(cell)
+	wrapper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
+	return wrapper
 
 
 func _on_cell_gui_input(event: InputEvent, cell_data: Dictionary) -> void:

@@ -30,9 +30,12 @@ const CURRENCY_ICONS: Dictionary = {
 const GOLD_ICON: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const ITEM_ICON_COLS: int = 4
 const ITEM_ICON_SIZE: float = 65.0
-# 物品附件 icon 缩放（源 content.lua:141 createIconWithAmount(id, 60, amount)：
-# ReadequipIcon 72px 基准 → 60/72，M1 对齐 overfull 侧同源值）
-const ICON_SCALE: float = 60.0 / 72.0
+# 物品附件 icon 缩放（源 content.lua:141 createIconWithAmount(id, 60, amount) → 显示 60 点）：
+# ReadequipIcon 的 frame Sprite2D 按纹理原尺寸渲染（equip_frame 94×95px，hero_detail 装备槽
+# 同口径），故 scale 基准取纹理像素宽 94 而非 container 72 → 视觉 60×60.64（task-11 修）。
+const FRAME_TEX_W: float = 94.0
+const FRAME_TEX_H: float = 95.0
+const ICON_SCALE: float = 60.0 / FRAME_TEX_W
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
 const LSTR_ATTACH_KEY: String = "MAILBOX.ATTACHMENTS_"
 const ATTACH_FALLBACK: String = "附件"
@@ -142,6 +145,7 @@ func _add_currency_row(y: float, icon_path: String, amount: int) -> void:
 
 
 func _add_item_attach(y: float, items: Array) -> float:
+	var vis_h: float = FRAME_TEX_H * ICON_SCALE   # icon 视觉高（95×60/94 = 60.64）
 	for i in range(items.size()):
 		var item: Dictionary = items[i]
 		var item_id: int = int(item.get("id", 0))
@@ -152,7 +156,10 @@ func _add_item_attach(y: float, items: Array) -> float:
 		var row_i: int = int(i / ITEM_ICON_COLS)
 		var icon: Control = ReadequipIcon.create_icon(item_id, amount, pd.cm)
 		icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
-		icon.position = Vector2(34.0 + float(col) * ITEM_ICON_SIZE, y + float(row_i) * ITEM_ICON_SIZE)
+		# 源 :137-143 getpos：icon 中心 (34+65col+32.5, y-65row-32.5) frame 局部 y-up →
+		# godot 中心 (66.5+65col, y+32.5+65row)；视觉盒左上 = 中心 - (30, vis_h/2)
+		icon.position = Vector2(36.5 + float(col) * ITEM_ICON_SIZE,
+			y + 32.5 + float(row_i) * ITEM_ICON_SIZE - vis_h * 0.5)
 		_attach_host.add_child(icon)
 	var rows: int = ceili(float(items.size()) / float(ITEM_ICON_COLS))
 	return y + float(rows) * ITEM_ICON_SIZE

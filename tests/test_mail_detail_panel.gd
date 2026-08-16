@@ -223,3 +223,26 @@ func test_theme_variations_wired() -> void:
 	assert_true(t.contains("MailDetailOkBtn/styles/normal = SubResource(\"SB_pkg_hb_n\")"),
 		"ok 按钮三态复用 SB_pkg_hb（同图同 cap(15,22,15,25)）")
 	assert_true(t.contains("MailDetailOkBtn/font_sizes/font_size = 17"), "ok 字号 17（ui_normal_button）")
+
+
+# 物品附件 icon 定位/缩放（task-11 守卫）：源 content.lua:137-151 getpos icon 中心
+# (34+65col+32.5, y-65row-32.5) frame 局部 y-up + createIconWithAmount(id,60) 显示 60 点。
+# ReadequipIcon frame Sprite2D 按纹理原尺寸渲染（94×95px）→ scale 基准 94（曾 60/72 致
+# 视觉 78×79 溢出 65 步进互相叠、偏左上 2.5px——验收"icon 不在图标框里"）。
+func test_item_attach_icon_scale_position() -> void:
+	var panel := MailDetailPanel.new("mail_detail", {})
+	panel.pd = GameData.player
+	var host := Control.new()
+	add_child_autofree(host)
+	panel._attach_host = host
+	panel._add_item_attach(248.24, [{"id": 101, "amount": 2}, {"id": 101, "amount": 2}])
+	assert_eq(host.get_child_count(), 2, "2 个物品 icon")
+	var icon0: Control = host.get_child(0)
+	assert_almost_eq(icon0.scale.x, 60.0 / 94.0, 0.0001, "icon scale=60/94（视觉宽 60）")
+	var vis_h: float = 95.0 * 60.0 / 94.0
+	assert_almost_eq(icon0.position.x + 30.0, 66.5, 0.1, "首列视觉中心 x=66.5（源 ox+icon_len/2）")
+	assert_almost_eq(icon0.position.y + vis_h * 0.5, 280.74, 0.1, "首行视觉中心 y=248.24+32.5（源 getpos）")
+	var icon1: Control = host.get_child(1)
+	assert_almost_eq(icon1.position.x, 36.5 + 65.0, 0.1, "第 2 列左 = 66.5+65-30（源 dx=icon_len=65）")
+	assert_almost_eq(icon1.position.y, icon0.position.y, 0.01, "同行 y 相同")
+	panel.free()

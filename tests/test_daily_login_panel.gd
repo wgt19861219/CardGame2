@@ -339,3 +339,40 @@ func test_cell_global_position() -> void:
 	assert_almost_eq(day1.global_position.y + day1.size.y * 0.5, 241.0, 0.5, "day1 格心 global y=241")
 	panel.remove_window()
 	panel.get_parent().queue_free()
+
+
+# Item/Hero icon 居中定位（task-11 守卫）：源 :317-334 createIcon(id) 无 length → 显示原点
+# 尺寸 = frame 纹理 94×95 ÷CS ≈ 73.37×74.13，icon 中心 board 局部 (51,52)（y-up → godot 49.5）。
+# 曾因 ReadequipIcon Sprite2D 按纹理原尺寸渲染且未补偿：icon 视觉 94×95 从 (15,13.5) 起 →
+# 中心 (57,61) 偏右下、溢出 board(103.8x101.46)、盖住 VipBg（验收三症状同源）。
+func test_item_icon_centered_in_board() -> void:
+	var panel: DailyLoginPanel = _make_panel()
+	var target_day: int = -1
+	for i in range(panel._data_list.size()):
+		var t: String = String(panel._data_list[i].get("type", ""))
+		if t == "Item" or t == "Hero":
+			target_day = i
+			break
+	assert_gt(target_day, -1, "当月表含 Item/Hero 奖励")
+	var cell: TextureButton = panel._cells[target_day]
+	var icon: Control = (cell.get_node("%IconHost") as TextureRect).get_child(0) as Control
+	assert_almost_eq(icon.scale.x, 1.0 / 1.28125, 0.0001, "icon scale=1/CS（视觉 73.37×74.13）")
+	var vis: Vector2 = Vector2(94.0, 95.0) / 1.28125
+	assert_almost_eq(icon.position.x + vis.x * 0.5, 51.0, 0.1, "icon 视觉中心 x=51（源 :334 ccp(51,52)）")
+	assert_almost_eq(icon.position.y + vis.y * 0.5, 49.5, 0.1, "icon 视觉中心 y=49.5（52 y 翻转）")
+	assert_almost_eq(icon.position.x, 14.31, 0.1, "icon 左 = 51-73.37/2")
+	assert_almost_eq(icon.position.y, 12.43, 0.1, "icon 顶 = 49.5-74.13/2")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+# cell 内 z 序（task-11 守卫）：源序 light→icon→vip_bg（vip 后加盖 icon）、checked z=10 置顶。
+# 曾因 IconHost 排 VipBg 后声明且无 z：icon 盖 vip（vip 须反过来盖 icon）。
+func test_cell_z_order_icon_below_vip_below_checked() -> void:
+	var inst: TextureButton = (load(CELL_PATH) as PackedScene).instantiate() as TextureButton
+	add_child_autofree(inst)
+	var icon_host: TextureRect = inst.get_node("%IconHost") as TextureRect
+	var vip_bg: TextureRect = inst.get_node("%VipBg") as TextureRect
+	var checked: TextureRect = inst.get_node("%CheckedIcon") as TextureRect
+	assert_true(int(vip_bg.z_index) > int(icon_host.z_index), "VipBg z=1 > icon z=0（源 vip 后加盖 icon）")
+	assert_true(int(checked.z_index) > int(vip_bg.z_index), "CheckedIcon z=2 > vip（源 checked z=10 置顶）")

@@ -196,3 +196,20 @@ func test_theme_variations_wired() -> void:
 	assert_true(t.contains("StarShopCostTitleLabel/colors/font_color = Color(0.588235, 0.92549, 1, 1)"),
 		"cost_title 色 = ccc3(150,236,255)")
 	assert_true(t.contains("StarShopStoneNameLabel/font_sizes/font_size = 19"), "stone_name 字号 19")
+
+
+# 灵魂石 icon 缩放/对齐（task-11 守卫）：源 shop.lua:571 createIcon(stone_id,46) → 显示
+# 46 点 + anchor(0,0) at(0,0) 左下对齐 stone_container。ReadequipIcon frame Sprite2D 按
+# 纹理原尺寸渲染（94×95px）→ scale 基准 94（曾 72 致视觉 60×61 溢出 45.31 容器——
+# 验收"star_shop 物品图标位置不对"）。
+func test_stone_icon_scale_and_bottom_align() -> void:
+	var panel := _make_panel()
+	var row: TextureButton = panel._item_layer.get_child(0) as TextureButton
+	var host: Control = row.get_node("%StoneHost") as Control
+	assert_gt(host.get_child_count(), 0, "stone icon 已 fill")
+	var icon: Control = host.get_child(0) as Control
+	assert_almost_eq(icon.scale.x, 46.0 / 94.0, 0.0001, "icon scale=46/94（视觉宽 46）")
+	var vis_h: float = 95.0 * 46.0 / 94.0
+	assert_almost_eq(icon.position.x, 0.0, 0.01, "icon 左=0（源 anchor(0,0)）")
+	assert_almost_eq(icon.position.y, 45.31 - vis_h, 0.01, "icon 底=容器底（左下对齐 y=45.31-46.49）")
+	panel.free()

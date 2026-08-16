@@ -143,10 +143,12 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(desc1.size.x, 312.5, 0.5, "desc1 宽 = DG(400)=312.5（autowrap）")
 
 
-# panel 零静态构造（宽口径白名单）：Grid/滚动 desc 全静态化，0 处 .new(。
+# panel 零静态构造（宽口径白名单）：Grid/滚动 desc 全静态化；仅 cell wrapper 的
+# Control.new(（task-11：GridContainer 会重置直接 child scale → wrapper 布局载体）。
 func test_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string(POPUP_PATH)
-	assert_eq(text.count(".new("), 0, "宽口径 .new( 总数 = 0（白名单为空）")
+	assert_eq(text.count(".new("), text.count("Control.new("),
+		"宽口径 .new( 总数 = Control.new( wrapper 白名单")
 
 
 # theme variation 接线（读 tres 文本表项）。
@@ -176,3 +178,21 @@ func _has_tex(node: Node, path: String) -> bool:
 		if _has_tex(c, path):
 			return true
 	return false
+
+
+# 溢满物品 icon 缩放/格子（task-11 守卫）：源 overfull.lua:79 createIconWithAmount(id,60)
+# → 显示 60 点；ReadequipIcon frame Sprite2D 按纹理原尺寸渲染（94×95px）→ scale 基准 94
+# （曾 60/72 致视觉 78×79 叠格；task-11 同步 min size=视觉盒，sep 8 → icon 间距不再叠）。
+func test_overfull_grid_icon_scale_and_minsize() -> void:
+	var popup := MailOverfullPopup.new()
+	popup.setup([{"id": 371, "amount": 5}, {"id": 371, "amount": 5}], GameData.config)
+	add_child(popup)
+	await get_tree().process_frame
+	var grid: GridContainer = popup.find_children("*", "GridContainer", true, false)[0] as GridContainer
+	assert_eq(grid.get_child_count(), 2, "2 溢出 icon")
+	var wrapper0: Control = grid.get_child(0)
+	assert_almost_eq(wrapper0.custom_minimum_size.x, 60.0, 0.01, "wrapper min 宽=视觉宽（格子贴合）")
+	assert_almost_eq(wrapper0.custom_minimum_size.y, 95.0 * 60.0 / 94.0, 0.01, "wrapper min 高=视觉高 60.64")
+	var icon0: Control = wrapper0.get_child(0)
+	assert_almost_eq(icon0.scale.x, 60.0 / 94.0, 0.0001, "icon scale=60/94（视觉宽 60，内层不被容器重置）")
+	popup.free()

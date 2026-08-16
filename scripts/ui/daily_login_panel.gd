@@ -25,6 +25,10 @@ const GRID_PAD_Y: float = 14.0
 const CONTENT_SCALE: float = 1.28125
 # 单格局部锚点（源 :331/:352/:366 Cocos 左下原点 → y 按 board 显示高 101.5 翻转）
 const ICON_CENTER_LOCAL: Vector2 = Vector2(51.0, 49.5)
+# ReadequipIcon frame 纹理像素尺寸（Sprite2D 原尺寸渲染口径，hero_detail 装备槽同款；
+# 源 :317-334 createIcon(id) 无 length → 显示原点尺寸 = 94×95÷CS = 73.37×74.13 →
+# scale=1/CS 补偿 + 中心定位，task-11 修：旧版未补偿致 icon 偏大溢出 board/盖 VIP 角标）
+const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
 const AMOUNT_RIGHT_LOCAL: Vector2 = Vector2(92.0, 79.5)
 const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 21.5)
 # 光效旋转（源 :313-315 CCRotateBy 5s/360 循环）
@@ -183,7 +187,10 @@ func _fill_icon(host: TextureRect, data: Dictionary) -> void:
 			if icon != null:
 				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				host.add_child(icon)
-				icon.position = ICON_CENTER_LOCAL - icon.size * 0.5
+				# 源显示原点尺寸（无 length）→ scale=1/CS 使视觉=73.37×74.13；
+				# 中心 (51,52) y-up → godot (51,49.5)，左上 = 中心 - 半视觉盒
+				icon.scale = Vector2.ONE / CONTENT_SCALE
+				icon.position = ICON_CENTER_LOCAL - FRAME_TEX_SIZE / CONTENT_SCALE * 0.5
 		return
 	var res_path: String = String(STATIC_ICON_MAP.get(type, ""))
 	if res_path.is_empty():

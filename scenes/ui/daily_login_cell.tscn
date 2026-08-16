@@ -27,9 +27,11 @@ theme_type_variation = &"DailyLoginAmountLabel"
 mouse_filter = 2
 text = "x0"
 
-; vip_bg 源 :337-351：77x80 ÷CS=60.10x62.45，anchor(0,1) 局部 (0,102)→顶=-0.5
+; vip_bg 源 :337-351：77x80 ÷CS=60.10x62.45，anchor(0,1) 局部 (0,102)→顶=-0.5；
+; z_index=1（task-11 修）：源序 light→icon→vip_bg（后加盖上），vip 须盖 Item icon
 [node name="VipBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
+z_index = 1
 offset_left = 0.0
 offset_top = -0.5
 offset_right = 60.1
@@ -42,6 +44,7 @@ visible = false
 ; vip num 源 :202-221/335-355：VIP%d size14 ccc3(231,206,19) 黑描边，pos (24,80)→(24,21.5) 旋转 -45°
 [node name="VipNum" type="Label" parent="."]
 unique_name_in_owner = true
+z_index = 1
 offset_left = 4.0
 offset_top = 11.5
 offset_right = 44.0
@@ -71,9 +74,11 @@ unique_name_in_owner = true
 expand_mode = 1
 mouse_filter = 2
 
-; checked 源 :277-294：132x130 ÷CS=103.02x101.46 中心=board 中心 z=10（置顶故排最后绘制）
+; checked 源 :277-294：132x130 ÷CS=103.02x101.46 中心=board 中心 z=10（源显式置顶，须盖
+; z=1 的 vip 角标 → 本项目 z_index=2，task-11 修）
 [node name="CheckedIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
+z_index = 2
 offset_left = 0.39
 offset_top = 0.0
 offset_right = 103.41

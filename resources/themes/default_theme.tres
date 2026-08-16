@@ -838,10 +838,12 @@ PackageHandbookBtn/styles/hover = SubResource("SB_pkg_hb_n")
 PackageHandbookBtn/styles/pressed = SubResource("SB_pkg_hb_p")
 PackageHandbookBtn/styles/disabled = SubResource("SB_pkg_hb_n")
 PackageHandbookBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
-; 背包网格间距（源 :251-276 refreshList cell 中心 dx=75/dy=80，cell 72x72 → 3/8）
+; 背包网格间距（源 :251-276 refreshList cell 中心 dx=75/dy=80；cell 视觉 = frame 纹理
+; 94×95px ×(74/95) = 73.22×74.0（task-11 修，loadEquip 无 length 原点尺寸 ≈÷CS）。
+; GridContainer separation 为 int constant（1.63 会被截 1）→ 取 2/6 使步进 75/80 精确）
 PackageGrid/base_type = &"GridContainer"
-PackageGrid/constants/h_separation = 3
-PackageGrid/constants/v_separation = 8
+PackageGrid/constants/h_separation = 2
+PackageGrid/constants/v_separation = 6
 
 ; ── star_shop 两件套（批 2 Task 4，2026-08-16）──
 ; 商品格 item_name（源 itemstarshop.lua 声明表 size20 ccc3(255,255,255)）

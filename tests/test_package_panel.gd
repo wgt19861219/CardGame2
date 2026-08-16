@@ -315,24 +315,30 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(scroll.offset_right, 730.0, 0.1, "ScrollHost 右 = 650+80")
 	assert_almost_eq(scroll.offset_bottom, 525.0, 0.1, "ScrollHost 底 = 560-35")
 	assert_true(scroll.clip_contents, "ScrollHost 裁剪（源 cliprect 等价）")
-	# 网格（cell 72x72 中心 dx=75/dy=80 → 起点局部 (2,11) 由 MarginHost 承载 + separation 3/8；
+	# 网格（cell 视觉 = frame 纹理 94×95px ×(74/95)=73.22×74.0（task-11 修，loadEquip 无
+	# length 原点尺寸 ≈÷CS）→ 起点局部 (1.39,10.0) 由 MarginHost 承载 + separation 2/6
+	# （GridContainer separation 是 int constant，步进 73.22+2=75/74+6=80 照源 dx,dy）；
 	# ScrollContainer 强制子节点贴 (0,0)，Grid 直接 offset 会被容器布局覆盖——批 2 实测）
 	var grid: GridContainer = inst.get_node("%Grid") as GridContainer
 	assert_eq(grid.columns, 4, "Grid 4 列照源")
 	var margin_host: MarginContainer = grid.get_parent() as MarginContainer
 	assert_not_null(margin_host, "Grid 挂 MarginHost（ScrollHost>MarginHost>Grid 层级）")
-	assert_eq(margin_host.get_theme_constant(&"margin_left"), 2, "MarginHost 左 = 473-435-36（源首格中心 393）")
-	assert_eq(margin_host.get_theme_constant(&"margin_top"), 11, "MarginHost 顶 = 217-170-36（源首行中心 343）")
+	assert_almost_eq(margin_host.get_theme_constant(&"margin_left"), 1, 0.01,
+		"MarginHost 左 = int(393-73.22/2+80-435)（margin 是 int constant，1.39 截 1）")
+	assert_almost_eq(margin_host.get_theme_constant(&"margin_top"), 10, 0.01,
+		"MarginHost 顶 = int(560-(343+74/2)-170)（源首行中心 343，cell 视觉高 74）")
 	assert_eq(String(grid.theme_type_variation), "PackageGrid", "Grid separation 走 PackageGrid variation")
 	# 迁移发明清理：StatusHost 死节点已删（HudOverlay 接管货币条）
 	assert_false(inst.has_node("%StatusHost"), "StatusHost 已删（HudOverlay 接管，防复发）")
 
 
-# panel 零静态构造（宽口径白名单）：仅动态弹窗 HandbookPanel/EquipboardPanel 允许 .new(。
+# panel 零静态构造（宽口径白名单）：动态弹窗 HandbookPanel/EquipboardPanel + cell wrapper
+# 的 Control.new(（task-11：GridContainer 会重置直接 child scale → wrapper 布局载体）。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
-	assert_eq(text.count(".new("), text.count("HandbookPanel.new(") + text.count("EquipboardPanel.new("),
-		"静态节点零 .new(，仅动态弹窗白名单")
+	assert_eq(text.count(".new("), text.count("HandbookPanel.new(") + text.count("EquipboardPanel.new(")
+		+ text.count("Control.new("),
+		"静态节点零 .new(，仅动态弹窗 + wrapper 载体白名单")
 
 
 # theme variation 接线（GUT 下节点级不解析 variation，读 tres 文本表项）。
@@ -358,8 +364,66 @@ func test_theme_variations_wired() -> void:
 	assert_true(sb_block.contains("texture_margin_top = 20.0"), "SB margin top=67-22-25=20（Task 1 公式）")
 	assert_true(sb_block.contains("texture_margin_right = 33.0"), "SB margin right=63-15-15=33")
 	assert_true(sb_block.contains("texture_margin_bottom = 22.0"), "SB margin bottom=源 cap.y=22")
-	assert_true(t.contains("PackageGrid/constants/h_separation = 3"), "PackageGrid h_sep=dx-cell=75-72=3")
-	assert_true(t.contains("PackageGrid/constants/v_separation = 8"), "PackageGrid v_sep=dy-cell=80-72=8")
+	assert_true(t.contains("PackageGrid/constants/h_separation = 2"),
+		"PackageGrid h_sep=2（task-11：cell 视觉 73.22，步进 73.22+2=75=源 dx；int constant）")
+	assert_true(t.contains("PackageGrid/constants/v_separation = 6"),
+		"PackageGrid v_sep=6（task-11：cell 视觉高 74，步进 74+6=80=源 dy；int constant）")
+
+
+# tab label 恒居底图上（task-11 守卫）：源 package.lua:424 label z=24 > normal 1/3、press 20。
+# 曾因 label z=0 被 _update_tab_visual 设 z 的按钮纹理盖住（classbtn 中心不透明，验收"无文字"）。
+func test_tab_labels_z_above_buttons() -> void:
+	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child_autofree(inst)
+	for key in ["All", "Equip", "Scroll", "Stone", "Consume"]:
+		var lbl: Label = inst.get_node("%Tab" + key + "Label") as Label
+		assert_eq(int(lbl.z_index), 24, "Tab%sLabel z=24（源 :424 label z=24 恒居底图上）" % key)
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	var all_btn: TextureButton = panel._tab_buttons["all"] as TextureButton
+	var all_lbl: Label = panel._tab_labels["all"] as Label
+	assert_eq(int(all_btn.z_index), 3, "选中 tab 按钮 z=3")
+	assert_true(int(all_lbl.z_index) > int(all_btn.z_index), "label z=24 > 选中按钮 z=3（文字不被盖）")
+	var equip_lbl: Label = panel._tab_labels["equip"] as Label
+	var equip_btn: TextureButton = panel._tab_buttons["equip"] as TextureButton
+	assert_true(int(equip_lbl.z_index) > int(equip_btn.z_index), "label z=24 > 未选中按钮 z=1")
+	panel.remove_window()
+	root.queue_free()
+
+
+# cell 显示对齐（task-11 守卫）：源 loadEquip :288 createIconWithAmount(id) 无 length →
+# 显示原点尺寸 ≈ frame 纹理 94×95 ÷CS；ReadequipIcon Sprite2D 按纹理原尺寸渲染（hero_detail
+# 装备槽同口径）→ panel 侧 icon scale=74/95 补偿 + wrapper min size=视觉盒。
+# 曾因无补偿：icon 视觉 94×95 溢出 72 格子，相邻品质框重叠 19/15px（验收"挤在一起"）。
+# 注：运行时步进 75/80 由 min 73.22 + theme sep 2/6（test_theme_variations_wired 文本守卫）
+# 合成；GUT 下节点级不解析 variation（批1 沉淀），故此处不断言步进（预览实测 75/80，见
+# docs task-11 报告）。GridContainer 会重置直接 child 的 scale → cell 包 wrapper（外层格子
+# min size、内层 icon 保 scale）。
+func test_grid_cell_display_alignment() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var parts_id: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var reel_id: int = _find_equip_id_by_category("EQUIP.REEL")
+	pd.add_item(parts_id, 1)
+	pd.add_item(reel_id, 1)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	assert_eq(panel._grid.get_child_count(), 2, "2 cell（all tab PARTS+REEL）")
+	var wrapper0: Control = panel._grid.get_child(0)
+	assert_almost_eq(wrapper0.custom_minimum_size.x, 73.22, 0.01, "wrapper min 宽=视觉宽（格子贴合无重叠）")
+	assert_almost_eq(wrapper0.custom_minimum_size.y, 74.0, 0.01, "wrapper min 高=视觉高")
+	var cell0: Control = wrapper0.get_child(0)
+	assert_almost_eq(cell0.scale.x, 74.0 / 95.0, 0.0001, "icon scale=74/95（视觉 73.22×74.0）")
+	var frame: Sprite2D = cell0.get_child(0) as Sprite2D
+	assert_almost_eq(frame.texture.get_size().x * cell0.scale.x, 73.22, 0.1,
+		"frame 视觉宽 = 94×74/95 = 73.22（源 73.37 差 0.15px）")
+	assert_almost_eq(frame.texture.get_size().y * cell0.scale.y, 74.0, 0.1, "frame 视觉高 74（源 74.13）")
+	panel.remove_window()
+	root.queue_free()
 
 
 # fill 语义：handbook 按钮文案 LSTR 填充；fragment identity 隐藏 handbook + stone/consume tab。

@@ -22,9 +22,12 @@ const ITEM_LOCAL_Y: float = 38.28
 const ITEM_DX: float = 212.0
 const LIST_MIN_W: float = 1100.0
 const LIST_MIN_H: float = 325.0
-# 灵魂石 icon（源 :571 createIcon(stone_id, 46)，项目 ReadequipIcon 72px 基准 → 缩放）
+# 灵魂石 icon（源 :571 createIcon(stone_id, 46) → 显示 46 点）：ReadequipIcon 的 frame
+# Sprite2D 按纹理原尺寸渲染（94×95px，hero_detail 装备槽同口径），故 scale 基准取纹理
+# 像素宽 94 而非 container 72（task-11 修：旧 72 基准致视觉 1.28× 偏大溢出容器）
 const STONE_ICON_SIDE: float = 46.0
-const STONE_ICON_BASE: float = 72.0
+const STONE_ICON_BASE: float = 94.0
+const STONE_FRAME_H: float = 95.0
 const STONE_HOST_SIDE: float = 45.31
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const STAR_BOX_RES: Array[String] = ["shop_star_box_1.png", "shop_star_box_2.png", "shop_star_box_3.png"]
@@ -108,13 +111,14 @@ func _fill_row(row: TextureButton, g: Dictionary) -> void:
 
 
 # 灵魂石消耗 icon（源 :568-576 createIcon(stone_id,46) anchor(0,0) at(0,0)）：
-# ReadequipIcon 72px 基准缩至 46，左下对齐（Godot y = 45.31-46 溢出 0.69 照源）；
+# scale=46/94 → 视觉 46×46.49（源显示 74.13×46/73.37 同值）；左下对齐（Godot y=容器高-视觉高）；
 # Equip 表缺 8/9/10 条目 → 默认降级框，数据补齐自动恢复。
 func _fill_stone_icon(host: Control, stone_id: int) -> void:
 	var icon := ReadequipIcon.create_icon(stone_id, 0, cm)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.scale = Vector2.ONE * (STONE_ICON_SIDE / STONE_ICON_BASE)
-	icon.position = Vector2(0.0, STONE_HOST_SIDE - STONE_ICON_SIDE)
+	var vis_h: float = STONE_FRAME_H * STONE_ICON_SIDE / STONE_ICON_BASE
+	icon.position = Vector2(0.0, STONE_HOST_SIDE - vis_h)
 	host.add_child(icon)
 
 
