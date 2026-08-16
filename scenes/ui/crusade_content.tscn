@@ -178,9 +178,9 @@ mouse_filter = 2
 [node name="StageHint" type="TextureRect" parent="HintAnchor"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = -18.0
-offset_top = -36.0
-offset_right = 18.0
+offset_left = -26.95
+offset_top = -62.44
+offset_right = 26.95
 offset_bottom = 0.0
 texture = ExtResource("9_pointer")
 expand_mode = 1

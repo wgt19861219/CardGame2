@@ -26,9 +26,9 @@ text = "跳过引导"
 [node name="Bubble" type="TextureRect" parent="."]
 layout_mode = 3
 offset_left = 300.0
-offset_top = 130.0
+offset_top = 81.5
 offset_right = 660.0
-offset_bottom = 310.0
+offset_bottom = 358.5
 texture = ExtResource("1_bubble")
 expand_mode = 1
 ignore_texture_size = true
