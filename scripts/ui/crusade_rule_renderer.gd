@@ -6,7 +6,12 @@ extends RefCounted
 ## 不反向引用 CrusadePanel（container/scene 经参数传入）。
 
 const RULE_FRAME_RES: String = "res://assets/ui/alpha/HVGA/main_vit_tips.png"
-const RULE_FRAME_CAP: int = 15
+# 源 crusadeconfig.lua:1548 ruleInfo capInsets CCRectMake(15,20,45,15)，贴图 103×61 PIL 实测。
+# 正确公式（批 1 fde903b）：left=x/bottom=y/right=W-x-w/top=H-y-h → L15/B20/R43/T26（旧全 15 是错值）。
+const RULE_FRAME_PATCH_L: int = 15
+const RULE_FRAME_PATCH_T: int = 26
+const RULE_FRAME_PATCH_R: int = 43
+const RULE_FRAME_PATCH_B: int = 20
 const RULE_FRAME_SIZE: Vector2 = Vector2(500.0, 400.0)
 const RULE_SHADE_ALPHA: float = 190.0 / 255.0
 const RULE_LABEL_FONT_SIZE: int = 18
@@ -61,10 +66,10 @@ static func build_rule_layer(container: Control, cm: Variant, on_close: Callable
 		frame.texture = load(RULE_FRAME_RES) as Texture2D
 	frame.position = frame_pos
 	frame.size = RULE_FRAME_SIZE
-	frame.patch_margin_left = RULE_FRAME_CAP
-	frame.patch_margin_top = RULE_FRAME_CAP
-	frame.patch_margin_right = RULE_FRAME_CAP
-	frame.patch_margin_bottom = RULE_FRAME_CAP
+	frame.patch_margin_left = RULE_FRAME_PATCH_L
+	frame.patch_margin_top = RULE_FRAME_PATCH_T
+	frame.patch_margin_right = RULE_FRAME_PATCH_R
+	frame.patch_margin_bottom = RULE_FRAME_PATCH_B
 	layer.add_child(frame)
 	# ScrollContainer + VBox（照源 listview 竖排 17 项）
 	var scroll := ScrollContainer.new()

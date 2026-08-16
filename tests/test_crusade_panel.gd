@@ -343,3 +343,29 @@ func test_rule_layer_has_17_items() -> void:
 	assert_eq(vbox.get_child_count(), 17, "17 条规则项（照源 initRuleLayer）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 规则页背景框九宫格守卫（批 2 Task 8）：源 crusadeconfig.lua:1548 ruleInfo
+# main_vit_tips.png capInsets CCRectMake(15,20,45,15)，贴图 103×61 PIL 实测
+# → left=15/bottom=20/right=103-15-45=43/top=61-20-15=26（批 1 fde903b 公式，旧值四边全 15 是错值）。
+func test_rule_layer_frame_patch_margins() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	panel._show_rule_info()
+	# ruleLayer 子序：shade(0) + frame(1) + scroll(2)
+	var frame: NinePatchRect = panel._rule_layer.get_child(1) as NinePatchRect
+	assert_not_null(frame, "ruleLayer frame 为 NinePatchRect（源 Scale9Sprite）")
+	if frame == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	assert_eq(frame.patch_margin_left, 15, "patch_margin_left=15（源 cap x=15）")
+	assert_eq(frame.patch_margin_top, 26, "patch_margin_top=26（H-y-h=61-20-15）")
+	assert_eq(frame.patch_margin_right, 43, "patch_margin_right=43（W-x-w=103-15-45）")
+	assert_eq(frame.patch_margin_bottom, 20, "patch_margin_bottom=20（源 cap y=20）")
+	panel.remove_window()
+	root.queue_free()

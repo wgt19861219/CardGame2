@@ -45,3 +45,15 @@ func test_avatar_panel_static_node_unique_name() -> void:
 	assert_true(tscn_text.find("AvatarList") != -1, "avatar_content.tscn 含 AvatarList 节点")
 	assert_true(tscn_text.find("unique_name_in_owner") != -1,
 		"avatar_content.tscn 节点标记 unique_name_in_owner")
+
+# 九宫格 capInsets 公式守卫（批 2 Task 8）：源 ofavatar.lua:112 CCRectMake(100,0,304,12)，
+# detail_title_bg 643×15 → left=100/bottom=0/right=239/top=3。批 1 fde903b 公式：
+# top=H-y-h / bottom=y（水平不反转）。曾发生 top=y/bottom=H-y-h 互换（批 1 同族错误）。
+
+func test_avatar_panel_title_bg_cap_formula() -> void:
+	# 正确公式形态：top 用 H-y-h（贴图高减 cap 顶），bottom 直接用 cap y
+	var script_text: String = FileAccess.get_file_as_string("res://scripts/ui/avatar_panel.gd")
+	assert_true(script_text.contains("patch_margin_bottom = int(TITLE_BG_CAP.position.y)"),
+		"margin_bottom 须为 y 形态（防 top/bottom 互换回退）")
+	assert_true(script_text.contains("patch_margin_top = int(bg_tex.get_height() - TITLE_BG_CAP.position.y - TITLE_BG_CAP.size.y)"),
+		"margin_top 须为 H-y-h 形态（防 top/bottom 互换回退）")

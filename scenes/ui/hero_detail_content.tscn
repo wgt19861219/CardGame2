@@ -350,7 +350,7 @@ mouse_filter = 2
 texture = ExtResource("6_yxfmg")
 expand_mode = 1
 
-[node name="StoneBarBg" type="TextureRect" parent="BaseLayer" unique_id=5101002]
+[node name="StoneBarBg" type="NinePatchRect" parent="BaseLayer" unique_id=5101002]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 279.5
@@ -359,7 +359,12 @@ offset_right = 459.5
 offset_bottom = 520.0
 mouse_filter = 2
 texture = ExtResource("7_xulm4")
-expand_mode = 1
+; 源 herodetail/window.lua:2192 stone_bar_bg Scale9Sprite capInsets CCRectMake(20,1,102,24) scaleSize(180,26)，
+; 贴图 204x34 → top=34-1-24=9/bottom=1/right=204-20-102=82（批 2 Task 8 复检 B 类修复）
+patch_margin_left = 20
+patch_margin_top = 9
+patch_margin_right = 82
+patch_margin_bottom = 1
 
 [node name="StoneBar" type="TextureRect" parent="BaseLayer" unique_id=5101003]
 unique_name_in_owner = true

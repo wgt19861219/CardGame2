@@ -203,7 +203,7 @@ const STONE_BAR_OFFSET_X: float = 279.5   # StoneBar offset_left（bg 偏移 221
 const LSTR_MAX_STAR: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
 static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_mgr: HeroManager) -> void:
 	var stone_icon: TextureRect = base.get_node("%StoneIcon") as TextureRect
-	var bar_bg: TextureRect = base.get_node("%StoneBarBg") as TextureRect
+	var bar_bg: NinePatchRect = base.get_node("%StoneBarBg") as NinePatchRect   # 批 2 Task 8 九宫格化（源 stone_bar_bg Scale9Sprite）
 	var bar: TextureRect = base.get_node("%StoneBar") as TextureRect
 	var lbl: Label = base.get_node("%StoneBarLabel") as Label
 	var get_stone: TextureButton = base.get_node("%GetStoneBtn") as TextureButton

@@ -11,12 +11,13 @@ const SCREEN_CENTER_X: float = 480.0   # 屏幕水平中心（960/2，position.x
 const TOAST_OUTLINE_SIZE: int = 3   # 文字描边粗细（add_theme_constant_override outline_size）
 const TOAST_CENTER_RATIO: float = 0.5   # 居中比例（label_w 乘以它算水平偏移）
 const TOAST_BG_RES: String = "res://assets/ui/alpha/HVGA/toast_bg.png"
-# 源 toast.lua:36 createScale9Sprite capInsets CCRectMake(20, 20, 194, 20)
+# 源 toast.lua:36 createScale9Sprite capInsets CCRectMake(20, 20, 194, 20)，贴图 306×87 PIL 实测。
+# 正确公式（批 1 fde903b）：left=x/bottom=y/right=W-x-w/top=H-y-h → L20/B20/R92/T47。
 const BOARD_PAD_W: float = 20.0   # board 比文字宽的边距（源 :44 labelSize.width + 20）
 const BOARD_PAD_H: float = 40.0   # board 比文字高的边距（源 :44 labelSize.height + 40）
 const BOARD_PATCH_L: int = 20
-const BOARD_PATCH_T: int = 20
-const BOARD_PATCH_R: int = 20
+const BOARD_PATCH_T: int = 47
+const BOARD_PATCH_R: int = 92
 const BOARD_PATCH_B: int = 20
 const HALF: float = 0.5   # 居中比例 / 边距减半
 const BOARD_OFFSET_Y: float = 2.0   # 源 board:setPosition(0,-2) label 在 board 内略上偏

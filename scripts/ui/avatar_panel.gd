@@ -123,11 +123,12 @@ func _make_title(text: String) -> Control:
 	var bg := NinePatchRect.new()
 	var bg_tex: Texture2D = load(TITLE_BG_RES)
 	bg.texture = bg_tex
+	# 正确公式（批 1 fde903b）：left=x/bottom=y/right=W-x-w/top=H-y-h（源 CCRect 左下原点垂直翻转，水平不反转）。
 	bg.patch_margin_left = int(TITLE_BG_CAP.position.x)
-	bg.patch_margin_top = int(TITLE_BG_CAP.position.y)
+	bg.patch_margin_bottom = int(TITLE_BG_CAP.position.y)
 	if bg_tex != null:
 		bg.patch_margin_right = int(bg_tex.get_width() - TITLE_BG_CAP.position.x - TITLE_BG_CAP.size.x)
-		bg.patch_margin_bottom = int(bg_tex.get_height() - TITLE_BG_CAP.position.y - TITLE_BG_CAP.size.y)
+		bg.patch_margin_top = int(bg_tex.get_height() - TITLE_BG_CAP.position.y - TITLE_BG_CAP.size.y)
 	bg.size = Vector2(TITLE_BG_W, 12.0)
 	bg.position = Vector2(0.0, 4.0)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE

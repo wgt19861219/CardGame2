@@ -90,3 +90,25 @@ func test_show_null_parent_returns_empty() -> void:
 func test_destroy_prompt_no_active_no_crash() -> void:
 	VitPromptCard.destroy_prompt()   # _active 已清/初始，不 crash
 	assert_true(true, "destroy_prompt 空 _active 不 crash")
+
+# 九宫格 capInsets 守卫（批 2 Task 8 复检新增发现）：源 framework.lua:96 createPromptCard
+# main_vit_tips.png capInsets CCRectMake(15,20,45,15)，贴图 103×61 PIL 实测
+# → L15/B20/R43/T26（批 1 fde903b 公式；旧值 L15/T28/R45/B15 是直抄错值）。
+func test_bg_patch_margins() -> void:
+	var pd := _make_player()
+	var host := Control.new()
+	add_child(host)
+	var ref: Dictionary = VitPromptCard.show(host, pd, cm)
+	assert_false(ref.is_empty(), "show 返回非空 ref")
+	var container: Control = ref.get("node") as Control
+	assert_not_null(container, "ref 含 container 节点")
+	if container != null:
+		var bg: NinePatchRect = container.get_child(0) as NinePatchRect
+		assert_not_null(bg, "container 首子为 NinePatchRect 背景")
+		if bg != null:
+			assert_eq(bg.patch_margin_left, 15, "patch_margin_left=15（源 cap x=15）")
+			assert_eq(bg.patch_margin_top, 26, "patch_margin_top=26（H-y-h=61-20-15）")
+			assert_eq(bg.patch_margin_right, 43, "patch_margin_right=43（W-x-w=103-15-45）")
+			assert_eq(bg.patch_margin_bottom, 20, "patch_margin_bottom=20（源 cap y=20）")
+	VitPromptCard.destroy_prompt(ref)
+	host.queue_free()

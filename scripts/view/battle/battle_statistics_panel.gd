@@ -130,10 +130,11 @@ func _make_bar_bg(cx: float, cy: float, w: float) -> Control:
 	if tex != null:
 		var npr := NinePatchRect.new()
 		npr.texture = tex
+		# 源 battleStatisticsConfig ui1 capInsets CCRectMake(12,4,12,4)，贴图 89×11：left=12/bottom=4/right=89-24=65/top=11-8=3
 		npr.patch_margin_left = 12
-		npr.patch_margin_top = 4
+		npr.patch_margin_top = 3
 		npr.patch_margin_right = 65
-		npr.patch_margin_bottom = 3
+		npr.patch_margin_bottom = 4
 		node = npr
 	else:
 		var cr := ColorRect.new()

@@ -389,3 +389,26 @@ func test_equips_persist_across_tabs() -> void:
 	assert_eq(equip_count, 6, "card tab 下装备槽仍 6 个（base 常显，挂 %EquipSlotHost）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# StoneBarBg 九宫格守卫（批 2 Task 8 复检 B 类修复）：源 herodetail/window.lua:2192
+# stone_bar_bg Scale9Sprite capInsets CCRectMake(20,1,102,24) scaleSize(180,26)，
+# 贴图 heropackage_soulstone_progress_bg 204×34 PIL 实测
+# → L20/T=34-1-24=9/R=204-20-102=82/B1（批 1 fde903b 公式；旧 TextureRect 整图强拉 180×26 ratio 失真 15%）。
+func test_stone_bar_bg_ninepatch_margins() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var bg: NinePatchRect = panel.container.find_children("StoneBarBg", "NinePatchRect", true, false)[0] as NinePatchRect
+	assert_not_null(bg, "StoneBarBg 为 NinePatchRect（源 Scale9Sprite）")
+	if bg != null:
+		assert_eq(bg.patch_margin_left, 20, "L=20（源 cap x=20）")
+		assert_eq(bg.patch_margin_top, 9, "T=9（H-y-h=34-1-24）")
+		assert_eq(bg.patch_margin_right, 82, "R=82（W-x-w=204-20-102）")
+		assert_eq(bg.patch_margin_bottom, 1, "B=1（源 cap y=1）")
+		assert_eq(bg.size, Vector2(180.0, 26.0), "显示尺寸 180×26 保持（源 scaleSize）")
+	panel.remove_window()
+	root.queue_free()

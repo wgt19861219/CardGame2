@@ -20,7 +20,10 @@ const BOARD_CENTER_X: float = 900.0
 const BOARD_UP_OFFSET: float = -132.0           # 整个抽屉上移量(负=上)；-132 让下拉钮与货币栏上端平齐（top=26）
 const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶 180 + 上移 → 48
 const BOARD_WIDTH: float = 82.0
-const BOARD_H_MIN: float = 40.0
+# 收起态板高受控偏离（批 2 Task 8 NinePatch 化）：源 40（uires.lua height_min），但 Godot
+# NinePatchRect 最小尺寸=patch margin 和（top40+bottom25=65），40 会被引擎钳到 65；
+# 源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。收起态板被 toggle 钮覆盖视觉无感。
+const BOARD_H_MIN: float = 65.0
 const BOARD_H_MAX: float = 460.0
 const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=68，下拉钮 top=26 与货币栏 top=26 上端平齐
 const BUTTON_CENTER_Y: Array[float] = [146.0, 236.0, 326.0, 416.0, 506.0]   # 间距 90（源 70~79 太挤，用户要加大）；整体随 BOARD_UP_OFFSET 上移对齐
@@ -43,7 +46,7 @@ signal open_requested(key: String)   # 按钮点击 → main_scene 路由（pack
 
 var _is_open: bool = false
 var _shade: ColorRect = null
-var _board: TextureRect = null
+var _board: NinePatchRect = null
 var _toggle_down: TextureButton = null
 var _toggle_up: TextureButton = null
 var _buttons: Dictionary = {}    # key(String) -> TextureButton
@@ -69,7 +72,7 @@ func _build_content() -> void:
 	add_child(content)
 	_shade = content.get_node("%Shade") as ColorRect
 	_shade.gui_input.connect(_on_shade_gui_input)
-	_board = content.get_node("%Board") as TextureRect
+	_board = content.get_node("%Board") as NinePatchRect   # tscn Board 已 NinePatchRect 化（源 Scale9Sprite cap(0,25,62,26)）
 	_toggle_down = content.get_node("%ToggleDown") as TextureButton
 	_toggle_down.pressed.connect(_toggle_open)
 	_toggle_up = content.get_node("%ToggleUp") as TextureButton

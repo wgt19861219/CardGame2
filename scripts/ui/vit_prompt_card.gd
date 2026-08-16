@@ -29,11 +29,12 @@ static func show(parent: Control, player: PlayerData, cm: ConfigManager) -> Dict
 	var bg := NinePatchRect.new()
 	bg.texture = load(TIPS_BG_RES)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# NinePatchRect 九宫格（源 CCRect(15,20,45,15) 左下原点 y向上 → Godot 左上原点 y向下）
+	# NinePatchRect 九宫格：源 framework.lua:96 CCRectMake(15,20,45,15)，贴图 103×61 PIL 实测，
+	# 正确公式（批 1 fde903b）：left=x/bottom=y/right=W-x-w/top=H-y-h → L15/B20/R43/T26（旧值 top/bottom/right 错）。
 	bg.patch_margin_left = 15
-	bg.patch_margin_top = 28
-	bg.patch_margin_right = 45
-	bg.patch_margin_bottom = 15
+	bg.patch_margin_top = 26
+	bg.patch_margin_right = 43
+	bg.patch_margin_bottom = 20
 	container.add_child(bg)
 	var lbl := Label.new()
 	lbl.text = _build_text(player, cm)
