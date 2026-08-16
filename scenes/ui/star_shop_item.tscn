@@ -1,0 +1,119 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_item_bg.png" id="1_itembg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_item_light.png" id="2_itempress"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_price_bg.png" id="3_costbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_none_tag.png" id="4_nonetag"]
+
+; 星辰商店商品格行模板（批 2 Task 4，2026-08-16）。照源 uieditor/itemstarshop.lua
+; 声明表 8 节点直译：fix_wh=显示尺寸（已含 CS 直接用），layout.position=中心点。
+; item_bg 局部空间为 Cocos 左下原点 y-up → Godot 容器内 (x, 286.72-y) 翻转。
+; item_press（源 visible=false 按下显示 :204/233/259）由 root TextureButton
+; pressed 态承担（texture_pressed 即高亮图）；box icon/灵魂石 icon/文案 fill
+; 见 star_shop_panel.gd。noneTag 为 shop.lua:577-588 运行时附挂（visible=amount<1）。
+
+[node name="StarShopItem" type="TextureButton"]
+layout_mode = 0
+offset_right = 207.03
+offset_bottom = 286.72
+texture_normal = ExtResource("1_itembg")
+texture_pressed = ExtResource("2_itempress")
+ignore_texture_size = true
+stretch_mode = 0
+
+; item_name（源 Label size20 白 中心(102.73,248.05) → gy 38.67；宽 190 照源 :502 ow 缩放上限）
+[node name="ItemName" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 7.73
+offset_top = 24.67
+offset_right = 197.73
+offset_bottom = 52.67
+theme_type_variation = &"StarShopItemNameLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; item_icon_container（源 Layer scaleSize 156.25x156.25 anchor(0,0) at(35.55,113.67)；
+; box icon 62.44x62.44=80px/CS at 容器左下（源 :559-567 无 fix_wh 点尺寸），fill 只换 texture）
+[node name="ItemIconHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 35.55
+offset_top = 16.8
+offset_right = 191.8
+offset_bottom = 173.05
+mouse_filter = 2
+
+; box 商品图（源 getStarGoodsRes 三态 box_1/2/3 fill 切；anchor(0,0) at(0,0) 左下 →
+; Godot y = 156.25-62.44）
+[node name="BoxIcon" type="TextureRect" parent="ItemIconHost"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 93.81
+offset_right = 62.44
+offset_bottom = 156.25
+expand_mode = 1
+mouse_filter = 2
+
+; cost_title_label（源 size19 ccc3(150,236,255) 中心(103.52,89.45) → gy 197.27；fill LSTR 文案）
+[node name="CostTitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 23.52
+offset_top = 184.27
+offset_right = 183.52
+offset_bottom = 210.27
+theme_type_variation = &"StarShopCostTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; cost_bg 价格底条（源 fix_wh(135.16x28.91) 中心(112.11,49.61) → gy 237.11）
+[node name="CostBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 44.53
+offset_top = 222.66
+offset_right = 179.69
+offset_bottom = 251.57
+texture = ExtResource("3_costbg")
+expand_mode = 1
+mouse_filter = 2
+
+; stone_container（源 Layer 45.31x45.31 anchor(0,0) at(26.17,26.95)；灵魂石 icon fill，
+; Equip 表缺 8/9/10 条目 → ReadequipIcon 默认降级框，数据补齐自动恢复）
+[node name="StoneHost" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 26.17
+offset_top = 214.46
+offset_right = 71.48
+offset_bottom = 259.77
+mouse_filter = 2
+
+; stone_name 价格 x{amount}（源 size19 anchor(0,0.5) at(72.27,51.17)+ccpAdd(30,0)
+; （shop.lua:591）→ x=102.27 垂直中心 gy 235.55；色 fill modulate 动态：
+; 足量 (150,236,255)/不足红（源 refreshCostLabel :75-86 覆盖声明表色））
+[node name="StoneName" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 102.27
+offset_top = 222.55
+offset_right = 202.27
+offset_bottom = 248.55
+theme_type_variation = &"StarShopStoneNameLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; noneTag 售罄覆盖（源 :577-588 anchor(0,0) at(0,0)，265x367px/CS=206.83x286.51；
+; visible=amount<1 fill 切；售罄同时价格隐藏（源 refreshGoods :118））
+[node name="NoneTag" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_right = 206.83
+offset_bottom = 286.51
+texture = ExtResource("4_nonetag")
+expand_mode = 1
+mouse_filter = 2

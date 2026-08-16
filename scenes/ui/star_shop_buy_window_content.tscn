@@ -1,4 +1,25 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=2 format=3]
+
+; 星辰商店购买确认窗静态树（批 2 Task 4，2026-08-16）。照源
+; uieditor/starshopbuywindow.lua 声明表 9 节点直译：fix_wh=显示尺寸（已含 CS），
+; layout.position=中心点；root=frame 挂 editorui 根 = 场景空间 → 全屏 rect
+; (256.18,215.08)-(722.58,504.92)（466.41x289.84 中心 to_godot(409.38,200)=(489.38,360)）。
+; frame 子节点 = frame 局部空间 Cocos 左下原点 y-up → Godot Frame 容器内 (x, 289.84-y)。
+; shop_star_tips_frame/delimeter/button_1/2.png 源导出物未含 → Frame StyleBoxFlat
+; 降级 / Line ColorRect / 按钮 StarShopBuyBtn 三态（hero_split sb_frame 同款先例）。
+; LSTR 文案 fill 见 star_shop_buy_window.gd。
+
+[sub_resource type="StyleBoxFlat" id="sb_ssbuy_frame"]
+bg_color = Color(0.12, 0.1, 0.08, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.7, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
 
 [node name="StarShopBuyWindowContent" type="Control"]
 layout_mode = 3
@@ -7,85 +28,104 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Frame" type="Control" parent="."]
+; frame（fix_wh 466.41x289.84 中心(409.38,200)；STOP 吞点击≈源 out_frame 外点关闭）
+[node name="Frame" type="Panel" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 246.0
-offset_top = 180.0
-offset_right = 712.0
-offset_bottom = 470.0
+layout_mode = 0
+offset_left = 256.18
+offset_top = 215.08
+offset_right = 722.58
+offset_bottom = 504.92
 mouse_filter = 0
+theme_override_styles/panel = SubResource("sb_ssbuy_frame")
 
-[node name="Title1Label" type="Label" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 190.0
-offset_top = 130.0
-offset_right = 290.0
-offset_bottom = 152.0
-theme_override_colors/font_color = Color(0.505882, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 20
-horizontal_alignment = 1
-vertical_alignment = 1
+; line 分隔线（fix_wh 405.47x7.81 中心(230.86,102.73) → gy 187.11）
+[node name="Line" type="ColorRect" parent="Frame"]
+layout_mode = 0
+offset_left = 28.13
+offset_top = 183.21
+offset_right = 433.59
+offset_bottom = 191.02
+color = Color(0.5, 0.42, 0.3, 0.6)
 mouse_filter = 2
 
-[node name="IconContainer" type="Control" parent="Frame"]
-layout_mode = 3
-offset_left = 180.0
-offset_top = 92.0
-offset_right = 223.0
-offset_bottom = 135.0
-mouse_filter = 2
-
-[node name="AmountLabel" type="Label" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 240.0
-offset_top = 90.0
-offset_right = 360.0
-offset_bottom = 114.0
-theme_override_colors/font_color = Color(0.513726, 0.941176, 1, 1)
-theme_override_font_sizes/font_size = 20
-mouse_filter = 2
-
+; title_2 "兑换"（size20 ccc3(129,204,255) 中心(140,220) → gy 69.84；fill LSTR）
 [node name="Title2Label" type="Label" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 120.0
-offset_top = 200.0
-offset_right = 160.0
-offset_bottom = 222.0
-theme_override_colors/font_color = Color(0.505882, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 20
+layout_mode = 0
+offset_left = 90.0
+offset_top = 55.84
+offset_right = 190.0
+offset_bottom = 83.84
+theme_type_variation = &"StarShopBuyTitleLabel"
+mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
 
+; name_label 商品名（size20 ccc3(131,240,255) anchor(0,0.5) at(186.33,220)；fill）
 [node name="NameLabel" type="Label" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 186.0
-offset_top = 90.0
-offset_right = 306.0
-offset_bottom = 114.0
-theme_override_colors/font_color = Color(0.513726, 0.941176, 1, 1)
-theme_override_font_sizes/font_size = 20
+layout_mode = 0
+offset_left = 186.33
+offset_top = 55.84
+offset_right = 346.33
+offset_bottom = 83.84
+theme_type_variation = &"StarShopBuyValueLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; icon_container 灵魂石 icon（Layer 42.97x42.97 anchor(0,0) at(180,155)；
+; fill ReadequipIcon 缩挂，源 :99-103 createIcon(id,45)）
+[node name="IconContainer" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 180.0
+offset_top = 91.88
+offset_right = 222.97
+offset_bottom = 134.84
 mouse_filter = 2
 
+; amount_label "x{amount}"（size20 ccc3(131,240,255) anchor(0,0.5) at(240,180)；fill）
+[node name="AmountLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 240.0
+offset_top = 95.84
+offset_right = 380.0
+offset_bottom = 123.84
+theme_type_variation = &"StarShopBuyValueLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; title_1 "确定兑换？"（size20 ccc3(129,204,255) 中心(240,140) → gy 149.84；fill LSTR）
+[node name="Title1Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 120.0
+offset_top = 135.84
+offset_right = 360.0
+offset_bottom = 163.84
+theme_type_variation = &"StarShopBuyTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+; cancel_button（DGButton fix_wh(120.31x53.91) 中心(141.02,66.8) → gy 223.04）
 [node name="CancelBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 81.0
-offset_top = 196.0
-offset_right = 201.0
-offset_bottom = 250.0
-mouse_filter = 0
+layout_mode = 0
+offset_left = 80.86
+offset_top = 196.09
+offset_right = 201.18
+offset_bottom = 249.99
+theme_type_variation = &"StarShopBuyBtn"
 
+; ok_button（同尺寸 中心(308.98,64.45)，源 z=4 置顶）
 [node name="OkBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 248.0
-offset_top = 199.0
-offset_right = 368.0
-offset_bottom = 253.0
-mouse_filter = 0
+layout_mode = 0
+offset_left = 248.82
+offset_top = 198.44
+offset_right = 369.14
+offset_bottom = 252.34
+theme_type_variation = &"StarShopBuyBtn"

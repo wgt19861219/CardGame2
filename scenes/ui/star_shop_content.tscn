@@ -1,9 +1,20 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_frame.png" id="2_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_back"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_star_title.png" id="3_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="4_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="5_backp"]
+
+; 星辰商店主面板静态树（批 2 Task 4，2026-08-16）。照源 market/shop.lua create("starshop")
+; + marketconfig.lua ["starshop"].ui_config 场景空间直译（root 直下，弃 PanelLayer 中间层）：
+; frame shop_star_frame.png(800x480px) 无 fix_wh → 显示 624.49x374.51（÷CS）中心
+; ccp(400,220)；title shop_star_title.png(257x46px) 中心 ccp(403,382) → 显示
+; 200.49x35.90；back 走 package 惯例 74x75px/CS（framework CCB 物件无源坐标）。
+; draglist cliprect CCRectMake(65,35,670,325)（shop.lua:738）→ (145,200)-(815,525)。
+; 单机化裁剪不入树：time 行（无商店时间系统）、showTalk 气泡、head_rect 点击区、
+; StoneLabel（迁移发明常驻余额标签，源无面板级余额显示，不足以价格红字提示）。
+; 商品格行模板 star_shop_item.tscn fill 挂 %ItemLayer。
 
 [node name="StarShopContent" type="Control"]
 layout_mode = 3
@@ -21,65 +32,54 @@ texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="PanelLayer" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 80.0
-offset_top = 80.0
-offset_right = 880.0
-offset_bottom = 560.0
-mouse_filter = 2
-
-[node name="Bg" type="TextureRect" parent="PanelLayer"]
-layout_mode = 3
-offset_right = 800.0
-offset_bottom = 480.0
+; frame（显示 624.49x374.51 中心 to_godot(400,220)=(480,340)；旧值 800x480 未÷CS 强拉）
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 167.76
+offset_top = 152.74
+offset_right = 792.24
+offset_bottom = 527.26
 texture = ExtResource("2_frame")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="Title" type="Label" parent="PanelLayer"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 330.0
-offset_top = 30.0
-offset_right = 530.0
-offset_bottom = 54.0
-theme_override_font_sizes/font_size = 24
+; title 图（显示 200.49x35.90 中心 to_godot(403,382)=(483,178)；替代迁移发明文字 Label）
+[node name="TitleImg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 382.76
+offset_top = 160.05
+offset_right = 583.24
+offset_bottom = 195.95
+texture = ExtResource("3_title")
+expand_mode = 1
 mouse_filter = 2
-text = "神秘星辰商人"
 
-[node name="CloseBtn" type="TextureButton" parent="PanelLayer"]
+; back（package 惯例：57.76x58.54=74x75px/CS at (20,15)，stretch 显式 SCALE）
+[node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 20.0
 offset_top = 15.0
-offset_right = 60.0
-offset_bottom = 47.0
-texture_normal = ExtResource("3_back")
-texture_pressed = ExtResource("4_backp")
+offset_right = 77.76
+offset_bottom = 73.54
+texture_normal = ExtResource("4_back")
+texture_pressed = ExtResource("5_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
-[node name="StoneLabel" type="Label" parent="PanelLayer"]
+; 商品横滚区（源 draglist cliprect 直译；starshop noshade=true 无滚动遮罩）
+[node name="GoodsScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 40.0
-offset_top = 25.0
-offset_right = 400.0
-offset_bottom = 45.0
-mouse_filter = 2
-
-[node name="ScrollContainer" type="ScrollContainer" parent="PanelLayer"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 30.0
-offset_top = 110.0
-offset_right = 770.0
-offset_bottom = 460.0
+layout_mode = 0
+offset_left = 145.0
+offset_top = 200.0
+offset_right = 815.0
+offset_bottom = 525.0
 horizontal_scroll_mode = 1
 vertical_scroll_mode = 0
 
-[node name="ItemLayer" type="Control" parent="PanelLayer/ScrollContainer"]
+; 行宿主（源 draglist listLayer；custom_minimum_size fill 设 1100x325 = 源 getListWidth dx*5+40）
+[node name="ItemLayer" type="Control" parent="GoodsScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=38 format=3]
+[gd_resource type="Theme" load_steps=40 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -199,6 +199,33 @@ texture_margin_left = 20.0
 texture_margin_top = 29.0
 texture_margin_right = 58.0
 texture_margin_bottom = 15.0
+
+; star_shop 购买确认按钮（批 2 Task 4）：源 uieditor/starshopbuywindow.lua cancel/ok
+; DGButton shop_star_button_1/2.png 源导出物未含 → StyleBoxFlat 降级（hero_split
+; sb_frame 同款先例：暖棕填充 + 金边，pressed 变暗区分态）
+[sub_resource type="StyleBoxFlat" id="SB_ssbuy_n"]
+bg_color = Color(0.55, 0.42, 0.24, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.7, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[sub_resource type="StyleBoxFlat" id="SB_ssbuy_p"]
+bg_color = Color(0.42, 0.31, 0.17, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.7, 0.56, 0.26, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -763,3 +790,40 @@ PackageHandbookBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 PackageGrid/base_type = &"GridContainer"
 PackageGrid/constants/h_separation = 3
 PackageGrid/constants/v_separation = 8
+
+; ── star_shop 两件套（批 2 Task 4，2026-08-16）──
+; 商品格 item_name（源 itemstarshop.lua 声明表 size20 ccc3(255,255,255)）
+StarShopItemNameLabel/base_type = &"Label"
+StarShopItemNameLabel/colors/font_color = Color(1, 1, 1, 1)
+StarShopItemNameLabel/font_sizes/font_size = 20
+; 消耗提示（源声明表 size19 ccc3(150,236,255)，fill 填 LSTR 文案）
+StarShopCostTitleLabel/base_type = &"Label"
+StarShopCostTitleLabel/colors/font_color = Color(0.588235, 0.92549, 1, 1)
+StarShopCostTitleLabel/font_sizes/font_size = 19
+; 价格 x{amount}（源声明表 size19 ccc3(39,209,232) 被 refreshCostLabel :75-86 运行时覆盖 →
+; 基色白 + fill modulate 动态：足量 (150,236,255)/不足红 (255,0,0)，variation 只定号）
+StarShopStoneNameLabel/base_type = &"Label"
+StarShopStoneNameLabel/colors/font_color = Color(1, 1, 1, 1)
+StarShopStoneNameLabel/font_sizes/font_size = 19
+; 购买窗 title_1/title_2（源 starshopbuywindow.lua 声明表 size20 ccc3(129,204,255)）
+StarShopBuyTitleLabel/base_type = &"Label"
+StarShopBuyTitleLabel/colors/font_color = Color(0.505882, 0.8, 1, 1)
+StarShopBuyTitleLabel/font_sizes/font_size = 20
+; 购买窗 amount/name（源声明表 size20 ccc3(131,240,255)）
+StarShopBuyValueLabel/base_type = &"Label"
+StarShopBuyValueLabel/colors/font_color = Color(0.513726, 0.941176, 1, 1)
+StarShopBuyValueLabel/font_sizes/font_size = 20
+; 购买窗 cancel/ok（源 DGButton fontinfo ui_normal_button 无 size 覆盖 → 默认 17 白 +
+; shadow ccc3(63,5,0) offset(0,2)（package HandbookLabel 同款 fontinfo 先例）；贴图未含 →
+; SB_ssbuy_n/p Flat 降级三态）
+StarShopBuyBtn/base_type = &"Button"
+StarShopBuyBtn/colors/font_color = Color(1, 1, 1, 1)
+StarShopBuyBtn/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+StarShopBuyBtn/constants/shadow_offset_x = 0
+StarShopBuyBtn/constants/shadow_offset_y = 2
+StarShopBuyBtn/font_sizes/font_size = 17
+StarShopBuyBtn/styles/normal = SubResource("SB_ssbuy_n")
+StarShopBuyBtn/styles/hover = SubResource("SB_ssbuy_n")
+StarShopBuyBtn/styles/pressed = SubResource("SB_ssbuy_p")
+StarShopBuyBtn/styles/disabled = SubResource("SB_ssbuy_n")
+StarShopBuyBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")

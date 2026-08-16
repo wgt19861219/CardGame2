@@ -1,18 +1,22 @@
 class_name StarShopBuyWindow
 extends PopWindow
 
-## 星际商店购买确认弹窗（View 层）— 照源 popwindow/starshopbuywindow.lua。
-## 9 节点照源 starshopbuywindow editorui：frame/line/cancel/ok/title_1/icon_container/amount/title_2/name。
-## 资源缺降级：tips_frame/tips_delimeter/button_1/2 png 缺（cocos Studio 导出物未含），框/线跳过、按钮文字。
+## 星辰商店购买确认弹窗（View 层）— 照源 popwindow/starshopbuywindow.lua。
+## 9 节点照源 uieditor/starshopbuywindow.lua 声明表：frame/line/cancel/ok/title_1/
+## icon_container/amount/title_2/name（fix_wh=显示尺寸，position=中心点，frame 局部
+## Cocos 左下原点→Godot 容器内 (x,289.84-y) 翻转）。
+## 资源缺降级：tips_frame/tips_delimeter/button_1/2.png 源导出物未含 → Frame
+## StyleBoxFlat/Line ColorRect/按钮 StarShopBuyBtn 三态（批 2 Task 4）。
 ## 入场缩放动画照源 :112-119 show frame setScale(0)→CCScaleTo 0.2 EASEBackOut。
-##
-## 重构（2026-07-18，hero_detail 范式）：frame/title_1/icon_container/amount/title_2/name/cancel/ok
-## 静态化进 scenes/ui/star_shop_buy_window_content.tscn（位置/size 编辑器可视化调）。
-## 原 procedural 9 节点位置/size/颜色/字号固化为 .tscn；panel 仅填动态 LSTR 文字 + 连信号。
+## panel 仅填动态 LSTR 文字 + 灵魂石 icon + 连信号。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/star_shop_buy_window_content.tscn")
 const SHOW_SEC: float = 0.2
 const GOODS_NAME_LSTR: Array[String] = ["PARAMETER.SMALL_PLANET_DEBRIS_BOX", "PARAMETER.MEDIUM_STELLAR_SUITCASE", "PARAMETER.LARGE_INTERSTELLAR_GALLERY"]
+# 灵魂石 icon（源 :100-102 createIcon(id,45) anchor(0,0) at(0,0)，项目 72px 基准缩放）
+const ICON_SIDE: float = 45.0
+const ICON_BASE: float = 72.0
+const ICON_HOST_SIDE: float = 42.97
 
 var shop_mgr: ShopManager
 var pd: PlayerData
@@ -46,13 +50,19 @@ func _build_ui() -> void:
 	(_frame.get_node("%Title2Label") as Label).text = pd.cm.get_lstr("STARSHOPBUYWINDOW.EXCHANGE")
 	# 9. name_label 商品名（源 :105 addition.name = getStarGoodsName）
 	(_frame.get_node("%NameLabel") as Label).text = pd.cm.get_lstr(GOODS_NAME_LSTR[int(g["type"])])
-	# 3. cancel_button（源 DGButton，button png 缺 → 文字 Button）
+	# 6. icon_container 灵魂石 icon（源 :99-103 createIcon(id,45)，Equip 缺条目默认降级框）
+	var icon := ReadequipIcon.create_icon(int(g.get("stone_id", 0)), 0, pd.cm)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.scale = Vector2.ONE * (ICON_SIDE / ICON_BASE)
+	icon.position = Vector2(0.0, ICON_HOST_SIDE - ICON_SIDE)
+	(_frame.get_node("%IconContainer") as Control).add_child(icon)
+	# 3. cancel_button（源 DGButton → StarShopBuyBtn 三态，text fill）
 	var cancel: Button = _frame.get_node("%CancelBtn") as Button
 	cancel.text = pd.cm.get_lstr("CHATCONFIG.CANCEL")
 	cancel.pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_click_feedback")
 		remove_window())
-	# 4. ok_button（源 DGButton，button png 缺 → 文字 Button）
+	# 4. ok_button（源 DGButton → StarShopBuyBtn 三态，text fill）
 	var ok: Button = _frame.get_node("%OkBtn") as Button
 	ok.text = pd.cm.get_lstr("CHATCONFIG.CONFIRM")
 	ok.pressed.connect(_on_ok)
