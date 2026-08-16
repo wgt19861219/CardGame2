@@ -1,27 +1,17 @@
 class_name CrusadePanel
 extends PopWindow
 
-const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
-const CrusadePanelBuilder := preload("res://scripts/ui/crusade_panel_builder.gd")
+## 远征（十字军征途）面板 — 照源 ui/crusade.lua（775 行）+ gametable/crusadeconfig.lua UIRes。
+## 2026-08-16 批 3 Task 7 两件套改造：静态层（Scroll 视口=源 clipNode 内缩 + Bg1-3/
+## 三段地图容器 + Fog1-4 + Light1-2/Frame/TitleBg/Title/BottomFrame/底栏三按钮/
+## 规则页全树）静态进 crusade_content.tscn；原 procedural 美术工厂（174 行）与
+## 规则页渲染器（125 行）双退役；格子从 HBox 均排改照源散点（battle1-15/box1-15
+## 挂三段 Map 容器，逐图 px/CS 实测尺寸）；
+## fog 四张 scale=4.0 等比归源（1998.05×396.49，ratio 5.04，旧 230×90 失真 2.56）。
+## 格子/规则页 fill 下沉 crusade_fills.gd（LINT005 View 400 行）。
 
-## UIRes 节点树缺（Cocos Studio 导出物，同 .Puppet 阻塞）→ 代码重建核心：
-##   15 stage TextureButton + current/locked/passed 状态纹理 + 战斗入口 + 水平滚动。
-##
-## 2026-07-17 .tscn 重构（hero_detail 范式）：位置/size 静态化进 crusade_content.tscn
-## （FrameworkBg/CloseBtn/ResetBtn/FogLayer+4 Fog/StageScroll+HBox/EnemyPreviewHost/
-## StartBtn/ResultLabel/HintAnchor+StageHint），panel instantiate + get_node("%..") 收集 +
-## fill 动态数据。stage/box 15 行按钮仍 procedural 由 HBox 自动排版（位置非 cocos 坐标）。
-
-# crusade_content.tscn：base 静态层（位置/size 编辑器可视化调）。
+const CrusadeFills := preload("res://scripts/ui/crusade_fills.gd")
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/crusade_content.tscn")
-const RESET_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_1.png"
-const RESET_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_normal_2.png"
-const RESET_BTN_CAP: Rect2 = Rect2(14.0, 20.0, 60.0, 23.0)
-const LSTR_RESET_KEY: String = "CRUSADECONFIG.RESTART"
-const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
-const STAGE_SIZE: Vector2 = Vector2(110.0, 110.0)
-const BOX_SIZE: Vector2 = Vector2(60.0, 60.0)
-const BOX_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/crusade_box_"
 const SHAKE_INTERVAL: float = 1.5
 const SHAKE_SCALE_PEAK: Vector2 = Vector2(1.15, 1.15)
 const SHAKE_DURATION: float = 0.1
@@ -35,11 +25,24 @@ const ENEMY_ICON_SCALE: float = 0.65
 const ENEMY_ICON_GAP: int = 5
 const ENEMY_HP_FULL: int = 10000
 const CRUSADE_HERO_MIN_LEVEL: int = 20
-# ruleLayer 规则页按钮（照源 crusadeconfig.lua:965-987 showrule Scale9Button）
-const RULE_SHOWRULE_BTN_POS: Vector2 = Vector2(560.0, 50.0)
-const RULE_SHOWRULE_BTN_SIZE: Vector2 = Vector2(120.0, 48.0)
-const RULE_LABEL_FONT_SIZE: int = 18
+# 源 initDragPos（crusade.lua:497-507）：分段偏移系数。
+const SCROLL_STEP_PER_STAGE: float = 50.0
+const SCROLL_MID_JUMP: float = 450.0
+const SCROLL_MID_FROM: int = 5
+const SCROLL_TAIL_JUMP: float = 400.0
+const SCROLL_TAIL_FROM: int = 9
+const SCROLL_MAX: float = 1259.0
+# 源 lefttime 动态文案（crusade.lua:494-496 refreshLeftTime）。
+const LSTR_LEFTTIME_KEY: String = "CRUSADE.THE_REMAINING_TIMES_OF_TODAY___D"
+const LSTR_LEFTTIME_FALLBACK: String = "今日剩余次数:%d"
+const LSTR_RESET_KEY: String = "CRUSADECONFIG.RESTART"
+const LSTR_RESET_FALLBACK: String = "重新开始"
 const LSTR_SHOW_RULE: String = "CRUSADECONFIG.REVIEW_RULES"
+const LSTR_SHOW_RULE_FALLBACK: String = "查看规则"
+const LSTR_SHOP_KEY: String = "CRUSADECONFIG.REDEEM"
+const LSTR_SHOP_FALLBACK: String = "兑换奖励"
+# 源 openShop（crusade.lua:681-683）pushScene shop.create(4) → 龙鳞（crusadepoint）商店。
+const CRUSADE_SHOP_ID: int = 4
 
 var player: PlayerData = null
 var rng: BattleRng = null
@@ -53,118 +56,95 @@ var start_btn: TextureButton = null
 var _shake_timer: Timer = null
 var _hint_anchor: Control = null
 var stage_hint: CanvasItem = null
-var _rule_layer: Control = null   # 规则页层（null=未建，visible 切换 show/close）
+var _content: Control = null
+var _scroll: ScrollContainer = null
 
 
 func setup_panel(p_player: PlayerData, p_rng: BattleRng) -> void:
-	hud_identity = "crusade"   # T4：原 apply/remove override 样板上收基类
-	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
+	hud_identity = "crusade"
+	transparent_shade = true   # .tscn 已补全屏 bg.jpg 还原源视觉
 	player = p_player
 	rng = p_rng
 	player.ensure_crusade(rng)
 	setup()
-	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn 已补全屏 bg.jpg 还原源视觉。
 	_build_content()
+	_fill_stage_grid()
+	CrusadeFills.fill_rule_layer(_content, player.cm)
+	_fill_lefttime()
+	_apply_initial_scroll()
 	_create_shake_timer()
 	_refresh_stage_states()
 	register_on_enter(_refresh_hint_pos)
 
 
-# 建 UI 内容：base 从 .tscn instantiate（位置/size 静态化）+ 收集 + bind + fill 动态层。
+## connect 静态层信号 + 收集引用（静态美术层/规则页已在 .tscn，builder/renderer 退役）。
 func _build_content() -> void:
-	var content := CONTENT_SCENE.instantiate()
-	container.add_child(content)
-	# 收集 .tscn 静态节点（位置/size 已固化，运行时只 fill 数据/纹理/visible）。
-	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	var reset_btn: Button = content.get_node("%ResetBtn") as Button
-	_apply_reset_button_style(reset_btn)
-	(content.get_node("%ResetLabel") as Label).text = _lstr(LSTR_RESET_KEY, "重新开始")
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	_scroll = _content.get_node("%Scroll") as ScrollContainer
+	# 源触屏拖拽无可见滚动条：压平 HScrollBar（min 占位 8px 会把视口高 405.76 钳到
+	# 413.76；引擎缺口例外，同 SOP 滚动条条款，树内实证 BAR_MIN=(0,0) 后 rect 归位）。
+	var h_bar: HScrollBar = _scroll.get_h_scroll_bar()
+	h_bar.custom_minimum_size = Vector2.ZERO
+	h_bar.add_theme_stylebox_override("scroll", StyleBoxEmpty.new())
+	h_bar.add_theme_stylebox_override("grabber", StyleBoxEmpty.new())
+	h_bar.add_theme_stylebox_override("grabber_highlight", StyleBoxEmpty.new())
+	h_bar.add_theme_stylebox_override("grabber_pressed", StyleBoxEmpty.new())
+	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	var reset_btn: Button = _content.get_node("%ResetBtn") as Button
+	(_content.get_node("%ResetLabel") as Label).text = _lstr(LSTR_RESET_KEY, LSTR_RESET_FALLBACK)
 	reset_btn.pressed.connect(_on_reset)
-	(content.get_node("%StartBtn") as BaseButton).pressed.connect(_on_start_pressed)
-	result_label = content.get_node("%ResultLabel") as Label
-	enemy_preview_box = content.get_node("%EnemyPreviewHost") as Control
-	start_btn = content.get_node("%StartBtn") as TextureButton
+	(_content.get_node("%StartBtn") as BaseButton).pressed.connect(_on_start_pressed)
+	(_content.get_node("%RuleBtn") as BaseButton).pressed.connect(_show_rule_info)
+	(_content.get_node("%ShopBtn") as BaseButton).pressed.connect(_on_shop_pressed)
+	(_content.get_node("%RuleLabel") as Label).text = _lstr(LSTR_SHOW_RULE, LSTR_SHOW_RULE_FALLBACK)
+	(_content.get_node("%ShopLabel") as Label).text = _lstr(LSTR_SHOP_KEY, LSTR_SHOP_FALLBACK)
+	(_content.get_node("%RuleCloseBtn") as BaseButton).pressed.connect(_close_rule_info)
+	(_content.get_node("%RuleShade") as Control).gui_input.connect(_on_rule_shade_input)
+	result_label = _content.get_node("%ResultLabel") as Label
+	enemy_preview_box = _content.get_node("%EnemyPreviewHost") as Control
+	start_btn = _content.get_node("%StartBtn") as TextureButton
 	start_btn.visible = false
 	result_label.text = "远征：第 " + str(player.crusade_manager.cur_stage) + " 关"
-	_hint_anchor = content.get_node("%HintAnchor") as Control
-	stage_hint = content.get_node("%StageHint") as CanvasItem
+	_hint_anchor = _content.get_node("%HintAnchor") as Control
+	stage_hint = _content.get_node("%StageHint") as CanvasItem
 	_start_hint_float()
-	# Fog1-4 .tscn 静态，instantiate 后收集（按 currentStage 显隐）。
+	# Fog1-4 .tscn 静态挂 %ScrollContent（= 源 dragContainer，随格滚动），按 cur 显隐。
 	fog_rects.clear()
+	var scroll_content: Control = _content.get_node("%ScrollContent") as Control
 	for i in range(1, 5):
-		fog_rects.append(content.get_node("%Fog" + str(i)) as TextureRect)
-	# 静态美术层（5 类缺图：bg 三段滚动背景 + frame 外框 + light 光效 + title_bg 标题底 + reset_bg 底部栏）。
-	# 必须在 _create_stage_list 之前建：HBox 子后建，bg/frame 在 .tscn 静态层之上、关卡按钮之下。
-	CrusadePanelBuilder.build_crusade(content)
-	# HBox 内 15 VBox ×（stage btn + box btn）。
-	var hbox: HBoxContainer = content.get_node("%StageHBox") as HBoxContainer
-	_create_stage_list(hbox)
-	# 规则页按钮（照源 crusadeconfig.lua:976 showrule Scale9Button handleName=showRuleInfo）
-	_create_rule_button(content)
-	# HudOverlay 切 identity=crusade（shortcut 隐藏，仅货币栏）。
+		fog_rects.append(scroll_content.get_node("%Fog" + str(i)) as TextureRect)
 
 
+## 格子 fill 下沉 crusade_fills（照源散点 + 位置表），此处只收结果引用。
+func _fill_stage_grid() -> void:
+	var grid: Dictionary = CrusadeFills.fill_stage_grid(
+		_content, player, Callable(self, "_on_stage_n"), Callable(self, "_on_box_pressed"))
+	stage_buttons = grid["stages"]
+	box_rects = grid["boxes"]
 
 
-func _create_stage_list(hbox: HBoxContainer) -> void:
-	for i in range(1, CrusadeData.MAX_STAGE + 1):
-		var vbox := VBoxContainer.new()
-		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var btn := TextureButton.new()
-		btn.texture_normal = _load_tex(_stage_texture(i))
-		btn.custom_minimum_size = STAGE_SIZE
-		btn.ignore_texture_size = true
-		btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		btn.pressed.connect(Callable(self, "_on_stage_n").bind(i))
-		vbox.add_child(btn)
-		var box := TextureButton.new()
-		box.texture_normal = _load_tex(_box_texture(i))
-		box.custom_minimum_size = BOX_SIZE
-		box.ignore_texture_size = true
-		box.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		box.pressed.connect(Callable(self, "_on_box_pressed").bind(i))
-		vbox.add_child(box)
-		hbox.add_child(vbox)
-		stage_buttons.append(btn)
-		box_rects.append(box)
+## 源 refreshLeftTime（:494-496）：lefttime 节点动态文案（格式化剩余次数）。
+func _fill_lefttime() -> void:
+	if player == null or player.crusade_manager == null:
+		return
+	var left: int = player.crusade_manager.get_reset_left()
+	var lbl: Label = _content.get_node("%LefttimeLabel") as Label
+	lbl.text = _lstr(LSTR_LEFTTIME_KEY, LSTR_LEFTTIME_FALLBACK) % left
 
 
-func _box_tier(i: int) -> String:
-	if i == 15:
-		return "gold"
-	if i == 5 or i == 10:
-		return "silver"
-	return "bronze"
-
-
-func _box_texture(i: int) -> String:
-	var state: String = "open" if player.crusade_manager.is_stage_rewarded(i) else "closed"
-	return BOX_TEX_DIR + _box_tier(i) + "_" + state + ".png"
-
-
-## 资源安全加载（exists 预检，避 headless/未 import 时 load push_error）。
-static func _load_tex(path: String) -> Variant:
-	return load(path) if ResourceLoader.exists(path) else null
-
-
-# .tscn 普通 Button 套 Scale9 StyleBoxTexture（normal/hover=tavern_button_normal_1, pressed=tavern_button_normal_2）。
-# 视觉等价 Scale9Sprite + press mask。文字 fill 到独立 Label 子节点 %ResetLabel
-# （Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）。
-func _apply_reset_button_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-
-
-func _stage_texture(i: int) -> String:
-	var state: String = "locked"
-	if player.crusade_manager.cur_stage == i:
-		state = "current"
-	elif player.crusade_manager.is_stage_cleared(i):
-		state = "passed"
-	return STAGE_TEX_DIR + str(i) + "_" + state + ".png"
+## 源 initDragPos（:497-507）：offset = max(cur-4,0)×50 + (cur>5?450) + (cur>9?400)，
+## clamp [0,1259]（源 maxRight=-1259 取负）。
+func _apply_initial_scroll() -> void:
+	if _scroll == null or player == null or player.crusade_manager == null:
+		return
+	var cur: int = player.crusade_manager.cur_stage
+	var offset: float = maxf(float(cur) - 4.0, 0.0) * SCROLL_STEP_PER_STAGE
+	if cur > SCROLL_MID_FROM:
+		offset += SCROLL_MID_JUMP
+	if cur > SCROLL_TAIL_FROM:
+		offset += SCROLL_TAIL_JUMP
+	_scroll.scroll_horizontal = int(clampf(offset, 0.0, SCROLL_MAX))
 
 
 func _on_reset() -> void:
@@ -183,12 +163,15 @@ func _on_reset_confirmed() -> void:
 		return
 	player.crusade_manager.reset()
 	_refresh_stage_states()
-	result_label.text = _lstr("CRUSADE.THE_REMAINING_TIMES_OF_TODAY___D", "今日剩余次数:%d") % player.crusade_manager.get_reset_left()
+	_fill_lefttime()
+	_apply_initial_scroll()
+	result_label.text = _lstr(LSTR_LEFTTIME_KEY, LSTR_LEFTTIME_FALLBACK) % player.crusade_manager.get_reset_left()
 
 
 func _lstr(key: String, fallback: String) -> String:
 	if player != null and player.cm != null:
-		return player.cm.get_lstr(key)
+		var v: String = player.cm.get_lstr(key)
+		return v if v != key else fallback
 	return fallback
 
 
@@ -234,6 +217,7 @@ func _show_reward_preview(i: int) -> void:
 	result_label.text = preview_text
 
 
+## 源 refreshFog（:42-67）：fog_i visible = cur <= 3×i（四层叠放随进度消散）。
 func _refresh_fog() -> void:
 	if fog_rects.size() < 4 or player == null or player.crusade_manager == null:
 		return
@@ -291,8 +275,7 @@ func _on_stage_n(i: int) -> void:
 		result_label.text = "第 %d/%d 关  (无敌人数据)" % [i, max_stage]
 
 
-## 目标单机化：弹 BattlePreparePanel（mode=crusade），玩家战前调阵容/看敌方；战斗同步执行，
-## 通过 crusade_battle_finished 信号回调刷新本面板。
+## 目标单机化：弹 BattlePreparePanel（mode=crusade，源 :431-441 heroLimit level=20）。
 func _on_start_pressed() -> void:
 	if player == null or rng == null or current_select == 0:
 		return
@@ -313,6 +296,17 @@ func _on_crusade_battle_finished(won: bool, stage: int) -> void:
 	else:
 		result_label.text = "第 " + str(stage) + " 关 失败"
 	_refresh_stage_states()
+	_apply_initial_scroll()
+
+
+## 源 openShop（:681-683）：shop.create(4) 龙鳞商店 → 单机化弹 ShopPanel(shop_id=4)。
+func _on_shop_pressed() -> void:
+	if player == null or rng == null:
+		return
+	var mgr := ShopManager.new(player.cm)
+	var shop := ShopPanel.new("shop", {})
+	shop.setup_panel(CRUSADE_SHOP_ID, mgr, player, rng)
+	shop.show_window(get_parent())
 
 
 func _create_shake_timer() -> void:
@@ -351,6 +345,7 @@ func _start_hint_float() -> void:
 	tw.tween_property(stage_hint, "position:y", HINT_FLOAT_DELTA, HINT_FLOAT_TIME).as_relative()
 
 
+## 源 refreshHintPos（:298-323）：指向当前关或上关宝箱（+40 偏移）。
 func _refresh_hint_pos() -> void:
 	if _hint_anchor == null or player == null or player.crusade_manager == null:
 		return
@@ -377,14 +372,14 @@ func _refresh_hint_pos() -> void:
 	_hint_anchor.position = target_global - origin + Vector2(offset_x, HINT_OFFSET_Y)
 
 
-## 刷新 stage 按钮状态纹理（通关/当前/锁定）+ disabled + box 宝箱。
+## 刷新 stage 按钮状态纹理（current/passed/locked 三态增强）+ disabled + box 宝箱。
 func _refresh_stage_states() -> void:
 	var i: int = 1
 	while i <= stage_buttons.size():
-		stage_buttons[i - 1].texture_normal = _load_tex(_stage_texture(i))
+		stage_buttons[i - 1].texture_normal = CrusadeFills.stage_button_texture(player, i)
 		stage_buttons[i - 1].disabled = _is_stage_locked(i)
 		if i - 1 < box_rects.size():
-			box_rects[i - 1].texture_normal = _load_tex(_box_texture(i))
+			box_rects[i - 1].texture_normal = CrusadeFills.box_button_texture(player, i)
 		i += 1
 	_refresh_fog()
 	_refresh_hint_pos()
@@ -403,35 +398,17 @@ func _is_stage_locked(i: int) -> bool:
 	return false
 
 
-# ==================== 规则页（照源 crusade.lua:425-610 ruleLayer）====================
-
-# 规则按钮（照源 crusadeconfig.lua:965-987 showrule Scale9Button）。
-func _create_rule_button(content: Node) -> void:
-	var btn := Button.new()
-	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(RESET_BTN_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(RESET_BTN_PRESS_RES, RESET_BTN_CAP))
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	btn.position = RULE_SHOWRULE_BTN_POS
-	btn.size = RULE_SHOWRULE_BTN_SIZE
-	btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	var lbl := Label.new()
-	lbl.text = player.cm.get_lstr(LSTR_SHOW_RULE)
-	lbl.add_theme_font_size_override("font_size", RULE_LABEL_FONT_SIZE)
-	lbl.anchors_preset = Control.PRESET_CENTER
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(lbl)
-	btn.pressed.connect(_show_rule_info)
-	content.add_child(btn)
-
+# ==================== 规则页（源 crusade.lua:425-430 + :543-595）====================
 
 func _show_rule_info() -> void:
-	if _rule_layer == null:
-		_rule_layer = CrusadeRuleRenderer.build_rule_layer(container, player.cm, _close_rule_info)
-	_rule_layer.visible = true
+	(_content.get_node("%RuleLayer") as Control).visible = true
 
 
 func _close_rule_info() -> void:
-	if _rule_layer != null:
-		_rule_layer.visible = false
+	(_content.get_node("%RuleLayer") as Control).visible = false
 
+
+## 源 ruleLayer touchInfo 吞点击（点遮罩关闭，conformReward/rewardLayerTouch 同语义）。
+func _on_rule_shade_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		_close_rule_info()

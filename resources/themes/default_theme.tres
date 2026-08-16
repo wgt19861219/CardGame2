@@ -314,6 +314,26 @@ texture_margin_top = 33.0
 texture_margin_right = 56.0
 texture_margin_bottom = 15.0
 
+; crusade 底栏功能按钮（批 3 Task 7，2026-08-16）：源 crusadeconfig.lua:967-1017
+; showrule/resetbattle/shop Scale9Button tavern_button_normal(166x63)
+; cap CCRectMake(14,20,60,23) 纹理像素直译（批 1 公式：left=14 top=63-20-23=20
+; right=166-14-60=92 bottom=20），press 层同 cap。取代 panel._apply_reset_button_style
+; /_create_rule_button 运行时 stylebox override（范式禁新增）。文字走按钮子 Label
+; （theme_override，范式同 ResetLabel——stylebox 不对称 margin 致 Button.text 偏移）。
+[sub_resource type="StyleBoxTexture" id="SB_crusade_action_n"]
+texture = ExtResource("14_dlbtn1")
+texture_margin_left = 14.0
+texture_margin_top = 20.0
+texture_margin_right = 92.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="SB_crusade_action_p"]
+texture = ExtResource("15_dlbtn2")
+texture_margin_left = 14.0
+texture_margin_top = 20.0
+texture_margin_right = 92.0
+texture_margin_bottom = 20.0
+
 [resource]
 AmountLabel/base_type = &"Label"
 AmountLabel/colors/font_color = Color(0.608, 0.161, 0.055, 1)
@@ -1086,3 +1106,15 @@ DialogConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 DialogMsgLabel/base_type = &"Label"
 DialogMsgLabel/colors/font_color = Color(1, 1, 1, 1)
 DialogMsgLabel/font_sizes/font_size = 20
+; ── crusade 两件套（批 3 Task 7，2026-08-16）── 底栏三按钮（查看规则/重新开始/兑换奖励）
+; 三态（cap 见 SB_crusade_action_n 注释）；左栏剩余次数（源 lefttime fontinfo
+; normal_button=18 号 ccc3(235,223,207)，crusadeconfig.lua:1032-1044）。
+CrusadeActionBtn/base_type = &"Button"
+CrusadeActionBtn/styles/normal = SubResource("SB_crusade_action_n")
+CrusadeActionBtn/styles/hover = SubResource("SB_crusade_action_n")
+CrusadeActionBtn/styles/pressed = SubResource("SB_crusade_action_p")
+CrusadeActionBtn/styles/disabled = SubResource("SB_crusade_action_n")
+CrusadeActionBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+CrusadeLefttimeLabel/base_type = &"Label"
+CrusadeLefttimeLabel/colors/font_color = Color(0.921569, 0.874510, 0.811765, 1)
+CrusadeLefttimeLabel/font_sizes/font_size = 18
