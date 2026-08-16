@@ -1,9 +1,29 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=24 format=3]
+
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_bg.png" id="2_titlebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_1.png" id="5_brbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_3.png" id="6_gobg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_2.png" id="7_mabg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_1.png" id="8_brchest"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_3.png" id="9_gochest"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_4.png" id="10_machest"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_3.png" id="11_golight"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_2.png" id="12_malight"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_mark1.png" id="13_mamark"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_bg.png" id="14_costbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="15_btn1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="16_btn2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="17_obtn1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="18_obtn2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_up.png" id="19_arrow"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_frame.png" id="20_costframe"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="21_goldicon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="22_rmbicon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_hero_bg.png" id="23_herobg"]
 
 [node name="TavernContent" type="Control"]
 layout_mode = 3
@@ -42,6 +62,7 @@ offset_bottom = 74.0
 texture_normal = ExtResource("3_back")
 texture_pressed = ExtResource("4_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="ResultLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -88,3 +109,725 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+
+
+[node name="BronzeBoard" type="Control" parent="BoardHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 137.0
+offset_top = 195.0
+offset_right = 343.0
+offset_bottom = 515.0
+mouse_filter = 2
+
+[node name="BoardBg" type="TextureRect" parent="BoardHost/BronzeBoard"]
+layout_mode = 3
+offset_left = -7.83
+offset_top = -45.66
+offset_right = 213.83
+offset_bottom = 365.66
+texture = ExtResource("5_brbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleImage" type="TextureRect" parent="BoardHost/BronzeBoard"]
+layout_mode = 3
+offset_left = -21.49
+offset_top = -14.03
+offset_right = 227.49
+offset_bottom = 64.03
+texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="BoardHost/BronzeBoard"]
+layout_mode = 3
+offset_left = 0.0
+offset_top = -2.0
+offset_right = 206.0
+offset_bottom = 22.0
+theme_type_variation = &"TitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "青铜酒馆"
+
+[node name="Clip" type="Control" parent="BoardHost/BronzeBoard"]
+layout_mode = 3
+offset_right = 206.0
+offset_bottom = 320.0
+clip_contents = true
+mouse_filter = 2
+
+[node name="Scroll" type="Control" parent="BoardHost/BronzeBoard/Clip"]
+layout_mode = 3
+mouse_filter = 2
+
+[node name="Box" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 48.12
+offset_top = -6.2
+offset_right = 169.88
+offset_bottom = 106.2
+texture = ExtResource("8_brchest")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CostBg" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 4.42
+offset_top = 199.78
+offset_right = 213.58
+offset_bottom = 230.22
+texture = ExtResource("14_costbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CheckBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 44.22
+offset_top = 235.42
+offset_right = 173.78
+offset_bottom = 284.58
+texture_normal = ExtResource("15_btn1")
+texture_pressed = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="CheckLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/CheckBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "查看"
+
+[node name="ArrowBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 93.0
+offset_top = 307.9
+offset_right = 125.0
+offset_bottom = 332.1
+texture_normal = ExtResource("19_arrow")
+texture_pressed = ExtResource("19_arrow")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="OneCostFrame" type="NinePatchRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 59.0
+offset_top = 391.0
+offset_right = 159.0
+offset_bottom = 423.0
+texture = ExtResource("20_costframe")
+patch_margin_left = 40
+patch_margin_top = 10
+patch_margin_right = 82
+mouse_filter = 2
+
+[node name="OneIcon" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 48.0
+offset_top = 392.56
+offset_right = 80.0
+offset_bottom = 421.44
+texture = ExtResource("21_goldicon")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="OneCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 124.0
+offset_top = 397.0
+offset_right = 164.0
+offset_bottom = 417.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 2
+mouse_filter = 2
+text = "0"
+
+[node name="OneBuyBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 44.22
+offset_top = 425.42
+offset_right = 173.78
+offset_bottom = 474.58
+texture_normal = ExtResource("17_obtn1")
+texture_pressed = ExtResource("18_obtn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="OneBuyLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/OneBuyBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "购买1个"
+
+[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 59.0
+offset_top = 516.0
+offset_right = 159.0
+offset_bottom = 548.0
+texture = ExtResource("20_costframe")
+patch_margin_left = 40
+patch_margin_top = 10
+patch_margin_right = 82
+mouse_filter = 2
+
+[node name="TenIcon" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 48.0
+offset_top = 518.56
+offset_right = 80.0
+offset_bottom = 547.44
+texture = ExtResource("21_goldicon")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TenCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 124.0
+offset_top = 522.0
+offset_right = 164.0
+offset_bottom = 542.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 2
+mouse_filter = 2
+text = "0"
+
+[node name="TenPromptLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 5.0
+offset_top = 490.0
+offset_right = 211.0
+offset_bottom = 510.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+mouse_filter = 2
+text = ""
+
+[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 44.22
+offset_top = 555.42
+offset_right = 173.78
+offset_bottom = 604.58
+texture_normal = ExtResource("15_btn1")
+texture_pressed = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="TenBuyLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/TenBuyBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "购买10个"
+
+
+[node name="GoldBoard" type="Control" parent="BoardHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 377.0
+offset_top = 195.0
+offset_right = 583.0
+offset_bottom = 515.0
+mouse_filter = 2
+
+[node name="BoardBg" type="TextureRect" parent="BoardHost/GoldBoard"]
+layout_mode = 3
+offset_left = -7.83
+offset_top = -45.66
+offset_right = 213.83
+offset_bottom = 365.66
+texture = ExtResource("6_gobg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleImage" type="TextureRect" parent="BoardHost/GoldBoard"]
+layout_mode = 3
+offset_left = -21.49
+offset_top = -14.03
+offset_right = 227.49
+offset_bottom = 64.03
+texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="BoardHost/GoldBoard"]
+layout_mode = 3
+offset_left = 0.0
+offset_top = -2.0
+offset_right = 206.0
+offset_bottom = 22.0
+theme_type_variation = &"TitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "黄金酒馆"
+
+[node name="Clip" type="Control" parent="BoardHost/GoldBoard"]
+layout_mode = 3
+offset_right = 206.0
+offset_bottom = 320.0
+clip_contents = true
+mouse_filter = 2
+
+[node name="Scroll" type="Control" parent="BoardHost/GoldBoard/Clip"]
+layout_mode = 3
+mouse_filter = 2
+
+[node name="Light" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = -40.47
+offset_top = -99.86
+offset_right = 258.47
+offset_bottom = 199.86
+texture = ExtResource("11_golight")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Box" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 48.12
+offset_top = -6.2
+offset_right = 169.88
+offset_bottom = 106.2
+texture = ExtResource("9_gochest")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CostBg" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 4.42
+offset_top = 199.78
+offset_right = 213.58
+offset_bottom = 230.22
+texture = ExtResource("14_costbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CheckBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 44.22
+offset_top = 235.42
+offset_right = 173.78
+offset_bottom = 284.58
+texture_normal = ExtResource("15_btn1")
+texture_pressed = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="CheckLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/CheckBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "查看"
+
+[node name="ArrowBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 93.0
+offset_top = 307.9
+offset_right = 125.0
+offset_bottom = 332.1
+texture_normal = ExtResource("19_arrow")
+texture_pressed = ExtResource("19_arrow")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="OneCostFrame" type="NinePatchRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 59.0
+offset_top = 391.0
+offset_right = 159.0
+offset_bottom = 423.0
+texture = ExtResource("20_costframe")
+patch_margin_left = 40
+patch_margin_top = 10
+patch_margin_right = 82
+mouse_filter = 2
+
+[node name="OneIcon" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 47.61
+offset_top = 391.55
+offset_right = 80.39
+offset_bottom = 422.45
+texture = ExtResource("22_rmbicon")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="OneCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 124.0
+offset_top = 397.0
+offset_right = 164.0
+offset_bottom = 417.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 2
+mouse_filter = 2
+text = "0"
+
+[node name="OneBuyBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 44.22
+offset_top = 425.42
+offset_right = 173.78
+offset_bottom = 474.58
+texture_normal = ExtResource("17_obtn1")
+texture_pressed = ExtResource("18_obtn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="OneBuyLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/OneBuyBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "购买1个"
+
+[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 59.0
+offset_top = 516.0
+offset_right = 159.0
+offset_bottom = 548.0
+texture = ExtResource("20_costframe")
+patch_margin_left = 40
+patch_margin_top = 10
+patch_margin_right = 82
+mouse_filter = 2
+
+[node name="TenIcon" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 47.61
+offset_top = 517.55
+offset_right = 80.39
+offset_bottom = 548.45
+texture = ExtResource("22_rmbicon")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TenCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 124.0
+offset_top = 522.0
+offset_right = 164.0
+offset_bottom = 542.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 2
+mouse_filter = 2
+text = "0"
+
+[node name="TenPromptLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 5.0
+offset_top = 490.0
+offset_right = 211.0
+offset_bottom = 510.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+mouse_filter = 2
+text = ""
+
+[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 44.22
+offset_top = 555.42
+offset_right = 173.78
+offset_bottom = 604.58
+texture_normal = ExtResource("15_btn1")
+texture_pressed = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="TenBuyLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/TenBuyBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "购买10个"
+
+
+[node name="MagicBoard" type="Control" parent="BoardHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 617.0
+offset_top = 195.0
+offset_right = 823.0
+offset_bottom = 515.0
+mouse_filter = 2
+
+[node name="BoardBg" type="TextureRect" parent="BoardHost/MagicBoard"]
+layout_mode = 3
+offset_left = -7.83
+offset_top = -45.66
+offset_right = 213.83
+offset_bottom = 365.66
+texture = ExtResource("7_mabg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleImage" type="TextureRect" parent="BoardHost/MagicBoard"]
+layout_mode = 3
+offset_left = -21.49
+offset_top = -14.03
+offset_right = 227.49
+offset_bottom = 64.03
+texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="BoardHost/MagicBoard"]
+layout_mode = 3
+offset_left = 0.0
+offset_top = -2.0
+offset_right = 206.0
+offset_bottom = 22.0
+theme_type_variation = &"TitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "魂匣"
+
+[node name="Clip" type="Control" parent="BoardHost/MagicBoard"]
+layout_mode = 3
+offset_right = 206.0
+offset_bottom = 320.0
+clip_contents = true
+mouse_filter = 2
+
+[node name="Scroll" type="Control" parent="BoardHost/MagicBoard/Clip"]
+layout_mode = 3
+mouse_filter = 2
+
+[node name="Light" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = -39.47
+offset_top = -79.86
+offset_right = 259.47
+offset_bottom = 219.86
+texture = ExtResource("12_malight")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="BoxBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 7.36
+offset_top = -32.64
+offset_right = 212.64
+offset_bottom = 172.64
+texture = ExtResource("13_mamark")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Box" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 70.58
+offset_top = -10.34
+offset_right = 149.42
+offset_bottom = 90.34
+texture = ExtResource("10_machest")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CostBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 5.42
+offset_top = 199.78
+offset_right = 214.58
+offset_bottom = 230.22
+texture = ExtResource("14_costbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CheckBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 45.22
+offset_top = 235.42
+offset_right = 174.78
+offset_bottom = 284.58
+texture_normal = ExtResource("15_btn1")
+texture_pressed = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="CheckLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll/CheckBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "查看"
+
+[node name="ArrowBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 94.0
+offset_top = 307.9
+offset_right = 126.0
+offset_bottom = 332.1
+texture_normal = ExtResource("19_arrow")
+texture_pressed = ExtResource("19_arrow")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="DropBgLeft" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 17.0
+offset_top = 120.0
+offset_right = 147.0
+offset_bottom = 170.0
+texture = ExtResource("23_herobg")
+patch_margin_left = 10
+patch_margin_top = 35
+patch_margin_right = 35
+patch_margin_bottom = 10
+mouse_filter = 2
+
+[node name="DropBgRight" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 150.0
+offset_top = 120.0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("23_herobg")
+patch_margin_left = 10
+patch_margin_top = 35
+patch_margin_right = 35
+patch_margin_bottom = 10
+mouse_filter = 2
+
+[node name="DropBgDay" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 32.0
+offset_top = 412.5
+offset_right = 182.0
+offset_bottom = 487.5
+texture = ExtResource("23_herobg")
+patch_margin_left = 10
+patch_margin_top = 35
+patch_margin_right = 35
+patch_margin_bottom = 10
+mouse_filter = 2
+
+[node name="DayTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 4.0
+offset_top = 416.0
+offset_right = 210.0
+offset_bottom = 436.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+mouse_filter = 2
+text = "今日热点"
+
+[node name="DropBgMonth" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 32.0
+offset_top = 334.5
+offset_right = 182.0
+offset_bottom = 409.5
+texture = ExtResource("23_herobg")
+patch_margin_left = 10
+patch_margin_top = 35
+patch_margin_right = 35
+patch_margin_bottom = 10
+mouse_filter = 2
+
+[node name="MonthTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 4.0
+offset_top = 340.0
+offset_right = 210.0
+offset_bottom = 360.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+mouse_filter = 2
+text = "本周热点"
+
+[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 60.0
+offset_top = 516.0
+offset_right = 160.0
+offset_bottom = 548.0
+texture = ExtResource("20_costframe")
+patch_margin_left = 40
+patch_margin_top = 10
+patch_margin_right = 82
+mouse_filter = 2
+
+[node name="TenIcon" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 47.61
+offset_top = 517.55
+offset_right = 80.39
+offset_bottom = 548.45
+texture = ExtResource("22_rmbicon")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TenCostLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 124.0
+offset_top = 522.0
+offset_right = 164.0
+offset_bottom = 542.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 2
+mouse_filter = 2
+text = "0"
+
+[node name="TenPromptLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 5.0
+offset_top = 490.0
+offset_right = 211.0
+offset_bottom = 510.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+mouse_filter = 2
+text = ""
+
+[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 3
+offset_left = 45.22
+offset_top = 555.42
+offset_right = 174.78
+offset_bottom = 604.58
+texture_normal = ExtResource("15_btn1")
+texture_pressed = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="TenBuyLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll/TenBuyBtn"]
+layout_mode = 3
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "购买1个"

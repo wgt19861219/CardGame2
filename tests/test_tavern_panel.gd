@@ -2,6 +2,12 @@ extends GutTest
 # Phase 5.3 UI TavernPanel 测试（per-board scroll_board 滑动 + magic drop_bg 4 组预览，2026-07-13）。
 # 照源 tavern.lua：3 board × per-board check/arrow/one_buy/ten_buy + magic drop_bg 4 组 heroIcons
 # （源 doRefrehMagicHeroIcon:1290 left3+right1+day3+month1）。magic 源无单抽 → once_btn==null。
+# 2026-08-16 两件套改造（批2 Task 7）：board 静态结构进 tavern_content.tscn（3 board ×
+# container/BoardBg/Title/Clip/Scroll 全静态），tavern_board_builder.gd 退役；
+# panel 只 fill（文案/cost）+ connect + 滑动 tween。heroIcons 仍运行时填（动态行）。
+
+const PANEL_PATH: String = "res://scripts/ui/tavern_panel.gd"
+const CONTENT_SCENE_PATH: String = "res://scenes/ui/tavern_content.tscn"
 
 var cm: ConfigManager
 
@@ -113,7 +119,7 @@ func test_magic_dropbg_heroicons() -> void:
 	var dropbg_count: int = 0
 	var icon_count: int = 0
 	for c in scroll.get_children():
-		if String(c.name).begins_with("drop_bg"):
+		if String(c.name).begins_with("DropBg"):
 			dropbg_count += 1
 		if c.has_meta("magic_icon"):
 			icon_count += 1
@@ -283,5 +289,81 @@ func test_magic_draw_blocked_below_unlock_vip() -> void:
 	assert_eq(pd.diamond, before_diamond, "VIP 0 magic 抽卡被拒，钻石未扣")
 	assert_true(panel._result_label.text.find("VIP") >= 0 or panel._result_label.text.find("解锁") >= 0,
 		"result_label 提示 VIP 解锁（拒绝文案）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ── 两件套改造守卫（批2 Task 7，2026-08-16）──
+
+# builder 退役（两件套范式）：文件删除 + panel 无残留引用。
+func test_builder_retired() -> void:
+	assert_false(FileAccess.file_exists("res://scripts/ui/tavern_board_builder.gd"),
+		"tavern_board_builder 已退役（两件套范式）")
+	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_false(text.contains("tavern_board_builder"), "panel 无 builder 残留引用")
+
+
+# panel 零静态构造（宽口径白名单）：magic 预览 hero icon 降级 Label.new( ×1 +
+# 抽卡结果弹窗 PopTavernLoot.new( ×1（批5 弹窗组件实例化），board 静态结构全在 tscn。
+func test_panel_no_static_construction() -> void:
+	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_eq(text.count("Label.new("), 1, "仅 1 处 Label.new(（magic 预览 hero icon 降级标签）")
+	assert_eq(text.count("PopTavernLoot.new("), 1, "仅 1 处 PopTavernLoot.new(（抽卡结果弹窗，批5 组件）")
+	assert_eq(text.count(".new("), 2, "宽口径 .new( 总数 = 白名单之和（Label 1 + PopTavernLoot 1）")
+
+
+# content tscn 静态树（A 轨无脚本）：根不绑脚本 + BoardHost 下 3 张完整 board 静态装配。
+func test_content_tscn_static_tree() -> void:
+	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
+	assert_not_null(scene, "tavern_content.tscn 可加载")
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	assert_null(content.get_script(), "content tscn 根无脚本（A 轨无脚本铁律）")
+	var host: Control = content.get_node("%BoardHost") as Control
+	assert_eq(host.get_child_count(), 3, "BoardHost 静态挂 3 张 board")
+	for board_name: String in ["BronzeBoard", "GoldBoard", "MagicBoard"]:
+		var board: Control = content.get_node("%" + board_name) as Control
+		assert_not_null(board, "%s 静态存在" % board_name)
+		# Clip（裁剪层）> Scroll（滑动层）层级防 parenting 回归
+		var scroll: Control = board.get_node("Clip/Scroll") as Control
+		assert_not_null(scroll, "%s 内 Scroll 存在" % board_name)
+		assert_eq((scroll.get_parent() as Control).clip_contents, true,
+			"%s 的 Scroll 父节点是 clip_contents 裁剪层" % board_name)
+	content.queue_free()
+
+
+# board 静态布局防漂移：3 board 横排孔位照源 draglist(80,80)+board_bg ccp(160,205)，
+# Godot 中心 (240,355)/(480,355)/(720,355) → container 左上 (137/377/617,195)（206×320）。
+# global_position 级断言防 parenting 回归（panel 挂载后仍应落在场景空间孔位）。
+func test_board_static_layout() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root)
+	for board_key: String in ["Bronze", "Gold", "MagicSoul"]:
+		var board: Dictionary = panel._boards[board_key]
+		var expect_x: float = {"Bronze": 137.0, "Gold": 377.0, "MagicSoul": 617.0}[board_key]
+		var container: Control = board["container"]
+		assert_almost_eq(container.position.x, expect_x, 0.5, "%s board 左上 x 照源孔位" % board_key)
+		assert_almost_eq(container.position.y, 195.0, 0.5, "%s board 左上 y 照源孔位" % board_key)
+		assert_almost_eq(container.global_position.y, 195.0, 0.5,
+			"%s board global_position 防 parenting 回归" % board_key)
+		assert_almost_eq(container.size.x, 206.0, 0.5, "%s board 宽 206（源 clip stencil 宽）" % board_key)
+		assert_almost_eq(container.size.y, 320.0, 0.5, "%s board 高 320（源滑动行程）" % board_key)
+	panel.remove_window()
+	root.queue_free()
+
+
+# magic board 静态差异：无单抽区（源 MagicSoul 表无 one 条目）+ drop_bg 4 组 day/month 标题静态存在。
+func test_magic_board_static_diff() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root)
+	var magic: Dictionary = panel._boards["MagicSoul"]
+	assert_null(magic.get("once_btn", null), "Magic board tscn 无单抽按钮节点")
+	var scroll: Control = magic["scroll_board"]
+	assert_not_null(scroll.get_node_or_null("TenBuyBtn/TenBuyLabel"), "magic ten_buy 标签静态存在")
+	# 源 :1225 magic ten_buy_label = BUY__D % 1（"购买1个"，magic 唯一按钮按单抽计费）。
+	assert_eq(String((scroll.get_node("TenBuyBtn/TenBuyLabel") as Label).text), "购买1个",
+		"magic ten_buy 标签照源为 购买1个（BUY__D %% 1）")
 	panel.remove_window()
 	root.queue_free()

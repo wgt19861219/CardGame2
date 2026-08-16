@@ -1,33 +1,35 @@
 class_name TavernPanel
 extends PopWindow
 
-## 抽卡面板（View 层）— 照源 tavern.lua 完整复刻 scroll_board 滑动交互 + magic drop_bg 4 组预览
-## （Phase 5.3，2026-07-13；.tscn 重构 2026-07-17）。
-## panel 层静态节点（bg/title_bg/close/result/status/preview_container/preview_label/board_host）
-## 从 tavern_content.tscn instantiate（位置/size 可视化），board 卡片（scroll_board 滑动机制 + drop_bg）
-## 仍 procedural 由 TavernBoardBuilder.create_board 建（保留滑动交互）。
-## 3 卡池 board（源 createItemLayer:1371 bronze/gold/magic）× per-board scroll_board 滑动展开：
-## 点 check（源 doClickCheck:1576 上滑 320 露底部按钮区）/ arrow（doClickArrow:1584 滑回）/
-## one_buy→doTavern("one") / ten_buy→doTavern("ten")。
-## magic drop_bg 4 组 heroIcons（源 doRefrehMagicHeroIcon:1290：left3+right1+day3+month1）。
-## Cost + Cost Type 从表读（TavernData.get_tavern_info），magic 源无单抽→builder 不建 once_buy。
-## 已接入：免费单抽 + 首抽保底 + 抽卡动画(PopTavernLoot)。
-## board 视觉节点 + 滑动机制 + drop_bg 在 TavernBoardBuilder（控行数）。
-## 面板级 _preview_container 保留兼容 test_tavern_magic（非独占不能改），magic 主预览在 scroll_board 内。
+## 抽卡面板（View 层）——两件套范式（批2 Task 7，2026-08-16）。
+## 静态结构全在 tavern_content.tscn：3 卡池 board（bronze/gold/magic）×
+## container(206×320) > BoardBg/TitleImage/TitleLabel + Clip(裁剪) > Scroll（卡池内容，
+## 源 createBaseBoard:594 + createCommonLayer:653 / createMagicLayer:949 静态化）。
+## 原 procedural board 工厂（336 行）退役；panel 只做业务 + 信号 connect + fill
+## （LSTR 文案/费用数值）+ 滑动 tween（源 doClickCheck:1576 上滑 320 / doClickArrow:1584）。
+## magic drop_bg 4 组 heroIcons 运行时填（源 doRefrehMagicHeroIcon:1290，
+## ask_magicsoul 回复后才有 ID，动态行不走 tscn）。
+## Cost + Cost Type 从表读（TavernData.get_tavern_info）；magic 源无单抽 → tscn 无单抽区，
+## ten_buy 标签照源 :1225 = BUY__D % 1（"购买1个"，唯一按钮按单抽计费）。
+## 面板级 _preview_container 保留兼容 test_tavern_magic（非独占不能改），magic 主预览在 Scroll 内。
 
 signal drawn
 
-const TavernBoardBuilder = preload("res://scripts/ui/tavern_board_builder.gd")
-const ReadheroIcon = preload("res://scripts/ui/readhero_icon.gd")
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/tavern_content.tscn")
 const POOL_KEYS: Array[String] = ["Bronze", "Gold", "MagicSoul"]
-# board 横排中心照源 draglist(80,80)+board_bg ccp(160,205) → Godot (240,355)/(480,355)/(720,355)
-const BOARD_CENTER_X: float = 240.0
-const BOARD_DX: float = 240.0
-const BOARD_CENTER_Y: float = 355.0
+# Scroll 局部空间高（源 clip stencil 206×320；子节点 y = CLIP_H - cocos_y）
+const CLIP_H: float = 320.0
+# 源 doClickCheck:1576 CCMoveTo(0.2, (0,320)) EaseSineIn / doClickArrow:1584 EaseSineOut
+const SLIDE_OFFSET: float = 320.0
+const SLIDE_DURATION: float = 0.2
+# 源 playLightAnim :577 gold/magic light CCRotateBy(5, 360) 循环
+const LIGHT_ROTATE_SEC: float = 5.0
+const FULL_CIRCLE_DEG: float = 360.0
+# 源 tavern.lua:566-574 getArrowudAnim：arrow MoveBy(1, (0,-5)) SineInOut ↔ reverse 循环
+const ARROW_FLOAT_OFFSET_Y: float = -5.0
+const ARROW_FLOAT_SEC: float = 1.0
 const REFRESH_INTERVAL_SEC: float = 1.0
 const MAGIC_VIP_KEY: String = "Magic Soul Box"
-# 由 panel 判 key==lstr 走 fallback）。
 const LSTR_CHECK: StringName = &"RECHARGE.VIEW"
 const LSTR_BUY_D: StringName = &"TAVERN.BUY__D"
 const LSTR_DAY_TITLE: StringName = &"TAVERN.TODAYS_HIGHLIGHT"
@@ -52,12 +54,13 @@ var _cm: Variant = null
 var _player: PlayerData = null
 var _rng: BattleRng = null
 var _current_pool: String = "Bronze"
-var _boards: Dictionary = {}   # key -> builder 返回的 board Dictionary
+var _boards: Dictionary = {}   # key -> board 节点 Dictionary（tscn 静态节点引用）
+var _content: Control = null
 var _result_label: Label = null
 var _status_label: Label = null
 var _preview_label: Label = null
 var _preview_container: HBoxContainer = null
-var _board_host: Control = null   # .tscn %BoardHost（3 board container 挂载点）
+var _board_host: Control = null   # .tscn %BoardHost（3 board 挂载点）
 var _refresh_timer: float = 0.0
 
 
@@ -70,46 +73,82 @@ func setup_panel(p_player: PlayerData, rng: BattleRng) -> void:
 	_build_content()
 
 
-# panel 层静态节点（bg/title_bg/close/result/status/preview_container/preview_label/board_host）
-# 从 tavern_content.tscn instantiate（位置/size 可视化），board 卡片仍由 builder procedural 建。
+# 静态结构 instantiate + 面板级节点引用 + 3 board 绑定（fill 文案/费用 + 信号 connect）。
 func _build_content() -> void:
-	var content := CONTENT_SCENE.instantiate()
-	container.add_child(content)
-	_board_host = content.get_node("%BoardHost") as Control
-	_result_label = content.get_node("%ResultLabel") as Label
-	_status_label = content.get_node("%StatusLabel") as Label
-	_preview_container = content.get_node("%PreviewContainer") as HBoxContainer
-	_preview_label = content.get_node("%PreviewLabel") as Label
-	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	_board_host = _content.get_node("%BoardHost") as Control
+	_result_label = _content.get_node("%ResultLabel") as Label
+	_status_label = _content.get_node("%StatusLabel") as Label
+	_preview_container = _content.get_node("%PreviewContainer") as HBoxContainer
+	_preview_label = _content.get_node("%PreviewLabel") as Label
+	var close_btn: TextureButton = _content.get_node("%CloseBtn") as TextureButton
 	close_btn.pressed.connect(remove_window)
-	_create_boards()
+	_bind_boards()
 	_refresh_countdown_label()
-	# HudOverlay 切 identity=tavern。
 
 
-
-
-# createCommonLayer/createMagicLayer（scroll_board 13 节点 + 滑动 + magic drop_bg）。per-board check/arrow/one_buy/ten_buy。
-# 末尾 playLightAnim（源 :1397）gold/magic light 旋转。
-func _create_boards() -> void:
+# 源 createItemLayer:1371：3 board 装配 + 末尾 playLightAnim（源 :1397 gold/magic light 旋转）。
+# board 静态结构在 tscn，此处只 bind（fill 文案/费用 + connect）+ 播动画。
+func _bind_boards() -> void:
 	for i in POOL_KEYS.size():
 		var key: String = POOL_KEYS[i]
 		var src_key: String = _src_key(key)
-		var center: Vector2 = Vector2(BOARD_CENTER_X + BOARD_DX * i, BOARD_CENTER_Y)
 		var cost_info: Dictionary = _read_cost_info(key)
-		var handlers: Dictionary = {
-			"on_check": _on_check_pressed.bind(key),
-			"on_arrow": _on_arrow_pressed.bind(key),
-			"on_once": _on_once_pressed.bind(key),
-			"on_ten": _on_ten_pressed.bind(key),
-		}
 		var texts: Dictionary = _build_board_texts(src_key)
-		var board: Dictionary = TavernBoardBuilder.create_board(src_key, center, cost_info, handlers, texts)
-		_board_host.add_child(board["container"])
+		var board: Dictionary = _bind_board(key, cost_info, texts)
 		_boards[key] = board
-		TavernBoardBuilder.play_light_anim(board)
-		TavernBoardBuilder.play_arrow_float_anim(board)
+		_play_light_anim(board)
+		_play_arrow_float_anim(board)
 	_refresh_magic_board_visibility()
+
+
+# 绑定单张 board：tscn %XxxBoard 容器 + 相对路径取内部节点（board 内节点用通用名，
+# 不开 unique_name_in_owner——owner 级唯一，3 board 同名会冲突）+ fill + connect。
+# 返回 {container, scroll_board, check_btn, arrow_btn, once_btn, ten_btn,
+#   once_cost_lbl, ten_cost_lbl, box, light}（键名沿 builder 期约定，测试锚定）。
+func _bind_board(key: String, cost_info: Dictionary, texts: Dictionary) -> Dictionary:
+	# tscn 节点前缀：MagicSoul 池键对应短名 Magic（%MagicBoard）
+	var board_id: String = "Magic" if key == "MagicSoul" else key
+	var container: Control = _content.get_node("%" + board_id + "Board") as Control
+	var scroll: Control = container.get_node("Clip/Scroll") as Control
+	var check: TextureButton = scroll.get_node("CheckBtn") as TextureButton
+	(check.get_node("CheckLabel") as Label).text = String(texts["check_label"])
+	check.pressed.connect(_on_check_pressed.bind(key))
+	var arrow: TextureButton = scroll.get_node("ArrowBtn") as TextureButton
+	arrow.pressed.connect(_on_arrow_pressed.bind(key))
+	# 十连区（bronze/gold/magic 共有）：费用 + 提示 + 按钮
+	var ten_cost_lbl: Label = scroll.get_node("TenCostLabel") as Label
+	ten_cost_lbl.text = str(int(cost_info.get("ten_cost", 0)))
+	var ten_prompt: Label = scroll.get_node("TenPromptLabel") as Label
+	ten_prompt.text = String(texts["ten_prompt_text"])
+	var ten_buy: TextureButton = scroll.get_node("TenBuyBtn") as TextureButton
+	(ten_buy.get_node("TenBuyLabel") as Label).text = String(texts["ten_label"])
+	ten_buy.pressed.connect(_on_ten_pressed.bind(key))
+	# 单抽区（源 magic 无 one 条目 → tscn 无单抽区，once_btn 为 null）
+	var once_btn: TextureButton = scroll.get_node_or_null("OneBuyBtn") as TextureButton
+	var once_cost_lbl: Label = null
+	if once_btn != null:
+		(once_btn.get_node("OneBuyLabel") as Label).text = String(texts["once_label"])
+		once_btn.pressed.connect(_on_once_pressed.bind(key))
+		once_cost_lbl = scroll.get_node("OneCostLabel") as Label
+		once_cost_lbl.text = str(int(cost_info.get("once_cost", 0)))
+	# magic drop_bg 标题（源 drop_day_title :1113 / drop_month_title :1139）
+	if key == "MagicSoul":
+		(scroll.get_node("DayTitle") as Label).text = String(texts["day_title"])
+		(scroll.get_node("MonthTitle") as Label).text = String(texts["month_title"])
+	return {
+		"container": container,
+		"scroll_board": scroll,
+		"check_btn": check,
+		"arrow_btn": arrow,
+		"once_btn": once_btn,
+		"ten_btn": ten_buy,
+		"once_cost_lbl": once_cost_lbl,
+		"ten_cost_lbl": ten_cost_lbl,
+		"box": scroll.get_node("Box") as TextureRect,
+		"light": scroll.get_node_or_null("Light") as TextureRect,
+	}
 
 
 # showvip > vip → magicLayer.setVisible(false)（源同时重排 bronze/gold 居中；本项目简化保 3 board 横排孔位）。
@@ -130,7 +169,8 @@ func _build_board_texts(src_key: String) -> Dictionary:
 	return {
 		"check_label": _lstr_or(LSTR_CHECK, FALLBACK_CHECK),
 		"once_label": _lstr_or(LSTR_BUY_D, FALLBACK_BUY_FMT) % 1,
-		"ten_label": _lstr_or(LSTR_BUY_D, FALLBACK_BUY_FMT) % 10,
+		# magic ten_buy 标签照源 :1225 = BUY__D % 1（唯一按钮按单抽计费）
+		"ten_label": _lstr_or(LSTR_BUY_D, FALLBACK_BUY_FMT) % (1 if src_key == "magic" else 10),
 		"day_title": _lstr_or(LSTR_DAY_TITLE, FALLBACK_DAY_TITLE),
 		"month_title": _lstr_or(LSTR_MONTH_TITLE, FALLBACK_MONTH_TITLE),
 		"ten_prompt_text": _ten_prompt_text(src_key),
@@ -183,12 +223,12 @@ func _select_pool(key: String) -> void:
 func _on_check_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_select_pool(key)
-	TavernBoardBuilder.expand((_boards[key] as Dictionary)["scroll_board"])
+	_expand_scroll((_boards[key] as Dictionary)["scroll_board"] as Control)
 
 
 func _on_arrow_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	TavernBoardBuilder.collapse((_boards[key] as Dictionary)["scroll_board"])
+	_collapse_scroll((_boards[key] as Dictionary)["scroll_board"] as Control)
 
 
 func _on_once_pressed(key: String) -> void:
@@ -199,6 +239,46 @@ func _on_once_pressed(key: String) -> void:
 func _on_ten_pressed(key: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_on_draw(_player, _rng, key, true)
+
+
+# 源 doClickCheck:1576：scroll_board CCMoveTo(0.2,(0,320)) EaseSineIn（cocos y 向上 320
+# = Godot y 向下 -320）→ Tween TRANS_SINE EASE_IN。
+func _expand_scroll(scroll: Control) -> void:
+	var tw: Tween = scroll.create_tween()
+	tw.tween_property(scroll, "position:y", -SLIDE_OFFSET, SLIDE_DURATION) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+
+# 源 doClickArrow:1584：CCMoveTo(0.2,(0,0)) EaseSineOut。
+func _collapse_scroll(scroll: Control) -> void:
+	var tw: Tween = scroll.create_tween()
+	tw.tween_property(scroll, "position:y", 0.0, SLIDE_DURATION) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+# 源 playLightAnim :577-590 gold/magic light CCRotateBy(5,360) RepeatForever。
+# TextureRect rotation 绕 pivot_offset，照源 Sprite anchor(0.5,0.5) → pivot=size/2。
+func _play_light_anim(board: Dictionary) -> void:
+	var light: TextureRect = board.get("light", null)
+	if light == null:
+		return
+	light.pivot_offset = light.size * 0.5
+	var tw: Tween = light.create_tween().set_loops()
+	tw.tween_property(light, "rotation", deg_to_rad(FULL_CIRCLE_DEG), LIGHT_ROTATE_SEC)
+
+
+# 源 tavern.lua:566-574 getArrowudAnim：arrow MoveBy(1,(0,-5)) SineInOut ↔ reverse 循环。
+func _play_arrow_float_anim(board: Dictionary) -> void:
+	var arrow: TextureButton = board.get("arrow_btn", null)
+	if arrow == null or not arrow.is_inside_tree():
+		return
+	var base_y: float = arrow.position.y
+	var tw: Tween = arrow.create_tween().set_loops()
+	tw.tween_property(arrow, "position:y", base_y + ARROW_FLOAT_OFFSET_Y, ARROW_FLOAT_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(arrow, "position:y", base_y, ARROW_FLOAT_SEC) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	arrow.set_meta(&"arrow_float_active", true)   # headless 测试查 meta（Tween 推进不可靠）
 
 
 # magic scroll_board drop_bg heroIcons 4 组（照源 left3+right1+day3+month1）+
@@ -259,7 +339,7 @@ func _add_magic_icon(scroll: Control, tid: int, cx: float, cy: float) -> void:
 	icon.set_meta("magic_icon", true)
 	icon.custom_minimum_size = Vector2(38.0, 38.0)
 	icon.size = Vector2(38.0, 38.0)
-	icon.position = Vector2(cx, TavernBoardBuilder.CLIP_H - cy) - icon.size * 0.5
+	icon.position = Vector2(cx, CLIP_H - cy) - icon.size * 0.5
 	scroll.add_child(icon)
 
 
