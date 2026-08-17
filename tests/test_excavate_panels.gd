@@ -544,28 +544,177 @@ func test_map_panel_empty_list_no_crash() -> void:
 	root.queue_free()
 
 
-# ── ExcavateSearchPanel：LSTR + 按钮纹理（tavern_button_1+icon_search）──
+# ── ExcavateSearchPanel：两件套 + A 债 #1/#2 归源（excavate 批 Task 4，2026-08-17）──
 
-# search toast + type name LSTR key 全在 JSON
+# search toast + type name + 按钮文案 LSTR key 全在 JSON
 func test_search_lstr_keys_present() -> void:
 	var keys: Array[String] = [
 		"MAP.TODAY_THE_SEARCH_HAS_REACHED_THE_MAXIMUM_NUMBER_OF_TIMES_",
 		"ERRORINFO.INSUFFICIENT_COINS",
 		"MAP.DIAMOND_MINE", "MAP.GOLDMINE", "MAP.LABORATORY",
+		"EXCAVATEHISTORY.DEFENSIVE_RECORD", "EXCAVATEMAP.RULES",
 	]
 	for k in keys:
 		var v: String = cm.get_lstr(k)
 		assert_ne(v, k, "LSTR key 命中：" + k)
 
 
-# search 关键资源存在（bg.jpg + excavate_empty.jpg + tavern_button + icon_search）
+# search 关键资源存在（bg/框体/按钮/图标贴图全量）
 func test_search_assets_exist() -> void:
-	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/excavate/excavate_empty.jpg"), "excavate_empty.jpg 存在")
-	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/tavern_button_1.png"), "tavern_button_1.png 存在")
-	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_1.png"), "excavate_icon_search_1.png 存在")
+	var paths: Array[String] = [
+		"res://assets/ui/alpha/HVGA/bg.jpg",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_empty.jpg",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_magnifier.png",
+		"res://assets/ui/alpha/HVGA/backbtn.png",
+		"res://assets/ui/alpha/HVGA/tavern_button_1.png",
+		"res://assets/ui/alpha/HVGA/tavern_button_2.png",
+		"res://assets/ui/alpha/HVGA/sell_number_button.png",
+		"res://assets/ui/alpha/HVGA/sell_number_button_down.png",
+		"res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png",
+		"res://assets/ui/alpha/HVGA/goldicon_small.png",
+	]
+	for p in paths:
+		assert_true(ResourceLoader.exists(p), "资源存在：" + p)
 
 
-# search 面板装配无异常（含 search button + label 覆盖 + cost label）
+# A 类债 #1/#2 归源：uieditor/excavatesearch.lua:112（frame_bg fix_wh 702.34375x392.96875）
+# 与 :129-135（frame fix_wh 733.59375x454.6875，PIL 实测纹理 734x455 ratio 1.6132，
+# fix ratio 1.61325 完全等比 → 偏差 0.004%）。弃迁移 520x400/500x380 强拉
+# （ratio 1.30/1.32 vs 1.6132 偏差 19%/18%，scan_texture_aspect 报警件）。
+# frame_bg 照源 702.34x392.97 系源对老资产(899x503÷1.28)的等比值，现资产 734x455
+# 资产换代致 ratio 1.7873 vs 1.6132 偏差 10.8%（HC 多语言项目查无 899x503 版）——
+# 源显式尺寸照源直译不"修正"（宽度 702.34 为填满 frame 透明内空的功能尺寸，
+# 等比收窄会露 bg 缝），故 frame 断言 ratio 守卫、frame_bg 只断言尺寸。
+# search_frame=Scale9Sprite crusade_reset_bg cap(23.44,23.44,19.53,19.53)@75x75
+# → patch L23/B23/R32/T32，opacity 200 → modulate.a=200/255。
+func test_search_frame_source_fidelity() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_search_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: TextureRect = content.get_node_or_null("FrameContainer/Frame") as TextureRect
+	assert_not_null(frame, "Frame 存在且为 TextureRect（源 t=Sprite）")
+	if frame == null:
+		content.queue_free()
+		return
+	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
+		"frame 贴图归源 excavate_main_frame")
+	assert_almost_eq(frame.size.x, 733.59, 0.02, "frame w=733.59（fix_wh 直译，A 债 #1）")
+	assert_almost_eq(frame.size.y, 454.69, 0.02, "frame h=454.69")
+	var tex: Texture2D = frame.texture
+	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
+	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
+	var frame_bg: TextureRect = content.get_node_or_null("FrameContainer/FrameBg") as TextureRect
+	assert_not_null(frame_bg, "FrameBg 存在且为 TextureRect")
+	if frame_bg != null:
+		assert_eq(frame_bg.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_empty.jpg",
+			"frame_bg 贴图归源 excavate_empty")
+		assert_almost_eq(frame_bg.size.x, 702.34, 0.02, "frame_bg w=702.34（fix_wh 直译，A 债 #2）")
+		assert_almost_eq(frame_bg.size.y, 392.97, 0.02, "frame_bg h=392.97（源显式尺寸，资产换代 10.8% 记录不断言）")
+	var search_frame: NinePatchRect = content.get_node_or_null("SearchFrame") as NinePatchRect
+	assert_not_null(search_frame, "SearchFrame 存在且为 NinePatchRect（源 Scale9Sprite）")
+	if search_frame != null:
+		assert_eq(search_frame.texture.resource_path, "res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png",
+			"search_frame 贴图归源 crusade_reset_bg")
+		assert_eq(search_frame.patch_margin_left, 23, "cap left=23.44 取整 23")
+		assert_eq(search_frame.patch_margin_bottom, 23, "cap bottom=23.44 取整 23")
+		assert_eq(search_frame.patch_margin_right, 32, "cap right=75-23.44-19.53=32.03 取整 32")
+		assert_eq(search_frame.patch_margin_top, 32, "cap top=32.03 取整 32")
+		assert_almost_eq(search_frame.modulate.a, 200.0 / 255.0, 0.005, "opacity=200/255（源 config.opacity）")
+	# 受控裁剪守卫：history_red_tag 不建（源 refreshHistoryTag 依赖服务器已读标记
+	# checkUnreadExcavateHistory，数据层无对应状态恒不可见，照 history 批 vit_button 口径）
+	var histroy: Button = content.get_node_or_null("%HistroyButton") as Button
+	assert_not_null(histroy, "HistroyButton 存在（源节点名 histroy_button 拼写照源）")
+	if histroy != null:
+		assert_eq(histroy.get_child_count(), 0, "histroy_button 无子节点（label 走 Button.text，red_tag 受控裁剪）")
+	content.queue_free()
+
+
+# 静态 rect 守卫（防 parenting 回归）：照 uieditor/excavatesearch.lua 声明表直译。
+# 场景层 to_godot(x,y)=(x+80,560-y)：frame_container Layer 800x480.47 anchor(0,0)
+# @(-3.13,3.91) → (76.875,75.625)-(876.875,556.094)；search_icon 中心 (400,254.69)
+# → (480,305.31)；histroy 117.19x53.13 中心 (154.69,81.25)→(234.69,478.75)；
+# explain 66.41x53.13 中心 (250.78,81.25)→(330.78,478.75)；search_frame 171.88x101.56
+# 中心 (637.5,99.22)→(717.5,460.78)。frame_container 局部（Cocos 子 y 翻转从上=480.47-cy）：
+# frame 中心 (402.34,246.88)；title 中心 (402.34,49.22) 246.09x35.94；back 74x75px÷CS
+# =57.78x58.54 中心 (65.63,46.09)。search_container@search_frame 局部 (85.94,7.81)
+# 39.06²；search_button 140.63x50.78 中心 container 局部 (0.78,60.94)（cy=-21.88 越界
+# 挂下）；cost_label anchor(1,0.5) 右缘 container 局部 48.44 → 全局 765.94。
+func test_search_content_static_rects() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_search_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var fc: Control = content.get_node("FrameContainer") as Control
+	assert_almost_eq(fc.position.x, 76.875, 0.02, "frame_container offset_left=76.875")
+	assert_almost_eq(fc.position.y, 75.625, 0.02, "frame_container offset_top=75.625")
+	assert_almost_eq(fc.size.x, 800.0, 0.02, "frame_container w=800（scaleSize 直译）")
+	assert_almost_eq(fc.size.y, 480.47, 0.02, "frame_container h=480.47")
+	var frame: Control = fc.get_node("Frame") as Control
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 402.34, 0.02, "frame 局部中心 x=402.34")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 246.88, 0.02, "frame 局部中心 y=246.88（480.47-233.59）")
+	var title: Control = fc.get_node("Title") as Control
+	assert_almost_eq(title.position.x + title.size.x * 0.5, 402.34, 0.02, "title 局部中心 x=402.34")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, 49.22, 0.02, "title 局部中心 y=49.22（480.47-431.25）")
+	assert_almost_eq(title.size.x, 246.09, 0.02, "title w=246.09（fix_wh 直译）")
+	var title_tex: Texture2D = (fc.get_node("Title") as TextureRect).texture
+	var title_dev: float = abs(title.size.x / title.size.y - float(title_tex.get_width()) / float(title_tex.get_height())) / (float(title_tex.get_width()) / float(title_tex.get_height()))
+	assert_lt(title_dev, 0.08, "title 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (title_dev * 100.0))
+	var back_btn: Control = fc.get_node("%BackButton") as Control
+	assert_almost_eq(back_btn.position.x + back_btn.size.x * 0.5, 65.63, 0.02, "back 局部中心 x=65.63")
+	assert_almost_eq(back_btn.position.y + back_btn.size.y * 0.5, 46.09, 0.02, "back 局部中心 y=46.09（480.47-434.38）")
+	var back_tex: Texture2D = (fc.get_node("%BackButton") as TextureButton).texture_normal
+	var back_dev: float = abs(back_btn.size.x / back_btn.size.y - float(back_tex.get_width()) / float(back_tex.get_height())) / (float(back_tex.get_width()) / float(back_tex.get_height()))
+	assert_lt(back_dev, 0.08, "back 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (back_dev * 100.0))
+	var icon: Control = content.get_node("%SearchIcon") as Control
+	assert_almost_eq(icon.position.x + icon.size.x * 0.5, 480.0, 0.02, "search_icon 中心 x=480（to_godot(400)）")
+	assert_almost_eq(icon.position.y + icon.size.y * 0.5, 305.31, 0.02, "search_icon 中心 y=305.31（560-254.69）")
+	assert_almost_eq(icon.size.x, 100.78, 0.02, "search_icon w=100.78（fix_wh 直译）")
+	assert_almost_eq(icon.size.y, 102.34, 0.02, "search_icon h=102.34")
+	var histroy: Control = content.get_node("%HistroyButton") as Control
+	assert_almost_eq(histroy.position.x + histroy.size.x * 0.5, 234.69, 0.02, "histroy 中心 x=234.69（to_godot(154.69)）")
+	assert_almost_eq(histroy.position.y + histroy.size.y * 0.5, 478.75, 0.02, "histroy 中心 y=478.75（560-81.25）")
+	assert_almost_eq(histroy.size.x, 117.19, 0.02, "histroy w=117.19（scaleSize 直译）")
+	assert_almost_eq(histroy.size.y, 53.13, 0.02, "histroy h=53.13")
+	var explain: Control = content.get_node("%ExplainButton") as Control
+	assert_almost_eq(explain.position.x + explain.size.x * 0.5, 330.78, 0.02, "explain 中心 x=330.78（to_godot(250.78)）")
+	assert_almost_eq(explain.size.x, 66.41, 0.02, "explain w=66.41（scaleSize 直译）")
+	var search_frame: Control = content.get_node("SearchFrame") as Control
+	assert_almost_eq(search_frame.position.x + search_frame.size.x * 0.5, 717.5, 0.02, "search_frame 中心 x=717.5（to_godot(637.5)）")
+	assert_almost_eq(search_frame.position.y + search_frame.size.y * 0.5, 460.78, 0.02, "search_frame 中心 y=460.78（560-99.22）")
+	assert_almost_eq(search_frame.size.x, 171.88, 0.02, "search_frame w=171.88（scaleSize 直译）")
+	assert_almost_eq(search_frame.size.y, 101.56, 0.02, "search_frame h=101.56")
+	var search_btn: Control = content.get_node("%SearchButton") as Control
+	assert_almost_eq(search_btn.size.x, 140.63, 0.02, "search_button w=140.63（scaleSize 直译）")
+	assert_almost_eq(search_btn.size.y, 50.78, 0.02, "search_button h=50.78")
+	var btn_center: Vector2 = search_btn.get_global_rect().get_center()
+	assert_almost_eq(btn_center.x, 718.28, 0.02, "search_button 全局中心 x=718.28（cy=-21.88 越界挂下）")
+	assert_almost_eq(btn_center.y, 478.75, 0.02, "search_button 全局中心 y=478.75")
+	var gold: Control = content.get_node("%GoldIcon") as Control
+	var gold_tex: Texture2D = (content.get_node("%GoldIcon") as TextureRect).texture
+	var gold_dev: float = abs(gold.size.x / gold.size.y - float(gold_tex.get_width()) / float(gold_tex.get_height())) / (float(gold_tex.get_width()) / float(gold_tex.get_height()))
+	assert_lt(gold_dev, 0.08, "gold 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (gold_dev * 100.0))
+	var cost: Control = content.get_node("%CostLabel") as Control
+	assert_almost_eq(cost.get_global_rect().position.x + cost.size.x, 765.94, 0.02, "cost 右缘全局 x=765.94（源 anchor(1,0.5)@48.44）")
+	# 绘制序守卫（防反盖）：源 z bg=0 < frame_container=5 < 同 z=10 组按声明序
+	# （search_icon→histroy→explain→search_frame）
+	assert_lt(content.get_node("Bg").get_index(), fc.get_index(), "bg 声明序先于 frame_container（z 0<5）")
+	assert_lt(fc.get_index(), content.get_node("%SearchIcon").get_index(), "frame_container 先于 search_icon（z 5<10）")
+	assert_lt(content.get_node("%SearchIcon").get_index(), histroy.get_index(), "search_icon 先于 histroy（同 z=10 声明序）")
+	assert_lt(explain.get_index(), search_frame.get_index(), "explain 先于 search_frame（同 z=10 声明序）")
+	content.queue_free()
+
+
+# 旧范式退役守卫（两件套 SOP）：panel.gd 源码无运行时样式/静态节点构造。
+func test_search_no_legacy_runtime_styling() -> void:
+	var src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_search_panel.gd")
+	assert_false(src.contains("UiScale9Button"), "UiScale9Button 已退役")
+	assert_false(src.contains("add_theme_color_override"), "运行时颜色 override 已退役")
+	assert_false(src.contains("add_theme_font_size_override"), "运行时字号 override 已退役")
+	assert_false(src.contains("add_theme_stylebox_override"), "运行时样式 override 已退役")
+	for ctor: String in ["Label.new(", "Button.new(", "TextureRect.new(", "TextureButton.new(", "Control.new("]:
+		assert_false(src.contains(ctor), "无运行时静态节点构造 %s（静态结构全在 tscn）" % ctor)
+
+
+# search 面板装配 + fill（按钮 LSTR 文案 / cost 数值与颜色二态）
 func test_search_panel_builds_without_error() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -575,8 +724,16 @@ func test_search_panel_builds_without_error() -> void:
 	panel.setup_panel(pd, BattleRng.new(1))
 	panel.show_window(root)
 	assert_gt(panel.container.get_child_count(), 0, "container 非空")
-	# cost_label 显示当前消耗数字（首搜 100）
 	assert_eq(panel._cost_label.text, "100", "首搜消耗显示 100")
+	# cost 颜色二态走 fill modulate（金币 100000 充足 → 白=基色橙）
+	assert_eq(panel._cost_label.modulate, Color.WHITE, "cost 充足态 modulate 白（基色橙，源 refreshCostLabel:88）")
+	pd.hero_manager.gold = 50
+	panel._refresh_cost()
+	assert_eq(panel._cost_label.modulate, Color(1.0, 0.0, 0.0), "cost 不足态 modulate 红（清 G/B 通道，源 :86）")
+	var histroy: Button = panel.container.get_node("ExcavateSearchContent/%HistroyButton") as Button
+	assert_eq(histroy.text, cm.get_lstr("EXCAVATEHISTORY.DEFENSIVE_RECORD"), "histroy 文案 fill（源节点名拼写照源）")
+	var explain: Button = panel.container.get_node("ExcavateSearchContent/%ExplainButton") as Button
+	assert_eq(explain.text, cm.get_lstr("EXCAVATEMAP.RULES"), "explain 文案 fill")
 	panel.remove_window()
 	root.queue_free()
 

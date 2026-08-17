@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=50 format=3]
+[gd_resource type="Theme" load_steps=54 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -332,6 +332,38 @@ texture = ExtResource("15_dlbtn2")
 texture_margin_left = 14.0
 texture_margin_top = 20.0
 texture_margin_right = 92.0
+texture_margin_bottom = 20.0
+
+; excavate_search 底部导航钮（excavatesearch.lua histroy/explain：sell_number_button
+; cap(15.63,15.63,18.75,18.75)@63x67 → L16/B16/R29/T33，批3 像素直译口径）
+[sub_resource type="StyleBoxTexture" id="SB_exc_nav_n"]
+texture = ExtResource("8_selln")
+texture_margin_left = 16.0
+texture_margin_top = 33.0
+texture_margin_right = 29.0
+texture_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxTexture" id="SB_exc_nav_p"]
+texture = ExtResource("9_sellp")
+texture_margin_left = 16.0
+texture_margin_top = 33.0
+texture_margin_right = 29.0
+texture_margin_bottom = 16.0
+
+; excavate_search 搜索钮（excavatesearch.lua search_button：tavern_button_1/2
+; cap(21.88,19.53,73.44,20.31)@166x63 → L22/B20/R71/T23）
+[sub_resource type="StyleBoxTexture" id="SB_exc_search_n"]
+texture = ExtResource("16_miduse1")
+texture_margin_left = 22.0
+texture_margin_top = 23.0
+texture_margin_right = 71.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="SB_exc_search_p"]
+texture = ExtResource("17_miduse2")
+texture_margin_left = 22.0
+texture_margin_top = 23.0
+texture_margin_right = 71.0
 texture_margin_bottom = 20.0
 
 [resource]
@@ -1165,3 +1197,26 @@ HistoryNameLabel/font_sizes/font_size = 16
 HistoryInfoLabel/base_type = &"Label"
 HistoryInfoLabel/colors/font_color = Color(0.254902, 0.223529, 0.211765, 1)
 HistoryInfoLabel/font_sizes/font_size = 16
+; ── excavate_search 两件套（excavate 批 Task 4，2026-08-17）──
+; 底部导航钮（uieditor/excavatesearch.lua histroy/explain_button DGButton
+; sell_number_button 系；子 label size22 ccc3(234,225,205) → Button.text 同色号）
+ExcavateNavBtn/base_type = &"Button"
+ExcavateNavBtn/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+ExcavateNavBtn/font_sizes/font_size = 22
+ExcavateNavBtn/styles/normal = SubResource("SB_exc_nav_n")
+ExcavateNavBtn/styles/hover = SubResource("SB_exc_nav_n")
+ExcavateNavBtn/styles/pressed = SubResource("SB_exc_nav_p")
+ExcavateNavBtn/styles/disabled = SubResource("SB_exc_nav_n")
+ExcavateNavBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 搜索钮（excavatesearch.lua search_button tavern_button 系，text 空图标走子 SearchLabel）
+ExcavateSearchBtn/base_type = &"Button"
+ExcavateSearchBtn/styles/normal = SubResource("SB_exc_search_n")
+ExcavateSearchBtn/styles/hover = SubResource("SB_exc_search_n")
+ExcavateSearchBtn/styles/pressed = SubResource("SB_exc_search_p")
+ExcavateSearchBtn/styles/disabled = SubResource("SB_exc_search_n")
+ExcavateSearchBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 花费数字（excavatesearch.lua cost_label size16 基色 ccc3(255,174,53)；
+; 不足红走 fill modulate(1,0,0) 清 G/B 通道，variation 只定号）
+ExcavateCostLabel/base_type = &"Label"
+ExcavateCostLabel/colors/font_color = Color(1, 0.682353, 0.207843, 1)
+ExcavateCostLabel/font_sizes/font_size = 16

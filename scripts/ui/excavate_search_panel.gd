@@ -1,32 +1,22 @@
 class_name ExcavateSearchPanel
 extends PopWindow
 
-## 藏宝地穴搜索场景（View 层）— 照源 ui/excavate/search.lua。
-## search_button → 检查次数/金币 → search_icon 圆周动画 → ExcavateManager.search → 结果反馈。
-## 单机化：源 ed.ui.excavate.search 联机 → 本地 mgr.search（roll+扣金+加 monster 矿点）。
-## 阶段 1：搜索成功 Toast 结果（map 展示阶段 2 接）；history 按钮接 ExcavateHistoryPanel。
-## P1（2026-07-16）：bg.jpg + frame_bg excavate_empty.jpg + backbtn + Scale9 按钮 + search 按钮纹理
-## （tavern_button_1 + excavate_icon_search_1）+ LSTR MAP.TODAY/ERRORINFO.INSUFFICIENT/MAP.DIAMOND_MINE。
-##
-## 重构（2026-07-18，hero_detail 范式）：panel 层静态节点（bg/frame_bg/frame/back/title/search_icon/
-## search_button+label/gold_icon/cost_label/explain/history）固化进 excavate_search_content.tscn；
-## 运行时套 Scale9 stylebox（apply_with_label）补九宫格视觉。源 cocos(800×480 左下) →
-## Godot(960×640 左上)：(cx+80, 560-cy)；纹理显示=纹理/CS（源 hello.lua:311 CS=1.28125）。
+## 藏宝地穴搜索场景（View 层）— 照源 ui/excavate/search.lua + uieditor/excavatesearch.lua。
+## 两件套（excavate 批 Task 4，2026-08-17）：静态结构全在 excavate_search_content.tscn
+## （bg/frame_container 子树/search_frame 子树/三按钮），本脚本只业务 + 信号 connect + fill。
+## search_button → 检查次数/金币 → search_icon 圆周动画（源 registerSearchButton:28
+## getMoveCircleAction palstance=180/radius=20/target=1）→ ExcavateManager.search → Toast。
+## 单机化：源 ed.ui.excavate.search 联网 → 本地 mgr.search；金币不足源走 useMidas 补金
+## 弹窗，单机直接 Toast 金币不足；搜索完跳 map。
+## 受控裁剪：history_red_tag（源 refreshHistoryTag:92-101 依赖服务器已读标记
+## checkUnreadExcavateHistory，数据层无对应状态恒不可见，节点不建，照 history 批
+## vit_button 同口径）；源 :121-127 按钮文案超宽 scale 钳制（中文 88<100/44<50 恒不触发）省略。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_search_content.tscn")
-# Scale9 按钮纹理（位置已静态化进 .tscn，运行时套 stylebox）
-const SEARCH_BTN_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_1.png"
-const SEARCH_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/tavern_button_2.png"
-const SEARCH_BTN_CAP: Rect2 = Rect2(21.88, 19.53, 73.44, 20.31)
-const SCALE9_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
-const SCALE9_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
-const SCALE9_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 18.75, 18.75)
-const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
-const COLOR_COST_OK: Color = Color(1.0, 174.0 / 255.0, 53.0 / 255.0)
-const COLOR_COST_LOW: Color = Color(1.0, 0.0, 0.0)
-const SEARCH_ANIM_DEG_PER_SEC: float = 180.0
-const SEARCH_ANIM_RADIUS: float = 20.0
-const SEARCH_ANIM_DURATION: float = 1.5         # 圆周动画时长（≈1 圈 + 缓冲）
+const COLOR_COST_LOW: Color = Color(1.0, 0.0, 0.0)   # 源 refreshCostLabel:86 ccc3(255,0,0)
+const SEARCH_ANIM_DEG_PER_SEC: float = 180.0         # 源 palstance=180
+const SEARCH_ANIM_RADIUS: float = 20.0               # 源 radius=20
+const SEARCH_ANIM_DURATION: float = 1.5              # 圆周动画时长（源 target=1 圈 + 缓冲）
 const LSTR_DIAMOND_KEY: String = "MAP.DIAMOND_MINE"
 const TYPE_DIAMOND_FALLBACK: String = "钻石矿"
 const LSTR_GOLD_KEY: String = "MAP.GOLDMINE"
@@ -42,7 +32,7 @@ const LSTR_HISTORY_KEY: String = "EXCAVATEHISTORY.DEFENSIVE_RECORD"
 const HISTORY_FALLBACK: String = "防守记录"
 const LSTR_EXPLAIN_KEY: String = "EXCAVATEMAP.RULES"
 const EXPLAIN_FALLBACK: String = "规则"
-const SEARCH_FOUND_FMT: String = "搜到 %s（%s 人）！"   # 单机 Toast 兜底
+const SEARCH_FOUND_FMT: String = "搜到 %s（%s 人）！"      # 单机 Toast 兜底
 const ExcavateHistoryPanel = preload("res://scripts/ui/excavate_history_panel.gd")
 
 var pd: PlayerData
@@ -72,39 +62,37 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
-# 建 UI：preload .tscn instantiate + 套 Scale9 stylebox + 绑信号。
-# 位置/size 静态节点（bg/frame_bg/frame/back/title/search_icon/search_button/label/gold_icon/
-# cost_label/explain/history）已在 .tscn 固化。
+# 建 UI：preload .tscn instantiate + 绑信号 + LSTR 文案 fill。
+# 按钮三态/字号/颜色全走 theme variation（ExcavateNavBtn/ExcavateSearchBtn/
+# ExcavateCostLabel），本层零运行时样式。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
-	(content.get_node("%BackBtn") as BaseButton).pressed.connect(remove_window)
+	(content.get_node("%BackButton") as BaseButton).pressed.connect(remove_window)
 	_search_icon = content.get_node("%SearchIcon") as TextureRect
-	_search_button = content.get_node("%SearchBtn") as Button
-	# search_button：.tscn 普通 Button 套九宫格 stylebox（视觉等价原 UiScale9Button.make）
-	UiScale9Button.apply_with_label(_search_button, SEARCH_BTN_RES, SEARCH_BTN_PRESS_RES, SEARCH_BTN_CAP)
+	_search_button = content.get_node("%SearchButton") as Button
 	_search_button.pressed.connect(_on_search_pressed)
 	_cost_label = content.get_node("%CostLabel") as Label
-	# explain/history：.tscn 普通 Button 套九宫格 stylebox + LSTR 文字
-	var explain: Button = content.get_node("%ExplainBtn") as Button
-	UiScale9Button.apply_with_label(explain, SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, SCALE9_BTN_CAP, _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK), BTN_LABEL_COLOR)
+	var explain: Button = content.get_node("%ExplainButton") as Button
+	explain.text = _lstr(LSTR_EXPLAIN_KEY, EXPLAIN_FALLBACK)
 	explain.pressed.connect(_on_explain_pressed)
-	var history: Button = content.get_node("%HistoryBtn") as Button
-	UiScale9Button.apply_with_label(history, SCALE9_BTN_RES, SCALE9_BTN_PRESS_RES, SCALE9_BTN_CAP, _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK), BTN_LABEL_COLOR)
+	var history: Button = content.get_node("%HistroyButton") as Button   # 源节点名 histroy_button（源拼写如此）
+	history.text = _lstr(LSTR_HISTORY_KEY, HISTORY_FALLBACK)
 	history.pressed.connect(_on_history_pressed)
 
 
-# 刷新消耗标签（照 refreshCostLabel:80）：颜色随金币够否。
+# 刷新消耗标签（照源 refreshCostLabel:80-90）：数值 + 颜色随金币够否。
+# 二态走 fill modulate（theme 基色橙 ccc3(255,174,53)，红态 (1,0,0) 清 G/B 通道）。
 func _refresh_cost() -> void:
 	var cost: int = ExcavateData.get_search_cost(pd.cm, pd.excavate.search_times)
 	_cost_label.text = str(cost)
 	if cost > int(pd.hero_manager.gold):
-		_cost_label.add_theme_color_override("font_color", COLOR_COST_LOW)
+		_cost_label.modulate = COLOR_COST_LOW
 	else:
-		_cost_label.add_theme_color_override("font_color", COLOR_COST_OK)
+		_cost_label.modulate = Color.WHITE
 
 
-# 搜索（照 registerSearchButton:4 clickHandler + doSearchExcavateReply:291）。
+# 搜索（照源 registerSearchButton:10-44 clickHandler + doSearchExcavateReply:291）。
 func _on_search_pressed() -> void:
 	if _searching:
 		return
