@@ -2,6 +2,22 @@
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
 
+; avatar 两件套 chrome 静态树（批 4 Task 3 完整树化，2026-08-17）照源
+; ui/selectwindow/base.lua：
+;   frame（:54-71）main_vit_tips cap(10,10,58,26)（贴图 103x61 → top=61-10-26=25
+;   bottom=10，批 1 公式；2026-07-18 静态化时 top/bottom 写反本 task 修正——
+;   批内通病第三例）scaleSize(530,375) 中心(400,240) → 全屏 (215,132.5)-(745,507.5)；
+;   draglist cliprect（createListLayer :8）CCRectMake(154,60,492,365) →
+;   AvatarScroll (234,135)-(726,500) clip_contents（坑 #3 裁剪层）。
+;   bar（:11-14 bglen=320 bgpos=(150,240) + draglist.lua:1116-1204）竖向细条
+;   滚动时显 → panel fill 期 StyleBoxTexture 贴图化（引擎缺口例外；位置贴
+;   容器右缘，源在列表左侧，internal child 不可移受控偏差）。
+;   explain（createExplain :19-38）仅 param.explain 非空才建——avatar 调用方
+;   （configure.lua:1935-1941）只传 name+callback，条件不触发照源不建。
+;   AvatarList = %动态项容器（分类标题行/网格/解锁提示 procedural 挂载），
+;   separation=0 照源 initListHeight :14-37 连续堆叠计账（titleHeight 40 +
+;   网格高 + additionHeight 40 无组间额外空隙）。
+
 [node name="AvatarContent" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -10,6 +26,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 [node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
 offset_left = 215.0
 offset_top = 132.5
@@ -17,9 +34,9 @@ offset_right = 745.0
 offset_bottom = 507.5
 texture = ExtResource("1_frame")
 patch_margin_left = 10
-patch_margin_top = 10
+patch_margin_top = 25
 patch_margin_right = 35
-patch_margin_bottom = 25
+patch_margin_bottom = 10
 mouse_filter = 2
 
 [node name="AvatarScroll" type="ScrollContainer" parent="."]
@@ -36,4 +53,4 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 0

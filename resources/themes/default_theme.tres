@@ -1331,3 +1331,15 @@ NameInputButton/styles/hover = SubResource("SB_pkg_hb_n")
 NameInputButton/styles/pressed = SubResource("SB_pkg_hb_p")
 NameInputButton/styles/disabled = SubResource("SB_pkg_hb_n")
 NameInputButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── avatar 两件套（批 4 Task 3，2026-08-17）──
+; 分类标题/解锁提示（ofavatar.lua createSubhead:116-117 + createUnlockPrompt:124-125
+; createttf(text,18) + setLabelColor ccc3(231,206,19)；231/255=0.905882
+; 206/255=0.807843 19/255=0.07451；同参数两处复用同一 variation）
+AvatarTitleLabel/base_type = &"Label"
+AvatarTitleLabel/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+AvatarTitleLabel/font_sizes/font_size = 18
+; 头像网格（源 getIconPos:146-148 x 步进 100/y 步进 90，icon 显示 106/CS=82.73
+; → 列距 100-82.73≈17 行距 90-82.73≈7；int constant）
+AvatarGrid/base_type = &"GridContainer"
+AvatarGrid/constants/h_separation = 17
+AvatarGrid/constants/v_separation = 7

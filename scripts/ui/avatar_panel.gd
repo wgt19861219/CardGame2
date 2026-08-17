@@ -3,32 +3,43 @@ extends PopWindow
 
 ## 头像选择面板（View 层）。
 ## 3 类（free/hero/worldcup）分组 + 标题 + 5 列图标网格 + 解锁判断 + 点选 set_avatar → destroy。
-## 点框外区域 destroy（无 close 按钮）。
+## 点框外区域 destroy（无 close 按钮，PopWindow shade 点击关闭基类等价源 btRegisterOutClick）。
 ##
-## 重构（2026-07-18 chrome 静态化 / 2026-07-24 UI 重构试点）：
-## - chrome（frame + draglist 容器）静态化进 scenes/ui/avatar_content.tscn（位置/size 编辑器可视化调）
-## - 分类标题 + 头像网格数量随解锁项变，保留 procedural 挂 %AvatarList（容器管理动态项，P1）
-## - add_theme override 归零（GridContainer 间距走 default_theme.tres；仅保留标题色 1 处受控 override，
-##   引用 UIConstants.COLOR_TITLE_GOLD，子类型 variation 留批次 1 统一决策）
-## - 信号全代码 connect（P2 默认规则）
-## cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)，纹理显示=纹理/CS（CONTENT_SCALE=1.28125）。
+## 完整树化（批 4 Task 3，2026-08-17；2026-07-18 chrome 静态化 → 完整两件套）：
+## - chrome 静态：frame + 裁剪滚动层进 avatar_content.tscn；滚动条贴图 fill 期
+##   override（引擎缺口例外）
+## - 分类标题行走行模板 avatar_title_item.tscn（数量随解锁变 1-3 个，fill 只填文案）
+## - 头像网格 procedural 保留挂 %AvatarList，间距走 AvatarGrid variation（源步进换算）
+## - 标题金/解锁提示同款 18 号色走 AvatarTitleLabel variation（受控 override 退役）
+## - 照源补 free 组末尾解锁提示（ofavatar.lua:123-128 createUnlockPrompt，此前漏译）
+## - 标题文案走 LSTR（源 type_title；worldcup"球队头像"此前硬编码"世界杯头像"不符）
+## - icon 显示 106/CS=82.73 手算（批 4 口径：无 TextureConfig 条目散图 ÷CS，勿调 tex_display_size）
+## cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)，CS=1.28125。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/avatar_content.tscn")
-# cocos sprite 显示=纹理/CS（无 fix 时），CS=setContentScaleFactor(615/480)=1.28125。
-const CONTENT_SCALE: float = 1.28125
+const TITLE_ITEM_SCENE: PackedScene = preload("res://scenes/ui/avatar_title_item.tscn")
 const ICON_FRAME_RES: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_1.png"
-const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/detail_title_bg.png"
-# NinePatch 九宫格中心区（detail_title_bg.png 的可拉伸矩形）。
-const TITLE_BG_CAP: Rect2 = Rect2(100.0, 0.0, 304.0, 12.0)
+const SCROLL_TRACK_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar_bg.png"
+const SCROLL_GRABBER_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar.png"
 const GRID_COLS: int = 5
 # icon 内边距：fixNodeSize 框-10（Picture 比 frame 内缩 5px 两侧）。
 const ICON_PAD: float = 10.0
-const TITLE_BG_W: float = 300.0
+# hero_icon_frame_1 106×106 / CS = 82.73（无 TextureConfig 条目，÷CS 轨道手算）。
+const ICON_FRAME_DISPLAY: Vector2 = Vector2(82.73, 82.73)
 const HERO_PIC_PREFIX: String = "res://assets/ui/HERO/"
+# 分类标题 LSTR 键（ofavatar.lua type_title :9-13；type_priority :4-8 顺序 free/hero/worldcup）。
+const LSTR_TITLE_KEYS: Dictionary = {
+	"free": "HEROSELECT.BASIC_AVATAR",
+	"hero": "HEROSELECT.HERO_AVATAR",
+	"worldcup": "ofavatar.1.10.1.001",
+}
+# free 组末尾解锁提示（:124 T(LSTR(...))）。
+const LSTR_TIPS_KEY: String = "HEROSELECT.TIPS__HERO_ADVANCED_TO_PURPLE_CAN_BE_SET_TO_AVATAR"
 
 var _pd: PlayerData
 var _cm: ConfigManager
-var _list: VBoxContainer = null   # .tscn %AvatarList（分类标题 + 头像网格容器）
+var _content: Control = null
+var _list: VBoxContainer = null   # .tscn %AvatarList（标题行/网格/提示 procedural 挂载）
 
 
 func setup_panel(p_pd: PlayerData, p_cm: ConfigManager) -> void:
@@ -38,23 +49,29 @@ func setup_panel(p_pd: PlayerData, p_cm: ConfigManager) -> void:
 	_build_ui()
 
 
-# 建 UI 内容：chrome 静态节点从 .tscn instantiate（位置/size 可视化）；分类标题 + 头像网格 procedural 挂 %AvatarList。
-# GridContainer 间距走 default_theme.tres（h/v_separation=8），不在此 override。
+# 建 UI：chrome 从 .tscn instantiate；分类标题行（行模板）+ 头像网格（procedural）
+# + free 组末尾解锁提示，按解锁分组挂 %AvatarList（源 createIconList :205-214 +
+# createIcon :153-188 的标题/网格/提示三段结构，容器化等价）。
 func _build_ui() -> void:
-	shade_layer.gui_input.connect(_on_shade_input)
-	var content := CONTENT_SCENE.instantiate()
-	container.add_child(content)
-	_list = content.get_node("%AvatarList") as VBoxContainer
-	# 分类 free/hero/worldcup + 解锁过滤。
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	_list = _content.get_node("%AvatarList") as VBoxContainer
+	_style_scrollbar()
+	# 分类 free/hero/worldcup + 解锁过滤（源 type_priority 顺序）。
 	var groups: Dictionary = _build_groups()
-	for type_key in ["free", "hero", "worldcup"]:
+	for type_key: String in ["free", "hero", "worldcup"]:
 		if groups.has(type_key) and not (groups[type_key] as Array).is_empty():
-			_list.add_child(_make_title(_type_title(type_key)))
+			_list.add_child(_make_title(type_key))
 			var grid := GridContainer.new()
 			grid.columns = GRID_COLS
-			for entry in groups[type_key]:
+			# 间距照源步进换算（x 100/y 90 − icon 82.73 → 17/7）走 theme variation。
+			grid.theme_type_variation = &"AvatarGrid"
+			for entry: Dictionary in groups[type_key]:
 				grid.add_child(_make_cell(int(entry["key"]), String(entry["res"])))
 			_list.add_child(grid)
+			# free 组末尾解锁提示（源 createIcon :163-167 仅 free 组最后一项后挂）。
+			if type_key == "free":
+				_list.add_child(_make_tips())
 
 
 # 按 Act Type/Requirement Type 分类 + 解锁过滤。
@@ -102,79 +119,66 @@ func _to_res_path(pic: String) -> String:
 	return HERO_PIC_PREFIX + pic.get_file()
 
 
-# 分类标题文案。
-func _type_title(type_key: String) -> String:
-	match type_key:
-		"free":
-			return "基础头像"
-		"hero":
-			return "英雄头像"
-		"worldcup":
-			return "世界杯头像"
-	return ""
+# 分类标题行：行模板实例 + fill 文案（源 createSubhead :109-121，18 号标题金）。
+func _make_title(type_key: String) -> Control:
+	var inst: Control = TITLE_ITEM_SCENE.instantiate() as Control
+	(inst.get_node("%TitleLabel") as Label).text = _cm.get_lstr(LSTR_TITLE_KEYS[type_key])
+	return inst
 
 
-# 创建分类标题：detail_title_bg Scale9 300×12 + Label（标题金）。
-# 标题色用 UIConstants.COLOR_TITLE_GOLD override（与全局 Label 白不同；子类型 variation 留批次 1 统一）。
-func _make_title(text: String) -> Control:
-	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(TITLE_BG_W, 20.0)
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg := NinePatchRect.new()
-	var bg_tex: Texture2D = load(TITLE_BG_RES)
-	bg.texture = bg_tex
-	# 正确公式（批 1 fde903b）：left=x/bottom=y/right=W-x-w/top=H-y-h（源 CCRect 左下原点垂直翻转，水平不反转）。
-	bg.patch_margin_left = int(TITLE_BG_CAP.position.x)
-	bg.patch_margin_bottom = int(TITLE_BG_CAP.position.y)
-	if bg_tex != null:
-		bg.patch_margin_right = int(bg_tex.get_width() - TITLE_BG_CAP.position.x - TITLE_BG_CAP.size.x)
-		bg.patch_margin_top = int(bg_tex.get_height() - TITLE_BG_CAP.position.y - TITLE_BG_CAP.size.y)
-	bg.size = Vector2(TITLE_BG_W, 12.0)
-	bg.position = Vector2(0.0, 4.0)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(bg)
-	var lbl := Label.new()
-	lbl.text = text
-	# 受控 override：标题金色与全局 Label 白不同，留至批次 1 统一 variation 决策。
-	lbl.add_theme_color_override("font_color", UIConstants.COLOR_TITLE_GOLD)
-	lbl.position = Vector2(0.0, 0.0)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(lbl)
-	return holder
+# free 组末尾解锁提示（源 createUnlockPrompt :123-128：18 号金同 createSubhead
+# 色号 → 复用 AvatarTitleLabel；行高 40 = 源 additionHeight :22-25 计账）。
+func _make_tips() -> Label:
+	var tips := Label.new()
+	tips.text = _cm.get_lstr(LSTR_TIPS_KEY)
+	tips.theme_type_variation = &"AvatarTitleLabel"
+	tips.custom_minimum_size = Vector2(0.0, 40.0)
+	tips.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tips.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return tips
 
 
 # 创建头像单元：hero_icon_frame_1 框 + Picture 图（fixNodeSize 框-10）+ 点击 set_avatar。
 func _make_cell(aid: int, picture_res: String) -> Control:
 	var btn := TextureButton.new()
-	var frame_tex: Texture2D = load(ICON_FRAME_RES)
-	btn.texture_normal = frame_tex
+	btn.texture_normal = load(ICON_FRAME_RES)
 	btn.ignore_texture_size = true
-	if frame_tex != null:
-		# frame ed.createSprite 无 fix → 显示=纹理×CS/CS（setScale(ContentScale)，此前漏乘 ContentScale）。
-		var frame_size: Vector2 = TexDisplaySize.display_size(ICON_FRAME_RES)
-		btn.size = frame_size
-		btn.custom_minimum_size = frame_size
+	# stretch_mode=0（SCALE）显式——TextureButton 默认 2（KEEP）不填 rect（批 2 方法论）。
+	btn.stretch_mode = TextureButton.STRETCH_SCALE
+	# ed.createSprite 无 fix → 显示 = 纹理 106/CS（÷CS 轨道手算，批 4 口径）。
+	btn.custom_minimum_size = ICON_FRAME_DISPLAY
 	btn.pressed.connect(_on_avatar_selected.bind(aid))
 	if ResourceLoader.exists(picture_res):
 		var icon := TextureRect.new()
 		icon.texture = load(picture_res)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.size = btn.size - Vector2(ICON_PAD, ICON_PAD)
+		icon.size = ICON_FRAME_DISPLAY - Vector2(ICON_PAD, ICON_PAD)
 		icon.position = Vector2(ICON_PAD * 0.5, ICON_PAD * 0.5)
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn.add_child(icon)
 	return btn
 
 
-# 点框外区域 destroy（btRegisterOutClick 范式：无 close 按钮）。
-func _on_shade_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mb: InputEventMouseButton = event as InputEventMouseButton
-		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-			remove_window()
+# 滚动条照源贴图（源 draglist bar：base.lua createListLayer :11-14 + draglist.lua
+# :1116-1204，轨道 scroll_bar_bg + 滑块 scroll_bar.png 竖向、滚动时显）。
+# ScrollContainer 默认灰圆角条 → StyleBoxTexture 贴图化；add_theme_stylebox_override
+# 属滚动条引擎缺口例外（SOP 条款）。位置贴容器右缘（源在列表左侧 x=150，
+# internal child 不可移，受控偏差）。
+func _style_scrollbar() -> void:
+	var scroll: ScrollContainer = _content.get_node("%AvatarScroll") as ScrollContainer
+	var vs: VScrollBar = scroll.get_v_scroll_bar()
+	var track := StyleBoxTexture.new()
+	track.texture = load(SCROLL_TRACK_RES)
+	var grabber := StyleBoxTexture.new()
+	grabber.texture = load(SCROLL_GRABBER_RES)
+	for key: StringName in ["scroll", "scroll_focus"]:
+		vs.add_theme_stylebox_override(key, track)
+	for key: StringName in ["grabber", "grabber_highlight", "grabber_pressed"]:
+		vs.add_theme_stylebox_override(key, grabber)
 
 
-# 点选 set_avatar → destroy。
+# 点选 set_avatar → destroy（源 doSendSet :258-265 单机化：直写 PlayerData + toast）。
 func _on_avatar_selected(aid: int) -> void:
 	_pd.set_avatar(aid)
 	Toast.show_message("头像已设置")
