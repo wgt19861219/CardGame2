@@ -1138,3 +1138,17 @@ GiveupRowLabel/font_sizes/font_size = 20
 GiveupRowValue/base_type = &"Label"
 GiveupRowValue/colors/font_color = Color(1, 0.949020, 0.803922, 1)
 GiveupRowValue/font_sizes/font_size = 20
+; ── excavate_explain 两件套（excavate 批 Task 2，2026-08-17）──
+; 通用说明窗文本行（uieditor/explainwindow + excavateexplain.lua createContent
+; createttf 16 号）。故事行 ccc3(255,255,221)（text_list_1 :8-13 + 签名 text_2 :14）
+ExplainStoryLabel/base_type = &"Label"
+ExplainStoryLabel/colors/font_color = Color(1, 1, 0.866667, 1)
+ExplainStoryLabel/font_sizes/font_size = 16
+; 规则行 ccc3(238,204,119)（text_list_3 :15-34，18 子句独立 label）
+ExplainRuleLabel/base_type = &"Label"
+ExplainRuleLabel/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
+ExplainRuleLabel/font_sizes/font_size = 16
+; 标题（explainwindow 声明表 title size24 ccc3(234,171,41)，text=PVP.RULE_DESCRIPTION）
+ExplainTitleLabel/base_type = &"Label"
+ExplainTitleLabel/colors/font_color = Color(0.917647, 0.670588, 0.160784, 1)
+ExplainTitleLabel/font_sizes/font_size = 24

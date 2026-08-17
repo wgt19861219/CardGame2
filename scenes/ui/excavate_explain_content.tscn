@@ -1,8 +1,22 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_title_bg.png" id="2_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="4_closep"]
+
+; 藏宝地穴玩法说明两件套静态树（excavate 批 Task 2，2026-08-17）。框体归源
+; ui/popwindow/explainwindow.lua 通用说明窗（excavateexplain.lua 继承，只填文本），
+; uieditor/explainwindow.lua 声明表：window_container Layer 156.25x156.25 anchor(0,0)
+; at (183.59,398.44) 场景空间，子节点 window_container 局部 → 本树直接用场景空间换算
+; （to_godot=(x+80,560-y)）。A 类债 #3：原 excavate_main_frame 600x440 强拉（ratio 1.364
+; vs 纹理 1.613 偏差 15.5%）系误用——源 Scale9Sprite main_vit_tips cap(17.19,17.19,46.88,15.63)
+; @103x61 → patch L17/B17/R39/T28；title_bg pvp_tip_title_bg cap(109.38,0,156.25,34.38)
+; @474x44 → L109/T10/R208/B0；close fix_wh 49.22x52.34 common_tips_button_close_1/2。
+; 滚动区照源 createListLayer cliprect DGRectMake(200,98,622,362)×0.78125
+; =(156.25,76.56,485.94,282.81)；行宽 label_dimensions 612x0×0.78125=478.13 autowrap。
+; text 为编辑器预览（LSTR 值），panel fill 覆盖。标题归源通用窗 PVP.RULE_DESCRIPTION
+; "规则说明"（弃迁移发明"藏宝地穴说明"，excavateexplain.lua 不覆写标题）。
 
 [node name="ExcavateExplainContent" type="Control"]
 layout_mode = 3
@@ -11,50 +25,327 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Frame" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 180.0
-offset_top = 80.0
-offset_right = 780.0
-offset_bottom = 560.0
+; 框（源 frame Scale9Sprite 548.44x378.91 anchor(0,1) 局部 (-58.59,31.25)
+; → 世界左上 (125,429.69) → Godot (205,130.31)-(753.44,509.22)）
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 205.0
+offset_top = 130.31
+offset_right = 753.44
+offset_bottom = 509.22
 texture = ExtResource("1_frame")
-expand_mode = 1
+patch_margin_left = 17
+patch_margin_top = 28
+patch_margin_right = 39
+patch_margin_bottom = 17
 mouse_filter = 2
 
-[node name="CloseBtn" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 730.0
-offset_top = 92.0
-offset_right = 770.0
-offset_bottom = 132.0
-texture_normal = ExtResource("2_close")
-texture_pressed = ExtResource("3_closep")
-ignore_texture_size = true
+; 标题条（源 title_bg Scale9Sprite 480.47x39.06 中心局部 (214.84,-8.59)
+; → 世界 (398.44,389.84) → Godot (238.2,150.63)-(718.67,189.69)）
+[node name="TitleBg" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 238.2
+offset_top = 150.63
+offset_right = 718.67
+offset_bottom = 189.69
+texture = ExtResource("2_titlebg")
+patch_margin_left = 109
+patch_margin_top = 10
+patch_margin_right = 208
+patch_margin_bottom = 0
+mouse_filter = 2
 
-[node name="Title" type="Label" parent="."]
-layout_mode = 3
-offset_left = 180.0
-offset_top = 95.0
-offset_right = 780.0
-offset_bottom = 135.0
-theme_override_font_sizes/font_size = 22
+; 标题（源 title Label size24 ccc3(234,171,41) 中心局部 (212.5,-8.59)
+; → 世界 (396.09,389.84) → Godot 中心 (476.09,170.16)，text fill）
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 326.09
+offset_top = 155.16
+offset_right = 626.09
+offset_bottom = 185.16
+theme_type_variation = &"ExplainTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
-text = "藏宝地穴说明"
+vertical_alignment = 1
+text = "规则说明"
 
-[node name="StoryScroll" type="ScrollContainer" parent="."]
+; 关闭按钮（源 close_button DGButton fix_wh 49.22x52.34 中心局部 (475.78,11.72)
+; → 世界 (659.38,410.16) → Godot (714.77,123.67)-(763.99,176.01) 骑框右上边）
+[node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 210.0
-offset_top = 145.0
-offset_right = 750.0
-offset_bottom = 535.0
-horizontal_scroll_mode = 0
+layout_mode = 0
+offset_left = 714.77
+offset_top = 123.67
+offset_right = 763.99
+offset_bottom = 176.01
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
 
-[node name="StoryList" type="VBoxContainer" parent="StoryScroll"]
+; 滚动区（源 draglist cliprect (156.25,76.56,485.94,282.81) 场景空间；Godot 4
+; ScrollContainer 接管子项 position（恒滚动偏移），源 left_x 160-clip 左 3.75 /
+; top_y 350→clip 顶差 9.37 的内边距烘进本 rect → (240,210)-(722.19,483.44)，
+; 文本左缘/首行顶精确落 Godot (240,210)=场景 (160,350)；右/底=clip 右/底不变）
+[node name="ScrollHost" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 240.0
+offset_top = 210.0
+offset_right = 722.19
+offset_bottom = 483.44
+mouse_filter = 1
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+; 文本列表层（源 listLayer + 逐行 label：dy=3 堆叠 + label_dimensions 612x0×0.78125
+; =478.13 宽 autowrap；位置由 ScrollContainer 滚动接管，无 offsets）
+[node name="ListHost" type="VBoxContainer" parent="ScrollHost"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 3
+
+; 故事段 4 行（源 text_list_1 :8-13，ccc3(255,255,221) size16），text fill
+[node name="StoryRow1" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainStoryLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "黑铁矮人的王国建筑在地下，盘更错节的地洞如同世界之树的根须，"
+
+[node name="StoryRow2" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainStoryLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "但它的历史比世界之树本身还要古老。当这些沉睡了千万年的宝藏重"
+
+[node name="StoryRow3" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainStoryLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "见天日，探险者们惊奇得发现，矮人的黄金与钻石依然历久弥新，一"
+
+[node name="StoryRow4" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainStoryLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "尘不染。但与黄金一样永恒不变的，是人类的贪欲和掠夺。"
+
+; 尾签名（源 text_2 :14 anchor(1,1)@rx=634 右对齐 → 宽 rx-lx=474 右缘精确落 634）
+[node name="StorySign" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainStoryLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(474, 0)
+horizontal_alignment = 2
+text = "——《阿努巴战记》"
+
+; 签名后间距（源 :50 height+=+20 → VBox sep3 + gap17）
+[node name="StoryGap" type="Control" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+custom_minimum_size = Vector2(0, 17)
+
+; 规则段 18 子句（源 text_list_3 :15-34，每子句独立 label ccc3(238,204,119) size16，
+; autowrap 后视觉等效合并），text fill
+[node name="RuleRow1" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "1.在藏宝地穴，你能找到各种资源点，包括金矿、钻石矿和实验室"
+
+[node name="RuleRow2" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "2.你可以向资源点发起多次攻击，每次攻击都会消耗一定体力，并"
+
+[node name="RuleRow3" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "获得对应的战队经验。所有战斗结束之前，攻守双方英雄的生命值"
+
+[node name="RuleRow4" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "和能量值都不会重置。"
+
+[node name="RuleRow5" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "3.如果在限定时间内击败所有守军，就可以占领资源点。占领的资"
+
+[node name="RuleRow6" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "源点会为你持续生产资源。"
+
+[node name="RuleRow7" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "4.新占领的宝藏根据不同宝藏类型获得1小时至2小时不等的保护时"
+
+[node name="RuleRow8" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "间，在保护时间内，其他玩家无法搜索到以及进攻这个宝藏。"
+
+[node name="RuleRow9" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "5.你需要派遣英雄防守已占领的资源点，驻防英雄越多，资源开采"
+
+[node name="RuleRow10" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "的速度越快。"
+
+[node name="RuleRow11" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "6.英雄驻防期间，不能参加其他战斗。你可以随时更换驻防英雄。"
+
+[node name="RuleRow12" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "7.资源点的资源总储量有限，全部开采完后，英雄会将所有资源运"
+
+[node name="RuleRow13" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "回你的仓库。"
+
+[node name="RuleRow14" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "8.如果资源开采过程中遭到袭击并防守失败，你可能会损失一部分"
+
+[node name="RuleRow15" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "已经开采的资源，剩余资源会运回你的仓库。"
+
+[node name="RuleRow16" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "9.某些大型资源点可以容纳多名玩家共同防守，你可以邀请同公会"
+
+[node name="RuleRow17" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "的小伙伴一同防御。所有防御者都可以开采资源。"
+
+[node name="RuleRow18" type="Label" parent="ScrollHost/ListHost"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ExplainRuleLabel"
+mouse_filter = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(478.13, 0)
+text = "10.在藏宝地穴的战斗中，防守方的英雄会获得一定初始能量。"

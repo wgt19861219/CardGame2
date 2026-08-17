@@ -2,18 +2,20 @@ class_name ExcavateExplainPanel
 extends PopWindow
 
 ## 藏宝地穴玩法说明（View 层）— 照源 ui/popwindow/excavateexplain.lua createContent:4。
-## 纯文本（背景故事 4 行 + 标题 + 规则段 16 个 LSTR 子句合成 10 条规则）。
+## 源继承 ed.ui.explainwindow 通用说明窗（框/标题条/关闭钮/滚动区在基类声明表），
+## 只填文本：4 行故事 + 尾签名 + 18 子句规则（每子句独立 label，autowrap 后视觉等效）。
 ## 无联机依赖，直接复用。P1（2026-07-16）：LSTR EXCAVATEEXPLAIN.* 全键照译。
 ##
-## 重构（2026-07-18，hero_detail 范式）：panel 层静态节点（frame/close/title/scroll/list）
-## 固化进 scenes/ui/excavate_explain_content.tscn；故事段+规则段 LSTR label 数量固定但
-## 内容动态，保留 procedural 挂 %StoryList（autowrap + 颜色 + 字号运行时设）。
+## 两件套（2026-08-17，excavate 批 Task 2）：框归源 main_vit_tips Scale9 + 标题条 +
+## 关闭钮 + 23 行 label 全静态进 excavate_explain_content.tscn（A 类债 #3 修复：
+## 弃 excavate_main_frame 600x440 强拉误用）；颜色/字号走 theme variation
+## ExplainTitleLabel / ExplainStoryLabel / ExplainRuleLabel。本文件只做 LSTR fill +
+## 关闭信号。标题归源通用窗 PVP.RULE_DESCRIPTION"规则说明"（弃迁移发明
+## "藏宝地穴说明"，excavateexplain.lua 不覆写基类标题）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_explain_content.tscn")
-const COLOR_STORY: Color = Color(1.0, 1.0, 221.0 / 255.0)
-const COLOR_RULE: Color = Color(238.0 / 255.0, 204.0 / 255.0, 119.0 / 255.0)
-const FONT_SIZE: int = 16
-const CONTENT_W: float = 500.0
+const TITLE_KEY: String = "PVP.RULE_DESCRIPTION"
+const TITLE_FALLBACK: String = "规则说明"
 
 # 故事段 4 行（照 text_list_1 :8-13，4 个 LSTR key 顺序）
 const STORY_KEYS: Array[String] = [
@@ -32,8 +34,7 @@ const STORY_FALLBACKS: Array[String] = [
 const STORY_TITLE_KEY: String = "EXCAVATEEXPLAIN._ANUBAR_WARS"
 const STORY_TITLE_FALLBACK: String = "——《阿努巴战记》"
 
-# 规则段（照 text_list_3 :15-33，16 个 LSTR 子句合成 10 条规则）。
-# 每条规则是 1-2 个 LSTR 子句拼接（源每个子句独立 label，autowrap 后视觉等效合并）。
+# 规则段（照 text_list_3 :15-34，18 个 LSTR 子句独立 label，autowrap 后视觉等效合并）
 const RULE_KEYS: Array[String] = [
 	"EXCAVATEEXPLAIN.1_IN_THE_TREASURE_CRYPT_YOU_CAN_FIND_A_VARIETY_OF_RESOURCE_POINTS_INCLUDING_GOLD_DIAMOND_AND_LABORATORY",
 	"EXCAVATEEXPLAIN.2_YOU_CAN_LAUNCH_MULTIPLE_ATTACKS_POINT_TO_RESOURCES_EACH_ATTACK_WILL_CONSUME_SOME_ENERGY_AND",
@@ -76,8 +77,6 @@ const RULE_FALLBACKS: Array[String] = [
 	"10.在藏宝地穴的战斗中，防守方的英雄会获得一定初始能量。",
 ]
 
-var _story_list: VBoxContainer = null
-
 
 func setup_panel() -> void:
 	setup()
@@ -91,29 +90,17 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
-# 建 UI：preload .tscn instantiate + 绑 close + fill 故事/规则 LSTR labels。
-# 位置/size 静态节点（frame/close/title/scroll/list）已在 .tscn 固化。
+# 两件套 fill：标题/故事/签名/规则 23 行 LSTR 文本 + 关闭信号
+# （位置/样式/行结构全在 tscn + theme，签名右对齐与 gap17 亦静态化）。
 func _build_content() -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	_story_list = content.get_node("%StoryList") as VBoxContainer
+	(content.get_node("%TitleLabel") as Label).text = _lstr(TITLE_KEY, TITLE_FALLBACK)
 	# 故事段（照 :37-46 4 行 + 尾签名）
 	for i in range(STORY_KEYS.size()):
-		_story_list.add_child(_make_label(_lstr(STORY_KEYS[i], STORY_FALLBACKS[i]), COLOR_STORY))
-	_story_list.add_child(_make_label(_lstr(STORY_TITLE_KEY, STORY_TITLE_FALLBACK), COLOR_STORY, HORIZONTAL_ALIGNMENT_RIGHT))
+		(content.get_node("%%StoryRow%d" % (i + 1)) as Label).text = _lstr(STORY_KEYS[i], STORY_FALLBACKS[i])
+	(content.get_node("%StorySign") as Label).text = _lstr(STORY_TITLE_KEY, STORY_TITLE_FALLBACK)
 	# 规则段（照 :53-62，源每子句独立 label，颜色 ccc3(238,204,119)）
 	for i in range(RULE_KEYS.size()):
-		_story_list.add_child(_make_label(_lstr(RULE_KEYS[i], RULE_FALLBACKS[i]), COLOR_RULE))
-
-
-func _make_label(text: String, color: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.horizontal_alignment = align
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(CONTENT_W, 0)
-	l.add_theme_font_size_override("font", FONT_SIZE)
-	l.add_theme_color_override("font_color", color)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
+		(content.get_node("%%RuleRow%d" % (i + 1)) as Label).text = _lstr(RULE_KEYS[i], RULE_FALLBACKS[i])

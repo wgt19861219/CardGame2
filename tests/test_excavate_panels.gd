@@ -29,14 +29,140 @@ func test_explain_lstr_keys_all_present() -> void:
 		assert_false(v.is_empty(), "LSTR 值非空：" + k)
 
 
-# ExcavateExplainPanel 装配无异常（ScrollContainer + VBox + 标签生成）
+# ExcavateExplainPanel 装配无异常（ScrollContainer + VBox + 静态标签 fill）
 func test_explain_panel_builds_without_error() -> void:
 	var root := Node.new()
 	add_child(root)
 	var panel := ExcavateExplainPanel.new("excavate_explain", {})
 	panel.setup_panel()
 	panel.show_window(root)
-	assert_gt(panel.container.get_child_count(), 0, "container 非空（frame 已加）")
+	assert_gt(panel.container.get_child_count(), 0, "container 非空（content 已装配）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# A 类债 #3 归源（excavate 批 Task 2，2026-08-17）：explain 框走 explainwindow
+# 通用说明窗（uieditor/explainwindow.lua:22-41 Scale9Sprite main_vit_tips
+# cap(17.19,17.19,46.88,15.63)@103x61 像素直译：L=17.19→17、B=17.19→17、
+# R=103-17.19-46.88=38.93→39、T=61-17.19-15.63=28.18→28），
+# scaleSize 548.44x378.91 anchor(0,1) 局部 (-58.59,31.25)@window_container(183.59,398.44)
+# → 世界左上 (125,429.69) → Godot (205,130.31)-(753.44,509.22)。
+# 弃 excavate_main_frame 误用（600x440 强拉，ratio 1.364 vs 纹理 1.613 偏差 15.5%）。
+func test_explain_frame_source_fidelity() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_explain_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: NinePatchRect = content.get_node_or_null("Frame") as NinePatchRect
+	assert_not_null(frame, "Frame 存在且为 NinePatchRect（源 Scale9Sprite）")
+	if frame == null:
+		content.queue_free()
+		return
+	assert_not_null(frame.texture, "frame 有贴图")
+	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
+		"frame 贴图归源 main_vit_tips（explainwindow 通用窗，弃 excavate_main_frame 误用）")
+	assert_eq(frame.patch_margin_left, 17, "cap left=17.19 取整 17")
+	assert_eq(frame.patch_margin_bottom, 17, "cap bottom=17.19 取整 17")
+	assert_eq(frame.patch_margin_right, 39, "cap right=38.93 取整 39")
+	assert_eq(frame.patch_margin_top, 28, "cap top=28.18 取整 28")
+	content.queue_free()
+
+
+# 静态 rect 守卫（防 parenting 回归）：照 uieditor/explainwindow.lua 声明表直译。
+# title_bg 480.47x39.06 中心 (214.84,-8.59)→世界 (398.44,389.84)→Godot (478.44,170.16)；
+# title size24 中心 (212.5,-8.59)→(476.09,170.16)；close fix_wh 49.22x52.34 中心 (475.78,11.72)
+# →世界 (659.38,410.16)→Godot (739.38,149.84) 骑框右上边；scroll=源 createListLayer
+# cliprect DGRectMake(200,98,622,362)×0.78125=(156.25,76.56,485.94,282.81)→Godot
+# (236.25,200.63)-(722.19,483.44)；ListHost 局部 (3.75,9.37)（left_x 160-156.25 / clip 顶 359.37-350）。
+func test_explain_content_static_rects() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_explain_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: Control = content.get_node("Frame") as Control
+	assert_almost_eq(frame.position.x, 205.0, 0.02, "frame offset_left=205")
+	assert_almost_eq(frame.position.y, 130.31, 0.02, "frame offset_top=130.31")
+	assert_almost_eq(frame.size.x, 548.44, 0.02, "frame w=548.44（scaleSize 直译）")
+	assert_almost_eq(frame.size.y, 378.91, 0.02, "frame h=378.91")
+	var title_bg: Control = content.get_node("TitleBg") as Control
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 478.44, 0.02, "title_bg 中心 x=478.44")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 170.16, 0.02, "title_bg 中心 y=170.16")
+	assert_almost_eq(title_bg.size.x, 480.47, 0.02, "title_bg w=480.47")
+	var title: Control = content.get_node("%TitleLabel") as Control
+	assert_almost_eq(title.position.x + title.size.x * 0.5, 476.09, 0.02, "title 中心 x=476.09")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, 170.16, 0.02, "title 中心 y=170.16")
+	var close_btn: Control = content.get_node("%CloseBtn") as Control
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 739.38, 0.02, "close 中心 x=739.38")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 149.84, 0.02, "close 中心 y=149.84 骑框右上")
+	# 纵横比守卫（对齐 scan_texture_aspect 8% 判据）：显示 49.22/52.34=0.9404 vs 纹理 65/66=0.9848 偏差 4.5%
+	var tex: Texture2D = (content.get_node("%CloseBtn") as TextureButton).texture_normal
+	var ratio_dev: float = abs(close_btn.size.x / close_btn.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
+	assert_lt(ratio_dev, 0.08, "close 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
+	var scroll: Control = content.get_node("%ScrollHost") as Control
+	assert_almost_eq(scroll.position.x, 240.0, 0.02, "scroll offset_left=240（cliprect 156.25+3.75 内边距烘入，场景 160）")
+	assert_almost_eq(scroll.position.y, 210.0, 0.02, "scroll offset_top=210（200.63+9.37 内边距烘入，场景 350）")
+	assert_almost_eq(scroll.position.x + scroll.size.x, 722.19, 0.02, "scroll 右缘=clip 右 722.19")
+	assert_almost_eq(scroll.position.y + scroll.size.y, 483.44, 0.02, "scroll 底缘=clip 底 483.44")
+	# ScrollContainer 接管子项 position（恒滚动偏移 0），源内边距已烘进 scroll rect
+	var list_host: Control = content.get_node("%ListHost") as Control
+	assert_almost_eq(list_host.position.x, 0.0, 0.02, "ListHost x=0（滚动接管，边距在 scroll rect）")
+	assert_almost_eq(list_host.position.y, 0.0, 0.02, "ListHost y=0（滚动接管）")
+	var rule_row: Control = content.get_node("%RuleRow1") as Control
+	assert_almost_eq(rule_row.size.x, 478.13, 0.02, "行宽=源 label_dimensions 612x0×0.78125=478.13")
+	# 绘制序守卫（防重排反盖）：框最底层 → 标题条/标题 → 关闭钮最上层（源 z 0/1/1/20）
+	assert_lt(content.get_node("Frame").get_index(), content.get_node("TitleBg").get_index(), "frame 声明序先于 title_bg")
+	assert_lt(content.get_node("TitleBg").get_index(), content.get_node("%TitleLabel").get_index(), "title_bg 先于 title")
+	assert_lt(content.get_node("%TitleLabel").get_index(), content.get_node("%CloseBtn").get_index(), "close 最后声明（最上层）")
+	content.queue_free()
+
+
+# 旧范式退役守卫（两件套 SOP）：panel.gd 源码无运行时样式/节点构造。
+func test_explain_no_legacy_runtime_styling() -> void:
+	var src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_explain_panel.gd")
+	assert_false(src.contains("UiScale9Button"), "UiScale9Button 已退役")
+	assert_false(src.contains("add_theme_color_override"), "运行时颜色 override 已退役")
+	assert_false(src.contains("add_theme_font_size_override"), "运行时字号 override 已退役")
+	assert_false(src.contains(".new("), "无运行时节点构造（23 行 label 全静态进 tscn）")
+
+
+# fill 守卫：标题/故事 4 行+签名/规则 18 行 LSTR 全命中，行结构照源
+# （签名右对齐 anchor(1,1)@rx=634；签名后 +20 间距 → VBox sep3+gap17）。
+func test_explain_fill_labels() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := ExcavateExplainPanel.new("excavate_explain", {})
+	panel.setup_panel()
+	panel.show_window(root)
+	var content: Control = panel.container.get_node("ExcavateExplainContent") as Control
+	assert_not_null(content, "content 已装配")
+	if content == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	assert_eq((content.get_node("%TitleLabel") as Label).text, cm.get_lstr("PVP.RULE_DESCRIPTION"),
+		"标题归源 PVP.RULE_DESCRIPTION（弃迁移发明『藏宝地穴说明』）")
+	var list_host: VBoxContainer = content.get_node("%ListHost") as VBoxContainer
+	assert_eq(list_host.get_child_count(), 24, "ListHost 24 子节点（4 故事+1 签名+1 gap+18 规则）")
+	var story_keys: Array[String] = [
+		"EXCAVATEEXPLAIN.DARK_IRON_DWARVES_KINGDOM_BUILDING_IN_THE_GROUND_MORE_WRONG_SECTION_OF_THE_HOLE_DISK_AS_THE_ROOT_OF_THE_TREE_OF_THE_WORLD_TO_BE",
+		"EXCAVATEEXPLAIN.BUT_ITS_HISTORY_OLDER_THAN_THE_WORLD_TREE_ITSELF_WHEN_THESE_DORMANT_FOR_MILLIONS_OF_YEARS_OF_HEAVY_TREASURE",
+		"EXCAVATEEXPLAIN.SEE_THE_LIGHT_EXPLORERS_WERE_SURPRISED_TO_HAVE_FOUND_GOLD_AND_DIAMONDS_ARE_STILL_DWARVES_TIMELESS_A",
+		"EXCAVATEEXPLAIN.DUST_IS_NOT_DYED_BUT_WITH_GOLD_AS_ETERNAL_HUMAN_GREED_AND_PLUNDER",
+	]
+	for i: int in story_keys.size():
+		var row: Label = content.get_node("%%StoryRow%d" % (i + 1)) as Label
+		assert_eq(row.text, cm.get_lstr(story_keys[i]), "故事行 %d LSTR fill" % (i + 1))
+		assert_false(row.text.is_empty(), "故事行 %d 非空" % (i + 1))
+	var sign: Label = content.get_node("%StorySign") as Label
+	assert_eq(sign.text, cm.get_lstr("EXCAVATEEXPLAIN._ANUBAR_WARS"), "签名 LSTR fill")
+	assert_eq(sign.horizontal_alignment, HORIZONTAL_ALIGNMENT_RIGHT, "签名右对齐（源 anchor(1,1)@rx）")
+	var gap: Control = content.get_node("%StoryGap") as Control
+	assert_almost_eq(gap.custom_minimum_size.y, 17.0, 0.02, "签名后 20 间距 = sep3+gap17")
+	for i: int in [1, 18]:
+		var rule: Label = content.get_node("%%RuleRow%d" % i) as Label
+		assert_false(rule.text.is_empty(), "规则行 %d 非空" % i)
+	assert_eq((content.get_node("%RuleRow1") as Label).text,
+		cm.get_lstr("EXCAVATEEXPLAIN.1_IN_THE_TREASURE_CRYPT_YOU_CAN_FIND_A_VARIETY_OF_RESOURCE_POINTS_INCLUDING_GOLD_DIAMOND_AND_LABORATORY"),
+		"规则行 1 LSTR fill")
+	assert_eq((content.get_node("%RuleRow18") as Label).text,
+		cm.get_lstr("EXCAVATEEXPLAIN.10_IN_THE_TREASURE_CRYPT_BATTLE_THE_HERO_OF_THE_DEFENSE_WILL_GET_SOME_INITIAL_ENERGY"),
+		"规则行 18 LSTR fill")
 	panel.remove_window()
 	root.queue_free()
 
