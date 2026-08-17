@@ -241,6 +241,30 @@ func test_stage_n_selects_and_shows_preview() -> void:
 	root.queue_free()
 
 
+# Task 9 验收修复守卫：实跑序（setup_panel 先于 show_window，router:115）下，
+# 离树赋值 scroll_horizontal 会被 HScrollBar 默认 max_value=100 钳制且进树后不
+# 恢复（修复前 cur=10 期望 1150 落在 100 → 镜头错段、第一关图标滚出视口被误读
+# 为被雾盖住）。修复 = 进树 + 首帧布局后重放。fog 层序照源不改（crusadeconfig
+# UIRes fog4-1 声明在 Map 之后；PIL 实测 fog1 纹理左缘 0-80px 全透明，透明前缘
+# 内容 x≈274.7 让出 battle1 右缘 253.25——cur=1 第一关清晰可见是源语义）。
+func test_initial_scroll_survives_enter_tree() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_hero(1)
+	pd.crusade_manager.cur_stage = 10
+	var panel := CrusadePanel.new("crusade", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var scroll: ScrollContainer = (panel.container.get_child(0) as Control).get_node("%Scroll") as ScrollContainer
+	assert_eq(scroll.scroll_horizontal, 1150, "cur=10 镜头 1150（源 (10-4)×50+450+400，进树重放生效）")
+	assert_almost_eq(scroll.get_h_scroll_bar().max_value, 2023.05, 0.01, "scrollbar range 已展开到内容宽（布局完成）")
+	panel.remove_window()
+	root.queue_free()
+
+
 # 源 crusade.lua:91 shakeBox 定时器（1.5s 周期，上一关 box 弹跳）。
 func test_shake_timer_created() -> void:
 	var root := Node.new()

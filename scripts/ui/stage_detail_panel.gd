@@ -33,7 +33,6 @@ const ENEMY_LEN_BOSS: float = 80.0
 const ENEMY_BOSS_OX: float = 5.0  # 源 :1169 boss 额外偏移
 # boss 标签源 ccp(52,20)（icon 104×104 局部左下原点）→ Godot 左上 y = 104-20-42.93。
 const BOSS_TAG_POS: Vector2 = Vector2(52.0, 41.07)
-const REWARD_ICON_SCALE: float = 0.7  # 奖励图标缩放（72→~50，对齐源 cocos 80 间距视觉）
 # TitleBg 细条 Scale9 中心直译（源 titlepos ccp(400,355) → godot(480,205)），size 随 stage_type。
 const TITLE_BG_CENTER: Vector2 = Vector2(480.0, 205.0)
 
@@ -409,18 +408,29 @@ func _add_boss_tag(icon: ReadheroIcon) -> void:
 		host.add_child(lbl)
 
 
-# 奖励：照源 createReward:1193-1211，容器化（ReadequipIcon 返回 Control 直接进 %RewardHBox）。
-# ReadequipIcon frame 按纹理原尺寸渲染（94×95px），scale 0.7 补偿对齐源 cocos 80 间距视觉
-# （批2 ReadequipIcon 补偿口径，宽基准 length 语义）。
+# 奖励：照源 createReward:1193-1211，createIcon(id) 无 length → frame 原样 px/CS
+# （73.37×74.14，源 anchor(0.5,0) 底对齐 pos(205+80(i-1),50)，步进 80）。
+# ReadequipIcon frame Sprite2D 按纹理原像素渲染（94×95px）→ scale=1/CS 补偿（批2 口径，
+# daily 同值）。Task 9 修复：HBox 一帧后重置直接子项 scale（实测 0.7→1.0，图标
+# 渲染底 557 压 Frame2 底 553）→ wrapper 承载 HBox 排布（72 槽+8 sep=80 步进照源），
+# 内层 icon 在 wrapper（非容器）内保 scale 且底对齐 wrapper 底（源底锚语义）。
+const REWARD_FRAME_PX: Vector2 = Vector2(94.0, 95.0)
+const REWARD_SLOT: float = 72.0  # = ReadequipIcon.ICON_SIZE（HBox 步进 72+8=80 照源）
+
 func create_reward(parent: Node, drops: Array, cm: Variant) -> void:
 	for d in drops:
 		var item_id: int = int(d.get("item_id", 0))
 		if item_id == 0:
 			continue
 		var icon: Control = ReadequipIcon.create_icon(item_id, 1, cm)
-		icon.scale = Vector2(REWARD_ICON_SCALE, REWARD_ICON_SCALE)
-		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		parent.add_child(icon)
+		var vis_size: Vector2 = REWARD_FRAME_PX * INV_CS
+		var wrapper := Control.new()
+		wrapper.custom_minimum_size = Vector2(REWARD_SLOT, REWARD_SLOT)
+		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.scale = Vector2(INV_CS, INV_CS)
+		icon.position = Vector2((REWARD_SLOT - vis_size.x) * 0.5, REWARD_SLOT - vis_size.y)
+		wrapper.add_child(icon)
+		parent.add_child(wrapper)
 
 
 # 星级：照源 createStars:1212-1261，星星已静态化进 .tscn（%StarHBox 下 Star1/2/3）。

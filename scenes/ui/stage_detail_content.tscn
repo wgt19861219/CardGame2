@@ -233,17 +233,22 @@ texture_pressed = ExtResource("11_backp")
 ignore_texture_size = true
 stretch_mode = 0
 
+; 源 createStars:1212-1261：star 左下 anchor(0,0) pos(320+gap*(i-1),336) scale 0.8，
+; gap=55（normal）；70×71px÷CS×0.8=43.71×44.33，星底=560-336=224、星1 左=400；
+; sep 11 → 步进 54.71（源 55 差 0.29/步）；TitleBg 细条(199..211)穿星中下部 = 源设计
+; （旧 56 大星+整体偏高 14px 致条压星下缘，Task 9 归源）
 [node name="StarHBox" type="HBoxContainer" parent="." unique_id=1669370048]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 405.0
-offset_top = 165.0
-offset_right = 573.0
-offset_bottom = 221.0
+offset_left = 400.0
+offset_top = 179.67
+offset_right = 553.13
+offset_bottom = 224.0
 mouse_filter = 2
+theme_override_constants/separation = 11
 
 [node name="Star1" type="TextureRect" parent="StarHBox" unique_id=351875002]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(43.71, 44.33)
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("13_star")
@@ -251,7 +256,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Star2" type="TextureRect" parent="StarHBox" unique_id=1386097018]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(43.71, 44.33)
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("13_star")
@@ -259,7 +264,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Star3" type="TextureRect" parent="StarHBox" unique_id=1159261772]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(43.71, 44.33)
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("13_stargrey")

@@ -197,13 +197,24 @@ func test_create_enemy_wraps_in_control_into_hbox() -> void:
 	hbox.queue_free()
 
 
-# create_reward：ReadequipIcon 返回 Control 直接进 HBox。
+# create_reward（Task 9 修复后）：HBox 一帧后重置直接子项 scale（实测 0.7→1.0，
+# frame 94×95 原像素渲染底 557 压 Frame2 底 553）→ wrapper 承载 HBox 排布（72 槽
+# +8 sep=80 步进照源），内层 icon 在 wrapper 内保 scale=1/CS（源 createIcon 无
+# length → frame 原样 px/CS=73.37×74.14）且底对齐 wrapper 底（源 anchor(0.5,0)）。
 func test_create_reward_adds_control_to_hbox() -> void:
 	var panel := _make_panel()
 	var hbox := HBoxContainer.new()
 	add_child(hbox)
 	panel.create_reward(hbox, [{"item_id": 1001}, {"item_id": 1002}], cm)
-	assert_eq(hbox.get_child_count(), 2, "2 个奖励图标直接进 HBox")
+	assert_eq(hbox.get_child_count(), 2, "2 个奖励 wrapper 直接进 HBox")
+	var wrapper: Control = hbox.get_child(0) as Control
+	assert_almost_eq(wrapper.custom_minimum_size.x, 72.0, 0.01, "wrapper 72 槽（HBox 步进 72+8=80 照源 ox 步进 80）")
+	var icon: Control = wrapper.get_child(0) as Control
+	assert_almost_eq(icon.scale.x, 1.0 / CS, 0.001, "icon scale=1/CS 保住（wrapper 非 Container 不重置；修复前直接挂 HBox 被重置 1.0）")
+	# icon 底对齐 wrapper 底：position.y = 72 - 95/CS（frame 视觉高 74.14，底=wrapper 底）。
+	assert_almost_eq(icon.position.y, 72.0 - 95.0 / CS, 0.01, "icon 底对齐 wrapper 底（源 anchor(0.5,0) 底锚）")
+	var visual_bottom: float = wrapper.position.y + icon.position.y + 95.0 * icon.scale.y
+	assert_almost_eq(visual_bottom, 72.0, 0.01, "frame 视觉底 = wrapper 底（不再压 Frame2 底框 553）")
 	panel.remove_window()
 	hbox.queue_free()
 
@@ -216,15 +227,16 @@ func test_builder_retired_and_new_whitelist() -> void:
 	assert_false(FileAccess.file_exists(BUILDER_PATH), "builder 文件不存在")
 	var panel_src: String = FileAccess.get_file_as_string(PANEL_PATH)
 	assert_false(panel_src.contains("stage_detail_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
-	# .new( 白名单（宽口径含带参构造）：panel 并入 builder 后恰 6 处——
-	# BattlePreparePanel/StageResetConfirm 弹窗 2 + ReadheroIcon/Control wrapper/Sprite2D tag/Label fallback 4。
+	# .new( 白名单（宽口径含带参构造）：panel 并入 builder 后恰 7 处——
+	# BattlePreparePanel/StageResetConfirm 弹窗 2 + ReadheroIcon/Control wrapper×2
+	# （敌方头像 + Task 9 奖励 wrapper）/Sprite2D tag/Label fallback。
 	var panel_new: PackedStringArray = _collect_new_calls(panel_src)
-	assert_eq(panel_new.size(), 6, "panel .new( 恰 6 处（2 弹窗 + 4 动态图标件）")
+	assert_eq(panel_new.size(), 7, "panel .new( 恰 7 处（2 弹窗 + 5 动态图标件）")
 	var joined: String = "\n".join(panel_new)
 	assert_true(joined.contains("BattlePreparePanel.new("), "出战弹窗在白名单")
 	assert_true(joined.contains("StageResetConfirm.new("), "重置确认弹窗在白名单")
 	assert_true(joined.contains("ReadheroIcon.new()"), "敌方头像图标在白名单")
-	assert_true(joined.contains("Control.new()"), "敌方头像 HBox wrapper 在白名单")
+	assert_true(joined.count("Control.new()") >= 2, "敌方/奖励 HBox wrapper 在白名单")
 	assert_true(joined.contains("Sprite2D.new()"), "boss 标签贴图在白名单")
 	assert_true(joined.contains("Label.new()"), "boss 标签缺图 fallback 在白名单")
 
@@ -285,6 +297,16 @@ func test_content_static_rects_source_aligned() -> void:
 	assert_almost_eq(cluster.position.y, 279.0, 0.6, "SweepCluster 顶 y=279")
 	assert_almost_eq(cluster.size.x, 135.0, 0.6, "SweepCluster 宽 135")
 	assert_almost_eq(cluster.size.y, 150.0, 0.6, "SweepCluster 高 150")
+	# 星区归源（Task 9 修复）：源 createStars:1212-1261 star 左下 anchor(0,0)
+	# pos(320+55*(i-1),336) scale 0.8 → 70×71px÷CS×0.8=43.71×44.33，星底=560-336=224，
+	# 星1 左=400（旧 56 大星 + 顶 165 偏高 14px 致 TitleBg 细条 199..211 压星下缘）。
+	var star_box: Control = content.get_node("%StarHBox") as Control
+	assert_almost_eq(star_box.position.x, 400.0, 0.6, "星区左 x=400（源 star1 左 320+80）")
+	assert_almost_eq(star_box.position.y + star_box.size.y, 224.0, 0.7, "星底 y=224（源 pos y=336 直译）")
+	var star1: TextureRect = star_box.get_child(0) as TextureRect
+	assert_almost_eq(star1.custom_minimum_size.x, 70.0 / CS * 0.8, 0.05, "星宽 =70px÷CS×0.8（源 scale 0.8）")
+	assert_almost_eq(star1.custom_minimum_size.y, 71.0 / CS * 0.8, 0.05, "星高 =71px÷CS×0.8")
+	assert_eq(star_box.get_theme_constant("separation"), 11, "星间距 11（步进 54.71，源 gap 55 差 0.29）")
 	content.queue_free()
 
 

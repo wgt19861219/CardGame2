@@ -135,16 +135,30 @@ func _fill_lefttime() -> void:
 
 ## 源 initDragPos（:497-507）：offset = max(cur-4,0)×50 + (cur>5?450) + (cur>9?400)，
 ## clamp [0,1259]（源 maxRight=-1259 取负）。
+## Task 9 验收修复：实跑序 setup_panel 先于 show_window（main_scene_entry_router:115），
+## 离树时 scroll_horizontal 赋值被 HScrollBar 默认 max_value=100 钳制且进树后不恢复
+## （实测 cur=10 期望 1150 落在 100）——镜头错段+第一关图标滚出视口被误读为
+## "被雾盖住"。须进树 + 首帧布局（scrollbar range 展开到内容宽）后重放。
 func _apply_initial_scroll() -> void:
 	if _scroll == null or player == null or player.crusade_manager == null:
 		return
+	var target: int = _initial_scroll_target()
+	_scroll.scroll_horizontal = target
+	if not is_inside_tree():
+		await tree_entered
+		await get_tree().process_frame
+		if is_instance_valid(_scroll) and _scroll.scroll_horizontal != target:
+			_scroll.scroll_horizontal = target
+
+
+func _initial_scroll_target() -> int:
 	var cur: int = player.crusade_manager.cur_stage
 	var offset: float = maxf(float(cur) - 4.0, 0.0) * SCROLL_STEP_PER_STAGE
 	if cur > SCROLL_MID_FROM:
 		offset += SCROLL_MID_JUMP
 	if cur > SCROLL_TAIL_FROM:
 		offset += SCROLL_TAIL_JUMP
-	_scroll.scroll_horizontal = int(clampf(offset, 0.0, SCROLL_MAX))
+	return int(clampf(offset, 0.0, SCROLL_MAX))
 
 
 func _on_reset() -> void:
