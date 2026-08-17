@@ -7,6 +7,8 @@ extends RefCounted
 ## 逐图 px/CS 实测尺寸）+ ui/crusade.lua:543-595 initRuleLayer 17 项。
 ## 贴图口径（批 3 Task 4 定稿）：crusade 系条目 Prescaled=false → 只算显式 scale 累乘
 ## （box=px/CS×0.8；battle 无 scale=px/CS；rect 恒 normal 图口径，源 setTexture 不改 contentSize）。
+## 战节点两态（第二轮验收归源 2026-08-17）：源 crusadeconfig:285-286 仅 normal/disable 两键；
+## _current/_passed 系美术死资产（源全工程零引用），旧三态自造致当前关图标透明。
 
 const CONTENT_SCALE: float = 1.28125
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
@@ -76,10 +78,11 @@ static func fill_stage_grid(content: Control, player: PlayerData, on_stage: Call
 			boxes.append(box)
 		for b in range(5):
 			var idx: int = s * 5 + b + 1
-			var tex: Texture2D = _load_tex(STAGE_TEX_DIR + str(idx) + ".png") as Texture2D
+			var tex: Texture2D = _load_tex(stage_texture_normal(idx)) as Texture2D
 			var btn_sz: Vector2 = (tex.get_size() if tex != null else Vector2(110.0, 110.0)) / CONTENT_SCALE
 			var btn := TextureButton.new()
-			btn.texture_normal = _load_tex(stage_texture(player, idx))
+			btn.texture_normal = tex
+			btn.texture_disabled = _load_tex(stage_texture_locked(idx))
 			btn.ignore_texture_size = true
 			btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
 			btn.position = map_local_top_left(BATTLE_POS[s][b], btn_sz)
@@ -134,18 +137,32 @@ static func box_texture(player: PlayerData, i: int) -> String:
 	return BOX_TEX_DIR + box_tier(i) + "_" + state + ".png"
 
 
-static func stage_texture(player: PlayerData, i: int) -> String:
-	var state: String = "locked"
-	if player.crusade_manager.cur_stage == i:
-		state = "current"
-	elif player.crusade_manager.is_stage_cleared(i):
-		state = "passed"
-	return STAGE_TEX_DIR + str(i) + "_" + state + ".png"
+## 源 battle 按钮两态贴图（crusadeconfig:285-286：normal=crusade_stage_N.png，
+## disable=crusade_stage_N_locked.png；disable 换图=Godot texture_disabled 语义）。
+static func stage_texture_normal(i: int) -> String:
+	return STAGE_TEX_DIR + str(i) + ".png"
+
+
+static func stage_texture_locked(i: int) -> String:
+	return STAGE_TEX_DIR + str(i) + "_locked.png"
+
+
+## 源 crusade.lua:328 enable(false) 布尔直译（and 高于 or）：
+## (battleState[i]=="unpassed" and i>currentStage) or (currentStage==i and
+## battleState[i-1]~="rewarded" and i>1)。
+static func stage_locked(player: PlayerData, i: int) -> bool:
+	var mgr = player.crusade_manager
+	return (not mgr.is_stage_cleared(i) and i > mgr.cur_stage) \
+		or (mgr.cur_stage == i and not mgr.is_stage_rewarded(i - 1) and i > 1)
 
 
 ## 面板刷新入口：路径 → 安全加载（exists 预检，返回 Texture2D 或 null）。
-static func stage_button_texture(player: PlayerData, i: int) -> Variant:
-	return _load_tex(stage_texture(player, i))
+static func stage_button_normal_texture(i: int) -> Variant:
+	return _load_tex(stage_texture_normal(i))
+
+
+static func stage_button_locked_texture(i: int) -> Variant:
+	return _load_tex(stage_texture_locked(i))
 
 
 static func box_button_texture(player: PlayerData, i: int) -> Variant:

@@ -1,7 +1,8 @@
 extends GutTest
 # Crusade UI 守卫测试（2026-07-02 初建；2026-07-17 .tscn 重构；2026-08-16 批 3 Task 7
 # 两件套改造重写：格子照源散点（HBox 均排退役）+ fog 归源（scale=4 等比）+ 美术层/
-# 规则页静态进 tscn + builder/rule_renderer 退役）。用例 18→26 不缩水。
+# 规则页静态进 tscn + builder/rule_renderer 退役）。用例 18→28 不缩水（第二轮验收
+# +2：两态贴图归源 + hint box 分支）。
 
 const BUILDER_PATH: String = "res://scripts/ui/crusade_panel_builder.gd"
 const RENDERER_PATH: String = "res://scripts/ui/crusade_rule_renderer.gd"
@@ -329,6 +330,8 @@ func test_reset_shows_confirm_dialog() -> void:
 
 
 # currentStageHint 导航箭头（源 refreshHintPos :298-323 + 浮动 :614-619）。
+# 第二轮验收归源：hint anchor(0.5,0) 底部中心 = target 中心 + (offsetX,+30 cocos 上方)
+# → Godot HintAnchor（零尺寸锚=箭头底边中心）global = battle1 全局中心 + (0,-30)。
 func test_stage_hint_created_and_points_current() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -339,9 +342,53 @@ func test_stage_hint_created_and_points_current() -> void:
 		assert_not_null(hint_tex.texture, "箭头纹理化 stagepointer.png")
 	assert_true(panel._hint_anchor.visible, "首关箭头指向当前关（源 :306）")
 	if panel.stage_buttons.size() > 0:
-		var btn_global: Vector2 = panel.stage_buttons[0].get_global_rect().position
-		var origin: Vector2 = panel.container.get_global_rect().position
-		assert_almost_eq(panel._hint_anchor.position.x, btn_global.x - origin.x, 1.0, "箭头 X 对齐当前关按钮（源 offsetX=0）")
+		var btn_center: Vector2 = panel.stage_buttons[0].get_global_rect().get_center()
+		var anchor: Vector2 = panel._hint_anchor.global_position
+		assert_almost_eq(anchor.x, btn_center.x, 1.0, "箭头 X=battle1 中心（源 :313-316 中心+offsetX=0）")
+		assert_almost_eq(anchor.y, btn_center.y - 30.0, 1.0, "箭头底=battle1 中心上 30（源 pos.y+30）")
+
+
+# 源 :311-316 分支二：前关 passed 未领奖 → 箭头指 boxButton{cur-1} 且 offsetX=40。
+func test_stage_hint_points_box_when_prev_unrewarded() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root, 1)
+	panel.player.crusade_manager.cur_stage = 2
+	panel.player.crusade_manager.cleared_stages[1] = true
+	panel._refresh_hint_pos()
+	assert_true(panel._hint_anchor.visible, "前关未领奖箭头可见（源 :310 分支二）")
+	var box_center: Vector2 = panel.box_rects[0].get_global_rect().get_center()
+	var anchor: Vector2 = panel._hint_anchor.global_position
+	assert_almost_eq(anchor.x, box_center.x + 40.0, 1.0, "箭头 X=box1 中心+40（源 :313 offsetX=40）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 战节点两态归源守卫（第二轮验收）：源 crusadeconfig:285-286 battle 仅 normal/disable
+# 两键（_current/_passed 系死资产零引用）；锁定走 texture_disabled（源 enable(false) 换图）。
+func test_stage_textures_two_state_source_aligned() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root, 1)
+	var stage_dir: String = "res://assets/ui/alpha/HVGA/crusade/stage/"
+	var b1: TextureButton = panel.stage_buttons[0]
+	assert_eq(b1.texture_normal.resource_path, stage_dir + "crusade_stage_1.png",
+		"cur=1 battle1 用 normal 图（非 _current 死资产）")
+	assert_eq(b1.texture_disabled.resource_path, stage_dir + "crusade_stage_1_locked.png",
+		"battle1 disable 槽=_locked 图（源 disable 键）")
+	assert_false(b1.disabled, "第 1 关当前关不锁（源 :328）")
+	var b3: TextureButton = panel.stage_buttons[2]
+	assert_true(b3.disabled, "第 3 关超进度锁定（源 :328 条件一）")
+	assert_eq(b3.texture_disabled.resource_path, stage_dir + "crusade_stage_3_locked.png",
+		"锁定关 disabled 图=_locked")
+	assert_eq(b3.texture_normal.resource_path, stage_dir + "crusade_stage_3.png",
+		"锁定关 normal 槽恒 normal 图")
+	# 源 :328 条件二：cur==i 且前关未领奖且 i>1 → 锁（构造 cur=2、cleared[1] 未领）。
+	panel.player.crusade_manager.cur_stage = 2
+	panel.player.crusade_manager.cleared_stages[1] = true
+	panel._refresh_stage_states()
+	assert_true(panel.stage_buttons[1].disabled, "cur=2 且第 1 关未领奖 → battle2 锁（源条件二）")
+	assert_false(panel.stage_buttons[0].disabled, "已通关的第 1 关不锁")
 	panel.remove_window()
 	root.queue_free()
 

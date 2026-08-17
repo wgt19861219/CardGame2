@@ -90,6 +90,8 @@ func _build_content() -> void:
 	h_bar.add_theme_stylebox_override("grabber", StyleBoxEmpty.new())
 	h_bar.add_theme_stylebox_override("grabber_highlight", StyleBoxEmpty.new())
 	h_bar.add_theme_stylebox_override("grabber_pressed", StyleBoxEmpty.new())
+	# 源拖动后 refreshHintPos 重算（crusade.lua:471-474）：滚动值变化 → 箭头跟随重算。
+	h_bar.value_changed.connect(_on_scroll_moved)
 	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
 	var reset_btn: Button = _content.get_node("%ResetBtn") as Button
 	(_content.get_node("%ResetLabel") as Label).text = _lstr(LSTR_RESET_KEY, LSTR_RESET_FALLBACK)
@@ -359,7 +361,11 @@ func _start_hint_float() -> void:
 	tw.tween_property(stage_hint, "position:y", HINT_FLOAT_DELTA, HINT_FLOAT_TIME).as_relative()
 
 
-## 源 refreshHintPos（:298-323）：指向当前关或上关宝箱（+40 偏移）。
+## 源 refreshHintPos（:298-323）：hint 指向当前关 battle 或上关宝箱 boxButton。
+## 位置语义（第二轮验收归源 2026-08-17）：源取 target.sprite 锚点（中心）世界坐标
+## +（offsetX,+30 cocos 上方）→ hint anchor(0.5,0) 底部中心落在该点；即 Godot
+## HintAnchor（零尺寸=底边中心锚）= target 全局中心 + (offsetX, -30)。旧实现误用
+## target 左上角致箭头整体偏左上（截图实证 battle1 圆心未对准）。
 func _refresh_hint_pos() -> void:
 	if _hint_anchor == null or player == null or player.crusade_manager == null:
 		return
@@ -381,16 +387,22 @@ func _refresh_hint_pos() -> void:
 		_hint_anchor.visible = false
 		return
 	_hint_anchor.visible = true
-	var target_global: Vector2 = target.get_global_rect().position
-	var origin: Vector2 = container.get_global_rect().position
-	_hint_anchor.position = target_global - origin + Vector2(offset_x, HINT_OFFSET_Y)
+	var anchor_pt: Vector2 = target.get_global_rect().get_center() + Vector2(offset_x, HINT_OFFSET_Y)
+	_hint_anchor.global_position = anchor_pt
 
 
-## 刷新 stage 按钮状态纹理（current/passed/locked 三态增强）+ disabled + box 宝箱。
+## 源拖动语义（:461-475）：dragContainer 偏移变化后 refreshHintPos 重算（拖动中隐藏）。
+## 本项目滚动=ScrollContainer：HScrollBar value 变化即重算（deferred 等布局重排）。
+func _on_scroll_moved(_value: float) -> void:
+	_refresh_hint_pos.call_deferred()
+
+
+## 刷新 stage 按钮状态（源 :324-343 两态：normal + disable 换图）+ disabled + box 宝箱。
 func _refresh_stage_states() -> void:
 	var i: int = 1
 	while i <= stage_buttons.size():
-		stage_buttons[i - 1].texture_normal = CrusadeFills.stage_button_texture(player, i)
+		stage_buttons[i - 1].texture_normal = CrusadeFills.stage_button_normal_texture(i)
+		stage_buttons[i - 1].texture_disabled = CrusadeFills.stage_button_locked_texture(i)
 		stage_buttons[i - 1].disabled = _is_stage_locked(i)
 		if i - 1 < box_rects.size():
 			box_rects[i - 1].texture_normal = CrusadeFills.box_button_texture(player, i)
@@ -399,17 +411,11 @@ func _refresh_stage_states() -> void:
 	_refresh_hint_pos()
 
 
+## 源 :328 布尔直译下沉 fills（stage_locked），此处只转发（单一来源）。
 func _is_stage_locked(i: int) -> bool:
 	if player == null or player.crusade_manager == null:
 		return false
-	if player.crusade_manager.is_stage_cleared(i):
-		return false   # 已通关可选（领奖）
-	var cur: int = player.crusade_manager.cur_stage
-	if i > cur:
-		return true   # 超进度
-	if i == cur and i > 1 and not player.crusade_manager.is_stage_rewarded(i - 1):
-		return true
-	return false
+	return CrusadeFills.stage_locked(player, i)
 
 
 # ==================== 规则页（源 crusade.lua:425-430 + :543-595）====================
