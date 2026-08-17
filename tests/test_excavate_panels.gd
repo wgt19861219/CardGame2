@@ -889,10 +889,14 @@ func test_map_content_static_rects() -> void:
 	var title: Control = fc.get_node("Title") as Control
 	assert_almost_eq(title.position.x + title.size.x * 0.5, 402.34, 0.02, "title 局部中心 x=402.34")
 	assert_almost_eq(title.position.y + title.size.y * 0.5, 49.22, 0.02, "title 局部中心 y=49.22（480.47-431.25）")
-	var back_btn: Control = fc.get_node("%BackButton") as Control
-	assert_almost_eq(back_btn.position.x + back_btn.size.x * 0.5, 65.63, 0.02, "back 局部中心 x=65.63")
-	assert_almost_eq(back_btn.position.y + back_btn.size.y * 0.5, 46.09, 0.02, "back 局部中心 y=46.09（480.47-434.38）")
-	var back_tex: Texture2D = (fc.get_node("%BackButton") as TextureButton).texture_normal
+	# 返回钮归位全项目惯例（实跑反馈修复三轮 2026-08-17）：root 直挂 + 左上角贴角
+	# (20,15)-(77.76,73.54)，与 stage_select/shop/tavern/crusade/dungeon_map 五件同款
+	# （源 back_button 挂 frame_container 内侧左上，受控偏离统一导航样式）。
+	var back_btn: Control = content.get_node("%BackButton") as Control
+	assert_almost_eq(back_btn.position.x, 20.0, 0.02, "back 贴角 offset_left=20（全项目惯例）")
+	assert_almost_eq(back_btn.position.y, 15.0, 0.02, "back 贴角 offset_top=15")
+	assert_almost_eq(back_btn.size.x, 57.76, 0.02, "back w=57.76（74px÷CS）")
+	var back_tex: Texture2D = (back_btn as TextureButton).texture_normal
 	var back_dev: float = abs(back_btn.size.x / back_btn.size.y - float(back_tex.get_width()) / float(back_tex.get_height())) / (float(back_tex.get_width()) / float(back_tex.get_height()))
 	assert_lt(back_dev, 0.08, "back 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (back_dev * 100.0))
 	var ptc: Control = fc.get_node("%PageTagContainer") as Control
@@ -1292,10 +1296,14 @@ func test_search_content_static_rects() -> void:
 	var title_tex: Texture2D = (fc.get_node("Title") as TextureRect).texture
 	var title_dev: float = abs(title.size.x / title.size.y - float(title_tex.get_width()) / float(title_tex.get_height())) / (float(title_tex.get_width()) / float(title_tex.get_height()))
 	assert_lt(title_dev, 0.08, "title 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (title_dev * 100.0))
-	var back_btn: Control = fc.get_node("%BackButton") as Control
-	assert_almost_eq(back_btn.position.x + back_btn.size.x * 0.5, 65.63, 0.02, "back 局部中心 x=65.63")
-	assert_almost_eq(back_btn.position.y + back_btn.size.y * 0.5, 46.09, 0.02, "back 局部中心 y=46.09（480.47-434.38）")
-	var back_tex: Texture2D = (fc.get_node("%BackButton") as TextureButton).texture_normal
+	# 返回钮归位全项目惯例（实跑反馈修复三轮 2026-08-17）：root 直挂 + 左上角贴角
+	# (20,15)-(77.76,73.54)，与 stage_select/shop/tavern/crusade/dungeon_map 五件同款
+	# （源 back_button 挂 frame_container 内侧左上，受控偏离统一导航样式）。
+	var back_btn: Control = content.get_node("%BackButton") as Control
+	assert_almost_eq(back_btn.position.x, 20.0, 0.02, "back 贴角 offset_left=20（全项目惯例）")
+	assert_almost_eq(back_btn.position.y, 15.0, 0.02, "back 贴角 offset_top=15")
+	assert_almost_eq(back_btn.size.x, 57.76, 0.02, "back w=57.76（74px÷CS）")
+	var back_tex: Texture2D = (back_btn as TextureButton).texture_normal
 	var back_dev: float = abs(back_btn.size.x / back_btn.size.y - float(back_tex.get_width()) / float(back_tex.get_height())) / (float(back_tex.get_width()) / float(back_tex.get_height()))
 	assert_lt(back_dev, 0.08, "back 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (back_dev * 100.0))
 	var icon: Control = content.get_node("%SearchIcon") as Control
