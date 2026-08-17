@@ -9,7 +9,9 @@
 ; frame（:141-145）main_vit_tips cap(10,10,58,26)（贴图 103x61 → top=61-10-26=25
 ; bottom=10）setContentSize(355,180) 中心(400,355) → 全屏 (302.5,115)-(657.5,295)；
 ; readnode root=frame（:294）→ 子节点 Frame 局部坐标（y' = 180-y 翻转直译，
-; 全 0 锚 + 固定 rect——tscn 手写比例锚布局不生效，实测 2026-08-17）：
+; 全 0 锚 + 固定 rect——照源直译的坐标精确性选择（子节点 rect 与源数值
+; 一一对应便于核对）；tscn 手写比例锚本身生效正常（2026-08-17 审查探针
+; 实证 anchor_top=0.5 时 position.y=320），本写法并非锚失效规避）：
 ; title（:148-159）(30,150) 左中 size20 白 NameInputTitleLabel，rect 中心 30 +
 ; vertical_alignment center 对字号稳健；name_bg（:160-174）activate_input
 ; cap(12,10,12,22)（47x55 → top=23 bottom=10）235x42 左中(30,95)；roll（:175-198）
