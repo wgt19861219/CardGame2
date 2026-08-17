@@ -1297,3 +1297,9 @@ ExcavateNodeBtn/styles/hover = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateNodeBtn/styles/pressed = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateNodeBtn/styles/disabled = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateNodeBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── language_change 两件套（批 4 Task 1，2026-08-17）──
+; 语言名标签（languagechange.lua:164-179 language_label size20 ccc3(220,176,103)；
+; 220/255=0.862745 176/255=0.690196 103/255=0.403914）
+LangNameLabel/base_type = &"Label"
+LangNameLabel/colors/font_color = Color(0.862745, 0.690196, 0.403914, 1)
+LangNameLabel/font_sizes/font_size = 20
