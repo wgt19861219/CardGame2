@@ -1220,3 +1220,16 @@ ExcavateSearchBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateCostLabel/base_type = &"Label"
 ExcavateCostLabel/colors/font_color = Color(1, 0.682353, 0.207843, 1)
 ExcavateCostLabel/font_sizes/font_size = 16
+; ── excavate_battle_report 两件套（excavate 批 Task 5，2026-08-17）──
+; 窗口侧标题（uieditor/excavatebattlereport.lua left/right_title size22 ccc3(255,224,131)）
+BattleReportSideTitleLabel/base_type = &"Label"
+BattleReportSideTitleLabel/colors/font_color = Color(1, 0.878431, 0.513725, 1)
+BattleReportSideTitleLabel/font_sizes/font_size = 22
+; 第 N 战标题（itemexcavatebattlereport.lua title_label size23 ccc3(253,210,17)）
+BattleReportTitleLabel/base_type = &"Label"
+BattleReportTitleLabel/colors/font_color = Color(0.992157, 0.823529, 0.066667, 1)
+BattleReportTitleLabel/font_sizes/font_size = 23
+; 玩家行名（itemexcavatebattleplayer.lua name_label size21 ccc3(255,255,255)）
+BattleReportNameLabel/base_type = &"Label"
+BattleReportNameLabel/colors/font_color = Color(1, 1, 1, 1)
+BattleReportNameLabel/font_sizes/font_size = 21

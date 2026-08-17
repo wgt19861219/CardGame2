@@ -1,8 +1,28 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-title-mark.png" id="2_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/chat/chat_replay_vs.png" id="3_vs"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="4_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="5_closep"]
+
+; 挖矿战报两件套静态树（excavate 批 Task 5，2026-08-17）。照源三份直译：
+; ui/popwindow/excavatebattlereport.lua（187 行窗口/条目装配）+ uieditor/
+; excavatebattlereport.lua（窗口声明表）+ uieditor/itemexcavatebattlereport.lua
+; （条目表）。A 类债 #4 归源：frame=Scale9Sprite main_vit_tips scaleSize
+; 703.13x434.38 中心 (419.53,233.59) → Godot (147.965,109.215)-(851.095,543.595)，
+; cap CCRectMake(21.88,21.09,39.06,11.72)@103x61 → patch L22/B21/R42/T28；
+; 弃 excavate_main_frame 600x440 误用（ratio 1.364 vs 1.613 偏差 15.5% 报警件）。
+; close fix_wh 49.22x52.34 中心 (752.34,432.81) 贴图归源 common_tips_button_close。
+; left/right_title size22 ccc3(255,224,131) 中心 (239.06,426.56)/(554.69,426.56)。
+; 条目表经源 scrollview 摆放链（createListLayer:41-58 oriPosition DGccp(107,325)
+; ×0.78125=(83.59,253.91)（readnode.lua DG 前缀像素→点）+ getItemPos item1 世界
+; 原点 → Godot item 左 163.59/底 306.09）：title_bg 中心 (313.28,135.94) 局部 →
+; Godot (476.87,170.15)；vs_icon 中心 (313.28,63.28) → (476.87,242.81)；
+; left/right_container 312.5x125 @(0,0)/(315.63,-0.78)。title_label 中心 (314.84,
+; 135.16)≈title_bg 几何中心 → 挂 TitleBg 内全矩形居中（history 件同款先例）。
+; 单机受控裁剪：源多波 scrollview 列表 → 单机单条静态；replay_button（联机
+; query_replay 回放）不建。绘制序照源 z：frame(1)→titles(2/4)→条目内容(5)→close(20)。
 
 [node name="ExcavateBattleReportContent" type="Control"]
 layout_mode = 3
@@ -11,123 +31,122 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Frame" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 180.0
-offset_top = 100.0
-offset_right = 780.0
-offset_bottom = 540.0
+; 窗口框（源 frame Scale9Sprite main_vit_tips，z=1）
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 147.965
+offset_top = 109.215
+offset_right = 851.095
+offset_bottom = 543.595
 texture = ExtResource("1_frame")
+patch_margin_left = 22
+patch_margin_top = 28
+patch_margin_right = 42
+patch_margin_bottom = 21
+mouse_filter = 2
+
+; 左侧标题（源 left_title OFFENCE 进攻方=敌方，z=2；text fill）
+[node name="EnemyTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 239.06
+offset_top = 117.44
+offset_right = 399.06
+offset_bottom = 149.44
+theme_type_variation = &"BattleReportSideTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "进攻方"
+
+; 右侧标题（源 right_title DEFENDER 防守方=我方，z=4；text fill）
+[node name="SelfTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 554.69
+offset_top = 117.44
+offset_right = 714.69
+offset_bottom = 149.44
+theme_type_variation = &"BattleReportSideTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "防守方"
+
+; 第 N 战标题条（条目表 title_bg Scale9Sprite herodetail-title-mark，z=2；
+; cap(74.22,11.72,82.03,11.72)@289x15 竖向越界退化（y+h=23.44>15，源 uieditor
+; 导出缺陷）→ 受控修正：横向 L74/R133 保留，竖向 T0/B0 整体缩放（h 11.72≈
+; 15/CS=11.71 等比，竖向九宫无意义，报告记录）
+[node name="TitleBg" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 319.45
+offset_top = 164.29
+offset_right = 634.29
+offset_bottom = 176.01
+texture = ExtResource("2_titlebg")
+patch_margin_left = 74
+patch_margin_top = 0
+patch_margin_right = 133
+patch_margin_bottom = 0
+mouse_filter = 2
+
+; 第 N 战标题（条目表 title_label size23 ccc3(253,210,17)，text fill）
+[node name="TitleLabel" type="Label" parent="TitleBg"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BattleReportTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "第1战"
+
+; 我方阵容容器（条目表 right_container Layer 312.5x125 @(315.63,-0.78)，z=1；
+; fill 时挂玩家行 excavate_battle_player_item.tscn）
+[node name="SelfContainer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 479.22
+offset_top = 181.87
+offset_right = 791.72
+offset_bottom = 306.87
+mouse_filter = 2
+
+; 敌方阵容容器（条目表 left_container Layer 312.5x125 @(0,0)，z=2）
+[node name="EnemyContainer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 163.59
+offset_top = 181.09
+offset_right = 476.09
+offset_bottom = 306.09
+mouse_filter = 2
+
+; VS 分隔图（条目表 vs_icon Sprite chat_replay_vs fix_wh 44.53x36.72，z=2，骑两容器中缝）
+[node name="VsIcon" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 454.604375
+offset_top = 224.450625
+offset_right = 499.135625
+offset_bottom = 261.169375
+texture = ExtResource("3_vs")
 expand_mode = 1
 mouse_filter = 2
 
+; 关闭按钮（源 close_button DGButton z=20 最高层，normal/press 双贴图）——声明最后：
+; 源 z 20>条目内容 5，需绘制在全部内容之上可点
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 730.0
-offset_top = 112.0
-offset_right = 770.0
-offset_bottom = 152.0
-texture_normal = ExtResource("2_close")
-texture_pressed = ExtResource("3_closep")
+layout_mode = 0
+offset_left = 807.730625
+offset_top = 101.018125
+offset_right = 856.949375
+offset_bottom = 153.361875
+texture_normal = ExtResource("4_close")
+texture_pressed = ExtResource("5_closep")
 ignore_texture_size = true
-
-[node name="Title" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 180.0
-offset_top = 160.0
-offset_right = 780.0
-offset_bottom = 190.0
-theme_override_font_sizes/font_size = 20
-mouse_filter = 2
-horizontal_alignment = 1
-text = "第1战"
-
-[node name="EnemySide" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 220.0
-offset_top = 210.0
-offset_right = 480.0
-offset_bottom = 510.0
-mouse_filter = 2
-
-[node name="VBox" type="VBoxContainer" parent="EnemySide"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 2
-theme_override_constants/separation = 4
-
-[node name="Head" type="HBoxContainer" parent="EnemySide/VBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="Name" type="Label" parent="EnemySide/VBox/Head"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-mouse_filter = 2
-text = "敌方"
-
-[node name="Tag" type="Label" parent="EnemySide/VBox/Head"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-mouse_filter = 2
-text = "胜"
-
-[node name="Heroes" type="VBoxContainer" parent="EnemySide/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 2
-
-[node name="SelfSide" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 480.0
-offset_top = 210.0
-offset_right = 740.0
-offset_bottom = 510.0
-mouse_filter = 2
-
-[node name="VBox" type="VBoxContainer" parent="SelfSide"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 2
-theme_override_constants/separation = 4
-
-[node name="Head" type="HBoxContainer" parent="SelfSide/VBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="Name" type="Label" parent="SelfSide/VBox/Head"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-mouse_filter = 2
-text = "我方"
-
-[node name="Tag" type="Label" parent="SelfSide/VBox/Head"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-mouse_filter = 2
-text = "胜"
-
-[node name="Heroes" type="VBoxContainer" parent="SelfSide/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-mouse_filter = 2
+stretch_mode = 0
