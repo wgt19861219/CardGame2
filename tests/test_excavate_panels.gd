@@ -286,7 +286,7 @@ func test_giveup_fill_branches() -> void:
 	root.queue_free()
 
 
-# ── ExcavateHistoryPanel：LSTR 时间格式 + ATTACK ──
+# ── ExcavateHistoryPanel：两件套 + 行模板（excavate 批 Task 3，2026-08-17）──
 
 # 时间 4 档 LSTR key 全在 JSON
 func test_history_time_lstr_keys_present() -> void:
@@ -294,10 +294,201 @@ func test_history_time_lstr_keys_present() -> void:
 		"EXCAVATEHISTORY._D_DAYS_AGO", "PVP._D_HOURS_AGO",
 		"PVP._D_MINUTES_AGO", "PVP._D_SECONDS_AGO",
 		"EXCAVATEHISTORY.ATTACK_YOUR__S",
+		"EXCAVATEHISTORY.DEFENSIVE_RECORD",
 	]
 	for k in keys:
 		var v: String = cm.get_lstr(k)
 		assert_ne(v, k, "LSTR key 命中：" + k)
+
+
+# A 类债 #5 归源（读源三份原文实证，非盲信批 2 甄别表预设——giveup/explain 均走
+# 通用窗，本件框体预设经原文复核为真）：uieditor/excavatehistory.lua:7,12
+# frame = Sprite package_herolist_bg fix_wh 568.75x409.21875 anchor(0.5,0.5)@(393.75,212.5)
+# → Godot (189.375,142.89)-(758.125,552.11)。纹理 700x485(ratio 1.4433)，fix ratio 1.3902
+# 偏差 3.7% ≤8%（源显式拉伸照源直译）。弃 excavate_main_frame 600x440 误用
+# （ratio 1.364 vs 1.613 偏差 15.5%，scan_texture_aspect 报警件）。
+func test_history_frame_source_fidelity() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_history_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: TextureRect = content.get_node_or_null("Frame") as TextureRect
+	assert_not_null(frame, "Frame 存在且为 TextureRect（源 t=Sprite 非 Scale9）")
+	if frame == null:
+		content.queue_free()
+		return
+	assert_not_null(frame.texture, "frame 有贴图")
+	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/package_herolist_bg.png",
+		"frame 贴图归源 package_herolist_bg（弃 excavate_main_frame 误用）")
+	assert_almost_eq(frame.size.x, 568.75, 0.02, "frame w=568.75（fix_wh 直译）")
+	assert_almost_eq(frame.size.y, 409.22, 0.02, "frame h=409.22")
+	# 纵横比守卫（对齐 scan_texture_aspect 8% 判据）
+	var tex: Texture2D = frame.texture
+	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
+	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
+	content.queue_free()
+
+
+# 静态 rect 守卫（防 parenting 回归）：照 uieditor/excavatehistory.lua + excavatehistory.lua:173-188 直译。
+# title_bg fix_wh 521.09x39.06 中心 frame 局部 (270.31,398.83)（frame 底左世界 (109.375,7.89)）
+# → 世界中心 (379.69,406.72) → Godot 中心 (459.69,153.28)，骑框顶边（局部 top=-9.14）；
+# title size22 ccc3(252,216,17) 中心局部 (260.55,19.53)=title_bg 几何中心 → 全矩形居中；
+# close fix_wh 57.81x58.59 中心 (678.91,389.06) → Godot (730.0,141.64)-(787.82,200.24)；
+# scroll=源 createListLayer cliprect DGRectMake(165,35,690,485)×0.78125=(128.91,27.34,539.06,378.91)
+# → Godot (208.91,153.75)-(747.97,532.66)，item 左 6.09/首行顶 4.25 内边距烘入 →
+# (215,158)-(747.97,532.66)（批2 口径：ScrollContainer 接管子项 position）。
+func test_history_content_static_rects() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_history_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: Control = content.get_node("Frame") as Control
+	assert_almost_eq(frame.position.x, 189.375, 0.02, "frame offset_left=189.375")
+	assert_almost_eq(frame.position.y, 142.89, 0.02, "frame offset_top=142.89")
+	assert_almost_eq(frame.position.x + frame.size.x, 758.125, 0.02, "frame 右缘=758.125")
+	assert_almost_eq(frame.position.y + frame.size.y, 552.11, 0.02, "frame 底缘=552.11")
+	var title_bg: Control = frame.get_node("TitleBg") as Control
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 270.31, 0.02, "title_bg frame 局部中心 x=270.31")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 10.39, 0.02, "title_bg frame 局部中心 y=10.39")
+	assert_almost_eq(title_bg.size.x, 521.09, 0.02, "title_bg w=521.09")
+	assert_lt(title_bg.position.y, 0.0, "title_bg 骑框顶边（局部 top<0，源 398.83+19.53>框高）")
+	var title: Control = frame.get_node("%TitleLabel") as Control
+	assert_almost_eq(title.position.x + title.size.x * 0.5, title_bg.size.x * 0.5, 0.02, "title 居中 title_bg（源中心 (260.55,19.53)≈几何中心）")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, title_bg.size.y * 0.5, 0.02, "title 垂直居中")
+	var close_btn: Control = content.get_node("%CloseBtn") as Control
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 758.91, 0.02, "close 中心 x=758.91")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 170.94, 0.02, "close 中心 y=170.94")
+	assert_almost_eq(close_btn.size.x, 57.81, 0.02, "close w=57.81")
+	assert_almost_eq(close_btn.size.y, 58.59, 0.02, "close h=58.59")
+	# 纵横比守卫：close 57.81/58.59=0.9867 vs 纹理 65/66=0.9848
+	var close_tex: Texture2D = (content.get_node("%CloseBtn") as TextureButton).texture_normal
+	var close_dev: float = abs(close_btn.size.x / close_btn.size.y - float(close_tex.get_width()) / float(close_tex.get_height())) / (float(close_tex.get_width()) / float(close_tex.get_height()))
+	assert_lt(close_dev, 0.08, "close 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (close_dev * 100.0))
+	var scroll: Control = content.get_node("%HistoryScroll") as Control
+	assert_almost_eq(scroll.position.x, 215.0, 0.02, "scroll offset_left=215（clip 左 208.91+item 左 6.09 烘入）")
+	assert_almost_eq(scroll.position.y, 158.0, 0.02, "scroll offset_top=158（clip 顶 153.75+首行顶差 4.25 烘入）")
+	assert_almost_eq(scroll.position.x + scroll.size.x, 747.97, 0.02, "scroll 右缘=clip 右 747.97")
+	assert_almost_eq(scroll.position.y + scroll.size.y, 532.66, 0.02, "scroll 底缘=clip 底 532.66")
+	# 绘制序守卫（防重排反盖）：框最底层 → 关闭钮（源 z=20）→ 滚动区
+	assert_lt(frame.get_index(), content.get_node("%CloseBtn").get_index(), "frame 声明序先于 close")
+	assert_lt(content.get_node("%CloseBtn").get_index(), content.get_node("%HistoryScroll").get_index(), "close 先于 scroll（源 z 1/20/5 但 close 需可点置顶层组）")
+	content.queue_free()
+
+
+# 行模板结构守卫：照 uieditor/itemexcavatehistory.lua 直译（scrollview itemSize CCSizeMake(512,82)）。
+# board Scale9 equip_detail_panel_bg scaleSize 514.06x74.22 中心 (257.03,34.38) → 行内
+# (0,10.51)-(514.06,84.73)；cap(67.97,36.72,265.63,60.94)@533x175 → L68/B37/R199/T77，
+# 但 cap 顶+底=114>显示高 74.22 系源退化九宫格（cocos 静默挤压渲染）→ Godot 需非退化
+# margin，按 T:B=77.34:36.72 原比例钳到 50/24（受控修正，报告记录）。
+# tag fix_wh 28.91x50 中心 (27.34,50.78)；check 57.81x58.59 中心 (475,35.16)；
+# 单机受控裁剪（数据层 excavate_history.gd 恒 _vatility=0/无服务器）：vit_button/red_tag/
+# enemy_svr_name 不进模板。
+func test_history_item_template_structure() -> void:
+	var item: Control = (load("res://scenes/ui/excavate_history_item.tscn") as PackedScene).instantiate() as Control
+	add_child(item)
+	assert_almost_eq(item.size.x, 512.0, 0.02, "行根宽=源 itemSize 512")
+	assert_almost_eq(item.size.y, 82.0, 0.02, "行根高=源 itemSize 82（列表 stride）")
+	var board: NinePatchRect = item.get_node_or_null("Board") as NinePatchRect
+	assert_not_null(board, "Board 存在且为 NinePatchRect（源 Scale9Sprite）")
+	if board == null:
+		item.queue_free()
+		return
+	assert_eq(board.texture.resource_path, "res://assets/ui/alpha/HVGA/equip_detail_panel_bg.png", "board 贴图归源")
+	assert_almost_eq(board.position.x, 0.0, 0.02, "board offset_left=0（中心 257.03=半宽）")
+	assert_almost_eq(board.size.x, 514.06, 0.02, "board w=514.06（scaleSize 直译）")
+	assert_almost_eq(board.size.y, 74.22, 0.02, "board h=74.22")
+	assert_eq(board.patch_margin_left, 68, "cap left=67.97 取整 68")
+	assert_eq(board.patch_margin_right, 199, "cap right=533-67.97-265.63=199.4 取整 199")
+	assert_lte(board.patch_margin_top + board.patch_margin_bottom, board.size.y, "纵向 margin 非退化（源退化九宫格已按比例钳制）")
+	var tag_win: Control = item.get_node("%TagWin") as Control
+	assert_almost_eq(tag_win.position.x + tag_win.size.x * 0.5, 27.34, 0.02, "tag 中心 x=27.34")
+	assert_almost_eq(tag_win.size.x, 28.91, 0.02, "tag w=28.91")
+	assert_almost_eq(tag_win.size.y, 50.0, 0.02, "tag h=50")
+	assert_false(tag_win.visible, "tag_win 默认隐藏（fill 按 result 切换）")
+	assert_false((item.get_node("%TagLose") as Control).visible, "tag_lose 默认隐藏")
+	var name_bg: Control = item.get_node("EnemyNameBg") as Control
+	assert_almost_eq(name_bg.modulate.a, 100.0 / 255.0, 0.005, "enemy_name_bg opacity=100/255（源 config.opacity）")
+	var check_btn: TextureButton = item.get_node("%CheckBtn") as TextureButton
+	assert_almost_eq(check_btn.position.x + check_btn.size.x * 0.5, 475.0, 0.02, "check 中心 x=475")
+	assert_almost_eq(check_btn.position.y + check_btn.size.y * 0.5, 46.84, 0.02, "check 中心 y=46.84（行内 82-35.16）")
+	assert_eq(check_btn.stretch_mode, 0, "TextureButton stretch_mode 显式 0（批2 教训：默认 KEEP 不缩放）")
+	assert_eq(check_btn.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_history_button_detail_1.png", "check 贴图归源 detail_1")
+	# 单机受控裁剪守卫：vit/red_tag/svr 不建（数据层恒 _vatility=0）
+	assert_null(item.get_node_or_null("VitButton"), "vit_button 不建（单机无防御体力奖励）")
+	assert_null(item.get_node_or_null("RedTag"), "red_tag 不建（随 vit_button 裁）")
+	assert_null(item.get_node_or_null("EnemySvrName"), "enemy_svr_name 不建（单机无服务器）")
+	item.queue_free()
+
+
+# 旧范式退役守卫（两件套 SOP）：panel.gd + row_builder 无运行时样式/静态节点构造。
+func test_history_no_legacy_runtime_styling() -> void:
+	var panel_src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_history_panel.gd")
+	assert_false(panel_src.contains("UiScale9Button"), "panel: UiScale9Button 已退役")
+	assert_false(panel_src.contains("add_theme_color_override"), "panel: 运行时颜色 override 已退役")
+	assert_false(panel_src.contains("add_theme_font_size_override"), "panel: 运行时字号 override 已退役")
+	assert_false(panel_src.contains("add_theme_stylebox_override"), "panel: 运行时样式 override 已退役")
+	for ctor: String in ["Label.new(", "Button.new(", "HBoxContainer.new(", "VBoxContainer.new(", "TextureRect.new("]:
+		assert_false(panel_src.contains(ctor), "panel: 无静态节点构造 %s" % ctor)
+	var builder_src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_history_row_builder.gd")
+	assert_false(builder_src.contains("UiScale9Button"), "builder: UiScale9Button 已退役")
+	assert_false(builder_src.contains("add_theme_color_override"), "builder: 运行时颜色 override 已退役")
+	assert_false(builder_src.contains("add_theme_font_size_override"), "builder: 运行时字号 override 已退役")
+	assert_false(builder_src.contains("add_theme_stylebox_override"), "builder: 运行时样式 override 已退役")
+	for ctor2: String in ["Label.new(", "Button.new(", "HBoxContainer.new(", "VBoxContainer.new(", "TextureRect.new("]:
+		assert_false(builder_src.contains(ctor2), "builder: 禁建静态结构 %s（静态结构全在 item tscn）" % ctor2)
+
+
+# fill 分支：双行（get_all 按 _time 倒序 → 行1=新记录 lose/行2=旧记录 win）tag 互斥 +
+# 敌方名 + 相对时间分档（天档）+ 行动文案 LSTR + ActionLabel 照源 ed.right2 定位在
+# TimeLabel 右侧 gap10；空态（EmptyLabel 单机自创兜底文案，源无空态）。
+func test_history_fill_rows_and_tags() -> void:
+	var root := Node.new()
+	add_child(root)
+	var now: int = int(Time.get_unix_time_from_system())
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.excavate.history.add({"excavate_id": 1, "result": "win", "enemy_name": "哥布林矿工",
+		"_time": now - 172800, "self_team": [], "oppo_team": []})
+	pd.excavate.history.add({"excavate_id": 1, "result": "lose", "enemy_name": "骷髅守卫",
+		"_time": now - 60, "self_team": [], "oppo_team": []})
+	var panel := ExcavateHistoryPanel.new("excavate_history", {})
+	panel.setup_panel(pd)
+	panel.show_window(root)
+	var content: Control = panel.container.get_node("ExcavateHistoryContent") as Control
+	assert_not_null(content, "content 已装配")
+	if content == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	assert_eq((content.get_node("%TitleLabel") as Label).text, cm.get_lstr("EXCAVATEHISTORY.DEFENSIVE_RECORD"),
+		"标题 fill EXCAVATEHISTORY.DEFENSIVE_RECORD（源 uieditor title text）")
+	var list_host: VBoxContainer = content.get_node("%HistoryList") as VBoxContainer
+	assert_eq(list_host.get_child_count(), 2, "两条记录 → 两行（行模板实例）")
+	var row1: Control = list_host.get_child(0)
+	assert_true((row1.get_node("%TagLose") as Control).visible, "行1（新，60 秒前）lose tag 可见")
+	assert_false((row1.get_node("%TagWin") as Control).visible, "行1 win tag 隐藏（互斥照源 :63-69）")
+	assert_eq((row1.get_node("%EnemyNameLabel") as Label).text, "骷髅守卫", "行1 敌方名 fill")
+	var row2: Control = list_host.get_child(1)
+	assert_true((row2.get_node("%TagWin") as Control).visible, "行2（旧，2 天前）win tag 可见")
+	assert_false((row2.get_node("%TagLose") as Control).visible, "行2 lose tag 隐藏")
+	var time2: Label = row2.get_node("%TimeLabel") as Label
+	assert_true(time2.text.contains("天"), "行2 相对时间走天档（2 天前）")
+	var action2: Label = row2.get_node("%ActionLabel") as Label
+	assert_true(action2.text.contains("偷袭了你的"), "行动文案 LSTR fill（EXCAVATEHISTORY.ATTACK_YOUR__S）")
+	# ed.right2 语义（excavatehistory.lua:107）：ActionLabel.x = TimeLabel.x + 时间文本宽 + 10
+	assert_almost_eq(action2.position.x, time2.position.x + time2.get_combined_minimum_size().x + 10.0, 0.02,
+		"ActionLabel 在 TimeLabel 右侧 gap10（源 ed.right2）")
+	assert_almost_eq(action2.position.y, time2.position.y, 0.02, "ActionLabel 与 TimeLabel 同行对齐（同为 anchor(0,0.5)）")
+	panel.remove_window()
+	# 空态分支
+	var pd2 := PlayerData.new(cm)
+	pd2.apply_default_data()
+	var panel2 := ExcavateHistoryPanel.new("excavate_history", {})
+	panel2.setup_panel(pd2)
+	panel2.show_window(root)
+	var content2: Control = panel2.container.get_node("ExcavateHistoryContent") as Control
+	assert_true((content2.get_node("%EmptyLabel") as Label).visible, "空态 EmptyLabel 可见")
+	assert_eq((content2.get_node("%EmptyLabel") as Label).text, "暂无战斗记录", "空态兜底文案（单机自创，源无）")
+	assert_false((content2.get_node("%HistoryScroll") as Control).visible, "空态 scroll 隐藏")
+	assert_eq((content2.get_node("%HistoryList") as VBoxContainer).get_child_count(), 0, "空态无行")
+	panel2.remove_window()
+	root.queue_free()
 
 
 # ── ExcavateBattleReportPanel：TITLE_FMT LSTR ──

@@ -1,0 +1,130 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_panel_bg.png" id="1_board"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_win.png" id="2_win"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_lose.png" id="3_lose"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_name_bg.png" id="4_namebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_history_button_detail_1.png" id="5_check"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_history_button_detail_2.png" id="6_checkp"]
+
+; 防守记录行动态行模板（excavate 批 Task 3，2026-08-17）。照源 uieditor/itemexcavatehistory.lua
+; 198 行条目表直译，行根=源 scrollview itemSize CCSizeMake(512,82)（excavatehistory.lua:182），
+; 条目 layout.position 为行内局部坐标（cocos y-up → Godot y-down=82-y）：
+; board Scale9 equip_detail_panel_bg scaleSize 514.06x74.22 中心 (257.03,34.38)
+; → (0,10.51)-(514.06,84.73)；cap(67.97,36.72,265.63,60.94)@533x175 → L68/B37/R199/T77，
+; 但 cap 顶+底=114>显示高 74.22 系源退化九宫格（cocos 静默挤压渲染）→ 按 T:B=77.34:36.72
+; 原比例钳到 50/24（受控修正，excavate 批 Task 3 报告记录）；tag fix_wh 28.91x50 中心 (27.34,50.78)
+; 互斥可见（fill 按 result 切换，源 :63-69）；enemy_name_bg fix_wh 329.69x26.56 中心 (200.78,50)
+; opacity 100；enemy_name_label anchor(0,0.5)@(49.22,52.34) 白 16；time_label @(49.22,20.31)
+; 深棕 16；action_label 照源代码建 label（excavatehistory.lua:97-107 size16 ccc3(65,57,54)
+; + ed.right2(time,10) 动态定位，x 由 row_builder fill 时右随时间文本宽）；
+; check_button fix_wh 57.81x58.59 中心 (475,35.16)。
+; 单机受控裁剪（数据层 excavate_history.gd 恒 _vatility=0/无服务器）：vit_button+red_tag
+; （:124-163 防御体力奖励领取）与 enemy_svr_name（:86-95 服务器名）不建。
+
+[node name="ExcavateHistoryItem" type="Control"]
+custom_minimum_size = Vector2(512, 82)
+layout_mode = 0
+offset_right = 512.0
+offset_bottom = 82.0
+mouse_filter = 2
+
+[node name="Board" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 10.51
+offset_right = 514.06
+offset_bottom = 84.73
+texture = ExtResource("1_board")
+patch_margin_left = 68
+patch_margin_top = 50
+patch_margin_right = 199
+patch_margin_bottom = 24
+mouse_filter = 2
+
+; 胜/败 tag（fill 互斥切换，默认双隐藏照源 readnode 后 setVisible(false)）
+[node name="TagWin" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 12.886875
+offset_top = 6.22
+offset_right = 41.793125
+offset_bottom = 56.22
+texture = ExtResource("2_win")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TagLose" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 12.886875
+offset_top = 6.22
+offset_right = 41.793125
+offset_bottom = 56.22
+texture = ExtResource("3_lose")
+expand_mode = 1
+mouse_filter = 2
+
+; 敌方名底条（源 config.opacity=100 → modulate.a=100/255）
+[node name="EnemyNameBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 35.93625
+offset_top = 18.71875
+offset_right = 365.62375
+offset_bottom = 45.28125
+modulate = Color(1, 1, 1, 0.392157)
+texture = ExtResource("4_namebg")
+expand_mode = 1
+mouse_filter = 2
+
+; 敌方名（源 size16 ccc3(255,255,255) anchor(0,0.5) 左对齐垂直居中，text fill）
+[node name="EnemyNameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 49.22
+offset_top = 21.66
+offset_right = 380.0
+offset_bottom = 37.66
+theme_type_variation = &"HistoryNameLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 相对时间（源 size16 ccc3(65,57,54) anchor(0,0.5)@(49.22,20.31)，text fill）
+[node name="TimeLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 49.22
+offset_top = 53.69
+offset_right = 380.0
+offset_bottom = 69.69
+theme_type_variation = &"HistoryInfoLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 行动文案（源代码建 label ATTACK_YOUR__S % 矿点名，ed.right2(time,10) → x 随时间文本宽，
+; row_builder fill 时重定位；y 与 TimeLabel 同带 anchor(0,0.5)）
+[node name="ActionLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 120.0
+offset_top = 53.69
+offset_right = 380.0
+offset_bottom = 69.69
+theme_type_variation = &"HistoryInfoLabel"
+mouse_filter = 2
+vertical_alignment = 1
+
+; 查看战报按钮（DGButton normal/press，pressed 信号 panel 接）
+[node name="CheckBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 446.09375
+offset_top = 17.543125
+offset_right = 503.90625
+offset_bottom = 76.136875
+texture_normal = ExtResource("5_check")
+texture_pressed = ExtResource("6_checkp")
+ignore_texture_size = true
+stretch_mode = 0

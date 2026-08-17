@@ -1152,3 +1152,16 @@ ExplainRuleLabel/font_sizes/font_size = 16
 ExplainTitleLabel/base_type = &"Label"
 ExplainTitleLabel/colors/font_color = Color(0.917647, 0.670588, 0.160784, 1)
 ExplainTitleLabel/font_sizes/font_size = 24
+; ── excavate_history 两件套（excavate 批 Task 3，2026-08-17）──
+; 窗口标题（uieditor/excavatehistory.lua title size22 ccc3(252,216,17)，text=DEFENSIVE_RECORD）
+HistoryTitleLabel/base_type = &"Label"
+HistoryTitleLabel/colors/font_color = Color(0.988235, 0.847059, 0.066667, 1)
+HistoryTitleLabel/font_sizes/font_size = 22
+; 行敌方名（itemexcavatehistory.lua enemy_name_label size16 ccc3(255,255,255)）
+HistoryNameLabel/base_type = &"Label"
+HistoryNameLabel/colors/font_color = Color(1, 1, 1, 1)
+HistoryNameLabel/font_sizes/font_size = 16
+; 行时间/行动文案（itemexcavatehistory.lua time_label + 代码建 action label size16 ccc3(65,57,54)）
+HistoryInfoLabel/base_type = &"Label"
+HistoryInfoLabel/colors/font_color = Color(0.254902, 0.223529, 0.211765, 1)
+HistoryInfoLabel/font_sizes/font_size = 16

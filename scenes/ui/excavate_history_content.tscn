@@ -1,9 +1,26 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_window_title_bg.png" id="2_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_herolist_bg.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_window_title_bg.png" id="2_titlebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+
+; 防守记录两件套静态树（excavate 批 Task 3，2026-08-17）。照源三份直译：
+; ui/popwindow/excavatehistory.lua（createListLayer :173-188）+ uieditor/excavatehistory.lua
+; （窗口声明表 88 行）+ uieditor/itemexcavatehistory.lua（行条目表，进 excavate_history_item.tscn）。
+; A 类债 #5 归源：frame=Sprite package_herolist_bg fix_wh 568.75x409.21875 anchor(0.5,0.5)
+; @(393.75,212.5) → (189.375,142.89)-(758.125,552.11)（纹理 700x485 ratio 1.4433，
+; fix ratio 1.3902 偏差 3.7%≤8% 源显式拉伸照源）；弃 excavate_main_frame 600x440 误用
+; （ratio 1.364 vs 1.613 偏差 15.5%，scan_texture_aspect 报警件）。
+; title_bg fix_wh 521.09x39.06 中心 frame 局部 (270.31,398.83)（父=frame 声明表 parent，
+; 骑框顶边局部 top=-9.14）；title size22 ccc3(252,216,17) 中心局部 (260.55,19.53)
+; ≈title_bg 几何中心 → 全矩形居中（text fill）；close fix_wh 57.81x58.59 中心 (678.91,389.06)。
+; 滚动区照源 createListLayer cliprect DGRectMake(165,35,690,485)×0.78125
+; =(128.91,27.34,539.06,378.91) → Godot (208.91,153.75)-(747.97,532.66)，item 左 6.09
+; （oriPosition 135-clip 左 128.91）/首行顶 4.25（clip 顶 406.25-首 item 顶 402）内边距
+; 烘入 → (215,158)（批2 口径：ScrollContainer 接管子项 position，边距烘进 rect）。
+; 单机受控裁剪：vit_button/red_tag（数据层 excavate_history.gd 恒 _vatility=0）与
+; enemy_svr_name（无服务器）不建；EmptyLabel"暂无战斗记录"为单机自创兜底（源无空态）。
 
 [node name="ExcavateHistoryContent" type="Control"]
 layout_mode = 3
@@ -12,57 +29,80 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; 框（源 frame t=Sprite 纯贴图非 Scale9 → TextureRect）
 [node name="Frame" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 180.0
-offset_top = 100.0
-offset_right = 780.0
-offset_bottom = 540.0
+layout_mode = 0
+offset_left = 189.375
+offset_top = 142.890625
+offset_right = 758.125
+offset_bottom = 552.109375
 texture = ExtResource("1_frame")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="CloseBtn" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 730.0
-offset_top = 112.0
-offset_right = 770.0
-offset_bottom = 152.0
-texture_normal = ExtResource("3_close")
-texture_pressed = ExtResource("4_closep")
-ignore_texture_size = true
-
-[node name="Title" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 219.453125
-offset_top = 112.0
-offset_right = 740.546875
-offset_bottom = 151.0625
-texture = ExtResource("2_title")
+; 标题条（源 title_bg parent="frame"，y 398.83+19.53=418.36 > 框高 409.22 → 骑框顶边）
+[node name="TitleBg" type="TextureRect" parent="Frame"]
+layout_mode = 0
+offset_left = 9.763125
+offset_top = -9.1425
+offset_right = 530.856875
+offset_bottom = 29.92
+texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="EmptyLabel" type="Label" parent="."]
+; 标题（源 title size22 ccc3(252,216,17) 中心=title_bg 几何中心 → 全矩形居中，text fill）
+[node name="TitleLabel" type="Label" parent="Frame/TitleBg"]
 unique_name_in_owner = true
-visible = false
-layout_mode = 3
-offset_left = 220.0
-offset_top = 180.0
-offset_right = 740.0
-offset_bottom = 500.0
-theme_override_font_sizes/font_size = 14
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"HistoryTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
+text = "防守记录"
 
+; 关闭按钮（源 close_button DGButton z=20，normal/press 双贴图）
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 730.00375
+offset_top = 141.643125
+offset_right = 787.81625
+offset_bottom = 200.236875
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
+
+; 空态兜底（单机自创，源无空态；fill 切换 visible）
+[node name="EmptyLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 189.375
+offset_top = 142.890625
+offset_right = 758.125
+offset_bottom = 552.109375
+theme_type_variation = &"HistoryInfoLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "暂无战斗记录"
+
+; 滚动区（源 scrollview cliprect；行 stride 82 全在行根 min size，VBox sep=0）
 [node name="HistoryScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 220.0
-offset_top = 180.0
-offset_right = 740.0
-offset_bottom = 500.0
+layout_mode = 0
+offset_left = 215.0
+offset_top = 158.0
+offset_right = 747.96875
+offset_bottom = 532.65625
+mouse_filter = 1
 horizontal_scroll_mode = 0
 
 [node name="HistoryList" type="VBoxContainer" parent="HistoryScroll"]
@@ -70,4 +110,4 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 0
