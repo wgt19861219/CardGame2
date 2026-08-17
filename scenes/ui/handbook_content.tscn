@@ -367,7 +367,7 @@ ignore_texture_size = true
 
 [node name="PageLabel" type="Label" parent="."]
 unique_name_in_owner = true
-theme_type_variation = &"BlackLabel18"
+theme_type_variation = &"HandbookPageLabel"
 layout_mode = 3
 offset_left = 733.32
 offset_top = 553.34

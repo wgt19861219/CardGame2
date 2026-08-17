@@ -157,6 +157,41 @@ func test_handbook_entry_label_has_size_16() -> void:
 	var size: int = theme.get_font_size("font_size", "HandbookEntryLabel")
 	assert_eq(size, 16, "HandbookEntryLabel font_size = 16")
 
+
+# ── 批4 Task 5 handbook 两件套改造新增（tag 两 variation + 装备名/页码 variation）──
+
+func test_handbook_entry_label_has_unselected_shadow() -> void:
+	# 源 doSelectTag :94 未选中 setShadow(ccc3(0,0,0), ccp(0,2))；选中 :100 disableShadow → 两 variation
+	var theme: Theme = ThemeManager.get_theme()
+	var shadow: Color = theme.get_color("font_shadow_color", "HandbookEntryLabel")
+	assert_color_approx(shadow, Color(0, 0, 0, 1), "HandbookEntryLabel 未选中阴影黑")
+	assert_eq(theme.get_constant("shadow_offset_x", "HandbookEntryLabel"), 0, "阴影偏移 x=0")
+	assert_eq(theme.get_constant("shadow_offset_y", "HandbookEntryLabel"), 2, "阴影偏移 y=2")
+
+
+func test_handbook_entry_label_selected_white_no_shadow() -> void:
+	# 源 doSelectTag :100-101 选中 disableShadow + ccc3(255,255,255)，字号 16 不变
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "HandbookEntryLabelSelected"), Color(1, 1, 1, 1), "选中态白")
+	assert_eq(theme.get_font_size("font_size", "HandbookEntryLabelSelected"), 16, "选中态 16 号")
+	assert_false(theme.has_color("font_shadow_color", "HandbookEntryLabelSelected"), "选中态无阴影")
+
+
+func test_handbook_equip_name_label_style() -> void:
+	# 源 createIcon :443-444 equipNameLabelColor ccc3(182,65,21) size=18 + 黑描边 2px
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "HandbookEquipNameLabel"), Color(0.713726, 0.254902, 0.082353, 1), "装备名色 (182,65,21)")
+	assert_eq(theme.get_font_size("font_size", "HandbookEquipNameLabel"), 18, "装备名 18 号")
+	assert_eq(theme.get_constant("outline_size", "HandbookEquipNameLabel"), 2, "装备名描边 2")
+	assert_color_approx(theme.get_color("font_outline_color", "HandbookEquipNameLabel"), Color(0, 0, 0, 1), "描边黑")
+
+
+func test_handbook_page_label_brown() -> void:
+	# 源 setPageTitle :511 pageNumber ccc3(174,133,76) 18 号（原 BlackLabel18 黑色不符）
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "HandbookPageLabel"), Color(0.682353, 0.521569, 0.298039, 1), "页码色 (174,133,76)")
+	assert_eq(theme.get_font_size("font_size", "HandbookPageLabel"), 18, "页码 18 号")
+
 func test_hero_tab_label_has_white_color() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var color: Color = theme.get_color("font_color", "HeroTabLabel")

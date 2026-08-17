@@ -564,7 +564,25 @@ ShopTitleLabel/base_type = &"Label"
 ShopTitleLabel/font_sizes/font_size = 24
 HandbookEntryLabel/base_type = &"Label"
 HandbookEntryLabel/colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
+; 批4 Task 5：源 doSelectTag :94 未选中 setShadow(ccc3(0,0,0), ccp(0,2))（两 variation 方案之未选中态）
+HandbookEntryLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+HandbookEntryLabel/constants/shadow_offset_x = 0
+HandbookEntryLabel/constants/shadow_offset_y = 2
 HandbookEntryLabel/font_sizes/font_size = 16
+; 批4 Task 5：tag 选中态（源 doSelectTag :100-101 disableShadow + ccc3(255,255,255)，字号 16 不变）
+HandbookEntryLabelSelected/base_type = &"Label"
+HandbookEntryLabelSelected/colors/font_color = Color(1, 1, 1, 1)
+HandbookEntryLabelSelected/font_sizes/font_size = 16
+; 批4 Task 5：装备名 label（源 createIcon :443-444 ccc3(182,65,21) size=18 + 黑描边 2px）
+HandbookEquipNameLabel/base_type = &"Label"
+HandbookEquipNameLabel/colors/font_color = Color(0.713726, 0.254902, 0.082353, 1)
+HandbookEquipNameLabel/colors/font_outline_color = Color(0, 0, 0, 1)
+HandbookEquipNameLabel/constants/outline_size = 2
+HandbookEquipNameLabel/font_sizes/font_size = 18
+; 批4 Task 5：页码 label（源 setPageTitle :511 pageNumber ccc3(174,133,76) 18 号，原 BlackLabel18 黑色不符）
+HandbookPageLabel/base_type = &"Label"
+HandbookPageLabel/colors/font_color = Color(0.682353, 0.521569, 0.298039, 1)
+HandbookPageLabel/font_sizes/font_size = 18
 HeroTabLabel/base_type = &"Label"
 HeroTabLabel/colors/font_color = Color(1, 1, 1, 1)
 HeroTabLabel/colors/font_shadow_color = Color(0.247, 0.02, 0, 1)
