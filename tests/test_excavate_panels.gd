@@ -1003,12 +1003,14 @@ func test_map_no_legacy_runtime_styling() -> void:
 # map 面板空矿点列表兜底（源 checkWork:911 空数据即弹走，map 不应存在空态；
 # 单机 giveup 后团队面板回 map 可能瞬时空 → EmptyLabel 护栏）
 func test_map_panel_empty_list_no_crash() -> void:
+	# hud_identity 接线守卫（同 search 件，setup_panel 时设 "excavate"）
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
 	pd.apply_default_data()
 	var panel := ExcavateMapPanel.new("excavate_map", {})
 	panel.setup_panel(pd, BattleRng.new(1))
+	assert_eq(panel.hud_identity, "excavate", "map 件 hud_identity=excavate（头像区透过修复）")
 	panel.show_window(root)
 	assert_true((panel.container.get_node("ExcavateMapContent/FrameContainer/InfoLayer/%EmptyLabel") as Control).visible,
 		"空列表 EmptyLabel 可见（单机护栏，源无空态文本）")
@@ -1348,12 +1350,17 @@ func test_search_no_legacy_runtime_styling() -> void:
 
 # search 面板装配 + fill（按钮 LSTR 文案 / cost 数值与颜色二态）
 func test_search_panel_builds_without_error() -> void:
+	# hud_identity 接线守卫（实跑反馈修复二轮 2026-08-17：头像区透过——search/map 须切子场景精简 StatusBar）
+	var sp := ExcavateSearchPanel.new("excavate", {})
+	assert_eq(sp.hud_identity, "", "构造期未设（setup_panel 时设）")
+	sp.queue_free()
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
 	pd.apply_default_data()
 	var panel := ExcavateSearchPanel.new("excavate", {})
 	panel.setup_panel(pd, BattleRng.new(1))
+	assert_eq(panel.hud_identity, "excavate", "search 件 hud_identity=excavate（头像区透过修复）")
 	panel.show_window(root)
 	assert_gt(panel.container.get_child_count(), 0, "container 非空")
 	assert_eq(panel._cost_label.text, "100", "首搜消耗显示 100")

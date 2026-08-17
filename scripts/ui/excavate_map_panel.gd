@@ -102,6 +102,7 @@ var _search_duration: float = 0.0
 
 
 func setup_panel(p_pd: PlayerData, p_rng: BattleRng) -> void:
+	hud_identity = "excavate"   # 子场景精简 StatusBar（仅货币条，避头像区压返回钮；实跑反馈修复 2026-08-17）
 	pd = p_pd
 	rng = p_rng
 	_index = 0
