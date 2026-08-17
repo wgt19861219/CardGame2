@@ -1303,3 +1303,31 @@ ExcavateNodeBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 LangNameLabel/base_type = &"Label"
 LangNameLabel/colors/font_color = Color(0.862745, 0.690196, 0.403914, 1)
 LangNameLabel/font_sizes/font_size = 20
+; ── name_input 两件套（批 4 Task 2，2026-08-17）──
+; 标题（bename.lua:148-159 title size=20 无 config.color 默认白）
+NameInputTitleLabel/base_type = &"Label"
+NameInputTitleLabel/colors/font_color = Color(1, 1, 1, 1)
+NameInputTitleLabel/font_sizes/font_size = 20
+; 输入框（源 edit CCLabelTTF 22 号 ccc3(198,175,126) :33-34；底图独立 NameBg
+; Scale9 节点 → LineEdit 本体透明底；caret/selection 同金色系补引擎默认深色缺口）
+NameInputLabel/base_type = &"LineEdit"
+NameInputLabel/colors/font_color = Color(0.776471, 0.686275, 0.494118, 1)
+NameInputLabel/colors/caret_color = Color(0.776471, 0.686275, 0.494118, 1)
+NameInputLabel/colors/selection_color = Color(0.776471, 0.686275, 0.494118, 0.35)
+NameInputLabel/font_sizes/font_size = 22
+NameInputLabel/styles/normal = SubResource("StyleBoxEmpty_0oxu6")
+NameInputLabel/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ok/cancel 按钮（源 :199-292 sell_number_button cap(15,22,15,25) 与 package 图鉴
+; 按钮同图同 cap → 复用 SB_pkg_hb_n/p；label fontinfo ui_normal_button 17 号 +
+; config.color ccc3(235,225,205) 覆盖 fontinfo 默认白 + shadow(63,5,0) offset(0,2)）
+NameInputButton/base_type = &"Button"
+NameInputButton/colors/font_color = Color(0.921569, 0.882353, 0.803922, 1)
+NameInputButton/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+NameInputButton/constants/shadow_offset_x = 0
+NameInputButton/constants/shadow_offset_y = 2
+NameInputButton/font_sizes/font_size = 17
+NameInputButton/styles/normal = SubResource("SB_pkg_hb_n")
+NameInputButton/styles/hover = SubResource("SB_pkg_hb_n")
+NameInputButton/styles/pressed = SubResource("SB_pkg_hb_p")
+NameInputButton/styles/disabled = SubResource("SB_pkg_hb_n")
+NameInputButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
