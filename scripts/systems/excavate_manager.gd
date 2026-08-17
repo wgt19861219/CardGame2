@@ -134,6 +134,15 @@ func produce_amount(excavate_id: int, now: int) -> int:
 	return _calc_produced(d, now)
 
 
+## 总累计产出（照 getProduced:462 无 owner 限制公开版）：monster 可掠夺量 fill 用
+## （源 excavatemap refreshBaseRecord:333 produced×getRobRatio，非 mine 也计产）。
+func produced_total(excavate_id: int, now: int) -> int:
+	var d: Dictionary = get_data(excavate_id)
+	if d.is_empty():
+		return 0
+	return _calc_produced(d, now)
+
+
 ## 存储剩余（照 getStorage:490）：storage - produced（不低于 0）。
 func storage_remaining(excavate_id: int, now: int) -> int:
 	var d: Dictionary = get_data(excavate_id)

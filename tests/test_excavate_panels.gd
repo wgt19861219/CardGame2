@@ -747,27 +747,254 @@ func test_battle_report_fill_sides_and_heroes() -> void:
 	root.queue_free()
 
 
-# ── ExcavateMapPanel：LSTR + bg.jpg + backbtn 装配 ──
+# ── ExcavateMapPanel：两件套 + A 债 #6/#8 归源（excavate 批 Task 7，2026-08-17）──
 
-# map 面板 LSTR key 全在 JSON
+# map 面板 LSTR key 全在 JSON（按钮/产量行/掠夺/矿上限/倒计时系）
 func test_map_lstr_keys_present() -> void:
 	var keys: Array[String] = [
 		"EXCAVATEMAP.RULES", "EXCAVATEHISTORY.DEFENSIVE_RECORD",
 		"RECHARGE.DIAMOND", "TASK.GOLD", "EQUIP.EXPERIENCE_CREAMS",
+		"MAP.MY_ACCUMULATED_RESOURCES_", "MAP.MY_PRODUCTION_SPEED_",
+		"MAP.YOU_CAN_PLUNDER_", "EXCAVATEMAP.PRODUCTION_SPEED_",
+		"MAP.TODAY_THE_SEARCH_HAS_REACHED_THE_MAXIMUM_NUMBER_OF_TIMES_",
+		"ERRORINFO.INSUFFICIENT_COINS", "TIME.HOUR",
+		"MAP._S_AFTER_THE_START_GENERATING_RESOURCES",
+		"MAP.AFTER_MINING_APPROXIMATELY__D_HOURS",
+		"MAP.THIS_TREASURE_IS_ABOUT_TO_FINISH_MINING",
+		"MAP.THE_TREASURE_HAS_REACHED_THE_MAXIMUM_NUMBER_",
 	]
 	for k in keys:
 		var v: String = cm.get_lstr(k)
 		assert_ne(v, k, "LSTR key 命中：" + k)
 
 
-# bg.jpg 资源存在（源 uieditor excavatemap:12 第 1 元素照源核实保留）
-func test_map_bg_asset_exists() -> void:
-	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/bg.jpg"), "bg.jpg 存在")
-	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/backbtn.png"), "backbtn.png 存在")
-	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/prevchap.png"), "prevchap.png 存在")
+# map 关键资源存在（bg/框体双层/标题 9 图/翻页 tag 系/信息面板/按钮贴图全量）
+func test_map_assets_exist() -> void:
+	var paths: Array[String] = [
+		"res://assets/ui/alpha/HVGA/bg.jpg",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_name_diamond_1.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_name_gold_1.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_name_exp_1.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_fog.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_info_bg.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_cycle_bg.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_cycle_mask_left.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_cycle_mask_right.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_cycle_gold.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_cycle_gold_current.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_cycle_search.png",
+		"res://assets/ui/alpha/HVGA/excavate/excavate_exp_icon.png",
+		"res://assets/ui/alpha/HVGA/backbtn.png",
+		"res://assets/ui/alpha/HVGA/prevchap.png",
+		"res://assets/ui/alpha/HVGA/sell_number_button.png",
+		"res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png",
+		"res://assets/ui/alpha/HVGA/tavern_button_1.png",
+		"res://assets/ui/alpha/HVGA/goldicon_small.png",
+		"res://assets/ui/alpha/HVGA/shop_token_icon.png",
+	]
+	for p in paths:
+		assert_true(ResourceLoader.exists(p), "资源存在：" + p)
 
 
-# map 面板空矿点列表时显示 NO_NODE_TEXT（避免除零/越界）
+# A 类债 #6/#8 归源（读源原文实证，非盲信 A 债表预设）：
+# uieditor/excavatemap.lua:125-143 frame = Sprite excavate_main_frame
+# fix_wh 733.59375x454.6875（与 search 同款同尺寸；PIL 实测纹理 734x455
+# ratio 1.6132，fix ratio 1.6134 完全等比 → 偏差 0.01%）。弃迁移 600x440 强拉
+# （ratio 1.364 vs 1.613 偏差 15.5%，scan_texture_aspect 报警件）。
+# frame_bg（同表 :107-124）= excavate_main_bg fix_wh 733.59x454.69 与框同尺寸
+# （search 的 frame_bg 是 excavate_empty 702.34x392.97，两表不同物）。
+# #8 title（:144-162）= **excavate_name_diamond_1**（A 债表预设 excavate_main_title
+# 315x46 系误——map.lua:1188 main_title 仅搜索动画期 initPageTitle 临时替换；
+# refreshPageTitle:1192 按 typeid 换 9 张 name 图，tscn 静态默认=表值 name_diamond_1）
+# fix_wh 339.84x37.5，纹理 435x48 ratio 9.0625 完全等比（偏差 0.003%）。
+# 弃迁移 excavate_main_title 340x38 误用（ratio 8.95 vs 纹理 6.85 偏差 31%）。
+func test_map_frame_source_fidelity() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_map_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: TextureRect = content.get_node_or_null("FrameContainer/Frame") as TextureRect
+	assert_not_null(frame, "Frame 存在且为 TextureRect（源 t=Sprite）")
+	if frame == null:
+		content.queue_free()
+		return
+	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
+		"frame 贴图归源 excavate_main_frame")
+	assert_almost_eq(frame.size.x, 733.59, 0.02, "frame w=733.59（fix_wh 直译，A 债 #6）")
+	assert_almost_eq(frame.size.y, 454.69, 0.02, "frame h=454.69")
+	var tex: Texture2D = frame.texture
+	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
+	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
+	var frame_bg: TextureRect = content.get_node_or_null("FrameContainer/FrameBg") as TextureRect
+	assert_not_null(frame_bg, "FrameBg 存在（源表 z=1 底层，迁移漏建）")
+	if frame_bg != null:
+		assert_eq(frame_bg.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png",
+			"frame_bg 贴图归源 excavate_main_bg")
+		assert_almost_eq(frame_bg.size.x, 733.59, 0.02, "frame_bg w=733.59（fix_wh 直译）")
+		assert_almost_eq(frame_bg.size.y, 454.69, 0.02, "frame_bg h=454.69")
+	var title: TextureRect = content.get_node_or_null("FrameContainer/Title") as TextureRect
+	assert_not_null(title, "Title 存在且为 TextureRect")
+	if title == null:
+		content.queue_free()
+		return
+	assert_eq(title.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_name_diamond_1.png",
+		"title 贴图归源 excavate_name_diamond_1（A 债 #8，弃 main_title 误用）")
+	assert_almost_eq(title.size.x, 339.84, 0.02, "title w=339.84（fix_wh 直译）")
+	assert_almost_eq(title.size.y, 37.5, 0.02, "title h=37.5")
+	var title_tex: Texture2D = title.texture
+	var title_dev: float = abs(title.size.x / title.size.y - float(title_tex.get_width()) / float(title_tex.get_height())) / (float(title_tex.get_width()) / float(title_tex.get_height()))
+	assert_lt(title_dev, 0.08, "title 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (title_dev * 100.0))
+	content.queue_free()
+
+
+# 静态 rect 守卫（防 parenting 回归）：照 uieditor/excavatemap.lua 声明表直译。
+# 场景层 to_godot(x,y)=(x+80,560-y)：bg 中心 (400,239.84)→(480,320.16)；
+# frame_container Layer 800x480.47 anchor(0,0)@(-3.13,3.91)→(76.875,75.625)；
+# left 42.97x58.59 中心 (63.28,217.19)→(143.28,342.81)；right 中心 (735.94,217.97)
+# →(815.94,342.03)；search_fog 702.34x392.97 中心 (396.88,220.31)→(476.88,339.69)
+# opacity 0 → modulate.a。frame_container 局部（H=480.47，y-up→y-down=480.47-cy）：
+# frame_bg 中心 (402.34,245.31)；frame @(402.34,246.88)；title @(402.34,49.22)；
+# back 74x75px÷CS=57.78x58.54 中心 (65.63,46.09)；page_tag_container 78.13²
+# anchor(0,0)@(416.41,81.25)→局部 top=480.47-81.25-78.13=321.09。
+# info_layer 与 frame_container 同 rect（pos(0,0) size 800x480.47）：
+# explain_bg Scale9 281.25x99.22 anchor(1,1)@(742.97,400.78)→右 742.97/底 79.69；
+# histroy 117.19x53.13 中心 (154.69,80.47)→(154.69,400)；explain 66.41x53.13
+# 中心 (250.78,80.47)；research_frame 171.88x101.56 中心 (637.5,99.22)→(637.5,381.25)。
+# research_container@research_frame 局部 (85.94,7.81) 39.06²（同 search 件先例）；
+# explain_container 39.06²@(601.56,89.85)；lack/speed/count_time 容器 156.25x46.88
+# @(-106.25,-3.13)/(-105.47,30.46)/(-106.25,64.84)（explain_container 39.06 高局部）。
+func test_map_content_static_rects() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_map_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var fc: Control = content.get_node("FrameContainer") as Control
+	assert_almost_eq(fc.position.x, 76.875, 0.02, "frame_container offset_left=76.875")
+	assert_almost_eq(fc.position.y, 75.625, 0.02, "frame_container offset_top=75.625")
+	assert_almost_eq(fc.size.x, 800.0, 0.02, "frame_container w=800（scaleSize 直译）")
+	assert_almost_eq(fc.size.y, 480.47, 0.02, "frame_container h=480.47")
+	var bg: Control = content.get_node("Bg") as Control
+	assert_almost_eq(bg.position.x + bg.size.x * 0.5, 480.0, 0.02, "bg 中心 x=480（to_godot(400)）")
+	assert_almost_eq(bg.position.y + bg.size.y * 0.5, 320.16, 0.02, "bg 中心 y=320.16（560-239.84）")
+	assert_almost_eq(bg.size.x, 800.0, 0.02, "bg w=800（fix_wh 直译）")
+	var frame: Control = fc.get_node("Frame") as Control
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 402.34, 0.02, "frame 局部中心 x=402.34")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 246.88, 0.02, "frame 局部中心 y=246.88（480.47-233.59）")
+	var title: Control = fc.get_node("Title") as Control
+	assert_almost_eq(title.position.x + title.size.x * 0.5, 402.34, 0.02, "title 局部中心 x=402.34")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, 49.22, 0.02, "title 局部中心 y=49.22（480.47-431.25）")
+	var back_btn: Control = fc.get_node("%BackButton") as Control
+	assert_almost_eq(back_btn.position.x + back_btn.size.x * 0.5, 65.63, 0.02, "back 局部中心 x=65.63")
+	assert_almost_eq(back_btn.position.y + back_btn.size.y * 0.5, 46.09, 0.02, "back 局部中心 y=46.09（480.47-434.38）")
+	var back_tex: Texture2D = (fc.get_node("%BackButton") as TextureButton).texture_normal
+	var back_dev: float = abs(back_btn.size.x / back_btn.size.y - float(back_tex.get_width()) / float(back_tex.get_height())) / (float(back_tex.get_width()) / float(back_tex.get_height()))
+	assert_lt(back_dev, 0.08, "back 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (back_dev * 100.0))
+	var ptc: Control = fc.get_node("%PageTagContainer") as Control
+	assert_almost_eq(ptc.position.x, 416.41, 0.02, "page_tag_container offset_left=416.41")
+	assert_almost_eq(ptc.position.y, 321.09, 0.02, "page_tag_container offset_top=321.09（480.47-81.25-78.13）")
+	assert_almost_eq(ptc.size.x, 78.13, 0.02, "page_tag_container w=78.13（scaleSize 直译）")
+	var tag_bg: NinePatchRect = ptc.get_node("TagBg") as NinePatchRect
+	assert_not_null(tag_bg, "TagBg 存在且为 NinePatchRect（源 Scale9Sprite）")
+	if tag_bg != null:
+		assert_almost_eq(tag_bg.size.x, 210.94, 0.02, "tag_bg w=210.94（scaleSize 直译）")
+		assert_almost_eq(tag_bg.size.y, 30.47, 0.02, "tag_bg h=30.47")
+		assert_eq(tag_bg.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_bg.png", "tag_bg 贴图归源")
+		assert_eq(tag_bg.patch_margin_left, 16, "cap left=15.63 取整 16")
+		assert_eq(tag_bg.patch_margin_right, 32, "cap right=60-15.63-12.5=31.87 取整 32")
+		assert_eq(tag_bg.patch_margin_top, 9, "cap top=39-0-29.69=9.31 取整 9")
+		assert_eq(tag_bg.patch_margin_bottom, 0, "cap bottom=0（源 y=0）")
+		assert_almost_eq(tag_bg.position.x + tag_bg.size.x * 0.5, ptc.size.x * 0.5, 0.02, "tag_bg 居中容器（源 pos(0,0) 中心锚）")
+	var il: Control = fc.get_node("InfoLayer") as Control
+	assert_almost_eq(il.position.x, 0.0, 0.02, "info_layer 与 frame_container 同 rect（源 pos(0,0) 800x480.47）")
+	assert_almost_eq(il.size.y, 480.47, 0.02, "info_layer h=480.47")
+	var explain_bg: NinePatchRect = il.get_node("%ExplainBg") as NinePatchRect
+	assert_not_null(explain_bg, "ExplainBg 存在且为 NinePatchRect（源 Scale9Sprite）")
+	if explain_bg != null:
+		assert_almost_eq(explain_bg.position.x + explain_bg.size.x, 742.97, 0.02, "explain_bg 右缘 x=742.97（源 anchor(1,1)）")
+		assert_almost_eq(explain_bg.position.y + explain_bg.size.y, 79.69, 0.02, "explain_bg 底缘 y=79.69（480.47-400.78）")
+		assert_almost_eq(explain_bg.size.x, 281.25, 0.02, "explain_bg w=281.25（scaleSize 直译）")
+		assert_eq(explain_bg.patch_margin_left, 133, "cap left=132.81 取整 133")
+		assert_eq(explain_bg.patch_margin_right, 58, "cap right=281-132.81-89.84=58.35 取整 58")
+	var histroy: Control = il.get_node("%HistroyButton") as Control
+	assert_almost_eq(histroy.position.x + histroy.size.x * 0.5, 154.69, 0.02, "histroy 中心 x=154.69（info_layer 局部）")
+	assert_almost_eq(histroy.position.y + histroy.size.y * 0.5, 400.0, 0.02, "histroy 中心 y=400（480.47-80.47）")
+	assert_almost_eq(histroy.size.x, 117.19, 0.02, "histroy w=117.19（scaleSize 直译）")
+	var explain: Control = il.get_node("%ExplainButton") as Control
+	assert_almost_eq(explain.position.x + explain.size.x * 0.5, 250.78, 0.02, "explain 中心 x=250.78")
+	assert_almost_eq(explain.size.x, 66.41, 0.02, "explain w=66.41（scaleSize 直译）")
+	var research_frame: Control = il.get_node("%ResearchFrame") as Control
+	assert_almost_eq(research_frame.position.x + research_frame.size.x * 0.5, 637.5, 0.02, "research_frame 中心 x=637.5")
+	assert_almost_eq(research_frame.position.y + research_frame.size.y * 0.5, 381.25, 0.02, "research_frame 中心 y=381.25（480.47-99.22）")
+	assert_almost_eq(research_frame.size.x, 171.88, 0.02, "research_frame w=171.88（scaleSize 直译）")
+	assert_almost_eq((research_frame as Control).modulate.a, 200.0 / 255.0, 0.005, "research_frame opacity=200/255（源 config.opacity）")
+	var research_btn: Control = il.get_node("%ResearchButton") as Control
+	assert_almost_eq(research_btn.size.x, 140.63, 0.02, "research_button w=140.63（scaleSize 直译）")
+	assert_almost_eq(research_btn.size.y, 50.78, 0.02, "research_button h=50.78")
+	var btn_center: Vector2 = research_btn.get_global_rect().get_center()
+	assert_almost_eq(btn_center.y, fc.position.y + 330.46875 + 7.8125 + 60.9375, 0.02,
+		"research_button 全局中心 y（research_frame 330.47+container 7.81+cy=-21.88 越界挂下）")
+	var explain_ctn: Control = il.get_node("%ExplainContainer") as Control
+	assert_almost_eq(explain_ctn.position.x, 601.56, 0.02, "explain_container offset_left=601.56")
+	assert_almost_eq(explain_ctn.position.y, 89.84, 0.02, "explain_container offset_top=89.84（480.47-351.56-39.06）")
+	var lack_ctn: Control = explain_ctn.get_node("LackLabelContainer") as Control
+	assert_almost_eq(lack_ctn.position.x, -106.25, 0.02, "lack_container offset_left=-106.25（源 anchor(0,0)@(-106.25,-4.69)）")
+	assert_almost_eq(lack_ctn.position.y, -3.13, 0.02, "lack_container offset_top=-3.13（39.06+4.69-46.88）")
+	assert_almost_eq(lack_ctn.size.x, 156.25, 0.02, "lack_container w=156.25（scaleSize 直译）")
+	var speed_ctn: Control = explain_ctn.get_node("SpeedLabelContainer") as Control
+	assert_almost_eq(speed_ctn.position.y, 30.46, 0.02, "speed_container offset_top=30.46（39.06+38.28-46.88）")
+	var count_ctn: Control = explain_ctn.get_node("CountTimeContainer") as Control
+	assert_almost_eq(count_ctn.position.y, 64.84, 0.02, "count_time_container offset_top=64.84（39.06+72.66-46.88）")
+	var lack_title: Label = lack_ctn.get_node("%LackTitle") as Label
+	assert_almost_eq(lack_title.position.x + lack_title.size.x, 85.94, 0.02, "lack_title 右缘 x=85.94（源 anchor(1,0.5)）")
+	assert_almost_eq(lack_title.offset_top, 12.44, 0.02, "lack_title offset_top=12.44（源中线 23.44-半高 11，min size 拉伸只动 bottom）")
+	assert_eq(lack_title.vertical_alignment, 1, "lack_title 垂直居中（源 anchor(*,0.5)）")
+	var lack_num: Label = lack_ctn.get_node("%LackNumber") as Label
+	assert_almost_eq(lack_num.position.x, 121.09, 0.02, "lack_number 左缘 x=121.09（源 anchor(0,0.5)）")
+	var left: Control = content.get_node("%LeftButton") as Control
+	assert_almost_eq(left.position.x + left.size.x * 0.5, 143.28, 0.02, "left_button 中心 x=143.28（to_godot(63.28)）")
+	assert_almost_eq(left.position.y + left.size.y * 0.5, 342.81, 0.02, "left_button 中心 y=342.81（560-217.19）")
+	assert_almost_eq(left.size.x, 42.97, 0.02, "left_button w=42.97（fix_wh 直译）")
+	var right: Control = content.get_node("%RightButton") as Control
+	assert_almost_eq(right.position.x + right.size.x * 0.5, 815.94, 0.02, "right_button 中心 x=815.94（to_godot(735.94)）")
+	assert_almost_eq(right.position.y + right.size.y * 0.5, 342.03, 0.02, "right_button 中心 y=342.03（560-217.97）")
+	assert_true((content.get_node("%RightButton") as TextureButton).flip_h, "right_button flip_h（源 flip=x）")
+	var fog: Control = content.get_node("%SearchFog") as Control
+	assert_almost_eq(fog.position.x + fog.size.x * 0.5, 476.88, 0.02, "search_fog 中心 x=476.88（to_godot(396.88)）")
+	assert_almost_eq(fog.size.x, 702.34, 0.02, "search_fog w=702.34（fix_wh 直译）")
+	assert_almost_eq(fog.modulate.a, 0.0, 0.005, "search_fog opacity=0（源 config.opacity=0，fill 淡入）")
+	# 绘制序守卫（防反盖）：源 z bg=0 < frame_container=5（内：frame_bg=1 < 动态矿点
+	# clipNode=2 < info_layer=15 < frame=20 < title=24 < page_tag/back=30）< 根级
+	# fog/left/right=10 < search_icon=15
+	assert_lt(content.get_node("Bg").get_index(), fc.get_index(), "bg 声明序先于 frame_container（z 0<5）")
+	assert_lt(fc.get_node("FrameBg").get_index(), fc.get_node("InfoLayer").get_index(), "frame_bg 先于 info_layer（z 1<15）")
+	assert_lt(fc.get_node("InfoLayer").get_index(), fc.get_node("Frame").get_index(), "info_layer 先于 frame（z 15<20）")
+	assert_lt(fc.get_node("Frame").get_index(), fc.get_node("Title").get_index(), "frame 先于 title（z 20<24）")
+	assert_lt(fc.get_node("NodeHost").get_index(), fc.get_node("InfoLayer").get_index(), "NodeHost（矿点宿主）先于 info_layer（源 clipNode z=2<15）")
+	assert_lt(fc.get_index(), fog.get_index(), "frame_container 先于 fog（z 5<10）")
+	content.queue_free()
+
+
+# 旧范式退役守卫（两件套 SOP）：panel.gd 无运行时样式/静态结构构造。
+# 矿点动态格子（Button/TextureRect，brief 明示业务层保留）与页签动态图标
+# TextureRect 为白名单豁免；Label/静态容器构造仍禁。
+func test_map_no_legacy_runtime_styling() -> void:
+	var src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_map_panel.gd")
+	assert_false(src.contains("UiScale9Button"), "UiScale9Button 已退役")
+	assert_false(src.contains("add_theme_color_override"), "运行时颜色 override 已退役")
+	assert_false(src.contains("add_theme_font_size_override"), "运行时字号 override 已退役")
+	assert_false(src.contains("add_theme_stylebox_override"), "运行时样式 override 已退役（矿点热区=透明 Button+子 TextureRect 等比）")
+	for ctor: String in ["Label.new(", "HBoxContainer.new(", "VBoxContainer.new(", "Control.new("]:
+		assert_false(src.contains(ctor), "无静态节点构造 %s（静态结构全在 tscn）" % ctor)
+	assert_false(src.contains("apply_with_label"), "UiScale9Button.apply_with_label 已退役")
+	var fills_src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_map_fills.gd")
+	assert_false(fills_src.contains("UiScale9Button"), "fills: UiScale9Button 已退役")
+	assert_false(fills_src.contains("add_theme_color_override"), "fills: 运行时颜色 override 已退役")
+	assert_false(fills_src.contains("add_theme_stylebox_override"), "fills: 运行时样式 override 已退役")
+	for ctor2: String in ["Label.new(", "Button.new(", "TextureRect.new(", "Control.new("]:
+		assert_false(fills_src.contains(ctor2), "fills: 纯数据绑定禁建节点 %s" % ctor2)
+
+
+# map 面板空矿点列表兜底（源 checkWork:911 空数据即弹走，map 不应存在空态；
+# 单机 giveup 后团队面板回 map 可能瞬时空 → EmptyLabel 护栏）
 func test_map_panel_empty_list_no_crash() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -776,9 +1003,158 @@ func test_map_panel_empty_list_no_crash() -> void:
 	var panel := ExcavateMapPanel.new("excavate_map", {})
 	panel.setup_panel(pd, BattleRng.new(1))
 	panel.show_window(root)
-	# 空矿点：info_label 显示 NO_NODE_TEXT，node_button 不可见
-	assert_false(panel._node_button.visible, "空列表 node_button 隐藏")
-	assert_eq(panel._info_label.text, "暂无矿点，点击「搜索」发现矿点", "空列表文案正确")
+	assert_true((panel.container.get_node("ExcavateMapContent/FrameContainer/InfoLayer/%EmptyLabel") as Control).visible,
+		"空列表 EmptyLabel 可见（单机护栏，源无空态文本）")
+	assert_eq((panel.container.get_node("ExcavateMapContent/FrameContainer/InfoLayer/%EmptyLabel") as Label).text,
+		"暂无矿点，点击「搜索」发现矿点", "空列表兜底文案")
+	panel.remove_window()
+	root.queue_free()
+
+
+# fill：mine+monster 双矿点 → 翻页/页签/箭头联动（照源 doTurnPage/refreshPageTag/
+# showArrow）+ title 贴图随 typeid 切换（refreshPageTitle）+ 产量行 mine 分支
+# （refreshBaseRecord）+ cost 数值与颜色二态（refreshCostLabel）。
+func test_map_fill_pages_tags_and_records() -> void:
+	var root := Node.new()
+	add_child(root)
+	var now: int = int(Time.get_unix_time_from_system())
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.excavate.excavate_data.append({
+		"_id": 1, "_type_id": 4, "_owner": "mine", "_state": "occupy",
+		"_found_ts": now - 60, "_produce_speed": 10.0, "_storage": 500, "_res_got": 0.0,
+		"_wild_id": 30001, "_team": [],
+	})
+	pd.excavate.excavate_data.append({
+		"_id": 2, "_type_id": 1, "_owner": "monster", "_state": "searched",
+		"_found_ts": now - 60, "_produce_speed": 5.0, "_storage": 300, "_res_got": 0.0,
+		"_wild_id": 30002, "_team": [],
+	})
+	var panel := ExcavateMapPanel.new("excavate_map", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	var fc: Control = panel.container.get_node("ExcavateMapContent/FrameContainer") as Control
+	if fc == null:
+		fail_test("content 未装配")
+		panel.remove_window()
+		root.queue_free()
+		return
+	# 首页（index 0 = mine typeid 4 gold）：title 贴图随 typeid 切 gold_1
+	var title: TextureRect = fc.get_node("%Title") as TextureRect
+	assert_eq(title.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_name_gold_1.png",
+		"title fill typeid=4 → name_gold_1（源 refreshPageTitle title_res[4]）")
+	# 箭头显隐（源 showArrow:513-530）：2 条数据双箭头可见，index=1 隐藏左
+	assert_false(left_arrow(panel).visible, "首页 left_button 隐藏（源 :523-525 index==1）")
+	assert_true(right_arrow(panel).visible, "首页 right_button 可见")
+	# 产量行 mine 分支（源 refreshBaseRecord:318-377）
+	var explain_ctn: Control = fc.get_node("InfoLayer/%ExplainContainer") as Control
+	var lack_ctn: Control = explain_ctn.get_node("LackLabelContainer") as Control
+	assert_eq((lack_ctn.get_node("%LackTitle") as Label).text, cm.get_lstr("MAP.MY_ACCUMULATED_RESOURCES_"),
+		"mine：lack 标题=我的累计资源（源 :336 storageTitle）")
+	assert_true((lack_ctn.get_node("%LackIconGold") as Control).visible, "mine：typeid=4 → gold icon（源 :350-375）")
+	assert_false((lack_ctn.get_node("%LackIconDiamond") as Control).visible, "mine：diamond icon 隐藏")
+	assert_eq((lack_ctn.get_node("%LackNumber") as Label).text, "x10",
+		"mine：累计=x10（speed 10/分×1 分，源 getProduced）")
+	var speed_ctn: Control = explain_ctn.get_node("SpeedLabelContainer") as Control
+	assert_eq((speed_ctn.get_node("%SpeedTitle") as Label).text, cm.get_lstr("MAP.MY_PRODUCTION_SPEED_"),
+		"mine：speed 标题=我的生产速度")
+	# 页签（源 refreshPageTag：2 数据可见、2 图标、当前页 selected 态）
+	var ptc: Control = fc.get_node("%PageTagContainer") as Control
+	assert_true(ptc.visible, "≥2 数据 page_tag_container 可见（源 :1067-1072）")
+	var tag_host: Control = ptc.get_node("%TagHost") as Control
+	assert_eq(tag_host.get_child_count(), 2, "2 矿点 → 2 页签图标")
+	var tag1: TextureRect = tag_host.get_child(0) as TextureRect
+	assert_true(tag1.texture.resource_path.contains("_current"), "当前页 tag1=selected 态（_current 贴图）")
+	assert_true(tag1.texture.resource_path.contains("gold"), "tag1 类型图 gold（typeid=4）")
+	var tag2: TextureRect = tag_host.get_child(1) as TextureRect
+	assert_false(tag2.texture.resource_path.contains("_current"), "非当前页 tag2=normal 态")
+	# cost fill（源 refreshCostLabel:1209：数值+颜色随金币）
+	var cost: Label = fc.get_node("InfoLayer/%ResearchFrame/ResearchContainer/%CostLabel") as Label
+	assert_eq(cost.text, "100", "首搜 cost=100 fill")
+	assert_eq(cost.modulate, Color.WHITE, "金币充足态 modulate 白（基色橙）")
+	# search/research label 二态（源 refresh:407-413 checkSearching）
+	assert_true((fc.get_node("InfoLayer/%ResearchFrame/ResearchContainer/%ResearchButton/SearchLabel") as Control).visible,
+		"无进行中搜索点 → search_label 显示")
+	# 翻页（源 turnPage/doTurnPage：index+1 + refresh 联动）
+	panel._on_next()
+	assert_eq(title.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_name_diamond_1.png",
+		"翻页后 title 切 typeid=1 → name_diamond_1")
+	assert_true((tag_host.get_child(1) as TextureRect).texture.resource_path.contains("_current"),
+		"翻页后 tag2 selected")
+	assert_false((tag_host.get_child(0) as TextureRect).texture.resource_path.contains("_current"),
+		"tag1 回 normal")
+	# monster 分支产量行（源 :330-334 可掠夺）
+	assert_eq((lack_ctn.get_node("%LackTitle") as Label).text, cm.get_lstr("MAP.YOU_CAN_PLUNDER_"),
+		"monster：lack 标题=可以掠夺（源 :331）")
+	assert_true((lack_ctn.get_node("%LackIconDiamond") as Control).visible, "monster：typeid=1 → diamond icon")
+	assert_false((lack_ctn.get_node("%LackIconGold") as Control).visible, "monster：gold icon 隐藏")
+	# 末页右箭头隐藏（源 showArrow index==#data）
+	assert_false(right_arrow(panel).visible, "末页 right_button 隐藏（源 :520-522）")
+	assert_true(left_arrow(panel).visible, "末页 left_button 可见")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 辅助：根级左右箭头（非 FrameContainer 子）
+func left_arrow(panel: ExcavateMapPanel) -> Control:
+	return panel.container.get_node("ExcavateMapContent/%LeftButton") as Control
+
+
+func right_arrow(panel: ExcavateMapPanel) -> Control:
+	return panel.container.get_node("ExcavateMapContent/%RightButton") as Control
+
+
+# map 内搜索（照源 registerSearchButton:137-204 clickHandler → showFog 搜索链，
+# 单机 fog fade/转圈动画简化为 icon 圆周 + 完成回调）：research_button 点击 →
+# ExcavateManager.search → 新矿点 focus 定位 + tag/title 刷新 + 消耗联动。
+func test_map_search_in_place_flow() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.excavate.excavate_data.append({
+		"_id": 1, "_type_id": 4, "_owner": "mine", "_state": "occupy",
+		"_found_ts": 1, "_produce_speed": 10.0, "_storage": 500, "_res_got": 0.0,
+		"_wild_id": 30001, "_team": [],
+	})
+	var panel := ExcavateMapPanel.new("excavate_map", {})
+	panel.setup_panel(pd, BattleRng.new(7))
+	panel.show_window(root)
+	var btn: Button = panel.container.get_node("ExcavateMapContent/FrameContainer/InfoLayer/%ResearchFrame/ResearchContainer/%ResearchButton") as Button
+	btn.pressed.emit()
+	assert_true(panel._searching, "点击 research_button 进入搜索动画态（源 showFog→showSearchIcon）")
+	assert_eq(pd.excavate.get_data_list().size(), 1, "动画期未入列（源转圈完成后才 search）")
+	panel._finish_search()
+	assert_eq(pd.excavate.get_data_list().size(), 2, "完成后新矿点入列（源 doSearchExcavateReply refreshData）")
+	assert_eq(pd.excavate.search_times, 1, "search_times +1（源 refreshExcavateSearchTime）")
+	assert_false(panel._searching, "动画态复位")
+	var fc: Control = panel.container.get_node("ExcavateMapContent/FrameContainer") as Control
+	var ptc: Control = fc.get_node("%PageTagContainer") as Control
+	assert_eq((ptc.get_node("%TagHost") as Control).get_child_count(), 2, "页签随新点更新")
+	panel.remove_window()
+	root.queue_free()
+
+
+# focus_excavate 定位（战斗结束重弹定位刚打矿点，接口保留）
+func test_map_focus_excavate() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	for i: int in range(3):
+		pd.excavate.excavate_data.append({
+			"_id": i + 1, "_type_id": 4 + i, "_owner": "mine", "_state": "occupy",
+			"_found_ts": 1, "_produce_speed": 10.0, "_storage": 500, "_res_got": 0.0,
+			"_wild_id": 30001, "_team": [],
+		})
+	var panel := ExcavateMapPanel.new("excavate_map", {})
+	panel.setup_panel(pd, BattleRng.new(1))
+	panel.show_window(root)
+	panel.focus_excavate(3)
+	assert_eq(panel._index, 2, "focus 定位到 id=3（index 2）")
+	var fc: Control = panel.container.get_node("ExcavateMapContent/FrameContainer") as Control
+	assert_true(((fc.get_node("%PageTagContainer/%TagHost") as Control).get_child(2) as TextureRect).texture.resource_path.contains("_current"),
+		"focus 后 tag3 selected")
 	panel.remove_window()
 	root.queue_free()
 

@@ -1,12 +1,68 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="2_frame"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_title.png" id="3_title"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="4_back"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="5_backp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/prevchap.png" id="6_prev"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/prevchap-mask.png" id="7_prevp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png" id="2_framebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="3_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_name_diamond_1.png" id="4_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="5_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="6_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/prevchap.png" id="7_prev"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/prevchap-mask.png" id="8_prevp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_fog.png" id="9_fog"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_magnifier.png" id="10_mag"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_info_bg.png" id="11_ibg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_cycle_bg.png" id="12_tbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_cycle_mask_left.png" id="13_tml"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_cycle_mask_right.png" id="14_tmr"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png" id="15_rframe"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="16_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_token_icon.png" id="17_dia"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_exp_icon.png" id="18_exp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_1.png" id="19_srch"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_2.png" id="20_srchp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_another_1.png" id="21_ano"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_another_2.png" id="22_anop"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_deal_tag.png" id="23_redtag"]
+
+; 藏宝地穴主地图两件套静态树（excavate 批 Task 7，2026-08-17）。
+; 照源 uieditor/excavatemap.lua 声明表（40 条目）+ ui/excavate/map.lua 直译。
+; 场景层点空间直译 to_godot(x,y)=(x+80,560-y)；frame_container/info_layer 子坐标
+; 为父局部（Cocos 子 y 向上翻转：从上=父高 480.47-cy）。A 类债 #6/#8 归源：
+; frame fix_wh 733.59x454.69（纹理 734x455 ratio 1.6132 完全等比，弃 600x440
+; 强拉）；title 贴图归源 excavate_name_diamond_1 fix_wh 339.84x37.5（纹理
+; 435x48 ratio 9.0625 完全等比，弃 main_title 340x38 误用——main_title 仅源
+; showFog 搜索期 initPageTitle 临时替换，panel fill 动态换）。
+; - bg fix_wh 800x481.25 中心 (400,239.84) → (80,79.54)-(880,560.79)。
+; - frame_container Layer 800x480.47 anchor(0,0)@(-3.13,3.91) → (76.88,75.63)-
+;   (876.88,556.09)。子声明序照源 z：frame_bg(1) < 矿点宿主(源 clipNode 2)
+;   < info_layer(15) < frame(20) < title(24) < page_tag/back(30)。
+; - frame_bg @(402.34,235.16)、frame @(402.34,233.59) 均 733.59x454.69 中心锚；
+;   back_button 74x75px÷CS=57.78x58.54 @(65.63,434.38)（无 fix_wh 走 ÷1.28125）。
+; - page_tag_container 78.13² anchor(0,0)@(416.41,81.25)；tag_bg Scale9
+;   210.94x30.47 中心(0,0) cap(15.63,0,12.5,29.69)@60x39 → L16/B0/R32/T9；
+;   tag_shade_* 30.47² 中心 (±91.41,0)。TagHost 为动态页签图标宿主（fill 挂）。
+; - info_layer 同 rect（pos(0,0) 800x480.47）：explain/histroy DGButton
+;   66.41/117.19x53.13 @(250.78/154.69,80.47)（sell_number 系走 theme
+;   ExcavateNavBtn，文案 fill）；explain_bg Scale9 281.25x99.22 anchor(1,1)
+;   @(742.97,400.78) cap(132.81,44.53,89.84,31.25)@281x99 → L133/B45/R58/T23；
+;   research_frame Scale9 171.88x101.56 @(637.5,99.22) opacity 200 → modulate.a，
+;   cap(23.44,23.44,19.53,19.53)@75x75 → L23/B23/R32/T32（同 search 件）。
+; - research_container 39.06² @research_frame 局部 (85.94,7.81)；
+;   research_button 140.63x50.78 中心 (0.78,-21.88)（cy 为负=越界挂 container
+;   下方，同 search 件 SearchButton 先例）；gold_icon 33.59x31.25 @(-28.91,22.66)；
+;   cost_label anchor(1,0.5) 右缘 48.44；search/research_label 140.84/141.33x
+;   52.55/52.73 中心=按钮几何中心 (70.31,25.39) 默认隐藏（fill 按 checkSearching 切）。
+; - explain_container 39.06² @(601.56,89.85)；lack/speed/count_time 容器
+;   156.25x46.88 @(-106.25,-3.13)/(-105.47,30.46)/(-106.25,64.84)；title 系
+;   18 号 (255,233,133) anchor(1,0.5) 右缘 85.94；icon_gold/diamond/exp 33.59x
+;   31.25/32.03、exp 25.78x30.47 @x≈97.66 默认隐藏（fill 按产类三选一）；
+;   number 系 16 白 anchor(0,0.5) 左缘 121.09；count_time_label 左缘 0。
+; - 根级：search_fog 702.34x392.97 @(396.88,220.31) opacity 0（fill 淡入）；
+;   left/right_button 42.97x58.59 @(63.28,217.19)/(735.94,217.97)（right flip）；
+;   search_icon 100.78x102.34 @(400,254.69) 默认隐藏（搜索转圈动画用）。
+; 受控裁剪：FCA 旗帜动画/复仇遮罩/多人防御点（单机静态单卡片，NodeHost 动态挂）；
+; history_red_tag 照源建位默认隐藏（数据层无已读状态恒不亮）。EmptyLabel 单机
+; 空态护栏（源 checkWork 空数据即弹走无空态）。text 为编辑器预览默认，fill 覆盖。
 
 [node name="ExcavateMapContent" type="Control"]
 layout_mode = 3
@@ -15,115 +71,487 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="FrameworkBg" type="TextureRect" parent="."]
-layout_mode = 3
-offset_right = 960.0
-offset_bottom = 640.0
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 79.535
+offset_right = 880.0
+offset_bottom = 560.785
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="Frame" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 180.0
-offset_top = 100.0
-offset_right = 780.0
-offset_bottom = 540.0
-texture = ExtResource("2_frame")
+[node name="FrameContainer" type="Control" parent="."]
+layout_mode = 0
+offset_left = 76.875
+offset_top = 75.625
+offset_right = 876.875
+offset_bottom = 556.09375
+mouse_filter = 2
+
+[node name="FrameBg" type="TextureRect" parent="FrameContainer"]
+layout_mode = 0
+offset_left = 35.545
+offset_top = 17.965
+offset_right = 769.135
+offset_bottom = 472.655
+texture = ExtResource("2_framebg")
 expand_mode = 1
 mouse_filter = 2
 
-[node name="BackBtn" type="TextureButton" parent="."]
+[node name="NodeHost" type="Control" parent="FrameContainer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 192.0
-offset_top = 112.0
-offset_right = 242.0
-offset_bottom = 162.0
-texture_normal = ExtResource("4_back")
-texture_pressed = ExtResource("5_backp")
-ignore_texture_size = true
-
-[node name="Title" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 310.078125
-offset_top = 112.0
-offset_right = 649.921875
-offset_bottom = 149.5
-texture = ExtResource("3_title")
-expand_mode = 1
+layout_mode = 0
+offset_right = 800.0
+offset_bottom = 480.46875
 mouse_filter = 2
 
-[node name="PrevArrow" type="TextureButton" parent="."]
+[node name="InfoLayer" type="Control" parent="FrameContainer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 200.0
-offset_top = 260.0
-offset_right = 243.0
-offset_bottom = 319.0
-texture_normal = ExtResource("6_prev")
-texture_pressed = ExtResource("7_prevp")
-ignore_texture_size = true
-
-[node name="NextArrow" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 717.0
-offset_top = 260.0
-offset_right = 760.0
-offset_bottom = 319.0
-texture_normal = ExtResource("6_prev")
-texture_pressed = ExtResource("7_prevp")
-ignore_texture_size = true
-flip_h = true
-
-[node name="NodeHost" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+layout_mode = 0
+offset_right = 800.0
+offset_bottom = 480.46875
 mouse_filter = 2
 
-[node name="InfoLabel" type="Label" parent="."]
+[node name="ExplainButton" type="Button" parent="FrameContainer/InfoLayer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 220.0
-offset_top = 385.0
-offset_right = 740.0
-offset_bottom = 465.0
-theme_override_font_sizes/font_size = 16
-mouse_filter = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PageLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 180.0
-offset_top = 320.0
-offset_right = 780.0
-offset_bottom = 344.0
-theme_override_font_sizes/font_size = 16
-mouse_filter = 2
-horizontal_alignment = 1
-
-[node name="ExplainBtn" type="Button" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 220.0
-offset_top = 495.0
-offset_right = 330.0
-offset_bottom = 535.0
+layout_mode = 0
+offset_left = 217.575
+offset_top = 373.435
+offset_right = 283.985
+offset_bottom = 426.565
+theme_type_variation = &"ExcavateNavBtn"
 mouse_filter = 0
 text = "规则"
 
-[node name="HistoryBtn" type="Button" parent="."]
+[node name="HistroyButton" type="Button" parent="FrameContainer/InfoLayer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 420.0
-offset_top = 495.0
-offset_right = 540.0
-offset_bottom = 535.0
+layout_mode = 0
+offset_left = 96.095
+offset_top = 373.435
+offset_right = 213.285
+offset_bottom = 426.565
+theme_type_variation = &"ExcavateNavBtn"
 mouse_filter = 0
 text = "防守记录"
+
+[node name="HistoryRedTag" type="TextureRect" parent="FrameContainer/InfoLayer/HistroyButton"]
+layout_mode = 0
+offset_left = 101.175
+offset_top = 1.565
+offset_right = 117.585
+offset_bottom = 18.755
+texture = ExtResource("23_redtag")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="ExplainBg" type="NinePatchRect" parent="FrameContainer/InfoLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 461.72
+offset_top = -19.53
+offset_right = 742.97
+offset_bottom = 79.69
+texture = ExtResource("11_ibg")
+patch_margin_left = 133
+patch_margin_top = 23
+patch_margin_right = 58
+patch_margin_bottom = 45
+mouse_filter = 2
+
+[node name="ResearchFrame" type="NinePatchRect" parent="FrameContainer/InfoLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 551.5625
+offset_top = 330.46875
+offset_right = 723.4375
+offset_bottom = 432.03125
+modulate = Color(1, 1, 1, 0.784314)
+texture = ExtResource("15_rframe")
+patch_margin_left = 23
+patch_margin_top = 32
+patch_margin_right = 32
+patch_margin_bottom = 23
+mouse_filter = 2
+
+[node name="ResearchContainer" type="Control" parent="FrameContainer/InfoLayer/ResearchFrame"]
+layout_mode = 0
+offset_left = 85.9375
+offset_top = 7.8125
+offset_right = 125.0
+offset_bottom = 46.875
+mouse_filter = 2
+
+[node name="ResearchButton" type="Button" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -69.53125
+offset_top = 35.546875
+offset_right = 71.09375
+offset_bottom = 86.328125
+theme_type_variation = &"ExcavateSearchBtn"
+mouse_filter = 0
+
+[node name="SearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -0.10939
+offset_top = -0.8862
+offset_right = 140.73439
+offset_bottom = 51.66745
+texture_normal = ExtResource("19_srch")
+texture_pressed = ExtResource("20_srchp")
+ignore_texture_size = true
+stretch_mode = 0
+mouse_filter = 2
+visible = false
+
+[node name="ResearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -0.345
+offset_top = -0.975
+offset_right = 140.985
+offset_bottom = 51.755
+texture_normal = ExtResource("21_ano")
+texture_pressed = ExtResource("22_anop")
+ignore_texture_size = true
+stretch_mode = 0
+mouse_filter = 2
+visible = false
+
+[node name="GoldIcon" type="TextureRect" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -45.703125
+offset_top = 0.78125
+offset_right = -12.109375
+offset_bottom = 32.03125
+texture = ExtResource("16_gold")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="CostLabel" type="Label" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -11.5625
+offset_top = 3.84375
+offset_right = 48.4375
+offset_bottom = 25.84375
+theme_type_variation = &"ExcavateCostLabel"
+horizontal_alignment = 2
+vertical_alignment = 1
+mouse_filter = 2
+text = "10000"
+
+[node name="ExplainContainer" type="Control" parent="FrameContainer/InfoLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 601.5625
+offset_top = 89.84375
+offset_right = 640.625
+offset_bottom = 128.90625
+mouse_filter = 2
+
+[node name="LackLabelContainer" type="Control" parent="FrameContainer/InfoLayer/ExplainContainer"]
+layout_mode = 0
+offset_left = -106.25
+offset_top = -3.125
+offset_right = 50.0
+offset_bottom = 43.75
+mouse_filter = 2
+
+[node name="LackTitle" type="Label" parent="FrameContainer/InfoLayer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.94
+offset_top = 12.44
+offset_right = 85.94
+offset_bottom = 34.44
+theme_type_variation = &"ExcavateTeamProduceTitle"
+horizontal_alignment = 2
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="LackIconGold" type="TextureRect" parent="FrameContainer/InfoLayer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.865
+offset_top = 7.815
+offset_right = 114.455
+offset_bottom = 39.065
+texture = ExtResource("16_gold")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="LackIconDiamond" type="TextureRect" parent="FrameContainer/InfoLayer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.865
+offset_top = 10.555
+offset_right = 114.455
+offset_bottom = 42.585
+texture = ExtResource("17_dia")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="LackIconExp" type="TextureRect" parent="FrameContainer/InfoLayer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 84.77
+offset_top = 8.205
+offset_right = 110.55
+offset_bottom = 38.675
+texture = ExtResource("18_exp")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="LackNumber" type="Label" parent="FrameContainer/InfoLayer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 121.09
+offset_top = 12.44
+offset_right = 191.09
+offset_bottom = 34.44
+theme_type_variation = &"ExcavateTeamProduceValue"
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="SpeedLabelContainer" type="Control" parent="FrameContainer/InfoLayer/ExplainContainer"]
+layout_mode = 0
+offset_left = -105.47
+offset_top = 30.46
+offset_right = 50.78
+offset_bottom = 77.34
+mouse_filter = 2
+
+[node name="SpeedTitle" type="Label" parent="FrameContainer/InfoLayer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.94
+offset_top = 12.44
+offset_right = 85.94
+offset_bottom = 34.44
+theme_type_variation = &"ExcavateTeamProduceTitle"
+horizontal_alignment = 2
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="SpeedIconGold" type="TextureRect" parent="FrameContainer/InfoLayer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.865
+offset_top = 8.595
+offset_right = 114.455
+offset_bottom = 39.845
+texture = ExtResource("16_gold")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="SpeedIconDiamond" type="TextureRect" parent="FrameContainer/InfoLayer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.865
+offset_top = 11.335
+offset_right = 114.455
+offset_bottom = 43.365
+texture = ExtResource("17_dia")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="SpeedIconExp" type="TextureRect" parent="FrameContainer/InfoLayer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 84.77
+offset_top = 8.595
+offset_right = 110.55
+offset_bottom = 39.065
+texture = ExtResource("18_exp")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="SpeedNumber" type="Label" parent="FrameContainer/InfoLayer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 121.09
+offset_top = 12.44
+offset_right = 191.09
+offset_bottom = 34.44
+theme_type_variation = &"ExcavateTeamProduceValue"
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="CountTimeContainer" type="Control" parent="FrameContainer/InfoLayer/ExplainContainer"]
+layout_mode = 0
+offset_left = -106.25
+offset_top = 64.84
+offset_right = 50.0
+offset_bottom = 111.72
+mouse_filter = 2
+
+[node name="CountTimeLabel" type="Label" parent="FrameContainer/InfoLayer/ExplainContainer/CountTimeContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 12.44
+offset_right = 240.0
+offset_bottom = 34.44
+theme_type_variation = &"ExcavateTeamProduceTitle"
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="EmptyLabel" type="Label" parent="FrameContainer/InfoLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 50.0
+offset_top = 160.0
+offset_right = 750.0
+offset_bottom = 240.0
+theme_type_variation = &"ExcavateTeamNameLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+visible = false
+
+[node name="Frame" type="TextureRect" parent="FrameContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 35.545
+offset_top = 19.535
+offset_right = 769.135
+offset_bottom = 474.225
+texture = ExtResource("3_frame")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Title" type="TextureRect" parent="FrameContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 232.42
+offset_top = 30.47
+offset_right = 572.26
+offset_bottom = 67.97
+texture = ExtResource("4_title")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="PageTagContainer" type="Control" parent="FrameContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 416.41
+offset_top = 321.09
+offset_right = 494.54
+offset_bottom = 399.22
+mouse_filter = 2
+
+[node name="TagBg" type="NinePatchRect" parent="FrameContainer/PageTagContainer"]
+layout_mode = 0
+offset_left = -66.405
+offset_top = 23.83
+offset_right = 144.535
+offset_bottom = 54.3
+texture = ExtResource("12_tbg")
+patch_margin_left = 16
+patch_margin_top = 9
+patch_margin_right = 32
+patch_margin_bottom = 0
+mouse_filter = 2
+
+[node name="TagHost" type="Control" parent="FrameContainer/PageTagContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 78.13
+offset_bottom = 78.13
+mouse_filter = 2
+
+[node name="TagShadeLeft" type="TextureRect" parent="FrameContainer/PageTagContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -106.645
+offset_top = 62.895
+offset_right = -76.175
+offset_bottom = 93.365
+texture = ExtResource("13_tml")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="TagShadeRight" type="TextureRect" parent="FrameContainer/PageTagContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 76.175
+offset_top = 62.895
+offset_right = 106.645
+offset_bottom = 93.365
+texture = ExtResource("14_tmr")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="BackButton" type="TextureButton" parent="FrameContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 36.73476
+offset_top = 16.82546
+offset_right = 94.51524
+offset_bottom = 75.36204
+texture_normal = ExtResource("5_back")
+texture_pressed = ExtResource("6_backp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="SearchFog" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 125.71
+offset_top = 143.205
+offset_right = 828.05
+offset_bottom = 536.175
+modulate = Color(1, 1, 1, 0)
+texture = ExtResource("9_fog")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="LeftButton" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 121.795
+offset_top = 313.515
+offset_right = 164.765
+offset_bottom = 372.105
+texture_normal = ExtResource("7_prev")
+texture_pressed = ExtResource("8_prevp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="RightButton" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 794.455
+offset_top = 312.735
+offset_right = 837.425
+offset_bottom = 371.325
+texture_normal = ExtResource("7_prev")
+texture_pressed = ExtResource("8_prevp")
+ignore_texture_size = true
+stretch_mode = 0
+flip_h = true
+
+[node name="SearchIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 429.609375
+offset_top = 254.140625
+offset_right = 530.390625
+offset_bottom = 356.484375
+texture = ExtResource("10_mag")
+expand_mode = 1
+mouse_filter = 2
+visible = false

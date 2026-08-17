@@ -1287,3 +1287,13 @@ ExcavateTeamProduceValue/font_sizes/font_size = 16
 ExcavateTeamEmptyHint/base_type = &"Label"
 ExcavateTeamEmptyHint/colors/font_color = Color(1, 1, 1, 1)
 ExcavateTeamEmptyHint/font_sizes/font_size = 16
+; ── excavate_map 两件套（excavate 批 Task 7，2026-08-17）──
+; 矿点热区透明钮（源 map.lua:726-760 defense_point 点击热区 136x130 + FCA 旗帜，
+; 单机裁 FCA → 透明 Button 热区 + 子 TextureRect 等比 cycle 图标；样式全空防
+; 默认灰底，贴图显示走子节点不拉伸）
+ExcavateNodeBtn/base_type = &"Button"
+ExcavateNodeBtn/styles/normal = SubResource("StyleBoxEmpty_0oxu6")
+ExcavateNodeBtn/styles/hover = SubResource("StyleBoxEmpty_0oxu6")
+ExcavateNodeBtn/styles/pressed = SubResource("StyleBoxEmpty_0oxu6")
+ExcavateNodeBtn/styles/disabled = SubResource("StyleBoxEmpty_0oxu6")
+ExcavateNodeBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
