@@ -398,3 +398,68 @@ func test_stone_amount_label_has_size_16() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	var size: int = theme.get_font_size("font_size", "StoneAmountLabel")
 	assert_eq(size, 16, "StoneAmountLabel font_size = 16")
+
+
+# ── 批4 Task 6 equipboard 两件套（源 board.lua + ofpackage.lua，2026-08-17）──
+
+# 源 board.lua:323-337 name size24 ccc3(66,45,28) + shadow ccc3(0,0,0) offset(0,2)。
+func test_equipboard_name_label_style() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "EquipboardNameLabel"), Color(0.259, 0.176, 0.11, 1), "EquipboardNameLabel 棕 (66,45,28)")
+	assert_eq(theme.get_font_size("font_size", "EquipboardNameLabel"), 24, "EquipboardNameLabel 24 号")
+	assert_color_approx(theme.get_color("font_shadow_color", "EquipboardNameLabel"), Color(0, 0, 0, 1), "EquipboardNameLabel 影黑")
+	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardNameLabel"), 2, "影偏移 y=2（源有影，旧 tscn 漏）")
+
+# 源 board.lua:55-70 amount_title size20 ccc3(67,59,56)（旧实现 18 号照源修 20，同 EquipCraftHaveLabel 口径）。
+func test_equipboard_have_label_size_20() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "EquipboardHaveLabel"), Color(0.263, 0.231, 0.22, 1), "EquipboardHaveLabel (67,59,56)")
+	assert_eq(theme.get_font_size("font_size", "EquipboardHaveLabel"), 20, "EquipboardHaveLabel 20 号（源 size=20）")
+
+# 源 board.lua:142-159 att size18 ccc3(64,63,63) + shadow(0,2)。
+func test_equipboard_att_label_style() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "EquipboardAttLabel"), Color(0.251, 0.247, 0.247, 1), "EquipboardAttLabel 灰 (64,63,63)")
+	assert_eq(theme.get_font_size("font_size", "EquipboardAttLabel"), 18, "EquipboardAttLabel 18 号")
+	assert_color_approx(theme.get_color("font_shadow_color", "EquipboardAttLabel"), Color(0, 0, 0, 1), "EquipboardAttLabel 影黑")
+	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardAttLabel"), 2, "影偏移 y=2（源有影，旧 gd 漏）")
+
+# 源 board.lua:206-238 fragment_title/amount size18 ccc3(66,45,28) + shadow(0,2)。
+func test_equipboard_fragment_label_style() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "EquipboardFragmentLabel"), Color(0.259, 0.176, 0.11, 1), "EquipboardFragmentLabel 棕 (66,45,28)")
+	assert_eq(theme.get_font_size("font_size", "EquipboardFragmentLabel"), 18, "EquipboardFragmentLabel 18 号")
+	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardFragmentLabel"), 2, "影偏移 y=2")
+
+# 源 ofpackage.lua:91-104 sell_number size18 ccc3(155,34,14)。
+func test_equipboard_price_label_style() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "EquipboardPriceLabel"), Color(0.607843, 0.133333, 0.054902, 1), "EquipboardPriceLabel 红 (155,34,14)")
+	assert_eq(theme.get_font_size("font_size", "EquipboardPriceLabel"), 18, "EquipboardPriceLabel 18 号")
+
+# 源 ofpackage.lua:140-152 按钮 label fontinfo ui_normal_button size20 白 + shadow ccc3(42,31,22) offset(0,2)。
+func test_equipboard_btn_label_style() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	assert_color_approx(theme.get_color("font_color", "EquipboardBtnLabel"), Color(1, 1, 1, 1), "EquipboardBtnLabel 白")
+	assert_eq(theme.get_font_size("font_size", "EquipboardBtnLabel"), 20, "EquipboardBtnLabel 20 号")
+	assert_color_approx(theme.get_color("font_shadow_color", "EquipboardBtnLabel"), Color(0.164706, 0.121569, 0.086275, 1), "EquipboardBtnLabel 影 (42,31,22)")
+	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardBtnLabel"), 2, "影偏移 y=2")
+
+# 源 ofpackage.lua:108-135 Scale9 package_button cap(10,10,236,29)；pressed=package_button_down。
+# 贴图 335×67（PIL 实测）→ margin L10/T28/R89/B10；content_margin 全 0 保按钮文字全 rect 居中。
+func test_equipboard_btn_stylebox() -> void:
+	var theme: Theme = ThemeManager.get_theme()
+	var sb: StyleBox = theme.get_stylebox("normal", "EquipboardBtn")
+	assert_true(sb is StyleBoxTexture, "EquipboardBtn normal 是 StyleBoxTexture")
+	var tex_sb: StyleBoxTexture = sb as StyleBoxTexture
+	assert_eq(tex_sb.texture.resource_path, "res://assets/ui/alpha/HVGA/package_button.png", "normal 用 package_button")
+	assert_eq(tex_sb.texture_margin_left, 10.0, "cap margin left=10")
+	assert_eq(tex_sb.texture_margin_top, 28.0, "cap margin top=67-10-29=28（cap 顶/底反写）")
+	assert_eq(tex_sb.texture_margin_right, 89.0, "cap margin right=335-10-236=89")
+	assert_eq(tex_sb.texture_margin_bottom, 10.0, "cap margin bottom=10")
+	assert_eq(tex_sb.content_margin_left, 0.0, "content_margin_left=0（cap 不对称防文字偏移）")
+	assert_eq(tex_sb.content_margin_top, 0.0, "content_margin_top=0")
+	var psb: StyleBox = theme.get_stylebox("pressed", "EquipboardBtn")
+	assert_eq((psb as StyleBoxTexture).texture.resource_path, "res://assets/ui/alpha/HVGA/package_button_down.png", "pressed 用 package_button_down")
+	var hsb: StyleBox = theme.get_stylebox("hover", "EquipboardBtn")
+	assert_eq((hsb as StyleBoxTexture).texture.resource_path, "res://assets/ui/alpha/HVGA/package_button.png", "hover 同 normal")

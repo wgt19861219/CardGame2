@@ -158,3 +158,96 @@ func test_compose_emits_composed_signal() -> void:
 	assert_eq(int(composed_args[0]), frag_id, "composed item_id = 碎片 id")
 	assert_true(panel.is_queued_for_deletion(), "合成后 equipboard queue_free 关闭（源 consumeAmount :55 amount<=0 popout 等价）")
 	root.queue_free()
+
+
+# ── 批4 Task 6 两件套改造守卫（gd 运行时主题 override 清零 + variation 接管）──
+
+const PANEL_SCRIPT_PATH: String = "res://scripts/ui/equipboard_panel.gd"
+
+
+func test_panel_no_runtime_theme_override() -> void:
+	var src: String = FileAccess.get_file_as_string(PANEL_SCRIPT_PATH)
+	var count: int = src.count("add_theme")
+	assert_eq(count, 0, "panel 源码零运行时 add_theme_* override（样式全走 default_theme variation）")
+
+
+func test_static_labels_use_variations() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var cell: Dictionary = {"id": eid, "makeId": eid, "amount": 3, "category": "EQUIP.PARTS", "type": 1}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var frame: Control = panel._frame
+	assert_eq((frame.get_node("%NameLabel") as Label).theme_type_variation, &"EquipboardNameLabel", "NameLabel variation（源 board.lua:323-337 size24 棕+影）")
+	assert_eq((frame.get_node("%AmountLabel") as Label).theme_type_variation, &"EquipboardHaveLabel", "AmountLabel variation（源 board.lua:60 size20）")
+	assert_eq((frame.get_node("%MoneyBoard/%MoneyContent/%SellTitleLabel") as Label).theme_type_variation, &"EquipboardHaveLabel", "SellTitleLabel 与 HaveLabel 同参数共用（源 ccc3(67,59,56) size20）")
+	assert_eq((frame.get_node("%MoneyBoard/%MoneyContent/%SellNumberLabel") as Label).theme_type_variation, &"EquipboardPriceLabel", "SellNumberLabel variation（源 ofpackage.lua:91-104 ccc3(155,34,14) size18）")
+	assert_eq((frame.get_node("%SellBtn/%SellLabel") as Label).theme_type_variation, &"EquipboardBtnLabel", "SellLabel variation（源 fontinfo ui_normal_button+shadow(42,31,22)）")
+	assert_eq((frame.get_node("%RightBtn/%RightLabel") as Label).theme_type_variation, &"EquipboardBtnLabel", "RightLabel variation")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_buttons_use_button_variation() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var cell: Dictionary = {"id": eid, "makeId": eid, "amount": 3, "category": "EQUIP.PARTS", "type": 1}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	assert_eq((panel._frame.get_node("%SellBtn") as Button).theme_type_variation, &"EquipboardBtn", "SellBtn 九宫格三态走 EquipboardBtn variation")
+	assert_eq((panel._frame.get_node("%RightBtn") as Button).theme_type_variation, &"EquipboardBtn", "RightBtn 同 variation")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_att_rows_use_variation_and_ignore_mouse() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var cell: Dictionary = {"id": eid, "makeId": eid, "amount": 3, "category": "EQUIP.PARTS", "type": 1}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var host: VBoxContainer = panel._frame.get_node("%AttHost") as VBoxContainer
+	assert_gt(host.get_child_count(), 0, "PARTS 装备至少一行属性")
+	for c in host.get_children():
+		var lbl: Label = c as Label
+		if lbl == null:
+			continue
+		assert_eq(lbl.theme_type_variation, &"EquipboardAttLabel", "属性行 variation（源 board.lua:142-159 size18 ccc3(64,63,63)+影）")
+		assert_eq(lbl.mouse_filter, Control.MOUSE_FILTER_IGNORE, "属性行装饰 Label 不吞点击")
+	panel.remove_window()
+	root.queue_free()
+
+
+func test_fragment_row_uses_lstr_and_variation() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var recipe: Dictionary = _find_hero_fragment_recipe()
+	var frag_id: int = int(recipe["frag_id"])
+	var hero_tid: int = int(recipe["tid"])
+	var cell: Dictionary = {"id": frag_id, "makeId": hero_tid, "amount": 5, "category": "BATTLE.HERO", "type": 2, "needAmount": 10}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var host: VBoxContainer = panel._frame.get_node("%AttHost") as VBoxContainer
+	var frag_lbl: Label = null
+	for c in host.get_children():
+		var lbl: Label = c as Label
+		if lbl != null and String(cm.get_lstr("EQUIPINFO.SYNTHESIS_REQUIRES_FRAGMENT_")) in lbl.text:
+			frag_lbl = lbl
+			break
+	assert_not_null(frag_lbl, "碎片行存在且标题走 LSTR（源 board.lua:209-222，非硬编码中文）")
+	if frag_lbl != null:
+		assert_string_contains(frag_lbl.text, "5/10", "碎片行数量 %d/%d（源 board.lua:227）")
+		assert_eq(frag_lbl.theme_type_variation, &"EquipboardFragmentLabel", "碎片行 variation（源 ccc3(66,45,28) size18+影）")
+	panel.remove_window()
+	root.queue_free()

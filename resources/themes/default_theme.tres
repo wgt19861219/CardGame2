@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=54 format=3]
+[gd_resource type="Theme" load_steps=64 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -17,6 +17,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="15_dlbtn2"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="16_miduse1"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="17_miduse2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="18_pkgn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="19_pkgp"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -382,6 +384,35 @@ texture_margin_left = 15.63
 texture_margin_top = 31.74
 texture_margin_right = 60.84
 texture_margin_bottom = 15.63
+
+; ── equipboard 卖出/右按钮（批 4 Task 6，2026-08-17）── 源 ofpackage.lua:108-135
+; left/right_button Scale9Sprite package_button(335x67 PIL 实测) cap CCRectMake(10,10,236,29)
+; 纹理像素直译（批 1 公式：left=10 top=67-10-29=28 right=335-10-236=89 bottom=10），
+; press 层 package_button_down 同尺寸同 cap。
+; content_margin 全 0：cap 严重不对称（top28/right89）时默认 content=texture_margin 会把
+; 按钮文字挤进偏移的九宫格内容区（不居中+下推出框），显式归零让文字全 rect 几何中心居中
+; （源 label mediate 居中 Scale9Sprite 等价；2026-07-20 equipboard 问题 5 实证）。
+[sub_resource type="StyleBoxTexture" id="SB_eb_btn_n"]
+texture = ExtResource("18_pkgn")
+texture_margin_left = 10.0
+texture_margin_top = 28.0
+texture_margin_right = 89.0
+texture_margin_bottom = 10.0
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxTexture" id="SB_eb_btn_p"]
+texture = ExtResource("19_pkgp")
+texture_margin_left = 10.0
+texture_margin_top = 28.0
+texture_margin_right = 89.0
+texture_margin_bottom = 10.0
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
 
 [resource]
 AmountLabel/base_type = &"Label"
@@ -1361,3 +1392,52 @@ AvatarTitleLabel/font_sizes/font_size = 18
 AvatarGrid/base_type = &"GridContainer"
 AvatarGrid/constants/h_separation = 17
 AvatarGrid/constants/v_separation = 7
+; ── equipboard 两件套（批 4 Task 6，2026-08-17）── 源 board.lua + ofpackage.lua。
+; 与 EquipCraft 组（批 1 Task 10）同源同参数（ofcraft/board 共用 board.lua 基类 UI），
+; 有意各建独立组：panel 语义独立，后续各自调样式互不牵连。
+; 装备名（源 board.lua:323-337 size24 ccc3(66,45,28) + shadow(0,2)；旧 tscn 漏影本批补）
+EquipboardNameLabel/base_type = &"Label"
+EquipboardNameLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
+EquipboardNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipboardNameLabel/constants/shadow_offset_x = 0
+EquipboardNameLabel/constants/shadow_offset_y = 2
+EquipboardNameLabel/font_sizes/font_size = 24
+; 拥有量/售价标题（源 board.lua:55-70 amount_title + ofpackage.lua:63-77 sell_title
+; 同参数 size20 ccc3(67,59,56) → 同 variation 两处复用；旧实现 18 号照源修 20，
+; 同 EquipCraftHaveLabel 批 1 口径）
+EquipboardHaveLabel/base_type = &"Label"
+EquipboardHaveLabel/colors/font_color = Color(0.263, 0.231, 0.22, 1)
+EquipboardHaveLabel/font_sizes/font_size = 20
+; 属性动态行（源 board.lua:142-159 att size18 ccc3(64,63,63) + shadow(0,2)；旧 gd 漏影本批补）
+EquipboardAttLabel/base_type = &"Label"
+EquipboardAttLabel/colors/font_color = Color(0.251, 0.247, 0.247, 1)
+EquipboardAttLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipboardAttLabel/constants/shadow_offset_x = 0
+EquipboardAttLabel/constants/shadow_offset_y = 2
+EquipboardAttLabel/font_sizes/font_size = 18
+; 碎片合成行（源 board.lua:206-238 fragment_title/amount size18 ccc3(66,45,28) + shadow(0,2)）
+EquipboardFragmentLabel/base_type = &"Label"
+EquipboardFragmentLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
+EquipboardFragmentLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+EquipboardFragmentLabel/constants/shadow_offset_x = 0
+EquipboardFragmentLabel/constants/shadow_offset_y = 2
+EquipboardFragmentLabel/font_sizes/font_size = 18
+; 售价数字（源 ofpackage.lua:91-104 sell_number size18 ccc3(155,34,14)）
+EquipboardPriceLabel/base_type = &"Label"
+EquipboardPriceLabel/colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
+EquipboardPriceLabel/font_sizes/font_size = 18
+; 按钮文字（源 ofpackage.lua:140-152/183-199 fontinfo ui_normal_button size20 白 +
+; config shadow ccc3(42,31,22) offset(0,2) 显式覆盖 fontinfo 默认 (63,5,0)）
+EquipboardBtnLabel/base_type = &"Label"
+EquipboardBtnLabel/colors/font_color = Color(1, 1, 1, 1)
+EquipboardBtnLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+EquipboardBtnLabel/constants/shadow_offset_x = 0
+EquipboardBtnLabel/constants/shadow_offset_y = 2
+EquipboardBtnLabel/font_sizes/font_size = 20
+; 卖出/右按钮三态（源 ofpackage.lua:107-182 Scale9 package_button + press down 层 → SB_eb_btn_n/p）
+EquipboardBtn/base_type = &"Button"
+EquipboardBtn/styles/normal = SubResource("SB_eb_btn_n")
+EquipboardBtn/styles/hover = SubResource("SB_eb_btn_n")
+EquipboardBtn/styles/pressed = SubResource("SB_eb_btn_p")
+EquipboardBtn/styles/disabled = SubResource("SB_eb_btn_n")
+EquipboardBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
