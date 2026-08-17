@@ -160,6 +160,40 @@ func test_produce_after_occupy() -> void:
 	assert_eq(mgr.produce_amount(1, 601), 100, "10/min × 10min = 100")
 
 
+# monster 矿点 produced_total 非零产出（照 getProduced:462 无 owner 限制公开版，
+# map 产量行"可以掠夺"fill 依赖；_found_ts=1 非 0 + _res_got=5 → 10×10+5=105）。
+func test_produced_total_monster_nonzero() -> void:
+	var mgr := ExcavateManager.new(cm)
+	mgr.excavate_data.append({
+		"_id": 2, "_type_id": 4, "_owner": "monster", "_state": "searched",
+		"_found_ts": 1, "_produce_speed": 10.0, "_storage": 500, "_res_got": 5.0, "_wild_id": 0,
+	})
+	assert_eq(mgr.produced_total(2, 601), 105, "monster 也计产：10/min × 10min + res_got 5 = 105")
+
+
+# produce_amount 与 produced_total 的 owner 分叉语义（前者锁 OWNER_MINE 照
+# getProduced:462-473 mine 可见口径，后者不限 owner 照 :476 全量口径）。
+func test_produced_total_owner_semantics() -> void:
+	var mgr := ExcavateManager.new(cm)
+	mgr.excavate_data.append({
+		"_id": 1, "_type_id": 4, "_owner": "mine", "_state": "occupy",
+		"_found_ts": 1, "_produce_speed": 10.0, "_storage": 1000, "_res_got": 0.0, "_wild_id": 0,
+	})
+	mgr.excavate_data.append({
+		"_id": 2, "_type_id": 4, "_owner": "monster", "_state": "searched",
+		"_found_ts": 1, "_produce_speed": 10.0, "_storage": 1000, "_res_got": 0.0, "_wild_id": 0,
+	})
+	# mine：两口径一致（同一矿点同量）
+	assert_eq(mgr.produce_amount(1, 601), mgr.produced_total(1, 601), "mine：produce_amount == produced_total")
+	assert_eq(mgr.produced_total(1, 601), 100, "mine：两口径均 100")
+	# monster：produce_amount 恒 0（owner 锁），produced_total 照计（map 掠夺 fill 用）
+	assert_eq(mgr.produce_amount(2, 601), 0, "monster：produce_amount 锁 mine 返 0")
+	assert_eq(mgr.produced_total(2, 601), 100, "monster：produuted_total 不限 owner 照计 100")
+	# 不存在的矿点两口径均 0
+	assert_eq(mgr.produced_total(99, 601), 0, "缺矿点返 0")
+	assert_eq(mgr.produce_amount(99, 601), 0, "缺矿点返 0")
+
+
 # storage_remaining = storage - produced（照 getStorage:495）。
 func test_storage_remaining() -> void:
 	var mgr := ExcavateManager.new(cm)
