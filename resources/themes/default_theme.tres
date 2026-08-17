@@ -1118,3 +1118,23 @@ CrusadeActionBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 CrusadeLefttimeLabel/base_type = &"Label"
 CrusadeLefttimeLabel/colors/font_color = Color(0.921569, 0.874510, 0.811765, 1)
 CrusadeLefttimeLabel/font_sizes/font_size = 18
+; ── excavate_giveup 两件套（excavate 批 Task 1，2026-08-17）──
+; 确认按钮（源 uieditor/confirmdialog.lua DGButton sell_number
+; cap(15.63,15.63,19.53,15.63) → 复用 SB_mo_btn_n/p 同图同 cap；fontinfo
+; ui_normal_button 17 号 + labelConfig ccc3(234,225,205)）
+GiveupConfirmBtn/base_type = &"Button"
+GiveupConfirmBtn/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+GiveupConfirmBtn/font_sizes/font_size = 17
+GiveupConfirmBtn/styles/normal = SubResource("SB_mo_btn_n")
+GiveupConfirmBtn/styles/hover = SubResource("SB_mo_btn_n")
+GiveupConfirmBtn/styles/pressed = SubResource("SB_mo_btn_p")
+GiveupConfirmBtn/styles/disabled = SubResource("SB_mo_btn_n")
+GiveupConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 内容行标签（源 giveup.lua r11/r21/r31 size20 ccc3(240,192,112)）
+GiveupRowLabel/base_type = &"Label"
+GiveupRowLabel/colors/font_color = Color(0.941176, 0.752941, 0.439216, 1)
+GiveupRowLabel/font_sizes/font_size = 20
+; 行数值（源 r13/r23 size20 ccc3(255,242,205)）
+GiveupRowValue/base_type = &"Label"
+GiveupRowValue/colors/font_color = Color(1, 0.949020, 0.803922, 1)
+GiveupRowValue/font_sizes/font_size = 20

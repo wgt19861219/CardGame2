@@ -1,6 +1,24 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_delimiter.png" id="2_line"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_exp_icon.png" id="3_icon"]
+
+; 放弃矿点确认（源 ui/excavate/giveup.lua:132 popConfirmDialog → announce/confirmdialog.lua
+; + uieditor/confirmdialog.lua 声明表，giveup 传 param.node 自定义内容分支）。
+; 点空间直译（Cocos 800x480 点 = Godot px 1:1，to_godot(x,y)=(x+80,560-y)）：
+; - frame：Scale9Sprite main_vit_tips cap(19.53,19.53,46.88,11.72)，中心 (401.56,234.38)→
+;   (481.56,325.62)；尺寸 initWindow 公式 w=max(500,min(nw*1.28+80,600))=500（内容窄取下限）、
+;   h=180+nh*1.28≈280（3 行 x26）。cap 换算像素直译（PIL 实测纹理 103x61）：
+;   L=x=19.53→20、B=y=19.53→20、R=W-x-w=36.59→37、T=H-y-h=29.75→30（patch_margin int 取整）。
+; - delimeter：fix_wh 371.09x2.34 直译（高向 2px→2.34 显式拉伸故 stretch_mode 显式），
+;   initWindow 覆盖中心 (w/2,100)→局部 (250,180)。
+; - 按钮：DGButton scaleSize 125x54.69，initWindow 覆盖 (w/7*2,58)/(w/7*5,58)→中心 y=h-58=222；
+;   left=CHATCONFIG.CANCEL、right=CHATCONFIG.CONFIRM（confirmdialog 家族，非 FASTSELL.GOOD）。
+; - 内容三行（ChaosNode horizontalArrange 左中紧排+verticalArrange 上往下无间距）：
+;   块底 y=135（anchor(0.5,0)）→Godot 底=280-135=145，行距 26（top 67/93/119）；
+;   行内估宽居中（fill 数字位数变化有 ±20 级容差，受控简化见 panel 注释）。
+; text 为编辑器预览默认，panel fill 覆盖（LSTR + 分支文案/数值/icon）。
 
 [node name="ExcavateGiveupContent" type="Control"]
 layout_mode = 3
@@ -9,53 +27,130 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Frame" type="TextureRect" parent="."]
+[node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 3
-offset_left = 270.0
-offset_top = 200.0
-offset_right = 690.0
-offset_bottom = 440.0
+offset_left = 231.56
+offset_top = 185.62
+offset_right = 731.56
+offset_bottom = 465.62
 texture = ExtResource("1_frame")
-expand_mode = 1
+patch_margin_left = 20
+patch_margin_top = 30
+patch_margin_right = 37
+patch_margin_bottom = 20
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="Frame"]
+[node name="Delimeter" type="TextureRect" parent="Frame"]
 layout_mode = 3
-offset_left = 0.0
-offset_top = 15.0
-offset_right = 420.0
-offset_bottom = 51.0
-theme_override_font_sizes/font_size = 22
-horizontal_alignment = 1
+offset_left = 64.45
+offset_top = 178.83
+offset_right = 435.55
+offset_bottom = 181.17
+texture = ExtResource("2_line")
+expand_mode = 1
+stretch_mode = 0
 mouse_filter = 2
-text = "放弃矿点"
 
-[node name="BodyLabel" type="Label" parent="Frame"]
+[node name="R11Label" type="Label" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 30.0
-offset_top = 70.0
-offset_right = 390.0
-offset_bottom = 130.0
-theme_override_font_sizes/font_size = 18
+offset_left = 122.0
+offset_top = 68.0
+offset_right = 378.0
+offset_bottom = 91.0
+theme_type_variation = &"GiveupRowLabel"
 horizontal_alignment = 1
-autowrap_mode = 3
 mouse_filter = 2
+text = "你目前累计开采了"
+
+[node name="R12Icon" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 314.0
+offset_top = 67.0
+offset_right = 339.0
+offset_bottom = 92.0
+texture = ExtResource("3_icon")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="R13Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 339.0
+offset_top = 68.0
+offset_right = 399.0
+offset_bottom = 91.0
+theme_type_variation = &"GiveupRowValue"
+mouse_filter = 2
+text = "352"
+
+[node name="R21Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 170.0
+offset_top = 94.0
+offset_right = 330.0
+offset_bottom = 117.0
+theme_type_variation = &"GiveupRowLabel"
+horizontal_alignment = 1
+mouse_filter = 2
+text = "如果主动撤退只能获得"
+
+[node name="R22Icon" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 330.0
+offset_top = 93.0
+offset_right = 355.0
+offset_bottom = 118.0
+texture = ExtResource("3_icon")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="R23Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 355.0
+offset_top = 94.0
+offset_right = 415.0
+offset_bottom = 117.0
+theme_type_variation = &"GiveupRowValue"
+mouse_filter = 2
+text = "352"
+
+[node name="R31Label" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 122.0
+offset_top = 120.0
+offset_right = 378.0
+offset_bottom = 143.0
+theme_type_variation = &"GiveupRowLabel"
+horizontal_alignment = 1
+mouse_filter = 2
+text = "是否确认从这座宝藏撤退？"
 
 [node name="CancelBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 45.0
-offset_top = 185.0
-offset_right = 165.0
-offset_bottom = 221.0
+offset_left = 80.36
+offset_top = 194.66
+offset_right = 205.36
+offset_bottom = 249.35
+theme_type_variation = &"GiveupConfirmBtn"
 mouse_filter = 0
+text = "取消"
 
 [node name="ConfirmBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 255.0
-offset_top = 185.0
-offset_right = 375.0
-offset_bottom = 221.0
+offset_left = 294.64
+offset_top = 194.66
+offset_right = 419.64
+offset_bottom = 249.35
+theme_type_variation = &"GiveupConfirmBtn"
 mouse_filter = 0
+text = "确认"
