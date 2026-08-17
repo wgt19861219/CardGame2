@@ -66,19 +66,6 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text = "防守记录"
 
-; 关闭按钮（源 close_button DGButton z=20，normal/press 双贴图）
-[node name="CloseBtn" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 730.00375
-offset_top = 141.643125
-offset_right = 787.81625
-offset_bottom = 200.236875
-texture_normal = ExtResource("3_close")
-texture_pressed = ExtResource("4_closep")
-ignore_texture_size = true
-stretch_mode = 0
-
 ; 空态兜底（单机自创，源无空态；fill 切换 visible）
 [node name="EmptyLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -111,3 +98,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 0
+
+; 关闭按钮（源 close_button DGButton z=20 最高层，normal/press 双贴图）——声明在
+; HistoryScroll 之后：源 z 20>scrollview 5，重叠角（scroll 左上 730-748x158-200）
+; 需 close 绘制于 scroll 之上且可点（审查 Important 修复，2026-08-17）
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 730.00375
+offset_top = 141.643125
+offset_right = 787.81625
+offset_bottom = 200.236875
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0

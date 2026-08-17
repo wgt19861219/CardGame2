@@ -57,6 +57,9 @@ func _fill_rows() -> void:
 	empty_label.visible = false
 	scroll.visible = true
 	var list_host: VBoxContainer = content.get_node("%HistoryList") as VBoxContainer
+	# fill 幂等（审查 Minor 修复，对齐 shop_panel._build_goods 范式）：重复 fill 先清老行
+	for c in list_host.get_children():
+		c.free()
 	var items: Array = ExcavateHistoryRowBuilder.build_rows(list_host, records, pd.cm)
 	for i in items:
 		var item: Control = i as Control

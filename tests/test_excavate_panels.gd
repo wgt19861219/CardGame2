@@ -365,9 +365,11 @@ func test_history_content_static_rects() -> void:
 	assert_almost_eq(scroll.position.y, 158.0, 0.02, "scroll offset_top=158（clip 顶 153.75+首行顶差 4.25 烘入）")
 	assert_almost_eq(scroll.position.x + scroll.size.x, 747.97, 0.02, "scroll 右缘=clip 右 747.97")
 	assert_almost_eq(scroll.position.y + scroll.size.y, 532.66, 0.02, "scroll 底缘=clip 底 532.66")
-	# 绘制序守卫（防重排反盖）：框最底层 → 关闭钮（源 z=20）→ 滚动区
-	assert_lt(frame.get_index(), content.get_node("%CloseBtn").get_index(), "frame 声明序先于 close")
-	assert_lt(content.get_node("%CloseBtn").get_index(), content.get_node("%HistoryScroll").get_index(), "close 先于 scroll（源 z 1/20/5 但 close 需可点置顶层组）")
+	# 绘制序守卫（防重排反盖）：框最底层（源 z=1）→ 滚动区（源 z=5）→ 关闭钮最上层
+	# （源 z=20>5；重叠角 scroll 左上 730-748x158-200 需 close 绘制于 scroll 之上可点，
+	# 审查 Important 修复 2026-08-17）
+	assert_lt(frame.get_index(), content.get_node("%HistoryScroll").get_index(), "frame 声明序先于 scroll")
+	assert_gt(content.get_node("%CloseBtn").get_index(), content.get_node("%HistoryScroll").get_index(), "close 后于 scroll 声明=绘制在上（源 z=20>5）")
 	content.queue_free()
 
 
@@ -475,6 +477,9 @@ func test_history_fill_rows_and_tags() -> void:
 	assert_almost_eq(action2.position.x, time2.position.x + time2.get_combined_minimum_size().x + 10.0, 0.02,
 		"ActionLabel 在 TimeLabel 右侧 gap10（源 ed.right2）")
 	assert_almost_eq(action2.position.y, time2.position.y, 0.02, "ActionLabel 与 TimeLabel 同行对齐（同为 anchor(0,0.5)）")
+	# fill 幂等（审查 Minor 修复 2026-08-17）：重复 fill 先清 %HistoryList 老行不叠行
+	panel._fill_rows()
+	assert_eq(list_host.get_child_count(), 2, "重复 fill 行数仍 2（幂等清理，对齐 shop_panel 范式）")
 	panel.remove_window()
 	# 空态分支
 	var pd2 := PlayerData.new(cm)
