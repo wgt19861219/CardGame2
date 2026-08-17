@@ -10,6 +10,9 @@ extends Control
 ## 重构（2026-07-17）：UI 静态节点（shade/board/2 toggle/5 button）固化进 shortcut_content.tscn
 ## （位置/size/texture/visible/modulate/mouse_filter 编辑器可视化调）。panel instantiate + 绑信号 +
 ## 保留抽屉展开/快捷入口跳转业务逻辑（动画/切换/路由）。Control 非 PopWindow，content 挂 panel 自身。
+## Task 4 两件套改造（2026-08-17）：红点 tag 静态节点（主 Tag + 5 按钮 _tag，源 createBoard :310-321
+## + createButtons :223-231）照源补全进 tscn；panel 补 refresh_tags()（源 refreshTags :126-144 +
+## framework.lua 五个 check handler，package/fragment 照源恒 false）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tscn")
 
@@ -41,6 +44,14 @@ const BUTTON_NODE_NAMES: Dictionary = {
 	"task": "BtnTask",
 	"todoList": "BtnTodoList",
 }
+# 红点 tag 节点名（源 createButtons _tag :223-231；Task 4 两件套改造静态化进 tscn）
+const TAG_NODE_NAMES: Dictionary = {
+	"heroPackage": "HeroPackageTag",
+	"package": "PackageTag",
+	"fragment": "FragmentTag",
+	"task": "TaskTag",
+	"todoList": "TodoListTag",
+}
 
 signal open_requested(key: String)   # 按钮点击 → main_scene 路由（package/fragment→PackagePanel / heroPackage→hero_scene）
 
@@ -50,6 +61,8 @@ var _board: NinePatchRect = null
 var _toggle_down: TextureButton = null
 var _toggle_up: TextureButton = null
 var _buttons: Dictionary = {}    # key(String) -> TextureButton
+var _main_tag: TextureRect = null   # 收起态聚合红点（源 createBoard tag :310-321）
+var _tags: Dictionary = {}    # key(String) -> TextureRect（源 createButtons _tag）
 var _tween: Tween = null
 
 
@@ -81,6 +94,8 @@ func _build_content() -> void:
 		var btn: TextureButton = content.get_node("%" + String(BUTTON_NODE_NAMES[key])) as TextureButton
 		btn.pressed.connect(_on_button_pressed.bind(key))
 		_buttons[key] = btn
+		_tags[key] = content.get_node("%" + String(TAG_NODE_NAMES[key])) as TextureRect
+	_main_tag = content.get_node("%Tag") as TextureRect
 	# 运行时覆盖 .tscn 固化的 toggle/board 位置（.tscn 已固化相同值，此行兜底防误改 + 保常量单一来源）。
 	var toggle_topleft: Vector2 = _center_to_topleft(TOGGLE_CENTER, _toggle_down)
 	_toggle_down.position = toggle_topleft
@@ -115,6 +130,7 @@ func _open() -> void:
 		var target_pos: Vector2 = _center_to_topleft(Vector2(BOARD_CENTER_X, BUTTON_CENTER_Y[i]), btn)
 		_tween.parallel().tween_property(btn, "position", target_pos, ANIM_DUR * 0.5).set_delay(delay)
 		_tween.parallel().tween_property(btn, "modulate:a", 1.0, ANIM_DUR * 0.5).set_delay(delay)
+	refresh_tags()
 
 
 func _close() -> void:
@@ -137,6 +153,7 @@ func _on_close_finished() -> void:
 	_shade.visible = false
 	for key in _buttons:
 		(_buttons[key] as TextureButton).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	refresh_tags()
 
 
 # 初始展开态（无动画，照源 isShortcutOpen=main）：板高 max，按钮竖排 opacity=1，up 可见 down 隐藏，shade 透明检测。
@@ -152,6 +169,7 @@ func _apply_open_instant() -> void:
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		btn.position = _center_to_topleft(Vector2(BOARD_CENTER_X, BUTTON_CENTER_Y[i]), btn)
 		btn.modulate.a = 1.0
+	refresh_tags()
 
 
 # 初始收起态（无动画）：按钮叠 origin opacity=0 + IGNORE，板高 min，down 可见 up 隐藏。
@@ -166,6 +184,7 @@ func _apply_closed_instant() -> void:
 	_toggle_up.visible = false
 	_toggle_down.visible = true
 	_shade.visible = false
+	refresh_tags()
 
 
 func _on_button_pressed(key: String) -> void:
@@ -179,6 +198,101 @@ func _on_button_pressed(key: String) -> void:
 func _on_shade_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		_close()
+
+
+# ── 红点刷新（源 shortcut.lua:126-144 refreshTags + framework.lua:668-737 五个 check handler）──
+# Task 4 两件套改造：tag 节点静态化进 tscn，本块只控 visible。
+# 刷新时机照源（createButtons 建面板 / doShortcut 开关抽屉）：setup 两分支 + 开关抽屉；
+# 数据中途变化不自动刷（源同，面板重建/开关时算），外部可调 refresh_tags() 主动刷。
+
+# 照源 refreshTags :126-144：各按钮 tag 按数据显隐；主 tag = 收起态 && 任一按钮有 tag。
+func refresh_tags() -> void:
+	var any_show: bool = false
+	for key in BUTTON_KEYS:
+		var show: bool = _check_button_tag(key)
+		(_tags[key] as TextureRect).visible = show
+		any_show = any_show or show
+	_main_tag.visible = not _is_open and any_show
+
+
+# 源 framework.lua:727-737 getCheckSCTagHandler 分发。package/fragment 照源 :685-699 恒 false
+# （死代码占位）；task/todoList/heroPackage 按数据。源 heroPackage 的 identity 屏蔽不译
+# （HudOverlay 全局仅 main 显示本面板，无"已在该页面"态）。
+func _check_button_tag(key: String) -> bool:
+	match key:
+		"package":
+			return false
+		"fragment":
+			return false
+		"task":
+			return _has_unclaimed_task()
+		"todoList":
+			return _has_claimable_dailyjob()
+		"heroPackage":
+			return _has_equippable_prop() or _has_summonable_hero()
+	return false
+
+
+# 源 framework.lua:701-709 checkCompletedTask：任一任务完成未领（可领取）即亮。
+func _has_unclaimed_task() -> bool:
+	var p: PlayerData = GameData.player
+	if p == null:
+		return false
+	var tm: TaskManager = p.task_manager
+	for id in tm.completed:
+		if tm.is_completed(id) and not tm.is_claimed(id):
+			return true
+	return false
+
+
+# 源 playertools.lua:127-146 checkDailyjobCount：目标达成 && 今日未领（本项目领取后计数归零
+# 表达"未领"，与 claim_job_reward 判定对齐）。源 checkDailyjobTrigger（服务器触发窗口）单机化
+# 无对应物，以 get_visible_daily_jobs 显示窗口代位；target>0 防 Todolist 空目标行常亮。
+func _has_claimable_dailyjob() -> bool:
+	var p: PlayerData = GameData.player
+	if p == null:
+		return false
+	var cm: ConfigManager = GameData.config
+	var tm: TaskManager = p.task_manager
+	var now: int = TaskManager.current_now_minutes()
+	for job_id in tm.get_visible_daily_jobs(cm, now):
+		var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
+		var target: int = int(row.get("Task Target", 0))
+		if target > 0 and tm.get_dailyjob_count(job_id) >= target:
+			return true
+	return false
+
+
+# 源 readhero.lua:732-750 checkEquipableProp：任一英雄任一空槽"配方可合成且等级可穿"。
+func _has_equippable_prop() -> bool:
+	var p: PlayerData = GameData.player
+	if p == null:
+		return false
+	var cm: ConfigManager = GameData.config
+	for inst_id in p.hero_manager.heroes:
+		var hero: HeroInstance = p.hero_manager.heroes[inst_id] as HeroInstance
+		if hero == null:
+			continue
+		for slot in range(1, HeroManager.EQUIP_SLOT_COUNT + 1):
+			if int(hero.equip_slots[slot - 1]) > 0:
+				continue
+			var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot, cm)
+			if eid > 0 and EquipdetailQuery.is_equip_craftable(eid, cm, p) \
+					and bool(EquipdetailQuery.can_wear_equip(hero, eid, cm)["can"]):
+				return true
+	return false
+
+
+# 源 readhero.lua:751-758 canSummonHero：任一未拥有英雄碎片够召唤。
+func _has_summonable_hero() -> bool:
+	var p: PlayerData = GameData.player
+	if p == null:
+		return false
+	var cm: ConfigManager = GameData.config
+	for tid in ReadheroHandbook.get_miss_list(cm, p.hero_manager):
+		if ReadheroHandbook.check_stone_enough(tid, cm, p.hero_manager):
+			return true
+	return false
 
 
 func _center_to_topleft(center: Vector2, btn: TextureButton) -> Vector2:
