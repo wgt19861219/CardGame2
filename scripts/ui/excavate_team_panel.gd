@@ -1,49 +1,51 @@
 class_name ExcavateTeamPanel
 extends PopWindow
 
-const UiScale9Button := preload("res://scripts/ui/ui_scale9_button.gd")
-
-## 挖掘队伍面板（View 层）— 照源 ui/popwindow/excavateteam.lua。
-## mine 矿点：显示驻防英雄 + 换队（玩家阵容）+ 放弃（ExcavateGiveupPanel）。
-## monster 矿点：显示敌人英雄 + 出战（ExcavateBattle.run_excavate_battle headless）。
-## 单机简化：源 battleprepare/excavateChange/Attack View 战斗 → headless；雇佣兵/联机验证/others 裁剪。
-## 英雄头像 ReadheroIcon 接入留视觉完善（阶段 2b），当前 Label 显示 tid/level。
-##
-## 重构（2026-07-18，hero_detail 范式）：panel 层静态节点（frame/close/title/hero_box/
-## change/giveup/battle button）固化进 excavate_team_content.tscn；运行时按 owner 切按钮 visible
-## （源 :504-535 按 owner 切 cg_button_container/go_battle_button 可见性）。英雄列表（ReadheroIcon）
-## 保留 procedural 挂 %HeroBox（数量动态）。
+## 矿点驻防选队弹窗（View 层）— 照源 ui/popwindow/excavateteam.lua（554 行）
+## + uieditor/excavateteam.lua（813 行声明表，excavate 批 Task 6 两件套改造）。
+## mine 矿点：玩家名 + 驻防英雄 5 静态槽 + 换队/撤退 + 产量行（累计/速度）。
+## monster 矿点：野怪名 + 敌英雄槽 + 出战（框体矮化，源 :528-531）。
+## 单机受控裁剪（源无对应数据/流程，验收记录留档）：guild 组（联机公会）、
+## vitality 组（单机战斗不扣体力）、go_battle disabled 分支（战败即 occupy 转
+## mine，敌队恒满血）、head/level 徽章 fill（getTeamHead/getLevelIcon 基础设施
+## 缺失，容器照源建位）、battleprepare 换队 View（单机 = 当前阵容一键驻防）。
+## 英雄槽为源声明表静态 hero_container_1..5（非动态行），fill 塞 ReadheroIcon。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/excavate_team_content.tscn")
-const TITLE_MINE: String = "驻防队伍"
-const TITLE_MONSTER: String = "敌方守卫"
+
+const OWNER_MINE: String = "mine"
+const HERO_SLOT_COUNT: int = 5
+# icon 缩放 = 源 enemy createIcon length 80 / ReadheroIcon 容器 104（mine/enemy 统一口径）
+const ICON_SCALE: float = 0.77
+# monster 框体矮化（源 :530-531 DG 前缀像素÷1.28125）：frame 高 265→206.87、容器下移 35→27.34
+const FRAME_MONSTER_SIZE: Vector2 = Vector2(632.81, 206.87)
+const FRAME_CONTAINER_MONSTER_DROP: float = 27.34
+# 分钟→小时换算 + 速度行拼接口径（源 :467-476 unitTime=60、pstr "%d/%d"）
+const MINUTES_PER_HOUR: float = 60.0
+const SPEED_HOUR_SUFFIX_BASE: String = "/1"
+# LSTR keys（fallback 单机兜底）
 const LSTR_CHANGE_TEAM_KEY: String = "EXCAVATETEAM.ADJUST_FORMATION"
 const CHANGE_TEAM_FALLBACK: String = "调整阵容"
-const GIVEUP_TEXT: String = "撤退"
-const BATTLE_TEXT: String = "出战"
-# ── Scale9 button 样式（.tscn 普通 Button 套 StyleBoxTexture）──
-const CHANGE_BTN_RES: String = "res://assets/ui/alpha/HVGA/task_button.png"
-const CHANGE_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/task_button_press.png"
-const CHANGE_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
-const GIVEUP_BTN_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button.png"
-const GIVEUP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/sell_number_button_down.png"
-const GIVEUP_BTN_CAP: Rect2 = Rect2(15.63, 15.63, 19.53, 15.63)
-const NO_DEFEND_TEXT: String = "尚未驻防，点击「换队」派英雄驻守"   # 单机兜底
-const NO_ENEMY_TEXT: String = "无敌人数据"   # 单机兜底
-const FONT_BODY: int = 16
-const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
+const LSTR_GIVEUP_KEY: String = "excavateteam.1.10.1.002"
+const GIVEUP_FALLBACK: String = "撤退"
+const LSTR_LACK_TITLE_KEY: String = "EXCAVATETEAM.CUMULATIVE_PRODUCTION_RESOURCES_"
+const LSTR_SPEED_TITLE_KEY: String = "EXCAVATEMAP.PRODUCTION_SPEED_"
+const LSTR_HOUR_KEY: String = "TIME.HOUR"
+const HOUR_FALLBACK: String = "小时"
 const TEAM_SET_TEXT: String = "已用当前阵容驻防"   # 单机 Toast（无 LSTR）
-const OWNER_MINE: String = "mine"
-const ICON_SCALE: float = 0.77
+const NO_DEFEND_TEXT: String = "尚未驻防，点击「调整阵容」派英雄驻守"   # 单机空态兜底（源无空态）
+const NO_ENEMY_TEXT: String = "无敌人数据"   # 单机兜底（源 monster 必有队）
+const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
+const PRODUCE_KINDS: Array[String] = ["Gold", "Diamond", "Exp"]
+const PRODUCE_ROW_PREFIXES: Array[String] = ["Lack", "Speed"]
+# 表 Produce Type 值（首字母大写）→ icon 后缀（源 :441-457 exp 组={7,8,9}，
+# 表值为 Item=经验药水产出，图标用 excavate_exp_icon）
+const PRODUCE_TYPE_TO_KIND: Dictionary = {"Gold": "Gold", "Diamond": "Diamond", "Item": "Exp"}
 
 var pd: PlayerData
 var rng: BattleRng
 var _excavate_id: int
 var _on_closed: Callable
-var _hero_box: HBoxContainer
-var _change_btn: Button
-var _giveup_btn: Button
-var _battle_btn: TextureButton
 
 
 func setup_panel(p_pd: PlayerData, excavate_id: int, p_rng: BattleRng, on_closed: Callable) -> void:
@@ -52,121 +54,146 @@ func setup_panel(p_pd: PlayerData, excavate_id: int, p_rng: BattleRng, on_closed
 	_excavate_id = excavate_id
 	_on_closed = on_closed
 	setup()
-	_build_ui()
+	_fill()
 
 
-# 建 UI：preload .tscn instantiate + fill 动态数据 + 按 owner 切按钮 visible + 绑信号。
-# 位置/size 静态节点（frame/close/title/hero_box/change/giveup/battle）已在 .tscn 固化。
-func _build_ui() -> void:
+# fill：实例化静态 content + 按矿点 owner 分支填数据/切可见性/绑信号。
+# 静态结构（框/槽/按钮/产量行）全在 excavate_team_content.tscn。
+func _fill() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	var owner: String = String(pd.excavate.get_data(_excavate_id).get("_owner", ""))
-	# 标题 fill 一次（源 :376 setLabelString(name, player._name)，单机用 mine/monster 兜底）
-	var title_node: Label = content.get_node("%Title") as Label
-	title_node.text = TITLE_MINE if owner == OWNER_MINE else TITLE_MONSTER
-	_hero_box = content.get_node("%HeroBox") as HBoxContainer
-	# 三按钮（.tscn ChangeBtn/GiveupBtn Button + 独立 Label，BattleBtn TextureButton 整图无文本）
-	_change_btn = content.get_node("%ChangeBtn") as Button
-	_giveup_btn = content.get_node("%GiveupBtn") as Button
-	_battle_btn = content.get_node("%BattleBtn") as TextureButton
-	# ChangeBtn/GiveupBtn 套 Scale9 stylebox（视觉等价源 DGButton task_button/sell_number_button）。
-	_apply_change_btn_style(_change_btn)
-	_apply_giveup_btn_style(_giveup_btn)
-	# fill 独立 Label（Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，范式同 hero_detail）
-	_change_btn.text = ""
-	_giveup_btn.text = ""
-	(content.get_node("%ChangeLabel") as Label).text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
-	(content.get_node("%GiveupLabel") as Label).text = GIVEUP_TEXT
-	_change_btn.pressed.connect(_on_change_team)
-	_giveup_btn.pressed.connect(_on_giveup)
-	_battle_btn.pressed.connect(_on_battle)
-	# 按 owner 切按钮可见（源 :504-535 data._owner=="mine" 时 explain/cg_button shown，
-	# go_battle hidden；非 mine 反过来。单机裁 vitality/guild/explain，保留 change/giveup vs battle 切换）
-	var is_mine: bool = owner == OWNER_MINE
-	_change_btn.visible = is_mine
-	_giveup_btn.visible = is_mine
-	_battle_btn.visible = not is_mine
-	_refresh_hero_list()
+	var is_mine: bool = _owner() == OWNER_MINE
+	_fill_name(content)
+	_fill_buttons(content, is_mine)
+	_fill_produce(content, is_mine)
+	_fill_hero_slots(content)
 
 
-func _refresh_hero_list() -> void:
-	for c in _hero_box.get_children():
-		c.free()
-	var owner: String = String(pd.excavate.get_data(_excavate_id).get("_owner", ""))
-	if owner == OWNER_MINE:
-		var team: Array = pd.excavate.get_defend_team(_excavate_id)
-		if team.is_empty():
-			_add_hint_label(NO_DEFEND_TEXT)
-		else:
-			for tid in team:
-				_add_hero_icon(_hero_info(int(tid)))
+# 玩家名 fill（源 :276-277 setLabelString(name, player._name)；mine=玩家名，
+# monster=ExcavateWildEnemy 表 Player Name（LSTR key），源 :325-327）。
+func _fill_name(content: Control) -> void:
+	var label: Label = content.get_node("%NameLabel") as Label
+	if _owner() == OWNER_MINE:
+		label.text = pd.player_name
+		return
+	var wild: Dictionary = ExcavateData.get_wild_enemy(pd.cm, _wild_id())
+	label.text = _lstr(String(wild.get("Player Name", "")), NO_ENEMY_TEXT)
+
+
+# 按钮组 fill（源 initMineTeam:109-137 / initEnemyTeam:174-175）：
+# mine → cg 组（换队/撤退）可见 + 出战隐藏；monster 反之 + 框体矮化（:528-531）。
+func _fill_buttons(content: Control, is_mine: bool) -> void:
+	(content.get_node("Frame/FrameContainer/CgButtonContainer") as Control).visible = is_mine
+	var battle_btn: TextureButton = content.get_node("%BattleBtn") as TextureButton
+	battle_btn.visible = not is_mine
+	battle_btn.pressed.connect(_on_battle)
+	var change_btn: Button = content.get_node("%ChangeBtn") as Button
+	change_btn.text = _lstr(LSTR_CHANGE_TEAM_KEY, CHANGE_TEAM_FALLBACK)
+	change_btn.pressed.connect(_on_change_team)
+	var giveup_btn: Button = content.get_node("%GiveupBtn") as Button
+	giveup_btn.text = _lstr(LSTR_GIVEUP_KEY, GIVEUP_FALLBACK)
+	giveup_btn.pressed.connect(_on_giveup)
+	if is_mine:
+		return
+	# monster：frame 保持中心改高 206.87 + frame_container 下移 27.34（源 :530-531）
+	var frame: Control = content.get_node("Frame") as Control
+	var center: Vector2 = frame.get_rect().get_center()
+	frame.size = FRAME_MONSTER_SIZE
+	frame.position = center - frame.size / 2.0
+	var fc: Control = content.get_node("Frame/FrameContainer") as Control
+	fc.position.y += FRAME_CONTAINER_MONSTER_DROP
+
+
+# 产量行 fill（源 :504-508 mine 分支 + refreshBaseRecord:435-477）：
+# 容器 mine 可见/monster 隐藏；icon 按 produce_type 三选一（源 :441-465
+# type_id_group 等价映射）；数值 = 累计产出 produce_amount / 每小时产速。
+func _fill_produce(content: Control, is_mine: bool) -> void:
+	var explain: Control = content.get_node("%ExplainContainer") as Control
+	explain.visible = is_mine
+	if not is_mine:
+		return
+	var d: Dictionary = pd.excavate.get_data(_excavate_id)
+	var active_kind: String = String(PRODUCE_TYPE_TO_KIND.get(ExcavateData.produce_type(pd.cm, int(d["_type_id"])), ""))
+	for prefix: String in PRODUCE_ROW_PREFIXES:
+		var ctn: Control = explain.get_node(prefix + "LabelContainer") as Control
+		for kind: String in PRODUCE_KINDS:
+			(ctn.get_node("%sIcon%s" % [prefix, kind]) as Control).visible = kind == active_kind
+	var lack_ctn: Control = explain.get_node("LackLabelContainer") as Control
+	(lack_ctn.get_node("%LackTitle") as Label).text = _lstr(LSTR_LACK_TITLE_KEY, LSTR_LACK_TITLE_KEY)
+	var now: int = int(Time.get_unix_time_from_system())
+	(lack_ctn.get_node("%LackNumber") as Label).text = "x%d" % pd.excavate.produce_amount(_excavate_id, now)
+	var speed_ctn: Control = explain.get_node("SpeedLabelContainer") as Control
+	(speed_ctn.get_node("%SpeedTitle") as Label).text = _lstr(LSTR_SPEED_TITLE_KEY, LSTR_SPEED_TITLE_KEY)
+	# 源 :469-476：speed×60（每小时），整数档 "%d/1" 小数档 "%.1f/1" + TIME.HOUR
+	var per_hour: float = float(d["_produce_speed"]) * MINUTES_PER_HOUR
+	var num: String = ("%.1f" % per_hour) if fmod(per_hour, 1.0) > 0.0 else str(int(per_hour))
+	(speed_ctn.get_node("%SpeedNumber") as Label).text = "x" + num + SPEED_HOUR_SUFFIX_BASE + _lstr(LSTR_HOUR_KEY, HOUR_FALLBACK)
+
+
+# 英雄槽 fill（源 initMineTeam:83-108 / initEnemyTeam:141-169：清槽 → 逐个
+# createIcon 塞 hero_container_i）。空态走单机自创 EmptyHint（源空队直接进
+# 换队流程 :405-408，单机换队不跳场景）。
+func _fill_hero_slots(content: Control) -> void:
+	var infos: Array = []
+	if _owner() == OWNER_MINE:
+		for tid: Variant in pd.excavate.get_defend_team(_excavate_id):
+			infos.append(_hero_info(int(tid)))
 	else:
-		var enemies: Array = pd.excavate.get_enemy_heroes(_excavate_id)
-		if enemies.is_empty():
-			_add_hint_label(NO_ENEMY_TEXT)
-			return
-		for e in enemies:
+		for e: Variant in pd.excavate.get_enemy_heroes(_excavate_id):
 			var base: Dictionary = e["base"]
-			_add_hero_icon({
+			infos.append({
 				"id": int(base.get("_tid", 0)),
 				"rank": int(base.get("_rank", 1)),
 				"stars": int(base.get("_stars", 0)),
 				"level": int(base.get("_level", 1)),
 			})
+	var hint: Label = content.get_node("%EmptyHint") as Label
+	hint.visible = infos.is_empty()
+	if infos.is_empty():
+		hint.text = NO_DEFEND_TEXT if _owner() == OWNER_MINE else NO_ENEMY_TEXT
+	var count: int = mini(infos.size(), HERO_SLOT_COUNT)
+	var i: int = 0
+	while i < HERO_SLOT_COUNT:
+		var slot: Control = content.get_node("Frame/FrameContainer/HeroSlot%d" % (i + 1)) as Control
+		for c in slot.get_children():
+			c.free()
+		if i < count:
+			var icon := ReadheroIcon.new()
+			icon.setup(infos[i], pd.cm)
+			icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
+			slot.add_child(icon)
+		i += 1
 
 
-func _add_hint_label(text: String) -> void:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font", FONT_BODY)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hero_box.add_child(l)
+func _owner() -> String:
+	return String(pd.excavate.get_data(_excavate_id).get("_owner", ""))
 
 
-# 英雄头像（源 excavateteam:159 readhero.createIcon，HBox 内 Control 包装 + ReadheroIcon scale）。
-func _add_hero_icon(info: Dictionary) -> void:
-	var wrapper := Control.new()
-	wrapper.custom_minimum_size = Vector2(ReadheroIcon.CONTAINER_SIZE.x * ICON_SCALE, ReadheroIcon.CONTAINER_SIZE.y * ICON_SCALE)
-	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon := ReadheroIcon.new()
-	icon.setup(info, pd.cm)
-	icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
-	wrapper.add_child(icon)
-	_hero_box.add_child(wrapper)
+func _wild_id() -> int:
+	return int(pd.excavate.get_data(_excavate_id).get("_wild_id", 0))
 
 
 func _lstr(key: String, fallback: String) -> String:
-	var cfg: ConfigManager = pd.cm
-	if cfg != null:
-		return cfg.get_lstr(key)
+	if pd.cm != null:
+		return pd.cm.get_lstr(key)
 	return fallback
 
 
-# ChangeBtn 双态：normal/hover=task_button，pressed=task_button_press（源 :733-760）。
-func _apply_change_btn_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(CHANGE_BTN_RES, CHANGE_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(CHANGE_BTN_PRESS_RES, CHANGE_BTN_CAP))
-
-
-# GiveupBtn 双态：normal/hover=sell_number_button，pressed=sell_number_button_down（源 :761-788）。
-func _apply_giveup_btn_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", UiScale9Button._make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
-	btn.add_theme_stylebox_override("hover", UiScale9Button._make_sb(GIVEUP_BTN_RES, GIVEUP_BTN_CAP))
-	btn.add_theme_stylebox_override("pressed", UiScale9Button._make_sb(GIVEUP_BTN_PRESS_RES, GIVEUP_BTN_CAP))
-
-
+# 换队（源 :113-122 change_team → enterExcavateChange 进 battleprepare；
+# 单机化 = 当前阵容一键驻防 set_defend_team + Toast + 重填槽）。
 func _on_change_team() -> void:
 	var tids: Array[int] = []
 	for inst_id in pd.team:
-		var hero = pd.hero_manager.heroes.get(inst_id)
+		var hero: Variant = pd.hero_manager.heroes.get(inst_id)
 		if hero != null:
 			tids.append(int(hero.tid))
 	var now: int = int(Time.get_unix_time_from_system())
 	pd.excavate.set_defend_team(_excavate_id, tids, now)
 	Toast.show_message(TEAM_SET_TEXT)
-	_refresh_hero_list()
+	var content: Control = container.get_node("ExcavateTeamContent") as Control
+	if content != null:
+		_fill_hero_slots(content)
 
 
 func _on_giveup() -> void:
@@ -182,9 +209,9 @@ func _on_giveup_confirmed(_amount: int) -> void:
 
 
 func _on_battle() -> void:
-	# 阶段 2b View 接入：装配 engine（不跑循环）→ 存 battle_context mode=excavate → 切 battle_scene
+	# View 接入：装配 engine（不跑循环）→ 存 battle_context mode=excavate → 切 battle_scene
 	# （照 stage_select_panel._on_stage_n 范式）。战斗结束 battle_scene._finalize 加 excavate 分支
-	# → 回 main_scene 重弹 ExcavateMapPanel + Toast 胜负（替代旧 headless 同步 Toast）。
+	# → 回 main_scene 重弹 ExcavateMapPanel + Toast 胜负。
 	var asm_r: Dictionary = ExcavateBattle.assemble_excavate_battle(pd.excavate, _excavate_id, pd, rng)
 	if not bool(asm_r.get("ok", false)):
 		return
@@ -197,10 +224,10 @@ func _on_battle() -> void:
 	SceneManager.change_scene(BATTLE_SCENE_PATH)
 
 
-# tid → 头像 info（rank/stars/level 从 HeroInstance 查；无则默认 1，照 readhero.createIcon info 结构）。
+# tid → 头像 info（rank/stars/level 从 HeroInstance 查；无则默认，照 readhero.createIcon info 结构）。
 func _hero_info(tid: int) -> Dictionary:
 	for inst_id in pd.hero_manager.heroes:
-		var h = pd.hero_manager.heroes[inst_id]
+		var h: Variant = pd.hero_manager.heroes[inst_id]
 		if int(h.tid) == tid:
 			return {"id": int(h.tid), "rank": int(h.rank), "stars": int(h.stars), "level": int(h.level)}
 	return {"id": tid, "rank": 1, "stars": 1, "level": 1}

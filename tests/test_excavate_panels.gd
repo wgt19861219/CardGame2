@@ -977,14 +977,254 @@ func test_search_panel_builds_without_error() -> void:
 	root.queue_free()
 
 
-# ── ExcavateTeamPanel：LSTR ADJUST_FORMATION + owner 切换 ──
+# ── ExcavateTeamPanel：两件套 + 静态 5 英雄槽（excavate 批 Task 6，2026-08-17）──
 
-# team LSTR ADJUST_FORMATION key 在 JSON
+# team LSTR key 全在 JSON（按钮/产量行/野怪名/小时后缀）
 func test_team_lstr_keys_present() -> void:
-	assert_eq(cm.get_lstr("EXCAVATETEAM.ADJUST_FORMATION"), "调整阵容", "ADJUST_FORMATION = 调整阵容")
+	var keys: Array[String] = [
+		"EXCAVATETEAM.ADJUST_FORMATION", "excavateteam.1.10.1.002",
+		"EXCAVATETEAM.CUMULATIVE_PRODUCTION_RESOURCES_",
+		"EXCAVATEMAP.PRODUCTION_SPEED_", "TIME.HOUR",
+		"EXCAVATEWILDENEMY.WITHERED_MINERS",
+	]
+	for k in keys:
+		var v: String = cm.get_lstr(k)
+		assert_ne(v, k, "LSTR key 命中：" + k)
+		assert_false(v.is_empty(), "LSTR 值非空：" + k)
 
 
-# team 面板 monster 矿点显示出战按钮（无 crash）
+# 框体归源（本件不在 A 债 8 处清单内，照源实证）：uieditor/excavateteam.lua:2-22
+# frame = Scale9Sprite **main_vit_tips** scaleSize 632.81x242.19 中心 (400,219.53)，
+# cap CCRectMake(17.97,18.75,46.88,11.72)@103x61 像素直译：L=17.97→18、B=18.75→19、
+# R=103-17.97-46.88=38.15→38、T=61-18.75-11.72=30.53→31。
+# 弃 excavate_main_frame 600x440 误用（贴图选择+尺寸双重失真：Scale9 框拉到
+# 2.61 比例非源 632.81/242.19 口径，且源框本是 main_vit_tips 系）。
+func test_team_frame_source_fidelity() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_team_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: NinePatchRect = content.get_node_or_null("Frame") as NinePatchRect
+	assert_not_null(frame, "Frame 存在且为 NinePatchRect（源 Scale9Sprite）")
+	if frame == null:
+		content.queue_free()
+		return
+	assert_not_null(frame.texture, "frame 有贴图")
+	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
+		"frame 贴图归源 main_vit_tips（弃 excavate_main_frame 误用）")
+	assert_almost_eq(frame.size.x, 632.81, 0.02, "frame w=632.81（scaleSize 直译）")
+	assert_almost_eq(frame.size.y, 242.19, 0.02, "frame h=242.19")
+	assert_eq(frame.patch_margin_left, 18, "cap left=17.97 取整 18")
+	assert_eq(frame.patch_margin_bottom, 19, "cap bottom=18.75 取整 19")
+	assert_eq(frame.patch_margin_right, 38, "cap right=38.15 取整 38")
+	assert_eq(frame.patch_margin_top, 31, "cap top=30.53 取整 31")
+	content.queue_free()
+
+
+# 静态 rect 守卫（防 parenting 回归）：照 uieditor/excavateteam.lua 声明表直译。
+# 场景层：frame 中心 (400,219.53) → Godot (163.595,219.375)-(796.405,461.565)。
+# frame_container Layer 156.25² @frame 局部 (316.41,142.97)（frame H=242.19）→
+# Godot offset (316.41,-57.03)；monster 分支 fill 整层下移（源 :530 DGccp(0,-35)px
+# →27.34 点）。fc 局部（H=156.25，y-up→y-down）：close 中心 (303.13,82.81)→(303.13,73.44)；
+# player 组（原点 (4.69,-3.13)）：head (-280.47,73.44) 62.5²、level (-213.28,86.72)
+# 39.06x31.25、name_bg 中心 (-26.56,103.91) 329.69x26.56。team 组（原点 (0,-8.59)）：
+# hero_container_1..5 85.94² x=-281.25/-188.28/-96.88/-4.69/85.16 y≈-74；
+# cg 组（原点 (0,5.47)）：change 中心 (236.72,167.97)、giveup 中心 (236.72,221.88)
+# 各 125x49.22；go_battle 中心 (233.59,110.94) 100x96.09 默认隐藏。
+func test_team_content_static_rects() -> void:
+	var content: Control = (load("res://scenes/ui/excavate_team_content.tscn") as PackedScene).instantiate() as Control
+	add_child(content)
+	var frame: Control = content.get_node("Frame") as Control
+	assert_almost_eq(frame.position.x, 163.595, 0.02, "frame offset_left=163.595")
+	assert_almost_eq(frame.position.y, 219.375, 0.02, "frame offset_top=219.375")
+	var fc: Control = content.get_node("Frame/FrameContainer") as Control
+	assert_almost_eq(fc.position.x, 316.41, 0.02, "frame_container offset_left=316.41（frame 局部）")
+	assert_almost_eq(fc.position.y, -57.03, 0.02, "frame_container offset_top=-57.03")
+	assert_almost_eq(fc.size.x, 156.25, 0.02, "frame_container w=156.25（scaleSize 直译）")
+	var close_btn: Control = fc.get_node("%CloseBtn") as Control
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 303.13, 0.02, "close 中心 x=303.13")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 73.44, 0.02, "close 中心 y=73.44（156.25-82.81）")
+	assert_almost_eq(close_btn.size.x, 49.22, 0.02, "close w=49.22（fix_wh 直译）")
+	assert_almost_eq(close_btn.size.y, 52.34, 0.02, "close h=52.34")
+	# 纵横比守卫：49.22/52.34=0.9404 vs 纹理 65/66=0.9848 偏差 4.5%（源轻微拉伸照源）
+	var close_tex: Texture2D = (fc.get_node("%CloseBtn") as TextureButton).texture_normal
+	var close_dev: float = abs(close_btn.size.x / close_btn.size.y - float(close_tex.get_width()) / float(close_tex.get_height())) / (float(close_tex.get_width()) / float(close_tex.get_height()))
+	assert_lt(close_dev, 0.08, "close 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (close_dev * 100.0))
+	# 玩家信息区（head/level 建位不填，getTeamHead/getLevelIcon 基础设施缺失照 battle_report 口径）
+	var head: Control = fc.get_node("HeadContainer") as Control
+	assert_almost_eq(head.position.x, -280.47, 0.02, "head_container offset_left=-280.47")
+	assert_almost_eq(head.position.y, 73.44, 0.02, "head_container offset_top=73.44")
+	assert_almost_eq(head.size.x, 62.5, 0.02, "head_container w=62.5")
+	var name_bg: Control = fc.get_node("NameBg") as Control
+	assert_almost_eq(name_bg.position.x + name_bg.size.x * 0.5, -26.56, 0.02, "name_bg 中心 x=-26.56")
+	assert_almost_eq(name_bg.position.y + name_bg.size.y * 0.5, 103.91, 0.02, "name_bg 中心 y=103.91")
+	assert_almost_eq(name_bg.size.x, 329.69, 0.02, "name_bg w=329.69（fix_wh 直译）")
+	var name_dev: float = abs(name_bg.size.x / name_bg.size.y - 422.0 / 34.0) / (422.0 / 34.0)
+	assert_lt(name_dev, 0.08, "name_bg 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (name_dev * 100.0))
+	# 静态 5 英雄槽（源 hero_container_1..5 声明表静态槽位，非动态行）
+	var slot1: Control = fc.get_node("HeroSlot1") as Control
+	assert_almost_eq(slot1.position.x, -281.25, 0.02, "hero_slot_1 offset_left=-281.25")
+	assert_almost_eq(slot1.position.y, 153.13, 0.02, "hero_slot_1 offset_top=153.13")
+	var slot5: Control = fc.get_node("HeroSlot5") as Control
+	assert_almost_eq(slot5.position.x, 85.16, 0.02, "hero_slot_5 offset_left=85.16")
+	assert_almost_eq(slot5.position.y, 152.34, 0.02, "hero_slot_5 offset_top=152.34（y=-73.44 档）")
+	assert_almost_eq(slot5.size.x, 85.94, 0.02, "hero_slot w=85.94（scaleSize 直译）")
+	# cg 按钮组（change/giveup，源 :733-788 scaleSize 125x49.22）
+	var cg: Control = fc.get_node("CgButtonContainer") as Control
+	var change_btn: Control = cg.get_node("%ChangeBtn") as Control
+	assert_almost_eq(change_btn.position.x + change_btn.size.x * 0.5, 236.72, 0.02, "change 中心 x=236.72")
+	assert_almost_eq(change_btn.position.y + change_btn.size.y * 0.5, 167.97, 0.02, "change 中心 y=167.97（156.25+11.72）")
+	assert_almost_eq(change_btn.size.x, 125.0, 0.02, "change w=125（scaleSize 直译）")
+	assert_almost_eq(change_btn.size.y, 49.22, 0.02, "change h=49.22")
+	var giveup_btn: Control = cg.get_node("%GiveupBtn") as Control
+	assert_almost_eq(giveup_btn.position.y + giveup_btn.size.y * 0.5, 221.88, 0.02, "giveup 中心 y=221.88（156.25+65.63）")
+	# 出战按钮（go_battle fix_wh 100x96.09 默认隐藏，fill 按 owner 切；team 层摊平
+	# 进 fc：中心 fc y-up = -8.59-32.81=-41.41 → Godot 197.66）
+	var battle_btn: Control = fc.get_node("%BattleBtn") as Control
+	assert_almost_eq(battle_btn.position.x + battle_btn.size.x * 0.5, 233.59, 0.02, "battle 中心 x=233.59")
+	assert_almost_eq(battle_btn.position.y + battle_btn.size.y * 0.5, 197.66, 0.02, "battle 中心 y=197.66（156.25+8.59+32.81）")
+	assert_almost_eq(battle_btn.size.x, 100.0, 0.02, "battle w=100（fix_wh 直译）")
+	assert_false(battle_btn.visible, "battle 默认隐藏（源 config.visible=false，fill 按 owner 切）")
+	var battle_tex: Texture2D = (fc.get_node("%BattleBtn") as TextureButton).texture_normal
+	var battle_dev: float = abs(battle_btn.size.x / battle_btn.size.y - float(battle_tex.get_width()) / float(battle_tex.get_height())) / (float(battle_tex.get_width()) / float(battle_tex.get_height()))
+	assert_lt(battle_dev, 0.08, "battle 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (battle_dev * 100.0))
+	# 产量行（explain_container 局部）：lack/speed 容器 156.25x46.88 @(-249.22,-132.03)/(-22.66,-132.03)
+	var explain: Control = fc.get_node("%ExplainContainer") as Control
+	var lack_ctn: Control = explain.get_node("LackLabelContainer") as Control
+	assert_almost_eq(lack_ctn.position.x, -249.22, 0.02, "lack_container offset_left=-249.22")
+	assert_almost_eq(lack_ctn.position.y, 241.41, 0.02, "lack_container offset_top=241.41（156.25+132.03-46.88）")
+	var speed_ctn: Control = explain.get_node("SpeedLabelContainer") as Control
+	assert_almost_eq(speed_ctn.position.x, -22.66, 0.02, "speed_container offset_left=-22.66")
+	var lack_title: Label = lack_ctn.get_node("%LackTitle") as Label
+	assert_almost_eq(lack_title.position.x + lack_title.size.x, 88.28, 0.02, "lack_title 右缘 x=88.28（源 anchor(1,0.5)）")
+	assert_almost_eq(lack_title.position.y + lack_title.size.y * 0.5, 23.44, 0.02, "lack_title 中线 y=23.44（46.88-23.44）")
+	var lack_num: Label = lack_ctn.get_node("%LackNumber") as Label
+	assert_almost_eq(lack_num.position.x, 125.0, 0.02, "lack_number 左缘 x=125（源 anchor(0,0.5)）")
+	# 结构守卫（防 parenting 回归）：frame_container 挂 Frame 内（源 parent="frame"），
+	# 且 Frame 为 content 首个静态底板节点
+	assert_eq(fc.get_parent(), frame, "frame_container 挂 Frame 下（源 parent=frame）")
+	assert_eq(frame.get_index(), 0, "Frame 为 content 首子节点（最底层绘制）")
+	assert_eq(fc.get_index(), 0, "frame_container 为 Frame 首子节点（源声明序首位）")
+	# 单机受控裁剪守卫：guild 组（mine/monster 均恒隐藏）、vitality 组（单机战斗无体力
+	# 消耗，显示即欺骗 UI）、迁移发明 Title（源标题区是玩家名 name_bg+name）不建。
+	assert_null(content.get_node_or_null("Title"), "迁移发明 Title 不建（源无标题 Label，name_bg+name 即标题区）")
+	assert_null(fc.get_node_or_null("GuildContainer"), "guild 组不建（联机公会信息，单机恒不可见）")
+	assert_null(fc.get_node_or_null("VitalityContainer"), "vitality 组不建（单机 excavate 战斗不扣体力）")
+	content.queue_free()
+
+
+# 旧范式退役守卫（两件套 SOP）：panel.gd 源码无运行时样式/静态节点构造
+# （ReadheroIcon 跨域展示工具实例化除外，照 battle_report builder 口径）。
+func test_team_no_legacy_runtime_styling() -> void:
+	var src: String = FileAccess.get_file_as_string("res://scripts/ui/excavate_team_panel.gd")
+	assert_false(src.contains("UiScale9Button"), "UiScale9Button 已退役")
+	assert_false(src.contains("add_theme_color_override"), "运行时颜色 override 已退役")
+	assert_false(src.contains("add_theme_font_size_override"), "运行时字号 override 已退役")
+	assert_false(src.contains("add_theme_stylebox_override"), "运行时样式 override 已退役")
+	for ctor: String in ["Label.new(", "Button.new(", "HBoxContainer.new(", "VBoxContainer.new(", "TextureRect.new(", "Control.new("]:
+		assert_false(src.contains(ctor), "无运行时静态节点构造 %s（静态结构全在 tscn；ReadheroIcon 工具实例化除外）" % ctor)
+
+
+# fill 分支（源 :489-536 enterExcavateTeam）：mine → cg 显示/battle 隐藏/explain 显示
+# + 玩家名 + 产量行（icon 按 produce_type 三选一 + 数值）+ 5 槽 ReadheroIcon；
+# monster → battle 显示/cg 隐藏/explain 隐藏 + 野怪名 LSTR + 框体矮化
+# （frame 高 265px÷1.28=206.87 + frame_container 下移 35px÷1.28=27.34，源 :530-531）。
+func test_team_fill_mine_and_monster() -> void:
+	var root := Node.new()
+	add_child(root)
+	var now: int = int(Time.get_unix_time_from_system())
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.excavate.excavate_data.append({
+		"_id": 1, "_type_id": 4, "_owner": "mine", "_state": "occupy",
+		"_found_ts": now, "_produce_speed": 10.0, "_storage": 500, "_res_got": 352.0,
+		"_wild_id": 30001, "_team": [{"_team_id": 0,
+			"_hero_bases": [1001, 1002],
+			"_hero_dynas": [{"_hp_perc": 10000, "_mp_perc": 0}, {"_hp_perc": 10000, "_mp_perc": 0}]}],
+	})
+	var panel := ExcavateTeamPanel.new("excavate_team", {})
+	panel.setup_panel(pd, 1, BattleRng.new(1), Callable())
+	panel.show_window(root)
+	var fc: Control = panel.container.get_node("ExcavateTeamContent/Frame/FrameContainer") as Control
+	if fc == null:
+		fail_test("content 未装配")
+		panel.remove_window()
+		root.queue_free()
+		return
+	assert_true((fc.get_node("CgButtonContainer") as Control).visible, "mine：cg 容器可见（源 :111-137 teamid=userid，容器级切换）")
+	assert_true((fc.get_node("CgButtonContainer/%ChangeBtn") as Control).visible, "mine：change 按钮节点可见")
+	assert_false((fc.get_node("%BattleBtn") as Control).visible, "mine：battle 隐藏（源 :110）")
+	assert_true((fc.get_node("%ExplainContainer") as Control).visible, "mine：explain 显示（源 :507）+ vitality/guild 隐藏（:505-506）")
+	assert_eq((fc.get_node("NameBg/%NameLabel") as Label).text, pd.player_name, "mine：玩家名 fill（源 :305-306 player 名兜底）")
+	var slot1: Control = fc.get_node("HeroSlot1") as Control
+	assert_gt(slot1.get_child_count(), 0, "mine：槽1 已填 ReadheroIcon")
+	assert_gt((fc.get_node("HeroSlot2") as Control).get_child_count(), 0, "mine：槽2 已填")
+	assert_eq((fc.get_node("HeroSlot3") as Control).get_child_count(), 0, "mine：槽3 空（2 英雄）")
+	assert_false((fc.get_node("%EmptyHint") as Control).visible, "mine：有队空态提示隐藏")
+	# 产量行 fill（type_id 4 → gold 组 icon，源 :441-457 type_id_group gold={4,5,6}）
+	var explain: Control = fc.get_node("%ExplainContainer") as Control
+	var lack_ctn: Control = explain.get_node("LackLabelContainer") as Control
+	assert_eq((lack_ctn.get_node("%LackTitle") as Label).text, cm.get_lstr("EXCAVATETEAM.CUMULATIVE_PRODUCTION_RESOURCES_"), "lack 标题 LSTR fill")
+	assert_true((lack_ctn.get_node("%LackIconGold") as Control).visible, "type_id=4 → gold icon 显示（源 :441-448）")
+	assert_false((lack_ctn.get_node("%LackIconDiamond") as Control).visible, "diamond icon 隐藏")
+	assert_eq((lack_ctn.get_node("%LackNumber") as Label).text, "x352", "lack 数值 fill（res_got=352，elapsed=0）")
+	var speed_ctn: Control = explain.get_node("SpeedLabelContainer") as Control
+	assert_eq((speed_ctn.get_node("%SpeedNumber") as Label).text, "x600/1" + cm.get_lstr("TIME.HOUR"),
+		"speed 数值 fill（10/分×60=600/1小时，源 :469-476 整数档 %%d/%%d）")
+	assert_true((speed_ctn.get_node("%SpeedIconGold") as Control).visible, "speed gold icon 显示")
+	panel.remove_window()
+	# monster 分支
+	var pd2 := PlayerData.new(cm)
+	pd2.apply_default_data()
+	pd2.excavate.excavate_data.append({
+		"_id": 2, "_type_id": 4, "_owner": "monster", "_state": "searched",
+		"_found_ts": now, "_produce_speed": 10.0, "_storage": 500, "_res_got": 0.0,
+		"_wild_id": 1, "_team": [{"_team_id": 0,
+			"_hero_bases": [{"_tid": 1001, "_level": 9, "_rank": 3, "_stars": 4}],
+			"_hero_dynas": [{"_hp_perc": 10000, "_mp_perc": 0}]}],
+	})
+	var panel2 := ExcavateTeamPanel.new("excavate_team", {})
+	panel2.setup_panel(pd2, 2, BattleRng.new(1), Callable())
+	panel2.show_window(root)
+	var fc2: Control = panel2.container.get_node("ExcavateTeamContent/Frame/FrameContainer") as Control
+	assert_true((fc2.get_node("%BattleBtn") as Control).visible, "monster：battle 可见（源 :175）")
+	assert_false((fc2.get_node("CgButtonContainer") as Control).visible, "monster：cg 容器隐藏（源 :174 容器级切换）")
+	assert_false((fc2.get_node("%ExplainContainer") as Control).visible, "monster：explain 隐藏（源 :527）")
+	assert_eq((fc2.get_node("NameBg/%NameLabel") as Label).text, cm.get_lstr("EXCAVATEWILDENEMY.WITHERED_MINERS"),
+		"monster：野怪名 LSTR fill（源 :325 row[Player Name]）")
+	var frame2: Control = panel2.container.get_node("ExcavateTeamContent/Frame") as Control
+	assert_almost_eq(frame2.size.y, 206.87, 0.02, "monster：frame 高 265px÷1.28=206.87（源 :531 DGSizeMake）")
+	assert_almost_eq(frame2.get_rect().get_center().y, 340.47, 0.02, "monster：frame 保持中心（Cocos setContentSize 中心锚不动）")
+	assert_almost_eq(fc2.position.y, -57.03 + 27.34, 0.02, "monster：frame_container 下移 35px÷1.28=27.34（源 :530）")
+	assert_gt((fc2.get_node("HeroSlot1") as Control).get_child_count(), 0, "monster：槽1 已填敌英雄")
+	panel2.remove_window()
+	root.queue_free()
+
+
+# 换队交互（源 :113-122 change_team_button → enterExcavateChange；单机化 = 当前阵容
+# 一键驻防 set_defend_team + 刷新）：驻防后槽重填且空态提示消隐。
+func test_team_change_team_refresh() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.excavate.excavate_data.append({
+		"_id": 1, "_type_id": 4, "_owner": "mine", "_state": "occupy",
+		"_found_ts": 1, "_produce_speed": 10.0, "_storage": 500, "_res_got": 0.0,
+		"_wild_id": 30001, "_team": [],
+	})
+	var panel := ExcavateTeamPanel.new("excavate_team", {})
+	panel.setup_panel(pd, 1, BattleRng.new(1), Callable())
+	panel.show_window(root)
+	var fc: Control = panel.container.get_node("ExcavateTeamContent/Frame/FrameContainer") as Control
+	assert_true((fc.get_node("%EmptyHint") as Control).visible, "空队：空态提示可见（单机兜底，源空队直接进换队 :405-408）")
+	assert_eq((fc.get_node("HeroSlot1") as Control).get_child_count(), 0, "空队：槽1 空")
+	panel._on_change_team()
+	assert_false((fc.get_node("%EmptyHint") as Control).visible, "换队后空态提示隐藏")
+	assert_gt((fc.get_node("HeroSlot1") as Control).get_child_count(), 0, "换队后槽1 已填（当前阵容驻防）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# team 面板 monster 矿点装配无 crash（回归底线用例，保留自迁移期）
 func test_team_panel_monster_builds() -> void:
 	var root := Node.new()
 	add_child(root)

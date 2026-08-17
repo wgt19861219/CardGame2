@@ -1,14 +1,35 @@
 [gd_scene load_steps=10 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="4_start"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn-disabled.png" id="5_startp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button.png" id="6_change"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_button_press.png" id="7_changep"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="8_giveup"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="9_giveupp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_name_bg.png" id="4_namebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="5_start"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn-disabled.png" id="6_startp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="7_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_token_icon.png" id="8_token"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_exp_icon.png" id="9_exp"]
+
+; 矿点驻防选队弹窗静态树（excavate 批 Task 6，2026-08-17）。照源两份直译：
+; ui/popwindow/excavateteam.lua（554 行逻辑）+ uieditor/excavateteam.lua（813 行
+; 声明表）。frame=Scale9Sprite main_vit_tips scaleSize 632.81x242.19 中心
+; (400,219.53) → Godot (163.595,219.375)-(796.405,461.565)，cap CCRectMake
+; (17.97,18.75,46.88,11.72)@103x61 → patch L18/B19/R38/T31；弃迁移
+; excavate_main_frame 600x440 误用（框体贴图选择失真）。
+; frame_container Layer 156.25² @frame 局部 (316.41,142.97) → offset (316.41,
+; -57.03)，实体保留（monster 分支 fill 整层下移 35px÷1.28=27.34 + frame 高
+; 265px÷1.28=206.87，源 :530-531）。fc 局部链：player 组原点 (4.69,-3.13)、
+; team 组原点 (0,-8.59)、cg 组原点 (0,5.47)、explain 组 (7.81,0)。
+; 英雄槽为静态 5 槽（hero_container_1..5 声明表静态 Layer，非动态行），fill 塞
+; ReadheroIcon scale 0.77（=源 enemy length 80/104，mine/enemy 统一口径）。
+; 单机受控裁剪：guild 组（联机公会，mine/monster 均恒隐藏 :506/:529）、vitality
+; 组（单机战斗不扣体力，显示即欺骗 UI）、go_battle disabled 分支（单机 monster
+; 战败即 occupy 转 mine，敌队恒满血死代码）、迁移发明 Title（源标题区=name_bg+
+; 玩家名）。head/level 容器照源建位不填（getTeamHead/getLevelIcon 基础设施
+; 缺失，照 battle_report/ranklist 口径）。EmptyHint 为单机自创空态兜底（源空队
+; 直接进换队流程 :405-408，单机换队=面板内一键驻防不跳场景）。
+; 绘制序照源声明序：frame → frame_container 子树（close 首位声明 → 建位内容
+; → 按钮）；close 在 fc 内 z=0 首位与兄弟无重叠（骑框右上角区域）。
 
 [node name="ExcavateTeamContent" type="Control"]
 layout_mode = 3
@@ -17,114 +38,359 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Frame" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 200.0
-offset_top = 140.0
-offset_right = 760.0
-offset_bottom = 500.0
+; 窗口框（源 frame Scale9Sprite main_vit_tips z=1）
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 0
+offset_left = 163.595
+offset_top = 219.375
+offset_right = 796.405
+offset_bottom = 461.565
 texture = ExtResource("1_frame")
-expand_mode = 1
+patch_margin_left = 18
+patch_margin_top = 31
+patch_margin_right = 38
+patch_margin_bottom = 19
 mouse_filter = 2
 
-[node name="CloseBtn" type="TextureButton" parent="."]
+; 弹窗内容容器（源 frame_container Layer 156.25² z=12；monster 时 fill 下移）
+[node name="FrameContainer" type="Control" parent="Frame"]
+layout_mode = 0
+offset_left = 316.41
+offset_top = -57.03
+offset_right = 472.66
+offset_bottom = 99.22
+mouse_filter = 2
+
+; 关闭钮（源 close_button DGButton fix_wh 49.22x52.34 中心 fc 局部 (303.13,82.81)）
+[node name="CloseBtn" type="TextureButton" parent="Frame/FrameContainer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 710.0
-offset_top = 152.0
-offset_right = 750.0
-offset_bottom = 192.0
+layout_mode = 0
+offset_left = 278.52
+offset_top = 47.27
+offset_right = 327.73
+offset_bottom = 99.61
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
-[node name="Title" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 200.0
-offset_top = 155.0
-offset_right = 760.0
-offset_bottom = 191.0
-theme_override_font_sizes/font_size = 22
+; 玩家头像容器（源 head_container 62.5² @player 局部 (-285.16,23.44)；fill 降级建位不填）
+[node name="HeadContainer" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -280.47
+offset_top = 73.44
+offset_right = -217.97
+offset_bottom = 135.94
 mouse_filter = 2
-horizontal_alignment = 1
-text = "驻防队伍"
 
-[node name="HeroBox" type="HBoxContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 240.0
-offset_top = 215.0
-offset_right = 720.0
-offset_bottom = 335.0
+; 等级徽章容器（源 level_container 39.06x31.25 @player 局部 (-217.97,41.41)；fill 降级建位不填）
+[node name="LevelContainer" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -213.28
+offset_top = 86.72
+offset_right = -174.22
+offset_bottom = 117.97
 mouse_filter = 2
-theme_override_constants/separation = 6
 
-[node name="ChangeBtn" type="Button" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 260.0
-offset_top = 445.0
-offset_right = 385.0
-offset_bottom = 494.0
-mouse_filter = 0
+; 玩家名底条（源 name_bg Sprite task_name_bg fix_wh 329.69x26.56 中心 player 局部 (-31.25,55.47)）
+[node name="NameBg" type="TextureRect" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -191.41
+offset_top = 90.63
+offset_right = 138.28
+offset_bottom = 117.19
+texture = ExtResource("4_namebg")
+expand_mode = 1
+mouse_filter = 2
 
-[node name="ChangeLabel" type="Label" parent="ChangeBtn"]
+; 玩家名（源 name Label size20 白 anchor(0,0.5)@name_bg 局部 (16.41,13.28)；text fill）
+[node name="NameLabel" type="Label" parent="Frame/FrameContainer/NameBg"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
-grow_horizontal = 2
+layout_mode = 0
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 16.41
+offset_top = -12.0
+offset_right = 240.0
+offset_bottom = 12.0
 grow_vertical = 2
+theme_type_variation = &"ExcavateTeamNameLabel"
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
-theme_override_font_sizes/font_size = 22
-horizontal_alignment = 1
 vertical_alignment = 1
+text = "Player"
+
+; 英雄槽 1..5（源 hero_container_1..5 Layer 85.94² @team 局部 x=-281.25/-188.28/
+; -96.88/-4.69/85.16 y=-74.22/-73.44；fill 塞 ReadheroIcon）
+[node name="HeroSlot1" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -281.25
+offset_top = 153.13
+offset_right = -195.31
+offset_bottom = 239.06
+mouse_filter = 2
+
+[node name="HeroSlot2" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -188.28
+offset_top = 152.34
+offset_right = -102.34
+offset_bottom = 238.28
+mouse_filter = 2
+
+[node name="HeroSlot3" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -96.88
+offset_top = 152.34
+offset_right = -10.94
+offset_bottom = 238.28
+mouse_filter = 2
+
+[node name="HeroSlot4" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = -4.69
+offset_top = 152.34
+offset_right = 81.25
+offset_bottom = 238.28
+mouse_filter = 2
+
+[node name="HeroSlot5" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = 85.16
+offset_top = 152.34
+offset_right = 171.09
+offset_bottom = 238.28
+mouse_filter = 2
+
+; 换队/撤退按钮组（源 cg_button_container Layer 156.25² @team 局部 (0,5.47)；
+; mine 可见 / monster 隐藏，fill 切换）
+[node name="CgButtonContainer" type="Control" parent="Frame/FrameContainer"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 3.13
+offset_right = 156.25
+offset_bottom = 159.38
+mouse_filter = 2
+
+; 换队钮（源 change_team_button DGButton task_button scaleSize 125x49.22 中心
+; cg 局部 (236.72,-11.72)；三态走 theme ExcavateTeamChangeBtn，text fill LSTR）
+[node name="ChangeBtn" type="Button" parent="Frame/FrameContainer/CgButtonContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 174.22
+offset_top = 143.36
+offset_right = 299.22
+offset_bottom = 192.58
+theme_type_variation = &"ExcavateTeamChangeBtn"
 text = "调整阵容"
 
-[node name="GiveupBtn" type="Button" parent="."]
+; 撤退钮（源 give_up_button DGButton sell_number scaleSize 125x49.22 中心
+; cg 局部 (236.72,-65.63)；三态走 theme ExcavateTeamGiveupBtn，text fill LSTR）
+[node name="GiveupBtn" type="Button" parent="Frame/FrameContainer/CgButtonContainer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 575.0
-offset_top = 445.0
-offset_right = 700.0
-offset_bottom = 494.0
-mouse_filter = 0
-
-[node name="GiveupLabel" type="Label" parent="GiveupBtn"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
-theme_override_font_sizes/font_size = 22
-horizontal_alignment = 1
-vertical_alignment = 1
+layout_mode = 0
+offset_left = 174.22
+offset_top = 197.27
+offset_right = 299.22
+offset_bottom = 246.48
+theme_type_variation = &"ExcavateTeamGiveupBtn"
 text = "撤退"
 
-[node name="BattleBtn" type="TextureButton" parent="."]
+; 出战钮（源 go_battle_button DGButton startbtn fix_wh 100x96.09 中心 team 局部
+; (233.59,-32.81)，config.visible=false；fill 按 owner 切 + 全灭 disabled 态单机裁）
+[node name="BattleBtn" type="TextureButton" parent="Frame/FrameContainer"]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 440.0
-offset_top = 380.0
-offset_right = 540.0
-offset_bottom = 476.0
-mouse_filter = 0
-texture_normal = ExtResource("4_start")
-texture_pressed = ExtResource("5_startp")
+layout_mode = 0
+offset_left = 183.59
+offset_top = 149.61
+offset_right = 283.59
+offset_bottom = 245.7
+texture_normal = ExtResource("5_start")
+texture_pressed = ExtResource("6_startp")
 ignore_texture_size = true
 stretch_mode = 0
+visible = false
+
+; 空驻防兜底提示（单机自创，源空队直接进换队；槽区中心 fc 局部 (-55.08,195.70)）
+[node name="EmptyHint" type="Label" parent="Frame/FrameContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -205.08
+offset_top = 185.7
+offset_right = 94.92
+offset_bottom = 205.7
+theme_type_variation = &"ExcavateTeamEmptyHint"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+visible = false
+text = "尚未驻防，点击「调整阵容」派英雄驻守"
+
+; 产量行容器（源 explain_container Layer 156.25² @fc 局部 (7.81,0)；mine 可见 /
+; monster 隐藏，fill 切换；vitality/guild 组单机受控裁剪不建）
+[node name="ExplainContainer" type="Control" parent="Frame/FrameContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 7.81
+offset_top = 0.0
+offset_right = 164.06
+offset_bottom = 156.25
+mouse_filter = 2
+
+; 累计产出容器（源 lack_label_container Layer 156.25x46.88 @explain 局部 (-249.22,-132.03)）
+[node name="LackLabelContainer" type="Control" parent="Frame/FrameContainer/ExplainContainer"]
+layout_mode = 0
+offset_left = -249.22
+offset_top = 241.41
+offset_right = -92.97
+offset_bottom = 288.28
+mouse_filter = 2
+
+; 累计产出标题（源 lack_label_title size18 ccc3(255,233,133) anchor(1,0.5)@右缘 88.28；
+; 固定宽 150 右对齐文本等价，text fill LSTR）
+[node name="LackTitle" type="Label" parent="Frame/FrameContainer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -61.72
+offset_top = -14.0
+offset_right = 88.28
+offset_bottom = 14.0
+grow_vertical = 2
+theme_type_variation = &"ExcavateTeamProduceTitle"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "累计生产资源："
+
+; 累计产出 icon 三选一（源 lack_icon_gold/diamond/exp fix_wh @中心 (101.56,y)，
+; visible=false fill 按 type_id 组切：gold={4,5,6} diamond={1,2,3} exp={7,8,9}）
+[node name="LackIconGold" type="TextureRect" parent="Frame/FrameContainer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 84.77
+offset_top = 7.81
+offset_right = 118.36
+offset_bottom = 39.06
+texture = ExtResource("7_gold")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="LackIconDiamond" type="TextureRect" parent="Frame/FrameContainer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 84.77
+offset_top = 10.56
+offset_right = 118.36
+offset_bottom = 42.59
+texture = ExtResource("8_token")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="LackIconExp" type="TextureRect" parent="Frame/FrameContainer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 88.67
+offset_top = 8.2
+offset_right = 114.45
+offset_bottom = 38.67
+texture = ExtResource("9_exp")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+; 累计产出数值（源 lack_number_label size16 白 anchor(0,0.5)@左缘 125；text fill）
+[node name="LackNumber" type="Label" parent="Frame/FrameContainer/ExplainContainer/LackLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 125.0
+offset_top = -14.0
+offset_right = 245.0
+offset_bottom = 14.0
+grow_vertical = 2
+theme_type_variation = &"ExcavateTeamProduceValue"
+mouse_filter = 2
+vertical_alignment = 1
+text = "x0"
+
+; 产出速度容器（源 speed_label_container Layer 156.25x46.88 @explain 局部 (-22.66,-132.03)）
+[node name="SpeedLabelContainer" type="Control" parent="Frame/FrameContainer/ExplainContainer"]
+layout_mode = 0
+offset_left = -22.66
+offset_top = 241.41
+offset_right = 133.59
+offset_bottom = 288.28
+mouse_filter = 2
+
+; 产出速度标题（源 speed_label_title size18 金 anchor(1,0.5)@右缘 85.94；text fill LSTR）
+[node name="SpeedTitle" type="Label" parent="Frame/FrameContainer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -64.06
+offset_top = -14.0
+offset_right = 85.94
+offset_bottom = 14.0
+grow_vertical = 2
+theme_type_variation = &"ExcavateTeamProduceTitle"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "生产速度："
+
+[node name="SpeedIconGold" type="TextureRect" parent="Frame/FrameContainer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.86
+offset_top = 8.59
+offset_right = 114.45
+offset_bottom = 39.84
+texture = ExtResource("7_gold")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="SpeedIconDiamond" type="TextureRect" parent="Frame/FrameContainer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.86
+offset_top = 11.33
+offset_right = 114.45
+offset_bottom = 43.36
+texture = ExtResource("8_token")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+[node name="SpeedIconExp" type="TextureRect" parent="Frame/FrameContainer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 84.77
+offset_top = 8.98
+offset_right = 110.55
+offset_bottom = 39.45
+texture = ExtResource("9_exp")
+expand_mode = 1
+mouse_filter = 2
+visible = false
+
+; 产出速度数值（源 speed_number_label size16 白 anchor(0,0.5)@左缘 121.09；text fill）
+[node name="SpeedNumber" type="Label" parent="Frame/FrameContainer/ExplainContainer/SpeedLabelContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 121.09
+offset_top = -14.0
+offset_right = 241.09
+offset_bottom = 14.0
+grow_vertical = 2
+theme_type_variation = &"ExcavateTeamProduceValue"
+mouse_filter = 2
+vertical_alignment = 1
+text = "x0/1小时"

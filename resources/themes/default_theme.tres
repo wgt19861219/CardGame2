@@ -366,6 +366,23 @@ texture_margin_top = 23.0
 texture_margin_right = 71.0
 texture_margin_bottom = 20.0
 
+; excavate_team 换队钮（uieditor/excavateteam.lua change_team_button：task_button
+; cap(15.63,15.63,19.53,15.63)@96x63 → L15.63/B15.63/R60.84/T31.74。与 hero_split
+; SB_hs_task 系同图不同 cap（w=39.06），故独立 StyleBox；press 层同 cap）
+[sub_resource type="StyleBoxTexture" id="SB_exc_team_task_n"]
+texture = ExtResource("10_taskn")
+texture_margin_left = 15.63
+texture_margin_top = 31.74
+texture_margin_right = 60.84
+texture_margin_bottom = 15.63
+
+[sub_resource type="StyleBoxTexture" id="SB_exc_team_task_p"]
+texture = ExtResource("11_taskp")
+texture_margin_left = 15.63
+texture_margin_top = 31.74
+texture_margin_right = 60.84
+texture_margin_bottom = 15.63
+
 [resource]
 AmountLabel/base_type = &"Label"
 AmountLabel/colors/font_color = Color(0.608, 0.161, 0.055, 1)
@@ -1233,3 +1250,40 @@ BattleReportTitleLabel/font_sizes/font_size = 23
 BattleReportNameLabel/base_type = &"Label"
 BattleReportNameLabel/colors/font_color = Color(1, 1, 1, 1)
 BattleReportNameLabel/font_sizes/font_size = 21
+; ── excavate_team 两件套（excavate 批 Task 6，2026-08-17）──
+; 换队钮（excavateteam.lua:733-760 DGButton task_button scaleSize 125x49.22 size22
+; labelConfig ccc3(234,225,205)；cap 见 SB_exc_team_task 注释）
+ExcavateTeamChangeBtn/base_type = &"Button"
+ExcavateTeamChangeBtn/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+ExcavateTeamChangeBtn/font_sizes/font_size = 22
+ExcavateTeamChangeBtn/styles/normal = SubResource("SB_exc_team_task_n")
+ExcavateTeamChangeBtn/styles/hover = SubResource("SB_exc_team_task_n")
+ExcavateTeamChangeBtn/styles/pressed = SubResource("SB_exc_team_task_p")
+ExcavateTeamChangeBtn/styles/disabled = SubResource("SB_exc_team_task_n")
+ExcavateTeamChangeBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 撤退钮（:761-788 DGButton sell_number cap(15.63,15.63,19.53,15.63) → 与
+; SB_mo_btn（mailoverfull/giveup）同图同 cap 复用；size22 labelConfig 同色）
+ExcavateTeamGiveupBtn/base_type = &"Button"
+ExcavateTeamGiveupBtn/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+ExcavateTeamGiveupBtn/font_sizes/font_size = 22
+ExcavateTeamGiveupBtn/styles/normal = SubResource("SB_mo_btn_n")
+ExcavateTeamGiveupBtn/styles/hover = SubResource("SB_mo_btn_n")
+ExcavateTeamGiveupBtn/styles/pressed = SubResource("SB_mo_btn_p")
+ExcavateTeamGiveupBtn/styles/disabled = SubResource("SB_mo_btn_n")
+ExcavateTeamGiveupBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 玩家名（excavateteam.lua name size20 默认白，挂 name_bg 内 anchor(0,0.5)）
+ExcavateTeamNameLabel/base_type = &"Label"
+ExcavateTeamNameLabel/colors/font_color = Color(1, 1, 1, 1)
+ExcavateTeamNameLabel/font_sizes/font_size = 20
+; 产行标题（lack/speed_label_title size18 ccc3(255,233,133)）
+ExcavateTeamProduceTitle/base_type = &"Label"
+ExcavateTeamProduceTitle/colors/font_color = Color(1, 0.913725, 0.521569, 1)
+ExcavateTeamProduceTitle/font_sizes/font_size = 18
+; 产行数值（lack/speed_number_label size16 默认白）
+ExcavateTeamProduceValue/base_type = &"Label"
+ExcavateTeamProduceValue/colors/font_color = Color(1, 1, 1, 1)
+ExcavateTeamProduceValue/font_sizes/font_size = 16
+; 空驻防兜底提示（单机自创，源空队直接进换队流程 :405-408；16 号白）
+ExcavateTeamEmptyHint/base_type = &"Label"
+ExcavateTeamEmptyHint/colors/font_color = Color(1, 1, 1, 1)
+ExcavateTeamEmptyHint/font_sizes/font_size = 16
