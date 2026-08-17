@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png" id="2_framebg"]
@@ -18,8 +18,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="16_gold"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_token_icon.png" id="17_dia"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_exp_icon.png" id="18_exp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_1.png" id="19_srch"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_2.png" id="20_srchp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png" id="19_srch"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_another_1.png" id="21_ano"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_another_2.png" id="22_anop"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_deal_tag.png" id="23_redtag"]
@@ -73,13 +72,11 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 79.535
-offset_right = 880.0
-offset_bottom = 560.785
+offset_right = 960.0
+offset_bottom = 640.0
 texture = ExtResource("1_bg")
 expand_mode = 1
-mouse_filter = 2
+mouse_filter = 0
 
 [node name="FrameContainer" type="Control" parent="."]
 layout_mode = 0
@@ -196,12 +193,12 @@ mouse_filter = 0
 [node name="SearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = -0.10939
-offset_top = -0.8862
-offset_right = 140.73439
-offset_bottom = 51.66745
+offset_left = 26.8086
+offset_top = 12.8906
+offset_right = 113.8086
+offset_bottom = 37.8906
 texture_normal = ExtResource("19_srch")
-texture_pressed = ExtResource("20_srchp")
+texture_pressed = ExtResource("19_srch")
 ignore_texture_size = true
 stretch_mode = 0
 mouse_filter = 2

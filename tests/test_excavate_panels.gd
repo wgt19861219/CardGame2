@@ -873,9 +873,16 @@ func test_map_content_static_rects() -> void:
 	assert_almost_eq(fc.size.x, 800.0, 0.02, "frame_container w=800（scaleSize 直译）")
 	assert_almost_eq(fc.size.y, 480.47, 0.02, "frame_container h=480.47")
 	var bg: Control = content.get_node("Bg") as Control
-	assert_almost_eq(bg.position.x + bg.size.x * 0.5, 480.0, 0.02, "bg 中心 x=480（to_godot(400)）")
-	assert_almost_eq(bg.position.y + bg.size.y * 0.5, 320.16, 0.02, "bg 中心 y=320.16（560-239.84）")
-	assert_almost_eq(bg.size.x, 800.0, 0.02, "bg w=800（fix_wh 直译）")
+	# 实跑反馈修复（2026-08-17）：源 pushScene 全屏页语义，bg 铺满视口 960×640 + STOP
+	# 挡点击穿透 shade（原 fix_wh 800×481 直译不满屏致主城透过/弹窗内点击误关窗）。
+	assert_almost_eq(bg.position.x, 0.0, 0.02, "bg 铺满 offset_left=0")
+	assert_almost_eq(bg.position.y, 0.0, 0.02, "bg 铺满 offset_top=0")
+	assert_almost_eq(bg.size.x, 960.0, 0.02, "bg w=960（pushScene 全屏语义）")
+	assert_almost_eq(bg.size.y, 640.0, 0.02, "bg h=640")
+	assert_eq((bg as TextureRect).mouse_filter, Control.MOUSE_FILTER_STOP, "bg STOP 挡点击穿透（pushScene 页无点外关闭）")
+	var mslbl: TextureButton = content.get_node("%ResearchFrame/ResearchContainer/%ResearchButton/SearchLabel") as TextureButton
+	assert_eq(mslbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
+		"map SearchLabel 接线文字图 word_search（实跑反馈修复同 search 件）")
 	var frame: Control = fc.get_node("Frame") as Control
 	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 402.34, 0.02, "frame 局部中心 x=402.34")
 	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 246.88, 0.02, "frame 局部中心 y=246.88（480.47-233.59）")
@@ -1258,6 +1265,16 @@ func test_search_frame_source_fidelity() -> void:
 func test_search_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_search_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
+	var bg_s: Control = content.get_node("Bg") as Control
+	# 实跑反馈修复（2026-08-17）：pushScene 全屏页语义铺满视口 + STOP（同 map 件守卫）。
+	assert_almost_eq(bg_s.size.x, 960.0, 0.02, "search bg w=960 全屏")
+	assert_almost_eq(bg_s.size.y, 640.0, 0.02, "search bg h=640 全屏")
+	assert_eq((bg_s as TextureRect).mouse_filter, Control.MOUSE_FILTER_STOP, "search bg STOP 挡点击穿透")
+	var slbl: TextureButton = content.get_node("SearchFrame/SearchContainer/%SearchButton/SearchLabel") as TextureButton
+	assert_eq(slbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
+		"SearchLabel 接线文字图 word_search（源在库未接线的本地化遗留，受控偏离）")
+	assert_almost_eq(slbl.size.x, 87.0, 0.02, "SearchLabel w=87（word_search 原尺寸）")
+	assert_almost_eq(slbl.size.y, 25.0, 0.02, "SearchLabel h=25")
 	var fc: Control = content.get_node("FrameContainer") as Control
 	assert_almost_eq(fc.position.x, 76.875, 0.02, "frame_container offset_left=76.875")
 	assert_almost_eq(fc.position.y, 75.625, 0.02, "frame_container offset_top=75.625")

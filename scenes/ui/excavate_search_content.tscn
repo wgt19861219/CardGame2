@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_empty.jpg" id="2_framebg"]
@@ -8,8 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="6_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="7_backp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png" id="8_sframe"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_1.png" id="9_slbl"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_icon_search_2.png" id="10_slblp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png" id="9_slbl"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="11_gold"]
 
 ; 藏宝地穴搜索两件套静态树（excavate 批 Task 4，2026-08-17）。
@@ -38,6 +37,10 @@
 ; checkUnreadExcavateHistory，数据层无对应状态恒不可见，节点不建，照 history 批
 ; vit_button 同口径）；源 :121-127 label 超宽 scale 钳制（中文 88<100/44<50 恒不触发）省略。
 ; text 为编辑器预览默认，panel fill 覆盖（LSTR）。
+; 实跑反馈修复（2026-08-17）：Bg 照源 pushScene 全屏语义恢复 960×640 铺满 + STOP
+; （原 fix_wh 800×481 直译不满屏致主城透过、弹窗内点击穿透 shade 误关窗）；SearchLabel
+; 弃 2 色块占位贴图（icon_search_1 系源资产即色块）改接在库文字图 excavate_word_search
+; （87×25，源未接线的本地化遗留资产，受控偏离）。
 
 [node name="ExcavateSearchContent" type="Control"]
 layout_mode = 3
@@ -48,13 +51,11 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 79.535
-offset_right = 880.0
-offset_bottom = 560.785
+offset_right = 960.0
+offset_bottom = 640.0
 texture = ExtResource("1_bg")
 expand_mode = 1
-mouse_filter = 2
+mouse_filter = 0
 
 [node name="FrameContainer" type="Control" parent="."]
 layout_mode = 0
@@ -173,12 +174,12 @@ mouse_filter = 0
 
 [node name="SearchLabel" type="TextureButton" parent="SearchFrame/SearchContainer/SearchButton"]
 layout_mode = 0
-offset_left = -0.10939
-offset_top = -0.8862
-offset_right = 140.73439
-offset_bottom = 51.66745
+offset_left = 26.8086
+offset_top = 12.8906
+offset_right = 113.8086
+offset_bottom = 37.8906
 texture_normal = ExtResource("9_slbl")
-texture_pressed = ExtResource("10_slblp")
+texture_pressed = ExtResource("9_slbl")
 ignore_texture_size = true
 stretch_mode = 0
 mouse_filter = 2
