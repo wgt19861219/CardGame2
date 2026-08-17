@@ -558,6 +558,12 @@ TaskRewardAmtLabel/font_sizes/font_size = 18
 TaskRewardTitleLabel/base_type = &"Label"
 TaskRewardTitleLabel/colors/font_color = Color(0.60784316, 0.13333334, 0.05490196, 1)
 TaskRewardTitleLabel/font_sizes/font_size = 20
+; task 段标题（批4 Task 7，2026-08-17）：迁移发明补充 UI（源为 task/dailyTask 两独立
+; 窗口各有 title，合并双列表后分区标签承担第二窗口 title 语义）；20 号金
+; （与面板大标题 24 号金 ccc3(250,205,16) 同色调小一号，task.lua:874-876）。
+TaskSectionLabel/base_type = &"Label"
+TaskSectionLabel/colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
+TaskSectionLabel/font_sizes/font_size = 20
 TitleLabel/base_type = &"Label"
 TitleLabel/colors/font_color = Color(0.906, 0.808, 0.075, 1)
 TitleLabel/colors/font_outline_color = Color(0, 0, 0, 1)

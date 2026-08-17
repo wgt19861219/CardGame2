@@ -13,6 +13,11 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/task_content.tscn")
 # PopWindow 默认 shade alpha=150/255（popwindow.lua），此处覆盖为源的 200/255。
 const SHADE_ALPHA: float = 200.0 / 255.0
 
+# 滚动条照源贴图（draglist bar：task.lua:387-390 bar={bglen=320,bgpos=ccp(145,218)}；
+# draglist.lua:13-14 轨道 scroll_bar_bg + 滑块 scroll_bar）。
+const SCROLL_TRACK_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar_bg.png"
+const SCROLL_GRABBER_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar.png"
+
 var _player: PlayerData
 var _cm: ConfigManager
 var _tm: TaskManager
@@ -43,8 +48,25 @@ func _build_content() -> void:
 	(content.get_node("%DailyTitleLabel") as Label).text = _cm.get_lstr("TASK.DAILY_ACTIVITIES")
 	# close 按钮
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	_style_scrollbar(content.get_node("%MainScroll") as ScrollContainer)
+	_style_scrollbar(content.get_node("%DailyScroll") as ScrollContainer)
 	_fill_main_list()
 	_fill_daily_list()
+
+
+# 滚动条照源贴图（源 draglist bar 轨道 scroll_bar_bg + 滑块 scroll_bar）。
+# ScrollContainer 默认灰圆角条 → StyleBoxTexture 贴图化；add_theme_stylebox_override
+# 属滚动条引擎缺口例外（SOP 条款，avatar 批4 先例）。
+func _style_scrollbar(scroll: ScrollContainer) -> void:
+	var vs: VScrollBar = scroll.get_v_scroll_bar()
+	var track := StyleBoxTexture.new()
+	track.texture = load(SCROLL_TRACK_RES)
+	var grabber := StyleBoxTexture.new()
+	grabber.texture = load(SCROLL_GRABBER_RES)
+	for key: StringName in ["scroll", "scroll_focus"]:
+		vs.add_theme_stylebox_override(key, track)
+	for key: StringName in ["grabber", "grabber_highlight", "grabber_pressed"]:
+		vs.add_theme_stylebox_override(key, grabber)
 
 
 # ed.ui.task:initTaskList + basetask.createTask：遍历 tm.task → Task[chain][id] → 装行。
