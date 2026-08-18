@@ -38,6 +38,9 @@ const BOARD_SIZE: Vector2 = Vector2(507.81, 74.22)
 # ranking 中心 DGccp(60,50)=(46.88,39.06) → Godot (46.88,35.16)；head DGccp(175,50) → (136.72,35.16)；
 # pvp 布局 nameBg/name DGccp(250/280,52)（initpvpItemHandler :612-638）；
 # common 布局 DGccp(250/280,67)（initCommonItemHandler :812-838）+ record DGccp(240,26)=(187.5,20.31)。
+# 2026-08-18 修复轮 B（受控偏离）：record 中心源值 53.91 → 50.9（上移 3 点）。Godot 18 号
+# 行高 20.1px ＞ cocos 18 号视觉 18px，中心照源时字形底实测(y183)压底边框过渡区起点(y182)；
+# 上移后字形底与源视觉底对齐（源字形底距过渡起点约 1.9 点）。star 基准同步 53.91→50.9。
 const RANKING_CENTER: Vector2 = Vector2(46.88, 35.16)
 const HEAD_CENTER: Vector2 = Vector2(136.72, 35.16)
 const HEAD_SIZE: Vector2 = Vector2(40.0, 40.0)
@@ -47,7 +50,8 @@ const NAME_BG_RES: String = "res://assets/ui/alpha/HVGA/task_name_bg.png"
 # nameBg 纹理 422x34px ÷CS = 329.37x26.54 点。
 const NAME_BG_SIZE: Vector2 = Vector2(329.37, 26.54)
 const NAME_X: float = 218.75
-const RECORD_POS: Vector2 = Vector2(187.5, 41.91)
+const RECORD_POS: Vector2 = Vector2(187.5, 38.9)
+const RECORD_LINE_CENTER_Y: float = 50.9
 # hero_evo_star 的星图标（源 :879-891 detail_star scale 0.5：70x71px ÷CS×0.5 = 27.31x27.71）。
 const STAR_ICON_RES: String = "res://assets/ui/alpha/HVGA/detail_star.png"
 const STAR_ICON_SIZE: Vector2 = Vector2(27.31, 27.71)
@@ -247,12 +251,16 @@ func _make_row(rank: int, row_name: String, level: int, param: int, avatar: int,
 	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(board)
 	# ranking：1st/2nd/3rd 徽章缺图（披露）→ 全档 Label "#N" 降级；self 行 "★"（迁移期行为）。
+	# 2026-08-18 修复轮 B：Label 补 VERTICAL_ALIGNMENT_CENTER——源 anchor(0,0.5) 中心定位，
+	# 旧 TOP 对齐 + Godot 18 号行高(20.1)＞cocos 18 号，字形系统性下沉约 2 点压行底板边框
+	# （实测 record 字形底 y183 vs 底边框过渡区起点 y182，用户实跑"标签挡住下面边框"）。
 	var rank_lbl := Label.new()
 	rank_lbl.text = "★" if rank == 0 else "#%d" % rank
 	rank_lbl.theme_type_variation = "RanklistWhiteLabel18"
 	rank_lbl.position = RANKING_CENTER - Vector2(30.0, 12.0)
 	rank_lbl.size = Vector2(60.0, 24.0)
 	rank_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rank_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	rank_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(rank_lbl)
 	# head：源 getTeamHead 组件（图+金框+mask）缺 → Avatar.Picture 直显（披露）。
@@ -282,6 +290,7 @@ func _make_row(rank: int, row_name: String, level: int, param: int, avatar: int,
 	name_lbl.theme_type_variation = "RanklistWhiteLabel18"
 	name_lbl.position = Vector2(NAME_X, name_bg_y - 12.0)
 	name_lbl.size = Vector2(240.0, 24.0)
+	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(name_lbl)
 	if not is_pvp:
@@ -308,6 +317,7 @@ func _add_record_row(row: Control, board: Control, param: int) -> void:
 	record.theme_type_variation = "RanklistRowRecordLabel"
 	record.position = RECORD_POS
 	record.size = Vector2(240.0, 24.0)
+	record.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	record.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(record)
 	var value := Label.new()
@@ -315,6 +325,7 @@ func _add_record_row(row: Control, board: Control, param: int) -> void:
 	value.theme_type_variation = "RanklistRowRecordLabel"
 	value.position = RECORD_POS
 	value.size = Vector2(240.0, 24.0)
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(value)
 	var star: TextureRect = null
@@ -333,7 +344,7 @@ func _add_record_row(row: Control, board: Control, param: int) -> void:
 func _place_record_tail(record: Label, star: TextureRect, value: Label) -> void:
 	var value_x: float = RECORD_POS.x + record.get_minimum_size().x
 	if star != null:
-		# 源 anchor ccp(0,0.4)：顶=中心线 y(53.91) - 高x0.4。
-		star.position = Vector2(value_x, 53.91 - STAR_ICON_SIZE.y * 0.4)
+		# 源 anchor ccp(0,0.4)：顶=中心线 y(50.9，修复轮 B 同步上移) - 高x0.4。
+		star.position = Vector2(value_x, RECORD_LINE_CENTER_Y - STAR_ICON_SIZE.y * 0.4)
 		value_x += STAR_ICON_SIZE.x
 	value.position = Vector2(value_x, RECORD_POS.y)

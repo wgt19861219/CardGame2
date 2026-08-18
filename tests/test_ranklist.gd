@@ -264,6 +264,28 @@ func test_panel_rows_after_setup() -> void:
 	panel.queue_free()
 
 
+# 修复轮 B（2026-08-18）守卫：record 行标签 y 上移 + 垂直居中。Godot 18 号行高 20.1 ＞
+# cocos 18 号视觉 18 → 中心照源 53.91 时字形底实测压底边框过渡区（用户实跑反馈"标签挡住
+# 下面的边框"）→ RECORD_POS.y 41.91→38.9（照源字形底视觉，受控偏离）+ CENTER 显式化。
+func test_record_row_label_lifted_and_centered() -> void:
+	var rm := RanklistManager.new()
+	var pd := PlayerData.new(cm)
+	var panel := RanklistPanel.new("ranklist", {})
+	panel.setup_panel(pd, rm, "full_hero_gs")
+	add_child(panel)
+	var rows: VBoxContainer = panel.container.get_node("RanklistContent/%ScrollLayer/%Rows") as VBoxContainer
+	var board: NinePatchRect = (rows.get_child(1) as Control).get_child(0) as NinePatchRect
+	var records: Array = []
+	for c in board.get_children():
+		if c is Label and String((c as Label).theme_type_variation) == "RanklistRowRecordLabel":
+			records.append(c)
+	assert_eq(records.size(), 2, "record tips + value 两 Label")
+	var record: Label = records[0] as Label
+	assert_almost_eq(record.position.y, 38.9, 0.05, "record y=38.9（修复轮 B：源中心 53.91-3 上移）")
+	assert_eq(record.vertical_alignment, VERTICAL_ALIGNMENT_CENTER, "record 垂直居中（源 anchor(0,0.5) 语义）")
+	panel.queue_free()
+
+
 # gd 运行时 theme override 清零守卫（panel + overlay 两文件，brief：gd add_theme 11 全清）。
 func test_panel_no_runtime_theme_override() -> void:
 	for path: String in [
