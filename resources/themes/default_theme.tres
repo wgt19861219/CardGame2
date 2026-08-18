@@ -414,6 +414,40 @@ content_margin_top = 0.0
 content_margin_right = 0.0
 content_margin_bottom = 0.0
 
+; ladder 换一批按钮（批4 Task 9）：源 pvp.lua:2211-2236 changeEnemy Scale9Sprite
+; tavern_button_1/2(166x63) cap CCRectMake(50,20,66,23) 纹理像素直译（批 1 公式：
+; left=50 top=63-20-23=20 right=166-50-66=50 bottom=20），无 scaleSize → 按钮 rect
+; 129.5x49.2（166/CS x 63/CS）。
+[sub_resource type="StyleBoxTexture" id="SB_ladder_change_n"]
+texture = ExtResource("16_miduse1")
+texture_margin_left = 50.0
+texture_margin_top = 20.0
+texture_margin_right = 50.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="SB_ladder_change_p"]
+texture = ExtResource("17_miduse2")
+texture_margin_left = 50.0
+texture_margin_top = 20.0
+texture_margin_right = 50.0
+texture_margin_bottom = 20.0
+
+; ladder 购买/阵容调整按钮（源 :2937-2963 adjustHero + pvpShop :2030-2055）
+; tavern_button_normal_1/2 同 cap(50,20,66,23)，图与 change 系不同故独立 SB。
+[sub_resource type="StyleBoxTexture" id="SB_ladder_normal50_n"]
+texture = ExtResource("14_dlbtn1")
+texture_margin_left = 50.0
+texture_margin_top = 20.0
+texture_margin_right = 50.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="SB_ladder_normal50_p"]
+texture = ExtResource("15_dlbtn2")
+texture_margin_left = 50.0
+texture_margin_top = 20.0
+texture_margin_right = 50.0
+texture_margin_bottom = 20.0
+
 [resource]
 AmountLabel/base_type = &"Label"
 AmountLabel/colors/font_color = Color(0.608, 0.161, 0.055, 1)
@@ -1503,3 +1537,74 @@ RanklistOverlayHintLabel/font_sizes/font_size = 18
 RanklistOverlayDeltaLabel/base_type = &"Label"
 RanklistOverlayDeltaLabel/colors/font_color = Color(0.94902, 0.384314, 0.235294, 1)
 RanklistOverlayDeltaLabel/font_sizes/font_size = 18
+; ── ladder 天梯面板（批4 Task 9，2026-08-18）── 源 pvp.lua 6 panelLayer 本项目消费
+; 3 层（main :1933-3050 / rank :1601 / record :1702）；heroInfo/reward/rewardInfo 未迁移。
+; tab 行/挑战按钮（源 cap(14,20,60,23) 同 crusade 系）复用 SB_crusade_action，文字走
+; 子 Label（stylebox 不对称 margin L14/R92 致 Button.text 偏移，crusade 先例）。
+LadderTabButton/base_type = &"Button"
+LadderTabButton/styles/normal = SubResource("SB_crusade_action_n")
+LadderTabButton/styles/hover = SubResource("SB_crusade_action_n")
+LadderTabButton/styles/pressed = SubResource("SB_crusade_action_p")
+LadderTabButton/styles/disabled = SubResource("SB_crusade_action_n")
+LadderTabButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+LadderChangeButton/base_type = &"Button"
+LadderChangeButton/styles/normal = SubResource("SB_ladder_change_n")
+LadderChangeButton/styles/hover = SubResource("SB_ladder_change_n")
+LadderChangeButton/styles/pressed = SubResource("SB_ladder_change_p")
+LadderChangeButton/styles/disabled = SubResource("SB_ladder_change_n")
+LadderChangeButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+LadderWideButton/base_type = &"Button"
+LadderWideButton/styles/normal = SubResource("SB_ladder_normal50_n")
+LadderWideButton/styles/hover = SubResource("SB_ladder_normal50_n")
+LadderWideButton/styles/pressed = SubResource("SB_ladder_normal50_p")
+LadderWideButton/styles/disabled = SubResource("SB_ladder_normal50_n")
+LadderWideButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 主层深灰字 20（源 rank/leftTime/cdText/DEFENSIVE_TEAM_ ccc3(67,59,56) size20）
+LadderDarkLabel20/base_type = &"Label"
+LadderDarkLabel20/colors/font_color = Color(0.262745, 0.231373, 0.219608, 1)
+LadderDarkLabel20/font_sizes/font_size = 20
+; 主层橙红数值 20（源 myRank/gpsValue/rankValue/gpsValue/leftTimeNum ccc3(138,56,1)）
+LadderOrangeLabel20/base_type = &"Label"
+LadderOrangeLabel20/colors/font_color = Color(0.541176, 0.219608, 0.003922, 1)
+LadderOrangeLabel20/font_sizes/font_size = 20
+; 弹层标题 24（源 rank/record 层标题 ccc3(243,196,16) size24 + fontinfo ui_normal_button
+; 阴影 ccc3(63,5,0) offset(0,2)，fontconfigs.lua:23-31）
+LadderTitleLabel24/base_type = &"Label"
+LadderTitleLabel24/colors/font_color = Color(0.952941, 0.768627, 0.062745, 1)
+LadderTitleLabel24/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+LadderTitleLabel24/constants/shadow_offset_x = 0
+LadderTitleLabel24/constants/shadow_offset_y = 2
+LadderTitleLabel24/font_sizes/font_size = 24
+; 按钮字 17（源各按钮 Label ccc3(234,225,205) + fontinfo ui_normal_button 阴影）
+LadderBtnLabel17/base_type = &"Label"
+LadderBtnLabel17/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+LadderBtnLabel17/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+LadderBtnLabel17/constants/shadow_offset_x = 0
+LadderBtnLabel17/constants/shadow_offset_y = 2
+LadderBtnLabel17/font_sizes/font_size = 17
+; 换一批按钮字 17（源 changeEnemyName ccc3(251,206,16)，stage 系 (250,205,16) 不同源色不混用）
+LadderChangeBtnLabel17/base_type = &"Label"
+LadderChangeBtnLabel17/colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
+LadderChangeBtnLabel17/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+LadderChangeBtnLabel17/constants/shadow_offset_x = 0
+LadderChangeBtnLabel17/constants/shadow_offset_y = 2
+LadderChangeBtnLabel17/font_sizes/font_size = 17
+; 卡名/记录名 20 白+黑影（源 enemyId setLabelShadow(ccc3(0,0,0), ccp(0,2)) :3094）
+LadderWhiteShadowLabel20/base_type = &"Label"
+LadderWhiteShadowLabel20/colors/font_color = Color(1, 1, 1, 1)
+LadderWhiteShadowLabel20/colors/font_shadow_color = Color(0, 0, 0, 1)
+LadderWhiteShadowLabel20/constants/shadow_offset_x = 0
+LadderWhiteShadowLabel20/constants/shadow_offset_y = 2
+LadderWhiteShadowLabel20/font_sizes/font_size = 20
+; 榜行白 20（源 createRankInfo rank label ccc3(255,255,255) size20 无阴影）
+LadderWhiteLabel20/base_type = &"Label"
+LadderWhiteLabel20/colors/font_color = Color(1, 1, 1, 1)
+LadderWhiteLabel20/font_sizes/font_size = 20
+; 记录行时间 20（源 time label ccc3(93,84,78) size20）
+LadderTimeLabel20/base_type = &"Label"
+LadderTimeLabel20/colors/font_color = Color(0.364706, 0.329412, 0.305882, 1)
+LadderTimeLabel20/font_sizes/font_size = 20
+; 卡内等级 18（源 enemyLevel ccc3(255,234,198) size18 :2410-2423）
+LadderCreamLabel18/base_type = &"Label"
+LadderCreamLabel18/colors/font_color = Color(1, 0.917647, 0.776471, 1)
+LadderCreamLabel18/font_sizes/font_size = 18
