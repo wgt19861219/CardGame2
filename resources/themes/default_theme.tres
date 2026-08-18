@@ -690,6 +690,31 @@ WarnLabel/font_sizes/font_size = 18
 InfoLineLabel/base_type = &"Label"
 InfoLineLabel/colors/font_color = Color(0.858824, 0.768627, 0.494118, 1)
 InfoLineLabel/font_sizes/font_size = 19
+; ── configure 两件套（批 4 Task 10，2026-08-18）── 源 popwindow/configure.lua。
+; Scale9 动作按钮（createWindow change_head:1149-1199/change_name:1213-1263/
+; save_manager:1264-1314 + createSWButton setup_button:742-792）同为
+; sell_number_button(63x67) cap CCRectMake(15,22,15,25)——与批 2 Task 2 package
+; 图鉴按钮同图同 cap → 复用 SB_pkg_hb_n/p（focus 空按钮集）。
+ConfigureActionBtn/base_type = &"Button"
+ConfigureActionBtn/styles/normal = SubResource("SB_pkg_hb_n")
+ConfigureActionBtn/styles/hover = SubResource("SB_pkg_hb_n")
+ConfigureActionBtn/styles/pressed = SubResource("SB_pkg_hb_p")
+ConfigureActionBtn/styles/disabled = SubResource("SB_pkg_hb_n")
+ConfigureActionBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; 玩家名（createName:87-118 size20 无 config.color 默认白 + 黑影(0,2)）
+ConfigureNameLabel/base_type = &"Label"
+ConfigureNameLabel/colors/font_color = Color(1, 1, 1, 1)
+ConfigureNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+ConfigureNameLabel/constants/shadow_offset_x = 0
+ConfigureNameLabel/constants/shadow_offset_y = 2
+ConfigureNameLabel/font_sizes/font_size = 20
+; 语言 label（createSWButton:955-973 size20 ccc3(220,176,103) + 黑影(0,2)）
+ConfigureLangLabel/base_type = &"Label"
+ConfigureLangLabel/colors/font_color = Color(0.862745, 0.690196, 0.403922, 1)
+ConfigureLangLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+ConfigureLangLabel/constants/shadow_offset_x = 0
+ConfigureLangLabel/constants/shadow_offset_y = 2
+ConfigureLangLabel/font_sizes/font_size = 20
 StageNumberLabel/base_type = &"Label"
 StageNumberLabel/colors/font_color = Color(0.961, 0.882, 0.745, 1)
 StageNumberLabel/font_sizes/font_size = 22
