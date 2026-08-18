@@ -121,6 +121,7 @@ func _build_content() -> void:
 	(_tab("%Title") as Label).text = _player.cm.get_lstr("RANKLIST.RANKLISTTITLE")
 	_tab_host = _tab("%TabHost") as Control
 	_rows = _tab("%Rows") as VBoxContainer
+	_scroll_layer = _tab("%ScrollLayer") as ScrollContainer
 	_bind_tabs()
 	_refresh_list()
 
@@ -196,11 +197,29 @@ func _on_tab_pressed(mode: String) -> void:
 
 
 # 行点击弹 RanklistSummary（照源 initpvpItemHandler:656 点击弹 userpvpsummary）。
+var _row_press: Variant = null   # 行点击位移判别（修复轮四：按下即弹吞拖动）
+var _drag_state: Dictionary = {}   # DragScrollHelper 跨帧基准
+var _scroll_layer: ScrollContainer = null
+
+# 拖拽滚动（修复轮四：Godot 4 ScrollContainer 桌面无拖拽，源 draglist 手势补齐）。
+func _input(event: InputEvent) -> void:
+	if _scroll_layer != null:
+		DragScrollHelper.handle_input(_scroll_layer, event, _drag_state)
+
+# 行点击弹 RanklistSummary（照源 initpvpItemHandler:656 点击弹 userpvpsummary）。
+# 修复轮四：press 记录 → release 位移 <8px 才触发（拖动滚动不触发弹窗）。
 func _on_row_input(event: InputEvent, rank: int, row_name: String, level: int, param: int, avatar: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var summary := RanklistSummary.new()
-		summary.setup_panel(row_name, level, param, avatar, rank, _player.cm)
-		summary.show_window(get_parent())
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		var mb := event as InputEventMouseButton
+		if mb.pressed:
+			_row_press = mb.global_position
+		elif DragScrollHelper.is_tap(_row_press, mb.global_position):
+			_row_press = null
+			var summary := RanklistSummary.new()
+			summary.setup_panel(row_name, level, param, avatar, rank, _player.cm)
+			summary.show_window(get_parent())
+		else:
+			_row_press = null
 
 
 func _refresh_list() -> void:

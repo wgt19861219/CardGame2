@@ -48,6 +48,14 @@ var _equip_grid: GridContainer = null
 var _hero_grid: GridContainer = null
 var _get_grid: GridContainer = null
 var _how_label: Label = null
+var _scroll_clip: ScrollContainer = null
+var _drag_state: Dictionary = {}   # DragScrollHelper 跨帧基准（修复轮四）
+
+# 拖拽滚动（修复轮四：Godot 4 ScrollContainer 桌面无拖拽，源 draglist 手势补齐；
+# 格子无点击交互，仅拖动滚动）。
+func _input(event: InputEvent) -> void:
+	if _scroll_clip != null:
+		DragScrollHelper.handle_input(_scroll_clip, event, _drag_state)
 
 
 func setup_panel(equip_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
@@ -68,6 +76,7 @@ func setup_panel(equip_id: int, p_cm: Variant, p_pd: PlayerData) -> void:
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
+	_scroll_clip = _content.get_node("%ScrollClip") as ScrollContainer
 	_icon_host = _content.get_node("%IconHost") as Control
 	_amount_label = _content.get_node("%AmountLabel") as Label
 	_equip_section = _content.get_node("%EquipSection") as Control
