@@ -337,8 +337,8 @@ func test_content_static_tree() -> void:
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
 	assert_eq(text.count(".new("), text.count("HandbookPanel.new(") + text.count("EquipboardPanel.new(")
-		+ text.count("Control.new("),
-		"静态节点零 .new(，仅动态弹窗 + wrapper 载体白名单")
+		+ text.count("Control.new(") + text.count("NinePatchRect.new("),
+		"静态节点零 .new(，仅动态弹窗 + wrapper/NinePatch 边框载体白名单")
 
 
 # theme variation 接线（GUT 下节点级不解析 variation，读 tres 文本表项）。
@@ -441,14 +441,10 @@ func test_tab_z_absolute_no_escape() -> void:
 	root.queue_free()
 
 
-# cell 显示对齐（task-11 守卫）：源 loadEquip :288 createIconWithAmount(id) 无 length →
-# 显示原点尺寸 ≈ frame 纹理 94×95 ÷CS；ReadequipIcon Sprite2D 按纹理原尺寸渲染（hero_detail
-# 装备槽同口径）→ panel 侧 icon scale=74/95 补偿 + wrapper min size=视觉盒。
-# 曾因无补偿：icon 视觉 94×95 溢出 72 格子，相邻品质框重叠 19/15px（验收"挤在一起"）。
-# 注：运行时步进 75/80 由 min 73.22 + theme sep 2/6（test_theme_variations_wired 文本守卫）
-# 合成；GUT 下节点级不解析 variation（批1 沉淀），故此处不断言步进（预览实测 75/80，见
-# docs task-11 报告）。GridContainer 会重置直接 child 的 scale → cell 包 wrapper（外层格子
-# min size、内层 icon 保 scale）。
+# cell 显示对齐（修复轮 B 守卫）：wrapper min=视觉盒 73.22×74（步进 75/80 由 min+theme sep
+# 2/6 合成）；frame 层 NinePatchRect 1:1 保立体（PIL 实测 equip_frame 边框 6 行层界
+# 顶 y2-7/底 y84-88/左右 x3-8、x85-90 含透明缘 → patch 9/8/11/9）；内容层去 frame Sprite2D、
+# scale 55/78 落中区、icon 归中 (9,9)。历史：等比缩放 6 层压 4-5 层高光并档（验收"边框糊"）。
 func test_grid_cell_display_alignment() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -463,12 +459,64 @@ func test_grid_cell_display_alignment() -> void:
 	var wrapper0: Control = panel._grid.get_child(0)
 	assert_almost_eq(wrapper0.custom_minimum_size.x, 73.22, 0.01, "wrapper min 宽=视觉宽（格子贴合无重叠）")
 	assert_almost_eq(wrapper0.custom_minimum_size.y, 74.0, 0.01, "wrapper min 高=视觉高")
-	var cell0: Control = wrapper0.get_child(0)
-	assert_almost_eq(cell0.scale.x, 74.0 / 95.0, 0.0001, "icon scale=74/95（视觉 73.22×74.0）")
-	var frame: Sprite2D = cell0.get_child(0) as Sprite2D
-	assert_almost_eq(frame.texture.get_size().x * cell0.scale.x, 73.22, 0.1,
-		"frame 视觉宽 = 94×74/95 = 73.22（源 73.37 差 0.15px）")
-	assert_almost_eq(frame.texture.get_size().y * cell0.scale.y, 74.0, 0.1, "frame 视觉高 74（源 74.13）")
+	# 边框层：child(0) = NinePatchRect（1:1 立体层）
+	var frame: NinePatchRect = wrapper0.get_child(0) as NinePatchRect
+	assert_not_null(frame, "frame 层 = NinePatchRect（修复轮 B：Sprite2D 等比缩放层混叠的反案）")
+	assert_eq(frame.patch_margin_left, 9, "patch left=9（层 x3-8 含透明缘）")
+	assert_eq(frame.patch_margin_top, 8, "patch top=8（层 y2-7 含透明缘）")
+	assert_eq(frame.patch_margin_right, 9, "patch right=9（层 x85-90 含透明缘）")
+	assert_eq(frame.patch_margin_bottom, 11, "patch bottom=11（层 y84-88 含透明缘）")
+	assert_almost_eq(frame.size.x, 73.22, 0.01, "frame 宽=格子盒（源 73.37 差 0.15px）")
+	assert_almost_eq(frame.size.y, 74.0, 0.01, "frame 高 74（源 74.13）")
+	assert_true(String(frame.texture.resource_path).begins_with(ReadequipIcon.FRAME_DIR),
+		"frame 贴图按品质 equip_frame_<color>.png")
+	# 内容层：child(1) = ReadequipIcon 产物（frame Sprite2D 已剥、icon 归中、缩放落中区）
+	var cell0: Control = wrapper0.get_child(1) as Control
+	assert_almost_eq(cell0.scale.x, 55.0 / 78.0, 0.0001, "内容层 scale=55/78（icon 视觉嵌 NinePatch 中区）")
+	assert_almost_eq(cell0.position.x, 9.0 - 9.0 * 55.0 / 78.0, 0.01, "内容层 offset 使 icon 视觉起点=中区左上")
+	for c in cell0.get_children():
+		var spr := c as Sprite2D
+		if spr == null or spr.texture == null:
+			continue
+		var p: String = spr.texture.resource_path
+		assert_false(p.begins_with(ReadequipIcon.FRAME_DIR) or p.begins_with(ReadequipIcon.FRAGMENT_FRAME_DIR),
+			"内容层无残留 frame Sprite2D（由 NinePatchRect 接管）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# fragment 侧 cell 结构（修复轮 B）：fragment_bg 衬底 NinePatch（渐变带 patch 12/13）+
+# fragment_frame 品质框 + 内容层 icon 归中（STONE_ICON_POS (36,38) 溢出格子的既有偏移治理）。
+func test_fragment_cell_ninepatch_structure() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var recipe: Dictionary = _find_hero_fragment_recipe()
+	pd.hero_manager.add_fragment(int(recipe["frag_id"]), 5)
+	var panel := _make_panel("fragment", pd)
+	panel.show_window(root)
+	assert_eq(panel._grid.get_child_count(), 1, "fragment all tab 1 cell")
+	var wrapper: Control = panel._grid.get_child(0)
+	var bg: NinePatchRect = wrapper.get_child(0) as NinePatchRect
+	assert_not_null(bg, "child(0) = fragment_bg 衬底 NinePatchRect")
+	assert_eq(String(bg.texture.resource_path), ReadequipIcon.FRAGMENT_BG_PATH, "衬底贴图 fragment_bg.png")
+	assert_eq(bg.patch_margin_top, 12, "衬底 patch top=12（渐变带 y1-11）")
+	assert_eq(bg.patch_margin_bottom, 13, "衬底 patch bottom=13（渐变带 y82-89 含透明缘）")
+	var frame: NinePatchRect = wrapper.get_child(1) as NinePatchRect
+	assert_not_null(frame, "child(1) = fragment_frame 品质框 NinePatchRect")
+	assert_true(String(frame.texture.resource_path).begins_with(ReadequipIcon.FRAGMENT_FRAME_DIR),
+		"品质框贴图 fragment_frame_<color>.png")
+	var cell: Control = wrapper.get_child(2) as Control
+	var icon: Sprite2D = null
+	for c in cell.get_children():
+		var spr := c as Sprite2D
+		if spr != null and spr.texture != null \
+				and String(spr.texture.resource_path) != ReadequipIcon.SOULSTONE_TAG_PATH \
+				and String(spr.texture.resource_path) != ReadequipIcon.TICK_PATH:
+			icon = spr
+			break
+	assert_not_null(icon, "内容层含 icon（含 gocha fallback：碎片 Icon 字段资源缺失回退）")
+	assert_eq(icon.position, Vector2(9.0, 9.0), "icon 归中 (9,9)（视觉嵌 NinePatch 中区，旧 (36,38) 溢出）")
 	panel.remove_window()
 	root.queue_free()
 
