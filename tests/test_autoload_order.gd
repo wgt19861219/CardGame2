@@ -35,3 +35,39 @@ func test_events_autoload_ready_before_game_data() -> void:
 	assert_gt(events_idx, 0, "Events autoload 应存在于 [autoload] 段")
 	assert_gt(game_data_idx, 0, "GameData autoload 应存在于 [autoload] 段")
 	assert_lt(events_idx, game_data_idx, "Events 必须在 GameData 之前（game_data._ready 依赖 Events.bus）")
+
+
+# ── 2026-08-18 战斗缠绕根因回归守卫（skill_lib 注入顺序）──
+# game_data._ready 曾把 stage_manager.skill_lib = skills 写在 skills 创建之前（阶段一注入化
+# 引入），注入 null 后建库不回填 → 战役单位 skill_list 恒空 → AI 无技能只普攻贴脸（用户实跑
+# "交织缠绕"）。excavate/crusade/ladder 自建 lib 故未暴露；dungeon e2e 只断言 has(won) 未拦。
+
+func test_game_data_injects_skill_lib_after_creation() -> void:
+	var gd_script := preload("res://scripts/autoload/game_data.gd")
+	var game_data := gd_script.new()
+	add_child(game_data)
+	assert_not_null(game_data.skills, "GameData._ready 后 skills 库就绪")
+	assert_not_null(game_data.player.stage_manager.skill_lib,
+		"player.stage_manager.skill_lib 已注入（非 null——2026-08-18 缠绕根因回归守卫）")
+	if game_data.player.stage_manager.skill_lib != null:
+		assert_same(game_data.skills, game_data.player.stage_manager.skill_lib,
+			"注入的是同一 SkillLibrary 实例")
+	game_data.queue_free()
+
+
+func test_stage_assemble_units_have_skills() -> void:
+	# 装配端到端守卫：真实入口同款（player.stage_manager）装配 stage1，单位技能表非空
+	var mgr: StageManager = GameData.player.stage_manager
+	if mgr == null or mgr.skill_lib == null:
+		fail_test("player.stage_manager.skill_lib 未注入（注入顺序回归）")
+		return
+	var r: Dictionary = mgr.assemble_stage_battle(1, GameData.player, [1, 2, 3, 4, 5], BattleRng.new(7))
+	if not bool(r.get("ok", false)):
+		fail_test("stage1 装配失败: %s" % str(r.get("error", "")))
+		return
+	var eng: BattleEngine = r["engine"]
+	var skilled: int = 0
+	for u in eng.foreach_alive_unit(BattleEngine.CAMP_BOTH):
+		if u.skill_list.size() > 0:
+			skilled += 1
+	assert_gt(skilled, 0, "装配单位至少 1 个技能非空（skill_lib 注入链不断，AI 可施法）")

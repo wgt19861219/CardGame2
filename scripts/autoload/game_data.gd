@@ -29,6 +29,12 @@ func _ready() -> void:
 	config = ConfigManager.new()
 	config.load_all()
 	player = _load_or_new_player()
+	# ⚠️ 注入必须在 skills 创建之后（2026-08-18 战斗缠绕根因）：skill_lib 注入的是引用值，
+	# 先注 null 后建库不会回填——阶段一注入化以来战役单位 skill_list 恒空，AI 无技能可用
+	# 只能普攻走位互贴（excavate/crusade/ladder 自建 lib 故此前验收未暴露；e2e 只断言
+	# has(won) 未断 won，超时判负也全绿）。
+	skills = SkillLibrary.new(config)
+	skill_groups = SkillGroupData.new(config)
 	player.events = Events.bus  # 注入 EventBus（check_unlocks 升级解锁发 feature_unlocked → main_scene 弹公告）
 	# T2 依赖倒置：Logic 写操作自动标脏（buy_vitality/midas exchange 等；缺省 Callable headless 可测）。
 	player.save_hook = mark_save_dirty
@@ -39,8 +45,6 @@ func _ready() -> void:
 	player.crusade_manager.sfx_hook = sfx
 	player.excavate.sfx_hook = sfx
 	player.ladder.sfx_hook = sfx
-	skills = SkillLibrary.new(config)
-	skill_groups = SkillGroupData.new(config)
 	_start_autosave_timer()
 	save()
 
