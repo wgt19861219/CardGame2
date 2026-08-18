@@ -77,7 +77,7 @@ static func take_damage(u: Variant, params: Dictionary) -> float:
 		else:
 			_try_hurt(u, lost)
 			var mp_gain: float = lost * float(u.info.get("MP Gain Rate", 0.0)) / float(u.attribs.get("HP", 1.0))
-			u.set_mp(int(float(u.mp) + mp_gain * float(u.engine.mp_bonus)))
+			u.set_mp(float(u.mp) + mp_gain * float(u.engine.mp_bonus))   # float 全程不截断（源语义）
 	elif field == "mp":
 		u.set_mp(int(float(u.mp) - lost))
 	u.unfreeze_actor()

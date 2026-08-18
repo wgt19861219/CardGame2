@@ -90,3 +90,16 @@ func test_stage_player_has_manual_skill_equipped() -> void:
 			any_manual = true
 	assert_true(any_multi, "玩家英雄技能数 >1（_skill_levels 装配）")
 	assert_true(any_manual, "玩家英雄大招（manual_skill）已装备")
+
+
+func test_mp_float_accumulation_reaches_cap() -> void:
+	# 源 lua mp 是 float——int 截断会让 0.6/次 的回蓝永久卡 999（Cost 1000 大招差 1 永不放）
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var eng := BattleEngine.new()
+	eng.rng = BattleRng.new(1)
+	var u := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": true}, cm, eng, {}, null)
+	var mp_max: float = float(u.attribs.get("MP", 1))
+	for i in range(2000):
+		u.set_mp(u.mp + 0.6)
+	assert_eq(u.mp, mp_max, "0.6/次累积 2000 次必达上限（不卡 999.6）")

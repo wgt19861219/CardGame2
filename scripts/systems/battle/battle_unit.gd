@@ -54,7 +54,7 @@ var orig_attribs: Dictionary = {}
 # （玩家 hp/mp 跨波保留；2026-08-18 用户实跑"切波能量条清零"根因，本项目漏此守卫）。
 var hpmp_inited: bool = false
 var hp: int = 0
-var mp: int = 0
+var mp: float = 0.0   # 源 lua number 全程 float——int 截断会卡 999 致 Cost 1000 大招永差 1（2026-08-18）
 var max_shield: int = 0
 var show_ball: Variant = null
 var gs: float = 0.0
@@ -176,9 +176,9 @@ func set_hp(new_hp: int) -> int:
 	return hp
 
 
-func set_mp(new_mp: int) -> int:
-	var capped: int = min(new_mp, int(attribs.get("MP", 0)))
-	capped = max(capped, 0)
+func set_mp(new_mp: float) -> float:
+	var capped: float = minf(new_mp, float(attribs.get("MP", 0)))
+	capped = maxf(capped, 0.0)
 	mp = capped
 	return mp
 
