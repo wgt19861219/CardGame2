@@ -143,18 +143,153 @@ func test_arrow_click_gap_debounces() -> void:
 func test_page_title_updates_on_tag_switch() -> void:
 	# #4 源 setPageTitle :475 tagText.title（切 tag 时 pageTitle 文字变）
 	var panel: HandbookPanel = _make_panel()
-	assert_eq(panel._page_title.text, HandbookBuilder.title_text(1, cm), "默认 ALL 标题")
+	assert_eq(panel._page_title.text, panel._title_text(1), "默认 ALL 标题")
 	panel._switch_tag(2)   # STR
-	assert_eq(panel._page_title.text, HandbookBuilder.title_text(2, cm), "切 STR 标题更新")
+	assert_eq(panel._page_title.text, panel._title_text(2), "切 STR 标题更新")
 	panel.remove_window()
 	panel.get_parent().queue_free()
 
 
-func test_builder_title_text_all_12_indices() -> void:
-	# #4 HandbookBuilder.title_text 12 个分类标题 LSTR 全解析非空
+func test_title_text_all_12_indices() -> void:
+	# #4 title_text 12 个分类标题 LSTR 全解析非空（源 tagText.title1-12 :53-64）
+	var panel: HandbookPanel = _make_panel()
 	for i in range(1, 13):
-		var t: String = HandbookBuilder.title_text(i, cm)
-		assert_true(t.length() > 0, "title_text(" + str(i) + ") 非空")
+		var t: String = panel._title_text(i)
+		assert_true(t.length() > 0, "_title_text(" + str(i) + ") 非空")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+# ── 两件套改造守卫（批4 Task 5：builder 退役 + variation 接线）──
+
+func test_builder_retired_gone() -> void:
+	# builder 退役守卫：handbook_builder.gd 删除 + panel 无残留引用（scripts/ui _builder.gd 5→4：
+	# 剩 main_map + shop_row/task_row/excavate_history_row 三个 row_builder，excavate 批前已在）
+	assert_false(ResourceLoader.exists("res://scripts/ui/handbook_builder.gd"), "handbook_builder.gd 已删除")
+	var panel_text: String = FileAccess.get_file_as_string("res://scripts/ui/handbook_panel.gd")
+	assert_true(panel_text.find("HandbookBuilder") == -1, "panel 无 HandbookBuilder 残留引用")
+
+
+func test_panel_no_runtime_theme_override() -> void:
+	# gd add_theme 5 处清零守卫：字号/颜色/描边全走 theme_type_variation（两件套范式）
+	var panel_text: String = FileAccess.get_file_as_string("res://scripts/ui/handbook_panel.gd")
+	assert_eq(panel_text.count("add_theme_"), 0, "panel 运行时 add_theme_* 清零")
+
+
+func test_tag_label_variation_switches_on_select() -> void:
+	# tag 选中态两 variation 方案（源 doSelectTag :94-101 选中白/disableShadow、未选中灰/setShadow 黑(0,2)）
+	var panel: HandbookPanel = _make_panel()
+	var lbl1: Label = panel._tag_ui[1]["label"]
+	var lbl2: Label = panel._tag_ui[2]["label"]
+	assert_eq(lbl1.theme_type_variation, &"HandbookEntryLabelSelected", "默认 tag1 选中 variation")
+	assert_eq(lbl2.theme_type_variation, &"HandbookEntryLabel", "tag2 未选中 variation")
+	panel._switch_tag(2)
+	assert_eq(lbl1.theme_type_variation, &"HandbookEntryLabel", "切走后 tag1 回未选中")
+	assert_eq(lbl2.theme_type_variation, &"HandbookEntryLabelSelected", "tag2 变选中")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_equip_cell_size_source_scale() -> void:
+	# 贴图显示尺寸 = 原始像素 ÷ CS(1.28125)（TextureConfig 无 handbook 条目口径）：
+	# handbook_equip_bg 148×139（PIL 实测）→ (115.51, 108.49) 点；防 1.28 偏大回退
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var cell: Control = panel._create_equip_cell(info, panel._player.team_level)
+	assert_almost_eq(cell.custom_minimum_size.x, 148.0 / 1.28125, 0.1, "cell 宽 = 148/CS")
+	assert_almost_eq(cell.custom_minimum_size.y, 139.0 / 1.28125, 0.1, "cell 高 = 139/CS")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_equip_name_label_uses_variation() -> void:
+	# 装备名 label 走 HandbookEquipNameLabel variation（源 createIcon :443-444 18 号 (182,65,21)）
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var cell: Control = panel._create_equip_cell(info, panel._player.team_level)
+	var name_lbl: Label = null
+	for c in cell.get_children():
+		if c is Label:
+			name_lbl = c
+	assert_not_null(name_lbl, "cell 含装备名 Label")
+	assert_eq(name_lbl.theme_type_variation, &"HandbookEquipNameLabel", "装备名 variation")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_name_label_clamps_over_cell_width() -> void:
+	# 源 :445-447 label 宽 >114 → setScale(114/width)（单参等比）
+	var panel: HandbookPanel = _make_panel()
+	var lbl := Label.new()
+	add_child(lbl)
+	panel._clamp_label_width(lbl, 228.0)
+	assert_almost_eq(lbl.scale.x, 0.5, 0.001, "228 宽等比缩到 0.5")
+	assert_almost_eq(lbl.scale.y, 0.5, 0.001, "Y 同比（源 setScale 单参等比）")
+	lbl.queue_free()
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_equip_cell_icon_or_lock_structure() -> void:
+	# 源 createIcon :428-441：解锁 → readequip icon；锁定(lr>level) → icon_bg + lock 居中(源 icon@(33,33)=中心)
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var open_cell: Control = panel._create_equip_cell(info, panel._player.MAX_TEAM_LEVEL)
+	assert_true(bool(open_cell.get_meta(&"is_open")), "满级 cell 解锁")
+	var locked_cell: Control = panel._create_equip_cell(info, 1)
+	var lr: int = int(info.get("lr", 1))
+	if lr > 1:
+		assert_false(bool(locked_cell.get_meta(&"is_open")), "level=1 且 lr>1 → 锁定")
+		var icon_bg: Control = locked_cell.get_child(1) as Control
+		assert_eq(icon_bg.get_child_count(), 1, "icon_bg 含 lock 子")
+		var lock: Control = icon_bg.get_child(0) as Control
+		assert_almost_eq(lock.position.x, (icon_bg.size.x - lock.size.x) / 2.0, 0.1, "lock 居中 x")
+		assert_almost_eq(lock.position.y, (icon_bg.size.y - lock.size.y) / 2.0, 0.1, "lock 居中 y")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_equip_cell_icon_centered_per_source() -> void:
+	# 2026-08-18 修复轮 C 守卫：源 createIcon :429/:439 icon/iconBg:setPosition(57,64) 是
+	# cocos 默认锚点(0.5,0.5)=【中心】语义 → Godot 左上角 position 须减半尺寸。
+	# 修复前漏减致 icon 中心相对 cell 中心偏 (+47,+35)（右下半身位）。
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var open_cell: Control = panel._create_equip_cell(info, panel._player.MAX_TEAM_LEVEL)
+	var icon: Control = open_cell.get_child(1) as Control
+	var icon_center: Vector2 = icon.position + icon.size * 0.5
+	assert_almost_eq(icon_center.x, 57.0, 0.1, "icon 中心 x = 源 equipIconPosX(57)")
+	assert_almost_eq(icon_center.y, 139.0 / 1.28125 - 64.0, 0.1, "icon 中心 y = bg 高-源 64（中心锚换算）")
+	var locked_cell: Control = panel._create_equip_cell(info, 1)
+	if int(info.get("lr", 1)) > 1:
+		var icon_bg: Control = locked_cell.get_child(1) as Control
+		var bg_center: Vector2 = icon_bg.position + icon_bg.size * 0.5
+		assert_almost_eq(bg_center.x, 57.0, 0.1, "锁定 icon_bg 中心 x = 57")
+		assert_almost_eq(bg_center.y, 139.0 / 1.28125 - 64.0, 0.1, "锁定 icon_bg 中心 y 同源")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_equip_name_label_centered_after_ready() -> void:
+	# 2026-08-18 修复轮 C 守卫：源 createIcon :448 label:setPosition(57,17) 中心锚语义 →
+	# 入树 ready 后按 variation 18 号真实 minsize 居中（_layout_name_label），
+	# 且 clamp 缩放围绕中心 pivot。修复前 label 左上定位致中心偏右、底部溢出 bg 底边。
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var cell: Control = panel._create_equip_cell(info, panel._player.MAX_TEAM_LEVEL)
+	add_child(cell)
+	await get_tree().process_frame
+	var lbl: Label = null
+	for c in cell.get_children():
+		if c is Label:
+			lbl = c
+	assert_almost_eq(lbl.position.x + lbl.size.x * 0.5, 57.0, 0.1, "label 中心 x = 源 equipNameLabelPosX(57)")
+	assert_almost_eq(lbl.position.y + lbl.size.y * 0.5, 139.0 / 1.28125 - 17.0, 0.1,
+		"label 中心 y = bg 高-源 17（中心锚换算）")
+	assert_almost_eq(lbl.pivot_offset.x, lbl.size.x * 0.5, 0.1, "pivot 居中（clamp 围绕中心缩）")
+	cell.queue_free()
+	panel.remove_window()
+	panel.get_parent().queue_free()
 
 
 func test_open_cell_click_opens_equipcraft() -> void:

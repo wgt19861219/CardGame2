@@ -4,6 +4,14 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="2_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="3_closep"]
 
+; language_change 两件套静态树（批 4 Task 1，2026-08-17）照源 ui/popwindow/languagechange.lua：
+; frame（:46-50）main_vit_tips cap(10,10,58,26)（贴图 103x61 → top=61-10-26=25 bottom=10）
+; scaleSize(630,440) 中心(400,232) → 左上 to_godot(400,232)-(315,220) = (165,108)；
+; 语言按钮 readnode root=frame（:128）→ LangHost 覆盖 Frame 全域做 procedural 挂载点；
+; cancel（:67-77）frame 局部(610,425) 中心锚 → 全屏中心 (775,123) 右上骑边，
+; 65x66/CS = 50.73x51.51；close 收尾声明（excavate 批层序方法论）。
+; 源 title 被注释（:52-66）无标题。坐标 cocos(800x480 左下) → godot(960x640 左上)。
+
 [node name="LanguageChangeContent" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -12,6 +20,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 [node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
 offset_left = 165.0
 offset_top = 108.0
@@ -19,32 +28,26 @@ offset_right = 795.0
 offset_bottom = 548.0
 texture = ExtResource("1_frame")
 patch_margin_left = 10
-patch_margin_top = 10
+patch_margin_top = 25
 patch_margin_right = 35
-patch_margin_bottom = 25
-axis_stretch_horizontal = 2
-axis_stretch_vertical = 2
+patch_margin_bottom = 10
+mouse_filter = 2
+
+[node name="LangHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 630.0
+offset_bottom = 440.0
 mouse_filter = 2
 
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 690.0
-offset_top = 135.0
-offset_right = 740.73
-offset_bottom = 186.51
+offset_left = 749.63
+offset_top = 97.24
+offset_right = 800.37
+offset_bottom = 148.76
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
-
-[node name="LangGrid" type="GridContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 150.0
-offset_top = 120.0
-offset_right = 750.0
-offset_bottom = 400.0
-theme_override_constants/h_separation = 30
-theme_override_constants/v_separation = 40
-columns = 5
-mouse_filter = 2
+stretch_mode = 0

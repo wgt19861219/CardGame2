@@ -84,3 +84,26 @@ func test_complete_button_falls_back_when_asset_missing() -> void:
 				btn_tex_nonempty = true
 	assert_true(btn_tex_nonempty, "completeTag 降级后 texture_normal 非空（task_get_reward_button.png 缺 → task_button.png）")
 	row.free()
+
+
+# 源 draglist bar（task.lua:387-390 bar={bglen=320,bgpos=ccp(145,218)}，draglist.lua:13-14
+# 贴图 scroll_bar_bg/scroll_bar）→ ScrollContainer 滚动条贴图化（avatar 批4 先例，
+# add_theme_stylebox_override 属滚动条引擎缺口例外）。
+func test_panel_styles_scrollbars_with_source_textures() -> void:
+	var panel := _make_panel()
+	for scroll in _collect_scrollcontainers(panel.container):
+		var vs: VScrollBar = (scroll as ScrollContainer).get_v_scroll_bar()
+		assert_true(vs.has_theme_stylebox_override("scroll"),
+			"%s 垂直滚动条轨道贴图化（源 scroll_bar_bg）" % (scroll as ScrollContainer).name)
+		assert_true(vs.has_theme_stylebox_override("grabber"),
+			"%s 垂直滚动条滑块贴图化（源 scroll_bar）" % (scroll as ScrollContainer).name)
+	panel.free()
+
+
+func _collect_scrollcontainers(node: Node) -> Array:
+	var result: Array = []
+	for c in node.get_children():
+		if c is ScrollContainer:
+			result.append(c)
+		result.append_array(_collect_scrollcontainers(c))
+	return result

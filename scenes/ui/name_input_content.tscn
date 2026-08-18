@@ -1,11 +1,27 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/activate_input.png" id="2_namebg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/naming_button_roll_1.png" id="3_roll"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/naming_button_roll_2.png" id="4_rollp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="5_btn"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="6_btnp"]
+
+; name_input 两件套静态树（批 4 Task 2，2026-08-17）照源 ui/popwindow/bename.lua：
+; frame（:141-145）main_vit_tips cap(10,10,58,26)（贴图 103x61 → top=61-10-26=25
+; bottom=10）setContentSize(355,180) 中心(400,355) → 全屏 (302.5,115)-(657.5,295)；
+; readnode root=frame（:294）→ 子节点 Frame 局部坐标（y' = 180-y 翻转直译，
+; 全 0 锚 + 固定 rect——照源直译的坐标精确性选择（子节点 rect 与源数值
+; 一一对应便于核对）；tscn 手写比例锚本身生效正常（2026-08-17 审查探针
+; 实证 anchor_top=0.5 时 position.y=320），本写法并非锚失效规避）：
+; title（:148-159）(30,150) 左中 size20 白 NameInputTitleLabel，rect 中心 30 +
+; vertical_alignment center 对字号稳健；name_bg（:160-174）activate_input
+; cap(12,10,12,22)（47x55 → top=23 bottom=10）235x42 左中(30,95)；roll（:175-198）
+; (300,95) 中心 80x75/CS=62.44x58.54；ok/cancel（:199-292）sell_number_button
+; 110x45 中心(235,35)/(115,35)，九宫格三态走 NameInputButton variation（theme
+; 复用 SB_pkg_hb_n/p 同图同 cap），文案 CHATCONFIG.CONFIRM/CANCEL 走 fill；
+; edit（:32-48）后挂（createEdit :301）→ Input 收尾声明盖 name_bg，22 号
+; ccc3(198,175,126) 走 NameInputLabel，rect 中心 85 高 32 给足 min 行高。
+; 源无 close 节点（点 frame 外=取消走 PopWindow shade）；弹窗内无字数提示
+; Label（超长走 Toast 照源 doSetName :393-399，brief 该点与源不符从源）。
 
 [node name="NameInputContent" type="Control"]
 layout_mode = 3
@@ -15,83 +31,79 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 [node name="Frame" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 3
-offset_left = 303.0
+offset_left = 302.5
 offset_top = 115.0
-offset_right = 658.0
+offset_right = 657.5
 offset_bottom = 295.0
 texture = ExtResource("1_frame")
 patch_margin_left = 10
-patch_margin_top = 10
+patch_margin_top = 25
 patch_margin_right = 35
-patch_margin_bottom = 25
-axis_stretch_horizontal = 2
-axis_stretch_vertical = 2
+patch_margin_bottom = 10
 mouse_filter = 2
 
-[node name="Title" type="Label" parent="."]
+[node name="Title" type="Label" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 333.0
-offset_top = 133.0
+offset_left = 30.0
+offset_top = 16.0
 offset_right = 533.0
-offset_bottom = 157.0
-theme_override_font_sizes/font_size = 20
+offset_bottom = 44.0
+theme_type_variation = &"NameInputTitleLabel"
+vertical_alignment = 1
 mouse_filter = 2
-text = "请为您的战队命名"
 
-[node name="NameBg" type="NinePatchRect" parent="."]
+[node name="NameBg" type="NinePatchRect" parent="Frame"]
+unique_name_in_owner = true
 layout_mode = 3
-offset_left = 333.0
-offset_top = 179.0
-offset_right = 568.0
-offset_bottom = 221.0
+offset_left = 30.0
+offset_top = 64.0
+offset_right = 265.0
+offset_bottom = 106.0
 texture = ExtResource("2_namebg")
 patch_margin_left = 12
-patch_margin_top = 10
+patch_margin_top = 23
 patch_margin_right = 23
-patch_margin_bottom = 23
-axis_stretch_horizontal = 2
-axis_stretch_vertical = 2
+patch_margin_bottom = 10
 mouse_filter = 2
 
-[node name="Input" type="LineEdit" parent="."]
+[node name="RollBtn" type="TextureButton" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 341.0
-offset_top = 187.0
-offset_right = 560.0
-offset_bottom = 213.0
-mouse_filter = 0
-max_length = 12
-
-[node name="RollBtn" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 572.0
-offset_top = 170.0
-offset_right = 634.0
-offset_bottom = 229.0
+offset_left = 268.78
+offset_top = 55.73
+offset_right = 331.22
+offset_bottom = 114.27
 texture_normal = ExtResource("3_roll")
 texture_pressed = ExtResource("4_rollp")
 ignore_texture_size = true
+stretch_mode = 0
 
-[node name="CancelBtn" type="Button" parent="."]
+[node name="OkBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 363.0
-offset_top = 238.0
-offset_right = 473.0
-offset_bottom = 283.0
-mouse_filter = 0
-text = "取消"
+offset_left = 180.0
+offset_top = 122.5
+offset_right = 290.0
+offset_bottom = 167.5
+theme_type_variation = &"NameInputButton"
 
-[node name="OkBtn" type="Button" parent="."]
+[node name="CancelBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 483.0
-offset_top = 238.0
-offset_right = 593.0
-offset_bottom = 283.0
-mouse_filter = 0
-text = "确认"
+offset_left = 60.0
+offset_top = 122.5
+offset_right = 170.0
+offset_bottom = 167.5
+theme_type_variation = &"NameInputButton"
+
+[node name="Input" type="LineEdit" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 40.0
+offset_top = 69.0
+offset_right = 260.0
+offset_bottom = 101.0
+theme_type_variation = &"NameInputLabel"

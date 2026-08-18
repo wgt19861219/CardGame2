@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/detail_title_bg.png" id="1_titlebg"]
+
+; avatar 分类标题行模板（批 4 Task 3，2026-08-17）。照源 ofavatar.lua
+; createSubhead:109-121 直译：container 300×20（bg/label 同心 (150,10)=中心）
+; + titleHeight=40 计账（initListHeight :20）→ 行高 40、底板/文字居中。
+; 底板 detail_title_bg cap(100,0,304,12)（贴图 643×15）Scale9 setContentSize(300,12)：
+; Godot NinePatchRect min size = patch 和（100+239=339）> 300 会钳宽 → AtlasTexture
+; 预裁 region(0,0,404,15)（左 patch 100 + 中心 304，裁右侧纯延伸 patch 区 239），
+; patch 100/3/0/0，min=100 可缩到 300；视觉等价源（右 239 区在 300 显示宽下
+; 本就被压没，源 Cocos 负拉伸同为粗暴裁）。
+; 标题 18 号 ccc3(231,206,19)（setLabelColor）走 AvatarTitleLabel variation。
+; 行数量随解锁变（free/hero/worldcup 1-3 个）→ 动态行范式，panel fill 只填文案。
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_titlebg"]
+atlas = ExtResource("1_titlebg")
+region = Rect2(0, 0, 404, 15)
+
+[node name="AvatarTitleItem" type="Control"]
+layout_mode = 2
+size_flags_horizontal = 3
+offset_right = 492.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="TitleBg" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -6.0
+offset_right = 150.0
+offset_bottom = 6.0
+texture = SubResource("AtlasTexture_titlebg")
+patch_margin_left = 100
+patch_margin_top = 3
+patch_margin_right = 0
+patch_margin_bottom = 0
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"AvatarTitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2

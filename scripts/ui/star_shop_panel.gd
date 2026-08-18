@@ -54,6 +54,7 @@ func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void
 	rng = p_rng
 	cm = pd.cm
 	setup()
+	hud_identity = "starshop"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
 	shop_mgr.open_star_shop()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉（同 PackagePanel 范式）。
 	_build_content()

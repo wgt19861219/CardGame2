@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_shortcut_board.png" id="1_board"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_down_button.png" id="2_down"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_task_button_shade.png" id="11_taskp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_menu_todolist_1.png" id="12_todo"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_menu_todolist_2.png" id="13_todop"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_deal_tag.png" id="14_tag"]
 
 [node name="ShortcutContent" type="Control"]
 layout_mode = 3
@@ -81,6 +82,19 @@ texture_normal = ExtResource("4_hero")
 texture_pressed = ExtResource("5_herop")
 modulate = Color(1, 1, 1, 0)
 mouse_filter = 2
+; 源 createButtons _tag :223-231 tagPos ccp(75,65)（按钮子坐标，原点=按钮左下角）
+; 显示尺寸 21x22÷CS=16.39x17.17；中心距左 75、距底 65 → 距顶 105-65=40
+[node name="HeroPackageTag" type="TextureRect" parent="BtnHeroPackage"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 66.805
+offset_top = 31.414
+offset_right = 83.195
+offset_bottom = 48.586
+mouse_filter = 2
+texture = ExtResource("14_tag")
+expand_mode = 1
 
 [node name="BtnPackage" type="TextureButton" parent="."]
 unique_name_in_owner = true
@@ -93,6 +107,18 @@ texture_normal = ExtResource("6_pkg")
 texture_pressed = ExtResource("7_pkgp")
 modulate = Color(1, 1, 1, 0)
 mouse_filter = 2
+; 源 tagPos ccp(75,65)；中心距左 75、距底 65 → 距顶 95-65=30
+[node name="PackageTag" type="TextureRect" parent="BtnPackage"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 66.805
+offset_top = 21.414
+offset_right = 83.195
+offset_bottom = 38.586
+mouse_filter = 2
+texture = ExtResource("14_tag")
+expand_mode = 1
 
 [node name="BtnFragment" type="TextureButton" parent="."]
 unique_name_in_owner = true
@@ -105,6 +131,18 @@ texture_normal = ExtResource("8_frag")
 texture_pressed = ExtResource("9_fragp")
 modulate = Color(1, 1, 1, 0)
 mouse_filter = 2
+; 源 tagPos ccp(68,60)；中心距左 68、距底 60 → 距顶 91-60=31
+[node name="FragmentTag" type="TextureRect" parent="BtnFragment"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 59.805
+offset_top = 22.414
+offset_right = 76.195
+offset_bottom = 39.586
+mouse_filter = 2
+texture = ExtResource("14_tag")
+expand_mode = 1
 
 [node name="BtnTask" type="TextureButton" parent="."]
 unique_name_in_owner = true
@@ -117,6 +155,18 @@ texture_normal = ExtResource("10_task")
 texture_pressed = ExtResource("11_taskp")
 modulate = Color(1, 1, 1, 0)
 mouse_filter = 2
+; 源 tagPos ccp(75,65)；中心距左 75、距底 65 → 距顶 96-65=31
+[node name="TaskTag" type="TextureRect" parent="BtnTask"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 66.805
+offset_top = 22.414
+offset_right = 83.195
+offset_bottom = 39.586
+mouse_filter = 2
+texture = ExtResource("14_tag")
+expand_mode = 1
 
 [node name="BtnTodoList" type="TextureButton" parent="."]
 unique_name_in_owner = true
@@ -129,3 +179,28 @@ texture_normal = ExtResource("12_todo")
 texture_pressed = ExtResource("13_todop")
 modulate = Color(1, 1, 1, 0)
 mouse_filter = 2
+; 源 tagPos ccp(70,60)；中心距左 70、距底 60 → 距顶 101-60=41
+[node name="TodoListTag" type="TextureRect" parent="BtnTodoList"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 61.805
+offset_top = 32.414
+offset_right = 78.195
+offset_bottom = 49.586
+mouse_filter = 2
+texture = ExtResource("14_tag")
+expand_mode = 1
+; 主红点（源 createBoard tag :310-321，pos=ccp(pos_x+28,pos_y+22) 场景系，受控偏离后随
+; toggle 中心 (900,68) 偏移 (28,-22) → 中心 (928,46)；声明在最后保 z 盖 toggle（源 z=10 同层后声明）
+[node name="Tag" type="TextureRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 919.805
+offset_top = 37.414
+offset_right = 936.195
+offset_bottom = 54.586
+mouse_filter = 2
+texture = ExtResource("14_tag")
+expand_mode = 1

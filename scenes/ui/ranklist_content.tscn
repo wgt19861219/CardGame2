@@ -1,8 +1,35 @@
-[gd_scene load_steps=4 format=3]
+; ranklist 主面板静态树（批4 Task 8 两件套改造，2026-08-18）。
+; 源 ui/uieditor/ranklistwindow.lua 声明表（坐标=最终点值直译，star_shop 先例）+ ranklist.lua：
+; - FrameworkBg：声明表元素1 bg.jpg fix_wh(800,481.25) 铺满语义 → 全屏（crusade 先例口径）
+; - Window：声明表元素4 window ranklist_bg.png scaleSize(722,400.25) @中心(400,216)
+;   → Godot 中心 (480,344) → (119,143.875,841,544.125) 取整
+; - TitleBg：create :1949-1952 重建 title_bg（声明表原元素 visible=false 弃用）
+;   DGccp(511,563)→(399.22,439.84) 中心；纹理 546x75px ÷CS=425.85x58.54
+; - Title：initTitle :1782-1797 "排行榜" 24 号 ccc3(255,214,17) DGccp(512,567)→中心(480,117.03)
+; - CloseBtn：声明表元素2 backbtn @中心(63.28,439.06)→(143.28,120.94)，但按全项目导航惯例
+;   （excavate 修复轮三定稿：返回钮 root 左上贴角 (20,15)~(77.76,73.54)，六页面统一优先于源框内位置）
+;   2026-08-18 用户实跑反馈归位
+; - TabClip：源 createRankSelListLayer :2177-2191 draglist cliprect(50,26,210,380)
+; - ScrollLayer：源 initListLayer :1697 scrollview cliprect(249,26,512,380)（旧 420x360 偏小）
+; - 受控裁剪：left/right_arrow（声明表 y=21700 屏外 + refreshArrow :1860 隐藏，死元素）
+; tab 按钮 6 个静态常驻（源 ranklisttree 2 组 + createRankBtn :2005-2175；单机化裁 pvp_r/
+; guildliveness → 2 分组 4 子项），尺寸 DGSizeMake(173,75)=(135.16,58.59)；折叠=visible+重排（fill）。
+; 其余 = px/CS。
+[gd_scene load_steps=14 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_title_bg.png" id="4_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_bg.png" id="5_win"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_button_current_1.png" id="6_gsel"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_button_current_2.png" id="7_gselp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_current_1.png" id="8_ssel"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_current_2.png" id="9_sselp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_button_normal_1.png" id="10_gn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_button_nromal_2.png" id="11_gnp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_normal_1.png" id="12_sn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_normal_2.png" id="13_snp"]
 
 [node name="RanklistContent" type="Control"]
 layout_mode = 3
@@ -11,12 +38,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="Bg" type="TextureRect" parent="."]
+[node name="FrameworkBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 119.0
-offset_top = 144.0
-offset_right = 841.0
-offset_bottom = 544.0
+offset_right = 960.0
+offset_bottom = 640.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
@@ -24,38 +49,215 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 114.0
-offset_top = 92.0
-offset_right = 188.0
-offset_bottom = 167.0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.81
+offset_bottom = 73.59
 texture_normal = ExtResource("2_back")
 texture_pressed = ExtResource("3_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
-[node name="TitleLabel" type="Label" parent="."]
+[node name="TitleBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 420.0
-offset_top = 100.0
-offset_right = 520.0
-offset_bottom = 124.0
-theme_override_colors/font_color = Color(1, 0.839, 0.067, 1)
-theme_override_font_sizes/font_size = 24
+offset_left = 266.0
+offset_top = 91.0
+offset_right = 692.0
+offset_bottom = 149.0
+texture = ExtResource("4_title")
+expand_mode = 1
 mouse_filter = 2
-text = "排行榜"
 
-[node name="TabHost" type="Control" parent="."]
+[node name="Window" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 119.0
+offset_top = 144.0
+offset_right = 841.0
+offset_bottom = 544.0
+texture = ExtResource("5_win")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 125.0
-offset_top = 155.0
+offset_left = 430.0
+offset_top = 105.0
+offset_right = 530.0
+offset_bottom = 129.0
+theme_type_variation = &"RanklistTitleLabel"
 mouse_filter = 2
+text = "排行榜"
 
 [node name="ScrollLayer" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 290.0
-offset_top = 155.0
-offset_right = 710.0
-offset_bottom = 515.0
-mouse_filter = 2
+offset_left = 329.0
+offset_top = 154.0
+offset_right = 841.0
+offset_bottom = 534.0
 horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="ScrollLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="TabClip" type="Control" parent="."]
+layout_mode = 3
+offset_left = 130.0
+offset_top = 154.0
+offset_right = 340.0
+offset_bottom = 534.0
+mouse_filter = 2
+clip_contents = true
+
+[node name="TabHost" type="Control" parent="TabClip"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; 组1 竞技场（默认展开=选中态图 current_1）；TabHost 局部坐标由 fill 重排（源 :1898-1925 精确直译：
+; height=380+5 起步、循环内先 -5 → 组1 pc(120,380)、子 pc(120,333)；组间 gap=展开尾5+下组开头5；
+; 子按钮=pc+(8,-5)；→ TabHost 局部 组 (2.4,-3.3)/子 (10.4,48.7)，取整落 tscn）。
+[node name="GroupArena" type="TextureButton" parent="TabClip/TabHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 2.0
+offset_top = -3.0
+offset_right = 137.0
+offset_bottom = 56.0
+texture_normal = ExtResource("6_gsel")
+texture_pressed = ExtResource("7_gselp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="TabClip/TabHost/GroupArena"]
+layout_mode = 3
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 138.0
+offset_bottom = 45.0
+theme_type_variation = &"RanklistGroupTabSelLabel"
+mouse_filter = 2
+text = "竞技场"
+
+[node name="SubPvp" type="TextureButton" parent="TabClip/TabHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 10.0
+offset_top = 49.0
+offset_right = 145.0
+offset_bottom = 108.0
+texture_normal = ExtResource("8_ssel")
+texture_pressed = ExtResource("9_sselp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="TabClip/TabHost/SubPvp"]
+layout_mode = 3
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 138.0
+offset_bottom = 45.0
+theme_type_variation = &"RanklistSubTabSelLabel"
+mouse_filter = 2
+text = "竞技场每日排名"
+
+; 组2 战力（默认折叠；组1 展开尾5+本组开头5 → pc(120,276) → TabHost 局部 (2.4,100.7) 取整）。
+[node name="GroupFightvalue" type="TextureButton" parent="TabClip/TabHost"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 2.0
+offset_top = 101.0
+offset_right = 137.0
+offset_bottom = 160.0
+texture_normal = ExtResource("10_gn")
+texture_pressed = ExtResource("11_gnp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="TabClip/TabHost/GroupFightvalue"]
+layout_mode = 3
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 138.0
+offset_bottom = 45.0
+theme_type_variation = &"RanklistGroupTabLabel"
+mouse_filter = 2
+text = "战力"
+
+; 组2 三子（默认折叠 visible=false；位置=组2 展开时 fill 布局：pc(120,229/182/135)）
+[node name="SubFullHeroGs" type="TextureButton" parent="TabClip/TabHost"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 10.0
+offset_top = 153.0
+offset_right = 145.0
+offset_bottom = 212.0
+texture_normal = ExtResource("12_sn")
+texture_pressed = ExtResource("13_snp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="TabClip/TabHost/SubFullHeroGs"]
+layout_mode = 3
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 138.0
+offset_bottom = 45.0
+theme_type_variation = &"RanklistSubTabLabel"
+mouse_filter = 2
+text = "总战力排名"
+
+[node name="SubHeroTeamGs" type="TextureButton" parent="TabClip/TabHost"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 10.0
+offset_top = 200.0
+offset_right = 145.0
+offset_bottom = 259.0
+texture_normal = ExtResource("12_sn")
+texture_pressed = ExtResource("13_snp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="TabClip/TabHost/SubHeroTeamGs"]
+layout_mode = 3
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 138.0
+offset_bottom = 45.0
+theme_type_variation = &"RanklistSubTabLabel"
+mouse_filter = 2
+text = "小队战力排名"
+
+[node name="SubHeroEvoStar" type="TextureButton" parent="TabClip/TabHost"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+offset_left = 10.0
+offset_top = 247.0
+offset_right = 145.0
+offset_bottom = 306.0
+texture_normal = ExtResource("12_sn")
+texture_pressed = ExtResource("13_snp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="TabClip/TabHost/SubHeroEvoStar"]
+layout_mode = 3
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 138.0
+offset_bottom = 45.0
+theme_type_variation = &"RanklistSubTabLabel"
+mouse_filter = 2
+text = "英雄进化排名"

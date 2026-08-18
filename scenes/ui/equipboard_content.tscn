@@ -47,22 +47,20 @@ mouse_filter = 2
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 92.0
-offset_top = 25.0
+offset_top = 22.0
 offset_right = 300.0
-offset_bottom = 55.0
-theme_override_colors/font_color = Color(0.259, 0.176, 0.11, 1)
-theme_override_font_sizes/font_size = 24
+offset_bottom = 58.0
+theme_type_variation = &"EquipboardNameLabel"
 vertical_alignment = 1
 
 [node name="AmountLabel" type="Label" parent="Frame" unique_id=754171751]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 90.0
-offset_top = 63.0
+offset_top = 60.0
 offset_right = 300.0
-offset_bottom = 87.0
-theme_override_colors/font_color = Color(0.263, 0.231, 0.22, 1)
-theme_override_font_sizes/font_size = 18
+offset_bottom = 90.0
+theme_type_variation = &"EquipboardHaveLabel"
 vertical_alignment = 1
 
 [node name="AttBg" type="TextureRect" parent="Frame" unique_id=2066330222]
@@ -114,8 +112,7 @@ theme_override_constants/separation = 6
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
-theme_override_colors/font_color = Color(0.263, 0.231, 0.22, 1)
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"EquipboardHaveLabel"
 text = "单位售价"
 
 [node name="SellIcon" type="TextureRect" parent="Frame/MoneyBoard/MoneyContent" unique_id=1153955427]
@@ -131,8 +128,7 @@ expand_mode = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 0
-theme_override_colors/font_color = Color(0.608, 0.133, 0.055, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"EquipboardPriceLabel"
 
 [node name="SellBtn" type="Button" parent="Frame" unique_id=1017895539]
 unique_name_in_owner = true
@@ -141,6 +137,7 @@ offset_left = 15.0
 offset_top = 320.0
 offset_right = 140.0
 offset_bottom = 369.0
+theme_type_variation = &"EquipboardBtn"
 
 [node name="SellLabel" type="Label" parent="Frame/SellBtn" unique_id=1017895540]
 unique_name_in_owner = true
@@ -155,11 +152,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"EquipboardBtnLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "卖出"
@@ -171,6 +164,7 @@ offset_left = 148.0
 offset_top = 320.0
 offset_right = 273.0
 offset_bottom = 369.0
+theme_type_variation = &"EquipboardBtn"
 
 [node name="RightLabel" type="Label" parent="Frame/RightBtn" unique_id=568152929]
 unique_name_in_owner = true
@@ -185,11 +179,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"EquipboardBtnLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "详情"
@@ -204,3 +194,4 @@ offset_bottom = 78.0
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
+stretch_mode = 0

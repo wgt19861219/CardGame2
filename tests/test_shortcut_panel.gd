@@ -109,3 +109,112 @@ func test_board_is_ninepatch_with_source_margins() -> void:
 	assert_eq(board.patch_margin_bottom, 25, "patch_margin_bottom=25（源 cap y=25）")
 	assert_eq(board.size, Vector2(82.0, 65.0), "收起态 82×65（受控偏离：NinePatch min size=margin 和 65>源 40）")
 	panel.queue_free()
+
+
+# ── Task 4 两件套改造：tag 红点静态节点（源 createBoard 主 tag :310-321 +
+#    createButtons 各按钮 _tag :223-231，refreshTags :126-144 控 visible）──
+
+# tag 显示尺寸 = 纹理 21×22 ÷ CS(1.28125)（无 TextureConfig 条目，批4 口径）= 16.39×17.17。
+const TAG_SIZE: Vector2 = Vector2(16.39, 17.17)
+const FAKE_TASK_ID: int = 987654   # 注入用假任务 id（远超真实 id 域，避污染）
+
+
+func test_tag_nodes_present_and_sized() -> void:
+	var panel := _make_panel()
+	# tscn 静态初值（源 :310-321 主 tag config.visible=false；按钮 tag 建后即被 refreshTags 接管，
+	# :253 createButtons 末刷新——面板侧初始可见性由数据决定，不在此断言）。
+	var raw: Control = ShortcutPanel.CONTENT_SCENE.instantiate() as Control
+	var raw_main: TextureRect = raw.get_node("%Tag") as TextureRect
+	assert_false(raw_main.visible, "主 tag tscn 静态初值隐藏")
+	for key in BUTTON_KEYS:
+		var raw_tag: TextureRect = raw.get_node("%" + String(ShortcutPanel.TAG_NODE_NAMES[key])) as TextureRect
+		assert_false(raw_tag.visible, "%s tag tscn 静态初值隐藏" % key)
+	raw.free()
+	# 面板侧：节点存在 + 贴图 + 尺寸 + 鼠标穿透
+	assert_not_null(panel._main_tag, "主 Tag 节点存在（源 createBoard tag，收起态聚合提示）")
+	assert_eq(panel._tags.size(), 5, "5 按钮各带红点 tag（源 createButtons _tag）")
+	for key in BUTTON_KEYS:
+		var tag: TextureRect = panel._tags[key]
+		assert_not_null(tag, "%s tag 节点存在" % key)
+		assert_eq(tag.texture.resource_path, "res://assets/ui/alpha/HVGA/main_deal_tag.png", "%s tag 贴图 main_deal_tag（源共用 tag 资源）" % key)
+		assert_almost_eq(tag.size.x, TAG_SIZE.x, 0.02, "%s tag 宽=21/CS=16.39" % key)
+		assert_almost_eq(tag.size.y, TAG_SIZE.y, 0.02, "%s tag 高=22/CS=17.17" % key)
+		assert_eq(tag.mouse_filter, Control.MOUSE_FILTER_IGNORE, "%s tag 装饰不吞点击" % key)
+	var main_tag: TextureRect = panel._main_tag
+	assert_eq(main_tag.texture.resource_path, "res://assets/ui/alpha/HVGA/main_deal_tag.png", "主 tag 贴图 main_deal_tag")
+	assert_eq(main_tag.mouse_filter, Control.MOUSE_FILTER_IGNORE, "主 tag 装饰不吞点击")
+	panel.queue_free()
+
+
+# 语义化防 parenting：按钮 tag 必须挂在按钮内右上区（源 tagPos 子坐标：距左 68~75、距底 60~65）。
+func test_button_tags_in_button_upper_right() -> void:
+	var panel := _make_panel()
+	for key in BUTTON_KEYS:
+		var btn: TextureButton = panel._buttons[key]
+		var tag: TextureRect = panel._tags[key]
+		var tag_center: Vector2 = tag.global_position + tag.size / 2.0
+		var btn_rect: Rect2 = Rect2(btn.global_position, btn.size)
+		assert_true(btn_rect.has_point(tag_center), "%s tag 中心在按钮 rect 内" % key)
+		assert_gt(tag_center.x, btn_rect.position.x + btn_rect.size.x / 2.0, "%s tag 中心在按钮右半" % key)
+		assert_lt(tag_center.y, btn_rect.position.y + btn_rect.size.y / 2.0, "%s tag 中心在按钮上半" % key)
+	panel.queue_free()
+
+
+# 主 tag 偏移照源 :318 ccp(shortcut_pos_x+28, shortcut_pos_y+22)（y 翻转）——防 parenting 语义断言。
+func test_main_tag_beside_toggle_upper_right() -> void:
+	var panel := _make_panel()
+	var toggle_center: Vector2 = panel._toggle_down.global_position + panel._toggle_down.size / 2.0
+	var tag_center: Vector2 = panel._main_tag.global_position + panel._main_tag.size / 2.0
+	var offset: Vector2 = tag_center - toggle_center
+	assert_almost_eq(offset.x, 28.0, 0.02, "主 tag 中心在 toggle 右 +28（源 pos_x+28）")
+	assert_almost_eq(offset.y, -22.0, 0.02, "主 tag 中心在 toggle 上 -22（源 pos_y+22 y 翻转）")
+	panel.queue_free()
+
+
+# 源 refreshTags :126-144：任务完成未领 → task tag 亮 + 收起态主 tag 亮；package/fragment 恒 false（源 :685-699）。
+func test_refresh_tags_task_unclaimed_shows_tags() -> void:
+	var panel := _make_panel()
+	var tm: TaskManager = GameData.player.task_manager
+	tm.completed[FAKE_TASK_ID] = true
+	tm.claimed.erase(FAKE_TASK_ID)
+	panel.refresh_tags()
+	assert_true(panel._tags["task"].visible, "完成未领任务 → task tag 亮")
+	assert_false(panel._tags["package"].visible, "package tag 恒灭（源 checkPackageTag 死代码恒 false）")
+	assert_false(panel._tags["fragment"].visible, "fragment tag 恒灭（源 checkFragmentPackageTag 恒 false）")
+	assert_true(panel._main_tag.visible, "收起态任一 tag 亮 → 主 tag 亮（源 :139-143）")
+	tm.completed.erase(FAKE_TASK_ID)
+	panel.queue_free()
+
+
+# 源 refreshTags :139-143：展开态主 tag 恒隐藏（按钮 tag 仍按数据显）。
+func test_refresh_tags_open_hides_main_tag() -> void:
+	var panel := _make_panel()
+	var tm: TaskManager = GameData.player.task_manager
+	tm.completed[FAKE_TASK_ID] = true
+	panel._toggle_open()
+	assert_false(panel._main_tag.visible, "展开态主 tag 恒隐藏")
+	assert_true(panel._tags["task"].visible, "展开态 task tag 仍按数据亮")
+	tm.completed.erase(FAKE_TASK_ID)
+	panel.queue_free()
+
+
+# 已领取任务不亮 tag（源 isTaskCompleted 语义：completed 且未 claimed）。
+func test_refresh_tags_claimed_task_hides() -> void:
+	var panel := _make_panel()
+	var tm: TaskManager = GameData.player.task_manager
+	tm.completed[FAKE_TASK_ID] = true
+	tm.claimed[FAKE_TASK_ID] = true
+	panel.refresh_tags()
+	assert_false(panel._tags["task"].visible, "已领取任务不亮 tag")
+	tm.completed.erase(FAKE_TASK_ID)
+	tm.claimed.erase(FAKE_TASK_ID)
+	panel.queue_free()
+
+
+# 全 key 分发健壮性：真实档数据（hero/碎片/日常）下全 key 查询不崩、返回 bool。
+func test_check_button_tag_all_keys_return_bool() -> void:
+	var panel := _make_panel()
+	for key in BUTTON_KEYS:
+		var v: bool = panel._check_button_tag(key)
+		assert_true(v == true or v == false, "%s 分发返回 bool 不崩" % key)
+	panel.queue_free()

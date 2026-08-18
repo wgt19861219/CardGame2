@@ -38,8 +38,7 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"EatexpTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -54,6 +53,7 @@ offset_bottom = 203.75
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="MainTitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -62,6 +62,7 @@ offset_left = 141.0
 offset_top = 20.0
 offset_right = 441.0
 offset_bottom = 50.0
+theme_type_variation = &"TaskSectionLabel"
 mouse_filter = 2
 
 [node name="MainScroll" type="ScrollContainer" parent="."]
@@ -78,7 +79,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 8
 
 [node name="DailyTitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -87,6 +87,7 @@ offset_left = 141.0
 offset_top = 200.0
 offset_right = 441.0
 offset_bottom = 230.0
+theme_type_variation = &"TaskSectionLabel"
 mouse_filter = 2
 
 [node name="DailyScroll" type="ScrollContainer" parent="."]
@@ -103,4 +104,3 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 8

@@ -200,6 +200,20 @@ func test_scroll_clip_rect() -> void:
 	assert_eq(clip.horizontal_scroll_mode, 0, "禁水平滚动（源仅 canDragY）")
 
 
+# 弹窗底板等比守卫（修复轮 D 2026-08-18 用户实跑"列表裁剪有问题"）：equip_detail_bg
+# 827x535 显示 645.3x417.6=÷CS，中心 _g(400,240)=(480,320)。原 rect 640x400 非等比
+# 压扁（违反等比红线），列表区距贴图上下缘仅 6-7px（源内框边距约 15px）视觉压框。
+func test_bg_rect_aspect_ratio() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipdetail_content.tscn")
+	var inst: Control = scene.instantiate() as Control
+	add_child_autofree(inst)
+	var bg: TextureRect = inst.get_node("Bg") as TextureRect
+	assert_almost_eq(bg.offset_right - bg.offset_left, 645.3, 0.5, "Bg 宽 645.3 = 827÷CS")
+	assert_almost_eq(bg.offset_bottom - bg.offset_top, 417.6, 0.5, "Bg 高 417.6 = 535÷CS")
+	assert_almost_eq((bg.offset_left + bg.offset_right) * 0.5, 480.0, 0.5, "Bg 中心 x=480")
+	assert_almost_eq((bg.offset_top + bg.offset_bottom) * 0.5, 320.0, 0.5, "Bg 中心 y=320")
+
+
 # 三段标题（源 :146/182/223 createttf 24 号 ccc3(250,205,16)）走
 # EquipDetailSectionTitle variation + fill 文本（LSTR 三 key）。
 func test_section_title_variation_and_fill() -> void:
@@ -208,9 +222,22 @@ func test_section_title_variation_and_fill() -> void:
 	for path in ["%EquipTitleLabel", "%HeroTitleLabel", "%GetTitleLabel"]:
 		var lbl: Label = _content_of(panel).get_node(path) as Label
 		assert_not_null(lbl, "%s 存在" % path)
-		assert_eq(lbl.theme_type_variation, &"EquipDetailSectionTitle", "%s variation 接线" % path)
+		assert_eq(lbl.theme_type_variation, &"EquipDetailSectionTitle", "%s variation 接线" % lbl.name)
 	assert_eq((_content_of(panel).get_node("%GetTitleLabel") as Label).text, cm.get_lstr("EQUIPCRAFT.WAY_TO_GET"), "获得途径标题 fill")
 	panel.remove_window()
+
+
+# 标题条占位守卫（修复轮 E 2026-08-18 用户实跑"列表压住小标题"）：普通 Control
+# 的 min size 不聚合子节点 → VBox 内高塌 0，标题溢出挤进 sep 20 间隙带（贴上
+# 一段面板底 0 间距，源 :150/:176 标题占位 17.17 + gap 20）→ 钉 17.17 防复发。
+func test_title_bars_hold_source_height() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipdetail_content.tscn")
+	var inst: Control = scene.instantiate() as Control
+	add_child_autofree(inst)
+	for path in ["%EquipSection/EquipTitleBar", "%HeroSection/HeroTitleBar", "%GetSection/GetTitleBar"]:
+		var bar: Control = inst.get_node(path) as Control
+		assert_almost_eq(bar.custom_minimum_size.y, 17.17, 0.5,
+			"%s 占位高 17.17（源 22÷CS，防 VBox 高塌 0 复发）" % path)
 
 
 # 段显隐照源条件（#equipList>0 / #heroList>0 / get 段恒显）。

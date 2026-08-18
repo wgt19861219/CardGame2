@@ -1,15 +1,15 @@
 class_name EquipboardPanel
 extends PopWindow
 
-## 装备浮层（View 层）— 照源 equipboard ofpackage.lua（299 行，2 按钮动态浮层）。
-## Phase A 重构（2026-07-17）：base 节点（frame+bg+icon+name+amount+price+2 button+close）静态化进
-## equipboard_content.tscn（instantiate + fill），位置/size 编辑器可视化调。照 hero_detail 范式（无 builder，
-## 单 panel 内 fill）。信号/业务逻辑/行为保留不变。
+## 装备浮层（View 层）— 照源 equipboard board.lua（459 行基类：frame/title/att/amount）+
+## ofpackage.lua（299 行：侧滑浮层 + 2 按钮 + 售价板）。两件套范式（批 4 Task 6，2026-08-17）：
+## 静态结构与样式全在 equipboard_content.tscn + default_theme（字号/颜色/阴影/按钮九宫格走
+## theme variation），panel 只做业务 + 信号 connect + fill 动态数据，零运行时主题 override。
 ## 接 PackagePanel.cell_clicked 弹出。左卖出（始终）+ 右动态（prop 查看/consume 使用/fragment 合成）。
 ## propType 判定照源 refreshPropType :233-253（Category=FRAGMENT→fragment / CONSUMABLES+EXPERIENCE_PILL→consume / 其他→prop）。
 ## sell 接 PlayerData.sell_equip + compose 接 FragmentComposePanel + check 接 EquipdetailPanel + use 接 EatexpPanel。
 
-# base + frame 子场景（Phase A 静态化：位置+size 在 .tscn 可视化）。
+# base + frame 子场景（静态化：位置+size 在 .tscn 可视化）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipboard_content.tscn")
 
 # ── propType（源 refreshPropType）──
@@ -35,19 +35,14 @@ const NAME_MAX_W: float = 208.0
 # frame 切换 fadeIn（源 board.lua:406-413 refresh 时 frame modulate.a 0→1）。
 const FRAME_FADE_DUR: float = 0.15
 
-# ── Scale9 按钮（源 ofpackage.lua:108-119 left_button / :154-165 right_button）──
-# .tscn 普通 Button 套 StyleBoxTexture 补九宫格（normal/hover=package_button，pressed=package_button_down）。
-const BTN_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/package_button.png"
-const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_down.png"
-const BTN_CAP: Rect2 = Rect2(10.0, 10.0, 236.0, 29.0)
-
 # ── 侧滑动画（源 ofpackage.lua:292-298 popin：起始 ccp(-142,213) 屏幕左外 → CCMoveTo 0.2 CCEaseOut → ccp(182,213)）──
 # 起始 ccp(-142,213) 中心 → Godot frame 左上 x=-206（屏幕左外），y 不变。
 const SLIDE_START_X: float = -206.0
 const SLIDE_TIME: float = 0.2
 
 # ── 文本 LSTR key（源 ofpackage.lua:140 PACKAGE.SELL / :225 PACKAGE.DETAIL / :227 MIDAS.USE /
-# :229 EQUIPCRAFT.SYNTHESIS；卖出 toast 用 ofsell.lua:427 EQUIPINFO.MONEY_GAINED）──
+# :229 EQUIPCRAFT.SYNTHESIS；卖出 toast 用 ofsell.lua:427 EQUIPINFO.MONEY_GAINED；
+# 碎片行 board.lua:212 EQUIPINFO.SYNTHESIS_REQUIRES_FRAGMENT_）──
 const LSTR_SELL: String = "PACKAGE.SELL"
 const LSTR_DETAIL: String = "PACKAGE.DETAIL"
 const LSTR_USE: String = "MIDAS.USE"
@@ -56,6 +51,7 @@ const LSTR_MONEY_GAINED: String = "EQUIPINFO.MONEY_GAINED"
 const LSTR_HAVE: String = "EQUIPINFO.HAVE"        # board.lua:60 持有量标题
 const LSTR_ITEM: String = "EQUIPINFO.ITEM"        # board.lua:87 持有量后缀
 const LSTR_SALE_COST: String = "EQUIPINFO.UNIT_SALE_COST"  # ofpackage.lua:66 售价标题
+const LSTR_SYNTHESIS_REQ: String = "EQUIPINFO.SYNTHESIS_REQUIRES_FRAGMENT_"  # board.lua:212 碎片行标题
 
 signal sold(item_id: int)           # 卖出后通知调用方刷新（PackagePanel 重 classify）
 signal composed(item_id: int)       # 碎片合成后通知调用方刷新（PackagePanel 重 classify，源 downFragmentCompose）
@@ -140,19 +136,17 @@ func _judge_prop_type() -> String:
 	return PROPTYPE_PROP
 
 
-# 位置/size .tscn 已固化（编辑器可视化调），fill 只填 texture/text/visible/stylebox。
+# 位置/size/样式 .tscn + theme variation 已固化（编辑器可视化调），fill 只填 texture/text/visible。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	_frame = content.get_node("%Frame") as Control
 	var sell_btn: Button = _frame.get_node("%SellBtn") as Button
-	_apply_button_style(sell_btn)
 	# fill 独立 Label 子节点 %SellLabel（Button.text 内嵌 label 受 stylebox content_margin 干扰字偏左上，
 	# 改独立 Label anchors_preset=15 full_rect + horizontal/vertical_alignment=1 稳定居中，范式同 hero_detail）。
 	(_frame.get_node("%SellLabel") as Label).text = cm.get_lstr(LSTR_SELL)
 	sell_btn.pressed.connect(_on_sell_pressed)
 	var right_btn: Button = _frame.get_node("%RightBtn") as Button
-	_apply_button_style(right_btn)
 	right_btn.pressed.connect(_on_right_pressed)
 	var close_btn: TextureButton = _frame.get_node("%CloseBtn") as TextureButton
 	close_btn.visible = false
@@ -196,16 +190,14 @@ func _fill_att() -> void:
 		var r: Dictionary = row as Dictionary
 		var lbl := Label.new()
 		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
-		lbl.add_theme_font_size_override("font_size", 18)
-		lbl.add_theme_color_override("font_color", Color(0.251, 0.247, 0.247, 1))
+		lbl.theme_type_variation = &"EquipboardAttLabel"
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(lbl)
-	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title + fragment_amount "X/Y"）
+	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title LSTR + fragment_amount "X/Y"）
 	if _prop_type == PROPTYPE_FRAGMENT:
 		var frag_lbl := Label.new()
-		frag_lbl.text = "合成所需碎片 %d/%d" % [int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
-		frag_lbl.add_theme_font_size_override("font_size", 18)
-		frag_lbl.add_theme_color_override("font_color", Color(0.259, 0.176, 0.11, 1))
+		frag_lbl.text = "%s %d/%d" % [cm.get_lstr(LSTR_SYNTHESIS_REQ), int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
+		frag_lbl.theme_type_variation = &"EquipboardFragmentLabel"
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
 	_relayout_att_bg()
@@ -250,31 +242,6 @@ func _fill_sell_price() -> void:
 		board.visible = true
 	else:
 		board.visible = false
-
-
-func _apply_button_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", _make_button_stylebox(BTN_NORMAL_RES))
-	btn.add_theme_stylebox_override("hover", _make_button_stylebox(BTN_NORMAL_RES))
-	btn.add_theme_stylebox_override("pressed", _make_button_stylebox(BTN_PRESS_RES))
-
-
-static func _make_button_stylebox(res_path: String) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	var tex: Texture2D = load(res_path) as Texture2D
-	sb.texture = tex
-	# Godot top = Cocos 顶 margin = tex.h-(y+h)；bottom = Cocos 底 margin = y。
-	# package_button 335×67 cap(10,10,236,29) → texture_margin(left10, top28, right89, bottom10)。
-	sb.texture_margin_left = BTN_CAP.position.x
-	sb.texture_margin_right = (tex.get_width() - BTN_CAP.position.x - BTN_CAP.size.x) if tex != null else 0.0
-	sb.texture_margin_top = (tex.get_height() - BTN_CAP.position.y - BTN_CAP.size.y) if tex != null else 0.0
-	sb.texture_margin_bottom = BTN_CAP.position.y
-	# content_margin = 0：Button text 在全 Button rect 几何中心居中（照源 label mediate 居中 Scale9Sprite）。
-	# cap 不对称致 texture_margin 不对称，默认 content=texture_margin 会让 text 居中偏移的九宫格内容区（字体不居中）。
-	sb.set_content_margin(SIDE_LEFT, 0)
-	sb.set_content_margin(SIDE_TOP, 0)
-	sb.set_content_margin(SIDE_RIGHT, 0)
-	sb.set_content_margin(SIDE_BOTTOM, 0)
-	return sb
 
 
 func _right_button_label() -> String:

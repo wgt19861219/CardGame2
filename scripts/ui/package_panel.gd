@@ -28,13 +28,26 @@ const TAB_LSTR_KEYS: Array[String] = [
 const CLASSBTN_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const CLASSBTN_SEL_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 # cell 显示尺寸（task-11 修）：源 loadEquip :288 createIconWithAmount(data.id) 无 length →
-# 显示原点尺寸 = frame 纹理 94×95px ÷CS = 73.37×74.13；ReadequipIcon 的 frame Sprite2D 按
-# 纹理原尺寸渲染（hero_detail 装备槽同口径），故 scale 补偿到视觉高 74（94×74/95=73.22 宽，
-# 源 73.37 差 0.15px）。GridContainer separation 是 int theme constant（预览实测 1.63 被截 1）
-# → 取 sep 2/6 + min size=视觉盒，步进 73.22+2=75（int 化）/ 74+6=80 照源 refreshList dx,dy。
-const CELL_SCALE: float = 74.0 / 95.0
+# 显示原点尺寸 = frame 纹理 94×95px ÷CS = 73.37×74.13。步进 75/80 照源 refreshList dx,dy
+# （GridContainer sep 2/6 int constant + min size=视觉盒）。
 const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
-const CELL_VIS_SIZE: Vector2 = FRAME_TEX_SIZE * CELL_SCALE
+const CELL_VIS_SIZE: Vector2 = Vector2(FRAME_TEX_SIZE.x * 74.0 / 95.0, 74.0)
+# 修复轮 B（2026-08-18，历史 6 轮回滚后重开）：frame Sprite2D 等比缩放丢边框立体层
+# （equip_frame 94×95px 边框 6 行 黑/白高光×2/灰×2/黑，×0.78 后层混叠高光并档）→
+# NinePatchRect 1:1 保层（PIL 实测层界：顶 y2-7/底 y84-88/左 x3-8/右 x85-90 含透明缘）。
+# anchors 警告治理：手摆节点（frame/内容层）只设 position/size 不碰 anchors，wrapper
+#（custom_minimum_size）隔离 GridContainer fit_child_in_rect。
+const FRAME_PATCH_H: int = 9
+const FRAME_PATCH_T: int = 8
+const FRAME_PATCH_B: int = 11
+# fragment_bg 衬底渐变带（PIL 实测顶 y1-11/底 y82-89，含透明缘到 y94）。
+const FRAG_BG_PATCH_T: int = 12
+const FRAG_BG_PATCH_B: int = 13
+# 内容层缩放：icon 纹理（ITEM 系 78×78）→ NinePatch 中区（73.22-18 × 74-19 ≈ 55×55）。
+# icon 局部 (9,9)（ICON_OFFSET 口径）→ 视觉起点 = 中区左上 (9,8)：offset = (9,8)-(9,9)×s。
+const CELL_INNER_SCALE: float = 55.0 / 78.0
+const CELL_CONTENT_OFFSET: Vector2 = Vector2(9.0, 8.0) - Vector2(9.0, 9.0) * (55.0 / 78.0)
+const ICON_LOCAL_POS: Vector2 = Vector2(9.0, 9.0)
 
 # panel 层子场景（位置/size/贴图/字号全静态化进 .tscn + theme variation）。
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/package_content.tscn")
@@ -188,24 +201,89 @@ func _on_sold(_item_id: int) -> void:
 
 
 # package → create_icon（装备/物品）；fragment → create_icon_with_tag（魂石图标 + 可合成 fragment_tick 角标，第 28 段）。
-# 两侧 frame 均为 94×95px 纹理 → 统一 scale=74/95 + wrapper min size=视觉盒（见 FRAME_TEX_SIZE 注释）。
-# GridContainer 的 fit_child_in_rect 会重置直接 child 的 scale（task-11 实测 min 生效 scale 归 1）
-# → 包一层 wrapper：外层承载格子 min size（步进 75/80），内层 icon 保 scale（视觉 73.22×74）。
+# 修复轮 B：cell 结构 = wrapper(格子盒 min 73.22×74，步进 75/80) + [NinePatchRect 边框 1:1 保立体层
+# （fragment 侧先垫 fragment_bg 衬底）+ 内容层（ReadequipIcon 产物去 frame/bg Sprite2D，icon 归中
+# (9,9)，scale 55/78 落 NinePatch 中区）]。GridContainer 的 fit_child_in_rect 会重置直接 child 的
+# scale（task-11 实测）→ wrapper 隔离；手摆节点不设 anchors（历史 anchors/size 警告根治）。
 func _make_cell(cell_data: Dictionary) -> Control:
 	var amount: int = int(cell_data["amount"])
+	var is_frag: bool = _identity == IDENTITY_FRAGMENT
 	var cell: Control
-	if _identity == IDENTITY_FRAGMENT:
+	if is_frag:
 		cell = ReadequipIcon.create_icon_with_tag(int(cell_data["makeId"]), amount, cm, pd)
 	else:
 		cell = ReadequipIcon.create_icon(int(cell_data["id"]), amount, cm)
-	cell.scale = Vector2.ONE * CELL_SCALE
-	cell.mouse_filter = Control.MOUSE_FILTER_STOP
+	# 提取 ReadequipIcon 已选的品质框/衬底纹理（create_hero_stone_icon 不存 quality meta，
+	# 探针实证 get_meta 恒缺省 → 品质色降级；直接复用原 Sprite2D 纹理最稳）。
+	var frame_tex: Texture2D = null
+	var bg_tex: Texture2D = null
+	for c in cell.get_children():
+		var spr := c as Sprite2D
+		if spr == null or spr.texture == null:
+			continue
+		var p: String = spr.texture.resource_path
+		if p.begins_with(ReadequipIcon.FRAME_DIR) or p.begins_with(ReadequipIcon.FRAGMENT_FRAME_DIR):
+			frame_tex = spr.texture
+		elif p == ReadequipIcon.FRAGMENT_BG_PATH:
+			bg_tex = spr.texture
 	var wrapper := Control.new()
 	wrapper.custom_minimum_size = CELL_VIS_SIZE
 	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
+	if bg_tex != null:
+		wrapper.add_child(_make_cell_frame(bg_tex, FRAG_BG_PATCH_T, FRAG_BG_PATCH_B))
+	if frame_tex != null:
+		wrapper.add_child(_make_cell_frame(frame_tex, FRAME_PATCH_T, FRAME_PATCH_B))
+	_strip_frame_sprites(cell)
+	_center_cell_icon(cell)
+	cell.scale = Vector2.ONE * CELL_INNER_SCALE
+	cell.position = CELL_CONTENT_OFFSET
+	cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(cell)
 	wrapper.gui_input.connect(func(event: InputEvent) -> void: _on_cell_gui_input(event, cell_data))
 	return wrapper
+
+
+# 格子边框层（NinePatch 1:1 保立体，历史等比缩放层混叠的反案）。
+func _make_cell_frame(p_texture: Texture2D, patch_t: int, patch_b: int) -> NinePatchRect:
+	var frame := NinePatchRect.new()
+	frame.texture = p_texture
+	frame.patch_margin_left = FRAME_PATCH_H
+	frame.patch_margin_top = patch_t
+	frame.patch_margin_right = FRAME_PATCH_H
+	frame.patch_margin_bottom = patch_b
+	frame.size = CELL_VIS_SIZE
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return frame
+
+
+# 去 ReadequipIcon 产物里的 94×95 底图层（equip_frame_*/fragment_frame_*/fragment_bg），
+# 由 NinePatchRect 边框层接管。gocha 不在名单：本项目仅在 icon 资源缺失时作 fallback
+# 出现（碎片 Icon 字段资源缺，探针实证），留作占位由 _center_cell_icon 归中。
+func _strip_frame_sprites(cell: Control) -> void:
+	for c in cell.get_children():
+		var spr := c as Sprite2D
+		if spr == null or spr.texture == null:
+			continue
+		var p: String = spr.texture.resource_path
+		if p.begins_with(ReadequipIcon.FRAME_DIR) or p.begins_with(ReadequipIcon.FRAGMENT_FRAME_DIR) \
+				or p == ReadequipIcon.FRAGMENT_BG_PATH:
+			spr.free()
+
+
+# icon 归中：strip 后第一个非 tag/tick 的 Sprite2D 定位 (9,9)（container 72 基准左上口径），
+# 使内容层缩放后 icon 视觉恰嵌 NinePatch 中区。覆盖 gocha fallback 占位（碎片 Icon 字段
+# 资源缺失时 _load_sprite 回退 gocha，非 ITEM 前缀）；fragment 侧 STONE_ICON_POS (36,38)
+# 既有偏移溢出格子，此处归中——package 特有定位，不动 ReadequipIcon 通用件。
+func _center_cell_icon(cell: Control) -> void:
+	for c in cell.get_children():
+		var spr := c as Sprite2D
+		if spr == null or spr.texture == null:
+			continue
+		var p: String = spr.texture.resource_path
+		if p == ReadequipIcon.SOULSTONE_TAG_PATH or p == ReadequipIcon.TICK_PATH:
+			continue
+		spr.position = ICON_LOCAL_POS
+		return
 
 
 func _on_cell_gui_input(event: InputEvent, cell_data: Dictionary) -> void:

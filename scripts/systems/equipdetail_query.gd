@@ -134,6 +134,16 @@ static func can_wear_equip(hero: HeroInstance, eid: int, cm: Variant) -> Diction
 	return {"can": hero.level >= elv, "hlv": hero.level, "elv": elv}
 
 
+# 快捷栏 heroPackage 红点的单英雄单槽判定（源 readhero.lua:734-750 checkEquipableProp
+# 内层条件 eid>0 and not hasEquipment and isEquipCraftable and canWearEquip 的等价收口；
+# framework.lua checkHeroPackageTag 是其全英雄聚合）。与 get_hero_equip_state 共用判据：
+# eti=="wear" 含"已持有可穿"(canWear) 与"可合成可穿"(canCraft+wear) 两支，
+# 已穿戴(isEquiped)/未解锁/不可穿/不可合成均 false。slot 0-based。
+# 2026-08-18：快捷栏聚合与英雄卡片红点共用本函数（同一判定拆粒度，勿复制两份）。
+static func is_slot_ready_to_wear(hero: HeroInstance, slot: int, cm: Variant, pd: PlayerData) -> bool:
+	return String(get_hero_equip_state(hero, slot, cm, pd)["eti"]) == "wear"
+
+
 # 英雄装备槽状态判定（照源 herodetail/controller.lua:207-233 getHeroEquipState）。
 # 服务 HeroDetailEquipSlots 状态角标（源 createEquipTag:1051-1061 etires[eti]）。
 # 复用 get_slot_expected_equip / is_equip_craftable / can_wear_equip，零新建依赖。
