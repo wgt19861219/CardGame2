@@ -1297,3 +1297,19 @@ ExcavateNodeBtn/styles/hover = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateNodeBtn/styles/pressed = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateNodeBtn/styles/disabled = SubResource("StyleBoxEmpty_0oxu6")
 ExcavateNodeBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; ── pop_tavern_loot 两件套（UI 重做批5 Task 1，2026-08-18）──
+; 源 poptavernloot.lua:799-812 tavern_label / :837-849 ok_label 走 fontinfo ui_normal_button
+; （fontconfigs.lua:23-31 size17 白，stroke 被注释 → variation 无描边，照批3 :408 先例删迁移发明描边）；
+; :850-863 reward_label size18 ccc3(231,206,19)；:762-773 cost size18 白（CCLabelTTF 默认色）。
+TavernLootBtnGoldLabel/base_type = &"Label"
+TavernLootBtnGoldLabel/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+TavernLootBtnGoldLabel/font_sizes/font_size = 17
+TavernLootBtnLabel/base_type = &"Label"
+TavernLootBtnLabel/colors/font_color = Color(1, 1, 1, 1)
+TavernLootBtnLabel/font_sizes/font_size = 17
+TavernLootRewardLabel/base_type = &"Label"
+TavernLootRewardLabel/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
+TavernLootRewardLabel/font_sizes/font_size = 18
+TavernLootCostLabel/base_type = &"Label"
+TavernLootCostLabel/colors/font_color = Color(1, 1, 1, 1)
+TavernLootCostLabel/font_sizes/font_size = 18

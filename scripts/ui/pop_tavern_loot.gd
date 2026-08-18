@@ -2,11 +2,12 @@ class_name PopTavernLoot
 extends PopWindow
 
 ## destroy(259) container scale 退场。
-## 待补：shadow 白光 FadeOut（:510）+ playBurst 光效旋转（:468）+ magic 分支 fade（:549-559）。
+## 待补：playBurst 光效旋转（:468）的 FCA 化（现为 Sprite2D 光效等价）。
 ##
-## Phase A 静态化（2026-07-18，照 hero_detail 范式）：双按钮（again/close）+ reward_label
-## 进 pop_tavern_loot_content.tscn（位置/size 编辑器可视化）。loot icons / FCA / shadow / burst
-## 保留 procedural 挂 %LootHost（动态数量 + 飞出/旋转动画）；cost_row 保留 procedural 挂
+## 批5 两件套（2026-08-18）：chrome 全量进 pop_tavern_loot_content.tscn（照源 readnode 声明序）——
+## 双按钮（again/close）+ reward_label + 费用行三节点（CostBg/CostIcon/CostLabel，fill 定位）。
+## loot icons / FCA / shadow / burst 保留 procedural 挂 %LootHost（动态数量 + 飞出/旋转动画）。
+## starshop（box_type=stone_*）分支：源 :679-731 ok 居中、无再抽按钮；magic 分支 reward_label 隐藏。
 
 signal draw_again
 # P2-GUT-2：入场 + 开箱 FCA 就位（box 阶段完成）
@@ -21,19 +22,29 @@ const GRID_ORIGIN: Vector2 = Vector2(190.0, 150.0)
 const GRID_CELL: Vector2 = Vector2(100.0, 105.0)
 const GRID_COLS: int = 5
 const SINGLE_POS: Vector2 = Vector2(400.0, 280.0)
-const COST_ROW_RIGHT_X: float = 240.0
-const COST_ROW_Y: float = 50.0
+# 源 :770-772 cost Label anchor(1,0.5)@ccp(240,50)（右缘 240 / 垂直中心 50）
+const COST_LABEL_POS: Vector2 = Vector2(240.0, 50.0)
+# 源 :1019 cost_icon 中心 y=48（略高于 label 中心 50）
+const COST_ICON_Y: float = 48.0
+# 源 :1022 cost_bg 中心 y=50
+const COST_BG_Y: float = 50.0
+# 源 :687 starshop 分支 ok 居中 ccp(400,50)（本项目 box_type=stone_*）
+const STARSHOP_OK_POS: Vector2 = Vector2(400.0, 50.0)
 const COST_ICON_RES_GOLD: String = "res://assets/ui/alpha/HVGA/task_gold_icon_2.png"
 const COST_ICON_RES_RMB: String = "res://assets/ui/alpha/HVGA/task_rmb_icon_2.png"
 const SINGLE_THRESHOLD: int = 1   # loot 种类 <= 此值用单抽布局
 const BOX_ANIM_POS: Vector2 = Vector2(400.0, 240.0)
-# magic 资源 eff_UI_tavern_open_magicsoul（注意源拼写 tavern 非 tarven）/ starshop 复用 gold 资源。
+# magic 资源 eff_UI_tavern_open_magicsoul（注意源拼写 tavern 非 tarven）/ starshop 复用 gold 资源；
+# stone_* 系（源 :293-295）是 eff_UI_shop_star_box_*（green/blue 为 .abc zip、purple 为 .ani）。
 const BOX_FCA_MAP: Dictionary = {
 	"bronze": "effect/eff_UI_tarven_open_chest",
 	"silver": "effect/eff_UI_tarven_open_chest_silver",
 	"gold": "effect/eff_UI_tarven_open_chest_gold",
 	"magic": "effect/eff_UI_tavern_open_magicsoul",
 	"starshop": "effect/eff_UI_tarven_open_chest_gold",
+	"stone_green": "effect/eff_UI_shop_star_box_green",
+	"stone_blue": "effect/eff_UI_shop_star_box_blue",
+	"stone_purple": "effect/eff_UI_shop_star_box_purple",
 }
 const MAGIC_CENTER_POS: Vector2 = Vector2(400.0, 280.0)
 const MAGIC_LOOT_POS: Array[Vector2] = [
@@ -76,7 +87,9 @@ var cost_info: Dictionary = {}
 var _cm: Variant = null
 var _content: Control = null       # .tscn instantiate 根（container 子）
 var _loot_host: Control = null     # %LootHost：动态 loot icons / FCA 挂载
-var _cost_host: Control = null     # %CostHost：cost_row procedural 挂载
+var _cost_bg: TextureRect = null   # %CostBg：费用行底板（fill 定位）
+var _cost_icon: TextureRect = null # %CostIcon：费用行货币图标（fill 换贴图+定位）
+var _cost_label: Label = null      # %CostLabel：费用数字（fill 文本+定位）
 var _loot_icons: Array[Control] = []
 var _loot_targets: Array[Vector2] = []
 var _loot_data: Array = []          # 原 loots 数组（id/amount），供 _add_loot_name_label 查名
@@ -94,18 +107,23 @@ func setup_loot(loots: Array, p_cm: Variant, p_box_type: String = "", p_times: S
 	setup()
 	_build_content()
 	_aggregate(loots, p_cm)
-	_create_cost_row()
 
 
-# Phase A：instantiate .tscn + 缓存 host + fill 双按钮文字（位置/纹理 .tscn 固化）+ 绑信号。
-# + reward_label（dpText 金黄 ccc3(231,206,19)）。
+# 批5 两件套：instantiate .tscn + 缓存 host/费用行节点 + fill 文本/分支布局 + 绑信号。
+# 费用行三节点静态进 tscn（源 :738-773 cost_bg/cost_icon/cost readnode 声明），fill 在
+# show_window 后（树内 variation 生效，Label 宽度量精确）。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
 	_loot_host = _content.get_node("%LootHost") as Control
-	_cost_host = _content.get_node("%CostHost") as Control
+	_cost_bg = _content.get_node("%CostBg") as TextureRect
+	_cost_icon = _content.get_node("%CostIcon") as TextureRect
+	_cost_label = _content.get_node("%CostLabel") as Label
 	var reward_lbl: Label = _content.get_node("%RewardLabel") as Label
 	reward_lbl.text = _lstr_or(LSTR_OPEN_CHEST, FALLBACK_OPEN_CHEST)
+	# 源 :1036-1038 type=="magic" → reward_label:setVisible(false)
+	if box_type == "magic":
+		reward_lbl.visible = false
 	var again_btn: TextureButton = _content.get_node("%AgainBtn") as TextureButton
 	(again_btn.get_node("Label") as Label).text = _tv_text()
 	again_btn.pressed.connect(_on_again)
@@ -114,6 +132,12 @@ func _build_content() -> void:
 	close_btn.pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_click_feedback")
 		remove_window())
+	# 源 :678-731 starshop 分支（本项目 box_type=stone_*，star_shop_buy_window 传 stone_green/blue/purple）：
+	# ok 居中 ccp(400,50)、无 tavern 再抽按钮、无 cost 行。
+	if box_type.begins_with("stone_"):
+		again_btn.visible = false
+		var ok_center: Vector2 = _g(STARSHOP_OK_POS)
+		close_btn.position = ok_center - close_btn.size * 0.5
 
 
 # loots 每项独立成 icon（源 10 个相同 equip 显 10 icon，非聚合 1 个）。
@@ -184,39 +208,34 @@ func _loot_pos(index: int, is_single: bool) -> Vector2:
 	return _g(Vector2(GRID_ORIGIN.x + GRID_CELL.x * col, GRID_ORIGIN.y + GRID_CELL.y * row))
 
 
-# 位置依赖 cost_val 字符串长度 → 保留 procedural 挂 %CostHost。
-func _create_cost_row() -> void:
-	if cost_info.is_empty():
-		return   # 单机化未传 cost（panel setup_loot 默认空）→ 不显消费行
-	var pay: String = String(cost_info.get("pay", "Diamond"))
-	var cost_val: int = int(cost_info.get("number", 0))
-	var godot_right: Vector2 = _g(Vector2(COST_ROW_RIGHT_X, COST_ROW_Y))
-	# cost Label 右对齐到 godot_right.x，size 估算（数字位数*12 + 8）
-	var cost_str: String = str(cost_val)
-	var cost_w: float = float(cost_str.length()) * 12.0 + 8.0
-	var cost_lbl := Label.new()
-	cost_lbl.text = cost_str
-	cost_lbl.size = Vector2(cost_w, 20.0)
-	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	cost_lbl.position = Vector2(godot_right.x - cost_w, godot_right.y - 10.0)
-	cost_lbl.add_theme_color_override("font_color", Color.WHITE)
-	cost_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	cost_lbl.add_theme_constant_override("outline_size", 1)
-	cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_cost_host.add_child(cost_lbl)
-	var icon_res: String = COST_ICON_RES_RMB if pay == "Diamond" else COST_ICON_RES_GOLD
-	if not ResourceLoader.exists(icon_res):
+# 源 :738-773 + :1014-1022：费用行 chrome（cost_bg/cost_icon/cost）静态进 tscn，fill 照源重排——
+# label 右缘 240（anchor(1,0.5)@ccp(240,50)）、icon 右缘紧贴 label 左缘（@y48）、bg 中心 = 组中心。
+# 在 show_window 后调用（树内 variation 生效，get_minimum_size 度量精确）。
+func _fill_cost_row() -> void:
+	var has_cost: bool = not cost_info.is_empty()
+	_cost_bg.visible = has_cost
+	_cost_icon.visible = has_cost
+	_cost_label.visible = has_cost
+	if not has_cost:
 		return
+	var pay: String = String(cost_info.get("pay", "Diamond"))
+	_cost_label.text = str(int(cost_info.get("number", 0)))
+	var label_size: Vector2 = _cost_label.get_minimum_size()
+	_cost_label.size = label_size
+	var label_anchor: Vector2 = _g(COST_LABEL_POS)   # (320, 510)：右缘 / 垂直中心
+	_cost_label.position = label_anchor - Vector2(label_size.x, label_size.y * 0.5)
+	var icon_res: String = COST_ICON_RES_RMB if pay == "Diamond" else COST_ICON_RES_GOLD
 	var icon_tex: Texture2D = load(icon_res) as Texture2D
-	var icon := TextureRect.new()
-	icon.texture = icon_tex
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.size = TexDisplaySize.display_size(icon_res) if icon_tex != null else Vector2(20.0, 20.0)
-	if pay != "Gold":
-		icon.scale = Vector2(1.2, 1.2)
-	icon.position = Vector2(godot_right.x - cost_w - icon.size.x, godot_right.y - icon.size.y * 0.5)
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_cost_host.add_child(icon)
+	if icon_tex == null:
+		return
+	_cost_icon.texture = icon_tex
+	# 显示尺寸 = 纹理原始像素 ÷ CS（无 TextureConfig 条目，批5 口径手算；TexDisplaySize 现公式偏大 1.28×）
+	var icon_size: Vector2 = icon_tex.get_size() / CONTENT_SCALE
+	_cost_icon.size = icon_size
+	var icon_center: Vector2 = _g(Vector2(COST_LABEL_POS.x, COST_ICON_Y))   # (320, 512)
+	_cost_icon.position = Vector2(label_anchor.x - label_size.x - icon_size.x, icon_center.y - icon_size.y * 0.5)
+	var bg_center: Vector2 = _g(Vector2(COST_LABEL_POS.x - (label_size.x + icon_size.x) * 0.5, COST_BG_Y))
+	_cost_bg.position = bg_center - _cost_bg.size * 0.5
 
 
 func _tv_text() -> String:
@@ -241,6 +260,7 @@ func _on_again() -> void:
 
 func show_window(parent: Node) -> void:
 	super.show_window(parent)
+	_fill_cost_row()   # 树内 fill（variation 生效后 Label 宽度量精确）
 	container.scale = Vector2.ZERO
 	var tw: Tween = create_tween()
 	tw.tween_property(container, "scale", Vector2.ONE, SHOW_SEC).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -308,11 +328,16 @@ func _play_box_anim() -> void:
 	fca.position = _g(BOX_ANIM_POS)
 	_loot_host.add_child(fca)
 	var resource: String = BOX_FCA_MAP[box_type]
+	# 特效 zip 双试 .ani/.abc（stone_green/blue 是 .abc、purple/bronze 系是 .ani；
+	# zip 非 Godot 资源，ResourceLoader.exists 恒 false 会让 FCA 永不加载——照
+	# fca_animation.gd _read_key_data 的 FileAccess.file_exists 既有模式修正）
 	var ani_path: String = ANIM_BASE + resource + ".ani"
-	if not ResourceLoader.exists(ani_path):
+	var abc_path: String = ANIM_BASE + resource + ".abc"
+	var zip_path: String = ani_path if FileAccess.file_exists(ani_path) else abc_path
+	if not FileAccess.file_exists(zip_path):
 		return
 	var atlas := AtlasSprite.new()
-	if atlas.load_atlas_from_ani(ani_path) and fca.load_from_ani(resource, atlas):
+	if atlas.load_atlas_from_ani(zip_path) and fca.load_from_ani(resource, atlas):
 		var actions: PackedStringArray = fca.get_action_names()
 		if actions.size() > 0:
 			fca.play(actions[0], false)

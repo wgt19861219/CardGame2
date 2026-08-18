@@ -1,10 +1,14 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="1_again"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="2_againp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="3_close"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="4_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="5_costbg"]
 
+; 批5 两件套（2026-08-18）：节点序照源 poptavernloot.lua playButtonAnim readnode 声明表
+; （:738-864 status==0：cost_bg → cost_icon → cost → tavern → ok → reward_label）。
+; loot icons/FCA/名字 Label 保留 procedural 挂 %LootHost（动态数量）。
 [node name="PopTavernLootContent" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -20,30 +24,37 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="CostHost" type="Control" parent="."]
+; 源 :738-751 cost_bg（tip_detail_bg scalexy y=2）：161×27 ÷1.28125 再 Y×2 → 125.61×42.15（rect 直译拉伸等效）
+; fill 按源 :1021-1022 定位（中心 = 240-(label_w+icon_w)/2, 50 → to_godot）
+[node name="CostBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+offset_right = 125.61
+offset_bottom = 42.15
+texture = ExtResource("5_costbg")
+expand_mode = 1
+stretch_mode = 0
 mouse_filter = 2
 
-[node name="RewardLabel" type="Label" parent="."]
+; 源 :752-761 cost_icon（pay 二选一 rmb/gold），fill 换贴图 + 定位（右缘紧贴 label 左缘）
+[node name="CostIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
-offset_left = 354.0
-offset_top = 175.0
-offset_right = 554.0
-offset_bottom = 195.0
-theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 1
-theme_override_font_sizes/font_size = 18
+expand_mode = 1
+stretch_mode = 0
 mouse_filter = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-text = "成功打开宝箱"
 
+; 源 :762-773 cost Label（数字文本，白 18 无描边），fill 右缘对齐 to_godot(240)=320
+[node name="CostLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+theme_type_variation = &"TavernLootCostLabel"
+mouse_filter = 2
+
+; 源 :774-783 tavern 再抽按钮 ccp(310,50) 中心 → to_godot (390,510)；166×63 ÷1.28125 = 129.56×49.16
 [node name="AgainBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -54,22 +65,20 @@ offset_bottom = 534.58
 texture_normal = ExtResource("1_again")
 texture_pressed = ExtResource("2_againp")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
+; 源 :798-812 tavern_label：fontinfo ui_normal_button（17 号）+ color ccc3(231,206,19)，位置 (64,25)=按钮中心
 [node name="Label" type="Label" parent="AgainBtn"]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-theme_override_colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 18
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"TavernLootBtnGoldLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "再抽一次"
 
+; 源 :813-822 ok 确定按钮 ccp(508,50) 中心 → to_godot (588,510)
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -80,18 +89,30 @@ offset_bottom = 534.58
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
-stretch_mode = 1
+stretch_mode = 0
 
+; 源 :837-849 ok_label：fontinfo ui_normal_button（17 号白，stroke 被注释 → 无描边）
 [node name="Label" type="Label" parent="CloseBtn"]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 18
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"TavernLootBtnLabel"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "确定"
+
+; 源 :850-863 reward_label ccp(374,375) 中心锚 → to_godot (454,185)，size18 ccc3(231,206,19)；
+; 最后声明（源 readnode 声明序，ok 按钮先于它）；magic 时 fill 隐藏（源 :1036-1038）
+[node name="RewardLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 354.0
+offset_top = 175.0
+offset_right = 554.0
+offset_bottom = 195.0
+theme_type_variation = &"TavernLootRewardLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "成功打开宝箱"
