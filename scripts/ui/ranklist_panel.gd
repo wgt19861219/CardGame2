@@ -46,7 +46,6 @@ const NAME_BG_RES: String = "res://assets/ui/alpha/HVGA/task_name_bg.png"
 const NAME_BG_SIZE: Vector2 = Vector2(329.37, 26.54)
 const NAME_X: float = 218.75
 const RECORD_POS: Vector2 = Vector2(187.5, 41.91)
-const RECORD_GAP: float = 5.0
 # hero_evo_star 的星图标（源 :879-891 detail_star scale 0.5：70x71px ÷CS×0.5 = 27.31x27.71）。
 const STAR_ICON_RES: String = "res://assets/ui/alpha/HVGA/detail_star.png"
 const STAR_ICON_SIZE: Vector2 = Vector2(27.31, 27.71)
@@ -133,8 +132,8 @@ func _bind_tabs() -> void:
 
 
 # 重排静态 tab 按钮（源 reCalculateRankBtnPos :1898-1925）：
-# 组中心 = (120, height)；子中心 = (128, height-5)；height 步进 47、组间 -5。
-# 场景 y-up → TabHost 局部 y-down：(560 - y_up) - 154。
+# 组中心场景 (120, height)；子中心 = (128, height-5)；height 步进 47、组间 -5。
+# 场景 y-up → Godot (x+80, 560-y) → TabHost 局部（TabClip 左上 (130,154)）再减半尺寸。
 func _layout_tabs() -> void:
 	var height: float = TAB_TOP_H
 	for gi in TAB_TREE.size():
@@ -142,14 +141,16 @@ func _layout_tabs() -> void:
 		var collapsed: bool = bool(_collapsed.get(gi, true))
 		var gbtn := _tab("%%%s" % group["btn"]) as TextureButton
 		_set_tab_state(gbtn, true, not collapsed)
-		gbtn.position = Vector2(TAB_X - TAB_W * 0.5, (560.0 - height) - TAB_CLIP_POS.y - TAB_H * 0.5)
+		gbtn.position = Vector2(
+			TAB_X + 80.0 - TAB_CLIP_POS.x - TAB_W * 0.5,
+			(560.0 - height) - TAB_CLIP_POS.y - TAB_H * 0.5)
 		height -= TAB_STEP
 		for child in group["children"]:
 			var sbtn := _tab("%%%s" % child["btn"]) as TextureButton
 			sbtn.visible = not collapsed
 			_set_tab_state(sbtn, false, child["mode"] == _rank_type)
 			sbtn.position = Vector2(
-				TAB_X + TAB_SUB_DX - TAB_W * 0.5,
+				TAB_X + TAB_SUB_DX + 80.0 - TAB_CLIP_POS.x - TAB_W * 0.5,
 				(560.0 - (height - TAB_SUB_DY)) - TAB_CLIP_POS.y - TAB_H * 0.5)
 			height -= TAB_STEP
 		height -= TAB_GROUP_GAP
@@ -273,13 +274,15 @@ func _make_row(rank: int, row_name: String, level: int, param: int, avatar: int,
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(name_lbl)
 	if not is_pvp:
-		_add_record_row(board, param)
+		_add_record_row(row, board, param)
 	return row
 
 
 # 战力系 record 行（源 :839-905）：tipsText 18 号 ccc3(128,54,23) + value（千分位，源
 # formatNumWithComma → 复用 BattleStatisticsCalc.format_comma）；hero_evo_star 加星图标。
-func _add_record_row(board: Control, param: int) -> void:
+# value/star 在 record 右侧（源 getRightSidePos）：record 宽离树测不准（variation 18 号
+# 未挂树不解析）→ row.ready 后精排（_place_record_tail）。
+func _add_record_row(row: Control, board: Control, param: int) -> void:
 	var tips_key: String = ""
 	var with_star: bool = false
 	for group in TAB_TREE:
@@ -296,21 +299,30 @@ func _add_record_row(board: Control, param: int) -> void:
 	record.size = Vector2(240.0, 24.0)
 	record.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(record)
-	var value_x: float = RECORD_POS.x + record.get_minimum_size().x
-	if with_star:
-		var star := TextureRect.new()
-		star.texture = load(STAR_ICON_RES) as Texture2D
-		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		star.size = STAR_ICON_SIZE
-		# 源 anchor ccp(0,0.4)：顶=中心线 y(53.91) - 高x0.4。
-		star.position = Vector2(value_x, 53.91 - STAR_ICON_SIZE.y * 0.4)
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		board.add_child(star)
-		value_x += STAR_ICON_SIZE.x
 	var value := Label.new()
 	value.text = BattleStatisticsCalc.format_comma(param)
 	value.theme_type_variation = "RanklistRowRecordLabel"
-	value.position = Vector2(value_x, RECORD_POS.y)
+	value.position = RECORD_POS
 	value.size = Vector2(240.0, 24.0)
 	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(value)
+	var star: TextureRect = null
+	if with_star:
+		star = TextureRect.new()
+		star.texture = load(STAR_ICON_RES) as Texture2D
+		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		star.size = STAR_ICON_SIZE
+		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		board.add_child(star)
+	row.ready.connect(_place_record_tail.bind(record, star, value))
+
+
+# record 右侧精排（源 getRightSidePos(record) + icon anchor(0,0.4)）：
+# record 已入树 → get_minimum_size() 解析 variation 18 号字体宽度。
+func _place_record_tail(record: Label, star: TextureRect, value: Label) -> void:
+	var value_x: float = RECORD_POS.x + record.get_minimum_size().x
+	if star != null:
+		# 源 anchor ccp(0,0.4)：顶=中心线 y(53.91) - 高x0.4。
+		star.position = Vector2(value_x, 53.91 - STAR_ICON_SIZE.y * 0.4)
+		value_x += STAR_ICON_SIZE.x
+	value.position = Vector2(value_x, RECORD_POS.y)
