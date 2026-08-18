@@ -283,4 +283,4 @@ static func reset(u: Variant) -> void:
 	for skill in u.skill_list:
 		skill.reset()
 	u.rebuild()
-	u._init_hp_mp()
+	u._init_hp_mp()   # 源守卫：已初始化单位保留 hp/mp（切波不清能量；重钳在 unit.reset 公共收尾）

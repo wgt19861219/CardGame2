@@ -251,6 +251,10 @@ func reset() -> void:
 		h.call(self)
 	else:
 		_reset_default()
+	# 公共收尾：hook/default 两路径 rebuild 后 buff 上限可能回落，保留的 hp/mp 重钳
+	# （源守卫语义保留值 + 防超上限；切波能量条超框根因收口，2026-08-18）。
+	set_hp(int(hp))
+	set_mp(int(mp))
 
 func _reset_default() -> void:
 	BattleUnitCombat.reset(self)

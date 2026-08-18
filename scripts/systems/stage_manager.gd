@@ -206,7 +206,9 @@ func _enter_stage(eng: BattleEngine, sid: int, player: PlayerData, player_tids: 
 	eng.mp_bonus = float(eng.stage_info.get(&"MP Bonus", 1.0))
 
 
-## isbot=false（玩家手动）：照源设 ai.will_cast_manual_skill=false（修 ai 默认 true 致 AI 自动放玩家大招 latent bug）。
+## 源 battle_engine.lua:455-459 普通 PVE 不设 will_cast_manual_skill → 保持 AiCreate 默认 true
+## （能量满 AI 自动放 manual 大招；仅 crusade/excavate 模式源 :504/:507 设 false——本项目两模式
+## 自建装配跟随默认 true 属既有差异，记滚清单）。旧注释"照源设 false"系错译 :344 isbot 路径，2026-08-18 修正。
 func _init_self_hero(eng: BattleEngine, player: PlayerData, player_tids: Array[int]) -> void:
 	var sorted_tids: Array[int] = _sort_hero_list(player_tids)
 	for tid in sorted_tids:
@@ -220,7 +222,6 @@ func _init_self_hero(eng: BattleEngine, player: PlayerData, player_tids: Array[i
 			proto["_level"] = 1; proto["_stars"] = 1
 		# lib=skill_lib（源 ed 全局 SkillLibrary，T3 改装配注入；lib null 致 init_skill 跳过→skill_list 空→不攻击 latent bug 修）
 		var u := BattleUnit.new(proto, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, config, eng, {}, skill_lib)
-		u.ai.will_cast_manual_skill = false
 		eng.add_unit(u)
 		eng.hero_id_list.append(tid)
 

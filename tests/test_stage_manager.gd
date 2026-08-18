@@ -190,9 +190,10 @@ func test_enter_stage_real_stage_uses_setup_battle() -> void:
 	# 位置 X 镜像（源 setupBattle:230-234）：敌方 X = maxX - INITIAL_POSITIONS.x，置于舞台右侧
 	for m in enemies:
 		assert_gt((m as BattleUnit).position.x, 400.0, "敌方 X 镜像置于舞台右侧（>400）")
-	# 玩家英雄 ai.will_cast_manual_skill=false（源 :344 isbot=false，修 ai 默认 true latent bug）
+	# 玩家英雄 ai.will_cast_manual_skill=true（源 :455-459 普通 PVE 不设 → AiCreate 默认 true，
+	# 能量满 AI 自动放 manual 大招；旧版照 :344 isbot 路径错译为 false 致大招永不放，2026-08-18 修正）
 	var players: Array = eng.alive_units.get(BattleEngine.CAMP_PLAYER, [])
-	assert_false(bool((players[0] as BattleUnit).ai.will_cast_manual_skill), "玩家英雄 ai.will_cast_manual_skill=false")
+	assert_true(bool((players[0] as BattleUnit).ai.will_cast_manual_skill), "玩家英雄 ai.will_cast_manual_skill=true（源 PVE 默认）")
 	# mp_bonus 照源 :365 读 stage_info["MP Bonus"]（stage 1 实配 1.5；修旧版未设默认 1.0）
 	assert_eq(eng.mp_bonus, 1.5, "mp_bonus 照源 :365 读 stage_info[MP Bonus]=1.5")
 
