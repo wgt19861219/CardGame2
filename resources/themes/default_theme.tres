@@ -1447,3 +1447,59 @@ EquipboardBtn/styles/hover = SubResource("SB_eb_btn_n")
 EquipboardBtn/styles/pressed = SubResource("SB_eb_btn_p")
 EquipboardBtn/styles/disabled = SubResource("SB_eb_btn_n")
 EquipboardBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+
+; ── 批4 Task 8：ranklist 系（2026-08-18）──
+; 主面板标题（源 ranklist.lua:1782-1797 initTitle size24 ccc3(255,214,17)，无阴影）
+RanklistTitleLabel/base_type = &"Label"
+RanklistTitleLabel/colors/font_color = Color(1, 0.839216, 0.066667, 1)
+RanklistTitleLabel/font_sizes/font_size = 24
+; tab 组按钮文字（源 createRankBtn :2045-2046 选中 ccc3(251,206,16) / 未选 ccc3(234,225,205)，
+; size18 + shadow ccc3(42,31,22) 偏移(0,2) :2091-2106；fill 切 variation 字符串换选中态）
+RanklistGroupTabSelLabel/base_type = &"Label"
+RanklistGroupTabSelLabel/colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
+RanklistGroupTabSelLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+RanklistGroupTabSelLabel/constants/shadow_offset_x = 0
+RanklistGroupTabSelLabel/constants/shadow_offset_y = 2
+RanklistGroupTabSelLabel/font_sizes/font_size = 18
+RanklistGroupTabLabel/base_type = &"Label"
+RanklistGroupTabLabel/colors/font_color = Color(0.917647, 0.882353, 0.803922, 1)
+RanklistGroupTabLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+RanklistGroupTabLabel/constants/shadow_offset_x = 0
+RanklistGroupTabLabel/constants/shadow_offset_y = 2
+RanklistGroupTabLabel/font_sizes/font_size = 18
+; tab 子按钮文字（源 :2046 选中 ccc3(254,255,152) / 未选 ccc3(222,222,222)，同阴影）
+RanklistSubTabSelLabel/base_type = &"Label"
+RanklistSubTabSelLabel/colors/font_color = Color(0.996078, 1, 0.596078, 1)
+RanklistSubTabSelLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+RanklistSubTabSelLabel/constants/shadow_offset_x = 0
+RanklistSubTabSelLabel/constants/shadow_offset_y = 2
+RanklistSubTabSelLabel/font_sizes/font_size = 18
+RanklistSubTabLabel/base_type = &"Label"
+RanklistSubTabLabel/colors/font_color = Color(0.870588, 0.870588, 0.870588, 1)
+RanklistSubTabLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
+RanklistSubTabLabel/constants/shadow_offset_x = 0
+RanklistSubTabLabel/constants/shadow_offset_y = 2
+RanklistSubTabLabel/font_sizes/font_size = 18
+; 行内 tips/数值（源 initCommonItemHandler :863-905 record/value size18 ccc3(128,54,23)）
+RanklistRowRecordLabel/base_type = &"Label"
+RanklistRowRecordLabel/colors/font_color = Color(0.501961, 0.211765, 0.090196, 1)
+RanklistRowRecordLabel/font_sizes/font_size = 18
+; 白 18 无描边（行 name :828-838 + overlay 数字/名字，源均无描边；WhiteLabel18 有 outline 不符）
+RanklistWhiteLabel18/base_type = &"Label"
+RanklistWhiteLabel18/colors/font_color = Color(1, 1, 1, 1)
+RanklistWhiteLabel18/font_sizes/font_size = 18
+; summary 弹窗字段（源 userpvpsummary.lua：title 系 ccc3(255,204,118) :96/:124/:152，
+; value 系 ccc3(247,236,198) :138/:166，size18）
+RanklistSummaryTitleLabel/base_type = &"Label"
+RanklistSummaryTitleLabel/colors/font_color = Color(1, 0.8, 0.462745, 1)
+RanklistSummaryTitleLabel/font_sizes/font_size = 18
+RanklistSummaryValueLabel/base_type = &"Label"
+RanklistSummaryValueLabel/colors/font_color = Color(0.968627, 0.92549, 0.776471, 1)
+RanklistSummaryValueLabel/font_sizes/font_size = 18
+; 我的排名浮窗（源 :1381-1410 较昨日 hint ccc3(241,193,113) / delta ccc3(242,98,60)，size18）
+RanklistOverlayHintLabel/base_type = &"Label"
+RanklistOverlayHintLabel/colors/font_color = Color(0.945098, 0.756863, 0.443137, 1)
+RanklistOverlayHintLabel/font_sizes/font_size = 18
+RanklistOverlayDeltaLabel/base_type = &"Label"
+RanklistOverlayDeltaLabel/colors/font_color = Color(0.94902, 0.384314, 0.235294, 1)
+RanklistOverlayDeltaLabel/font_sizes/font_size = 18

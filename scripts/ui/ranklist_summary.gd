@@ -11,7 +11,8 @@ extends PopWindow
 ## 查 Avatar.Picture）保留 procedural 挂 %AvatarHost（pos=0,0 保持子组件局部坐标系不变）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ranklist_summary_content.tscn")
-const HEAD_SIZE: Vector2 = Vector2(65.0, 65.0)
+# 源 :54-58 head fix_size DGSizeMake(65,65)=(50.78,50.78) 点（批4 Task 8 DG×0.78125 修正）。
+const HEAD_SIZE: Vector2 = Vector2(50.78, 50.78)
 
 var _cm: Variant
 

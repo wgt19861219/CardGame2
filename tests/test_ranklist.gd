@@ -114,3 +114,161 @@ func test_overlay_rank_3_uses_badge_or_number() -> void:
 			break
 	assert_true(has_badge, "self_rank=3 → 3rd 徽章图（资源存在）")
 	parent.queue_free()
+
+
+# ==================== 批4 Task 8 两件套守卫（2026-08-18）====================
+# 源 uieditor/ranklistwindow.lua 声明表坐标 = 最终点值直译（star_shop 先例）。
+# 声明表坐标即 Cocos 800×480 y-up 点空间 → to_godot(x,y)=(x+80, 560-y)。
+
+const CONTENT_PATH: String = "res://scenes/ui/ranklist_content.tscn"
+const THEME_PATH: String = "res://resources/themes/default_theme.tres"
+
+
+func _instantiate_content() -> Control:
+	var content: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
+	add_child(content)
+	return content
+
+
+# 声明表元素 4 window：ranklist_bg.png scaleSize(722,400.25) @中心(400,216)
+# → Godot 中心 (480,344) → rect (119,143.875,841,544.125) 取整 (119,144,841,544)。
+# 声明表元素 1 bg：bg.jpg fix_wh(800,481.25) 铺满语义 → FrameworkBg 全屏（crusade 先例）。
+func test_content_window_layout_from_uieditor() -> void:
+	var content := _instantiate_content()
+	var bg: TextureRect = content.get_node("FrameworkBg") as TextureRect
+	assert_not_null(bg, "FrameworkBg 全屏底（声明表 bg.jpg，铺满语义）")
+	assert_eq(bg.size, Vector2(960.0, 640.0), "bg 铺满全屏（crusade 先例口径）")
+	var window: TextureRect = content.get_node("Window") as TextureRect
+	assert_not_null(window, "Window 节点（声明表 window 元素）")
+	assert_eq(window.size, Vector2(722.0, 400.0), "window 722×400（声明表 scaleSize 直译取整）")
+	assert_eq(window.position, Vector2(119.0, 144.0), "window 左上 (119,144)（中心 (480,344)）")
+	content.queue_free()
+
+
+# 声明表元素 2 back_button：fix_wh(57.8125,58.59375) @中心(63.28,439.06)
+# → Godot 中心 (143.28,120.94) → rect (114.375,91.64,172.19,150.23) 取整 (114,92,172,150)。
+# 旧实现 74×75 为像素值未 ÷CS（backbtn.png 74×75px ÷1.28125 = 57.8×58.6 点）。
+func test_content_closebtn_size_from_uieditor() -> void:
+	var content := _instantiate_content()
+	var btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
+	assert_not_null(btn, "CloseBtn 存在")
+	assert_eq(btn.size, Vector2(58.0, 58.0), "close 尺寸 58×58（声明表 fix_wh 点值，非像素）")
+	assert_eq(btn.position, Vector2(114.0, 92.0), "close 左上 (114,92)（中心 (143.28,120.94)）")
+	assert_eq(btn.stretch_mode, TextureButton.STRETCH_SCALE, "TextureButton 显式 stretch_mode=0（批惯例）")
+	content.queue_free()
+
+
+# create :1949-1952 重建 title_bg：createSprite ranklist_title_bg @DGccp(511,563)=(399.22,439.84)
+# → Godot 中心 (479.22,120.16)；尺寸 = 纹理 546×75px ÷CS = 425.85×58.54。
+# initTitle :1782-1797 "排行榜" 24 号 ccc3(255,214,17) @DGccp(512,567) → 中心 (480,117.03)。
+func test_content_title_and_titlebg_layout() -> void:
+	var content := _instantiate_content()
+	var title_bg: TextureRect = content.get_node("TitleBg") as TextureRect
+	assert_not_null(title_bg, "TitleBg（create :1949 重建版；声明表 title_bg visible=false 弃用）")
+	assert_eq(title_bg.size, Vector2(426.0, 58.0), "title_bg 426×58（纹理 546×75 ÷CS）")
+	assert_eq(title_bg.position, Vector2(266.0, 91.0), "title_bg 左上 (266,91)（中心 (479.22,120.16)）")
+	var title: Label = content.get_node("%Title") as Label
+	assert_not_null(title, "Title Label")
+	assert_eq(title.text, "排行榜", "标题文本（RANKLIST.RANKLISTTITLE）")
+	assert_almost_eq(title.position.y, 105.0, 0.5, "title 顶 ~105（中心 y=117.03）")
+	assert_eq(String(title.theme_type_variation), "RanklistTitleLabel", "title 走 RanklistTitleLabel variation")
+	content.queue_free()
+
+
+# 源 createRankSelListLayer :2177-2191 draglist cliprect CCRectMake(50,26,210,380)（场景点坐标）
+# → Godot (130,154)-(340,534)。源 initListLayer :1697 scrollview cliprect CCRectMake(249,26,512,380)
+# → Godot (329,154)-(841,534)（旧实现 420×360 偏小）。
+func test_content_clip_layers_source_rects() -> void:
+	var content := _instantiate_content()
+	var tab_clip: Control = content.get_node("TabClip") as Control
+	assert_not_null(tab_clip, "TabClip 裁剪层（源 draglist cliprect）")
+	assert_true(tab_clip.clip_contents, "TabClip clip_contents=true（源 cliprect 裁剪）")
+	assert_eq(tab_clip.position, Vector2(130.0, 154.0), "TabClip 左上 (130,154)")
+	assert_eq(tab_clip.size, Vector2(210.0, 380.0), "TabClip 210×380（源 cliprect 尺寸直译）")
+	var scroll: ScrollContainer = content.get_node("%ScrollLayer") as ScrollContainer
+	assert_not_null(scroll, "ScrollLayer 存在")
+	assert_eq(scroll.position, Vector2(329.0, 154.0), "ScrollLayer 左上 (329,154)")
+	assert_eq(scroll.size, Vector2(512.0, 380.0), "ScrollLayer 512×380（源 scrollview cliprect 直译）")
+	content.queue_free()
+
+
+# 源声明表 left_arrow/right_arrow pos y=21700 屏外（编辑器残留）+ initArrow→refreshArrow :1860-1864
+# setVisible(false) 双重死元素 → 受控裁剪不进 tscn。tscn theme_override 样式清零（两件套 SOP）。
+func test_content_no_arrows_and_no_theme_override() -> void:
+	var content := _instantiate_content()
+	assert_false(content.has_node("LeftArrow"), "LeftArrow 不存在（源 :21700 屏外+refreshArrow 隐藏，受控裁剪）")
+	assert_false(content.has_node("RightArrow"), "RightArrow 不存在（同上）")
+	content.queue_free()
+	var tscn_text: String = FileAccess.get_file_as_string(CONTENT_PATH)
+	assert_eq(tscn_text.count("theme_override_colors"), 0, "tscn 无 font_color override（走 variation）")
+	assert_eq(tscn_text.count("theme_override_font_sizes"), 0, "tscn 无 font_size override（走 variation）")
+
+
+# tab 树静态常驻（源 ranklisttree 2 组 4 子 + createRankBtn :2005-2175 按钮贴图/Label 18 号）。
+# 折叠 = 子按钮 visible 切换 + 重排（fill），不再 procedural 重建（SOP visible 切换条款）。
+func test_tab_buttons_static_six() -> void:
+	var content := _instantiate_content()
+	var host: Control = content.get_node("%TabHost") as Control
+	assert_not_null(host, "TabHost 存在")
+	var btns: Array = []
+	for c in host.get_children():
+		if c is TextureButton:
+			btns.append(c)
+	assert_eq(btns.size(), 6, "6 静态 tab 按钮（2 组 + 4 子，单机化 2 分组 4 子项）")
+	var group_arena: TextureButton = content.get_node("%GroupArena") as TextureButton
+	assert_eq(group_arena.size, Vector2(135.0, 59.0), "组按钮 135×59（源 DGSizeMake(173,75)=(135.16,58.59)）")
+	var sub_pvp: TextureButton = content.get_node("%SubPvp") as TextureButton
+	var lbl: Label = sub_pvp.get_child(0) as Label
+	assert_eq(lbl.text, "竞技场每日排名", "子 tab 文本 LSTR ARENADAY（源 rankconfig[1]）")
+	assert_eq(String(lbl.theme_type_variation), "RanklistSubTabSelLabel", "选中子 tab 走 variation")
+	# 默认组 2 折叠：子 3 个 visible=false
+	var sub_gs: TextureButton = content.get_node("%SubFullHeroGs") as TextureButton
+	assert_false(sub_gs.visible, "默认战力组折叠（源 ranklisttree[2].collapsed=true）")
+	content.queue_free()
+
+
+# variation 注册守卫（GUT 下 get_theme_font_size 不解析 variation → 读 tres 文本，批内惯例）。
+func test_theme_registers_ranklist_variations() -> void:
+	var theme_text: String = FileAccess.get_file_as_string(THEME_PATH)
+	for v: String in [
+		"RanklistTitleLabel", "RanklistGroupTabSelLabel", "RanklistGroupTabLabel",
+		"RanklistSubTabSelLabel", "RanklistSubTabLabel", "RanklistRowRecordLabel",
+		"RanklistSummaryTitleLabel", "RanklistSummaryValueLabel",
+		"RanklistOverlayHintLabel", "RanklistOverlayDeltaLabel", "RanklistWhiteLabel18",
+	]:
+		assert_true(theme_text.find("%s/base_type" % v) != -1, "theme 注册 %s" % v)
+
+
+# panel fill 化：行板 Scale9 化（源 initCommonItemHandler :780-793 board capInsets DG(65,25,545,25)
+# ×贴图 638×97px → patch L=65 T=97-25-25=47 R=638-65-545=28 B=25；scaleSize DG(650,95)=(507.81,74.22)）。
+func test_panel_rows_after_setup() -> void:
+	var rm := RanklistManager.new()
+	var pd := PlayerData.new(cm)
+	var panel := RanklistPanel.new("ranklist", {})
+	panel.setup_panel(pd, rm, "pvp")
+	add_child(panel)
+	var rows: VBoxContainer = panel.container.get_node("RanklistContent/%ScrollLayer/%Rows") as VBoxContainer
+	assert_not_null(rows, "Rows 行容器（%ScrollLayer/%Rows）")
+	assert_eq(rows.get_child_count(), 21, "21 行（1 self + 20 NPC 假榜）")
+	var first_row: Control = rows.get_child(0) as Control
+	var board: NinePatchRect = first_row.get_child(0) as NinePatchRect
+	assert_not_null(board, "行板 NinePatchRect（源 Scale9Sprite board）")
+	assert_eq(board.patch_margin_left, 65, "patch left=65（源 cap x=65DG×CS）")
+	assert_eq(board.patch_margin_top, 47, "patch top=47（H-y-h=97-25-25）")
+	assert_eq(board.patch_margin_right, 28, "patch right=28（W-x-w=638-65-545）")
+	assert_eq(board.patch_margin_bottom, 25, "patch bottom=25（源 cap y=25DG×CS）")
+	assert_almost_eq(board.size.x, 507.81, 0.5, "行板宽 507.81（源 DGSizeMake(650,95)）")
+	assert_almost_eq(board.size.y, 74.22, 0.5, "行板高 74.22")
+	assert_almost_eq(first_row.custom_minimum_size.y, 74.22, 0.5, "行高 74.22（源 itemSize dy 105DG-板 95DG 余量内）")
+	panel.queue_free()
+
+
+# gd 运行时 theme override 清零守卫（panel + overlay 两文件，brief：gd add_theme 11 全清）。
+func test_panel_no_runtime_theme_override() -> void:
+	for path: String in [
+		"res://scripts/ui/ranklist_panel.gd",
+		"res://scripts/ui/ranklist_myself_overlay.gd",
+	]:
+		var script_text: String = FileAccess.get_file_as_string(path)
+		assert_eq(script_text.count("add_theme_color_override"), 0, "%s 无 font_color override" % path)
+		assert_eq(script_text.count("add_theme_font_size_override"), 0, "%s 无 font_size override" % path)

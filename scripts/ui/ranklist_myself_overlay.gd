@@ -6,7 +6,8 @@ extends RefCounted
 ## ranklist_my_bg + 排名图标（1st/2nd/3rd 徽章资源缺→数字 / >3 数字）+ pvp_up/down 升降箭头
 ## + delta 标签（COMPAREYESTERDAY + |delta|）+ 头像 + 名字 + 等级。
 ## 单机化裁剪：源 getMyselfRankSummary 联机查 previndex → 本项目 previndex=0（首次），
-# delta = self_rank（源 :1364-1365 previndex==0 时 deltaposvalue=index）。
+## delta = self_rank（源 :1364-1365 previndex==0 时 deltaposvalue=index）。
+## 批4 Task 8：add_theme 色/号 override 清零 → theme_type_variation（default_theme ranklist 系）。
 
 const BOARD_OFFSET: Vector2 = Vector2(8.0, 7.0)
 const ME_BG_RES: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_my_bg.png"
@@ -15,6 +16,10 @@ const PVP_DOWN_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_down.png"
 const RANK_1ST_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_1st_star.png"
 const RANK_2ND_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_2nd_star.png"
 const RANK_3RD_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_3rd_star.png"
+# variation 名（default_theme 批4 Task 8；色/号见 tres 注释）。
+const VAR_WHITE_18: String = "RanklistWhiteLabel18"
+const VAR_HINT: String = "RanklistOverlayHintLabel"
+const VAR_DELTA: String = "RanklistOverlayDeltaLabel"
 # 源 :1359 ranking:setPosition(60,50)；:1360 scale=min(1, 70/w)。
 const RANK_POS: Vector2 = Vector2(60.0, 50.0)
 const RANK_MAX_W: float = 70.0
@@ -28,9 +33,6 @@ const HEAD_SCALE: Vector2 = Vector2(0.85, 0.85)
 const HEAD_SIZE: Vector2 = Vector2(60.0, 60.0)
 # 源 :1436/1458 name pos(280+xOffset,67) anchor(0,0.5)。
 const NAME_POS: Vector2 = Vector2(360.0, 67.0)
-const HINT_COLOR: Color = Color(241.0 / 255.0, 193.0 / 255.0, 113.0 / 255.0)
-const DELTA_COLOR: Color = Color(242.0 / 255.0, 98.0 / 255.0, 60.0 / 255.0)
-const FONT_SIZE: int = 18
 const Z_ORDER: int = 99
 const RANK_TOP_VISIBLE_MAX: int = 2   # 前 2 名已在列表显，浮窗不叠（源 :1330）
 
@@ -94,8 +96,7 @@ static func _add_rank_icon(board: TextureRect, self_rank: int) -> void:
 	num.position = RANK_POS - Vector2(30.0, 12.0)
 	num.size = Vector2(60.0, 24.0)
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	num.add_theme_font_size_override("font_size", FONT_SIZE)
-	num.add_theme_color_override("font_color", Color.WHITE)
+	num.theme_type_variation = VAR_WHITE_18
 	num.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(num)
 
@@ -122,8 +123,7 @@ static func _add_delta_arrow(board: TextureRect, delta: int) -> void:
 	hint.position = HINT_POS - Vector2(40.0, 10.0)
 	hint.size = Vector2(80.0, 20.0)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", FONT_SIZE)
-	hint.add_theme_color_override("font_color", HINT_COLOR)
+	hint.theme_type_variation = VAR_HINT
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(hint)
 	# delta |val|（源 :1397-1410）。
@@ -132,8 +132,7 @@ static func _add_delta_arrow(board: TextureRect, delta: int) -> void:
 	dl.position = DELTA_POS - Vector2(20.0, 10.0)
 	dl.size = Vector2(40.0, 20.0)
 	dl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	dl.add_theme_font_size_override("font_size", FONT_SIZE)
-	dl.add_theme_color_override("font_color", DELTA_COLOR)
+	dl.theme_type_variation = VAR_DELTA
 	dl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(dl)
 
@@ -158,7 +157,6 @@ static func _add_name(board: TextureRect, player_name: String, level: int) -> vo
 	var name_lbl := Label.new()
 	name_lbl.text = "%s Lv%d" % [player_name, level]
 	name_lbl.position = NAME_POS - Vector2(0.0, 10.0)
-	name_lbl.add_theme_font_size_override("font_size", FONT_SIZE)
-	name_lbl.add_theme_color_override("font_color", Color.WHITE)
+	name_lbl.theme_type_variation = VAR_WHITE_18
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(name_lbl)
