@@ -69,3 +69,24 @@ func test_stage_player_auto_casts_manual_skill() -> void:
 		return
 	for u in r["engine"].foreach_alive_unit(BattleEngine.CAMP_PLAYER):
 		assert_true(bool(u.ai.will_cast_manual_skill), "战役玩家 AI 自动放 manual 大招（源 :455-459 默认）")
+
+
+func test_stage_player_has_manual_skill_equipped() -> void:
+	# 源 main.lua:1590 玩家 proto 须带 _skill_levels（漏传致只装 Basic Skill 无大招）
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills
+	var r: Dictionary = mgr.assemble_stage_battle(1, GameData.player, [1, 2, 3, 4, 5], BattleRng.new(7))
+	if not bool(r.get("ok", false)):
+		fail_test("stage1 装配失败")
+		return
+	var any_manual: bool = false
+	var any_multi: bool = false
+	for u in r["engine"].foreach_alive_unit(BattleEngine.CAMP_PLAYER):
+		if u.skill_list.size() > 1:
+			any_multi = true
+		if u.manual_skill != null:
+			any_manual = true
+	assert_true(any_multi, "玩家英雄技能数 >1（_skill_levels 装配）")
+	assert_true(any_manual, "玩家英雄大招（manual_skill）已装备")

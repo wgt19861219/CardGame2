@@ -20,3 +20,11 @@ func _init(hero_tid: int = 0, initial_stars: int = 1, id: int = 0) -> void:
 	tid = hero_tid
 	stars = initial_stars
 	inst_id = id
+
+
+## SkillGroup 槽字符串键字典（供战斗装配 proto._skill_levels；源 main.lua:1590）。
+func skill_levels_by_slot() -> Dictionary:
+	var out: Dictionary = {}
+	for i in skill_levels.size():
+		out[str(i + 1)] = int(skill_levels[i])
+	return out

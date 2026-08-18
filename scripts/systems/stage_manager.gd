@@ -218,8 +218,10 @@ func _init_self_hero(eng: BattleEngine, player: PlayerData, player_tids: Array[i
 			proto["_level"] = hero.level; proto["_stars"] = hero.stars
 			proto["_rank"] = hero.rank; proto["_items"] = _hero_items(hero)
 			proto["_awake"] = hero.awake
+			# 源 main.lua:1590 _skill_levels（漏传致只装 Basic Skill 无大招，2026-08-18 修）
+			proto["_skill_levels"] = hero.skill_levels_by_slot()
 		else:
-			proto["_level"] = 1; proto["_stars"] = 1
+			proto["_level"] = 1; proto["_stars"] = 1; proto["_skill_levels"] = {"1": 1, "2": 1, "3": 1, "4": 1}
 		# lib=skill_lib（源 ed 全局 SkillLibrary，T3 改装配注入；lib null 致 init_skill 跳过→skill_list 空→不攻击 latent bug 修）
 		var u := BattleUnit.new(proto, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, config, eng, {}, skill_lib)
 		eng.add_unit(u)
