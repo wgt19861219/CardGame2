@@ -752,3 +752,22 @@ func test_abc_unit_loads_fca_from_zip() -> void:
 	sprite.setup(u, cm)
 	assert_true(sprite._using_fca, "Treant(.abc) ZIP 直读 FCA 成功（非降级头像）")
 	sprite.queue_free()
+
+
+# 2026-08-18 用户复验收官验收实跑反馈：点速度按钮报
+# Invalid access 'puppet' on ProjectileActor——actor_list 混装（BattleActor/NpcActor 有 puppet，
+# ProjectileActor 无此键），skill_lib 修复后技能投射物首次真实出现踩中。
+func test_speed_changed_with_projectile_actor_mixed() -> void:
+	var scene := BattleScene.new()
+	add_child_autofree(scene)
+	# 模拟 ProjectileSync 混装：裸 Node2D（无 puppet 键）+ 带 puppet 的单位 actor
+	var fake_projectile := Node2D.new()
+	scene.actor_list.append(fake_projectile)
+	var eng := _make_engine()
+	var u := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	var actor := BattleActor.new()
+	actor.setup(u, cm)
+	scene.actor_list.append(actor)
+	scene._on_speed_changed(2)   # 修复前：对 Node2D 点 .puppet 即崩
+	assert_eq(scene.speed_state, 2, "速度档已切换")
+	fake_projectile.queue_free()

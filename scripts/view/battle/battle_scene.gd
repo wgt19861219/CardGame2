@@ -365,10 +365,12 @@ func _create_speed_button() -> void:
 
 func _on_speed_changed(state: int) -> void:
 	set_speed_state(state)
-	var spd: float = float(SPEED_MULTIPLIERS[state - 1])
 	for actor in actor_list:
-		if actor.puppet != null and actor.puppet.has_method("set_speed"):
-			actor.puppet.set_speed(spd)
+		# 混装 BattleActor/NpcActor/ProjectileActor：puppet 仅前两者有，ProjectileActor 无此键
+		# （点属性即崩；skill_lib 修复后投射物首次出现踩中，Object.get 缺键安全返 null）。
+		var puppet: Variant = actor.get("puppet")
+		if puppet != null and puppet.has_method("set_speed"):
+			puppet.set_speed(float(SPEED_MULTIPLIERS[state - 1]))
 
 
 func _create_return_button() -> void:
