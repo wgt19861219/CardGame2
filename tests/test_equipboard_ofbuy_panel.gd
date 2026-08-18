@@ -211,6 +211,8 @@ func test_fill_att_attribute_branch() -> void:
 
 
 # att 面板碎片分支（源 board.lua:197-240：Description + Category=FRAGMENT → 合成所需碎片 X/Y）
+# 行数互斥守卫（源 :197-249 if isFragment ... elseif lineCount<5 互斥）：
+# 碎片路径 3 行（desc+空行+合成行）不再补 <5 空行；非碎片 desc 路径 1 行 → 补 1 空行 = 2 行。
 func test_fill_att_fragment_branch() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -221,12 +223,28 @@ func test_fill_att_fragment_branch() -> void:
 	panel.show_window(root)
 	var frame: Control = panel.get("_frame") as Control
 	var host: VBoxContainer = frame.get_node("%AttHost") as VBoxContainer
+	assert_eq(host.get_child_count(), 3,
+		"碎片路径 3 行（desc+空行+合成行），<5 补行互斥不触发（源 :197 elseif 互斥）")
 	var texts: Array[String] = []
 	for c in host.get_children():
 		texts.append((c as Label).text)
 	var joined: String = "|".join(texts)
 	assert_true(joined.contains("合成需要碎片"), "碎片行含 fragment_title LSTR（源 :211-219）")
 	assert_true(joined.contains("3/5"), "碎片行含 拥有3/需5（源 :223-227 格式 %d/%d）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# <5 补行仅在非碎片路径生效（源 :241-249 elseif：Description 非碎片 1 行 → 补 1 空行 = 2 行）
+func test_fill_att_pad_only_non_fragment() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipboardOfbuyPanel.new("equipboardofbuy", {})
+	panel.setup_panel({"id": 371, "amount": 1, "pay": "gold", "price": 100, "cost": 100}, cm, null)
+	panel.show_window(root)
+	var frame: Control = panel.get("_frame") as Control
+	var host: VBoxContainer = frame.get_node("%AttHost") as VBoxContainer
+	assert_eq(host.get_child_count(), 2, "非碎片 desc 路径 1 行 desc + 1 空行 = 2 行（源 elseif 补一行）")
 	panel.remove_window()
 	root.queue_free()
 

@@ -118,7 +118,8 @@ func _fill_money_row() -> void:
 
 # att 面板（源 board.lua:106-281 initAtt）：
 # Equip.Description 存在 → 单行描述（wrap 252，源 :131-137）；碎片类再补空行 + 合成所需碎片
-# X/Y（源 :197-240）；否则 getDescription 属性行；行数不足 5 补一行空白（源 :241-249）。
+# X/Y（源 :197-240）；否则 getDescription 属性行；行数不足 5 补一行空白（源 :241-249，
+# 与碎片分支 if/elseif 互斥——碎片路径不走 <5 补行）。
 func _fill_att() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	for c in host.get_children():
@@ -126,12 +127,14 @@ func _fill_att() -> void:
 	var item_id: int = int(_param.get("id", 0))
 	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(item_id), {})
 	var line_count: int = 0
+	var is_frag_branch: bool = false   # 源 uinfo 仅在 equipDesc 分支赋值 → 碎片行只在 desc 分支内触发
 	var desc_key: String = String(equip_row.get(&"Description", ""))
-	var is_fragment: bool = String(equip_row.get(&"Category", "")) == CAT_FRAGMENT
 	if desc_key != "":
 		_add_att_label(host, String(cm.get_lstr(desc_key)), "desc")
 		line_count = 1
+		var is_fragment: bool = String(equip_row.get(&"Category", "")) == CAT_FRAGMENT
 		if is_fragment:
+			is_frag_branch = true
 			var owned: int = int(pd.items.get(item_id, 0)) if pd != null else 0
 			var need: int = _fragment_need(item_id)
 			_add_att_label(host, " ", "row")
@@ -144,7 +147,8 @@ func _fill_att() -> void:
 			_add_att_label(host,
 				String(r.get("att", "")) + String(r.get("add", "")) + String(r.get("suffix", "")), "row")
 		line_count = rows.size()
-	if line_count < ATT_MIN_LINES:
+	# 补行互斥（源 board.lua:197-249 if isFragment ... elseif lineCount<5：碎片路径不走 <5 补行）
+	if not is_frag_branch and line_count < ATT_MIN_LINES:
 		_add_att_label(host, " ", "row")
 
 
