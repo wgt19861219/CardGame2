@@ -20,19 +20,26 @@ const RANK_3RD_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_3rd_star.p
 const VAR_WHITE_18: String = "RanklistWhiteLabel18"
 const VAR_HINT: String = "RanklistOverlayHintLabel"
 const VAR_DELTA: String = "RanklistOverlayDeltaLabel"
-# 源 :1359 ranking:setPosition(60,50)；:1360 scale=min(1, 70/w)。
-const RANK_POS: Vector2 = Vector2(60.0, 50.0)
-const RANK_MAX_W: float = 70.0
-# 源 :1378 arrow pos(130,30) anchor(0.5,0.5)；:1389 hint "较昨日" pos(155,67)；:1405 delta |val| pos(173,30)。
-const ARROW_POS: Vector2 = Vector2(130.0, 30.0)
-const HINT_POS: Vector2 = Vector2(155.0, 67.0)
-const DELTA_POS: Vector2 = Vector2(173.0, 30.0)
-# 源 :1423 head pos(175+xOffset,50) scale 0.85；xOffset=80（源 :1362）。
-const HEAD_POS: Vector2 = Vector2(255.0, 50.0)
+# ── 2026-08-18 修复轮三 T1：浮窗尺寸/内部布局照源重算 ──
+# 源 board 无 fix → 显示 = 纹理 642×107px ÷CS = 501.07×83.51 点（旧实现误用
+# TexDisplaySize.display_size——其公式 base×cs 对无条目散图偏大 1.28×（全局已挂账债），
+# 致浮窗 642 宽超出 512 列表区，用户反馈"太大超出边框"）。内部坐标源系 ed.DGccp
+# （×0.78125）+ cocos y-up → Godot y = BOARD_H - y_dg（旧常量源原文直用三重漏换算）。
+const CONTENT_SCALE: float = 1.28125
+const BOARD_SIZE: Vector2 = Vector2(642.0 / CONTENT_SCALE, 107.0 / CONTENT_SCALE)   # 501.07×83.51
+# ranking (60,50)DG=(46.88,39.06) → y=83.51-39.06=44.45；:1360 scale=min(1,70/点宽)。
+const RANK_POS: Vector2 = Vector2(46.88, 44.45)
+const RANK_MAX_W: float = 70.0   # 点值（对 ÷CS 后的点宽取 min）
+# arrow (130,30)DG；hint (155,67)DG；delta (173,30)DG → y 各翻。
+const ARROW_POS: Vector2 = Vector2(101.56, 60.07)
+const HINT_POS: Vector2 = Vector2(121.09, 31.17)
+const DELTA_POS: Vector2 = Vector2(135.16, 60.07)
+# head (175+80,50)DG=(199.22,39.06) → y=44.45；scale 0.85。
+const HEAD_POS: Vector2 = Vector2(199.22, 44.45)
 const HEAD_SCALE: Vector2 = Vector2(0.85, 0.85)
 const HEAD_SIZE: Vector2 = Vector2(60.0, 60.0)
-# 源 :1436/1458 name pos(280+xOffset,67) anchor(0,0.5)。
-const NAME_POS: Vector2 = Vector2(360.0, 67.0)
+# name (280+80,67)DG=(281.25,52.34) → y=31.17，anchor(0,0.5) 左对齐垂直居中。
+const NAME_POS: Vector2 = Vector2(281.25, 31.17)
 const Z_ORDER: int = 99
 const RANK_TOP_VISIBLE_MAX: int = 2   # 前 2 名已在列表显，浮窗不叠（源 :1330）
 const SCROLL_OFFSET_Y: float = 80.0   # 源 rankListMyselfOffsetY（:1336，浮窗显示时列表让位高）
@@ -62,7 +69,7 @@ static func _make_board(page: Control) -> TextureRect:
 	var board := TextureRect.new()
 	board.texture = load(ME_BG_RES) as Texture2D
 	board.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	board.size = TexDisplaySize.display_size(ME_BG_RES) if board.texture != null else Vector2(400.0, 80.0)
+	board.size = BOARD_SIZE   # 修复轮三 T1：手算 ÷CS（TexDisplaySize 无条目散图偏大 1.28×，勿用）
 	# 源 anchor(0,1) pos(8,7) y-up → Godot y-down：page 内 (8, pageH-7-boardH)；page 无 size，用 board 左上 (8,7) 近似。
 	board.position = BOARD_OFFSET
 	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -81,10 +88,11 @@ static func _add_rank_icon(board: TextureRect, self_rank: int) -> void:
 		var icon := TextureRect.new()
 		icon.texture = load(res) as Texture2D
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		var sz: Vector2 = TexDisplaySize.display_size(res) if icon.texture != null else Vector2(40.0, 40.0)
+		# 修复轮三 T1：head 图显示 = 纹理 ÷CS（手算，同 board 口径）。
+		var sz: Vector2 = (icon.texture.get_size() / CONTENT_SCALE) if icon.texture != null else Vector2(40.0, 40.0)
 		icon.size = sz
 		icon.pivot_offset = sz * 0.5
-		# 源 :1360 scale=min(1, 70/w)。
+		# 源 :1360 scale=min(1, 70/w)——70 是点值，对点宽取 min。
 		var s: float = minf(1.0, RANK_MAX_W / sz.x) if sz.x > 0.0 else 1.0
 		icon.scale = Vector2(s, s)
 		icon.position = RANK_POS - sz * 0.5
