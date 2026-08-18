@@ -46,6 +46,7 @@ func _lstr(key: String, fallback: String) -> String:
 func setup_panel(p_pd: PlayerData) -> void:
 	pd = p_pd
 	setup()
+	hud_identity = "mailbox"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
 	_build_content()
 
 

@@ -233,9 +233,14 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 	var is_open: bool = player_level >= lr
 	if is_open:
 		var icon: Control = ReadequipIcon.create_icon(int(info["id"]), 0, _cm)
-		# 源 :429 icon:setPosition(57,64) — cocos Sprite/Label 默认锚点(0.5,0.5)即【中心】落在
-		# (57,64)；Godot position 是左上角 → 减半尺寸换算（2026-08-18 修复轮 C：此前漏减致
-		# icon 偏右下约半个身位）。pivot 同设中心（源 began setScale 围绕锚点缩）。
+		# ReadequipIcon frame 按纹理原尺寸渲染（94×95px，批2 口径）——源显示尺寸 = ÷CS =
+		# 73.4×74.2 点，宿主须 scale 补偿（2026-08-18 修复轮二 R4：此前漏补偿致已解锁格比
+		# 锁定格[icon_bg 86÷CS=67.1 点]大 1.28×，用户反馈"第一格比较大"根因）。
+		icon.scale = Vector2.ONE / CONTENT_SCALE
+		# 源 :429 icon:setPosition(57,64) — cocos 默认锚点(0.5,0.5)即【中心】落在 (57,64)。
+		# Godot position 是左上角，减半尺寸换算（修复轮 C）；scale 围绕 pivot=size/2 缩放
+		# 不改 position 语义——position 减数维持 size*0.5（轮二 R4 教训：减缩放后尺寸会
+		# 中心偏移 size*(1-1/CS)/2 ≈ 10.3，被守卫测试抓出）。
 		icon.position = Vector2(EQUIP_ICON_POS.x, EQUIP_BG_SIZE.y - EQUIP_ICON_POS.y) - icon.size * 0.5
 		icon.pivot_offset = icon.size * 0.5
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE

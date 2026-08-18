@@ -108,6 +108,7 @@ func setup_panel(p_player: PlayerData, p_rm: RanklistManager, rank_type: String)
 	# 源为 pushScene 全屏场景（bg.jpg 铺满）→ shade 透明不吞点击（crusade 先例）。
 	transparent_shade = true
 	setup()
+	hud_identity = "ranklist"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
 	_build_content()
 
 
@@ -210,6 +211,15 @@ func _refresh_list() -> void:
 		if c.name == "PageContainer":
 			c.queue_free()
 	var r: Dictionary = _rm.generate_ranklist(_player, _rank_type)
+	# 2026-08-18 修复轮二 R1：浮窗让位照源——源 rankListMyselfOffsetY=80（:1336），浮窗显示
+	# 时 draglist oriPosition y 下移 80 + heightOffset 同加（:1704/:1712），本项目等价 = Rows
+	# 顶部垫 80 spacer（用户反馈浮窗遮住下方排名行；漏译项）。
+	if int(r["self_rank"]) > RanklistMyselfOverlay.RANK_TOP_VISIBLE_MAX:
+		var spacer := Control.new()
+		spacer.name = "MyselfSpacer"
+		spacer.custom_minimum_size = Vector2(0.0, RanklistMyselfOverlay.SCROLL_OFFSET_Y)
+		spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_rows.add_child(spacer)
 	_rows.add_child(_make_row(0, _player.player_name, _player.team_level, int(r["self_param"]), int(r.get("self_avatar", 0)), true))
 	for i in r["items"].size():
 		var item: Dictionary = r["items"][i]

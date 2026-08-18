@@ -35,6 +35,7 @@ const HEAD_SIZE: Vector2 = Vector2(60.0, 60.0)
 const NAME_POS: Vector2 = Vector2(360.0, 67.0)
 const Z_ORDER: int = 99
 const RANK_TOP_VISIBLE_MAX: int = 2   # 前 2 名已在列表显，浮窗不叠（源 :1330）
+const SCROLL_OFFSET_Y: float = 80.0   # 源 rankListMyselfOffsetY（:1336，浮窗显示时列表让位高）
 
 
 # 建"我的排名"浮窗挂 parent（ScrollLayer 之上）。self_rank<=2 → 不建（前 2 已列表内显）。

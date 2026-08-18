@@ -250,8 +250,13 @@ func test_panel_rows_after_setup() -> void:
 	add_child(panel)
 	var rows: VBoxContainer = panel.container.get_node("RanklistContent/%ScrollLayer/%Rows") as VBoxContainer
 	assert_not_null(rows, "Rows 行容器（%ScrollLayer/%Rows）")
-	assert_eq(rows.get_child_count(), 21, "21 行（1 self + 20 NPC 假榜）")
+	# 2026-08-18 修复轮二 R1：self_rank>2 时浮窗显示 → Rows 头部垫 80 spacer（源
+	# rankListMyselfOffsetY），子节点 = 1 spacer + 1 self + 20 = 22。
+	var expect_n: int = 22 if int(rm.generate_ranklist(pd, "pvp")["self_rank"]) > RanklistMyselfOverlay.RANK_TOP_VISIBLE_MAX else 21
+	assert_eq(rows.get_child_count(), expect_n, "行数（浮窗让位 spacer + 1 self + 20 NPC 假榜）")
 	var first_row: Control = rows.get_child(0) as Control
+	if expect_n == 22:
+		first_row = rows.get_child(1) as Control   # 跳过 MyselfSpacer 取首行
 	var board: NinePatchRect = first_row.get_child(0) as NinePatchRect
 	assert_not_null(board, "行板 NinePatchRect（源 Scale9Sprite board）")
 	assert_eq(board.patch_margin_left, 65, "patch left=65（源 cap x=65 DG 裸值直译，非 ×CS：65×CS=83.28≠65）")

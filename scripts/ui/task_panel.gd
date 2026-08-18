@@ -30,6 +30,7 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -
 	_cm = p_cm
 	_tm = p_tm
 	setup()
+	hud_identity = "task"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
 	if shade_layer != null:
 		shade_layer.color.a = SHADE_ALPHA
 	_build_content()

@@ -43,6 +43,7 @@ func setup_panel(p_pd: PlayerData, p_cm: ConfigManager) -> void:
 	_pd = p_pd
 	_cm = p_cm
 	setup()
+	hud_identity = "configure"   # 2026-08-18 修复轮二 R2：主城点头像区直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
 	_build_content()
 
 
