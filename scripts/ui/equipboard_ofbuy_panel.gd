@@ -1,161 +1,199 @@
 class_name EquipboardOfbuyPanel
 extends PopWindow
 
-## 装备购买确认浮层（View 层）— 照源 ui/equipboard/ofbuy.lua（202 行）。
-## shop 商品点击购买时弹出，显示 icon + name + 购买数量 + 货币图标 + 总价 + 确认按钮。
+## 装备购买确认浮层（View 层）— 照源 ui/equipboard/ofbuy.lua（202 行）+ 继承链
+## board.lua（create 链：initFrame→initContainer→initTitle→initAtt + initAmount）。
+## shop 商品点击购买时弹出：icon + name + 拥有行 + 属性/描述面板 + 购买数量行 +
+## 货币图标 + 总价 + 确认按钮。弹窗确认语义近 confirm_dialog 家族但内容富（icon/属性/
+## 价格），按批5 规约维持独立文件不过度抽象。
+## 批5 两件套（2026-08-18 Task 3）：静态 chrome 全量进 equipboard_ofbuy_content.tscn
+## （照源声明序直译坐标/贴图/字号），本文件只做业务 + 信号 connect + fill；
+## icon/att 行是动态数据保留 procedural（%IconHost/%AttHost 挂载）。
 ## 单机化：源 param.doBuy 闭包 → confirmed 信号（ShopPanel 连接执行 shop_mgr.buy）。
 
 signal confirmed()
 
-const FRAME_RES: String = "res://assets/ui/alpha/HVGA/package_detail_bg.png"
-const CLOSE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close.png"
-const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png"
-const BTN_NORMAL_RES: String = "res://assets/ui/alpha/HVGA/package_button.png"
-const BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_down.png"
-const BTN_CAP: Rect2 = Rect2(10.0, 10.0, 236.0, 29.0)
-const MONEY_BG_RES: String = "res://assets/ui/alpha/HVGA/sell_number_bg.png"
-const FRAME_SIZE: Vector2 = Vector2(288.0, 385.0)
-const BTN_SIZE: Vector2 = Vector2(150.0, 45.0)
-const MONEY_BG_SIZE: Vector2 = Vector2(155.0, 36.0)
-const MONEY_ICON_SIZE: Vector2 = Vector2(28.0, 28.0)
-const CLOSE_SIZE: Vector2 = Vector2(30.0, 30.0)
+const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipboard_ofbuy_content.tscn")
+
+# icon 定位（源 board.lua:320 ccp(50,328) 中心锚 → 左上 (14,21)，同 EquipboardPanel 实证口径）
+const ICON_POS: Vector2 = Vector2(14.0, 21.0)
+const ICON_SCALE: float = 0.8   # 用户视觉偏好缩小（同 EquipboardPanel；源 createIcon 无 scale）
+# name 长名缩放（源 board.lua:338-341 w>160 → setScale(160/w)）
+const NAME_MAX_W: float = 160.0
+# att_bg 高度自适应（源 board.lua:263 setContentSize(bw, attListHeight + 12)）
+const ATT_BG_PAD: float = 12.0
+# 描述行 wrap 宽（源 board.lua:153 dimensions CCSizeMake(252, 0)）
+const ATT_WRAP_W: float = 252.0
+# att 行最少行数（源 board.lua:241-249 lineCount<5 补一行空白）
+const ATT_MIN_LINES: int = 5
+# money icon 中心锚（源 ofbuy.lua:131 ccp(145,95) → Godot (145, 290)）
+const MONEY_ICON_CENTER: Vector2 = Vector2(145.0, 290.0)
+# CS：贴图显示尺寸 = 原始像素 ÷ 1.28125（本弹窗贴图均无 TextureConfig 条目）
+const CONTENT_SCALE: float = 1.28125
+
+const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"
 const LSTR_PURCHASE: String = "EQUIPINFO.PURCHASE"
 const LSTR_ITEM: String = "EQUIPINFO.ITEM"
+const LSTR_HAVE: String = "EQUIPINFO.HAVE"
 const LSTR_CONFIRM: String = "EQUIPINFO.CONFIRM_PURCHASE"
-
-# frame_h=385；Godot y = frame_h - cocos_y。源 anchor 0,0.5（左中）→ Godot 左上 y - h/2。
-const ICON_TOPLEFT: Vector2 = Vector2(14.0, 21.0)
-const ICON_SCALE: float = 0.8   # 与 EquipboardPanel 一致（用户视觉偏好，源 createIcon 无 scale）
-const NAME_POS: Vector2 = Vector2(92.0, 25.0)
-const NAME_SIZE: Vector2 = Vector2(208.0, 30.0)
-const AMOUNT_TITLE_POS: Vector2 = Vector2(25.0, 285.0)
-const AMOUNT_TITLE_W: float = 60.0
-const MONEY_Y: float = 285.0
-const MONEY_ICON_POS: Vector2 = Vector2(131.0, 271.0)
-const MONEY_LABEL_POS: Vector2 = Vector2(200.0, 285.0)
-const BTN_TOPLEFT: Vector2 = Vector2(72.0, 322.5)
-const CLOSE_TOPLEFT: Vector2 = Vector2(271.0, 12.0)
-
-const NAME_COLOR: Color = Color(66.0 / 255.0, 45.0 / 255.0, 28.0 / 255.0, 1.0)
-const TITLE_COLOR: Color = Color(67.0 / 255.0, 59.0 / 255.0, 56.0 / 255.0, 1.0)
-const AMOUNT_COLOR: Color = Color(0.0, 71.0 / 255.0, 188.0 / 255.0, 1.0)
-const BTN_LABEL_COLOR: Color = Color(234.0 / 255.0, 225.0 / 255.0, 205.0 / 255.0)
-const LINE_H: float = 20.0   # 行高（Label vertical center 等高）
+const LSTR_SYNTHESIS: String = "EQUIPINFO.SYNTHESIS_REQUIRES_FRAGMENT_"
 
 var cm: Variant = null
-var _frame: Control = null
+var pd: PlayerData = null
 var _param: Dictionary = {}
+var _content: Control = null   # .tscn instantiate 根（container 子）
+var _frame: Control = null     # %Frame（chrome 容器，fill 锚点）
 
 
-func setup_panel(p_param: Dictionary, p_cm: Variant) -> void:
+func setup_panel(p_param: Dictionary, p_cm: Variant, p_pd: PlayerData = null) -> void:
 	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	_param = p_param
 	cm = p_cm
+	pd = p_pd
 	setup()
 	if shade_layer != null:
-		shade_layer.color.a = 0.4
-		shade_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+		shade_layer.color.a = 0.4   # 源 popwindow 半透遮罩口径（点遮罩关闭由基类 _on_shade_clicked）
 	_build_content()
+	_schedule_dynamic_layout()
+
+
+# shop 直挂 container.add_child（不走 show_window）：_ready 兜底触发动态布局。
+func _ready() -> void:
+	_schedule_dynamic_layout()
 
 
 func _build_content() -> void:
-	_frame = Control.new()
-	_frame.size = FRAME_SIZE
-	# 屏幕居中（960×640，源 frame 中心 ccp(400,240) 近屏幕中心）
-	_frame.position = Vector2((960.0 - FRAME_SIZE.x) * 0.5, (640.0 - FRAME_SIZE.y) * 0.5)
-	_frame.mouse_filter = Control.MOUSE_FILTER_STOP   # frame 区域吞点击（btRegisterOutClick out_click 关闭）
-	container.add_child(_frame)
-	_add_texture(_frame, FRAME_RES, Vector2.ZERO, FRAME_SIZE)
-	_add_close_button()
-	_add_icon()
-	_add_name()
-	_add_amount_row()
-	_add_money_row()
-	_add_confirm_button()
+	_content = CONTENT_SCENE.instantiate() as Control
+	container.add_child(_content)
+	_frame = _content.get_node("%Frame") as Control
+	_fill_icon()
+	(_frame.get_node("%NameLabel") as Label).text = _equip_name()
+	_fill_have_row()
+	(_frame.get_node("%PurchaseTitle") as Label).text = String(cm.get_lstr(LSTR_PURCHASE))
+	(_frame.get_node("%AmountLabel") as Label).text = str(int(_param.get("amount", 1)))
+	(_frame.get_node("%ItemSuffix") as Label).text = String(cm.get_lstr(LSTR_ITEM))
+	_fill_money_row()
+	_fill_att()
+	var confirm_btn: TextureButton = _frame.get_node("%ConfirmBtn") as TextureButton
+	(confirm_btn.get_node("Label") as Label).text = String(cm.get_lstr(LSTR_CONFIRM))
+	confirm_btn.pressed.connect(_on_confirm)
+	(_frame.get_node("%CloseBtn") as TextureButton).pressed.connect(_on_close)
 
 
-func _add_close_button() -> void:
-	var close := TextureButton.new()
-	close.texture_normal = load(CLOSE_RES) as Texture2D
-	close.texture_pressed = load(CLOSE_PRESS_RES) as Texture2D
-	close.position = CLOSE_TOPLEFT
-	close.size = CLOSE_SIZE
-	close.mouse_filter = Control.MOUSE_FILTER_STOP
-	close.pressed.connect(_on_close)
-	_frame.add_child(close)
-
-
-func _add_icon() -> void:
+# icon（源 board.lua:303-321 initTitle：createIcon(id) 无 level）。
+func _fill_icon() -> void:
 	var icon: Control = ReadequipIcon.create_icon(int(_param.get("id", 0)), 0, cm)
-	icon.position = ICON_TOPLEFT
+	icon.position = ICON_POS
 	icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(icon)
+	(_frame.get_node("%IconHost") as Control).add_child(icon)
 
 
-func _add_name() -> void:
+# 拥有行（源 board.lua:44-103 initAmount：equip_qunty[id] → pd.items；
+# 文本 HAVE + " " + 拥有数 + " " + ITEM；amount_label/amount_title_suffix 源 visible=false 死节点已裁）。
+func _fill_have_row() -> void:
+	var item_id: int = int(_param.get("id", 0))
+	var owned: int = int(pd.items.get(item_id, 0)) if pd != null else 0
+	(_frame.get_node("%HaveLabel") as Label).text = "%s %d %s" % [
+		String(cm.get_lstr(LSTR_HAVE)), owned, String(cm.get_lstr(LSTR_ITEM))]
+
+
+# 货币行（源 ofbuy.lua:113-150：money_icon pay 二选一中心锚 + money 总价；
+# cost 源 :57 自算 price×max(amount,1)，shop 已传则直用）。
+func _fill_money_row() -> void:
+	var amount: int = maxi(int(_param.get("amount", 1)), 1)
+	var cost: int = int(_param.get("cost", int(_param.get("price", 0)) * amount))
+	(_frame.get_node("%MoneyLabel") as Label).text = str(cost)
+	var icon: TextureRect = _frame.get_node("%MoneyIcon") as TextureRect
+	var icon_res: String = _pay_icon_path(String(_param.get("pay", "gold")))
+	var tex: Texture2D = load(icon_res) as Texture2D if ResourceLoader.exists(icon_res) else null
+	if tex == null:
+		icon.visible = false   # 资产缺失防御：icon 隐藏（bg/label 保留）
+		return
+	icon.texture = tex
+	var icon_size: Vector2 = tex.get_size() / CONTENT_SCALE
+	icon.size = icon_size
+	icon.position = MONEY_ICON_CENTER - icon_size * 0.5
+
+
+# att 面板（源 board.lua:106-281 initAtt）：
+# Equip.Description 存在 → 单行描述（wrap 252，源 :131-137）；碎片类再补空行 + 合成所需碎片
+# X/Y（源 :197-240）；否则 getDescription 属性行；行数不足 5 补一行空白（源 :241-249）。
+func _fill_att() -> void:
+	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
+	for c in host.get_children():
+		c.free()
+	var item_id: int = int(_param.get("id", 0))
+	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(item_id), {})
+	var line_count: int = 0
+	var desc_key: String = String(equip_row.get(&"Description", ""))
+	var is_fragment: bool = String(equip_row.get(&"Category", "")) == CAT_FRAGMENT
+	if desc_key != "":
+		_add_att_label(host, String(cm.get_lstr(desc_key)), "desc")
+		line_count = 1
+		if is_fragment:
+			var owned: int = int(pd.items.get(item_id, 0)) if pd != null else 0
+			var need: int = _fragment_need(item_id)
+			_add_att_label(host, " ", "row")
+			_add_att_label(host, String(cm.get_lstr(LSTR_SYNTHESIS)) + "%d/%d" % [owned, need], "synthesis")
+			line_count += 2
+	else:
+		var rows: Array = ReadequipData.get_description(item_id, 0, cm)
+		for row in rows:
+			var r: Dictionary = row as Dictionary
+			_add_att_label(host,
+				String(r.get("att", "")) + String(r.get("add", "")) + String(r.get("suffix", "")), "row")
+		line_count = rows.size()
+	if line_count < ATT_MIN_LINES:
+		_add_att_label(host, " ", "row")
+
+
+# att 行 Label：kind "desc"=描述行（wrap 252）/"row"=普通行（OfbuyAttLabel）/
+# "synthesis"=碎片合成行（OfbuySynthesisLabel，源 ccc3(66,45,28)）。
+func _add_att_label(host: VBoxContainer, text: String, kind: String) -> void:
 	var lbl := Label.new()
-	lbl.text = _equip_name()
-	lbl.position = NAME_POS
-	lbl.size = NAME_SIZE
-	lbl.add_theme_font_size_override("font_size", 24)
-	lbl.add_theme_color_override("font_color", NAME_COLOR)
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.text = text
+	lbl.theme_type_variation = &"OfbuySynthesisLabel" if kind == "synthesis" else &"OfbuyAttLabel"
+	if kind == "desc":
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(lbl)
+	host.add_child(lbl)
 
 
-func _add_amount_row() -> void:
-	var title := Label.new()
-	title.text = String(cm.get_lstr(LSTR_PURCHASE))
-	title.position = AMOUNT_TITLE_POS
-	title.size = Vector2(AMOUNT_TITLE_W, LINE_H)
-	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", TITLE_COLOR)
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(title)
-	var amount: int = int(_param.get("amount", 1))
-	var amt := Label.new()
-	amt.text = str(amount)
-	amt.position = Vector2(AMOUNT_TITLE_POS.x + AMOUNT_TITLE_W + 5.0, AMOUNT_TITLE_POS.y)
-	amt.size = Vector2(30.0, LINE_H)
-	amt.add_theme_font_size_override("font_size", 16)
-	amt.add_theme_color_override("font_color", AMOUNT_COLOR)
-	amt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	amt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(amt)
-	var suf := Label.new()
-	suf.text = String(cm.get_lstr(LSTR_ITEM))
-	suf.position = Vector2(amt.position.x + 30.0, AMOUNT_TITLE_POS.y)
-	suf.size = Vector2(60.0, LINE_H)
-	suf.add_theme_font_size_override("font_size", 18)
-	suf.add_theme_color_override("font_color", TITLE_COLOR)
-	suf.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	suf.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(suf)
+# 碎片合成需求数（源 board.lua:222-227 遍历 fragment 表 Fragment ID == id 取 Fragment Count）。
+func _fragment_need(item_id: int) -> int:
+	var frag_table: Dictionary = cm.get_raw_table(&"Fragment")
+	for key in frag_table:
+		var fr: Dictionary = frag_table[key]
+		if int(fr.get(&"Fragment ID", 0)) == item_id:
+			return int(fr.get(&"Fragment Count", 0))
+	return 0
 
 
-func _add_money_row() -> void:
-	_add_texture(_frame, MONEY_BG_RES, Vector2(115.0, MONEY_Y - MONEY_BG_SIZE.y * 0.5), MONEY_BG_SIZE)
-	var pay: String = String(_param.get("pay", "gold"))
-	_add_texture(_frame, _pay_icon_path(pay), MONEY_ICON_POS, MONEY_ICON_SIZE)
-	var cost: int = int(_param.get("cost", 0))
-	var lbl := Label.new()
-	lbl.text = str(cost)
-	lbl.position = MONEY_LABEL_POS
-	lbl.size = Vector2(80.0, LINE_H)
-	lbl.add_theme_font_size_override("font_size", 16)
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(lbl)
+# 动态布局（须入树后度量，variation 树内才解析）：
+# name 长名缩放 + att_bg 高度自适应。setup 时已入树立即执行，否则 register_on_enter
+# （show_window 流程）或 _ready（shop 直挂 add_child 流程）兜底。
+func _schedule_dynamic_layout() -> void:
+	if _content == null:
+		return
+	if is_inside_tree():
+		_layout_dynamic()
+	else:
+		register_on_enter(_layout_dynamic)
 
 
-func _add_confirm_button() -> void:
-	var btn: Button = UiScale9Button.make(BTN_NORMAL_RES, BTN_PRESS_RES, BTN_TOPLEFT, BTN_SIZE, BTN_CAP,
-		String(cm.get_lstr(LSTR_CONFIRM)), BTN_LABEL_COLOR)
-	btn.pressed.connect(_on_confirm)
-	_frame.add_child(btn)
+func _layout_dynamic() -> void:
+	if _content == null or not is_instance_valid(_content):
+		return
+	var name_lbl: Label = _frame.get_node("%NameLabel") as Label
+	name_lbl.scale = Vector2.ONE   # 重置上次缩放，避免短名残留长名 scale
+	var name_w: float = name_lbl.get_combined_minimum_size().x
+	if name_w > NAME_MAX_W:
+		name_lbl.scale = Vector2(NAME_MAX_W / name_w, NAME_MAX_W / name_w)
+	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
+	var host_min: Vector2 = host.get_combined_minimum_size()
+	(_frame.get_node("%AttBg") as NinePatchRect).size.y = host_min.y + ATT_BG_PAD
 
 
 func _on_close() -> void:
@@ -169,28 +207,16 @@ func _on_confirm() -> void:
 	remove_window()
 
 
+# 装备名（源 board.lua:322 readequip.value(id,"Name")——源 datatable.lua:110 数据表加载即
+# 翻译 → 本项目 get_lstr 等价；ofbuy.lua:60 amount>1 → "%sx%d"）。
 func _equip_name() -> String:
 	var item_id: int = int(_param.get("id", 0))
 	var row: Dictionary = cm.get_raw_table(&"Equip").get(str(item_id), {})
-	var raw_name: String = String(row.get(&"Name", str(item_id)))
+	var name_key: String = String(row.get(&"Name", str(item_id)))
+	var raw_name: String = String(cm.get_lstr(name_key))
 	var amount: int = int(_param.get("amount", 1))
 	return raw_name + "x" + str(amount) if amount > 1 else raw_name
 
 
 func _pay_icon_path(pay: String) -> String:
 	return MarketConfig.UI_DIR + MarketConfig.get_coin_res(pay)
-
-
-func _add_texture(parent: Control, path: String, pos: Vector2, sz: Vector2) -> void:
-	if not ResourceLoader.exists(path):
-		return
-	var tex: Texture2D = load(path) as Texture2D
-	if tex == null:
-		return
-	var tr := TextureRect.new()
-	tr.texture = tex
-	tr.position = pos
-	tr.size = sz
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(tr)

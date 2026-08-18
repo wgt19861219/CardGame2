@@ -1,0 +1,235 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="2_attbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_bg.png" id="3_moneybg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="4_btn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="5_btnp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="6_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="7_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/shop_gold_icon.png" id="8_gold"]
+
+; 批5 两件套（2026-08-18 Task 3）：装备购买确认浮层静态 chrome，节点序照源
+; ofbuy.lua create 链声明序——initFrame（frame+close）→ initContainer → initTitle（icon/name）
+; → initAtt（att_bg+att_list 宿主）→ initAmount（拥有行）→ initWindow（购买行/货币行/确认按钮）。
+; 坐标系：源 Cocos 800×480 左下原点 → Godot 960×640 左上；frame 内子坐标 (x,y)→(x, 385-y)；
+; 贴图显示尺寸 = 原始像素 ÷ CS 1.28125（均无 TextureConfig 条目）。
+; icon/att 行是动态数据 → %IconHost/%AttHost 容器 fill 挂 procedural（面板 gd 负责）。
+[node name="EquipboardOfbuyContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+; 源 board.lua:423-428 frame（package_detail_bg 369×493÷CS=288×385）屏幕中心
+; ccp(400,240) → to_godot(480,320) → 左上 (336,127.5)；STOP 吞点击（源 btRegisterOutClick area=frame）
+[node name="Frame" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 0
+offset_left = 336.0
+offset_top = 127.5
+offset_right = 624.0
+offset_bottom = 512.5
+mouse_filter = 0
+
+[node name="Bg" type="TextureRect" parent="Frame"]
+layout_mode = 0
+offset_right = 288.0
+offset_bottom = 385.0
+mouse_filter = 2
+texture = ExtResource("1_bg")
+expand_mode = 1
+stretch_mode = 0
+
+; 源 board.lua:320 icon（readequip.createIcon）中心 ccp(50,328) → 动态挂载宿主（全 frame 层）
+[node name="IconHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+; 源 board.lua:322-337 name anchor(0,0.5)@ccp(92,345) 24 号 ccc3(66,45,28)+shadow(0,2)；
+; 框宽 160（源 :338-341 w>160 setScale 缩小，fill 动态执行）
+[node name="NameLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 92.0
+offset_top = 25.0
+offset_right = 252.0
+offset_bottom = 55.0
+theme_type_variation = &"OfbuyNameLabel"
+vertical_alignment = 1
+mouse_filter = 2
+
+; 源 board.lua:55-70 initAmount amount_title（拥有行）anchor(0,0.5)@ccp(90,310) 20 号
+; ccc3(67,59,56)，文本 HAVE+拥有数+ITEM（fill）；同函数 amount_label/amount_title_suffix
+; 源 visible=false 死节点，裁（受控裁剪见验收记录）
+[node name="HaveLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 90.0
+offset_top = 63.0
+offset_right = 280.0
+offset_bottom = 87.0
+theme_type_variation = &"OfbuyHaveLabel"
+vertical_alignment = 1
+mouse_filter = 2
+
+; 源 board.lua:114-125 att_bg Scale9 package_detail_bg_2（326×192÷CS=254.44×149.85）
+; capInsets CCRectMake(10,10,230,120) → margin L10 T62 R86 B10；anchor(0.5,1)@ccp(143,287)
+; → 顶 98、左 143-127.22=15.78；高度 fill 自适应（源 :263 setContentSize(bw, attListHeight+12)）
+[node name="AttBg" type="NinePatchRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.78
+offset_top = 98.0
+offset_right = 270.22
+offset_bottom = 247.85
+mouse_filter = 2
+texture = ExtResource("2_attbg")
+patch_margin_left = 10
+patch_margin_top = 62
+patch_margin_right = 86
+patch_margin_bottom = 10
+
+; 源 board.lua:250-259 att_list ChaosNode anchor(0,1)@ccp(22,282) → 左 22、顶 103；
+; 行间距 offset=2 → separation 2；行内容（属性/描述/碎片）fill procedural 挂载
+[node name="AttHost" type="VBoxContainer" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 22.0
+offset_top = 103.0
+offset_right = 274.0
+offset_bottom = 253.0
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+; ── 底行（源 ofbuy.lua initWindow :64-112，垂直中心 385-95=290 → 顶 278）──
+; amount_title（购买）anchor(0,0.5)@ccp(25,95) 18 号 ccc3(67,59,56)；
+; 右三节点 right2 链（源 readnode right2：amount=标题右缘+10、suffix=amount 右缘+3）
+; 静态近似：zh LSTR 文本宽实测（"购买"18 号≈40 → amount 左 75；amount 数字框 30 → suffix 左 108）
+[node name="PurchaseTitle" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 25.0
+offset_top = 278.0
+offset_right = 65.0
+offset_bottom = 302.0
+theme_type_variation = &"OfbuyRowLabel18"
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="AmountLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 75.0
+offset_top = 278.0
+offset_right = 105.0
+offset_bottom = 302.0
+theme_type_variation = &"OfbuyAmountLabel16"
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="ItemSuffix" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 108.0
+offset_top = 278.0
+offset_right = 148.0
+offset_bottom = 302.0
+theme_type_variation = &"OfbuyRowLabel18"
+vertical_alignment = 1
+mouse_filter = 2
+
+; 源 :113-126 money_bg（sell_number_bg 326×62 原图）fix_size(155,36) anchor(0,0.5)@ccp(115,95)
+; → (115,272)-(270,308)（fix_size 不÷CS 直译）
+[node name="MoneyBg" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 115.0
+offset_top = 272.0
+offset_right = 270.0
+offset_bottom = 308.0
+mouse_filter = 2
+texture = ExtResource("3_moneybg")
+expand_mode = 1
+stretch_mode = 0
+
+; 源 :127-133 money_icon 中心锚 ccp(145,95) → 中心 (145,290)；贴图 pay 二选一
+; （gold 46×44÷CS=35.9×34.34 → 默认态），fill 换贴图重定位
+[node name="MoneyIcon" type="TextureRect" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 127.05
+offset_top = 272.83
+offset_right = 162.95
+offset_bottom = 307.17
+mouse_filter = 2
+texture = ExtResource("8_gold")
+expand_mode = 1
+stretch_mode = 0
+
+; 源 :134-150 money 中心锚 ccp(200,95) → 框中心 (200,290)，16 号 + shadow(0,2)
+; + refreshCostColor 恒金 ccc3(251,206,16)（源 :9-16 if 空块死代码，色恒定走 variation）
+[node name="MoneyLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 140.0
+offset_top = 278.0
+offset_right = 260.0
+offset_bottom = 302.0
+theme_type_variation = &"OfbuyMoneyLabel16"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+; 源 :151-183 sell 整图 Sprite package_button（335×67÷CS=261.46×52.29，无 fix_size/Scale9）
+; 中心 ccp(147,40) → (16.27,318.85)；sell_press visible=false 按下态 → TextureButton 双态；
+; sell_label mediate 居中 20 号 fontinfo ui_normal_button（白+shadow(63,5,0)(0,2)）
+[node name="ConfirmBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 16.27
+offset_top = 318.85
+offset_right = 277.73
+offset_bottom = 371.14
+texture_normal = ExtResource("4_btn")
+texture_pressed = ExtResource("5_btnp")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Label" type="Label" parent="Frame/ConfirmBtn"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"OfbuyConfirmLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+text = "确认购买"
+
+; 源 board.lua:430-445 close DGButton（normal/press 双贴图）中心 ccp(286,358)
+; → 中心 (286,27) → (260.64,1.24)，65×66÷CS=50.73×51.51（右缘探出 frame 与源一致）；
+; 声明序最后（批5 弹窗 close 层序通查：close 后声明盖住内容）
+[node name="CloseBtn" type="TextureButton" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 260.64
+offset_top = 1.24
+offset_right = 311.37
+offset_bottom = 52.75
+texture_normal = ExtResource("6_close")
+texture_pressed = ExtResource("7_closep")
+ignore_texture_size = true
+stretch_mode = 0

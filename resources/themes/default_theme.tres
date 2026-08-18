@@ -1313,3 +1313,51 @@ TavernLootRewardLabel/font_sizes/font_size = 18
 TavernLootCostLabel/base_type = &"Label"
 TavernLootCostLabel/colors/font_color = Color(1, 1, 1, 1)
 TavernLootCostLabel/font_sizes/font_size = 18
+; ── equipboard_ofbuy 两件套（UI 重做批5 Task 3，2026-08-18）──
+; 源 ofbuy.lua + board.lua 继承链色板：name（board.lua:322-337 size24 ccc3(66,45,28)
+; +shadow(0,2)）；HAVE 拥有行（board.lua:55-70 size20 ccc3(67,59,56) 无阴影）；
+; att 行（board.lua:140-158 size18 ccc3(64,63,63)+shadow(0,2)）；碎片合成行
+; （board.lua:206-240 size18 ccc3(66,45,28)+shadow(0,2)）；底行标题/后缀
+; （ofbuy.lua:63-112 size18 ccc3(67,59,56)）；购买数量（ofbuy.lua:80-97 size16 ccc3(0,71,188)）；
+; money（ofbuy.lua:134-150 size16+shadow(0,2)，refreshCostColor :9-16 恒金 ccc3(251,206,16)）；
+; 确认按钮字（ofbuy.lua:171-183 size20 fontinfo ui_normal_button =
+; fontconfigs.lua:23-31 白+shadow(63,5,0)偏移(0,2)，stroke 被注释 → 无描边）。
+OfbuyNameLabel/base_type = &"Label"
+OfbuyNameLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
+OfbuyNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+OfbuyNameLabel/constants/shadow_offset_x = 0
+OfbuyNameLabel/constants/shadow_offset_y = 2
+OfbuyNameLabel/font_sizes/font_size = 24
+OfbuyHaveLabel/base_type = &"Label"
+OfbuyHaveLabel/colors/font_color = Color(0.263, 0.231, 0.22, 1)
+OfbuyHaveLabel/font_sizes/font_size = 20
+OfbuyAttLabel/base_type = &"Label"
+OfbuyAttLabel/colors/font_color = Color(0.251, 0.247, 0.247, 1)
+OfbuyAttLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+OfbuyAttLabel/constants/shadow_offset_x = 0
+OfbuyAttLabel/constants/shadow_offset_y = 2
+OfbuyAttLabel/font_sizes/font_size = 18
+OfbuySynthesisLabel/base_type = &"Label"
+OfbuySynthesisLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
+OfbuySynthesisLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+OfbuySynthesisLabel/constants/shadow_offset_x = 0
+OfbuySynthesisLabel/constants/shadow_offset_y = 2
+OfbuySynthesisLabel/font_sizes/font_size = 18
+OfbuyRowLabel18/base_type = &"Label"
+OfbuyRowLabel18/colors/font_color = Color(0.263, 0.231, 0.22, 1)
+OfbuyRowLabel18/font_sizes/font_size = 18
+OfbuyAmountLabel16/base_type = &"Label"
+OfbuyAmountLabel16/colors/font_color = Color(0, 0.278, 0.737, 1)
+OfbuyAmountLabel16/font_sizes/font_size = 16
+OfbuyMoneyLabel16/base_type = &"Label"
+OfbuyMoneyLabel16/colors/font_color = Color(0.984, 0.808, 0.063, 1)
+OfbuyMoneyLabel16/colors/font_shadow_color = Color(0, 0, 0, 1)
+OfbuyMoneyLabel16/constants/shadow_offset_x = 0
+OfbuyMoneyLabel16/constants/shadow_offset_y = 2
+OfbuyMoneyLabel16/font_sizes/font_size = 16
+OfbuyConfirmLabel/base_type = &"Label"
+OfbuyConfirmLabel/colors/font_color = Color(1, 1, 1, 1)
+OfbuyConfirmLabel/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
+OfbuyConfirmLabel/constants/shadow_offset_x = 0
+OfbuyConfirmLabel/constants/shadow_offset_y = 2
+OfbuyConfirmLabel/font_sizes/font_size = 20

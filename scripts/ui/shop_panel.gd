@@ -150,13 +150,14 @@ func _on_buy(slot: int) -> void:
 	var price: int = int(g.get("price", 0))
 	var cost: int = price * maxi(amount, 1)
 	var popup := EquipboardOfbuyPanel.new("equipboardofbuy", {})
+	# pd 传弹窗（源 board.lua initAmount equip_qunty 拥有行 + initAtt 碎片 X/Y 用）
 	popup.setup_panel({
 		"id": int(g.get("id", 0)),
 		"amount": amount,
 		"pay": String(g.get("type", "gold")),
 		"price": price,
 		"cost": cost,
-	}, cm)
+	}, cm, pd)
 	popup.confirmed.connect(_make_buy_confirm_handler(slot))
 	container.add_child(popup)
 
