@@ -73,8 +73,11 @@ func _build_content() -> void:
 
 
 # avatar id（0→默认 1，player.lua:378）→ Avatar[id].Picture → load 头像图 + portrait_mask shader 裁剪
-# （源 createClippingNode(res, main_head_mask.png) 圆形 mask）→ addChild z=3。host 已照源 (185,363)
-# 定位进 .tscn，icon 局部 pos=0,0（范式「子组件挂 host pos=0,0」）。ranklist 路径转换范式复用。
+# （源 createClippingNode(res, main_head_mask.png) 圆形 mask）。host 已照源 (185,363) 定位进 .tscn，
+# icon 局部 pos=0,0（范式「子组件挂 host pos=0,0」）。ranklist 路径转换范式复用。
+# z 序：源 addChild(head,3) < head_frame z=5（configure.lua:83/:1142，框纹盖头像缘）→ Godot 走纯
+# 声明序（tscn Host 声明于 HeadFrame 之前），icon 不设 z_index——z_as_relative 默认 true 会累加
+# PopWindow z=100（icon 103 > frame 100）反序盖框（2026-08-18 审查 Important 修正）。
 func _add_head_icon(host: Control) -> void:
 	var avatar_id: int = _pd.avatar if _pd.avatar > 0 else 1
 	var pic: String = String(_cm.get_raw_table(&"Avatar").get(str(avatar_id), {}).get("Picture", ""))
@@ -88,7 +91,6 @@ func _add_head_icon(host: Control) -> void:
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = HEAD_ICON_SIZE
 	icon.position = Vector2.ZERO   # host 已照源定位，icon 局部原点
-	icon.z_index = 3
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
 	mat.shader = PortraitMaskShader

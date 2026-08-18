@@ -175,11 +175,29 @@ func test_head_zone_display_sizes() -> void:
 
 
 func test_head_icon_draw_order() -> void:
-	# 源 z 序：head_frame z=5 > head icon z=3 → Godot 声明序 Host 在 HeadFrame 之前
+	# 源 z 序：head_frame z=5（configure.lua:1142）> head icon z=3（:83 addChild(head,3)）→
+	# 框纹盖头像缘。Godot 走纯声明序（tscn Host 声明于 HeadFrame 前）+ icon 运行时 z_index=0——
+	# z_as_relative 默认 true，icon 设 z_index=3 会累加 PopWindow z=100（icon 103 > frame 100）
+	# 反序盖框（2026-08-18 审查 Important 守卫，补运行时断言堵 get_index-only 盲区）。
 	var inst := _content()
 	var host: Control = _find(inst, "HeadIconHost") as Control
 	var frame: Control = _find(inst, "HeadFrame") as Control
 	assert_true(host.get_index() < frame.get_index(), "icon(z3) 在 frame(z5) 之下绘制")
+	# 运行时守卫：panel fill 后 icon 真创建 + z_index 默认 0（禁相对 z 逃逸）
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var pd := PlayerData.new(cm)
+	var panel: ConfigurePanel = ConfigurePanel.new("configure", {})
+	panel.setup_panel(pd, cm)
+	add_child_autofree(panel)
+	var rt_content: Control = panel.container.get_node("ConfigureContent")
+	var rt_host: Control = rt_content.get_node("%HeadIconHost") as Control
+	var rt_frame: Control = rt_content.get_node("%HeadFrame") as Control
+	assert_gt(rt_host.get_child_count(), 0, "head icon 已 fill 创建（默认 avatar=1 → Coco.jpg）")
+	for child in rt_host.get_children():
+		var icon: CanvasItem = child as CanvasItem
+		assert_eq(icon.z_index, 0, "head icon z_index=0 默认（禁相对 z 逃逸盖框）")
+	assert_true(rt_host.get_index() < rt_frame.get_index(), "运行时声明序 icon 在 frame 之下")
 
 
 func test_head_icon_host_rect() -> void:
