@@ -50,6 +50,9 @@ var dyna_data: Dictionary = {}
 var proto: Dictionary = {}
 var attribs: Dictionary = {}
 var orig_attribs: Dictionary = {}
+# 源 unit.lua:55 hpmpInited——首次 initHpMpInfo 后置位，切波 reset 再调直接 return
+# （玩家 hp/mp 跨波保留；2026-08-18 用户实跑"切波能量条清零"根因，本项目漏此守卫）。
+var hpmp_inited: bool = false
 var hp: int = 0
 var mp: int = 0
 var max_shield: int = 0
