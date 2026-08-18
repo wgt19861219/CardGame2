@@ -35,8 +35,8 @@
 ;   society(600-320=280) / language(150) / facebook(85)。
 ;   单机化重排（受控偏离）：language_button 源 debug_mode 隐藏（:1052-1056），
 ;   单机版语言切换为正式功能 → 100x60 照源 scaleSize 占被裁 select_server(393,115)
-;   中心位 (473,445)；label 中心 = 按钮中心 +(88,0)（源 :964 label@250=162+88），
-;   金 20 黑影 → ConfigureLangLabel。
+;   中心 x=473、底对齐底排 472.5（不压 FacebookLine）；label 中心 = 按钮中心 +(88,0)
+;   （源 :964 label@250=162+88），金 20 黑影 → ConfigureLangLabel。
 
 [node name="ConfigureContent" type="Control"]
 layout_mode = 3
@@ -302,9 +302,9 @@ mouse_filter = 2
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 423.0
-offset_top = 415.0
+offset_top = 412.5
 offset_right = 523.0
-offset_bottom = 475.0
+offset_bottom = 472.5
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -313,9 +313,9 @@ unique_name_in_owner = true
 theme_type_variation = &"ConfigureLangLabel"
 layout_mode = 0
 offset_left = 471.0
-offset_top = 432.5
+offset_top = 430.0
 offset_right = 651.0
-offset_bottom = 457.5
+offset_bottom = 455.0
 text = "语言"
 
 [node name="FacebookLine" type="NinePatchRect" parent="."]

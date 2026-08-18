@@ -77,7 +77,7 @@ const LANG_T: float = 415.0
 const LANG_R: float = 523.0
 const LANG_B: float = 475.0
 const LANG_LABEL_CX: float = 561.0
-const LANG_LABEL_CY: float = 445.0
+const LANG_LABEL_CY: float = 442.5
 # 分隔线 600×2 中心 x=390 → (170,~)~(770,~)；中心 y 280/410/475（源 600-320/150/85）。
 const LINE_L: float = 170.0
 const LINE_R: float = 770.0
@@ -231,7 +231,8 @@ func test_bottom_row_layout() -> void:
 	assert_eq(setup.theme_type_variation, &"ConfigureActionBtn", "setup variation")
 	var lang: TextureButton = _find(inst, "LangBtn") as TextureButton
 	assert_almost_eq((lang.offset_left + lang.offset_right) * 0.5, 473.0, 0.5, "lang 中心 x（select_server 393+80）")
-	assert_almost_eq((lang.offset_top + lang.offset_bottom) * 0.5, 445.0, 0.5, "lang 中心 y（源 115 → 560-115）")
+	assert_almost_eq((lang.offset_top + lang.offset_bottom) * 0.5, 442.5, 0.5, "lang 中心 y（底对齐底排 472.5，100x60 高于 55 按钮）")
+	assert_almost_eq(lang.offset_bottom, 472.5, 0.5, "lang 底与 setup 底齐（不压 FacebookLine 474）")
 	assert_almost_eq(lang.offset_bottom - lang.offset_top, 60.0, 0.5, "lang 高 60 照源 scaleSize")
 	assert_eq(lang.stretch_mode, TextureButton.STRETCH_SCALE, "lang 显式 stretch_mode=0")
 	var label: Label = _find(inst, "LangLabel") as Label
