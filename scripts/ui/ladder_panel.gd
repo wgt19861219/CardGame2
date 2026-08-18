@@ -292,6 +292,7 @@ func _fill_records_tab() -> void:
 		empty.position = Vector2(100.0, RANK_ROW_FIRST_Y)
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_records_host.add_child(empty)
+		_records_host.custom_minimum_size = Vector2(REC_CLIP_W, 0.0)
 		return
 	for i in records.size():
 		_records_host.add_child(_make_record_row(records[i] as Dictionary, i))
