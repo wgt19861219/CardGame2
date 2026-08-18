@@ -446,3 +446,45 @@ func test_tscn_variation_wiring() -> void:
 		"cost 走 variation")
 	popup.remove_window()
 	root.queue_free()
+
+
+# ── Task 2 诊断披露守卫（2026-08-18）：magic 复用主 tscn，无独立底板 ──
+# 源实证（poptavernloot.lua）：magic 是同一弹窗类的 type=="magic" 分支，非独立弹窗——
+# chrome readnode 声明表（:738-864）对 magic 全量生效，仅差异 :1036-1038 reward_label 隐藏
+# + :666-668 tvText 强制 DRAW_ONCE + :406-409 getLootPos 圆阵多点位；magic 独有圆阵/阴影/名字
+# 全是运行时动画（:378-405 / :430-461 / :629-636 createSprite/createttf + 自毁），源里同样不在
+# readnode 静态表 → 本项目 PopTavernLootMagic（RefCounted helper）挂 %LootHost procedural 正确，
+# 不需要独立 pop_tavern_loot_magic_content.tscn。本守卫防"magic 被误拆独立底板"回归。
+func test_magic_reuses_main_content_scene() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "magic", "ten", {"pay": "Diamond", "number": 288})
+	popup.show_window(root)
+	# 1. 路由守卫：magic 走与主路径同一 content tscn（源同类分支共享 chrome）
+	assert_eq(popup._content.scene_file_path, "res://scenes/ui/pop_tavern_loot_content.tscn",
+		"magic 复用主 pop_tavern_loot_content.tscn（源 magic 是同弹窗类分支非独立弹窗）")
+	# 2. chrome 完整性：magic 走 status==0 主路径 readnode 全量 chrome（7 静态子同构 + 按钮不隐藏 + 有费用行）
+	assert_eq(popup._content.get_child_count(), 7, "magic Content 7 静态子（与主路径同构）")
+	assert_true((popup._content.get_node("%AgainBtn") as Control).visible,
+		"magic 再抽按钮可见（源 magic 不走 starshop 无-tavern 分支）")
+	assert_true((popup._content.get_node("%CostBg") as Control).visible,
+		"magic 有费用行（源 magic 走 readnode cost 声明表）")
+	# 3. 常量绝对值照源（test_magic_circle_layout 只测内部一致性，此处防"常量抄错源"回归）：
+	# MAGIC_CENTER_POS = 源 :9 matrix_center_pos ccp(400,280)；MAGIC_LOOT_POS 十点 = 源 :44-55 逐点。
+	assert_eq(PopTavernLoot.MAGIC_CENTER_POS, Vector2(400.0, 280.0), "magic 圆阵中心照源 :9 ccp(400,280)")
+	var src_pos: Array[Vector2] = [
+		Vector2(-105.0, 95.0), Vector2(105.0, 95.0), Vector2(215.0, 10.0),
+		Vector2(100.0, -95.0), Vector2(-100.0, -95.0), Vector2(-215.0, 10.0),
+		Vector2(0.0, 0.0), Vector2(-160.0, -20.0), Vector2(160.0, -20.0),
+		Vector2(0.0, 110.0),
+	]
+	assert_eq(PopTavernLoot.MAGIC_LOOT_POS.size(), src_pos.size(), "magic 多点位数 = 10（源 :44-55）")
+	for i in range(src_pos.size()):
+		assert_eq(PopTavernLoot.MAGIC_LOOT_POS[i], src_pos[i], "magic_loot_pos[%d] 照源 :%d" % [i, 45 + i])
+	# 4. helper 性质守卫：PopTavernLootMagic 是 RefCounted 动画 helper 非 Node（magic 无独立弹窗实体）
+	# （Variant 绕过编译期判型，运行时 is Node 恒假）
+	var helper: Variant = PopTavernLootMagic.new()
+	assert_false(helper is Node, "PopTavernLootMagic 是 RefCounted helper（非独立弹窗节点）")
+	popup.remove_window()
+	root.queue_free()
