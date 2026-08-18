@@ -249,6 +249,49 @@ func test_equip_cell_icon_or_lock_structure() -> void:
 	panel.get_parent().queue_free()
 
 
+func test_equip_cell_icon_centered_per_source() -> void:
+	# 2026-08-18 修复轮 C 守卫：源 createIcon :429/:439 icon/iconBg:setPosition(57,64) 是
+	# cocos 默认锚点(0.5,0.5)=【中心】语义 → Godot 左上角 position 须减半尺寸。
+	# 修复前漏减致 icon 中心相对 cell 中心偏 (+47,+35)（右下半身位）。
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var open_cell: Control = panel._create_equip_cell(info, panel._player.MAX_TEAM_LEVEL)
+	var icon: Control = open_cell.get_child(1) as Control
+	var icon_center: Vector2 = icon.position + icon.size * 0.5
+	assert_almost_eq(icon_center.x, 57.0, 0.1, "icon 中心 x = 源 equipIconPosX(57)")
+	assert_almost_eq(icon_center.y, 139.0 / 1.28125 - 64.0, 0.1, "icon 中心 y = bg 高-源 64（中心锚换算）")
+	var locked_cell: Control = panel._create_equip_cell(info, 1)
+	if int(info.get("lr", 1)) > 1:
+		var icon_bg: Control = locked_cell.get_child(1) as Control
+		var bg_center: Vector2 = icon_bg.position + icon_bg.size * 0.5
+		assert_almost_eq(bg_center.x, 57.0, 0.1, "锁定 icon_bg 中心 x = 57")
+		assert_almost_eq(bg_center.y, 139.0 / 1.28125 - 64.0, 0.1, "锁定 icon_bg 中心 y 同源")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
+func test_equip_name_label_centered_after_ready() -> void:
+	# 2026-08-18 修复轮 C 守卫：源 createIcon :448 label:setPosition(57,17) 中心锚语义 →
+	# 入树 ready 后按 variation 18 号真实 minsize 居中（_layout_name_label），
+	# 且 clamp 缩放围绕中心 pivot。修复前 label 左上定位致中心偏右、底部溢出 bg 底边。
+	var panel: HandbookPanel = _make_panel()
+	var info: Dictionary = (panel._list()[0] as Dictionary).duplicate()
+	var cell: Control = panel._create_equip_cell(info, panel._player.MAX_TEAM_LEVEL)
+	add_child(cell)
+	await get_tree().process_frame
+	var lbl: Label = null
+	for c in cell.get_children():
+		if c is Label:
+			lbl = c
+	assert_almost_eq(lbl.position.x + lbl.size.x * 0.5, 57.0, 0.1, "label 中心 x = 源 equipNameLabelPosX(57)")
+	assert_almost_eq(lbl.position.y + lbl.size.y * 0.5, 139.0 / 1.28125 - 17.0, 0.1,
+		"label 中心 y = bg 高-源 17（中心锚换算）")
+	assert_almost_eq(lbl.pivot_offset.x, lbl.size.x * 0.5, 0.1, "pivot 居中（clamp 围绕中心缩）")
+	cell.queue_free()
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
 func test_open_cell_click_opens_equipcraft() -> void:
 	# #1 源 doSelectElement :105-109 → equipcraft.createPanel :1277 equipLayer = equipboard.init("ofcraft")
 	# 装备详情面板（equipboard base，属性/描述/卖出）。本项目复用 EquipboardPanel（package 已实现）。

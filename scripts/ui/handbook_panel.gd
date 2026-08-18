@@ -49,6 +49,8 @@ const BASE_Y: float = 640.0
 const LEFT_FIRST: Vector2 = Vector2(196.0, 356.0)
 const RIGHT_FIRST: Vector2 = Vector2(476.0, 356.0)
 const GAP: Vector2 = Vector2(130.0, 115.0)
+# 源 :14-16 锚点坐标语义：cocos Sprite/Label 默认锚(0.5,0.5)，(57,64)/(57,17) 均为
+# 【中心】落在 cell(bg) 左下原点系的位置；Godot 用左上角 position，须减半尺寸换算。
 const EQUIP_ICON_POS: Vector2 = Vector2(57.0, 64.0)
 const EQUIP_NAME_POS: Vector2 = Vector2(57.0, 17.0)
 # 源 :445 label:getContentSize().width > 114 → setScale(114/width) 等比缩(2026-08-17 补)
@@ -231,7 +233,11 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 	var is_open: bool = player_level >= lr
 	if is_open:
 		var icon: Control = ReadequipIcon.create_icon(int(info["id"]), 0, _cm)
-		icon.position = Vector2(EQUIP_ICON_POS.x, EQUIP_BG_SIZE.y - EQUIP_ICON_POS.y)
+		# 源 :429 icon:setPosition(57,64) — cocos Sprite/Label 默认锚点(0.5,0.5)即【中心】落在
+		# (57,64)；Godot position 是左上角 → 减半尺寸换算（2026-08-18 修复轮 C：此前漏减致
+		# icon 偏右下约半个身位）。pivot 同设中心（源 began setScale 围绕锚点缩）。
+		icon.position = Vector2(EQUIP_ICON_POS.x, EQUIP_BG_SIZE.y - EQUIP_ICON_POS.y) - icon.size * 0.5
+		icon.pivot_offset = icon.size * 0.5
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon)
 	else:
@@ -239,7 +245,9 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 		icon_bg.texture = load(ICON_BG_RES) as Texture2D
 		icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_bg.size = ICON_BG_SIZE
-		icon_bg.position = Vector2(EQUIP_ICON_POS.x, EQUIP_BG_SIZE.y - EQUIP_ICON_POS.y)
+		# 同上：源 :439 iconBg:setPosition(57,64) 中心锚 → 左上角减半尺寸（修复轮 C）
+		icon_bg.position = Vector2(EQUIP_ICON_POS.x, EQUIP_BG_SIZE.y - EQUIP_ICON_POS.y) - icon_bg.size * 0.5
+		icon_bg.pivot_offset = icon_bg.size * 0.5
 		icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cell.add_child(icon_bg)
 		var lock := TextureRect.new()
@@ -253,21 +261,27 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 	var lbl := Label.new()
 	lbl.text = name_text
 	lbl.theme_type_variation = &"HandbookEquipNameLabel"
-	lbl.position = Vector2(EQUIP_NAME_POS.x, EQUIP_BG_SIZE.y - EQUIP_NAME_POS.y)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(lbl)
-	# clamp 须入树后测宽：此刻 lbl/cell 均未挂树，theme 链断裂，get_minimum_size 按引擎
+	# 源 :448 label:setPosition(57,17) 同为中心锚 → 需按真实文本 minsize 居中放置，
+	# 且 clamp 缩放须围绕中心（源 setScale 围绕锚点 0.5,0.5）。
+	# 须入树后布局：此刻 lbl/cell 均未挂树，theme 链断裂，get_minimum_size 按引擎
 	# 默认 16 号而非 variation 18 号测宽（压缩比失真约 11%，长英文名仍可溢出 114 宽）
-	# → 挂 lbl.ready 入树解析 variation 后再 clamp（同 ranklist _place_record_tail 范式）。
-	lbl.ready.connect(_clamp_name_width.bind(lbl))
+	# → 挂 lbl.ready 入树解析 variation 后再布局（同 ranklist _place_record_tail 范式）。
+	lbl.ready.connect(_layout_name_label.bind(lbl))
 	cell.set_meta(&"is_open", is_open)
 	cell.set_meta(&"id", int(info["id"]))
 	return cell
 
 
-# lbl 入树后 theme 链解析 variation 18 号，get_minimum_size 才是真实字号宽度。
-func _clamp_name_width(lbl: Label) -> void:
-	_clamp_label_width(lbl, lbl.get_minimum_size().x)
+# lbl 入树后 theme 链解析 variation 18 号，get_minimum_size 才是真实字号宽度：
+# 按源中心锚语义居中放置（position = 源锚点 - minsize/2），再 clamp。
+func _layout_name_label(lbl: Label) -> void:
+	var ms: Vector2 = lbl.get_minimum_size()
+	lbl.size = ms
+	lbl.pivot_offset = ms * 0.5
+	lbl.position = Vector2(EQUIP_NAME_POS.x, EQUIP_BG_SIZE.y - EQUIP_NAME_POS.y) - ms * 0.5
+	_clamp_label_width(lbl, ms.x)
 
 
 # 源 :445-447 label:getContentSize().width > 114 → label:setScale(114/width)(单参等比)。
