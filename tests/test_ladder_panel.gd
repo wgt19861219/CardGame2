@@ -167,9 +167,48 @@ func test_fill_rankboard_rows() -> void:
 	assert_eq(host.get_child_count(), 21, "20 榜行 + 1 self 行")
 	var row0: Control = host.get_child(0) as Control
 	assert_not_null(row0.get_node_or_null(^"RankBg"), "行内底图节点存在（源 rankBg 分档底图）")
-	# 源行步进 78（rankFrameHeight70+8，initRankListData :1846）
+	# 源行步进 78（rankFrameHeight70+8，initRankListData :1846）；源 cocos y 向上 i 增 y 减=行向下
+	# → Godot y 向下直接 +78（2026-08-18 审查 Critical：旧断言 row0-row1==78 把倒序固化进守卫）。
 	var row1: Control = host.get_child(1) as Control
-	assert_almost_eq(row0.position.y - row1.position.y, 78.0, 0.5, "行步进 70+8")
+	assert_almost_eq(row1.position.y - row0.position.y, 78.0, 0.5, "行步进 70+8（下行 y 更大）")
+	assert_lt(row0.position.y, row1.position.y, "第 1 名在最上（源 i 增 y 减=向下直译）")
+	for c in host.get_children():
+		assert_gt(c.position.y, -0.01, "全部行 y>=0（ScrollContainer 滚不到负 y，旧实现 18 行永不可见）")
+
+
+func test_rankboard_row_y_formula_and_total_height() -> void:
+	# 源 initRankListData :1843-1848 直译守卫：行中心 = 39 + 78*(min(10,i)-1) + 58*max(0,i-10)
+	# + (i>10 ? 8 : 0)（39 = clip 顶 cocos 400 − 首行底图中心 361，host 局部空间）。
+	var panel := _panel()
+	panel._fill_tab(1)
+	var host: Control = _panel_content(panel).get_node("%RankboardHost") as Control
+	var prev_y: float = -1.0
+	for i in host.get_child_count():
+		var row: Control = host.get_child(i) as Control
+		assert_almost_eq(row.position.y, panel._rank_row_y(i + 1), 0.01, "行 %d y 与源公式一致" % (i + 1))
+		if i > 0:
+			assert_gt(row.position.y, prev_y, "行 %d 在上一行下方（y 单调递增）" % (i + 1))
+		prev_y = row.position.y
+	# 关键样本：#1 顶=39-35=4 / #3 顶=39+156-35=160 / #21 中心=39+702+638+8=1387
+	assert_almost_eq((host.get_child(0) as Control).position.y, 4.0, 0.5, "row#1 y=4")
+	assert_almost_eq((host.get_child(2) as Control).position.y, 160.0, 0.5, "row#3 y=160")
+	assert_almost_eq((host.get_child(20) as Control).position.y, 1387.0 - 25.0, 0.5, "row#21 y=1362")
+	# 源 totalHeight = 78*10 + 58*11 = 1418（:1848 无 adjust 项）
+	assert_almost_eq(host.custom_minimum_size.y, 1418.0, 0.5, "rank host 内容高 1418 照源")
+
+
+func test_record_row_scale_size_and_content_height() -> void:
+	# 源 createRecordInfo highlightbg scaleSize=CCSizeMake(485,70)（:1271-1280 点值直译）；
+	# initListHeight = 78n+20（:1802）。
+	var panel := _panel()
+	panel._ladder.pvp["records"] = [{"result": "victory", "time": 100, "rank": 50}]
+	panel._fill_tab(2)
+	var host: Control = _panel_content(panel).get_node("%RecordsHost") as Control
+	var row: Control = host.get_child(0) as Control
+	assert_almost_eq(row.size.x, 485.0, 0.5, "记录行宽 485（源 scaleSize）")
+	assert_almost_eq(row.size.y, 70.0, 0.5, "记录行高 70（源 scaleSize）")
+	assert_almost_eq(row.position.y, 39.0 - 35.0, 0.5, "记录行首行顶 y=39-35=4（基准 39）")
+	assert_almost_eq(host.custom_minimum_size.y, 78.0 + 20.0, 0.5, "记录 host 内容高 78*1+20")
 
 
 func test_fill_records_relative_time() -> void:

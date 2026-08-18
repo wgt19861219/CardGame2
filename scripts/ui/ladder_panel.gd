@@ -14,32 +14,45 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ladder_content.tscn"
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
 # L1727 PVP.COMBAT_RECORD(战斗记录) / L2969 PVP.ADJUSTMENT(防守阵容调整)。
 const TAB_LSTR: Array[String] = ["PVP.ARMORY", "PVP.RANKING_", "PVP.COMBAT_RECORD", "PVP.ADJUSTMENT"]
-# 排行行（源 initRankListData :1843-1848）：行高 70（1-10 名）/50（11+ 名），步进 +8 间距；
-# 底图分档 rankFrameRecource :33-67（1st/2nd/3rd/high/low，setContentSize(475,h)）。
+# 排行行（源 initRankListData :1843-1848）：行高 70（1-10 名）/50（11+ 名），步进 78/58 已含
+# +8 间距；底图分档 rankFrameRecource :33-67（1st/2nd/3rd/high/low，setContentSize(475,h)）。
+# FIRST_Y 是 host 局部空间首行中心基准 = 源 clip 顶 cocos 400（:1494 cliprect(165,40,470,360)，
+# Godot 场景 y=160 即 ScrollContainer 顶）− 首行底图中心 361（bg 290 + rankBg 局部 71）= 39
+# （2026-08-18 审查 Critical：旧值 199=560-361 是场景空间值，host y=0 对应场景 160 不可混用）。
 const RANK_ROW_W: float = 475.0
 const RANK_ROW_H_HIGH: float = 70.0
 const RANK_ROW_H_LOW: float = 50.0
 const RANK_ROW_GAP: float = 8.0
 const RANK_ROW_STEP_HIGH: float = 78.0
 const RANK_ROW_STEP_LOW: float = 58.0
-const RANK_ROW_FIRST_Y: float = 199.0
+const RANK_ROW_FIRST_Y: float = 39.0
 const RANK_ROW_TEX_1ST: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_1st.png"
 const RANK_ROW_TEX_2ND: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_2nd.png"
 const RANK_ROW_TEX_3RD: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_3rd.png"
 const RANK_ROW_TEX_HIGH: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
 const RANK_ROW_TEX_LOW: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_low.png"
-# 排行行内（相对 475xh 底图）：名次 x=10 / 名字 x=110（源 rank(-200,-11)/iconParent(-110)
-# 名次在榜框左带、头像降级后名字占 iconParent 位，简化直译披露）。
-const RANK_ROW_RANK_X: float = 10.0
-const RANK_ROW_NAME_X: float = 110.0
+# 排行行内（相对 475xh 底图中心，源 createRankInfo :1173-1207 相对 bg 点坐标减底图中心 (150,71)：
+# rank(-200,+11)/iconParent(-110,0)，cocos y 向上 → Godot y 取反）：名次/名字 Label 中心锚定照源
+# （源 rank Label anchor(0.5,0.5) 中心锚定）；头像组件 getWholeHeadIcon 缺 → "名字 LvN" Label
+# 居中占 iconParent 位（ranklist 先例降级披露）。
+const RANK_ROW_RANK_DX: float = -200.0
+const RANK_ROW_RANK_DY: float = -11.0
+const RANK_ROW_NAME_DX: float = -110.0
+const RANK_ROW_NAME_DY: float = 0.0
+const RANK_RANK_LBL_W: float = 60.0
+const RANK_NAME_LBL_W: float = 320.0
 const RANK_ROW_LBL_H: float = 24.0
-# 记录行（源 initRecordData :1801）：行步进 78；highlight 底图无 scaleSize → 原尺寸
-# 638x97px ÷CS = 498.1x75.7；行内子相对底图中心点值直译（resultEffect(-220,-15)/
-# name(-25,-11)/time(-60,+16)/record(-180,+16)，:1270-1395）。
-const REC_ROW_W: float = 498.1
-const REC_ROW_H: float = 75.7
+# 记录行（源 initRecordData :1801-1802）：行步进 78、内容高 78n+20；highlight 底图
+# scaleSize=CCSizeMake(485,70)（:1271-1280 点值直译，2026-08-18 审查 Important：旧值
+# 498.1x75.7 误按"无 scaleSize 原尺寸直译"算，与源矛盾）；FIRST_Y 基准 39 同 RANK 侧
+# （源首行底图中心同为 cocos 361）；行内子相对底图中心点值直译（源相对 bg 点坐标减底图中心
+# (150,71)：resultEffect(-220,+15)/name(-25,+11)/time(-60,-16)/record(-180,-16)，:1300-1360，
+# cocos y 向上 → Godot y 取反成 DY -15/-11/+16/+16）；源 name 宽>140 setScale 压缩未迁移（披露）。
+const REC_ROW_W: float = 485.0
+const REC_ROW_H: float = 70.0
 const REC_ROW_STEP: float = 78.0
-const REC_ROW_FIRST_Y: float = 199.0
+const REC_ROW_FIRST_Y: float = 39.0
+const REC_ROW_TAIL: float = 20.0
 const REC_ROW_TEX: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
 const REC_WIN_TEX: String = "res://assets/ui/alpha/HVGA/pvp/pvp_win.png"
 const REC_LOSE_TEX: String = "res://assets/ui/alpha/HVGA/pvp/pvp_lose.png"
@@ -220,17 +233,22 @@ func _fill_rankboard_tab() -> void:
 	self_row.position.y = _rank_row_y(rank_list.size() + 1)
 	_rankboard_host.add_child(self_row)
 	var count: int = rank_list.size() + 1
-	var total_h: float = RANK_ROW_STEP_HIGH * float(mini(10, count)) + RANK_ROW_STEP_LOW * float(maxi(0, count - 10)) + RANK_ROW_GAP
+	# 源 totalHeight = 78*min(10,n) + 58*max(0,n-10)（:1848，无 adjust 项——adjust 只进各行 y
+	# 不进总高；2026-08-18 审查 Minor：旧实现多加一个 8）。
+	var total_h: float = RANK_ROW_STEP_HIGH * float(mini(10, count)) + RANK_ROW_STEP_LOW * float(maxi(0, count - 10))
 	_rankboard_host.custom_minimum_size = Vector2(RANK_CLIP_W, total_h)
 
 
-# 行 y（源 initRankListData :1846 公式直译）：第 i 行底图中心 = 199 - 78*(min(10,i)-1)
-# - 58*max(0,i-10) - 8*(i>10)（199 = 560-(290+71) 源 bg(250,290)+rankBg 局部(150,71)）。
+# 行 y（源 initRankListData :1843-1847 公式直译）：源 cocos y 向上
+# y = 290 - adjust - 78*(min(10,i)-1) - 58*max(0,i-10)（i 增 y 减 = 行向下，第 1 名最上；i>10 时
+# adjust=8），转 Godot y 向下 → 首行中心 39 + step 单调递增。基准 39 是 host（ScrollContainer
+# 内容）局部空间值 = 源 clip 顶 cocos 400 − 首行底图中心 361（2026-08-18 审查 Critical：旧实现
+# 199-step 方向反 + 199=560-(290+71) 是场景空间值误塞 host 局部，双重修正）。
 func _rank_row_y(i: int) -> float:
 	var step: float = RANK_ROW_STEP_HIGH * float(mini(10, i) - 1) + RANK_ROW_STEP_LOW * float(maxi(0, i - 10))
 	if i > 10:
 		step += RANK_ROW_GAP
-	return RANK_ROW_FIRST_Y - step - _rank_row_h(i) * 0.5
+	return RANK_ROW_FIRST_Y + step - _rank_row_h(i) * 0.5
 
 
 func _rank_row_h(rank_num: int) -> float:
@@ -261,19 +279,23 @@ func _make_rank_row(rank_num: int, label_text: String) -> Control:
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(bg)
+	var cx: float = RANK_ROW_W * 0.5
+	var cy: float = h * 0.5
 	var rank_lbl := Label.new()
 	rank_lbl.text = "#%d" % rank_num
 	rank_lbl.theme_type_variation = "LadderWhiteLabel20"
-	rank_lbl.position = Vector2(RANK_ROW_RANK_X, h * 0.5 - RANK_ROW_LBL_H * 0.5)
-	rank_lbl.size = Vector2(60.0, RANK_ROW_LBL_H)
+	rank_lbl.position = Vector2(cx + RANK_ROW_RANK_DX - RANK_RANK_LBL_W * 0.5, cy + RANK_ROW_RANK_DY - RANK_ROW_LBL_H * 0.5)
+	rank_lbl.size = Vector2(RANK_RANK_LBL_W, RANK_ROW_LBL_H)
+	rank_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	rank_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(rank_lbl)
 	var name_lbl := Label.new()
 	name_lbl.text = label_text
 	name_lbl.theme_type_variation = "LadderWhiteLabel20"
-	name_lbl.position = Vector2(RANK_ROW_NAME_X, h * 0.5 - RANK_ROW_LBL_H * 0.5)
-	name_lbl.size = Vector2(320.0, RANK_ROW_LBL_H)
+	name_lbl.position = Vector2(cx + RANK_ROW_NAME_DX - RANK_NAME_LBL_W * 0.5, cy + RANK_ROW_NAME_DY - RANK_ROW_LBL_H * 0.5)
+	name_lbl.size = Vector2(RANK_NAME_LBL_W, RANK_ROW_LBL_H)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(name_lbl)
@@ -289,14 +311,15 @@ func _fill_records_tab() -> void:
 		var empty := Label.new()
 		empty.text = "暂无战斗记录"
 		empty.theme_type_variation = "LadderDarkLabel20"
-		empty.position = Vector2(100.0, RANK_ROW_FIRST_Y)
+		empty.position = Vector2(100.0, REC_ROW_FIRST_Y)
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_records_host.add_child(empty)
 		_records_host.custom_minimum_size = Vector2(REC_CLIP_W, 0.0)
 		return
 	for i in records.size():
 		_records_host.add_child(_make_record_row(records[i] as Dictionary, i))
-	_records_host.custom_minimum_size = Vector2(REC_CLIP_W, REC_ROW_FIRST_Y + REC_ROW_STEP * float(records.size()))
+	# 源 initListHeight = 78n + 20（:1802，2026-08-18 审查 Important：旧 199+78n 混入场景空间基准）。
+	_records_host.custom_minimum_size = Vector2(REC_CLIP_W, REC_ROW_STEP * float(records.size()) + REC_ROW_TAIL)
 
 
 # 记录行：底图 highlight（源 :1271-1280）+ 胜负图（:1425-1432 pvp_win/lose）+ 名字/时间/
