@@ -227,6 +227,11 @@ func _fill_cost_row() -> void:
 	var icon_res: String = COST_ICON_RES_RMB if pay == "Diamond" else COST_ICON_RES_GOLD
 	var icon_tex: Texture2D = load(icon_res) as Texture2D
 	if icon_tex == null:
+		# 资产缺失防御：三节点整体隐藏（bg 不悬空在未定位的默认位）
+		_cost_bg.visible = false
+		_cost_icon.visible = false
+		_cost_label.visible = false
+		push_warning("PopTavernLoot: cost icon 缺失: " + icon_res)
 		return
 	_cost_icon.texture = icon_tex
 	# 显示尺寸 = 纹理原始像素 ÷ CS（无 TextureConfig 条目，批5 口径手算；TexDisplaySize 现公式偏大 1.28×）
