@@ -121,16 +121,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-; 组1 竞技场（默认展开=选中态图 current_1）；TabHost 局部坐标由 fill 重排（源 47 点步进），
-; 初始值=默认折叠态布局（源 reCalculateRankBtnPos :1898-1925：组1 pc(120,385)/子 pc(120,338)，
-; 子中心=pc+(8,-5)；中心→左上：组 (2.5,-8.5)、子 (10.5,43.5)，取整落 tscn）。
+; 组1 竞技场（默认展开=选中态图 current_1）；TabHost 局部坐标由 fill 重排（源 :1898-1925 精确直译：
+; height=380+5 起步、循环内先 -5 → 组1 pc(120,380)、子 pc(120,333)；组间 gap=展开尾5+下组开头5；
+; 子按钮=pc+(8,-5)；→ TabHost 局部 组 (2.4,-3.3)/子 (10.4,48.7)，取整落 tscn）。
 [node name="GroupArena" type="TextureButton" parent="TabClip/TabHost"]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 2.0
-offset_top = -8.0
+offset_top = -3.0
 offset_right = 137.0
-offset_bottom = 51.0
+offset_bottom = 56.0
 texture_normal = ExtResource("6_gsel")
 texture_pressed = ExtResource("7_gselp")
 ignore_texture_size = true
@@ -150,9 +150,9 @@ text = "竞技场"
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 10.0
-offset_top = 44.0
+offset_top = 49.0
 offset_right = 145.0
-offset_bottom = 103.0
+offset_bottom = 108.0
 texture_normal = ExtResource("8_ssel")
 texture_pressed = ExtResource("9_sselp")
 ignore_texture_size = true
@@ -168,13 +168,14 @@ theme_type_variation = &"RanklistSubTabSelLabel"
 mouse_filter = 2
 text = "竞技场每日排名"
 
+; 组2 战力（默认折叠；组1 展开尾5+本组开头5 → pc(120,276) → TabHost 局部 (2.4,100.7) 取整）。
 [node name="GroupFightvalue" type="TextureButton" parent="TabClip/TabHost"]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 2.0
-offset_top = 91.0
+offset_top = 101.0
 offset_right = 137.0
-offset_bottom = 150.0
+offset_bottom = 160.0
 texture_normal = ExtResource("10_gn")
 texture_pressed = ExtResource("11_gnp")
 ignore_texture_size = true
@@ -190,15 +191,15 @@ theme_type_variation = &"RanklistGroupTabLabel"
 mouse_filter = 2
 text = "战力"
 
-; 组2 三子（默认折叠 visible=false；位置=组2 展开时 fill 布局：pc(120,239/192/145)）
+; 组2 三子（默认折叠 visible=false；位置=组2 展开时 fill 布局：pc(120,229/182/135)）
 [node name="SubFullHeroGs" type="TextureButton" parent="TabClip/TabHost"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 3
 offset_left = 10.0
-offset_top = 143.0
+offset_top = 153.0
 offset_right = 145.0
-offset_bottom = 202.0
+offset_bottom = 212.0
 texture_normal = ExtResource("12_sn")
 texture_pressed = ExtResource("13_snp")
 ignore_texture_size = true
@@ -219,9 +220,9 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 3
 offset_left = 10.0
-offset_top = 190.0
+offset_top = 200.0
 offset_right = 145.0
-offset_bottom = 249.0
+offset_bottom = 259.0
 texture_normal = ExtResource("12_sn")
 texture_pressed = ExtResource("13_snp")
 ignore_texture_size = true
@@ -242,9 +243,9 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 3
 offset_left = 10.0
-offset_top = 237.0
+offset_top = 247.0
 offset_right = 145.0
-offset_bottom = 296.0
+offset_bottom = 306.0
 texture_normal = ExtResource("12_sn")
 texture_pressed = ExtResource("13_snp")
 ignore_texture_size = true

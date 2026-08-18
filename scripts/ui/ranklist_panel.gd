@@ -5,7 +5,9 @@ extends PopWindow
 ## 窗口框架/tab 按钮/列表容器静态化进 ranklist_content.tscn（编辑器所见即所得）；
 ## 本文件只做业务、信号 connect、fill（% 取节点填动态数据）+ 行渲染（动态行 procedural）。
 ## 单机化裁剪：源 3 分组裁 pvp_r 实时联机 + guildliveness 公会 → 2 分组 4 子项（勿回加）。
-## 残留披露（维持不修，下轮）：1st/2nd/3rd 行内排名徽章缺图（pvp_rank_1st.png 无 _star 版）
+## 残留披露（维持不修，下轮补图）：1st/2nd/3rd 行内排名徽章缺图——本项目资产区无裸版
+## pvp_rank_1st/2nd/3rd.png（仅 _star/_light 变体；源 :596-800/:1350-1356 行内+overlay 均用裸版；
+## HC multilanguage 四语言区有裸版三图可补，2026-08-18 审查更正"HC 亦无"系查证错误）
 ## → Label "#N" 降级；getTeamHead 头像组件（图+金框+mask）→ Avatar.Picture 直显 40x40；
 ## getLevelIcon 等级徽章缺 → 名字合并 "LvN" 文本；self 行（rank0 "★" 顶部恒叠）与
 ## overlay 仅 rank>2 叠为迁移期行为（源 :1330 判 tab index 非排名，pvp 榜不显自己），行为债滚清单。
@@ -49,8 +51,10 @@ const RECORD_POS: Vector2 = Vector2(187.5, 41.91)
 # hero_evo_star 的星图标（源 :879-891 detail_star scale 0.5：70x71px ÷CS×0.5 = 27.31x27.71）。
 const STAR_ICON_RES: String = "res://assets/ui/alpha/HVGA/detail_star.png"
 const STAR_ICON_SIZE: Vector2 = Vector2(27.31, 27.71)
-# tab 布局（源 reCalculateRankBtnPos :1898-1925：leftdown.x=120、起始 height=385、步进 47、组后 -5；
-# 子按钮中心=pc+(8,-5)；TabHost 局部 = 场景 - (130,154)）。
+# tab 布局（源 reCalculateRankBtnPos :1898-1925 精确直译：height=380 再 +5 起步、循环内先 -5
+# 再放组按钮 → 组1 pos=380；步进 47；展开组尾再 -5（+下组开头 -5 = 组间 gap 10）；折叠组子
+# 按钮只藏不占位；子按钮贴图=pc+(8,-5)（createRankBtn Ppoint :2050-2054）；
+# TabHost 局部 = 场景 - (130,154)）。
 const TAB_X: float = 120.0
 const TAB_TOP_H: float = 385.0
 const TAB_STEP: float = 47.0
@@ -131,14 +135,16 @@ func _bind_tabs() -> void:
 	_layout_tabs()
 
 
-# 重排静态 tab 按钮（源 reCalculateRankBtnPos :1898-1925）：
-# 组中心场景 (120, height)；子中心 = (128, height-5)；height 步进 47、组间 -5。
+# 重排静态 tab 按钮（源 reCalculateRankBtnPos :1898-1925 精确直译）：
+# height 385(=380+5) 起步；每组先 -5 再放组按钮（组1 pos=380，非 385）；组后 -47；
+# 展开组逐子 -47 且尾再 -5（下组开头又 -5 → 展开后组间 gap=10）；折叠组子按钮只藏不占位。
 # 场景 y-up → Godot (x+80, 560-y) → TabHost 局部（TabClip 左上 (130,154)）再减半尺寸。
 func _layout_tabs() -> void:
 	var height: float = TAB_TOP_H
 	for gi in TAB_TREE.size():
 		var group: Dictionary = TAB_TREE[gi]
 		var collapsed: bool = bool(_collapsed.get(gi, true))
+		height -= TAB_GROUP_GAP
 		var gbtn := _tab("%%%s" % group["btn"]) as TextureButton
 		_set_tab_state(gbtn, true, not collapsed)
 		gbtn.position = Vector2(
@@ -149,11 +155,13 @@ func _layout_tabs() -> void:
 			var sbtn := _tab("%%%s" % child["btn"]) as TextureButton
 			sbtn.visible = not collapsed
 			_set_tab_state(sbtn, false, child["mode"] == _rank_type)
-			sbtn.position = Vector2(
-				TAB_X + TAB_SUB_DX + 80.0 - TAB_CLIP_POS.x - TAB_W * 0.5,
-				(560.0 - (height - TAB_SUB_DY)) - TAB_CLIP_POS.y - TAB_H * 0.5)
-			height -= TAB_STEP
-		height -= TAB_GROUP_GAP
+			if not collapsed:
+				sbtn.position = Vector2(
+					TAB_X + TAB_SUB_DX + 80.0 - TAB_CLIP_POS.x - TAB_W * 0.5,
+					(560.0 - (height - TAB_SUB_DY)) - TAB_CLIP_POS.y - TAB_H * 0.5)
+				height -= TAB_STEP
+		if not collapsed:
+			height -= TAB_GROUP_GAP
 
 
 # tab 贴图/文字 variation 选中态切换（源 resTbl sel/notsel + btncolortree :2042-2046）。

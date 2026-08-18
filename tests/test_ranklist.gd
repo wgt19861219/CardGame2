@@ -272,3 +272,45 @@ func test_panel_no_runtime_theme_override() -> void:
 		var script_text: String = FileAccess.get_file_as_string(path)
 		assert_eq(script_text.count("add_theme_color_override"), 0, "%s 无 font_color override" % path)
 		assert_eq(script_text.count("add_theme_font_size_override"), 0, "%s 无 font_size override" % path)
+
+
+# ==================== 审查更正守卫（2026-08-18 Important×2）====================
+# 源 reCalculateRankBtnPos :1898-1925 精确直译：height=380+5 起步、循环内先 -5 再用（组1 pos=380，
+# 非 385）；展开组尾 -5 + 下组开头 -5 = 组间 gap 10；折叠组子按钮只藏不占位（:1915-1918）。
+# 断言值 = 源 height 反推 TabHost 局部：x_组=2.42/x_子=10.42；y_组=376.705-h/y_子=381.705-pc。
+func _make_panel_for_layout() -> RanklistPanel:
+	var rm := RanklistManager.new()
+	var pd := PlayerData.new(cm)
+	var panel := RanklistPanel.new("ranklist", {})
+	panel.setup_panel(pd, rm, "pvp")
+	add_child(panel)
+	return panel
+
+
+func test_layout_tabs_group1_pos_from_source() -> void:
+	var panel := _make_panel_for_layout()
+	var host: Control = panel.container.get_node("RanklistContent/TabClip/TabHost")
+	var group1: TextureButton = host.get_node("GroupArena") as TextureButton
+	assert_almost_eq(group1.position.x, 2.42, 0.05, "组1 x=场景 120 → TabHost 局部 2.42")
+	assert_almost_eq(group1.position.y, -3.295, 0.05, "组1 pos=源 380（:1903 循环内先 -5 再用，非 385）")
+	var sub_pvp: TextureButton = host.get_node("SubPvp") as TextureButton
+	assert_almost_eq(sub_pvp.position.y, 48.705, 0.05, "组1 子 pc=源 333（380-47）")
+	var group2: TextureButton = host.get_node("GroupFightvalue") as TextureButton
+	assert_almost_eq(group2.position.y, 100.705, 0.05, "组2 pos=源 276（展开尾 5+下组开头 5，gap=10 非 5）")
+	panel.queue_free()
+
+
+# 折叠组不占位（源 :1915-1918 折叠分支不减 height）：组1 折叠 → 组2 顶到源 328。
+func test_layout_tabs_collapsed_group_takes_no_space() -> void:
+	var panel := _make_panel_for_layout()
+	panel._collapsed = {0: true, 1: false}
+	panel._layout_tabs()
+	var host: Control = panel.container.get_node("RanklistContent/TabClip/TabHost")
+	var sub_pvp: TextureButton = host.get_node("SubPvp") as TextureButton
+	assert_false(sub_pvp.visible, "组1 折叠 → 子按钮隐藏")
+	var group2: TextureButton = host.get_node("GroupFightvalue") as TextureButton
+	assert_almost_eq(group2.position.y, 48.705, 0.05, "组1 折叠不占位 → 组2 pos=源 328（380-47 后直接 -5+5）")
+	var sub_gs: TextureButton = host.get_node("SubFullHeroGs") as TextureButton
+	assert_true(sub_gs.visible, "组2 展开 → 子按钮可见")
+	assert_almost_eq(sub_gs.position.y, 100.705, 0.05, "组2 展开子1 pc=源 281（328-47）")
+	panel.queue_free()
