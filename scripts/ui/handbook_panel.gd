@@ -100,6 +100,7 @@ var _is_fading: bool = false            # #3 翻页动画进行中(防动画期�
 
 
 func setup_panel(p_player: PlayerData) -> void:
+	hud_identity = "handbook"   # 2026-08-18 用户实跑修复：源 handbook extends basescene（非 framework）无 HUD → 进隐藏清单
 	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	_player = p_player
 	_cm = p_player.cm

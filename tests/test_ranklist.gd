@@ -152,8 +152,9 @@ func test_content_closebtn_size_from_uieditor() -> void:
 	var content := _instantiate_content()
 	var btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
 	assert_not_null(btn, "CloseBtn 存在")
-	assert_eq(btn.size, Vector2(58.0, 58.0), "close 尺寸 58×58（声明表 fix_wh 点值，非像素）")
-	assert_eq(btn.position, Vector2(114.0, 92.0), "close 左上 (114,92)（中心 (143.28,120.94)）")
+	assert_almost_eq(btn.size.x, 57.81, 0.01, "close 宽（贴角惯例，offset 差值浮点容差）")
+	assert_almost_eq(btn.size.y, 58.59, 0.01, "close 高")
+	assert_eq(btn.position, Vector2(20.0, 15.0), "close 左上贴角 (20,15)（2026-08-18 导航惯例归位，excavate 判例）")
 	assert_eq(btn.stretch_mode, TextureButton.STRETCH_SCALE, "TextureButton 显式 stretch_mode=0（批惯例）")
 	content.queue_free()
 

@@ -29,20 +29,26 @@ func _ready() -> void:
 	config = ConfigManager.new()
 	config.load_all()
 	player = _load_or_new_player()
-	player.events = Events.bus  # 注入 EventBus（check_unlocks 升级解锁发 feature_unlocked → main_scene 弹公告）
-	# T2 依赖倒置：Logic 写操作自动标脏（buy_vitality/midas exchange 等；缺省 Callable headless 可测）。
-	player.save_hook = mark_save_dirty
-	player.midas.save_hook = mark_save_dirty
-	# T3 依赖倒置：战斗胜/败音效由 Logic 钩子回调（battle_engine 不再直调 AudioPlayer autoload）。
-	var sfx: Callable = func(name: String) -> void: AudioPlayer.play_sfx(name)
-	player.stage_manager.sfx_hook = sfx; player.stage_manager.skill_lib = skills
-	player.crusade_manager.sfx_hook = sfx
-	player.excavate.sfx_hook = sfx
-	player.ladder.sfx_hook = sfx
+	_wire_player(player)
 	skills = SkillLibrary.new(config)
 	skill_groups = SkillGroupData.new(config)
 	_start_autosave_timer()
 	save()
+
+
+# PlayerData 依赖注入（事件总线/存脏钩子/战斗音效钩子）。_ready 与 apply_imported_save
+# （导入存档换 player 实例）共用——换实例必须重挂全部 hook，否则自动存档/音效断链。
+func _wire_player(p_pd: PlayerData) -> void:
+	p_pd.events = Events.bus  # 注入 EventBus（check_unlocks 升级解锁发 feature_unlocked → main_scene 弹公告）
+	# T2 依赖倒置：Logic 写操作自动标脏（buy_vitality/midas exchange 等；缺省 Callable headless 可测）。
+	p_pd.save_hook = mark_save_dirty
+	p_pd.midas.save_hook = mark_save_dirty
+	# T3 依赖倒置：战斗胜/败音效由 Logic 钩子回调（battle_engine 不再直调 AudioPlayer autoload）。
+	var sfx: Callable = func(name: String) -> void: AudioPlayer.play_sfx(name)
+	p_pd.stage_manager.sfx_hook = sfx; p_pd.stage_manager.skill_lib = skills
+	p_pd.crusade_manager.sfx_hook = sfx
+	p_pd.excavate.sfx_hook = sfx
+	p_pd.ladder.sfx_hook = sfx
 
 func _start_autosave_timer() -> void:
 	var timer := Timer.new()
@@ -86,3 +92,15 @@ func save() -> int:
 ## 标脏（照源 ed.saveDirty=true）：等 60s Timer 合并刷盘，避免高频操作每次写盘。
 func mark_save_dirty() -> void:
 	_dirty = true
+
+
+## 导入存档落地（save_manager_panel 导入确认后调，源 savemanager.lua:235-251 等价）：
+## 从 dict 重建 PlayerData + 重挂全部 hook（_wire_player）+ 立即存盘。返回是否成功。
+## 失败（from_dict 异常/存盘错误码非 OK）时 player 保持原实例不动。测试模式存盘 no-op（OK）。
+func apply_imported_save(data: Dictionary) -> int:
+	var new_pd: PlayerData = PlayerDataScript.from_dict(data, config)
+	if new_pd == null:
+		return ERR_INVALID_DATA
+	player = new_pd
+	_wire_player(player)
+	return save()

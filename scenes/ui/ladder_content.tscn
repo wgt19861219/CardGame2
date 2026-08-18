@@ -50,13 +50,15 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 ; close 65x66px ÷CS = 50.7x51.5（本项目 PopWindow 适配自建，源 pushScene 无 close）
+; 2026-08-18 用户实跑反馈归位：root 左上贴角 (20,15)~(77.76,73.54) 全项目导航惯例
+; （excavate 修复轮三判例：六页面统一优先于源位置；贴图维持 X 样式未换 backbtn 系，结构性改动红线）
 [node name="CloseBtn" type="TextureButton" parent="HeaderLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 874.0
-offset_top = 14.0
-offset_right = 925.0
-offset_bottom = 66.0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.76
+offset_bottom = 73.54
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true

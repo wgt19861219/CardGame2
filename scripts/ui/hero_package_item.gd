@@ -104,16 +104,19 @@ func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: Player
 	_fill_head()
 	_fill_name()
 	_fill_mark()
+	# 红点默认关（tscn TipHost 未标 visible；miss 形态与无可穿槽拥有形态均关），
+	# 拥有形态 _fill_equips → _fill_deal_tag 按需置 true。2026-08-18 修复：原置于
+	# _fill_equips 之后无条件覆盖，把已点亮的 tag 也压灭（用户实跑反馈"卡片无红点"根因）。
+	_tip_host.visible = false
 	if is_miss:
 		_fill_stone()
 	else:
 		_fill_equips()
 	# 两形态 visible 切换（坑 5）：拥有→EquipGroup / 未拥有→StoneGroup + 头像灰化。
-	# TipHost 已从 EquipGroup 拎到根平级（用户决策"红点和装备槽平级"），不再跟随 EquipGroup visible 链，
-	# 此处显式按形态控可见（未拥有形态无装备可穿戴，红点必隐）。
+	# TipHost 已从 EquipGroup 拎到根平级（用户决策"红点和装备槽平级"），不跟随 EquipGroup
+	# visible 链（miss 形态已在上方默认关）。
 	_equip_group.visible = not is_miss
 	_stone_group.visible = is_miss
-	_tip_host.visible = false
 
 
 # Phase A 重构：取 .tscn 节点引用（fill 用）。
@@ -193,7 +196,9 @@ func _fill_mark() -> void:
 
 
 # plusSign：空槽查 hero_equip[tid][rank]["Equip{slot} ID"]，可合成则加 + 号（黄+仅可合成 / 蓝+可穿戴）。
-# canDealTag：任一槽可穿戴时在 (240,90) 加 main_deal_tag（源 :243-248 isShowTag，DealTag position 已烘焙）。
+# canDealTag 判据走 EquipdetailQuery.is_slot_ready_to_wear（与快捷栏 heroPackage 红点同一判定
+# 拆粒度，源 readhero.lua:734-750 checkEquipableProp 单英雄单槽 vs framework 聚合），
+# 任一槽可穿（已持有可穿或可合成可穿）时在 (240,90) 加 main_deal_tag（源 :243-248 isShowTag）。
 func _fill_equips() -> void:
 	var hero: HeroInstance = _entry as HeroInstance
 	var show_tag: bool = false
@@ -211,8 +216,8 @@ func _fill_equips() -> void:
 			if eid > 0 and EquipdetailQuery.is_equip_craftable(eid, cm, pd):
 				var can_wear: bool = bool(EquipdetailQuery.can_wear_equip(hero, eid, cm)["can"])
 				_fill_plus_sign(PLUS_WEAR_RES if can_wear else PLUS_CRAFT_RES, slot_bg, slot_size)
-				if can_wear:
-					show_tag = true
+		if EquipdetailQuery.is_slot_ready_to_wear(hero, i, cm, pd):
+			show_tag = true
 	if show_tag:
 		_fill_deal_tag()
 

@@ -29,6 +29,7 @@ const LSTR_LEVEL_CAP: String = "CONFIGURE.HAS_REACHED_THE_LEVEL_CAP"
 
 var _pd: PlayerData
 var _cm: ConfigManager
+var _content_ref: Control = null   # 2026-08-18：子弹窗（改名/换头像）关闭刷新用
 
 
 # 入口（照源 statusbar:313-322 headIcon→configure）：main_scene head 点击调。
@@ -51,6 +52,7 @@ func setup_panel(p_pd: PlayerData, p_cm: ConfigManager) -> void:
 func _build_content() -> void:
 	shade_layer.gui_input.connect(_on_shade_input)
 	var content := CONTENT_SCENE.instantiate()
+	_content_ref = content
 	container.add_child(content)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
 	var vip_idx: int = 1 if _pd.vip_level > 0 else 0
@@ -125,20 +127,40 @@ func _bind_action_btn(btn: Button, label_text: String, handler: Callable) -> voi
 	btn.pressed.connect(handler)
 
 
+# 2026-08-18 用户实跑修复：子弹窗（改名/换头像）关闭后刷新名字 Label 与头像 icon。
+func _refresh_name_and_head() -> void:
+	if _content_ref == null or not is_instance_valid(_content_ref):
+		return
+	(_content_ref.get_node("%NameLabel") as Label).text = _pd.player_name
+	var host: Control = _content_ref.get_node_or_null("%HeadIconHost")
+	if host != null:
+		for c in host.get_children():
+			host.remove_child(c)
+			c.queue_free()
+		_add_head_icon(host)
+
+
 func _on_change_name() -> void:
 	var panel := NameInputPanel.new("name_input", {})
 	panel.setup_panel(_pd)
 	panel.show_window(get_parent())
+	# 2026-08-18 用户实跑修复：改名弹窗关闭后刷新本面板名字（旧实现无回调，名字仍是旧值
+	# → 用户感知"功能没实现"）。
+	panel.tree_exited.connect(_refresh_name_and_head)
 
 
 func _on_change_head() -> void:
 	var panel := AvatarPanel.new("avatar", {})
 	panel.setup_panel(_pd, _cm)
 	panel.show_window(get_parent())
+	# 2026-08-18 用户实跑修复：换头像弹窗关闭后刷新本面板头像（同改名，旧值残留）。
+	panel.tree_exited.connect(_refresh_name_and_head)
 
 
 func _on_save_manager() -> void:
-	Toast.show_message("存档导出/导入（换机迁移）单机版暂缓")
+	# 2026-08-18 修复轮 A：存档管理单机最小版（SaveManagerPanel——手动保存/剪贴板+文件
+	# 导出导入/导入二次确认），源多快照槽 UI 单机裁剪（见面板头注释）。
+	SaveManagerPanel.open(get_parent())
 
 
 func _on_setup() -> void:

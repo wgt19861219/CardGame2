@@ -46,7 +46,12 @@ func setup() -> void:
 	container = Control.new()
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shade_layer.add_child(container)
+	# 2026-08-18 用户实跑修复：container 根挂（shade 兄弟）——原 shade 子挂时，
+	# 嵌套非模态浮层（如 package 内 equipboard，自身全 IGNORE 穿透）的点击会被宿主
+	# 全屏 STOP 的 shade 截走，宿主内容层（格子等）永远收不到（源 package 系 pushScene
+	# 场景无遮罩概念）。根挂后内容层在 shade 之上：内容命中→处理；空白区穿到 shade→
+	# 点外关闭，语义与原等价（container 全屏 IGNORE 不挡 shade 命中）。
+	add_child(container)
 	# 点击遮罩区域关闭弹窗（手游常见交互）。shade STOP 吞点击，gui_input 捕获后 remove_window。
 	shade_layer.gui_input.connect(_on_shade_clicked)
 

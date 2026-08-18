@@ -65,9 +65,12 @@ const TAB_CLIP_POS: Vector2 = Vector2(130.0, 154.0)
 const TAB_W: float = 135.16
 const TAB_H: float = 58.59
 # P0 我的排名浮窗（源 ranklist.lua:1318-1571）→ RanklistMyselfOverlay 拆出。
-# pageContainer 源 ccp(245,400) 在 ranklist window 容器（cocos 480 tall y-up → Godot y=480-400=80）。
-const OVERLAY_PAGE_GODOT_X: float = 245.0
-const OVERLAY_PAGE_GODOT_Y: float = 80.0
+# pageContainer 源 ccp(245,400) 在 ranklistwindow 编辑器容器局部（cocos 800×481.25 y-up 世界
+# = 屏幕 to_godot(x,y)=(x+80,560-y)）→ 屏幕点 (325,160)。
+# 2026-08-18 用户实跑修复：旧值 (245,80) 双漏偏移（x 漏 +80 平移、y 漏 560-480 边距）
+# → 浮窗遮在 window 边框上，应在列表顶部区。
+const OVERLAY_PAGE_GODOT_X: float = 325.0
+const OVERLAY_PAGE_GODOT_Y: float = 160.0
 # tab 树（%按钮名 ↔ 源 ranklisttree/ranklist_config；key 为 LSTR 键，fill 时 get_lstr）。
 # tips_key = 行内 record 文案（源 :839-861 config table；pvp 榜无 record 行）。
 const TAB_TREE: Array = [

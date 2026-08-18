@@ -263,7 +263,9 @@ func _has_claimable_dailyjob() -> bool:
 	return false
 
 
-# 源 readhero.lua:732-750 checkEquipableProp：任一英雄任一空槽"配方可合成且等级可穿"。
+# 源 readhero.lua:734-750 checkEquipableProp：任一英雄任一空槽"配方可合成且等级可穿"。
+# 2026-08-18：内层判据收口到 EquipdetailQuery.is_slot_ready_to_wear（与英雄卡片红点
+# HeroPackageItem._fill_equips 同一判定拆粒度，勿复制两份）；已穿戴/未解锁槽该函数返 false。
 func _has_equippable_prop() -> bool:
 	var p: PlayerData = GameData.player
 	if p == null:
@@ -273,12 +275,8 @@ func _has_equippable_prop() -> bool:
 		var hero: HeroInstance = p.hero_manager.heroes[inst_id] as HeroInstance
 		if hero == null:
 			continue
-		for slot in range(1, HeroManager.EQUIP_SLOT_COUNT + 1):
-			if int(hero.equip_slots[slot - 1]) > 0:
-				continue
-			var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot, cm)
-			if eid > 0 and EquipdetailQuery.is_equip_craftable(eid, cm, p) \
-					and bool(EquipdetailQuery.can_wear_equip(hero, eid, cm)["can"]):
+		for slot in range(HeroManager.EQUIP_SLOT_COUNT):
+			if EquipdetailQuery.is_slot_ready_to_wear(hero, slot, cm, p):
 				return true
 	return false
 

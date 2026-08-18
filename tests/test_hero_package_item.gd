@@ -130,3 +130,74 @@ func test_item_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_package_item.gd")
 	assert_eq(text.count(".new("), text.count("HeroPackageItem.new(") + text.count("ReadheroIcon.new(")
 		+ text.count("TextureRect.new("), "静态节点零 .new(，仅工厂与动态图标白名单")
+
+
+# ── 卡片红点 canDealTag（2026-08-18 修复轮 A：快捷栏红点亮但卡片无红点）──
+# 判据与快捷栏 heroPackage 红点同源（EquipdetailQuery.is_slot_ready_to_wear，
+# 源 readhero.lua:734-750 checkEquipableProp 单英雄粒度）；贴图 main_deal_tag（源 heroitem :243-248）。
+
+# 可穿装备（持有 eid + level≥LvReq）→ 拥有卡片 TipHost 亮。
+# hero1 rank1 slot1 eid=102（LvReq=2）：pd.items[102]=1（has 路径 craftable）+ hero.level=2 → ready。
+func test_item_deal_tag_shown_when_wearable() -> void:
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var hero: HeroInstance = mgr.find_hero_by_tid(1)
+	hero.level = 2
+	var pd := PlayerData.new(cm)
+	var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, 1, cm)
+	assert_gt(eid, 0, "hero1 rank1 slot1 应有配方 eid")
+	pd.items[eid] = 1   # 背包持有 → is_equip_craftable has 路径 true
+	var item := HeroPackageItem.create_from_entry(hero, cm, mgr, pd)
+	var tip_host: Control = _find_node_by_name(item, "TipHost")
+	assert_not_null(tip_host, "TipHost 应存在")
+	assert_true(EquipdetailQuery.is_slot_ready_to_wear(hero, 0, cm, pd), "前置：slot1 判定 ready（与快捷栏同判据）")
+	assert_true(tip_host.visible, "可穿装备英雄卡片红点亮（修复前 _build 末尾覆盖 visible 恒灭）")
+
+
+# 全穿好（6 槽 isEquiped）→ 卡片红点不亮。
+func test_item_deal_tag_hidden_when_all_equipped() -> void:
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var hero: HeroInstance = mgr.find_hero_by_tid(1)
+	hero.level = 2
+	var pd := PlayerData.new(cm)
+	hero.equip_slots = [102, 102, 111, 107, 108, 109]   # 6 槽全穿（hero1 rank1 配方）
+	var item := HeroPackageItem.create_from_entry(hero, cm, mgr, pd)
+	var tip_host: Control = _find_node_by_name(item, "TipHost")
+	assert_not_null(tip_host, "TipHost 应存在")
+	assert_false(tip_host.visible, "全穿好不亮（已穿戴槽 eti 为空）")
+
+
+# 持有但等级不够（level 1 < LvReq 2）→ 不亮（can_wear false）。
+func test_item_deal_tag_hidden_when_level_too_low() -> void:
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var hero: HeroInstance = mgr.find_hero_by_tid(1)
+	hero.level = 1
+	var pd := PlayerData.new(cm)
+	pd.items[102] = 1
+	var item := HeroPackageItem.create_from_entry(hero, cm, mgr, pd)
+	var tip_host: Control = _find_node_by_name(item, "TipHost")
+	assert_not_null(tip_host, "TipHost 应存在")
+	assert_false(tip_host.visible, "等级不够穿不亮")
+
+
+# miss 卡片红点必隐（未拥有无装备可穿，SummonLight 呼吸光效是源对可召唤的表达）。
+func test_item_deal_tag_hidden_on_miss() -> void:
+	var entry: Dictionary = {"tid": 2, "miss": true}
+	var mgr := HeroManager.new(cm)
+	var item := HeroPackageItem.create_from_entry(entry, cm, mgr)
+	var tip_host: Control = _find_node_by_name(item, "TipHost")
+	assert_not_null(tip_host, "TipHost 应存在")
+	assert_false(tip_host.visible, "miss 卡片红点必隐")
+
+
+# 递归找名（TipHost 在 content 子场景层下）。
+static func _find_node_by_name(node: Node, node_name: String) -> Control:
+	for c in node.get_children():
+		if c.name == node_name:
+			return c as Control
+		var sub: Control = _find_node_by_name(c, node_name)
+		if sub != null:
+			return sub
+	return null

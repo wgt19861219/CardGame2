@@ -6,8 +6,9 @@
 ; - TitleBg：create :1949-1952 重建 title_bg（声明表原元素 visible=false 弃用）
 ;   DGccp(511,563)→(399.22,439.84) 中心；纹理 546x75px ÷CS=425.85x58.54
 ; - Title：initTitle :1782-1797 "排行榜" 24 号 ccc3(255,214,17) DGccp(512,567)→中心(480,117.03)
-; - CloseBtn：声明表元素2 fix_wh(57.8125,58.59375) @中心(63.28,439.06)→(143.28,120.94)
-;   取整 (114,92,172,150)（旧 74x75 为像素值未÷CS）
+; - CloseBtn：声明表元素2 backbtn @中心(63.28,439.06)→(143.28,120.94)，但按全项目导航惯例
+;   （excavate 修复轮三定稿：返回钮 root 左上贴角 (20,15)~(77.76,73.54)，六页面统一优先于源框内位置）
+;   2026-08-18 用户实跑反馈归位
 ; - TabClip：源 createRankSelListLayer :2177-2191 draglist cliprect(50,26,210,380)
 ; - ScrollLayer：源 initListLayer :1697 scrollview cliprect(249,26,512,380)（旧 420x360 偏小）
 ; - 受控裁剪：left/right_arrow（声明表 y=21700 屏外 + refreshArrow :1860 隐藏，死元素）
@@ -48,10 +49,10 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 114.0
-offset_top = 92.0
-offset_right = 172.0
-offset_bottom = 150.0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.81
+offset_bottom = 73.59
 texture_normal = ExtResource("2_back")
 texture_pressed = ExtResource("3_backp")
 ignore_texture_size = true
