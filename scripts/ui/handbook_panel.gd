@@ -255,10 +255,18 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 	lbl.position = Vector2(EQUIP_NAME_POS.x, EQUIP_BG_SIZE.y - EQUIP_NAME_POS.y)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(lbl)
-	_clamp_label_width(lbl, lbl.get_minimum_size().x)
+	# clamp 须入树后测宽：此刻 lbl/cell 均未挂树，theme 链断裂，get_minimum_size 按引擎
+	# 默认 16 号而非 variation 18 号测宽（压缩比失真约 11%，长英文名仍可溢出 114 宽）
+	# → 挂 lbl.ready 入树解析 variation 后再 clamp（同 ranklist _place_record_tail 范式）。
+	lbl.ready.connect(_clamp_name_width.bind(lbl))
 	cell.set_meta(&"is_open", is_open)
 	cell.set_meta(&"id", int(info["id"]))
 	return cell
+
+
+# lbl 入树后 theme 链解析 variation 18 号，get_minimum_size 才是真实字号宽度。
+func _clamp_name_width(lbl: Label) -> void:
+	_clamp_label_width(lbl, lbl.get_minimum_size().x)
 
 
 # 源 :445-447 label:getContentSize().width > 114 → label:setScale(114/width)(单参等比)。

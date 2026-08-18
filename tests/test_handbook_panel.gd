@@ -163,7 +163,8 @@ func test_title_text_all_12_indices() -> void:
 # ── 两件套改造守卫（批4 Task 5：builder 退役 + variation 接线）──
 
 func test_builder_retired_gone() -> void:
-	# builder 退役守卫：handbook_builder.gd 删除 + panel 无残留引用（scripts/ui _builder.gd 5→3）
+	# builder 退役守卫：handbook_builder.gd 删除 + panel 无残留引用（scripts/ui _builder.gd 5→4：
+	# 剩 main_map + shop_row/task_row/excavate_history_row 三个 row_builder，excavate 批前已在）
 	assert_false(ResourceLoader.exists("res://scripts/ui/handbook_builder.gd"), "handbook_builder.gd 已删除")
 	var panel_text: String = FileAccess.get_file_as_string("res://scripts/ui/handbook_panel.gd")
 	assert_true(panel_text.find("HandbookBuilder") == -1, "panel 无 HandbookBuilder 残留引用")
