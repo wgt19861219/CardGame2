@@ -189,13 +189,18 @@ static func _get_quality(id: int, is_hero: bool, cm: Variant) -> int:
 
 static func _get_icon_path(id: int, is_hero: bool, cm: Variant) -> String:
 	if is_hero:
-		var portrait: String = String(cm.get_raw_table("Unit").get(str(id), {}).get("Portrait", ""))
+		var portrait: String = str(cm.get_raw_table("Unit").get(str(id), {}).get("Portrait", ""))
 		if portrait == "":
 			return ""
 		return HERO_PORTRAIT_DIR + portrait.get_file()
-	var icon: String = String(cm.get_raw_table("Equip").get(str(id), {}).get("Icon", ""))
+	var icon: String = str(cm.get_raw_table("Equip").get(str(id), {}).get("Icon", ""))
 	if icon == "":
 		return ""
+	# 源 readequip.lua:548/:581 直接用表内完整路径——Equip 表 Icon 前缀混存
+	# UI/ITEM/（613）+ UI/HERO/（108 英雄魂石）+ UI/alpha/（1），只取 basename 硬拼
+	# ITEM 目录会让魂石全落 gocha 占位图（2026-08-18 批5 验收反馈实证）。
+	if icon.begins_with("UI/"):
+		return "res://assets/ui/" + icon.substr(3)
 	return EQUIP_ICON_DIR + icon.get_file()
 
 

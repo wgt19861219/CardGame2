@@ -488,3 +488,111 @@ func test_magic_reuses_main_content_scene() -> void:
 	assert_false(helper is Node, "PopTavernLootMagic 是 RefCounted helper（非独立弹窗节点）")
 	popup.remove_window()
 	root.queue_free()
+
+
+# ── 2026-08-18 验收反馈修复守卫（用户反馈：label 压图/物品图缺/动画错） ──
+
+# 源 icon 布点是中心锚（Cocos 默认 0.5,0.5）；ReadequipIcon frame 按纹理原尺寸 94×95 渲染——
+# 宿主须补偿：icon position = 中心点 - 渲染半尺寸、终态 scale=÷CS（AGENTS 反模式#1）。
+func test_icon_center_anchor_compensation() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}, {"id": 102, "amount": 1}], cm, "bronze", "ten", {})
+	# 初建 icon 起点 = box 中心 - 渲染半尺寸（非裸中心点）
+	var origin: Vector2 = popup._icon_origin(popup._loot_spawn())
+	assert_almost_eq((popup._loot_icons[0] as Control).position.x, origin.x, 0.5,
+		"icon 起点 x = box 中心 - 渲染半宽（中心锚补偿）")
+	assert_almost_eq((popup._loot_icons[0] as Control).position.y, origin.y, 0.5,
+		"icon 起点 y = box 中心 - 渲染半高（中心锚补偿）")
+	# 补偿数学：94×95 纹理 × ÷CS scale = 73.4×74.2 ≈ 源 72×72 点框
+	var half: Vector2 = Vector2(94.0, 95.0) * (1.0 / 1.28125) * 0.5
+	assert_almost_eq(origin.x, popup._g(PopTavernLoot.BOX_BPOS).x - half.x, 0.1,
+		"渲染半宽 = 94÷CS/2")
+	popup.remove_window()
+	root.queue_free()
+
+
+# 源 createLootAnim :527-531：hero loot 直接落位目标点（无飞行/旋转），非 hero 才飞。
+func test_hero_loot_direct_placement_no_fly() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero_id: int = _first_hero_id()
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": hero_id, "amount": 1}], cm, "bronze", "one", {})
+	popup._fly_loot(0)
+	var icon: Control = popup._loot_icons[0]
+	assert_almost_eq(icon.rotation, 0.0, 0.001, "hero loot 不旋转（直接落位）")
+	assert_almost_eq(icon.scale.x, 1.0 / 1.28125, 0.001, "hero loot 终态 scale=÷CS")
+	assert_almost_eq(icon.position.x, popup._icon_origin(popup._loot_targets[0]).x, 0.5,
+		"hero loot 位置 = 中心锚补偿目标")
+	popup.remove_window()
+	root.queue_free()
+
+
+# 源 show/destroy :247/:260 container 中心锚缩放（Cocos 默认）→ Godot pivot 取屏幕中心。
+func test_show_pivot_center() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "one", {})
+	popup.show_window(root)
+	assert_almost_eq(popup.container.pivot_offset.x, 480.0, 0.5, "pivot x=屏幕中心 480")
+	assert_almost_eq(popup.container.pivot_offset.y, 320.0, 0.5, "pivot y=屏幕中心 320")
+	popup.remove_window()
+	root.queue_free()
+
+
+# 源 readequip.lua:548/:581 直接用表内完整 Icon 路径——Equip 表 108 个魂石 Icon 前缀是
+# UI/HERO/（2026-08-18 实证），硬拼 ITEM 目录会全落 gocha 占位图。
+func test_soulstone_icon_uses_table_path() -> void:
+	var path_124: String = ReadequipIcon._get_icon_path(124, false, cm)
+	assert_eq(path_124, "res://assets/ui/HERO/Coco.jpg", "魂石 124 用表内 UI/HERO/ 完整路径")
+	assert_true(ResourceLoader.exists(path_124), "魂石图资源真实存在")
+	var path_266: String = ReadequipIcon._get_icon_path(266, false, cm)
+	assert_eq(path_266, "res://assets/ui/ITEM/200+.jpg", "普通装备仍拼 ITEM 目录")
+	assert_true(ResourceLoader.exists(path_266), "装备图资源真实存在")
+
+
+# 源 playBoxAnim :299-318/:346-352：box FCA bscale 1.5 → endScale 0.5 + 上浮 epos（ten +120）0.3s SineOut。
+func test_box_anim_scale_and_drift() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "ten", {})
+	popup.show_window(root)
+	popup._play_box_anim()
+	# wrapper Node2D 持缩放/位移动画（FCA 自身 scale=0.39 是坐标换算基数不可动）
+	var holder: Node2D = null
+	for c in popup._loot_host.get_children():
+		if c is Node2D and not (c is Control) and (c as Node2D).get_child_count() > 0:
+			holder = c as Node2D
+	assert_not_null(holder, "box holder 挂载 LootHost（FCA 在其下）")
+	if holder == null:
+		popup.remove_window()
+		root.queue_free()
+		return
+	assert_almost_eq(holder.scale.x, 1.5, 0.01, "box holder 初始 bscale=1.5（源 :299）")
+	var start_y: float = holder.position.y
+	await get_tree().create_timer(0.45).timeout
+	assert_almost_eq(holder.scale.x, 0.5, 0.05, "box holder 终态 endScale=0.5（源 :301/:347）")
+	assert_almost_eq(holder.position.y, start_y - 120.0, 1.0, "box holder 上浮 120（源 ten epos :306）")
+	popup.remove_window()
+	root.queue_free()
+
+
+# 源表 Unit.Display Name 存 LSTR key（源运行时加载即翻译，同 ofbuy name 口径）——hero 名须走 LSTR。
+func test_loot_name_hero_lstr() -> void:
+	var hero_id: int = _first_hero_id()
+	var display: String = str(cm.get_raw_table(&"Unit").get(str(hero_id), {}).get(&"Display Name", ""))
+	var resolved: String = PopTavernLootMagic._lookup_name(cm, hero_id)
+	assert_false(resolved.begins_with("Unit.hero."), "hero 名经 LSTR 翻译（原始 key=%s）" % display)
+	assert_ne(resolved, "", "hero 名非空")
+
+
+func _first_hero_id() -> int:
+	var unit: Dictionary = cm.get_raw_table(&"Unit")
+	for key in unit.keys():
+		if str(unit[key].get(&"Unit Type", "")) == "Hero" and int(key) < 100:
+			return int(key)
+	return 1

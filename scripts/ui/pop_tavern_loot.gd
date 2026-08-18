@@ -69,6 +69,19 @@ const BOX_BPOS: Vector2 = Vector2(400.0, 240.0)
 const LOOT_ANIM_SEC: float = 0.2
 const LOOT_ROTATE_DEG: float = 720.0
 const BOX_FCA_LEAD_SEC: float = 0.3                # box FCA 开启后引领（简化：不等 FCA 完成）
+# 源 playBoxAnim :299-318：bscale 1.5（starshop 1.0）→ endScale 0.5，0.3s SineOut + 上浮 epos
+# （one +110 / ten +120，y-up）——box 开箱后缩小上浮，loot 从其世界位飞出。
+const BOX_START_SCALE: float = 1.5
+const BOX_START_SCALE_STARSHOP: float = 1.0
+const BOX_END_SCALE: float = 0.5
+const BOX_ANIM_SEC: float = 0.3
+const BOX_DRIFT_Y_ONE: float = 110.0
+const BOX_DRIFT_Y_TEN: float = 120.0
+# ReadequipIcon frame 按纹理原尺寸渲染（94×95px，AGENTS 反模式#1）。源 icon 布点是中心锚
+# （Cocos sprite 默认 0.5,0.5，readequip.lua:758 length 语义）+ 源显示尺寸 = 纹理÷CS ≈ 73×74 点。
+# 宿主补偿：终态 scale=÷CS、position = 中心点 - 渲染半尺寸（左上角语义）。
+const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
+const ICON_END_SCALE: Vector2 = Vector2(1.0 / CONTENT_SCALE, 1.0 / CONTENT_SCALE)
 const SHADOW_RES: String = "res://assets/ui/alpha/HVGA/tavern_get_item_bg_light_white.png"
 const SHADOW_POS: Vector2 = Vector2(35.0, 35.0)
 const SHADOW_FADE_SEC: float = 0.4
@@ -151,11 +164,26 @@ func _aggregate(loots: Array, p_cm: Variant) -> void:
 		var lid: int = int(loot["id"])
 		var icon: Control = ReadequipIcon.create_icon(lid, int(loot["amount"]), p_cm)
 		icon.scale = Vector2.ZERO
-		icon.position = _g(BOX_BPOS)
+		icon.position = _icon_origin(_loot_spawn())
 		_loot_host.add_child(icon)
 		_loot_icons.append(icon)
 		_loot_targets.append(_loot_pos(idx, is_single))
 		idx += 1
+
+
+# loot 飞行起点 = box FCA 上浮后的终态位（源 createLootAnim :517-524 取 self.box 当前世界位；
+# box 动画先缩小上浮 epos 后才 playLootAnim，故 loot 从上浮位飞出）。
+func _loot_spawn() -> Vector2:
+	var drift: float = BOX_DRIFT_Y_ONE if times == "one" else BOX_DRIFT_Y_TEN
+	if box_type == "magic":
+		drift = 0.0
+	return _g(BOX_BPOS) + Vector2(0.0, -drift)
+
+
+# 源 icon 布点是中心锚；ReadequipIcon Control position 是左上角——中心点换算左上原点
+# （frame 94×95 原尺寸渲染 × 终态 ÷CS scale = 73.4×74.2 ≈ 源 72×72 点框）。
+func _icon_origin(center: Vector2) -> Vector2:
+	return center - FRAME_TEX_SIZE * ICON_END_SCALE.x * 0.5
 
 
 # + 同英雄（isHero）amount 降序（把 amount 大的同英雄 loot 提前）。
@@ -265,6 +293,10 @@ func _on_again() -> void:
 
 func show_window(parent: Node) -> void:
 	super.show_window(parent)
+	# 源 show/destroy :247/:260 container setScale——Cocos 默认锚点 (0.5,0.5) 中心缩放；
+	# Godot 需 pivot=屏幕中心（照基类 play_scale_in 先例）。取 viewport 而非 container.size
+	# （full-rect anchor 同帧可能未 layout，size=0 会让 pivot 落左上角）。
+	container.pivot_offset = get_viewport_rect().size * 0.5
 	_fill_cost_row()   # 树内 fill（variation 生效后 Label 宽度量精确）
 	container.scale = Vector2.ZERO
 	var tw: Tween = create_tween()
@@ -306,10 +338,16 @@ func _fly_loot(index: int) -> void:
 		# P0 magic 阴影（源 poptavernloot.lua:559 playMagicLootShadeAnim）：magic 分支
 		# 不加普通白光，改加 tavern_magicsoul_item_bg.png scale+move+fade（drop 60px→目标 + fadeout）。
 		PopTavernLootMagic.play_magic_loot_shade_anim(self, index)
+	var target: Vector2 = _icon_origin(_loot_targets[index])
+	# 源 createLootAnim :527-531：hero loot 直接落位目标点（setScale(0)+bpos 飞行旋转仅非 hero）。
+	if bool(icon.get_meta("is_hero", false)):
+		icon.position = target
+		icon.scale = ICON_END_SCALE
+		return
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(icon, "scale", Vector2.ONE, LOOT_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_property(icon, "position", _loot_targets[index], LOOT_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(icon, "scale", ICON_END_SCALE, LOOT_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(icon, "position", target, LOOT_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(icon, "rotation", deg_to_rad(LOOT_ROTATE_DEG), LOOT_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
@@ -329,9 +367,14 @@ func _do_remove() -> void:
 func _play_box_anim() -> void:
 	if not BOX_FCA_MAP.has(box_type):
 		return
+	# wrapper 持缩放/位移动画（源 :334 box setScale(bscale) + :346-352 spawn）——FcaAnimation
+	# 自身 scale 是坐标换算基数（load_from_ani 设 0.39，eff_UI 前缀），直接 tween 会覆盖坐标系。
+	var holder := Node2D.new()
+	holder.position = _g(BOX_ANIM_POS)
+	holder.scale = Vector2.ONE * (BOX_START_SCALE_STARSHOP if box_type.begins_with("stone_") else BOX_START_SCALE)
+	_loot_host.add_child(holder)
 	var fca := FcaAnimation.new()
-	fca.position = _g(BOX_ANIM_POS)
-	_loot_host.add_child(fca)
+	holder.add_child(fca)
 	var resource: String = BOX_FCA_MAP[box_type]
 	# 特效 zip 双试 .ani/.abc（stone_green/blue 是 .abc、purple/bronze 系是 .ani；
 	# zip 非 Godot 资源，ResourceLoader.exists 恒 false 会让 FCA 永不加载——照
@@ -347,6 +390,15 @@ func _play_box_anim() -> void:
 		if actions.size() > 0:
 			fca.play(actions[0], false)
 			AudioPlayer.play_sfx("skill_upgrade_success_blue")
+			# 源 playBoxAnim :346-352 非 magic：ScaleTo(0.3, endScale=0.5) + MoveTo(0.3, epos) SineOut
+			# 并行——box 开箱后缩小上浮（epos = one +110 / ten +120，y-up → Godot y-down 取负）。
+			# magic 源 bscale/endScale 均 1 不缩放（维持既有披露差异：本项目 box 位置不切 (400,80)）。
+			if box_type != "magic":
+				var drift: float = BOX_DRIFT_Y_ONE if times == "one" else BOX_DRIFT_Y_TEN
+				var tw: Tween = create_tween()
+				tw.set_parallel(true)
+				tw.tween_property(holder, "scale", Vector2.ONE * BOX_END_SCALE, BOX_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+				tw.tween_property(holder, "position:y", holder.position.y - drift, BOX_ANIM_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 func _add_shadow(icon: Control) -> void:

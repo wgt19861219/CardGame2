@@ -143,12 +143,16 @@ static func add_loot_name_label(panel, index: int) -> void:
 		lbl.scale = Vector2(LOOT_NAME_MAX_W / min_size.x, LOOT_NAME_MAX_W / min_size.x)
 
 
-# hero: Unit[lid]["Display Name"]（源 :566-572）；equip: Equip[lid].Name 经 LSTR（源 :580，多为 LSTR key）。
+# hero: Unit[lid]["Display Name"] 经 LSTR（源表存 key、源运行时加载即翻译，同 ofbuy name 口径）；
+# equip: Equip[lid].Name 经 LSTR（源 :580，多为 LSTR key）。
 static func _lookup_name(cm: Variant, lid: int) -> String:
 	if lid < HERO_ID_MAX:
-		return String(cm.get_raw_table(&"Unit").get(str(lid), {}).get(&"Display Name", ""))
-	var raw_name: String = String(cm.get_raw_table(&"Equip").get(str(lid), {}).get(&"Name", ""))
+		var display: String = str(cm.get_raw_table(&"Unit").get(str(lid), {}).get(&"Display Name", ""))
+		if display != "" and cm.has_method("get_lstr"):
+			return str(cm.get_lstr(display))   # 查无时 get_lstr 返回 key 本身 = 原值
+		return display
+	var raw_name: String = str(cm.get_raw_table(&"Equip").get(str(lid), {}).get(&"Name", ""))
 	if not cm.has_method("get_lstr"):
 		return raw_name
-	var resolved: String = String(cm.get_lstr(raw_name))
+	var resolved: String = str(cm.get_lstr(raw_name))
 	return resolved if resolved != raw_name else raw_name
