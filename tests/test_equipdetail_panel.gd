@@ -222,9 +222,22 @@ func test_section_title_variation_and_fill() -> void:
 	for path in ["%EquipTitleLabel", "%HeroTitleLabel", "%GetTitleLabel"]:
 		var lbl: Label = _content_of(panel).get_node(path) as Label
 		assert_not_null(lbl, "%s 存在" % path)
-		assert_eq(lbl.theme_type_variation, &"EquipDetailSectionTitle", "%s variation 接线" % path)
+		assert_eq(lbl.theme_type_variation, &"EquipDetailSectionTitle", "%s variation 接线" % lbl.name)
 	assert_eq((_content_of(panel).get_node("%GetTitleLabel") as Label).text, cm.get_lstr("EQUIPCRAFT.WAY_TO_GET"), "获得途径标题 fill")
 	panel.remove_window()
+
+
+# 标题条占位守卫（修复轮 E 2026-08-18 用户实跑"列表压住小标题"）：普通 Control
+# 的 min size 不聚合子节点 → VBox 内高塌 0，标题溢出挤进 sep 20 间隙带（贴上
+# 一段面板底 0 间距，源 :150/:176 标题占位 17.17 + gap 20）→ 钉 17.17 防复发。
+func test_title_bars_hold_source_height() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipdetail_content.tscn")
+	var inst: Control = scene.instantiate() as Control
+	add_child_autofree(inst)
+	for path in ["%EquipSection/EquipTitleBar", "%HeroSection/HeroTitleBar", "%GetSection/GetTitleBar"]:
+		var bar: Control = inst.get_node(path) as Control
+		assert_almost_eq(bar.custom_minimum_size.y, 17.17, 0.5,
+			"%s 占位高 17.17（源 22÷CS，防 VBox 高塌 0 复发）" % path)
 
 
 # 段显隐照源条件（#equipList>0 / #heroList>0 / get 段恒显）。

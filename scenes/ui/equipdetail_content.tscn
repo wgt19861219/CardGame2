@@ -113,9 +113,13 @@ mouse_filter = 2
 theme_override_constants/separation = 20
 
 ; 标题条（源 :143-149 equip_detail_title_bg 388x22 at (400,435-h-22/2/CS) 中心
-; + 24 号金字同中心）：显示 302.93x17.17 = 388x22 ÷ CS，条贴段宽 560 居中
+; + 24 号金字同中心）：显示 302.93x17.17 = 388x22 ÷ CS，条贴段宽 560 居中。
+; 修复轮 E（2026-08-18 用户实跑"列表压住小标题"）：普通 Control 的 min size
+; 不聚合子节点 → VBox 内高塌 0，标题溢出挤进 sep 20 间隙带（标题贴上一段
+; 面板底 0 间距/贴自身面板顶 2.83px，源均 20px）→ 钉源占位高 17.17
 [node name="EquipTitleBar" type="Control" parent="ScrollClip/SectionsMargin/SectionsVBox/EquipSection"]
 layout_mode = 3
+custom_minimum_size = Vector2(0, 17.17)
 offset_right = 560.0
 offset_bottom = 17.17
 mouse_filter = 2
@@ -162,8 +166,10 @@ layout_mode = 3
 mouse_filter = 2
 theme_override_constants/separation = 20
 
+; 标题条占位高 17.17（修复轮 E 同 EquipTitleBar）
 [node name="HeroTitleBar" type="Control" parent="ScrollClip/SectionsMargin/SectionsVBox/HeroSection"]
 layout_mode = 3
+custom_minimum_size = Vector2(0, 17.17)
 offset_right = 560.0
 offset_bottom = 17.17
 mouse_filter = 2
@@ -206,8 +212,10 @@ layout_mode = 3
 mouse_filter = 2
 theme_override_constants/separation = 20
 
+; 标题条占位高 17.17（修复轮 E 同 EquipTitleBar）
 [node name="GetTitleBar" type="Control" parent="ScrollClip/SectionsMargin/SectionsVBox/GetSection"]
 layout_mode = 3
+custom_minimum_size = Vector2(0, 17.17)
 offset_right = 560.0
 offset_bottom = 17.17
 mouse_filter = 2
