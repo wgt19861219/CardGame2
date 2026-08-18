@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=64 format=3]
+[gd_resource type="Theme" load_steps=65 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="17_miduse2"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="18_pkgn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="19_pkgp"]
+[ext_resource type="FontFile" path="res://resources/fonts/arial_unicode_ms.ttf" id="20_arialuni"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -1460,45 +1461,60 @@ AvatarGrid/constants/v_separation = 7
 ; ── equipboard 两件套（批 4 Task 6，2026-08-17）── 源 board.lua + ofpackage.lua。
 ; 与 EquipCraft 组（批 1 Task 10）同源同参数（ofcraft/board 共用 board.lua 基类 UI），
 ; 有意各建独立组：panel 语义独立，后续各自调样式互不牵连。
+; 修复轮 D（2026-08-18 用户实跑"字体颜色有问题"）：色值/阴影实测全部精确=源
+; （PIL 采样 name(66,45,28)/have(67,59,56)/att(64,63,63)），根因有二——
+; ①无自定义字体时 Godot 系统 fallback 字形与源不同；②字号漏乘 CS（本 panel 布局
+; 常量全是"源点数×1.28125"口径如 NAME_MAX_W 208=源 160 点，字号却是源点数直用，
+; 24px 字配 208px 框 vs 源 24 点字配 160 点框，比例小 22%，观感发灰发淡）。
+; 本组 6 Label 挂源字体 arial_unicode_ms.ttf（源 hello.lua ed.font，1.87MB 照搬）
+; + 字号补 ×CS（24→31/20→26/18→23）；按钮 label 源 fontinfo ui_normal_button
+; size=17 点（ofpackage.lua 无 base.size → readnode:342-346 取 fontInfo.size，
+; resource_manager.lua:709-731）→ 22，批 4 Task 6 记 20 系字号笔误。
 ; 装备名（源 board.lua:323-337 size24 ccc3(66,45,28) + shadow(0,2)；旧 tscn 漏影本批补）
 EquipboardNameLabel/base_type = &"Label"
+EquipboardNameLabel/fonts/font = ExtResource("20_arialuni")
 EquipboardNameLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
 EquipboardNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
 EquipboardNameLabel/constants/shadow_offset_x = 0
 EquipboardNameLabel/constants/shadow_offset_y = 2
-EquipboardNameLabel/font_sizes/font_size = 24
+EquipboardNameLabel/font_sizes/font_size = 31
 ; 拥有量/售价标题（源 board.lua:55-70 amount_title + ofpackage.lua:63-77 sell_title
 ; 同参数 size20 ccc3(67,59,56) → 同 variation 两处复用；旧实现 18 号照源修 20，
 ; 同 EquipCraftHaveLabel 批 1 口径）
 EquipboardHaveLabel/base_type = &"Label"
+EquipboardHaveLabel/fonts/font = ExtResource("20_arialuni")
 EquipboardHaveLabel/colors/font_color = Color(0.263, 0.231, 0.22, 1)
-EquipboardHaveLabel/font_sizes/font_size = 20
+EquipboardHaveLabel/font_sizes/font_size = 26
 ; 属性动态行（源 board.lua:142-159 att size18 ccc3(64,63,63) + shadow(0,2)；旧 gd 漏影本批补）
 EquipboardAttLabel/base_type = &"Label"
+EquipboardAttLabel/fonts/font = ExtResource("20_arialuni")
 EquipboardAttLabel/colors/font_color = Color(0.251, 0.247, 0.247, 1)
 EquipboardAttLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
 EquipboardAttLabel/constants/shadow_offset_x = 0
 EquipboardAttLabel/constants/shadow_offset_y = 2
-EquipboardAttLabel/font_sizes/font_size = 18
+EquipboardAttLabel/font_sizes/font_size = 23
 ; 碎片合成行（源 board.lua:206-238 fragment_title/amount size18 ccc3(66,45,28) + shadow(0,2)）
 EquipboardFragmentLabel/base_type = &"Label"
+EquipboardFragmentLabel/fonts/font = ExtResource("20_arialuni")
 EquipboardFragmentLabel/colors/font_color = Color(0.259, 0.176, 0.11, 1)
 EquipboardFragmentLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
 EquipboardFragmentLabel/constants/shadow_offset_x = 0
 EquipboardFragmentLabel/constants/shadow_offset_y = 2
-EquipboardFragmentLabel/font_sizes/font_size = 18
+EquipboardFragmentLabel/font_sizes/font_size = 23
 ; 售价数字（源 ofpackage.lua:91-104 sell_number size18 ccc3(155,34,14)）
 EquipboardPriceLabel/base_type = &"Label"
+EquipboardPriceLabel/fonts/font = ExtResource("20_arialuni")
 EquipboardPriceLabel/colors/font_color = Color(0.607843, 0.133333, 0.054902, 1)
-EquipboardPriceLabel/font_sizes/font_size = 18
+EquipboardPriceLabel/font_sizes/font_size = 23
 ; 按钮文字（源 ofpackage.lua:140-152/183-199 fontinfo ui_normal_button size20 白 +
 ; config shadow ccc3(42,31,22) offset(0,2) 显式覆盖 fontinfo 默认 (63,5,0)）
 EquipboardBtnLabel/base_type = &"Label"
+EquipboardBtnLabel/fonts/font = ExtResource("20_arialuni")
 EquipboardBtnLabel/colors/font_color = Color(1, 1, 1, 1)
 EquipboardBtnLabel/colors/font_shadow_color = Color(0.164706, 0.121569, 0.086275, 1)
 EquipboardBtnLabel/constants/shadow_offset_x = 0
 EquipboardBtnLabel/constants/shadow_offset_y = 2
-EquipboardBtnLabel/font_sizes/font_size = 20
+EquipboardBtnLabel/font_sizes/font_size = 22
 ; 卖出/右按钮三态（源 ofpackage.lua:107-182 Scale9 package_button + press down 层 → SB_eb_btn_n/p）
 EquipboardBtn/base_type = &"Button"
 EquipboardBtn/styles/normal = SubResource("SB_eb_btn_n")

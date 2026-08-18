@@ -47,9 +47,9 @@ mouse_filter = 2
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 92.0
-offset_top = 25.0
+offset_top = 22.0
 offset_right = 300.0
-offset_bottom = 55.0
+offset_bottom = 58.0
 theme_type_variation = &"EquipboardNameLabel"
 vertical_alignment = 1
 
@@ -57,9 +57,9 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 90.0
-offset_top = 63.0
+offset_top = 60.0
 offset_right = 300.0
-offset_bottom = 87.0
+offset_bottom = 90.0
 theme_type_variation = &"EquipboardHaveLabel"
 vertical_alignment = 1
 

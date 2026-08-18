@@ -200,6 +200,20 @@ func test_scroll_clip_rect() -> void:
 	assert_eq(clip.horizontal_scroll_mode, 0, "禁水平滚动（源仅 canDragY）")
 
 
+# 弹窗底板等比守卫（修复轮 D 2026-08-18 用户实跑"列表裁剪有问题"）：equip_detail_bg
+# 827x535 显示 645.3x417.6=÷CS，中心 _g(400,240)=(480,320)。原 rect 640x400 非等比
+# 压扁（违反等比红线），列表区距贴图上下缘仅 6-7px（源内框边距约 15px）视觉压框。
+func test_bg_rect_aspect_ratio() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipdetail_content.tscn")
+	var inst: Control = scene.instantiate() as Control
+	add_child_autofree(inst)
+	var bg: TextureRect = inst.get_node("Bg") as TextureRect
+	assert_almost_eq(bg.offset_right - bg.offset_left, 645.3, 0.5, "Bg 宽 645.3 = 827÷CS")
+	assert_almost_eq(bg.offset_bottom - bg.offset_top, 417.6, 0.5, "Bg 高 417.6 = 535÷CS")
+	assert_almost_eq((bg.offset_left + bg.offset_right) * 0.5, 480.0, 0.5, "Bg 中心 x=480")
+	assert_almost_eq((bg.offset_top + bg.offset_bottom) * 0.5, 320.0, 0.5, "Bg 中心 y=320")
+
+
 # 三段标题（源 :146/182/223 createttf 24 号 ccc3(250,205,16)）走
 # EquipDetailSectionTitle variation + fill 文本（LSTR 三 key）。
 func test_section_title_variation_and_fill() -> void:

@@ -403,45 +403,52 @@ func test_stone_amount_label_has_size_16() -> void:
 # ── 批4 Task 6 equipboard 两件套（源 board.lua + ofpackage.lua，2026-08-17）──
 
 # 源 board.lua:323-337 name size24 ccc3(66,45,28) + shadow ccc3(0,0,0) offset(0,2)。
+# 修复轮 D（2026-08-18）：字号 24 点×CS(1.28125)=31px（本 panel 布局常量全是"源点数×CS"口径如
+# NAME_MAX_W 208=源 160 点，字号漏乘致 24px 字配 208px 框比例小 22% 观感发灰）+ 挂源字体。
 func test_equipboard_name_label_style() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	assert_color_approx(theme.get_color("font_color", "EquipboardNameLabel"), Color(0.259, 0.176, 0.11, 1), "EquipboardNameLabel 棕 (66,45,28)")
-	assert_eq(theme.get_font_size("font_size", "EquipboardNameLabel"), 24, "EquipboardNameLabel 24 号")
+	assert_eq(theme.get_font_size("font_size", "EquipboardNameLabel"), 31, "EquipboardNameLabel 31px（源 24 点×CS）")
+	assert_eq(theme.get_font("font", "EquipboardNameLabel").resource_path, "res://resources/fonts/arial_unicode_ms.ttf", "挂源字体 arial_unicode_ms")
 	assert_color_approx(theme.get_color("font_shadow_color", "EquipboardNameLabel"), Color(0, 0, 0, 1), "EquipboardNameLabel 影黑")
 	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardNameLabel"), 2, "影偏移 y=2（源有影，旧 tscn 漏）")
 
-# 源 board.lua:55-70 amount_title size20 ccc3(67,59,56)（旧实现 18 号照源修 20，同 EquipCraftHaveLabel 口径）。
+# 源 board.lua:55-70 amount_title size20 ccc3(67,59,56)。修复轮 D：20 点×CS=26px + 源字体。
 func test_equipboard_have_label_size_20() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	assert_color_approx(theme.get_color("font_color", "EquipboardHaveLabel"), Color(0.263, 0.231, 0.22, 1), "EquipboardHaveLabel (67,59,56)")
-	assert_eq(theme.get_font_size("font_size", "EquipboardHaveLabel"), 20, "EquipboardHaveLabel 20 号（源 size=20）")
+	assert_eq(theme.get_font_size("font_size", "EquipboardHaveLabel"), 26, "EquipboardHaveLabel 26px（源 20 点×CS）")
+	assert_eq(theme.get_font("font", "EquipboardHaveLabel").resource_path, "res://resources/fonts/arial_unicode_ms.ttf", "挂源字体")
 
-# 源 board.lua:142-159 att size18 ccc3(64,63,63) + shadow(0,2)。
+# 源 board.lua:142-159 att size18 ccc3(64,63,63) + shadow(0,2)。修复轮 D：18 点×CS=23px + 源字体。
 func test_equipboard_att_label_style() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	assert_color_approx(theme.get_color("font_color", "EquipboardAttLabel"), Color(0.251, 0.247, 0.247, 1), "EquipboardAttLabel 灰 (64,63,63)")
-	assert_eq(theme.get_font_size("font_size", "EquipboardAttLabel"), 18, "EquipboardAttLabel 18 号")
+	assert_eq(theme.get_font_size("font_size", "EquipboardAttLabel"), 23, "EquipboardAttLabel 23px（源 18 点×CS）")
+	assert_eq(theme.get_font("font", "EquipboardAttLabel").resource_path, "res://resources/fonts/arial_unicode_ms.ttf", "挂源字体")
 	assert_color_approx(theme.get_color("font_shadow_color", "EquipboardAttLabel"), Color(0, 0, 0, 1), "EquipboardAttLabel 影黑")
 	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardAttLabel"), 2, "影偏移 y=2（源有影，旧 gd 漏）")
 
-# 源 board.lua:206-238 fragment_title/amount size18 ccc3(66,45,28) + shadow(0,2)。
+# 源 board.lua:206-238 fragment_title/amount size18 ccc3(66,45,28) + shadow(0,2)。修复轮 D：×CS=23px。
 func test_equipboard_fragment_label_style() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	assert_color_approx(theme.get_color("font_color", "EquipboardFragmentLabel"), Color(0.259, 0.176, 0.11, 1), "EquipboardFragmentLabel 棕 (66,45,28)")
-	assert_eq(theme.get_font_size("font_size", "EquipboardFragmentLabel"), 18, "EquipboardFragmentLabel 18 号")
+	assert_eq(theme.get_font_size("font_size", "EquipboardFragmentLabel"), 23, "EquipboardFragmentLabel 23px（源 18 点×CS）")
 	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardFragmentLabel"), 2, "影偏移 y=2")
 
-# 源 ofpackage.lua:91-104 sell_number size18 ccc3(155,34,14)。
+# 源 ofpackage.lua:91-104 sell_number size18 ccc3(155,34,14)。修复轮 D：18 点×CS=23px + 源字体。
 func test_equipboard_price_label_style() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	assert_color_approx(theme.get_color("font_color", "EquipboardPriceLabel"), Color(0.607843, 0.133333, 0.054902, 1), "EquipboardPriceLabel 红 (155,34,14)")
-	assert_eq(theme.get_font_size("font_size", "EquipboardPriceLabel"), 18, "EquipboardPriceLabel 18 号")
+	assert_eq(theme.get_font_size("font_size", "EquipboardPriceLabel"), 23, "EquipboardPriceLabel 23px（源 18 点×CS）")
 
-# 源 ofpackage.lua:140-152 按钮 label fontinfo ui_normal_button size20 白 + shadow ccc3(42,31,22) offset(0,2)。
+# 源 ofpackage.lua:140-152 按钮 label fontinfo ui_normal_button 白 + shadow ccc3(42,31,22) offset(0,2)。
+# 修复轮 D：源字号修正——ofpackage base 无 size → readnode:342-346 取 fontInfo.size=17 点
+# （fontconfigs.lua ui_normal_button，批 4 Task 6 记 20 系笔误）→ 17×CS≈22px。
 func test_equipboard_btn_label_style() -> void:
 	var theme: Theme = ThemeManager.get_theme()
 	assert_color_approx(theme.get_color("font_color", "EquipboardBtnLabel"), Color(1, 1, 1, 1), "EquipboardBtnLabel 白")
-	assert_eq(theme.get_font_size("font_size", "EquipboardBtnLabel"), 20, "EquipboardBtnLabel 20 号")
+	assert_eq(theme.get_font_size("font_size", "EquipboardBtnLabel"), 22, "EquipboardBtnLabel 22px（源 fontinfo 17 点×CS）")
 	assert_color_approx(theme.get_color("font_shadow_color", "EquipboardBtnLabel"), Color(0.164706, 0.121569, 0.086275, 1), "EquipboardBtnLabel 影 (42,31,22)")
 	assert_eq(theme.get_constant("shadow_offset_y", "EquipboardBtnLabel"), 2, "影偏移 y=2")
 

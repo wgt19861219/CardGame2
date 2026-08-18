@@ -22,13 +22,17 @@ anchor_bottom = 1.0
 mouse_filter = 2
 
 ; 弹窗底板（源 :353-361 bg equip_detail_bg 827x535 at (400,240) 中心锚）：
-; 显示 645.3x417.6 = 827x535 ÷ CS，中心 _g(400,240)=(480,320)
+; 显示 645.3x417.6 = 827x535 ÷ CS，中心 _g(400,240)=(480,320)。
+; 修复轮 D（2026-08-18 用户实跑"列表裁剪有问题"）：原 rect 640x400（160..800/120..520）
+; 与显示尺寸 645.3x417.6 不符，贴图被非等比压扁（违反等比红线），致弹窗整体偏扁、
+; ScrollClip(126..513) 距贴图上下缘仅 6-7px（源内框边距约 15px）——列表视觉压框。
+; 等比修正为 157.35..802.65 / 111.2..528.8，裁剪区与贴图内框关系恢复源口径。
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 160.0
-offset_top = 120.0
-offset_right = 800.0
-offset_bottom = 520.0
+offset_left = 157.35
+offset_top = 111.2
+offset_right = 802.65
+offset_bottom = 528.8
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
