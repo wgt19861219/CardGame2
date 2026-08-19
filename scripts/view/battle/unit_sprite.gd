@@ -65,7 +65,10 @@ func _try_load_fca() -> void:
 		_fallback_to_portrait()
 		return
 	# atlas 加载：先试外部目录（.ani 预解压产物），失败试 .abc/.ani ZIP 直读。
-	var atlas: AtlasSprite = _get_or_load_atlas("res://assets/anim_frames/" + _resource + "/sheet.plist")
+	# plist 前置存在性检查：.abc 单位（Treant 等共 198 场）无预解压目录，
+	# 必然失败的 open 只产 WARNING 噪音（回归 2026-08-19 每场 3 条），直跳 zip 路径。
+	var plist_path: String = "res://assets/anim_frames/" + _resource + "/sheet.plist"
+	var atlas: AtlasSprite = _get_or_load_atlas(plist_path) if FileAccess.file_exists(plist_path) else null
 	if atlas == null or not atlas.is_loaded():
 		atlas = _get_or_load_atlas_zip("res://assets/anim_frames/" + _resource)
 	if atlas == null or not atlas.is_loaded():

@@ -53,6 +53,20 @@ func test_setup_fallback_no_puppet() -> void:
 	sprite.queue_free()
 
 
+# 2026-08-19 回归 P3 守卫：Treant（.abc 单位，无 anim_frames/Treant/ 预解压目录）
+# 应走 .abc zip 直读加载 FCA 而非降级头像（plist 前置存在性检查改动回归线）。
+func test_setup_loads_fca_treant_zip() -> void:
+	var sprite := UnitSprite.new()
+	add_child(sprite)
+	var u := MockUnit.new()
+	u.info = _cm.get_raw_table(&"Unit").get("101", {}).duplicate()
+	sprite.setup(u, _cm)
+	assert_true(sprite._using_fca, "Treant（.abc zip 直读）应成功加载 FCA")
+	assert_not_null(sprite._fca, "FcaAnimation 实例应就位")
+	assert_null(sprite._fallback_portrait, "不应降级头像")
+	sprite.queue_free()
+
+
 func test_attack_duration_positive() -> void:
 	var sprite := UnitSprite.new()
 	add_child(sprite)
