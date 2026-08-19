@@ -15,6 +15,7 @@ const FragmentComposePanel = preload("res://scripts/ui/fragment_compose_panel.gd
 const RanklistSummary = preload("res://scripts/ui/ranklist_summary.gd")
 const UnlockAnnounceView = preload("res://scripts/ui/unlock_announce_view.gd")
 const StoryView = preload("res://scripts/ui/story_view.gd")
+const BattlePreparePanel = preload("res://scripts/view/battle/battle_prepare_panel.gd")
 
 const QA_LEVEL: int = 99
 const QA_DIAMOND: int = 1000000
@@ -125,13 +126,29 @@ func _open_page(id: String) -> String:
 		"story":
 			var sv := StoryView.new()
 			scene.add_child(sv)
-			sv.show_story("Stage1Wave3")
+			sv.show_story("Stage1Wave3", pd.cm)
 		_:
 			if scene.has_method("_on_entry_pressed"):
 				scene._on_entry_pressed(id)
 			else:
 				return "ERR: scene 无 _on_entry_pressed: " + scene.scene_file_path
 	return "OK"
+
+
+## 直进指定关卡战斗（复现结算页问题用；走 BattlePreparePanel 真实开战链：
+## setup → _ready 默认阵容 → _on_go_pressed assemble+change_scene）。
+## call_method 不等协程：await 帧后 fire-and-forget 续跑，返回 "started"。
+func qa_start_stage(sid: int) -> String:
+	var scene: Node = get_tree().current_scene
+	var pd: Variant = GameData.player
+	var mgr: Variant = pd.stage_manager
+	var rng := BattleRng.new(randi())
+	var panel := BattlePreparePanel.new()
+	panel.setup(sid, pd, mgr, rng, pd.cm)
+	scene.add_child(panel)
+	await get_tree().process_frame
+	panel._on_go_pressed()
+	return "started sid=" + str(sid)
 
 
 ## 关闭当前场景顶层全部 PopWindow（嵌套子面板随宿主一起释放）。

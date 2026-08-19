@@ -35,8 +35,8 @@ func _g(pos: Vector2) -> Vector2:
 	return BattleViewCoords.to_godot(pos.x, pos.y)
 
 
-func show_story(story_name: String) -> void:
-	var data: Dictionary = StoryData.get_story(story_name)
+func show_story(story_name: String, cm: Variant) -> void:
+	var data: Dictionary = StoryData.get_story(cm, story_name)
 	if data.is_empty():
 		story_ended.emit(story_name)
 		return   # 无此剧情数据，直接结束（单机化：剧情可选）
