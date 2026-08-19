@@ -75,12 +75,15 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	hp_bar = BattleHpBar.create(unit, "HP")
 	hp_bar.auto_hide = false
 	hp_bar_host.add_child(hp_bar)
-	hp_bar.position = Vector2(59.5, 8.5)   # bg(119×17) centered=true，中心对齐 Zone(119×17) 中心
+	# 受控偏离（用户观感验收 2026-08-19）：bg 119 比头像 110 宽出头 → 整条 ×0.92 缩至齐宽。
+	hp_bar.scale = Vector2(0.92, 0.92)
+	hp_bar.position = Vector2(59.5, 8.5)
 	var mp_type: String = str(unit.info.get("MP Type", "Mana"))
 	mp_bar = BattleHpBar.create(unit, mp_type)
 	mp_bar.auto_hide = false
 	mp_bar_host.add_child(mp_bar)
-	mp_bar.position = Vector2(59.5, 8.5)   # 同 HP
+	mp_bar.scale = Vector2(0.92, 0.92)   # 同 HP 齐宽
+	mp_bar.position = Vector2(59.5, 8.5)
 	_start_redmask_flicker()
 	frame_btn.disabled = true
 

@@ -8,7 +8,7 @@
 [node name="BattleHeroPanelContent" type="VBoxContainer"]
 layout_mode = 3
 mouse_filter = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 7
 
 ; 头像区：portrait 104×104 + frame 109×109，Zone 110×115 容纳。
 [node name="PortraitZone" type="Control" parent="."]
