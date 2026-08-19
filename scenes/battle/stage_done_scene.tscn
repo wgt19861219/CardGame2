@@ -126,8 +126,8 @@ offset_left = -60.0
 offset_top = -200.0
 offset_right = 40.0
 offset_bottom = -180.0
-label_settings = SubResource("LabelSettings_lv")
 text = "LV 1"
+label_settings = SubResource("LabelSettings_lv")
 
 [node name="Gold" type="Label" parent="InfoBg" unique_id=762184030]
 unique_name_in_owner = true
@@ -135,8 +135,8 @@ offset_left = -10.0
 offset_top = -200.0
 offset_right = 80.0
 offset_bottom = -180.0
-label_settings = SubResource("LabelSettings_gold")
 text = "+0"
+label_settings = SubResource("LabelSettings_gold")
 
 [node name="Exp" type="Label" parent="InfoBg" unique_id=1217841582]
 unique_name_in_owner = true
@@ -144,8 +144,8 @@ offset_left = 60.0
 offset_top = -200.0
 offset_right = 150.0
 offset_bottom = -180.0
-label_settings = SubResource("LabelSettings_exp")
 text = "+0"
+label_settings = SubResource("LabelSettings_exp")
 
 [node name="BattleStatistBtn" type="Button" parent="InfoBg" unique_id=313899263]
 unique_name_in_owner = true
