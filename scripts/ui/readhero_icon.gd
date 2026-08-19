@@ -46,6 +46,10 @@ const DEAD_POS: Vector2 = Vector2(44.0, 39.0)
 const HP_PERC_DENOM: float = 10000.0
 const SHADE_ALPHA: float = 150.0 / 255.0
 const DEAD_Z: int = 10
+# 贴图显示尺寸 = 原始像素 ÷ CS（源 createSprite 等价，照 readequip_icon 口径；crusade 条无 TextureConfig 条目）。
+# 2026-08-19 修：原实现原尺寸显示致条粗 1.28×（10px 高 vs 源 7.8 点），血/蓝条中心距 7 < 条高 10
+# 互相叠 3px 糊在头像上——源 7.8 高 vs 7 距仅微叠 0.8 点不可见。
+const CONTENT_SCALE: float = 1.28125
 
 const RANK_FRAME_IDS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12]
 
@@ -212,7 +216,8 @@ func _create_dead_shade() -> void:
 	icon.add_child(shade)
 
 
-# cocos setAnchorPoint(0,0.5) setPosition(x,y) → Godot centered=false + position(x, y-h/2) 等价（左边缘 x，垂直中心 y）。
+# cocos setAnchorPoint(0,0.5) setPosition(x,y) → Godot centered=false + position(x, y-显示高/2) 等价
+# （左边缘 x，垂直中心 y）。显示高 = 贴图高 ÷ CS（缩放后），见 CONTENT_SCALE 注释。
 func _create_bar(bg_path: String, bar_path: String, pos: Vector2, perc: float) -> void:
 	var bg_tex: Texture2D = _load_tex(bg_path)
 	var bar_tex: Texture2D = _load_tex(bar_path)
@@ -220,14 +225,15 @@ func _create_bar(bg_path: String, bar_path: String, pos: Vector2, perc: float) -
 		var bar_bg := Sprite2D.new()
 		bar_bg.texture = bg_tex
 		bar_bg.centered = false
-		bar_bg.position = Vector2(pos.x, pos.y - float(bg_tex.get_height()) * 0.5)
+		bar_bg.scale = Vector2.ONE / CONTENT_SCALE
+		bar_bg.position = Vector2(pos.x, pos.y - float(bg_tex.get_height()) / CONTENT_SCALE * 0.5)
 		icon.add_child(bar_bg)
 	if bar_tex != null:
 		var bar := Sprite2D.new()
 		bar.texture = bar_tex
 		bar.centered = false
-		bar.position = Vector2(pos.x, pos.y - float(bar_tex.get_height()) * 0.5)
-		bar.scale.x = clampf(perc, 0.0, 1.0)
+		bar.scale = Vector2(clampf(perc, 0.0, 1.0), 1.0) / CONTENT_SCALE
+		bar.position = Vector2(pos.x, pos.y - float(bar_tex.get_height()) / CONTENT_SCALE * 0.5)
 		icon.add_child(bar)
 
 

@@ -128,13 +128,30 @@ func test_create_icon_by_hero() -> void:
 # ===== hp/mp 血条（源 readhero.lua:266-305 addHpInfo，2026-07-05 stagedone hp 视觉补全）=====
 
 # 源 :281-289 hp>0 画 hp 血条（bg + bar，bar scaleX = hp/10000）。
+# 2026-08-19：显示尺寸 ÷CS（CONTENT_SCALE，源 createSprite 等价）——scale = (perc, 1)/CS，
+# 修前原尺寸显示致血/蓝条高 10 > 中心距 7 互相叠 3px（源 7.8 高仅微叠 0.8 点不可见）。
 func test_icon_hp_bar_drawn() -> void:
 	var icon := ReadheroIcon.new()
 	icon.setup({"id": 1, "hp": 5000}, cm)   # hp=5000 万分比 = 50%
 	var hp_bar: Sprite2D = _find_sprite_by_texture(icon, "crusade_hp_bar.png")
 	assert_not_null(hp_bar, "hp=5000 → hp bar 画（源 :282）")
 	if hp_bar != null:
-		assert_true(abs(hp_bar.scale.x - 0.5) < 0.01, "hp bar scaleX = hp/10000 = 0.5（源 :289）")
+		assert_true(abs(hp_bar.scale.x - 0.5 / ReadheroIcon.CONTENT_SCALE) < 0.01,
+			"hp bar scaleX = (hp/10000)/CS（源 :289 × ÷CS 口径）")
+	icon.queue_free()
+
+
+# 血/蓝条显示高 = 贴图高(10)÷CS ≈ 7.8px，中心距 7 → 互叠 ≤0.8px（源等价；回归守卫）。
+func test_icon_bars_display_height_no_overlap() -> void:
+	var icon := ReadheroIcon.new()
+	icon.setup({"id": 1, "hp": 10000, "mp": 10000}, cm)
+	var hp_bar: Sprite2D = _find_sprite_by_texture(icon, "crusade_hp_bar.png")
+	var mp_bar: Sprite2D = _find_sprite_by_texture(icon, "crusade_mp_bar.png")
+	if hp_bar != null and mp_bar != null:
+		assert_true(abs(hp_bar.scale.y - 1.0 / ReadheroIcon.CONTENT_SCALE) < 0.001,
+			"条 scale.y = 1/CS（÷CS 显示口径）")
+		var overlap: float = 10.0 / ReadheroIcon.CONTENT_SCALE - abs(hp_bar.position.y - mp_bar.position.y)
+		assert_lt(overlap, 1.0, "显示高7.8-中心距7 → 互叠 0.8px ≤1（源等价；修前原尺寸叠 3px 此断言红）")
 	icon.queue_free()
 
 

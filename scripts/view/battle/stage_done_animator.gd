@@ -150,11 +150,14 @@ func _play_hero_bar() -> void:
 		var tw: Tween = _new_tween()
 		tw.tween_interval(dt)
 		tw.tween_callback(_play_sfx_exp_up)
+		# bar 创建时 scale=(ratio, 1)/CONTENT_SCALE（÷CS 显示口径），scaleX 动画目标须乘
+		# bar.scale.y（=1/CS 基准）保持口径一致（2026-08-19 修：原 1.0/final_x 直写丢基准致条放大 1.28×）。
+		var base: float = bar.scale.y
 		for j in range(t_level - pre_level):
-			tw.tween_property(bar, "scale:x", 1.0, HERO_LEVEL_DUR)
+			tw.tween_property(bar, "scale:x", base, HERO_LEVEL_DUR)
 			# bind 即时求值 bar/ri/pre_level+j+1，规避 for-var 闭包陷阱
 			tw.tween_callback(_on_hero_levelup.bind(bar, ri, pre_level + j + 1))
-		var final_x: float = clampf(float(t_exp) / float(max(t_max, 1)), 0.0, 1.0)
+		var final_x: float = clampf(float(t_exp) / float(max(t_max, 1)), 0.0, 1.0) * base
 		tw.tween_property(bar, "scale:x", final_x, FADE_DUR)
 
 
