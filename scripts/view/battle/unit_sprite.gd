@@ -88,11 +88,6 @@ func _try_load_fca() -> void:
 	_fallback_to_portrait()
 
 
-func _on_fca_action_finished(action_name: String) -> void:
-	if action_name != "Idle":
-		_fca.play("Idle")
-
-
 func _get_or_load_atlas(plist_path: String) -> AtlasSprite:
 	if _atlas_cache.has(plist_path):
 		return _atlas_cache[plist_path]
@@ -148,16 +143,15 @@ func is_walking() -> bool:
 	return _is_walking_to_target or _is_walking_directional
 
 
-## 施法慢放对齐率（源 skill.lua:242 setActionElapsed 进度驱动的等效实现）：
-## FCA 动画自然时长 < 技能 phase 时长时按比例慢放，动作与技能相位同步结束
-## （自由播放 0.3s 播完回 Idle 而 phase 2.1s 仍在施法 = 大招动画不同步，2026-08-18）。
-func cast_rate_for(phase_duration: float) -> float:
-	if _fca == null or phase_duration <= 0.0:
-		return 1.0
-	var natural: float = _fca.get_action_duration(_fca.get_current_action())
-	if natural <= 0.0 or natural >= phase_duration:
-		return 1.0
-	return natural / phase_duration
+# 施法中动作播完不回 Idle：大招动作 2× 速播完后停在末帧等 phase 结束
+#（源 update(dt*2) 主导 + setActionElapsed clamp 末帧同款；回 Idle 会出现"施法还没完人已待机"）。
+func _on_fca_action_finished(action_name: String) -> void:
+	if action_name != "Idle":
+		if _unit != null and _unit.get("current_skill") != null:
+			var cs: Variant = _unit.current_skill
+			if cs != null and bool(cs.get("casting")):
+				return   # 施法中：保持末帧
+		_fca.play("Idle")
 
 
 func set_speed(s: float) -> void:

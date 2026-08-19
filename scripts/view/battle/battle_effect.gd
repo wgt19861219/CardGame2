@@ -46,6 +46,14 @@ static func create(effect_name: String) -> BattleEffect:
 	return eff
 
 
+# 战斗加速同步：FcaAnimation _process 用真实 delta 自驱，特效须由外部补偿倍率
+# （源 effect:update(dt) 与 actor 同链被加速 dt 集中推进；Godot 版自驱漏倍率 →
+# 2x 下人物动作 2x 播而特效 1x 播，技能动画与人物动画不同步，2026-08-19 修）。
+func set_speed(s: float) -> void:
+	if _fca != null:
+		_fca.set_speed(s)
+
+
 func play(action: String = "Start", loop: bool = false) -> void:
 	_loop = loop
 	if _fca == null:

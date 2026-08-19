@@ -112,3 +112,61 @@ func test_effect_single_action_no_loop_terminates() -> void:
 		# 无 Loop 配对 → _next_action 不应被设为 Loop
 		assert_ne(str(fca.get("_next_action")), "Loop", "无 Loop 配对应设 Start→Loop 切换")
 	eff.get_node().queue_free()
+
+
+# ── 战斗加速同步（2026-08-19）：FCA _process 真实 delta 自驱，特效须 set_speed 补偿倍率 ──
+# 源 effect:update(dt) 与 actor 同链被加速 dt 集中推进；Godot 版漏补偿 → 2x 下人物动作
+# 2x 播而特效 1x 播（技能动画与人物动画不同步根因）。
+
+func test_effect_set_speed_forwards_to_fca() -> void:
+	var eff := BattleEffect.create("effect/eff_launch_spike")
+	if eff == null:
+		fail_test("eff_launch_spike 加载失败，测试环境异常")
+		return
+	assert_eq(eff.get("_fca").get("_speed"), 1.0, "默认速度 1x")
+	eff.set_speed(2.0)
+	assert_eq(eff.get("_fca").get("_speed"), 2.0, "set_speed 应转发到 fca._speed")
+	eff.get_node().queue_free()
+
+
+func test_play_effect_on_scene_applies_speed() -> void:
+	var scene := BattleScene.new()
+	scene.setup(null, null)
+	scene.set_speed_state(2)
+	assert_eq(scene.current_speed(), 2.0, "current_speed 读接口应返回倍率")
+	scene.play_effect_on_scene("effect/eff_launch_spike", Vector2(0, 0), 1.0, 0.0, 0)
+	var eff: Variant = scene.effect_list[0]
+	assert_true(eff is BattleEffect, "应创建 BattleEffect")
+	if eff is BattleEffect:
+		assert_eq(eff.get("_fca").get("_speed"), 2.0, "场景特效创建时应带当前倍率")
+	scene.queue_free()
+
+
+func test_speed_change_updates_existing_effects() -> void:
+	var scene := BattleScene.new()
+	scene.setup(null, null)
+	scene.play_effect_on_scene("effect/eff_launch_spike", Vector2(0, 0), 1.0, 0.0, 0)
+	scene._on_speed_changed(3)
+	var eff: Variant = scene.effect_list[0]
+	assert_true(eff is BattleEffect, "真资源应创建 BattleEffect（非降级）")
+	if eff is BattleEffect:
+		assert_eq(eff.get("_fca").get("_speed"), 3.0, "切速应同步已存在的场景特效")
+	scene.queue_free()
+
+
+func test_add_effect_applies_scene_speed() -> void:
+	var scene := BattleScene.new()
+	scene.setup(null, null)
+	scene.set_speed_state(2)
+	var actor := BattleActor.new()
+	scene.main_layer.add_child(actor)   # 入 scene 树（add_effect 向上找 current_speed）
+	actor.add_effect("effect/eff_launch_spike", 1)
+	var eff: Variant = actor.get("_effects").get("effect/eff_launch_spike", null)
+	assert_not_null(eff, "add_effect 应登记 _effects")
+	if eff != null and eff is BattleEffect:
+		assert_eq(eff.get("_fca").get("_speed"), 2.0, "actor buff 特效创建时应带 scene 倍率")
+	actor.apply_speed_to_effects(3.0)
+	if eff != null and eff is BattleEffect:
+		assert_eq(eff.get("_fca").get("_speed"), 3.0, "apply_speed_to_effects 应切速同步")
+	actor.remove_effect("effect/eff_launch_spike")
+	scene.queue_free()

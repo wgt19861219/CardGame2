@@ -32,6 +32,7 @@ var _speed: float = 1.0
 var _playing: bool = false
 var _finished: bool = false
 var _next_action: String = ""
+var _applied_frame: int = -1   # 已应用帧索引（set_action_elapsed 防重复 apply）
 
 
 func load_from_ani(resource: String, atlas: AtlasSprite) -> bool:
@@ -210,6 +211,7 @@ func play(action: String, loop: bool = true) -> void:
 	_loop = loop
 	_playing = true
 	_finished = false
+	_applied_frame = -1
 	set_process(true)
 	var frames: Array = _actions[action].get("frames", [])
 	if frames.size() > 0:
@@ -222,6 +224,53 @@ func set_next_action(action: String) -> void:
 
 func set_speed(s: float) -> void:
 	_speed = clampf(s, 0.1, 10.0)
+
+
+# 照源 LegendAnimation::setActionElapsed（C++ :176-203）：动作时间锚定——帧索引
+# clamp/loop 到范围并应用帧，不改 _playing（后续 _process 继续自由推进，锚定仅校正）。
+# 施法中每 tick 由 battle_actor 调用，把动作帧锚到技能 phase 进度（源 skill.lua:242
+# gotoEventIdx 的 setActionElapsed 等效）——替代原 cast_rate_for 整体慢放（自创方案，
+# 大招特效常速播而动作龟速拉伸 = "技能播放比人物响应动画快"根因，2026-08-19）。
+func set_action_elapsed(elapsed: float) -> void:
+	var action: Dictionary = _actions.get(_action, {})
+	var frames: Array = action.get("frames", [])
+	if frames.is_empty():
+		_elapsed = elapsed
+		return
+	var fps: float = action.get("fps", 24.0)
+	var total_t: float = float(frames.size()) / fps
+	_elapsed = clampf(elapsed, 0.0, total_t - _FRAME_EPS)
+	var new_frame: int = int(_elapsed * fps)
+	if new_frame >= frames.size():
+		new_frame = frames.size() - 1
+	if new_frame != _applied_frame:
+		_applied_frame = new_frame
+		_apply_frame(frames[new_frame])
+
+
+const _FRAME_EPS: float = 0.001   # 锚定钳到末帧内，防 _process 立即触发 finished
+
+
+# 内容居中：按当前帧可见散件的真实包围盒中心（四角变换，几何正确）把整体平移到节点原点。
+# 供大位移资源消费方用（幽灵船投射物等 tx/ty ±5000 的数据，内容中心偏离原点缩后 500px+
+# 直接飞出屏幕）；小位移资源调用为近似无操作。首帧后动画内容波动小，一次补偿全程有效。
+func center_content() -> void:
+	var bmin := Vector2(1e9, 1e9)
+	var bmax := Vector2(-1e9, -1e9)
+	for c in get_children():
+		var s := c as Sprite2D
+		if s == null or not s.visible or s.texture == null:
+			continue
+		var half: Vector2 = s.texture.get_size() * 0.5
+		for corner: Vector2 in [Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2(-half.x, half.y), Vector2(half.x, half.y)]:
+			var world: Vector2 = s.transform * corner
+			bmin = bmin.min(world)
+			bmax = bmax.max(world)
+	if bmax.x <= bmin.x:
+		return   # 无可见内容
+	var center: Vector2 = (bmin + bmax) * 0.5
+	# 补偿作用于父坐标：当前帧内容中心（FCA 局部，含 sprite transform）× 节点 scale。
+	position -= center * scale
 
 
 func stop() -> void:
@@ -303,6 +352,7 @@ func _process(delta: float) -> void:
 			_playing = false
 			_finished = true
 			set_process(false)
+			_applied_frame = frame_count - 1
 			_apply_frame(frames[frame_count - 1])
 			action_finished.emit(_action)
 			if not _next_action.is_empty():
@@ -313,7 +363,9 @@ func _process(delta: float) -> void:
 
 	var frame_idx: int = int(_elapsed / frame_time)
 	frame_idx = mini(frame_idx, frame_count - 1)
-	_apply_frame(frames[frame_idx])
+	if frame_idx != _applied_frame:
+		_applied_frame = frame_idx
+		_apply_frame(frames[frame_idx])
 
 
 func _apply_frame(frame: Dictionary) -> void:
@@ -339,7 +391,10 @@ func _apply_frame(frame: Dictionary) -> void:
 		var tx: float = fe.get("tx", 0.0)
 		var ty: float = fe.get("ty", 0.0)
 
-		# origin 用原始 tx/ty（Node2D scale 整体缩，等价源 batchNode setScale）。
+		# ⚠️ tx/ty 原样用于 y-down（源 C++ readFrames 另有 b/c 取反+锚点补偿+ty 取反的
+		# adjustment，系 Cocos anchor(0,0)/y-up 语境，直译进 Godot centered/y-down 会翻转
+		# 元素朝向——2026-08-19 实测人物元素散架已回退。小位移资源偏差无感；大位移资源
+		# （幽灵船投射物）的偏移由消费方按需补偿。
 		var factor: float = 1.0 / _coord_scale
 		sprite.transform = Transform2D(
 			Vector2(a * factor, b * factor),

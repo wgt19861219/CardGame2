@@ -146,3 +146,102 @@ func test_panel_frame_pressed_casts() -> void:
 	assert_true(u.cast_called, "frame_pressed → unit.cast_manual_skill（源 :47）")
 	assert_eq(panel.frame_btn.disabled, true, "castHandler → frame_btn disabled（源 :48）")
 	panel.queue_free()
+
+
+# ── 战斗加速同步（2026-08-19）──
+
+# 能量/血条渐追只允许 ui_list 单链路驱动（scene._advance_ui_list 加速 dt → update 末尾）。
+# 曾有 _process(delta) 用未加速真实帧 delta 双驱动：2x 下每帧推进 INC*(delta+2delta)=3 份
+# vs 1x 的 2 份，观感仅 1.5x（"能量条速度没两倍"根因）。守护：脚本不得再定义 _process。
+func test_panel_no_process_double_drive() -> void:
+	var u := MockUnit.new()
+	var panel := _make_panel(u)
+	assert_false(panel.get_script().has_method("_process"),
+		"hero_panel 禁自定义 _process 驱动条（与 ui_list 加速链双驱动稀释倍率）")
+	panel.queue_free()
+
+
+# update(dt) 单次调用 → mp 渐追精确推进 MP_INC_SPEED*dt（单链路推进量锚点）。
+func test_panel_update_advances_mp_bar_single_source() -> void:
+	var u := MockUnit.new()
+	u.attribs["MP"] = 1000.0
+	u.mp = 500   # percent = 0.5
+	var panel := _make_panel(u)
+	panel.mp_bar.set("_fore_length", 0.0)
+	panel.update(0.1)
+	assert_almost_eq(float(panel.mp_bar.get("_fore_length")), 0.2, 0.0001,
+		"update(0.1) 应单次推进渐追 MP_INC_SPEED*0.1=0.2（双驱动会推进 0.4）")
+	panel.queue_free()
+
+
+# apply_speed 切速同步 ready 光圈（scene._on_speed_changed → panel.apply_speed 链）。
+func test_panel_apply_speed_sets_ready_effect() -> void:
+	var u := MockUnit.new()
+	u.can_cast_manual = true
+	u.mp = 2000
+	var panel := _make_panel(u)
+	panel.apply_speed(2.0)   # _skill_ready_eff 未建时应静默不崩
+	assert_null(panel.get("_skill_ready_eff"), "未播光圈时 apply_speed 不崩")
+	panel.update(0.0)   # state cast → _play_skill_ready 建光圈
+	var eff: Variant = panel.get("_skill_ready_eff")
+	assert_not_null(eff, "cast state 应创建 ready 光圈 BattleEffect")
+	panel.apply_speed(3.0)
+	if eff != null:
+		assert_eq(eff.get("_fca").get("_speed"), 3.0, "apply_speed 应同步光圈 fca 速度")
+	panel.queue_free()
+
+
+# ── 光圈挂载与定位（2026-08-19 紫色边框错位修复）──
+# 源 hero_panel.lua:157/172 effect 挂 self.btn + setContent(ccp(36,31))；本项目等效=挂
+# frame_btn + frame 贴图中心 (53,53)（FCA 内容中心≈节点原点，headless 实测）。
+# 曾错挂 panel 原点无定位 → 紫色光圈（will_ready/can_switch）飘在面板左上角。
+
+func test_ready_glow_mounts_on_frame_btn_centered() -> void:
+	var u := MockUnit.new()
+	u.can_cast_manual = true
+	u.mp = 2000
+	var panel := _make_panel(u)
+	panel.update(0.0)   # state cast → _play_skill_ready
+	var glow: Variant = panel.get("_skill_ready_effect")
+	assert_not_null(glow, "cast state 应创建 ready 光圈节点")
+	if glow == null:
+		panel.queue_free()
+		return
+	assert_eq(glow.get_parent(), panel.frame_btn, "ready 光圈应挂 frame_btn（源 self.btn:addChild）")
+	assert_eq(glow.position, panel.GLOW_POS, "ready 光圈应按内容中心校准定位（Loop 期中心对准按钮中心）")
+	panel.queue_free()
+
+
+func test_cast_glow_mounts_on_frame_btn_centered() -> void:
+	var u := MockUnit.new()
+	u.can_cast_manual = true
+	u.mp = 2000
+	var panel := _make_panel(u)
+	panel.update(0.0)   # state cast → frame_btn enabled
+	panel._on_frame_pressed()   # castHandler → _play_skill_cast_effect
+	# 光圈节点是 FcaAnimation（带脚本）；同挂 frame_btn 的 Redmask 是 tscn 纯 Sprite2D（无脚本）
+	var found: int = 0
+	for child in panel.frame_btn.get_children():
+		if child.get_script() != null and not child.is_queued_for_deletion():
+			found += 1
+			assert_eq(child.position, panel.GLOW_CAST_POS, "cast 光圈应按内容中心校准定位（-3.1,-33.9 补偿）")
+	assert_eq(found, 1, "cast 光圈应挂 frame_btn 恰 1 个（不闪删）")
+	panel.queue_free()
+
+
+# 源 play_skill_cast_effect 开头 disable_cast + update newState==nil 分支 disable_cast：
+# 施法/状态消退时 ready 光圈（紫色）须清，否则放完大招紫圈残留。
+func test_cast_clears_ready_glow() -> void:
+	var u := MockUnit.new()
+	u.can_cast_manual = true
+	u.mp = 2000
+	var panel := _make_panel(u)
+	panel.update(0.0)   # state cast → ready 光圈
+	assert_not_null(panel.get("_skill_ready_effect"), "cast state 应有 ready 光圈")
+	panel._on_frame_pressed()   # 施法 → _play_skill_cast_effect 开头 disable_cast
+	assert_null(panel.get("_skill_ready_effect"), "施法应清 ready 光圈（源 disable_cast）")
+	# 状态消退（mp 花掉 → state NONE）也应清
+	panel.update(0.0)
+	panel._play_skill_ready("")   # 显式 STATE_NONE 路径
+	assert_null(panel.get("_skill_ready_effect"), "state NONE 应清光圈")
+	panel.queue_free()

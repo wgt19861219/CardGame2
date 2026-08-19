@@ -24,6 +24,7 @@ const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
 const BattleWaveAdvancer = preload("res://scripts/view/battle/battle_wave_advancer.gd")
 const BattleTimeoutBanner = preload("res://scripts/view/battle/battle_timeout_banner.gd")
 const BattleHud = preload("res://scripts/view/battle/battle_hud.gd")
+const BattleSpeedSync = preload("res://scripts/view/battle/battle_speed_sync.gd")
 const BattleHudAssembler = preload("res://scripts/view/battle/battle_hud_assembler.gd")
 const ProjectileSync = preload("res://scripts/view/battle/projectile_sync.gd")
 const HUD_SCENE: PackedScene = preload("res://scenes/battle/battle_hud.tscn")
@@ -185,6 +186,12 @@ func set_speed_state(s: int) -> void:
 	speed_state = clampi(s, 1, SPEED_MULTIPLIERS.size())
 
 
+# 当前战斗加速倍率（View 层）——FCA 特效创建/切速时补偿到 set_speed
+# （FcaAnimation _process 真实 delta 自驱，不补偿则特效恒 1x 与人物动作脱节）。
+func current_speed() -> float:
+	return float(SPEED_MULTIPLIERS[speed_state - 1])
+
+
 func step(dt: float) -> void:
 	if speed_state > 1:
 		var speed: int = SPEED_MULTIPLIERS[speed_state - 1]
@@ -326,6 +333,7 @@ func play_effect_on_scene(effect_name: String, origin: Vector2, scale: float = 1
 	var battle_effect := BattleEffect.create(effect_name)
 	if battle_effect != null:
 		battle_effect.play()
+		battle_effect.set_speed(current_speed())
 		effect = battle_effect
 	else:
 		effect = BattleEffect.FallbackEffect.new(Node2D.new(), 1.0)  # 降级
@@ -365,12 +373,7 @@ func _create_speed_button() -> void:
 
 func _on_speed_changed(state: int) -> void:
 	set_speed_state(state)
-	for actor in actor_list:
-		# 混装 BattleActor/NpcActor/ProjectileActor：puppet 仅前两者有，ProjectileActor 无此键
-		# （点属性即崩；skill_lib 修复后投射物首次出现踩中，Object.get 缺键安全返 null）。
-		var puppet: Variant = actor.get("puppet")
-		if puppet != null and puppet.has_method("set_speed"):
-			puppet.set_speed(float(SPEED_MULTIPLIERS[state - 1]))
+	BattleSpeedSync.broadcast(self, state)
 
 
 func _create_return_button() -> void:
@@ -389,16 +392,14 @@ func create_pause_layer() -> void:
 	AudioPlayer.set_bgm_volume(0.25)
 	var layer := BattlePauseLayer.new()
 	layer.setup(ui_layer, true)
-	layer.exit_requested.connect(_on_pause_exit)
-	layer.resume_requested.connect(_on_pause_resume)
+	layer.exit_requested.connect(_on_pause_dismissed)
+	layer.resume_requested.connect(_on_pause_dismissed)
 	pause_layer = layer
 
 
-func _on_pause_exit() -> void:
-	_clear_pause_layer(); pause_locks["pauseButton"] = false; is_paused = pause_locks.values().has(true)
-
-
-func _on_pause_resume() -> void:
+# pause 退出/恢复同效（清层 + 解锁）：原两回调体相同，合一。单机化仅 pauseButton 一种 reason；
+# resume 设 false 非 erase（源 :174）。has(true) = 源 :777-780 any(v)。
+func _on_pause_dismissed() -> void:
 	_clear_pause_layer(); pause_locks["pauseButton"] = false; is_paused = pause_locks.values().has(true)
 
 
@@ -410,8 +411,6 @@ func _clear_pause_layer() -> void:
 
 
 # reason：pauseButton/5v5skill·5v5ending（教学）/story（剧情）。单机化裁剪教学/剧情，仅 pauseButton 实接。
-# _on_pause_exit/_on_pause_resume 调用点（pause_locks[reason]= + is_paused=pause_locks.values().has(true)）。
-# resume 设 false 非 erase（源 :174）。has(true) = 源 :777-780 any(v)。
 
 
 func _create_timer() -> void:

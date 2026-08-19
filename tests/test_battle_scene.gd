@@ -337,7 +337,7 @@ func test_pause_resume_clears_layer() -> void:
 	scene.setup(eng, cm)
 	add_child(scene)
 	scene._on_return_pressed()
-	scene._on_pause_resume()   # 模拟 resume 按钮信号（源 resume handler）
+	scene._on_pause_dismissed()   # 模拟 resume 按钮信号（exit/resume 合一回调，源 resume handler）
 	assert_eq(scene.is_paused, false, "resume → is_paused=false（源 :303）")
 	assert_null(scene.pause_layer, "resume → 暂停层清除")
 	scene.queue_free()
