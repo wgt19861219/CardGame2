@@ -105,7 +105,13 @@ func get_region_texture(region_name: String) -> Texture2D:
 	var rect: Rect2i = Rect2i(xy.x, godot_y, stored_w, stored_h)
 	var img: Image = _sheet_image.get_region(rect)
 	if rotate:
+		# rotate region 旧行为保持（rotate_90 转正，不 flip——修复前 Pve/Mailbox 主贴图
+		# 视觉正立，实测 orient_check 判定对横放贴图无效，保守不动）
 		img.rotate_90(1)
+	else:
+		# Spine y-up 纹理约定：SpineSkeleton 根部 scale.y=-1 镜像骨骼树时会把纹理上下翻，
+		# 提取时预翻一次补偿（曾致主城 13/14 建筑上下颠倒，2026-08-19 orient_check 实测）
+		img.flip_y()
 	var tex: Texture2D = ImageTexture.create_from_image(img)
 	_region_cache[region_name] = tex
 	return tex
