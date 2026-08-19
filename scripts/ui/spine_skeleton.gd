@@ -151,7 +151,7 @@ func _apply(t: float) -> void:
 		var n: Node2D = _bone_nodes[String(bn)]
 		var ba: Dictionary = bones_anim[bn]
 		if ba.has("rotate"):
-			n.rotation = float(_setup_rot[String(bn)]) + deg_to_rad(_interp_num(ba["rotate"], t, "angle"))
+			n.rotation = float(_setup_rot[String(bn)]) + deg_to_rad(_interp_angle(ba["rotate"], t))
 		if ba.has("translate"):
 			n.position = Vector2(_setup_pos[String(bn)]) + _interp_vec(ba["translate"], t)
 		if ba.has("scale"):
@@ -269,13 +269,17 @@ func _bez_d(t: float, p1: float, p2: float) -> float:
 	return 3.0 * mt * mt * p1 + 6.0 * mt * t * (p2 - p1) + 3.0 * t * t * (1.0 - p2)
 
 
-func _interp_num(timeline: Array, t: float, field: String) -> float:
+# 角度最短路径插值（spine-c RotateTimeline 语义：diff 归一化到 [-180, 180)）。
+# 帧对 [0→347.45] 视觉语义是 -12.55°，数值线性插值会绕远路 +347.45°——
+# 主城建筑摇摆/持续旋转动画（Shop/Shop2/Mailbox/Guard 相邻帧差>180）曾因此抽搐自旋。
+func _interp_angle(timeline: Array, t: float) -> float:
 	var k: Dictionary = _keyframes(timeline, t)
 	if k.is_empty():
 		return 0.0
-	var v0: float = float(timeline[k["i0"]].get(field, 0.0))
-	var v1: float = float(timeline[k["i1"]].get(field, 0.0))
-	return v0 + (v1 - v0) * float(k["alpha"])
+	var v0: float = float(timeline[k["i0"]].get("angle", 0.0))
+	var v1: float = float(timeline[k["i1"]].get("angle", 0.0))
+	var diff: float = fmod(v1 - v0 + 540.0, 360.0) - 180.0
+	return v0 + diff * float(k["alpha"])
 
 
 func _interp_vec(timeline: Array, t: float) -> Vector2:
