@@ -28,10 +28,14 @@ const LIGHTNING_POS: Array = [205, 310]       # Godot(205, MAP_H-330=310)
 const LIGHTNING_GAP: Array = [1.71, 1.71, 1.71, 3, 10]  # gap/loop 序列
 const EXCAVATE_WIN_TEXT: String = "占领成功！矿点开始产出资源"     # excavate 战斗胜利 Toast（_maybe_resume_excavate）
 const EXCAVATE_LOSE_TEXT: String = "战斗失败，再接再厉"          # excavate 战斗失败 Toast
-# 每日签到入口按钮（dailylogin_pos，head→项目 HEAD_POS(70,52)，delta(150,42)→项目(220,94)）。
+# 每日签到入口按钮（源 uires.lua:53 dailylogin_pos=ori_pos=ccp(220,392)，头像 head_bg_pos=ccp(70,434)，
+# 相对 delta(150,-42)→Godot y 翻转即 (+150,+42)。头像定版 HEAD_POS(150,66)——C13(89e57b2) 修 (70,52)→
+# (150,126) 与 f32fcd0 HUD 精调 126→66 两轮均漏同步本按钮，旧值 (220,94) 压头像致重叠。
+# 中心=(150+150, 66+42)=(300,108)。
 const DAILY_BTN_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_1.png"
 const DAILY_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_2.png"
-const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 94.0)
+const DAILY_BTN_CENTER: Vector2 = Vector2(300.0, 108.0)
+const DAILY_BTN_CONTENT_SCALE: float = 1.28125   # 散图显示=纹理÷CS（main_dailyreward 无 TextureConfig 条目，同 main_status_bar 口径）
 # 15 入口按钮数据外移 main_scene_entries.gd（控 LINT005 ≤400，第九轮 P1-B 入口接线）。
 const MainSceneEntries = preload("res://scripts/ui/main_scene_entries.gd")
 
@@ -230,7 +234,12 @@ func _find_entry(entry_id: String) -> Dictionary:
 func _build_hud() -> void:
 	HudOverlay.apply_identity("main")
 	# 每日签到入口按钮（dailylogin 按钮 clickHandler→showDailyLogin，仅 main 建）。
+	# 显示尺寸 ÷CS 散图口径（AGENTS.md 2026-08-15）：main_dailyreward 无 TextureConfig 条目，
+	# UiButton.make 内 tex_display_size 对散图偏大 1.28×（全项目 73 处共债待专项，此处手算覆盖）。
+	var dl_size: Vector2 = (load(DAILY_BTN_RES) as Texture2D).get_size() / DAILY_BTN_CONTENT_SCALE
 	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
+	dl_btn.size = dl_size
+	dl_btn.position = DAILY_BTN_CENTER - dl_size / 2.0
 	dl_btn.pressed.connect(func() -> void: MainSceneEntryRouter.open_daily_login(self))
 	add_child(dl_btn)
 
