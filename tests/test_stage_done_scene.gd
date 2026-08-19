@@ -79,12 +79,13 @@ func test_initial_state_hidden() -> void:
 
 
 func test_hero_initial_hidden() -> void:
-	# hero icon modulate.a=0；bar scale.x = pre_exp/pre_max（hero1: 20/80=0.25）
+	# hero icon modulate.a=0；bar scale.x = pre_exp/pre_max ×(1/CS)（hero1: 20/80=0.25 → 0.195）
 	var scene := _make_scene()
 	var ri: ReadheroIcon = scene._hero_icon_nodes[0]
 	assert_eq(ri.icon.modulate.a, 0.0, "hero icon modulate.a=0（fade 前）")
 	var bar: Sprite2D = scene._hero_bars[0]
-	assert_almost_eq(bar.scale.x, 0.25, 0.001, "bar scale.x = pre_exp/pre_max（20/80）")
+	assert_almost_eq(bar.scale.x, 0.25 / StageDoneScene.CONTENT_SCALE, 0.001,
+		"bar scale.x = pre_exp/pre_max ×1/CS（20/80 ÷CS）")
 	scene.queue_free()
 
 
@@ -109,13 +110,14 @@ func test_skip_stars_final() -> void:
 
 
 func test_skip_hero_final() -> void:
-	# skip 后 hero icon modulate.a=1，bar scale.x=t_exp/t_max_exp（hero1: 50/100=0.5）
+	# skip 后 hero icon modulate.a=1，bar scale.x=t_exp/t_max_exp ×(1/CS)（hero1: 50/100=0.5 → 0.39）
 	var scene := _make_scene()
 	scene.skip_anim()
 	var ri: ReadheroIcon = scene._hero_icon_nodes[0]
 	assert_eq(ri.icon.modulate.a, 1.0, "hero icon modulate.a=1（skip 终态）")
 	var bar: Sprite2D = scene._hero_bars[0]
-	assert_almost_eq(bar.scale.x, 0.5, 0.001, "bar scale.x = t_exp/t_max_exp（50/100）")
+	assert_almost_eq(bar.scale.x, 0.5 / StageDoneScene.CONTENT_SCALE, 0.001,
+		"bar scale.x = t_exp/t_max_exp ×1/CS（50/100 ÷CS）")
 	scene.queue_free()
 
 
@@ -199,4 +201,56 @@ func test_hero_loot_host_exist() -> void:
 	# hero/loot icon 挂在 Host 下（数量随 _param）
 	assert_eq(scene._hero_host.get_child_count(), scene._hero_icon_nodes.size(), "HeroHost 子节点数 = hero icon 数")
 	assert_eq(scene._loot_host.get_child_count(), scene._loot_icon_nodes.size(), "LootHost 子节点数 = loot icon 数")
+	scene.queue_free()
+
+
+# 经验条源位断言（源 stagedone.lua:364-374：bar 左中锚 (0,-8)/bg 中心 (40,-8)/exp 文本 (38,-30)，
+# Cocos 头像 104×104 左下原点 → Godot 左上原点中心线 y=104+8=112 / 104+30=134）。
+# 回归锚点：2026-08-19 修复 ①BAR_OFFSET=(0,-8) 照抄未翻转（条跑到头像上方）②原尺寸显示（÷CS 修）。
+func test_hero_exp_bar_source_positions() -> void:
+	var scene := _make_scene()
+	var bar_bg: Sprite2D = scene._hero_bar_bgs[0]
+	assert_true(bar_bg.centered, "bar_bg 中心锚（源默认锚点 0.5,0.5）")
+	assert_eq(bar_bg.position, Vector2(40.0, 112.0), "bar_bg 中心 (40,112)（源 40,-8 翻转）")
+	var bar_scale: Vector2 = Vector2.ONE / StageDoneScene.CONTENT_SCALE
+	assert_almost_eq(bar_bg.scale.x, bar_scale.x, 0.001, "bar_bg ÷CS 缩放（107→83.5 显示）")
+	var bar: Sprite2D = scene._hero_bars[0]
+	assert_false(bar.centered, "bar 左上锚（源锚点 0,0.5）")
+	assert_almost_eq(bar.position.y, 112.0 - 17.0 / StageDoneScene.CONTENT_SCALE * 0.5, 0.01,
+		"bar 左端 x=0 中心线 y=112（左上角 = 112-显示高/2）")
+	var exp_lbl: Label = (scene._hero_icon_nodes[0].icon.get_child(-1) as Label)
+	assert_eq(exp_lbl.position, Vector2(-2.0, 125.0), "exp label 左上 (38,134)-size/2")
+	assert_eq(exp_lbl.label_settings.font_size, 18, "exp label 字号 18（源 createttf 18）")
+	scene.queue_free()
+
+
+# skip 后 fade 组终态恢复（回归锚点：2026-08-19 修复 skip 冻结 InfoBg modulate.a=0 整条透明）。
+func test_skip_restores_fade_group() -> void:
+	var scene := _make_scene()
+	scene.skip_anim()
+	assert_eq(scene._info_bg.modulate.a, 1.0, "skip 后 InfoBg 不透明")
+	assert_eq(scene._light.modulate.a, 1.0, "skip 后 Light 不透明")
+	assert_eq(scene._battle_statist_btn.modulate.a, 1.0, "skip 后统计按钮不透明")
+	assert_eq(scene._next_btn.modulate.a, 1.0, "skip 后 Next 按钮不透明")
+	var ri: ReadheroIcon = scene._hero_icon_nodes[0]
+	assert_eq(ri.icon.rotation, 0.0, "skip 后 hero icon 无旋转残留")
+	scene.queue_free()
+
+
+# InfoBg 文字样式断言（源 lv 18 号 / gold·exp 19 号 + ccc3(169,70,6) 棕红）。
+func test_info_bg_label_styles() -> void:
+	var scene := _make_scene()
+	var info_bg: Sprite2D = scene._info_bg
+	var lv: Label = info_bg.get_node("%Lv") as Label
+	var gold: Label = info_bg.get_node("%Gold") as Label
+	var exp_lbl: Label = info_bg.get_node("%Exp") as Label
+	assert_eq(lv.label_settings.font_size, 18, "Lv 字号 18（源）")
+	assert_eq(gold.label_settings.font_size, 19, "Gold 字号 19（源）")
+	assert_eq(exp_lbl.label_settings.font_size, 19, "Exp 字号 19（源）")
+	var src_color: Color = Color(169.0 / 255.0, 70.0 / 255.0, 6.0 / 255.0)
+	assert_almost_eq(gold.label_settings.font_color.r8, 169, 1, "Gold 字色 R=169（源 ccc3(169,70,6)）")
+	assert_almost_eq(gold.label_settings.font_color.g8, 70, 1, "Gold 字色 G=70")
+	assert_almost_eq(gold.label_settings.font_color.b8, 6, 1, "Gold 字色 B=6")
+	assert_almost_eq(exp_lbl.label_settings.font_color.r8, 169, 1, "Exp 字色 R=169")
+	assert_almost_eq(lv.label_settings.font_color.r8, 169, 1, "Lv 字色 R=169")
 	scene.queue_free()

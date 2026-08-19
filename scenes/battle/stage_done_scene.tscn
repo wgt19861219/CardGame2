@@ -16,6 +16,18 @@
 [ext_resource type="Texture2D" uid="uid://cpyfjvblmhjg2" path="res://assets/ui/alpha/HVGA/shadow_win_bg.png" id="13_title2"]
 [ext_resource type="Texture2D" uid="uid://s4de6u60hqct" path="res://assets/ui/alpha/HVGA/goldicon_small.png" id="14_gold"]
 
+[sub_resource type="LabelSettings" id="LabelSettings_lv"]
+font_size = 18
+font_color = Color(0.662745, 0.27451, 0.023529, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_gold"]
+font_size = 19
+font_color = Color(0.662745, 0.27451, 0.023529, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_exp"]
+font_size = 19
+font_color = Color(0.662745, 0.27451, 0.023529, 1)
+
 [node name="StageDoneScene" type="Control" unique_id=193704999]
 layout_mode = 3
 anchors_preset = 15
@@ -114,6 +126,7 @@ offset_left = -60.0
 offset_top = -200.0
 offset_right = 40.0
 offset_bottom = -180.0
+label_settings = SubResource("LabelSettings_lv")
 text = "LV 1"
 
 [node name="Gold" type="Label" parent="InfoBg" unique_id=762184030]
@@ -122,6 +135,7 @@ offset_left = -10.0
 offset_top = -200.0
 offset_right = 80.0
 offset_bottom = -180.0
+label_settings = SubResource("LabelSettings_gold")
 text = "+0"
 
 [node name="Exp" type="Label" parent="InfoBg" unique_id=1217841582]
@@ -130,6 +144,7 @@ offset_left = 60.0
 offset_top = -200.0
 offset_right = 150.0
 offset_bottom = -180.0
+label_settings = SubResource("LabelSettings_exp")
 text = "+0"
 
 [node name="BattleStatistBtn" type="Button" parent="InfoBg" unique_id=313899263]

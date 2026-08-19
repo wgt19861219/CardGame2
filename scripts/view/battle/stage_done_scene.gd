@@ -21,8 +21,21 @@ const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
 # hero/loot 起始坐标（HERO_ORI/LOOT_ORI）已搬进 %HeroHost/%LootHost 的 position，可视化调。
 const HERO_GAP_X: float = 110.0
 const LOOT_GAP_X: float = 84.0
-const BAR_OFFSET: Vector2 = Vector2(0.0, -8.0)
-const EXP_LABEL_OFFSET: Vector2 = Vector2(38.0, -30.0)
+# 贴图显示尺寸 = 原始像素 ÷ CS（源 createSprite 等价，照 readequip_icon 口径；heroxp 条无 TextureConfig
+# 条目）。2026-08-19 修：原尺寸显示致条大 1.28×（107×17 vs 源 83.5×13.3 点）。
+const CONTENT_SCALE: float = 1.28125
+# 经验条三层 + EXP 文本源位（源 stagedone.lua:364-374，Cocos 头像 container 104×104 左下原点，
+# y=-8/-30 = 头像底下方 8/30 → Godot 左上原点中心线 y = 104+8=112 / 104+30=134）。
+# bar/full 源锚点 (0,0.5)（左中）→ Godot centered=false + 左上 y = 112 - 显示高(17/CS)/2；
+# barBg 源默认锚点 (0.5,0.5) 中心 (40,-8) → Godot centered=true + (40,112)。
+const HERO_CONTAINER_H: float = 104.0
+const HERO_EXP_BAR_TEX_H: float = 17.0
+const HERO_EXP_BAR_CENTER_Y: float = HERO_CONTAINER_H + 8.0
+const HERO_EXP_BAR_POS: Vector2 = Vector2(0.0, HERO_EXP_BAR_CENTER_Y - HERO_EXP_BAR_TEX_H / CONTENT_SCALE * 0.5)
+const HERO_EXP_BAR_BG_POS: Vector2 = Vector2(40.0, HERO_EXP_BAR_CENTER_Y)
+const HERO_EXP_LABEL_CENTER: Vector2 = Vector2(38.0, HERO_CONTAINER_H + 30.0)
+const HERO_EXP_LABEL_SIZE: Vector2 = Vector2(80.0, 18.0)
+const HERO_EXP_FONT_SIZE: int = 18
 const MAX_STARS: int = 3
 # battleStatist 按钮 Scale9 尺寸/CAP（贴图路径走公共常量；本场景独有的尺寸）。
 const BATTLE_STATIST_SIZE: Vector2 = Vector2(70.0, 50.0)
@@ -151,34 +164,43 @@ func _create_hero_icons() -> void:
 		ri.position = Vector2(HERO_GAP_X * i, 0.0)
 		ri.icon.modulate.a = 0.0
 		_hero_host.add_child(ri)   # 起始坐标已固化进 %HeroHost.position，此处相对 host 横向排列
-		# 经验条三层（源 stagedone.lua:364-371,443-449）：bg 静态底 + progress 前景（scaleX 动画）+ full 满级覆盖。
-		# bg 先 add（z 序在下），progress 后 add（覆盖 bg），full 最后 add（覆盖 progress，仅 is_max_level visible）。
+		# 经验条三层（源 stagedone.lua:364-371,443-449）：bg 静态底（中心锚 40,-8）+ progress 前景
+		# （左中锚 0,-8，scaleX 动画）+ full 满级覆盖。y 翻转：Cocos -8（底下方 8）→ Godot 中心线 112。
+		# 显示尺寸 ÷CS；bar.scale.y = 1/CS 为 scaleX 动画的基准（animator/skip 乘 bar.scale.y 复原）。
 		var bar_bg := Sprite2D.new()
 		bar_bg.texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + HERO_BAR_BG_TEX)
-		bar_bg.centered = false
-		bar_bg.position = BAR_OFFSET
+		bar_bg.centered = true
+		bar_bg.position = HERO_EXP_BAR_BG_POS
+		bar_bg.scale = Vector2.ONE / CONTENT_SCALE
 		ri.icon.add_child(bar_bg)
 		_hero_bar_bgs.append(bar_bg)
 		var bar := Sprite2D.new()
 		bar.texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + HERO_BAR_TEX)
 		bar.centered = false
-		bar.position = BAR_OFFSET
+		bar.position = HERO_EXP_BAR_POS
 		var pre_exp: int = int(hinfo.get("exp", 0))
 		var pre_max: int = int(hinfo.get("max_exp", 1))
-		bar.scale.x = clampf(float(pre_exp) / float(maxi(pre_max, 1)), 0.0, 1.0)
+		bar.scale = Vector2(clampf(float(pre_exp) / float(maxi(pre_max, 1)), 0.0, 1.0), 1.0) / CONTENT_SCALE
 		ri.icon.add_child(bar)
 		_hero_bars.append(bar)
 		# 满级态覆盖（源 stagedone.lua:1676-1742 isMaxLevel 显示 full bar）；当前数据层 is_max_level 兜底 false。
 		var bar_full := Sprite2D.new()
 		bar_full.texture = StageSettlementCommon.load_texture(ALPHA_HVGA_DIR + HERO_BAR_FULL_TEX)
 		bar_full.centered = false
-		bar_full.position = BAR_OFFSET
+		bar_full.position = HERO_EXP_BAR_POS
+		bar_full.scale = Vector2.ONE / CONTENT_SCALE
 		bar_full.visible = bool(hinfo.get("is_max_level", false))
 		ri.icon.add_child(bar_full)
 		_hero_bar_fulls.append(bar_full)
 		var exp_lbl := Label.new()
 		exp_lbl.text = "EXP +" + str(int(hinfo.get("add_hero_exp", 0)))
-		exp_lbl.position = EXP_LABEL_OFFSET
+		exp_lbl.size = HERO_EXP_LABEL_SIZE
+		exp_lbl.position = HERO_EXP_LABEL_CENTER - HERO_EXP_LABEL_SIZE * 0.5
+		exp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		exp_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var exp_ls := LabelSettings.new()
+		exp_ls.font_size = HERO_EXP_FONT_SIZE
+		exp_lbl.label_settings = exp_ls
 		ri.icon.add_child(exp_lbl)
 		_hero_icon_nodes.append(ri)
 
@@ -205,6 +227,12 @@ func skip_anim() -> void:
 		_animator.kill()
 	_exp_label.text = "+" + str(int(_param.get("exp", 0)))
 	_gold_label.text = "+" + str(int(_param.get("gold", 0)))
+	# fade 组终态（源各段动画均淡入到 1；skip 须补全，否则 kill 冻结在中间透明度）
+	_info_bg.modulate.a = 1.0
+	_light.modulate.a = 1.0
+	_battle_statist_btn.modulate.a = 1.0
+	_replay_btn.modulate.a = 1.0
+	_next_btn.modulate.a = 1.0
 	var stars: int = int(_param.get("stars", 0))
 	for i in range(stars):
 		if i < _star_nodes.size():
@@ -213,14 +241,19 @@ func skip_anim() -> void:
 	for i in range(_hero_icon_nodes.size()):
 		var ri: ReadheroIcon = _hero_icon_nodes[i]
 		ri.icon.modulate.a = 1.0
+		ri.icon.rotation = 0.0
+		ri.position.y = 0.0
 		var hinfo: Dictionary = heroes[i] if i < heroes.size() else {}
 		var t_exp: int = int(hinfo.get("t_exp", 0))
 		var t_max: int = int(hinfo.get("t_max_exp", 1))
 		if i < _hero_bars.size():
-			(_hero_bars[i] as Sprite2D).scale.x = clampf(float(t_exp) / float(max(t_max, 1)), 0.0, 1.0)
+			var bar: Sprite2D = _hero_bars[i]
+			# ratio × bar.scale.y（=1/CS 基准）保持 scaleX 动画与创建口径一致
+			bar.scale.x = clampf(float(t_exp) / float(max(t_max, 1)), 0.0, 1.0) * bar.scale.y
 		ri.refresh_level(int(hinfo.get("t_level", 1)))
 	for icon in _loot_icon_nodes:
 		(icon as Control).scale = Vector2.ONE
+		(icon as Control).rotation = 0.0
 	if _animator != null:
 		_animator.play_button()
 
