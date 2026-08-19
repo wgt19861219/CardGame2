@@ -82,7 +82,9 @@ func update_view(dt: float) -> void:
 		_enter_arrive_dir = 0
 		scale = Vector2(dir_for_scale * rt_scale, rt_scale)
 		if puppet != null:
-			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) else float(model.speeder)
+			# 动画推进速率 = Logic 实际推进倍率（dt_action/tick = 战斗速度×攻速 speeder）——
+			# 只用 speeder 会漏战斗加速（2x 下 Logic 快 2 倍、FCA 真实帧速 1 倍 → 特效先出动作后动）。
+			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) 					else float(model.dt_action) / BattleEngine.TICK_INTERVAL
 			# 施法中慢放对齐（源 setActionElapsed 等效）：动作速度 ×= 自然时长/phase 时长。
 			var cs: Variant = model.current_skill
 			if cs != null and bool(cs.get("casting")) and puppet.has_method("cast_rate_for"):
