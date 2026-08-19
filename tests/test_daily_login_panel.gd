@@ -92,6 +92,25 @@ func test_cell_status_future_beyond_freq() -> void:
 	panel.get_parent().queue_free()
 
 
+# 2026-08-19 回归 P2 复现守卫：领奖刷新（_refresh_view → _fill_grid 重建）后
+# Cell%d 可读名必须保留。缺陷：queue_free 延迟删除 + 同帧 add_child 同名 →
+# 名字冲突被引擎改派 @TextureButton@N → find_nodes/调试按名定位失效（走查误判「格子消失」）。
+func test_refresh_preserves_cell_names() -> void:
+	var panel: DailyLoginPanel = _make_panel()
+	var expect_names: Array = []
+	for i in range(panel._data_list.size()):
+		expect_names.append("Cell%d" % (i + 1))
+	panel._refresh_view(true)
+	# _cells 由 _fill_grid 重建后重填，只含新格子（避开旧格子 queue_free 释放时机差异）
+	var after_names: Array = []
+	for c in panel._cells:
+		after_names.append(String(c.name))
+	assert_eq(after_names.size(), expect_names.size(), "重建后格子数不变")
+	assert_eq(after_names, expect_names, "重建后 Cell1..N 可读名保留（无 @TextureButton@N 改名）")
+	panel.remove_window()
+	panel.get_parent().queue_free()
+
+
 # ── LSTR 化（照源 dailylogin.lua :7/:448/:662/:697/:862 + syncDate :893）──
 
 func test_daily_login_lstr_keys_exist() -> void:

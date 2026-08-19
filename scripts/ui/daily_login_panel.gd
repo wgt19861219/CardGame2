@@ -121,9 +121,12 @@ func _refresh_view(bounce: bool = false) -> void:
 
 # 网格 fill（源 createList :380-420 + createRewardItem :222-378）：
 # 清旧 cell（保留 RewardBg 底板）→ 设 content/bg 尺寸（ha 行数随当月天数变）→ 逐日实例化 cell 模板。
+# 清除须 remove_child 立即移出树再 queue_free：queue_free 延迟删除下同帧 add_child
+# 同名 Cell%d 触发名字冲突，显式名被引擎改派 @TextureButton@N（2026-08-19 回归 P2）。
 func _fill_grid() -> void:
 	for c in _grid_content.get_children():
 		if c != _reward_bg:
+			_grid_content.remove_child(c)
 			c.queue_free()
 	var da: int = _data_list.size()
 	var ha: int = maxi(1, int(ceil(float(da) / float(COLS))))

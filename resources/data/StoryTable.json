@@ -1,0 +1,1524 @@
+{
+ "OpeningMain": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.I_NEED_TO_ASSEMBLE_A_NEW_TEAM"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_12.png",
+    "name_key": "STORYTABLECONFIG.ASSISTANT",
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.LEAVE_IT_TO_ME_FOLLOW_ME_HERO"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage101Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MEDUSA_LIVE_UP_TO_HER_REPUTATION"
+   },
+   {
+    "play_index": 5,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BE_AWARE_OF_HER_SNAKE_HEX"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage104Wave2": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MISSILE_AND_LASER_FIRE"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BE_AWARE_OF_CUNNING_GOBLINS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage107Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MY_AXE_CHOPS_ALL"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.DEFEAT_EVIL_WITH_THE_POWER_OF_MAGIC_AND_HEART"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage109Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.OBSIDIAN_GLITTERS_AND_DESTRUCTION_COMES"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THE_POWER_OF_GOD_CORROSION_ERASES_MIND_A_TERRIBLE_RIVAL"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage112Wave1": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_CHALLENGE_YOU_ALL"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.NEVER_UNDERESTIMATE_THE_ENEMY"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage114Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.DARK_MAGIC_IS_GROWING"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_CANT_STOP_US"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage117Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_GREW_UP"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_ASS_KICKED"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage11Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.PROTECT_MY_SOLDIERS_WITH_LIGHT_SHIELD"
+   },
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.PIERCE_ALL_ENEMIES_WITH_ARROWS_OF_HURRICANE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THEY_BECAME_ALLIES_HARD_FIGHT_AHEAD"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage120Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FIRE_THE_ARROW_OF_DEATH"
+   },
+   {
+    "play_index": 5,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BONE_FLECHER_RIDES_ON_A_GOLDEN_DRAGON"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage123Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SACRIFICE_FOR_MY_ALTAR"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WITCHCRAFT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage126Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ENJOY_MY_BATTLE_ROYALE"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SHOW_YOURSELF_SHADOW_FIEND"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage129Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SKELETON_LEGIONS_CRUSH_THEM"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SKELETONS_ARE_GETTING_STRONGER"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage132Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_SUMMON_DEATH"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.UNDEAD_LEGIONS_ALWAYS_OBSTRUCTS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage134Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.BLOOD_QUICK"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.MAGIC_AND_SWORD_ARE_MY_PRESENTS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage137Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SHADOW_POWER_BRINGS_YOU_TO_GHOSTS"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.LETS_WORK_TOGETHER"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage140Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ENJOY_RAIN_OF_ARROWS"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_2.png",
+    "name_key": "Unit.hero.alias.002",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.TIT_FOR_TAT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage143Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_CURE_EVERYTHING"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BREAK_HIS_HOLY_LIGHT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage146Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.THE_POWER_OF_GOD_CORROSION_ELIMINATES_ALL"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WHAT_A_POWERFUL_MAGIC"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage149Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MY_ARROW_IS_BURNING"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_ARROW_CAN_NEVER_PIERCE_MY_ARMOR"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage152Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_SMASH_EARTH_WITH_GIANT_ANCHOR"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.I_DESTORY_YOU"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage154Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MY_SHEEL_STOPS_EVERYONE"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.MAGIC_IS_WHAT_WE_CAN_ONLY_DEPEND_ON"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage157Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.IM_TINY_NOT_TINY"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_CANT_SACRE_ME_WITH_SIZE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage15Wave3": {
+  "content": [
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SKELETON_LEGIONS_COMES_AGAIN"
+   },
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SKELETONS_ARE_UNDEAD_HAHA"
+   },
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WATCH_OUT_THEYRE_GETTING_STRONGER"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage160Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.WANT_TO_BE_TEARED"
+   },
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.HE_GOES_INTO_RAMPAGE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage162Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.LIKE_MY_WHIP"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.MALICIOUS_WOMAN"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage167Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.YOURE_NOTHING_TO_A_WARRIOR_WHO_CAN_EVEN_DESTROY_THE_FOUNTAIN_OF_LIFE"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.IN_ACCOMPANY_WITH_TINY_URSA_IS_EVEN_MORE_ARROGANT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage170Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.REPRESENTS_THE_MOON_I_DESTROY_YOU"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.IN_FACE_OF_MOON_RIDER_NO_ONE_IS_SAFE_ATTENTION_BACK_ROW"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage174Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FULL_AHEAD_NIGHT_ELFS"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.KILL_THEM_ALL"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage176Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.TASTE_THIS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage179Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.NEW_CORPSES_COME_TO_MY_CAVE_HUH"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage181Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_CAME_FROM_DARKNESS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage184Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.GOBLINS_AND_SPIRITS_ALSO_HAVE_A_SHARE_OF_THIS_CAVE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage187Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.TAKE_A_HEAVY_SLEEP"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage18Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SPELL_SUMMONS_THE_POWER_OF_DEATH"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THE_MANA_IS_SO_STRONG"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.ONLY_A_HERO_WITH_STRONG_MIND_TO_RESIST_MANA_CAN_FACE_SUCH_A_CHALLENGE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage190Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.OX_HEAD_IS_THE_GLORY_OF_THE_HORDE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage194Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.TRY_THIS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage197Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FRESH_MEAT_COMES"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage1Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.YOU_SMALL_BUGS_DARE_TO_CHALLENGE_THE_SCOURGE_TRY_MY_FLY_BALL_FIRST"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WE_CAN_ONLY_CONTINUE_THE_JOURNEY_AFTER_DEFEATING_SKELETON_KING"
+   },
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.AHEAD_THE_SCOURGE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage200Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.WELL_SEE_WHO_THE_KING_OF_INDIVIDUAL_CHALLENGES_IS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage203Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_BRING_EVERYTHING_INTO_TOMB_IN_DARKNESS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage206Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.GOBLINS_ARE_ALMIGHTY"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage209Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ANYONE_DARE_TO_CROSS_MY_GULLIES"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage20Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.JUNGLE_BRINGS_THE_CURE_OF_IMMORTALITY"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.DONT_BE_CHARMED"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage212Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.COUNTER_EVERY_INVASION"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage214Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SUMMON_POWER_OF_LUNAR_THE_MOON_GOD"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage216Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.REMOTE_KILL"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage218Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FIRE_IT_UP"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage221Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.YOUR_EARPHONE_WILL_BREAK_AFTER_MY_PRESENCE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage224Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.COME_LIGHTNING"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage226Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.YOU_HEARD_ABOUT_MEDUSA"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage229Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FLAME_BOMB_BURSTS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage231Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ARROW_BRINGS_THE_SMELL_OF_DEATH"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage234Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.AIR_OR_LAND_I_TAKE_THEM_ALL"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage23Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_COME_WITH_WAVE_AND_I_SLAVE_TIDES"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WHAT_A_HARD_STUFF"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage27Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.WE_SNIPERS_ELIMINATE_TARGETS"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WATCH_OUT_HE_SNIPES_WOUNDED_ONLY"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage2Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SKELETONS_WERE_GIVEN_THE_POWER_OF_MAGIC_AND_WAITING_FOR_YOU_TO_STEP_INTO_TRAPS"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.ILL_BURN_YOU_INTO_ASHES_WITH_THE_POWER_OF_THE_FLAME"
+   },
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FRESH_BLOOD_HAHA"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage30Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ONLY_THE_SORCERESS_WHO_MASTERS_FLAME_CAN_POSSESS_THE_POWER_TO_BREAK_DRAGONS"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_3.png",
+    "name_key": "Unit.hero.alias.003",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.LETS_FIGHT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage33Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.REPRESENTS_THE_HELL_I_SUMMON_RAY_STORM"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SPREAD_OUT_AND_DODGE_PLASMA_FIELD"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage36Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.YOU_DARE_TO_STEP_INTO_THE_LAND_OF_THE_ICE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SNOWSTORM_COMING"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage39Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SHADOW_POWER_HELPS_MY_ALLIES_AND_DESTROYS_MY_ENEMIES"
+   },
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THESE_GUYS_ARE_TURNING_STRONGER_UNDER_THE_PROTECTION_OF_SHADOW_PRIESTS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage3Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SURPRIZE_YOU_MAKE_SO_FAR_TRY_MY_ARROW_OF_SKELETONS"
+   },
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.MY_ARROW_IS_FASTER"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage42Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.WHO_DARE_TO_MAKE_TROUBLE_ON_MY_BOAT"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_MERELY_A_GHOST_MANIPULATOR_CAN_BE_THE_KING_OF_OCEANS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage45Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MY_ANCHOR_CRUSHES_COAST"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.KNOCK_OUT_BY_MEDUSA_CAN_BE_A_BIG_TROUBLE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage48Wave3": {
+  "content": [
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.RYLAI_CRESTFALL_AND_NAGA_NOW_ARE_ALLIES"
+   },
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ENJOY_SNOWSTORM_IN_DREAM"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage4Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.DARE_TO_STEP_IN_TO_MY_MANOR_YOU_MUST_SEEKING_DEATH"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.ANOTHER_BATTLE_AHEAD"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage51Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ANYONE_DARE_TO_CROSS_ME_AND_MY_SHIELD"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THEYRE_OVERWHELMING_IN_NUMBERS_CHALLENGE_AHEAD"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage53Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.TIDES_AND_WAVES_CANNOT_BE_DEFEATED_THEYLL_COME_BACK"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SIREN_IS_GANG_UP_WITH_UNDEAD_AGAIN_FINISH_THEM"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage55Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.PETRIFACTION_COMES_TO_THOSE_WHO_DARE_TO_STARE_AT_ME"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_NAGA"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage58Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.CROSSING_SEA_WONT_SAVE_YOU_WE_NAGA_DOMINATE_COAST_AS_WE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.REALLY_PERSISTENT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage5Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.WITH_THE_POWER_OF_THE_GODS_I_ZEUS_EXTERMINATE_THOSE_WHO_DARE_TO_OFFEND_MY_MAJESTY"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BE_AWARE_OF_HIS_THUNDER"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage60Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SEABEACH_IS_WHERE_YOUR_TOMB_LIES"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.IN_WATER_OR_ON_LAND_IM_NOT_AFRAID_OF_YOU"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage63Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SONG_IN_THE_FOREST_IS_PRELUDE_OF_ARROW_RAIN"
+   },
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_CAN_RUN_AWAY_BUT_YOU_CANT_HIDE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage66Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.DARK_SOULS_AND_POWER_OF_THUNDER_COME"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THE_DARK_LEGIONS_IS_ASSEMBLING_TIME_TO_FIGHT"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage69Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.THE_ARROW_OF_HURRICANE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.IT_SEEMS_HER_ARCHERY_WAS_IMPORVED_AGAIN"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage6Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_RULES_THIS_INVIOLABLE_JUNGLE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.REALLY_A_PERSISTENT_FELLOW"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage71Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.FULL_AHEAD_THE_SCOURGE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.DANGER"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage74Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_BRING_TIDES"
+   },
+   {
+    "play_index": 4,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WHAT_A_HARD_STUFF"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage76Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.RISE_THE_POWER_OF_THE_FLAME"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.LINA_IS_GETTING_STRONGER_UNDER_THE_PROTECTION_OF_SPELL_BREAKER_FOOTMEN"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage79Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.REAP_HEADS_EVEN_THOUSANDS_MILES_AWAY"
+   },
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ENJOY_DEATH_HAHA"
+   },
+   {
+    "play_index": 5,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.STANDING_BEHIND_IS_NO_LONGER_SAFE"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage7Wave3": {
+  "content": [
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.ZEUS_COMES_AGAIN"
+   },
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.LAST_TIME_YOU_WON_BUT_NOT_THIS_TIME"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.HE_IS_EVEN_MORE_FEROCIOUS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage82Wave3": {
+  "content": [
+   {
+    "monster_index": 5,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SIGN_A_CONTRACT_WITH_DEATH_AND_YOUR_IMMORTALITY_IS_GUARANTEED"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.DARKNESS_WILL_BE_EXILED_ANYWAY"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage85Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.SUCK_BLOOD_SKELETON"
+   },
+   {
+    "play_index": 3,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.I_CURSH_YOUR_BONES"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage88Wave3": {
+  "content": [
+   {
+    "monster_index": 4,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.ENJOY_MY_WHIP"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.A_HORRIBLE_ENCHANTRESS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage91Wave3": {
+  "content": [
+   {
+    "monster_index": 3,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.HERE_COMES_THE_POWER_OF_THE_GODS_AGAIN"
+   },
+   {
+    "play_index": 2,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.EVEN_GOLD_CANT_ACT_CAPRICIOUSLY"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage94Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_WATCH_YOU_BACK_KILLING_TIME"
+   },
+   {
+    "play_index": 5,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WELL_PIERCE_YOUR_SHELL"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage95Wave3": {
+  "content": [
+   {
+    "monster_index": 2,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.MISSILE_AND_LASER_FIRE"
+   },
+   {
+    "play_index": 5,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BE_AWARE_OF_CUNNING_GOBLINS"
+   }
+  ],
+  "show_once": true
+ },
+ "Stage98Wave3": {
+  "content": [
+   {
+    "monster_index": 1,
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.I_DESTROYED_THE_FOUNTAIN_OF_LIFE"
+   },
+   {
+    "play_index": 1,
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WHAT_A_HARD_CLAW"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect114": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.NO_ONE_CAN_STOP_US"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect134": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WITHOUT_ANNIHILATING_THE_SCOURGE_WE_CAN_NEVER_HAVE_PEACE"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect154": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THE_SCOURGE_HAS_WITHDRAWN_FINALLY_MAY_PEACE_NOT_TOO_SHORT"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect174": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WALKED_THROUGH_THE_DANGEROUS_DARK_FOREST_FINALLY"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect18": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WELL_DOWN_HEROES_KEEP_MOVING"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect194": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WE_ALREADY_OUT_OF_THE_CAVE_ORC_CANT_STOP_US_EITHER"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect20": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.THE_DAUGHTER_OF_FOREST_WILL_JOIN_US_GO_CLAIM_HER_SOUL_STONE_FROM_QUEST_AND_SUMMON_HER"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_3.png",
+    "name_key": "Unit.hero.alias.003",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.SHUFFLE_A_BRONZE_CHEST_FOR_FREE_IF_YOU_DONT_GET_ENOUGH_SOUL_STONE_BY_FINISHING_QUESTS"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect214": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WALKED_THROUGH_DARK_RUINS_AND_LIGHT_IS_AHEAD"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect234": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.A_TEMPLE_FULL_OF_THE_FLAVOR_OF_MAGIC_ADVENTURES_MUST_AHEAD"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect39": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.TOGETHER_WE_WALK_FURTHER_STRONGER_ENEMIES_AHEAD"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect4": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WELL_DOWN_I_WILL_GAIN_NEW_ABILITY_WHEN_ALL_GEARS_FOR_MY_ADVANCE_ARE_COLLECTED"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_2.png",
+    "name_key": "Unit.hero.alias.002",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.NOW_SUIT_UP_GEARS_FOR_THE_CAPTAIN_AND_ADVANCE"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect55": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.FINALLY_FINISHED_THE_DANGEROUS_SEA_OF_DARKNESS"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect7": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.ZEUS_HAVE_PROVEN_HIS_LOYALTY_CLAIM_HIS_SOUL_STONE_FROM_QUESTS_AND_SUMMON_HIM"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_3.png",
+    "name_key": "Unit.hero.alias.003",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.CLAIM_SOUL_STONE_OF_ZEUS_FROM_QUESTS_AND_SUMMON_HIM_IN_HEROES_TAB"
+   }
+  ],
+  "show_once": true
+ },
+ "WinBackToSelect74": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.EVIL_WILL_COME_TO_AN_END"
+   }
+  ],
+  "show_once": true
+ },
+ "_5v5CM": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_12.png",
+    "name_key": "Unit.hero.alias.012",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.WATCH_MY_SNOWSTORM"
+   }
+  ],
+  "show_once": false
+ },
+ "_5v5Coco": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.FIRE"
+   }
+  ],
+  "show_once": false
+ },
+ "_5v5ES": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_30.png",
+    "name_key": "Unit.hero.alias.030",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.YOU_DIED_MAN"
+   }
+  ],
+  "show_once": false
+ },
+ "_5v5Ending": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.EH_WHERE_ARE_MY_BUDDIES"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_25.png",
+    "name_key": "Unit.hero.alias.025",
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.THE_PRAETORIAN_LEGION_CRUMBLES_WITH_A_BANG"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.STUPID_TEAMMATES"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.TODAY_ILL_WITHDRAW_BUT_ILL_BE_BACK_TOMORROW"
+   }
+  ],
+  "show_once": false
+ },
+ "_5v5Opening": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_1.png",
+    "name_key": "Unit.hero.alias.001",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.BROTHERS_LETS_RUSH_TO_THE_HIGHLAND_AND_OVERTURN_THE_FROZEN_THRONE"
+   },
+   {
+    "icon": "UI/portrait/dialogue_portrait_25.png",
+    "name_key": "Unit.hero.alias.025",
+    "position": "right",
+    "text_key": "STORYTABLECONFIG.YOU_UNDERESTIMATED_THE_SCOURGE_AND_YOU_WIPED"
+   }
+  ],
+  "show_once": false
+ },
+ "_5v5Sniper": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_10.png",
+    "name_key": "Unit.hero.alias.010",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.ILL_STEAL"
+   }
+  ],
+  "show_once": false
+ },
+ "_5v5Zeus": {
+  "content": [
+   {
+    "icon": "UI/portrait/dialogue_portrait_4.png",
+    "name_key": "Unit.hero.alias.004",
+    "position": "left",
+    "text_key": "STORYTABLECONFIG.I_ALSO_WANT_TO_STEAL"
+   }
+  ],
+  "show_once": false
+ }
+}
