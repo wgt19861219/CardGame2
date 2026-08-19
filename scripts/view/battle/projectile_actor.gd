@@ -36,9 +36,14 @@ func setup(proj: Variant) -> void:
 		# .cha 投射物（FCA 动画）：BattleEffect.create 剥后缀 + 查 effect/ 子目录（路径回退已修）。
 		_fca_effect = BattleEffect.create(art)
 		if _fca_effect != null:
-			_fca_effect.play("Loop", true)  # 飞行期间循环播放
+			_fca_effect.play("Loop", true)  # 飞行期间循环播放（源 setStartAction/setLoopAction("Loop")，无 Loop 资源兜底首个）
 			var n: Node2D = _fca_effect.get_node()
 			add_child(n)
+			# 大位移资源内容居中（2026-08-19）：幽灵船等 .cha 投射物帧 tx/ty ±5000 原始，
+			# 内容中心偏节点原点缩后 500px+（投射物锚点在船外）→ 直接飞出屏幕"看不到"。
+			# 把内容中心平移回投射物锚点（小位移资源近似无操作）。
+			if n.has_method("center_content"):
+				n.call("center_content")
 	update_view(0.0)
 
 

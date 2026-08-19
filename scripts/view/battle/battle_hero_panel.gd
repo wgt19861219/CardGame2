@@ -48,6 +48,8 @@ var _state: String = STATE_NONE
 var _ticks: int = -1
 var _skill_ready_timer: float = 0.0
 var _skill_ready_effect: Variant = null
+var _skill_ready_eff: Variant = null   # _skill_ready_effect 的 BattleEffect 包装（切速 set_speed 用）
+var _skill_cast_eff: Variant = null    # cast 光圈包装引用（防 RefCounted 析构秒删，见 _play_skill_cast_effect）
 
 
 # 动态 portrait/hp_bar/mp_bar 挂 %Host（位置在 .tscn，子组件局部坐标系不变）。
@@ -88,15 +90,9 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	frame_btn.disabled = true
 
 
-# 每帧驱动 hp_bar/mp_bar 的 update（percent 刷新 + 血量动画 + visible）。
-# BattleFloatingBar 无自驱 _process，需外部调 update（源 actor update 链路调 bar.update）。
-func _process(delta: float) -> void:
-	if hp_bar != null:
-		hp_bar.update(delta)
-	if mp_bar != null:
-		mp_bar.update(delta)
-
-
+# hp_bar/mp_bar 的 update 由 ui_list 链路驱动（scene._advance_ui_list 加速 dt → update 末尾），
+# 不写 _process：Godot 原始 delta 不含战斗加速倍率，双驱动会稀释倍率
+# （2x 下每帧推进 INC*(delta+2delta)=3 份 vs 1x 的 2 份，观感仅 1.5x，2026-08-19 修）。
 func _start_redmask_flicker() -> void:
 	if redmask == null:
 		return
@@ -147,31 +143,69 @@ func update(dt: float) -> void:
 	mp_bar.update(dt)
 
 
+# 光圈挂载点：frame_btn（源 hero_panel.lua:157/172 self.btn:addChild）。定位按各 FCA 帧内容
+# 中心实测校准（headless 逐帧观察 2026-08-19）：内容中心相对节点原点系统性偏上——ready/
+# switch/trigger 光圈 Loop 期 (5.4,-17.1)、cast 全程 (-3.1,-33.9)。定位 = frame 贴图中心
+# (53,53) − 内容中心，使内容中心与按钮中心重合（源 ccp(36,31) 系对源 C++ FCA 原点的补偿，
+# 本项目 FCA 内容中心≈原点系实测，直译源数值不等效）。
+const GLOW_POS: Vector2 = Vector2(47.6, 70.1)       # ready/switch/trigger（Loop 期校准，Start 期 0.63s 过渡偏差 ~14px 可接受）
+const GLOW_CAST_POS: Vector2 = Vector2(56.1, 86.9)  # cast 施法光圈（内容中心 -3.1,-33.9）
+
 func _play_skill_ready(state: String) -> void:
 	_skill_ready_timer = 0.0
 	if state == STATE_NONE:
+		# 源 update newState==nil 分支调 disable_cast 清 ready 光圈（本项目漏译致放完大招紫圈残留）
+		_clear_skill_glow()
 		return
 	if state == STATE_CAST:
 		AudioPlayer.play_sfx("battle_fury_full")
-	if _skill_ready_effect != null and is_instance_valid(_skill_ready_effect):
-		_skill_ready_effect.queue_free()
+	_clear_skill_glow()
 	var res: String = FCA_READY if state == STATE_CAST else (FCA_TRIGGER if state == STATE_TRIGGER else FCA_SWITCH)
 	var eff: Variant = BattleEffect.create(res)
 	if eff != null:
 		eff.play()
+		_apply_scene_speed(eff)
+		_skill_ready_eff = eff
 		_skill_ready_effect = eff.get_node()
-		add_child(_skill_ready_effect)
+		frame_btn.add_child(_skill_ready_effect)
+		_skill_ready_effect.position = GLOW_POS
+
+
+# FCA 光圈特效跟随战斗加速（scene 切速经 apply_speed 同步 _skill_ready_effect；cast 短效创建时即时补偿）。
+func _apply_scene_speed(eff: Variant) -> void:
+	if scene != null and scene.has_method("current_speed"):
+		eff.set_speed(float(scene.call("current_speed")))
+
+
+func apply_speed(spd: float) -> void:
+	if _skill_ready_eff != null and _skill_ready_eff.has_method("set_speed"):
+		_skill_ready_eff.set_speed(spd)
 
 
 func _play_skill_cast_effect() -> void:
+	_clear_skill_glow()   # 源 play_skill_cast_effect 开头 disable_cast（清 ready 光圈）
 	var eff: Variant = BattleEffect.create(FCA_CAST)
 	if eff != null:
 		eff.play()
+		_apply_scene_speed(eff)
+		_skill_cast_eff = eff   # 持引用：BattleEffect 是 RefCounted，局部引用归零即 PREDELETE 秒删节点（曾致 cast 光圈从未显示）
 		var n: Node2D = eff.get_node()
-		add_child(n)
-		# cast 特效不持久，1s 后清（hero_panel 不在 effect_list，手动回收）
+		frame_btn.add_child(n)
+		n.position = GLOW_CAST_POS
+		# cast 特效不持久，1s 后清（hero_panel 不在 effect_list，手动回收节点+释放包装引用）
 		if is_inside_tree():
-			get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(n): n.queue_free())
+			get_tree().create_timer(1.0).timeout.connect(func():
+				if is_instance_valid(n):
+					n.queue_free()
+				_skill_cast_eff = null)
+
+
+# 源 disable_cast（hero_panel.lua:178-187）：清 ready 光圈节点与包装引用。
+func _clear_skill_glow() -> void:
+	if _skill_ready_effect != null and is_instance_valid(_skill_ready_effect):
+		_skill_ready_effect.queue_free()
+	_skill_ready_effect = null
+	_skill_ready_eff = null
 
 
 func _set_portrait_gray() -> void:

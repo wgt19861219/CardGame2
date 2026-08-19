@@ -32,9 +32,11 @@ offset_top = 2.0
 offset_right = 102.0
 offset_bottom = 102.0
 
+; Redmask 定位 frame 贴图中心 (53,53)（源 hero_panel.lua:73 setPosition(anchorPointInPoints)）。
 [node name="Redmask" type="Sprite2D" parent="PortraitZone/PortraitHost/FrameBtn"]
 unique_name_in_owner = true
 visible = false
+position = Vector2(53, 53)
 texture = ExtResource("2_redmask")
 
 [node name="Container" type="Sprite2D" parent="PortraitZone/PortraitHost"]
