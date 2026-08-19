@@ -103,3 +103,12 @@ func test_mp_float_accumulation_reaches_cap() -> void:
 	for i in range(2000):
 		u.set_mp(u.mp + 0.6)
 	assert_eq(u.mp, mp_max, "0.6/次累积 2000 次必达上限（不卡 999.6）")
+
+
+# 2026-08-18 三轮：能量条满格超框——hero_panel 误用 FloatingBar 小条（bg 89 < mp_mana 104），
+# 源 hero_panel.lua:15-16 两条均 HpBar 大条。守卫：HpBar 系全部 fg 宽 ≤ bg 宽（满格不超框）。
+func test_hero_panel_bar_textures_fit() -> void:
+	var bg: Texture2D = load("res://assets/ui/alpha/HVGA/hp_gray.png")
+	for fg_name in ["hp_green.png", "hp_red.png", "mp_mana.png", "mp_energy.png", "mp_rage.png"]:
+		var fg: Texture2D = load("res://assets/ui/alpha/HVGA/" + fg_name)
+		assert_lte(fg.get_size().x, bg.get_size().x, fg_name + " 宽 ≤ HpBar bg（满格不超框）")

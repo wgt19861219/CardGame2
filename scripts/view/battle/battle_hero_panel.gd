@@ -40,8 +40,8 @@ var unit: Variant = null
 var cm: Variant = null
 var scene: Variant = null
 var portrait: ReadheroIcon = null
-var hp_bar: BattleFloatingBar = null
-var mp_bar: BattleFloatingBar = null
+var hp_bar: BattleHpBar = null
+var mp_bar: BattleHpBar = null
 var frame_btn: TextureButton = null
 var redmask: Sprite2D = null
 var _state: String = STATE_NONE
@@ -70,12 +70,14 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	portrait.setup({"id": int(unit.tid), "stars": int(unit.stars), "isHideFrame": true}, cm)
 	portrait_host.add_child(portrait)
 	portrait_host.move_child(portrait, 0)   # 让 portrait 在 FrameBtn 之下（视觉等价源 add 顺序）
-	hp_bar = BattleFloatingBar.create(unit, "HP")
+	# 源 hero_panel.lua:15-16 两条均 HpBar 大条（bg 119px）——旧版误用 FloatingBar 小条
+	# （bg 89px < mp_mana.png 104px 满格超框"变长"，2026-08-18 修）。
+	hp_bar = BattleHpBar.create(unit, "HP")
 	hp_bar.auto_hide = false
 	hp_bar_host.add_child(hp_bar)
 	hp_bar.position = Vector2(52.0, 6.5)   # bg centered=true，条中心对齐 Zone(104×13) 中心
-	var mp_type: String = str(unit.info.get("MP Type", "MP"))
-	mp_bar = BattleFloatingBar.create(unit, mp_type)
+	var mp_type: String = str(unit.info.get("MP Type", "Mana"))
+	mp_bar = BattleHpBar.create(unit, mp_type)
 	mp_bar.auto_hide = false
 	mp_bar_host.add_child(mp_bar)
 	mp_bar.position = Vector2(52.0, 6.5)   # 同 HP，条中心对齐 Zone 中心

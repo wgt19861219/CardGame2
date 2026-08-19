@@ -287,7 +287,9 @@ func play_ult(_target_pos: Vector2) -> void:
 	if _dead or not _using_fca:
 		return
 	_stop_walk_immediately()
-	if not _is_in_attack_action():
+	# 只防 ult 重复触发；atk 播放中必须打断切 ult（源 setAction 无条件切换——
+	# 旧守卫挡掉 atk 中的 ult 致"技能已放动画不播"不同步，2026-08-18 修）。
+	if _fca.get_current_action() != "ult":
 		_fca.play("ult", false)
 		_fca.set_next_action("Idle")
 
