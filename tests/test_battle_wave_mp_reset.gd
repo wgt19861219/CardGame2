@@ -112,3 +112,25 @@ func test_hero_panel_bar_textures_fit() -> void:
 	for fg_name in ["hp_green.png", "hp_red.png", "mp_mana.png", "mp_energy.png", "mp_rage.png"]:
 		var fg: Texture2D = load("res://assets/ui/alpha/HVGA/" + fg_name)
 		assert_lte(fg.get_size().x, bg.get_size().x, fg_name + " 宽 ≤ HpBar bg（满格不超框）")
+
+
+# 源 hp_bar.lua :61/68/71 fg/mid anchorPoint(0,0)+ccp(6,1)——从 bg 左下内缩。
+# 守卫：fg 左上 = bg 左上 + OFFSET(6,1)（旧版直译 OFFSET 致 fg 从 bg 中心起画整条右偏半宽）。
+func test_hp_bar_foreground_aligned_to_bg_left() -> void:
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var eng := BattleEngine.new()
+	eng.rng = BattleRng.new(1)
+	var u := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": true}, cm, eng, {}, null)
+	var bar: BattleHpBar = BattleHpBar.create(u, "Mana")
+	add_child_autofree(bar)
+	var bg: Sprite2D = bar.get("_background") as Sprite2D
+	var fg: Sprite2D = bar.get("_foreground") as Sprite2D
+	if bg == null or fg == null or bg.texture == null or fg.texture == null:
+		fail_test("bar 节点/贴图缺失")
+		return
+	var bg_size: Vector2 = bg.texture.get_size()
+	var expect_left: float = -bg_size.x * 0.5 + 6.0   # bg centered=true 原点=中心 → 左上=-half+OFFSET
+	assert_almost_eq(fg.position.x, expect_left, 0.1, "fg 左上 x = bg 左缘+6（非中心起画）")
+	assert_almost_eq(fg.position.y, -bg_size.y * 0.5 + 1.0, 0.1, "fg 左上 y = bg 上缘+1")
+	assert_lte(fg.position.x + fg.texture.get_size().x, bg_size.x * 0.5, "fg 满格右缘 ≤ bg 右缘")

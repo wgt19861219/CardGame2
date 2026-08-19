@@ -47,20 +47,24 @@ func _setup(unit: Variant, bar_type: String, color: String) -> void:
 	_background = _load_sprite("hp_gray.png")
 	if _background:
 		add_child(_background)
-		# midlayer/foreground/mask 是 background 子（源 :61/68/71）
+		# 源 :61/68/71 fg/mid anchorPoint(0,0)+ccp(6,1)——ed.createSprite 默认锚点左下，
+		# 即从 bg 左下角内缩 (6,1)。Godot bg centered=true 原点=中心 → 左上对齐需 -bg_half
+		# 再加内缩（y-up/y-down 的 1px 差忽略；mask 源 pos(0,0) 仅 -bg_half）。
+		var bg_half: Vector2 = _background.texture.get_size() * 0.5 if _background.texture != null else Vector2.ZERO
 		_midlayer = _load_sprite("hp_yellow.png")
 		if _midlayer:
 			_midlayer.centered = false
-			_midlayer.position = OFFSET
+			_midlayer.position = -bg_half + OFFSET
 			_background.add_child(_midlayer)
 		_foreground = _load_sprite(_resolve_fg_res(bar_type, unit, color))
 		if _foreground:
 			_foreground.centered = false
-			_foreground.position = OFFSET
+			_foreground.position = -bg_half + OFFSET
 			_background.add_child(_foreground)
 		_mask = _load_sprite("hp_red_mask.png" if bar_type == "HP" else "mp_mana_mask.png")
 		if _mask:
 			_mask.centered = false
+			_mask.position = -bg_half
 			_mask.visible = false
 			_background.add_child(_mask)
 	# 初始 percent + scale（源 :51-58）
