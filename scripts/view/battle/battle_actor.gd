@@ -15,6 +15,8 @@ const BOSS_BAR_POS: Vector2 = Vector2(435.0, 134.0)  # 原 to_godot(355,426)=(35
 const BAR_Z: int = 999
 const MANUALLY_CAST_SCALE: float = 1.35
 const GRAVITY: float = -1800.0
+# 源动画 2 倍速基数（unit.lua:1768 puppet:update(dt*2)，C++ elapsed+=dt*speeder 实证）。
+const ANIM_RATE_2X: float = 2.0
 const NEXT_BATTLE_WALK_SPEEDER: float = 1.75
 const ENTER_WALK_SPEEDER: float = 1.75   # 入场走路加速（复用切波系数）
 const ENTER_ARRIVE_THRESHOLD: float = 5.0  # 入场到位判定阈值（logic 单位）
@@ -82,13 +84,16 @@ func update_view(dt: float) -> void:
 		_enter_arrive_dir = 0
 		scale = Vector2(dir_for_scale * rt_scale, rt_scale)
 		if puppet != null:
-			# 动画推进速率 = Logic 实际推进倍率（dt_action/tick = 战斗速度×攻速 speeder）——
-			# 只用 speeder 会漏战斗加速（2x 下 Logic 快 2 倍、FCA 真实帧速 1 倍 → 特效先出动作后动）。
-			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) 					else float(model.dt_action) / BattleEngine.TICK_INTERVAL
-			# 施法中慢放对齐（源 setActionElapsed 等效）：动作速度 ×= 自然时长/phase 时长。
-			var cs: Variant = model.current_skill
-			if cs != null and bool(cs.get("casting")) and puppet.has_method("cast_rate_for"):
-				spd *= puppet.call("cast_rate_for", float(cs.current_phase.get("duration", 0.0)))
+			# 动画推进速率 = 2 × Logic 实际推进倍率（源 unit.lua:1768 puppet:update(dt*2) + C++
+			# elapsed += dt*speeder——源动画固有 2 倍速基数，Logic 层却按 1× duration 计时：
+			# 源里动作快速播完/Attack 事件帧时动作进度已是 2×。漏 2× 基数则动作慢于源一半，
+			# 投射物发射时人物还在动作前半程（"大招投射物播完了人还在放技能"根因，2026-08-19）。
+			# 攻速 speeder 与战斗加速均含于 dt_action（db6ca40 口径）。
+			# ⚠️ 不做每 tick set_action_elapsed 锚定：源 gotoEventIdx 仅 Attack 事件时刻偶发校正，
+			# 且"动作短于 phase"的大招锚定时动作早已 2× 播完（clamp 末帧无效果）——源有效行为
+			# =2× 自由播完+末帧定格（UnitSprite 施法守卫保末帧）。每 tick 锚定会把 elapsed 反复
+			# 拉回 1× phase_elapsed，2× 前进量被锚定吃掉=净速度钳回 1×（五轮实测无效的根因）。
+			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) 					else float(model.dt_action) / BattleEngine.TICK_INTERVAL * ANIM_RATE_2X
 			puppet.set_speed(spd)
 	var logic_pos: Vector2
 	if _offline:
@@ -211,6 +216,12 @@ func add_effect(effect_name: String, zorder: int = 0) -> void:
 	var battle_effect := BattleEffect.create(effect_name)
 	if battle_effect != null:
 		battle_effect.play()
+		# FCA 自驱漏战斗加速（同 scene.play_effect_on_scene 根因）：创建时按 scene 当前倍率补偿。
+		var scene := get_parent()
+		while scene != null and not scene.has_method("current_speed"):
+			scene = scene.get_parent()
+		if scene != null:
+			battle_effect.set_speed(float(scene.call("current_speed")))
 		var node: Node2D = battle_effect.get_node()
 		node.name = effect_name
 		add_child(node)
@@ -224,6 +235,14 @@ func add_effect(effect_name: String, zorder: int = 0) -> void:
 		node.z_index = zorder
 		_effects[effect_name] = node
 		get_tree().create_timer(1.0).timeout.connect(remove_effect.bind(effect_name))
+
+
+# 切速同步：buff 光环特效（_effects，多为 Start→Loop 长驻）跟随新倍率
+# （scene._on_speed_changed 遍历 actor 调此；新建特效在 add_event 内即时补偿）。
+func apply_speed_to_effects(spd: float) -> void:
+	for eff in _effects.values():
+		if eff is BattleEffect:
+			eff.set_speed(spd)
 
 
 func remove_effect(effect_name: String) -> void:
