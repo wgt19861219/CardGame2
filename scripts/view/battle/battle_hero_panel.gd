@@ -75,12 +75,12 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	hp_bar = BattleHpBar.create(unit, "HP")
 	hp_bar.auto_hide = false
 	hp_bar_host.add_child(hp_bar)
-	hp_bar.position = Vector2(52.0, 6.5)   # bg centered=true，条中心对齐 Zone(104×13) 中心
+	hp_bar.position = Vector2(59.5, 8.5)   # bg(119×17) centered=true，中心对齐 Zone(119×17) 中心
 	var mp_type: String = str(unit.info.get("MP Type", "Mana"))
 	mp_bar = BattleHpBar.create(unit, mp_type)
 	mp_bar.auto_hide = false
 	mp_bar_host.add_child(mp_bar)
-	mp_bar.position = Vector2(52.0, 6.5)   # 同 HP，条中心对齐 Zone 中心
+	mp_bar.position = Vector2(59.5, 8.5)   # 同 HP
 	_start_redmask_flicker()
 	frame_btn.disabled = true
 

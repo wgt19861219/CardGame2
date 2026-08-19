@@ -83,6 +83,10 @@ func update_view(dt: float) -> void:
 		scale = Vector2(dir_for_scale * rt_scale, rt_scale)
 		if puppet != null:
 			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) else float(model.speeder)
+			# 施法中慢放对齐（源 setActionElapsed 等效）：动作速度 ×= 自然时长/phase 时长。
+			var cs: Variant = model.current_skill
+			if cs != null and bool(cs.get("casting")) and puppet.has_method("cast_rate_for"):
+				spd *= puppet.call("cast_rate_for", float(cs.current_phase.get("duration", 0.0)))
 			puppet.set_speed(spd)
 	var logic_pos: Vector2
 	if _offline:

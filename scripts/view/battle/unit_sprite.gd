@@ -148,6 +148,18 @@ func is_walking() -> bool:
 	return _is_walking_to_target or _is_walking_directional
 
 
+## 施法慢放对齐率（源 skill.lua:242 setActionElapsed 进度驱动的等效实现）：
+## FCA 动画自然时长 < 技能 phase 时长时按比例慢放，动作与技能相位同步结束
+## （自由播放 0.3s 播完回 Idle 而 phase 2.1s 仍在施法 = 大招动画不同步，2026-08-18）。
+func cast_rate_for(phase_duration: float) -> float:
+	if _fca == null or phase_duration <= 0.0:
+		return 1.0
+	var natural: float = _fca.get_action_duration(_fca.get_current_action())
+	if natural <= 0.0 or natural >= phase_duration:
+		return 1.0
+	return natural / phase_duration
+
+
 func set_speed(s: float) -> void:
 	_current_speed = s
 	if _using_fca and _fca:

@@ -42,9 +42,9 @@ position = Vector2(52, 52)
 z_index = -2
 texture = ExtResource("1_bucket")
 
-; HP 条区：104×13（mp 贴图宽 104 统一，HP bg 89 宽居中）。
+; HP 条区：119×17 容纳 HpBar 大条 bg hp_gray（源 hero_panel.lua:15 两条均 HpBar，2026-08-18）。
 [node name="HpBarZone" type="Control" parent="."]
-custom_minimum_size = Vector2(104, 13)
+custom_minimum_size = Vector2(119, 17)
 layout_mode = 2
 mouse_filter = 2
 
@@ -55,9 +55,9 @@ offset_left = 0.0
 offset_top = 0.0
 mouse_filter = 2
 
-; MP 条区：104×13。
+; MP 条区：119×17。
 [node name="MpBarZone" type="Control" parent="."]
-custom_minimum_size = Vector2(104, 13)
+custom_minimum_size = Vector2(119, 17)
 layout_mode = 2
 mouse_filter = 2
 
