@@ -26,6 +26,9 @@ const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
 const WIN_TAG_POS: Vector2 = Vector2(378.0, 410.0)
 const WIN_TAG_TEX: String = "stagedone_win_tag.png"
 const WIN_TAG_LIGHT_TEX: String = "stagedone_win_tag_light.png"
+const STAR_SFX_KEYS: Array[String] = [
+	"battledown_star_one", "battledown_star_two", "battledown_star_three",
+]
 
 var _s: Control = null    # StageDoneScene（持有方，操作其装配节点）
 var _tweens: Array = []   # 活跃 Tween（skip 时 kill）
@@ -87,12 +90,13 @@ func _play_star() -> void:
 		tw.tween_interval(STAR_DELAY_BASE + STAR_DELAY_STEP * i)
 		tw.tween_property(star, "scale", Vector2.ONE, STAR_SCALE_DUR) \
 			.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-		if i == 0:
-			tw.tween_callback(_play_sfx_star_one)
+		tw.tween_callback(_play_sfx_star.bind(i))
 
 
-func _play_sfx_star_one() -> void:
-	AudioPlayer.play_sfx("battledown_star_one")
+func _play_sfx_star(i: int) -> void:
+	# 第 i 颗星播对应音（源 stagedonelsr.lua:46/50）；clamp 防越界（stars 数据源恒 [1,3]，二审 S-7 双保险）。
+	var idx: int = clampi(i, 0, STAR_SFX_KEYS.size() - 1)
+	AudioPlayer.play_sfx(STAR_SFX_KEYS[idx])
 
 
 func _play_win() -> void:
@@ -185,8 +189,13 @@ func _play_loot() -> void:
 		tw.tween_interval(LOOT_SHOW_GAP * i)
 		if i == n - 1:
 			tw.tween_callback(play_button)
+		tw.tween_callback(_play_sfx_pop_loot)
 		tw.tween_property(icon, "scale", Vector2.ONE, FADE_DUR) \
 			.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
+
+func _play_sfx_pop_loot() -> void:
+	AudioPlayer.play_sfx("battledown_pop_loot")
 
 
 func play_button() -> void:
