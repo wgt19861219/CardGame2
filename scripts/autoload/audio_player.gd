@@ -12,9 +12,12 @@ const SoundResScript = preload("res://scripts/data/sound_res.gd")
 const RES_PREFIX: String = "res://assets/"
 const SFX_VOLUME: float = 1.0
 const BGM_VOLUME: float = 1.0
+const SFX_POOL_SIZE: int = 8   # 池大小（源 SimpleAudioEngine 多通道等价；const 免魔法数字）
 
 var am: AudioManager = null
-var sfx_player: AudioStreamPlayer = null
+var _sfx_pool: Array[AudioStreamPlayer] = []
+var _sfx_pool_cursor: int = 0
+var _last_sfx_frame: Dictionary = {}  # rel_path → Engine.get_process_frames()（同帧同名去重，源 sound.lua:30-42）
 var bgm_player: AudioStreamPlayer = null
 var sound_switch: bool = true
 var _sfx_path_cache: Dictionary = {}  # play_sfx_by_path 缓存（rel_path→AudioStream，避重复 load）
@@ -26,9 +29,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	sfx_player = AudioStreamPlayer.new()
-	sfx_player.volume_db = linear_to_db(SFX_VOLUME)
-	add_child(sfx_player)
+	for i in range(SFX_POOL_SIZE):
+		var p := AudioStreamPlayer.new()
+		p.volume_db = linear_to_db(SFX_VOLUME)
+		add_child(p)
+		_sfx_pool.append(p)
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = linear_to_db(BGM_VOLUME)
 	add_child(bgm_player)
@@ -43,36 +48,28 @@ func restore_bgm_volume() -> void:
 	set_bgm_volume(BGM_VOLUME)
 
 
-# 源 sound.lua:46 playEffect(name) — am 查 path → load → play。soundSwitch 关 / 资源缺失 → 跳过。
+# 源 sound.lua:46 playEffect(name) — am 查 path → 池播。soundSwitch 关 / 资源缺失 → 跳过。
+# UI 音通道：不做同帧去重（照源 playEffect 无去重；连点截断由池化缓解——设计文档三-9）。
 func play_sfx(key: String) -> void:
-	if not sound_switch or sfx_player == null:
+	if not sound_switch:
 		return
 	var path: String = am.get_sfx_path(StringName(key))
 	if path.is_empty():
 		return
-	var stream: AudioStream = _load_stream(RES_PREFIX + path)
-	if stream == null:
-		return
-	sfx_player.stream = stream
-	sfx_player.play()
+	_play_pooled(path)
 
 
-# "sound/<NAME>_ULT|_DEATH.mp3"）。与 play_sfx(key) 区别：key 走 SoundRes 注册表，本方法按相对
-# 路径直载（res://assets/<rel_path>）。资源缺失静默跳过（照源文件不存在 + ResourceLoader 守卫）。
-# 缓存 AudioStream 避重复 load（缺失资源缓存 null，只查一次）。
+# "sound/<NAME>_ULT|_DEATH.mp3"）。按相对路径直载（res://assets/<rel_path>）。
+# 资源缺失静默跳过；缓存 AudioStream（缺失缓存 null 只查一次）。
+# 语音/打击音通道：per-name 同帧去重（源 sound.lua:30-42；三-2 受控偏离：镜像对战同帧同名 2→1 次）。
 func play_sfx_by_path(rel_path: String) -> void:
-	if not sound_switch or sfx_player == null or rel_path == "":
+	if not sound_switch or rel_path == "":
 		return
-	var stream: AudioStream = null
-	if _sfx_path_cache.has(rel_path):
-		stream = _sfx_path_cache[rel_path]
-	else:
-		stream = _load_stream(RES_PREFIX + rel_path)
-		_sfx_path_cache[rel_path] = stream
-	if stream == null:
+	var frame: int = Engine.get_process_frames()
+	if int(_last_sfx_frame.get(rel_path, -1)) == frame:
 		return
-	sfx_player.stream = stream
-	sfx_player.play()
+	_last_sfx_frame[rel_path] = frame
+	_play_pooled(rel_path)
 
 
 # BGM 播放（源 ed.music[chapter]）。
@@ -93,3 +90,37 @@ func _load_stream(path: String) -> AudioStream:
 	if not ResourceLoader.exists(path):
 		return null
 	return load(path) as AudioStream
+
+
+# 池轮转播放：游标轮转取 player，覆盖式 set stream + play（快速连音不互截）。
+func _play_pooled(rel_path: String) -> void:
+	if _sfx_pool.is_empty():
+		return
+	var stream: AudioStream = null
+	if _sfx_path_cache.has(rel_path):
+		stream = _sfx_path_cache[rel_path]
+	else:
+		stream = _load_stream(RES_PREFIX + rel_path)
+		_sfx_path_cache[rel_path] = stream
+	if stream == null:
+		return
+	var p: AudioStreamPlayer = _sfx_pool[_sfx_pool_cursor]
+	_sfx_pool_cursor = (_sfx_pool_cursor + 1) % _sfx_pool.size()
+	p.stream = stream
+	p.play()
+
+
+# ---- 测试访问器（headless 断言池状态；GUT 已实证 playing 属性可靠——设计文档五-1） ----
+func get_playing_sfx_count() -> int:
+	var n: int = 0
+	for p in _sfx_pool:
+		if p.playing:
+			n += 1
+	return n
+
+
+func has_playing_sfx_stream(res_path: String) -> bool:
+	for p in _sfx_pool:
+		if p.playing and p.stream != null and p.stream.resource_path == res_path:
+			return true
+	return false

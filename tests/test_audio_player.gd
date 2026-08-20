@@ -42,10 +42,9 @@ func test_common_exp_up_registered() -> void:
 func test_audio_player_play_sfx_no_crash() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
-	player.play_sfx("common_click_feedback")   # 资源在，load + play
-	# P1-GUT-5：强化为验证实际播放（stream 已设 + playing=true），非占位 assert_true(true)
-	assert_not_null(player.sfx_player.stream, "play_sfx 应设置 stream")
-	assert_true(player.sfx_player.playing, "play_sfx 应触发播放")
+	player.play_sfx("common_click_feedback")
+	assert_true(player.has_playing_sfx_stream("res://assets/sound_menu/common_click_feedback.mp3"),
+		"play_sfx 应在池中触发播放")
 	player.queue_free()
 
 
@@ -53,28 +52,24 @@ func test_audio_player_sound_switch_off() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
 	player.sound_switch = false
-	player.play_sfx("common_click_feedback")   # switch 关 → 跳过
-	# P1-GUT-5：强化为验证 switch 关时不播放（stream 未设）
-	assert_null(player.sfx_player.stream, "sound_switch off 不应设置 stream")
+	player.play_sfx("common_click_feedback")
+	assert_eq(player.get_playing_sfx_count(), 0, "sound_switch off 不应播放")
 	player.queue_free()
 
 
 func test_audio_player_play_bgm_no_crash() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
-	player.play_bgm("chapter1")   # battle_bgm.mp3 资源在/不在均守卫
-	# P1-GUT-5：强化为验证 bgm 实际播放（资源存在时 stream 已设）
+	player.play_bgm("chapter1")
 	assert_not_null(player.bgm_player.stream, "play_bgm 应设置 stream（chapter1 资源存在）")
 	player.queue_free()
 
 
-# 源 sound.lua:46 playEffect(name) — play_sfx_by_path 按文件路径播英雄/怪物音效（源 unit.lua:1113/1158）。
 func test_play_sfx_by_path_real_resource() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
-	player.play_sfx_by_path("sound/AM_ULT.mp3")   # 资源存在（assets/sound/AM_ULT.mp3）
-	assert_not_null(player.sfx_player.stream, "真实资源设 stream")
-	assert_true(player.sfx_player.playing, "触发播放")
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	assert_true(player.has_playing_sfx_stream("res://assets/sound/AM_ULT.mp3"), "真实资源播")
 	assert_true(player._sfx_path_cache.has("sound/AM_ULT.mp3"), "缓存已记录")
 	player.queue_free()
 
@@ -82,8 +77,8 @@ func test_play_sfx_by_path_real_resource() -> void:
 func test_play_sfx_by_path_missing_resource() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
-	player.play_sfx_by_path("sound/NOTEXIST_ULT.mp3")   # 资源缺失 → 静默跳过
-	assert_null(player.sfx_player.stream, "缺失资源不设 stream")
+	player.play_sfx_by_path("sound/NOTEXIST_ULT.mp3")
+	assert_eq(player.get_playing_sfx_count(), 0, "缺失资源不播")
 	assert_true(player._sfx_path_cache.has("sound/NOTEXIST_ULT.mp3"), "缺失资源也缓存 null（只查一次）")
 	assert_null(player._sfx_path_cache["sound/NOTEXIST_ULT.mp3"], "缓存值为 null")
 	player.queue_free()
@@ -93,8 +88,8 @@ func test_play_sfx_by_path_sound_off() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
 	player.sound_switch = false
-	player.play_sfx_by_path("sound/AM_ULT.mp3")   # switch 关 → 跳过
-	assert_null(player.sfx_player.stream, "sound_switch off 不设 stream")
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	assert_eq(player.get_playing_sfx_count(), 0, "sound_switch off 不播")
 	assert_false(player._sfx_path_cache.has("sound/AM_ULT.mp3"), "switch off 不缓存")
 	player.queue_free()
 
@@ -102,6 +97,50 @@ func test_play_sfx_by_path_sound_off() -> void:
 func test_play_sfx_by_path_empty_path() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
-	player.play_sfx_by_path("")   # 空路径 → 跳过
-	assert_null(player.sfx_player.stream, "空路径不设 stream")
+	player.play_sfx_by_path("")
+	assert_eq(player.get_playing_sfx_count(), 0, "空路径不播")
+	player.queue_free()
+
+
+# 池轮转：两个不同音效占用池中不同 player 且都 playing（不互截，治单 player 覆盖缺陷）。
+func test_sfx_pool_round_robin_no_truncate() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	player.play_sfx_by_path("sound/ZEUS_ULT.mp3")
+	assert_true(player.has_playing_sfx_stream("res://assets/sound/AM_ULT.mp3"), "第一个音效仍在播")
+	assert_true(player.has_playing_sfx_stream("res://assets/sound/ZEUS_ULT.mp3"), "第二个音效也在播")
+	player.queue_free()
+
+
+# 同帧同名去重（源 sound.lua:30-42 last_played_frame per-name）：同帧同路径只播 1 次。
+func test_sfx_dedupe_same_frame_same_path() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	assert_eq(player.get_playing_sfx_count(), 1, "同帧同名去重为 1 次")
+	player.queue_free()
+
+
+# 同帧不同名不去重（三审 MAJOR-5：全局单帧标记会互杀不同音效，per-name 键不会）。
+func test_sfx_dedupe_same_frame_diff_path_all_play() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	player.play_sfx_by_path("sound/ZEUS_ULT.mp3")
+	assert_eq(player.get_playing_sfx_count(), 2, "同帧不同名都播")
+	player.queue_free()
+
+
+# 跨帧后同路径可再播（await 推进 process frame）。第一次占池[0]仍在播，第二次放行占池[1]，
+# 故 playing 计数为 2（两个池位各自活跃）——这正是"去重只拦同帧"的可观测证据。
+func test_sfx_dedupe_cross_frame_replays() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	assert_eq(player.get_playing_sfx_count(), 1, "第一次播（池[0]）")
+	await get_tree().process_frame
+	player.play_sfx_by_path("sound/AM_ULT.mp3")
+	assert_eq(player.get_playing_sfx_count(), 2, "跨帧后同路径再播（占第二池位，非同帧拦截）")
 	player.queue_free()
