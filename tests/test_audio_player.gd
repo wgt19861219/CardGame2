@@ -14,9 +14,29 @@ func test_sound_res_register_all() -> void:
 
 func test_sound_res_get_music() -> void:
 	assert_eq(SoundRes.get_music("chapter1"), "sound_menu/battle_bgm.mp3", "music chapter1")
-	assert_eq(SoundRes.get_music("map"), "installer/stage_select_bgm.mp3", "music map")
+	assert_eq(SoundRes.get_music("map"), "sound/stage_select_bgm.mp3", "music map（installer 迁移产物 bug 修复）")
 	assert_eq(SoundRes.get_music("chapter-1"), "sound_menu/battle_bgm_arena.mp3", "music arena")
 	assert_eq(SoundRes.get_music("unknown"), "", "未知 chapter 空")
+
+
+# 设计文档 2.2：MUSIC_MAP 全 21 条 value + DEO_MAP 全量 value 落盘存在性（防死键/路径断链回归）。
+func test_sound_res_all_registered_files_exist() -> void:
+	for key in SoundRes.MUSIC_MAP:
+		var path: String = String(SoundRes.MUSIC_MAP[key])
+		assert_true(ResourceLoader.exists("res://assets/" + path),
+			"MUSIC_MAP[%s] 文件存在: %s" % [key, path])
+	for key in SoundRes.DEO_MAP:
+		var path2: String = String(SoundRes.DEO_MAP[key])
+		assert_true(ResourceLoader.exists("res://assets/" + path2),
+			"DEO_MAP[%s] 文件存在: %s" % [key, path2])
+
+
+# 设计文档三-3：common_exp_up 源 nil 禁用，本项目受控偏离启用（资产在 + 调用方守卫就绪）。
+func test_common_exp_up_registered() -> void:
+	var am := AudioManager.new()
+	SoundRes.register_all(am)
+	assert_true(am.has_sfx(&"common_exp_up"), "common_exp_up 已注册（受控偏离启用）")
+	assert_false(SoundRes.DEO_MAP.has("map_bgm"), "map_bgm 死键已删除")
 
 
 func test_audio_player_play_sfx_no_crash() -> void:
