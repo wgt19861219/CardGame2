@@ -12,6 +12,8 @@ var bus: EventBus
 
 func _ready() -> void:
 	bus = EventBusScript.new()
-	var presenter := UnlockAnnouncePresenter.new()
-	add_child(presenter)
-	presenter.setup(bus)
+	# 2026-08-20 用户指示：通关升级「功能解锁公告」暂不弹（与剧情触发一并禁用）。
+	# Logic 侧 check_unlocks 记录 tutorial_record 不受影响；恢复弹窗时取消下方注释即可。
+	# var presenter := UnlockAnnouncePresenter.new()
+	# add_child(presenter)
+	# presenter.setup(bus)
