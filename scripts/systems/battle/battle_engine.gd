@@ -332,7 +332,7 @@ func victory(_skip: bool = false) -> void:
 	if wave_id < total_waves and not _skip:
 		wave_clear = true   # 本波清完待切波（View 检测此标志自动切下一波）
 		return
-	_play_sfx("battle_win")
+	_play_sfx("battle_cheer")
 	death_count = 0
 	for unit in unit_list:
 		if int(unit.camp) == CAMP_PLAYER and bool(unit.is_hero()) and not bool(unit.is_alive()):
