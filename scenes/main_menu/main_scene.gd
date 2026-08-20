@@ -49,6 +49,7 @@ var _drag_last_time: int = 0
 var _drag_velocity: float = 0.0
 
 func _ready() -> void:
+	AudioPlayer.play_bgm("map")   # 地图 BGM（源 soundres music.map；战斗进出闭环锚点——设计 2.3）
 	var bg := ColorRect.new()
 	bg.color = Color(40.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)

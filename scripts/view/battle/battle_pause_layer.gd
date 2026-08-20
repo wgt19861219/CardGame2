@@ -4,6 +4,7 @@ extends ColorRect
 ## 战斗暂停面板（View 层）— 照源 battle_scene.lua:178-330 createPauseLayer/doPauseLayerTouch。
 ## 黑半透全屏背景 + 三按钮（exit 退出 / sound 音效切换 / resume 恢复）+ 缩放进场/退场动画。
 ## 挂 ui_layer（scene 创建）。发 exit_requested/resume_requested/sound_toggled 信号。
+## 接线自持（setup 注入 dismiss 回调；sound_toggled→AudioPlayer.toggle_sound）。
 ##
 ## 重构（2026-07-18，hero_detail 范式）：三按钮 + 三 Label 静态化进
 ## scenes/battle/battle_pause_layer_content.tscn（instantiate + add_child + get_node + fill）。
@@ -27,16 +28,19 @@ signal sound_toggled
 var _content: Control = null
 var _sound_btn: TextureButton = null
 var _sound_on: bool = true
+var _on_dismiss: Callable = Callable()
 
 
-func setup(ui_layer: Node, sound_on: bool) -> void:
+func setup(ui_layer: Node, sound_on: bool, on_dismiss: Callable = Callable()) -> void:
 	color = BG_COLOR
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截下层点击（源 pauseLayer 触摸吞）
 	position = Vector2.ZERO
 	size = VIEW_SIZE
 	ui_layer.add_child(self)
 	_sound_on = sound_on
+	_on_dismiss = on_dismiss
 	_build_content()
+	_wire_signals()
 	_play_enter_tween()
 
 
@@ -51,6 +55,19 @@ func _build_content() -> void:
 		_sound_btn.texture_normal = _load("sound_off.png")
 	_sound_btn.pressed.connect(_on_sound_pressed)
 	(_content.get_node("%ResumeBtn") as TextureButton).pressed.connect(_on_resume_pressed)
+
+
+# 信号接线（自 battle_scene:395-396 下沉，三审 MAJOR-R1：battle_scene 代码行 399/400 净 ≤ +1）。
+# sound_toggled 直连 AudioPlayer.toggle_sound；exit/resume 回调经 setup 参数注入。
+func _wire_signals() -> void:
+	if _on_dismiss.is_valid():
+		exit_requested.connect(_on_dismiss)
+		resume_requested.connect(_on_dismiss)
+	sound_toggled.connect(_on_sound_toggled)
+
+
+func _on_sound_toggled() -> void:
+	AudioPlayer.toggle_sound()
 
 
 func _play_enter_tween() -> void:

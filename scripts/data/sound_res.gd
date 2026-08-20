@@ -2,7 +2,7 @@ class_name SoundRes
 extends RefCounted
 
 ## 音效/音乐资源映射（Data 层）— 照源 soundres.lua ed.sound.deo + ed.music。
-## deo：基础音效 key→"sound_menu/xx.mp3"（源 :26-68，common_exp_up=nil 跳过）。
+## deo：基础音效 key→"sound_menu/xx.mp3"（源 :26-68；common_exp_up 源 nil 禁用，本项目受控偏离启用——设计文档三-3；map_bgm/skill_att_bar_change/battle_drop 源即死键——无文件无调用，删）。
 ## music：chapter→bgm path（源 :3-25）。register_all 注册 deo 到 AudioManager.sfx_map。
 
 
@@ -31,7 +31,6 @@ const DEO_MAP: Dictionary = {
 	"battle_fury_full": "sound_menu/battle_fury_full.mp3",
 	"battle_begin": "sound_menu/battle_begin.mp3",
 	"map_stage_detail": "sound_menu/map_stage_detail.mp3",
-	"skill_att_bar_change": "sound_menu/skill_att_bar_change.mp3",
 	"skill_unlock_success": "sound_menu/skill_unlock_success.mp3",
 	"battle_loot": "sound_menu/battle_loot.mp3",
 	"skill_upgrade_fail": "sound_menu/skill_upgrade_fail.mp3",
@@ -39,19 +38,18 @@ const DEO_MAP: Dictionary = {
 	"skill_upgrade_success_gold": "sound_menu/skill_upgrade_success_gold.mp3",
 	"flip_book_page": "sound_menu/flip_book_page.mp3",
 	"flip_book": "sound_menu/flip_book.mp3",
-	"battle_drop": "sound_menu/battle_drop.mp3",
-	"map_bgm": "sound_menu/stage_select_bgm.mp3",
 	"skill_remove_blue_star_success": "sound_menu/skill_remove_blue_star_success.mp3",
 	"battle_next_wave": "sound_menu/battle_next_wave.mp3",
 	"battle_win": "sound_menu/battle_win.mp3",
 	"battle_lose": "sound_menu/battle_lose.mp3",
 	"battle_cheer": "sound_menu/battle_cheer.mp3",
 	"battledown_pop_loot": "sound_menu/battledown_pop_loot.mp3",
+	"common_exp_up": "sound_menu/common_exp_up.mp3",
 }
 
 
 const MUSIC_MAP: Dictionary = {
-	"map": "installer/stage_select_bgm.mp3",
+	"map": "sound/stage_select_bgm.mp3",
 	"chapter1": "sound_menu/battle_bgm.mp3",
 	"chapter2": "sound_menu/battle_bgm.mp3",
 	"chapter3": "sound_menu/battle_bgm.mp3",

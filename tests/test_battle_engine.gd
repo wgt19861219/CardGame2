@@ -188,12 +188,13 @@ func test_deterministic_same_input_same_ticks() -> void:
 	assert_eq(_run_ten_updates(), _run_ten_updates(), "同输入两次 ticks 一致（确定性）")
 
 # T3 依赖倒置：胜/败音效走 sfx_hook（battle_engine 不再直调 AudioPlayer autoload）。
+# 胜利瞬间播 cheer（源 soundres.lua:154 win=battle_cheer；battle_win 留结算页——设计 2.4）。
 func test_sfx_hook_called_on_victory() -> void:
 	var e := BattleEngine.new()
 	var played: Array[String] = []
 	e.sfx_hook = func(name: String) -> void: played.append(name)
 	e.victory()
-	assert_has(played, "battle_win", "victory 应经 sfx_hook 回调 battle_win")
+	assert_has(played, "battle_cheer", "victory 应经 sfx_hook 回调 battle_cheer")
 
 
 func test_sfx_hook_default_no_crash() -> void:

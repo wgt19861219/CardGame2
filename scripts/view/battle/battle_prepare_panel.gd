@@ -332,7 +332,7 @@ func _on_back_pressed() -> void:
 
 # 同步跑（不进 battle_scene，照 crusade_panel 既有实现），emit crusade_battle_finished 给 crusade_panel。
 func _on_go_pressed() -> void:
-	AudioPlayer.play_sfx("common_click_feedback")
+	AudioPlayer.play_sfx("battle_begin")
 	if _team.size() < TEAM_MAX:
 		pass  # 照源允许不足 5 人开战（确认框降级跳过）
 	var tids: Array[int] = []
