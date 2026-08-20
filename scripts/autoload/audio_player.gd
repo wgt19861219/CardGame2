@@ -13,6 +13,7 @@ const RES_PREFIX: String = "res://assets/"
 const SFX_VOLUME: float = 1.0
 const BGM_VOLUME: float = 1.0
 const SFX_POOL_SIZE: int = 8   # 池大小（源 SimpleAudioEngine 多通道等价；const 免魔法数字）
+const SOUND_CFG_PATH: String = "user://audio.cfg"   # 应用级设置（源 CCUserDefault 等价）
 
 var am: AudioManager = null
 var _sfx_pool: Array[AudioStreamPlayer] = []
@@ -30,6 +31,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	_load_sound_cfg()
 	for i in range(SFX_POOL_SIZE):
 		var p := AudioStreamPlayer.new()
 		p.volume_db = linear_to_db(SFX_VOLUME)
@@ -146,3 +148,43 @@ func has_playing_sfx_stream(res_path: String) -> bool:
 func has_bgm_stream_path(res_path: String) -> bool:
 	return bgm_player != null and bgm_player.stream != null \
 		and bgm_player.stream.resource_path == res_path
+
+
+# 音效开关（源 sound.lua:109-127 turnSoundSwitch）：翻转+持久化+全停/恢复。
+# off：BGM pause（保留流，供 resume 分支）+ 停池中 SFX；on：双分支恢复（源 :112-121）——
+#   流 playing 且 paused → resume；否则按 _bgm_key 实际 play（off 期间切歌场景，三审 MAJOR-R3）。
+func toggle_sound() -> void:
+	sound_switch = not sound_switch
+	_save_sound_cfg()
+	if sound_switch:
+		_resume_bgm()
+	else:
+		_pause_all_audio()
+
+
+func _resume_bgm() -> void:
+	if bgm_player == null:
+		return
+	if bgm_player.playing and bgm_player.stream_paused:
+		bgm_player.stream_paused = false
+	elif _bgm_key != "" and bgm_player.stream != null:
+		bgm_player.play()
+
+
+func _pause_all_audio() -> void:
+	if bgm_player != null and bgm_player.playing:
+		bgm_player.stream_paused = true
+	for p in _sfx_pool:
+		p.stop()
+
+
+func _load_sound_cfg() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SOUND_CFG_PATH) == OK:
+		sound_switch = bool(cfg.get_value("audio", "sound_on", true))
+
+
+func _save_sound_cfg() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("audio", "sound_on", sound_switch)
+	cfg.save(SOUND_CFG_PATH)

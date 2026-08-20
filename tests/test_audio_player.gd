@@ -196,3 +196,57 @@ func test_play_battle_bgm_normal_chapter() -> void:
 	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm.mp3"),
 		"chapter5 → battle_bgm.mp3")
 	player.queue_free()
+
+
+# toggle on 恢复双分支（三审 MAJOR-R3 照源 sound.lua:112-121）：
+# 分支一：曾播且被 pause → resume。
+func test_toggle_off_pause_then_on_resume() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_bgm("chapter1")
+	player.toggle_sound()   # off：BGM stream_paused
+	assert_true(player.bgm_player.stream_paused, "off 后 BGM paused")
+	player.toggle_sound()   # on：resume 分支
+	assert_false(player.bgm_player.stream_paused, "on 后恢复播放")
+	assert_true(player.bgm_player.playing, "playing")
+	player.toggle_sound()   # 还原开关，避免污染后续
+	player.queue_free()
+
+
+# 分支二：off 期间切歌（记账新曲未出声）→ on 按记忆曲重播（单一 resume 对非 playing 流无效）。
+func test_toggle_on_replays_bgm_after_off_switch() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sound_switch = false
+	player.play_bgm("chapter2")   # off 记账新曲不出声
+	player.sound_switch = true    # 手动置回（不经 toggle 的 off 半程）
+	player.toggle_sound()         # off（chapter2 已记账）
+	player.toggle_sound()         # on → 重播分支
+	assert_true(player.bgm_player.playing, "off 期间切歌后 on 应实际重播记忆曲")
+	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm.mp3"), "记忆曲=chapter2")
+	player.queue_free()
+
+
+# 持久化（user://audio.cfg，源 CCUserDefault 等价；先例 language_manager lang.cfg——二审 S-4）。
+func test_sound_cfg_persist_and_load() -> void:
+	var cfg_path := ProjectSettings.globalize_path("user://audio.cfg")
+	DirAccess.remove_absolute(cfg_path)   # 清环境
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	var initial: bool = player.sound_switch
+	player.toggle_sound()
+	var toggled: bool = player.sound_switch
+	assert_ne(toggled, initial, "开关已翻转")
+	player.queue_free()
+	var player2 = AudioPlayerScript.new()
+	add_child(player2)
+	player2._load_sound_cfg()
+	assert_eq(player2.sound_switch, toggled, "新实例读 cfg 继承开关状态")
+	player2.queue_free()
+	DirAccess.remove_absolute(cfg_path)   # 还原环境，不污染真实用户配置
+
+
+# 兜底清理：任何 toggle 类测试中途失败导致 cfg 残留（sound_on=false 会毒化后续
+# 新实例 _ready 的 _load_sound_cfg → play_sfx 全被跳过），after_all 统一清除。
+func after_all() -> void:
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://audio.cfg"))
