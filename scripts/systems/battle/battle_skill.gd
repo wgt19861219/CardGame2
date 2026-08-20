@@ -214,6 +214,7 @@ func _on_attack_frame_default() -> void:
 		caster.engine.unfreeze()
 		caster.manually_casting = false
 	attack_counter += 1
+	BattleSkillEffect.emit_attack_voice(caster, attack_counter)
 	if str(info.get("Target Type", "")) == "random" or target == null or not bool(target.is_alive()):
 		_select_target(null)
 	if target == null:

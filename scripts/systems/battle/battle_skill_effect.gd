@@ -11,6 +11,7 @@ const LFS_DENOM: float = 100.0
 const LFS_SCALE: float = 0.01
 const CRIT_DEFAULT: int = 100
 const SHAPE_HALF: float = 0.5
+const ATK_SOUNDS: PackedStringArray = ["_ATK", "_ATK2", "_ATK3"]   # 源 skill.lua:8
 
 static func test_point_in_shape(p: Vector2, shape: String, arg1: float, arg2: float) -> bool:
 	match shape:
@@ -157,3 +158,16 @@ static func _show_buff_resist_popup(target: Variant, reason: String) -> void:
 static func _play_puppet_effect(target: Variant, effect_name: String, zorder: int) -> void:
 	if target != null:
 		target.emit_add_effect(effect_name, zorder)
+
+
+## 普攻出手语音（源 skill.lua:414-421）：ATK/ATK2/ATK3 按 attack_counter 轮换。
+## 公式 (counter-1)%size：源 Lua 1-based (counter-1)%3+1 的 0-based 等价（counter 已自增后传入）。
+## is_hero 收紧为受控偏离（三-7：源无判定靠缺文件静默，效果等价）。缺 ATK 文件英雄静默（play_voice 守卫）。
+static func emit_attack_voice(caster: Variant, attack_counter: int) -> void:
+	if caster == null or not bool(caster.is_hero()):
+		return
+	var hero_name: String = String(caster.name).to_upper()
+	if hero_name == "":
+		return
+	var idx: int = (attack_counter - 1) % ATK_SOUNDS.size()
+	caster.emit_voice(hero_name, ATK_SOUNDS[idx])
