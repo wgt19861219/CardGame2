@@ -152,7 +152,8 @@ func has_bgm_stream_path(res_path: String) -> bool:
 
 # 音效开关（源 sound.lua:109-127 turnSoundSwitch）：翻转+持久化+全停/恢复。
 # off：BGM pause（保留流，供 resume 分支）+ 停池中 SFX；on：双分支恢复（源 :112-121）——
-#   流 playing 且 paused → resume；否则按 _bgm_key 实际 play（off 期间切歌场景，三审 MAJOR-R3）。
+#   流 paused → resume（stream_paused=true 时 playing 必为 false，不能复合判 playing）；
+#   否则按 _bgm_key 实际 play（off 期间切歌场景，三审 MAJOR-R3）。
 func toggle_sound() -> void:
 	sound_switch = not sound_switch
 	_save_sound_cfg()
@@ -165,7 +166,7 @@ func toggle_sound() -> void:
 func _resume_bgm() -> void:
 	if bgm_player == null:
 		return
-	if bgm_player.playing and bgm_player.stream_paused:
+	if bgm_player.stream_paused:
 		bgm_player.stream_paused = false
 	elif _bgm_key != "" and bgm_player.stream != null:
 		bgm_player.play()

@@ -199,29 +199,32 @@ func test_play_battle_bgm_normal_chapter() -> void:
 
 
 # toggle on 恢复双分支（三审 MAJOR-R3 照源 sound.lua:112-121）：
-# 分支一：曾播且被 pause → resume。
+# 分支一：曾播且被 pause → resume 保位置续播（源 :114-115 语义；headless 下
+# get_playback_position 可靠，审查实证）。
 func test_toggle_off_pause_then_on_resume() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
 	player.play_bgm("chapter1")
-	player.toggle_sound()   # off：BGM stream_paused
+	player.toggle_sound()   # off：BGM paused
 	assert_true(player.bgm_player.stream_paused, "off 后 BGM paused")
+	var pos_before: float = player.bgm_player.get_playback_position()
 	player.toggle_sound()   # on：resume 分支
 	assert_false(player.bgm_player.stream_paused, "on 后恢复播放")
 	assert_true(player.bgm_player.playing, "playing")
-	player.toggle_sound()   # 还原开关，避免污染后续
+	assert_almost_eq(player.bgm_player.get_playback_position(), pos_before, 0.05,
+		"resume 保位置续播（非从头播）")
 	player.queue_free()
 
 
-# 分支二：off 期间切歌（记账新曲未出声）→ on 按记忆曲重播（单一 resume 对非 playing 流无效）。
+# 分支二：off 期间切歌（play_bgm 记账新曲 + stop 清 paused，不出声）→ on 走 play
+# 重播分支（stream_paused 已被 stop 清空）。真实产品序列，不经手动 sound_switch 构造。
 func test_toggle_on_replays_bgm_after_off_switch() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
-	player.sound_switch = false
-	player.play_bgm("chapter2")   # off 记账新曲不出声
-	player.sound_switch = true    # 手动置回（不经 toggle 的 off 半程）
-	player.toggle_sound()         # off（chapter2 已记账）
-	player.toggle_sound()         # on → 重播分支
+	player.play_bgm("chapter1")
+	player.toggle_sound()          # off（chapter1 被 pause）
+	player.play_bgm("chapter2")    # off 期间切歌：记账新曲+stop（清 paused）不出声
+	player.toggle_sound()          # on → 重播分支（paused 已被 stop 清，走 play）
 	assert_true(player.bgm_player.playing, "off 期间切歌后 on 应实际重播记忆曲")
 	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm.mp3"), "记忆曲=chapter2")
 	player.queue_free()
