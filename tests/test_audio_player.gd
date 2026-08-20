@@ -144,3 +144,55 @@ func test_sfx_dedupe_cross_frame_replays() -> void:
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	assert_eq(player.get_playing_sfx_count(), 2, "跨帧后同路径再播（占第二池位，非同帧拦截）")
 	player.queue_free()
+
+
+# BGM 循环（一审 MAJOR-2：AudioStreamMP3.loop 默认 false，不设则播一遍停）。
+func test_bgm_loop_enabled() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_bgm("chapter1")
+	var stream := player.bgm_player.stream as AudioStreamMP3
+	assert_not_null(stream, "chapter1 资源在")
+	assert_true(stream.loop, "BGM 流应 loop=true")
+	player.queue_free()
+
+
+# 同名短路（源 sound.lua:79-81 按 audioParam.music 判断，非播放器当前流）。
+func test_bgm_same_key_shortcircuit() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_bgm("chapter1")
+	var first: AudioStream = player.bgm_player.stream
+	player.play_bgm("chapter1")
+	assert_eq(player.bgm_player.stream, first, "同 key 第二次调用不换流不重播")
+	player.queue_free()
+
+
+# off 期间记账（源 sound.lua:73-98：soundSwitch=false 仍 stopMusic + 更新曲目记忆，不出声）。
+func test_bgm_off_records_key_without_playing() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sound_switch = false
+	player.play_bgm("chapter2")
+	assert_eq(player._bgm_key, "chapter2", "off 期间仍记账 _bgm_key")
+	assert_false(player.bgm_player.playing, "off 期间不出声")
+	player.queue_free()
+
+
+# 缺 Chapter ID key 不崩且默认 -1=arena 曲（三审 MAJOR-R2：excavate 链可产空 stage_info）。
+func test_play_battle_bgm_missing_chapter_key_defaults_arena() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_battle_bgm({})
+	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm_arena.mp3"),
+		"空 stage_info 取默认 chapter-1（arena 曲）")
+	player.queue_free()
+
+
+func test_play_battle_bgm_normal_chapter() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.play_battle_bgm({"Chapter ID": 5})
+	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm.mp3"),
+		"chapter5 → battle_bgm.mp3")
+	player.queue_free()

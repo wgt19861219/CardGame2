@@ -1,7 +1,7 @@
 extends Node
 
 ## 音频播放（View 层 autoload AudioPlayer）— 照源 sound.lua:46 playEffect + BGM 播放。
-## 持有 AudioManager（Logic 查询，SoundRes 注册 deo）+ AudioStreamPlayer（sfx/bgm）。
+## 持有 AudioManager（Logic 查询，SoundRes 注册 deo）+ 8 池 SFX + BGM AudioStreamPlayer。
 ## 资源缺失守卫：ResourceLoader.exists 跳过（源 pcall 吞 C++ 错误，新版静默 + am push_error）。
 ## 音效路径源 "sound_menu/xx.mp3"（相对 res/）→ res://assets/sound_menu/xx.mp3。
 ## autoload 脚本不用 class_name（autoload 名即全局，仿 events.gd），依赖类 preload const。
@@ -21,6 +21,7 @@ var _last_sfx_frame: Dictionary = {}  # rel_path → Engine.get_process_frames()
 var bgm_player: AudioStreamPlayer = null
 var sound_switch: bool = true
 var _sfx_path_cache: Dictionary = {}  # play_sfx_by_path 缓存（rel_path→AudioStream，避重复 load）
+var _bgm_key: String = ""  # 记忆曲 key（含 off 期间记账；源 sound.lua:79 按 audioParam.music 短路）
 
 
 func _init() -> void:
@@ -72,9 +73,14 @@ func play_sfx_by_path(rel_path: String) -> void:
 	_play_pooled(rel_path)
 
 
-# BGM 播放（源 ed.music[chapter]）。
+# BGM 播放（源 ed.music[chapter]）。同名短路按 _bgm_key 记账值判断（源 :79）；
+# 切歌停旧播新（源 playMusic 自动 stopMusic）；loop=true（一审 MAJOR-2）；
+# sound_switch off 期间仍记账+换流不出声（源 :73-98，toggle on 按记忆曲恢复——Task 4）。
 func play_bgm(chapter: String) -> void:
-	if not sound_switch or bgm_player == null:
+	if chapter == _bgm_key:
+		return
+	_bgm_key = chapter
+	if bgm_player == null:
 		return
 	var path: String = SoundRes.get_music(chapter)
 	if path.is_empty():
@@ -82,8 +88,19 @@ func play_bgm(chapter: String) -> void:
 	var stream: AudioStream = _load_stream(RES_PREFIX + path)
 	if stream == null:
 		return
+	if stream is AudioStreamMP3:
+		stream.loop = true
+	bgm_player.stop()
 	bgm_player.stream = stream
-	bgm_player.play()
+	if sound_switch:
+		bgm_player.play()
+
+
+# 战斗 BGM（源 battle_scene.lua:135-136 "chapter"..stage_info["Chapter ID"] 查表）。
+# 变体全在 MUSIC_MAP（chapter-1=arena / chapter-3=crusade / 其余 battle_bgm），代码无 if-else。
+# .get 兜底 -1：excavate 装配链可产无该 key 的空 stage_info（三审 MAJOR-R2）。
+func play_battle_bgm(stage_info: Dictionary) -> void:
+	play_bgm("chapter" + str(int(stage_info.get("Chapter ID", -1))))
 
 
 func _load_stream(path: String) -> AudioStream:
@@ -124,3 +141,8 @@ func has_playing_sfx_stream(res_path: String) -> bool:
 		if p.playing and p.stream != null and p.stream.resource_path == res_path:
 			return true
 	return false
+
+
+func has_bgm_stream_path(res_path: String) -> bool:
+	return bgm_player != null and bgm_player.stream != null \
+		and bgm_player.stream.resource_path == res_path
