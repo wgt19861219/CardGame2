@@ -57,7 +57,7 @@ func _ready() -> void:
 	_build_map()
 	_build_hud()
 	_refresh_status()
-	_maybe_start_tutorial()
+	# _maybe_start_tutorial()   # 2026-08-20 用户指示：一进游戏的新手引导暂不弹（与剧情/解锁公告一并禁用）；恢复取消本行注释即可
 	_maybe_resume_excavate()
 	_maybe_resume_pvp()
 
