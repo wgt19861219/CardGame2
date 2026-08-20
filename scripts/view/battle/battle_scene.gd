@@ -220,6 +220,7 @@ func _ready() -> void:
 		var eng: BattleEngine = _battle_context["engine"]
 		var info: Dictionary = _battle_context["battle_info"]
 		setup(eng, GameData.config, info)
+		AudioPlayer.play_battle_bgm(eng.stage_info)
 		_enter_walk_enabled = true   # 真实战斗入口（经 battle_context 装配）启用入场走路
 	# 战斗场景无全局 HUD（货币栏/快捷栏）— 声明 identity 让 HudOverlay 整体隐藏。
 	HudOverlay.apply_identity("battle")
@@ -391,9 +392,7 @@ func create_pause_layer() -> void:
 	pause_locks["pauseButton"] = true; is_paused = pause_locks.values().has(true)
 	AudioPlayer.set_bgm_volume(0.25)
 	var layer := BattlePauseLayer.new()
-	layer.setup(ui_layer, true)
-	layer.exit_requested.connect(_on_pause_dismissed)
-	layer.resume_requested.connect(_on_pause_dismissed)
+	layer.setup(ui_layer, AudioPlayer.sound_switch, _on_pause_dismissed)
 	pause_layer = layer
 
 
