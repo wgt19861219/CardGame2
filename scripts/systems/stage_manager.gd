@@ -145,9 +145,11 @@ func run_stage_battle(sid: int, player: PlayerData, player_tids: Array[int], rng
 
 
 ## 装配阶段（View 接入用）：enter 扣体力 + 生成 loots + 创建并装配 BattleEngine，不跑战斗循环。
-## 返 {ok, engine, loots, battle_info, stage_id}；体力不足等失败返 {ok:false}。
+## 返 {ok, engine, loots, battle_info, stage_id}；体力不足/空队伍(error:"empty_team"，对齐源
+## 2026-08-19 enterStage 空队防护，拒绝先于扣体力等一切副作用)等失败返 {ok:false}。
 ## act/raid/dungeon 走 enter_act_stage（扣净消耗 = Vitality Cost - Vit Return）。
 func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int], rng: BattleRng) -> Dictionary:
+	if player_tids.is_empty(): return {"ok": false, "error": "empty_team"}
 	if StageData.is_dungeon_stage(sid) or StageAccount.stage_type(sid) in ["act", "raid"]:
 		var table: StringName = &"StageDungeon" if StageData.is_dungeon_stage(sid) else &"Stage"
 		var cfg: Dictionary = config.get_raw_table(table).get(str(sid), {})
@@ -251,8 +253,7 @@ func _auto_attack_range(tid: int) -> float:
 
 ## 按 tid 找玩家首个英雄实例（上场 tid→HeroInstance 映射；无则 null 走桩）。
 static func _find_hero_by_tid(mgr: HeroManager, tid: int) -> HeroInstance:
-	if mgr == null:
-		return null
+	if mgr == null: return null
 	for inst_id in mgr.heroes:
 		var h: HeroInstance = mgr.heroes[inst_id]
 		if h.tid == tid:

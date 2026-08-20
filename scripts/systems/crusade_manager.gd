@@ -177,6 +177,10 @@ func get_stage_enemies(stage: int) -> Array:
 ## 端到端 Crusade 战斗：玩家英雄（跨关 HP/MP）+ 敌人英雄（max_rank 装备）+ BattleEngine 跑 + fight 存状态。
 ## 敌人来源 enemies[stage].heroes（init_crusade 生成）；玩家跨关 HP/MP from hero_hp_perc/hero_mp_perc。
 func run_crusade_battle(stage: int, player: PlayerData, player_tids: Array[int], rng: BattleRng) -> Dictionary:
+	# 空队伍拒绝（对齐源 2026-08-19 enterStage 空队防护）：必败 fight() 会污染 crusade
+	# 跨关 HP/MP 与进度状态，拒绝进入而非记一场空队败仗。
+	if player_tids.is_empty():
+		return {"ok": false, "error": "empty_team"}
 	if config == null or rng == null:
 		return {"ok": false}
 	var stage_enemies: Array = get_stage_enemies(stage)
