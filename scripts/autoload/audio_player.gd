@@ -35,10 +35,12 @@ func _ready() -> void:
 	for i in range(SFX_POOL_SIZE):
 		var p := AudioStreamPlayer.new()
 		p.volume_db = linear_to_db(SFX_VOLUME)
+		p.bus = "Sfx"
 		add_child(p)
 		_sfx_pool.append(p)
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = linear_to_db(BGM_VOLUME)
+	bgm_player.bus = "Music"
 	add_child(bgm_player)
 
 

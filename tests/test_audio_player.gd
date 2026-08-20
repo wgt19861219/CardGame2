@@ -249,6 +249,25 @@ func test_sound_cfg_persist_and_load() -> void:
 	DirAccess.remove_absolute(cfg_path)   # 还原环境，不污染真实用户配置
 
 
+# 总线布局（二审 m-7）：default_bus_layout.tres 在 res:// 根，headless AudioServer 正常加载。
+func test_audio_buses_exist() -> void:
+	assert_ne(AudioServer.get_bus_index("Music"), -1, "Music 总线存在")
+	assert_ne(AudioServer.get_bus_index("Sfx"), -1, "Sfx 总线存在")
+
+
+func test_players_assigned_to_buses() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	assert_eq(player.bgm_player.bus, "Music", "bgm_player → Music 总线")
+	player.play_sfx("common_click_feedback")
+	var sfx_bus_ok: bool = false
+	for p in player._sfx_pool:
+		if p.bus == "Sfx":
+			sfx_bus_ok = true
+	assert_true(sfx_bus_ok, "SFX 池 → Sfx 总线")
+	player.queue_free()
+
+
 # 兜底清理：任何 toggle 类测试中途失败导致 cfg 残留（sound_on=false 会毒化后续
 # 新实例 _ready 的 _load_sound_cfg → play_sfx 全被跳过），after_all 统一清除。
 func after_all() -> void:
