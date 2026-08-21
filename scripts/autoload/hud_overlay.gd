@@ -29,11 +29,14 @@ const MAIN_IDENTITY: String = "main"
 const SHORTCUT_HIDDEN_IDENTITIES: Array[String] = ["crusade", "battle"]
 const SHORTCUT_HIDDEN_SUFFIXES: Array[String] = ["GWMode"]
 const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle", "battleprepare", "handbook"]   # 整体隐藏 HUD（battle_scene/battle_prepare/handbook 源里无 HUD——handbook extends basescene 非 framework，2026-08-18 用户实跑反馈）
+# 通知轮询间隔（秒）：5 定时提醒到点检测（源 localnotify 手机推送 → 单机游戏内 Toast，
+# 30s 粒度足够——源时间点粒度为分钟；2026-08-21 SetupPanel 二轮）。
+const NOTIFY_TICK_SEC: float = 30.0
 
 var _status_parent_main: Panel = null   # main 版容器（含头像）
-var _status_parent_sub: Panel = null    # 子场景版容器（仅货币条）
+var _status_parent_sub: Panel = null    # 子场景版（仅货币条）
 var _status_refs_main: Dictionary = {}   # main 版 label/bar 引用
-var _status_refs_sub: Dictionary = {}    # 子场景版 label/bar 引用
+var _status_refs_sub: Dictionary = {}   # 子场景版 label/bar 引用
 var _shortcut: ShortcutPanel = null
 var _current_identity: String = MAIN_IDENTITY
 var _built: bool = false
@@ -41,6 +44,27 @@ var _built: bool = false
 
 func _ready() -> void:
 	layer = HUD_LAYER
+	var timer := Timer.new()
+	timer.wait_time = NOTIFY_TICK_SEC
+	timer.autostart = true
+	timer.timeout.connect(_on_notify_tick)
+	add_child(timer)
+
+
+# 定时提醒轮询（源 localnotify data 1/2/4/5/7 定时项）：到点 + 开启 + 当天未推 → Toast。
+# GameData.config 未就绪（loading 阶段）静默跳过，下轮 tick 补。
+# 时间 + 日期两个 dict 合并（Time.get_time_dict_from_system 只含时分秒，
+# 年月日须 get_date_dict_from_system——2026-08-21 实测 fired 写出 "00000000" 抓出）。
+func _on_notify_tick() -> void:
+	var cm: ConfigManager = GameData.config
+	if cm == null:
+		return
+	var time_dict: Dictionary = Time.get_time_dict_from_system()
+	time_dict.merge(Time.get_date_dict_from_system())
+	for id: int in NotifySettings.check_time_due(time_dict):
+		NotifySettings.mark_fired(id, time_dict)
+		Toast.show_message(cm.get_lstr(NotifySettings.entry_fire_lstr(id)))
+
 
 
 ## 首次惰性建 HUD（player/cm 从 GameData 取，避 loading_scene 阶段 GameData 未就绪）。

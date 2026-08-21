@@ -165,7 +165,9 @@ func _on_save_manager() -> void:
 
 
 func _on_setup() -> void:
-	Toast.show_message("系统通知（联机推送）单机版暂缓")
+	# 2026-08-20 修复轮：原 Toast 占位（"联机推送暂缓"）→ SetupPanel 补全
+	#（源 notification.lua 音效开关保留；推送/CDKey/黑名单联机依赖裁剪，见面板头注释）。
+	SetupPanel.open(get_parent())
 
 
 func _on_language() -> void:
