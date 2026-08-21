@@ -59,10 +59,10 @@ mouse_filter = 0
 
 [node name="FrameContainer" type="Control" parent="."]
 layout_mode = 0
-offset_left = 76.875
-offset_top = 75.625
-offset_right = 876.875
-offset_bottom = 556.09375
+offset_left = -3.125
+offset_top = -4.375
+offset_right = 796.875
+offset_bottom = 476.094
 mouse_filter = 2
 
 [node name="FrameBg" type="TextureRect" parent="FrameContainer"]
@@ -99,10 +99,10 @@ mouse_filter = 2
 [node name="SearchIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 429.609375
-offset_top = 254.140625
-offset_right = 530.390625
-offset_bottom = 356.484375
+offset_left = 349.609
+offset_top = 174.141
+offset_right = 450.391
+offset_bottom = 276.484
 texture = ExtResource("5_mag")
 expand_mode = 1
 mouse_filter = 2
@@ -110,10 +110,10 @@ mouse_filter = 2
 [node name="HistroyButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 176.09375
-offset_top = 452.1875
-offset_right = 293.28125
-offset_bottom = 505.3125
+offset_left = 96.0938
+offset_top = 372.188
+offset_right = 213.281
+offset_bottom = 425.312
 theme_type_variation = &"ExcavateNavBtn"
 mouse_filter = 0
 text = "防守记录"
@@ -121,20 +121,20 @@ text = "防守记录"
 [node name="ExplainButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 297.578125
-offset_top = 452.1875
-offset_right = 363.984375
-offset_bottom = 505.3125
+offset_left = 217.578
+offset_top = 372.188
+offset_right = 283.984
+offset_bottom = 425.312
 theme_type_variation = &"ExcavateNavBtn"
 mouse_filter = 0
 text = "规则"
 
 [node name="SearchFrame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 631.5625
-offset_top = 410.0
-offset_right = 803.4375
-offset_bottom = 511.5625
+offset_left = 551.562
+offset_top = 330.0
+offset_right = 723.438
+offset_bottom = 431.562
 modulate = Color(1, 1, 1, 0.784314)
 texture = ExtResource("8_sframe")
 patch_margin_left = 23

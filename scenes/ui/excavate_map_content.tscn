@@ -80,10 +80,10 @@ mouse_filter = 0
 
 [node name="FrameContainer" type="Control" parent="."]
 layout_mode = 0
-offset_left = 76.875
-offset_top = 75.625
-offset_right = 876.875
-offset_bottom = 556.09375
+offset_left = -3.125
+offset_top = -4.375
+offset_right = 796.875
+offset_bottom = 476.094
 mouse_filter = 2
 
 [node name="FrameBg" type="TextureRect" parent="FrameContainer"]
@@ -496,10 +496,10 @@ visible = false
 [node name="SearchFog" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 125.71
-offset_top = 143.205
-offset_right = 828.05
-offset_bottom = 536.175
+offset_left = 45.71
+offset_top = 63.205
+offset_right = 748.05
+offset_bottom = 456.175
 modulate = Color(1, 1, 1, 0)
 texture = ExtResource("9_fog")
 expand_mode = 1
@@ -508,10 +508,10 @@ mouse_filter = 2
 [node name="LeftButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 121.795
-offset_top = 313.515
-offset_right = 164.765
-offset_bottom = 372.105
+offset_left = 41.795
+offset_top = 233.515
+offset_right = 84.765
+offset_bottom = 292.105
 texture_normal = ExtResource("7_prev")
 texture_pressed = ExtResource("8_prevp")
 ignore_texture_size = true
@@ -520,10 +520,10 @@ stretch_mode = 0
 [node name="RightButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 794.455
-offset_top = 312.735
-offset_right = 837.425
-offset_bottom = 371.325
+offset_left = 714.455
+offset_top = 232.735
+offset_right = 757.425
+offset_bottom = 291.325
 texture_normal = ExtResource("7_prev")
 texture_pressed = ExtResource("8_prevp")
 ignore_texture_size = true
@@ -533,10 +533,10 @@ flip_h = true
 [node name="SearchIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 429.609375
-offset_top = 254.140625
-offset_right = 530.390625
-offset_bottom = 356.484375
+offset_left = 349.609
+offset_top = 174.141
+offset_right = 450.391
+offset_bottom = 276.484
 texture = ExtResource("10_mag")
 expand_mode = 1
 mouse_filter = 2

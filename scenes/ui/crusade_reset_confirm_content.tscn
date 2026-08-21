@@ -28,10 +28,10 @@ mouse_filter = 2
 ; bg（源 :40-43 createSprite dialog_bg 中心锚点 ccp(400,240)=屏中心）
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 305.56
-offset_top = 209.56
-offset_right = 654.44
-offset_bottom = 430.44
+offset_left = 225.56
+offset_top = 129.56
+offset_right = 574.44
+offset_bottom = 350.44
 expand_mode = 1
 texture = ExtResource("1_dlg")
 mouse_filter = 2

@@ -33,8 +33,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -65,34 +65,34 @@ color = Color(0, 0, 0, 0.588235)
 [node name="Light" type="Sprite2D" parent="." unique_id=762288245]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
-position = Vector2(446, 107)
+position = Vector2(371.667, 80.25)
 texture = ExtResource("1_light")
 
 [node name="Star1" type="Sprite2D" parent="." unique_id=1584956854]
 unique_name_in_owner = true
 z_index = 100
-position = Vector2(312, 104)
+position = Vector2(260.0, 78.0)
 scale = Vector2(1e-05, 1e-05)
 texture = ExtResource("2_star1")
 
 [node name="Star2" type="Sprite2D" parent="." unique_id=980427014]
 unique_name_in_owner = true
 z_index = 101
-position = Vector2(454, 93)
+position = Vector2(378.333, 69.75)
 scale = Vector2(1e-05, 1e-05)
 texture = ExtResource("3_star2")
 
 [node name="Star3" type="Sprite2D" parent="." unique_id=1976436254]
 unique_name_in_owner = true
 z_index = 102
-position = Vector2(586, 104)
+position = Vector2(488.333, 78.0)
 scale = Vector2(1e-05, 1e-05)
 texture = ExtResource("4_star3")
 
 [node name="InfoBg" type="Sprite2D" parent="." unique_id=1337558394]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
-position = Vector2(456, 420)
+position = Vector2(380.0, 315.0)
 texture = ExtResource("9_infobg")
 
 [node name="TopWinBg1" type="Sprite2D" parent="InfoBg" unique_id=1662719642]
@@ -173,10 +173,10 @@ unique_name_in_owner = true
 visible = false
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
-offset_left = 788.0
-offset_top = 159.0
-offset_right = 916.0
-offset_bottom = 282.0
+offset_left = 656.667
+offset_top = 119.25
+offset_right = 763.333
+offset_bottom = 211.5
 texture_normal = ExtResource("5_replay")
 texture_pressed = ExtResource("6_replayp")
 ignore_texture_size = true
@@ -185,10 +185,10 @@ ignore_texture_size = true
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
-offset_left = 788.0
-offset_top = 446.0
-offset_right = 916.0
-offset_bottom = 569.0
+offset_left = 656.667
+offset_top = 334.5
+offset_right = 763.333
+offset_bottom = 426.75
 texture_normal = ExtResource("7_next")
 texture_pressed = ExtResource("8_nextp")
 ignore_texture_size = true
@@ -196,17 +196,17 @@ ignore_texture_size = true
 [node name="HeroHost" type="Control" parent="." unique_id=1891025862]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 234.0
-offset_top = 316.0
-offset_right = 234.0
-offset_bottom = 316.0
+offset_left = 195.0
+offset_top = 237.0
+offset_right = 195.0
+offset_bottom = 237.0
 mouse_filter = 2
 
 [node name="LootHost" type="Control" parent="." unique_id=1814744843]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 240.0
-offset_top = 507.0
-offset_right = 240.0
-offset_bottom = 507.0
+offset_left = 200.0
+offset_top = 380.25
+offset_right = 200.0
+offset_bottom = 380.25
 mouse_filter = 2

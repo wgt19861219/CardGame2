@@ -26,8 +26,8 @@ mouse_filter = 2
 [node name="FrameworkBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
@@ -35,10 +35,10 @@ mouse_filter = 2
 ; frame（显示 624.49x374.51 中心 to_godot(400,220)=(480,340)；旧值 800x480 未÷CS 强拉）
 [node name="Frame" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 167.76
-offset_top = 152.74
-offset_right = 792.24
-offset_bottom = 527.26
+offset_left = 87.76
+offset_top = 72.74
+offset_right = 712.24
+offset_bottom = 447.26
 texture = ExtResource("2_frame")
 expand_mode = 1
 mouse_filter = 2
@@ -46,10 +46,10 @@ mouse_filter = 2
 ; title 图（显示 200.49x35.90 中心 to_godot(403,382)=(483,178)；替代迁移发明文字 Label）
 [node name="TitleImg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 382.76
-offset_top = 160.05
-offset_right = 583.24
-offset_bottom = 195.95
+offset_left = 302.76
+offset_top = 80.05
+offset_right = 503.24
+offset_bottom = 115.95
 texture = ExtResource("3_title")
 expand_mode = 1
 mouse_filter = 2
@@ -71,10 +71,10 @@ stretch_mode = 0
 [node name="GoodsScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 145.0
-offset_top = 200.0
-offset_right = 815.0
-offset_bottom = 525.0
+offset_left = 65.0
+offset_top = 120.0
+offset_right = 735.0
+offset_bottom = 445.0
 horizontal_scroll_mode = 1
 vertical_scroll_mode = 0
 

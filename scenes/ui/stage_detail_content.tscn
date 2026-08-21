@@ -31,8 +31,8 @@ mouse_filter = 2
 [node name="FrameworkBg" type="TextureRect" parent="." unique_id=1725632254]
 unique_name_in_owner = true
 layout_mode = 0
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 mouse_filter = 2
 texture = ExtResource("1_bg")
 expand_mode = 1
@@ -40,10 +40,10 @@ expand_mode = 1
 [node name="Frame2" type="TextureRect" parent="." unique_id=121549709]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 115.0
-offset_top = 157.0
-offset_right = 845.0
-offset_bottom = 553.0
+offset_left = 35.0
+offset_top = 77.0
+offset_right = 765.0
+offset_bottom = 473.0
 mouse_filter = 2
 texture = ExtResource("2_frame2")
 expand_mode = 1
@@ -51,10 +51,10 @@ expand_mode = 1
 [node name="Frame3" type="TextureRect" parent="." unique_id=1401968421]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 115.0
-offset_top = 157.0
-offset_right = 845.0
-offset_bottom = 553.0
+offset_left = 35.0
+offset_top = 77.0
+offset_right = 765.0
+offset_bottom = 473.0
 mouse_filter = 2
 texture = ExtResource("12_frame3")
 expand_mode = 1
@@ -62,10 +62,10 @@ expand_mode = 1
 [node name="TitleBg" type="TextureRect" parent="." unique_id=988708085]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 228.0
-offset_top = 199.0
-offset_right = 732.0
-offset_bottom = 211.0
+offset_left = 148.0
+offset_top = 119.0
+offset_right = 652.0
+offset_bottom = 131.0
 mouse_filter = 2
 texture = ExtResource("3_titlebg")
 expand_mode = 1
@@ -73,10 +73,10 @@ expand_mode = 1
 [node name="Detail" type="Label" parent="." unique_id=611903851]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 150.0
-offset_top = 240.0
-offset_right = 810.0
-offset_bottom = 300.0
+offset_left = 70.0
+offset_top = 160.0
+offset_right = 730.0
+offset_bottom = 220.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
 vertical_alignment = 1
@@ -84,29 +84,29 @@ vertical_alignment = 1
 [node name="PowerTitle" type="Label" parent="." unique_id=1755623783]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 150.0
-offset_top = 330.0
-offset_right = 300.0
-offset_bottom = 354.0
+offset_left = 70.0
+offset_top = 250.0
+offset_right = 220.0
+offset_bottom = 274.0
 theme_type_variation = &"StageSectionLabel"
 text = "体力消耗"
 
 [node name="PowerNumber" type="Label" parent="." unique_id=1998089572]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 250.0
-offset_top = 330.0
-offset_right = 340.0
-offset_bottom = 354.0
+offset_left = 170.0
+offset_top = 250.0
+offset_right = 260.0
+offset_bottom = 274.0
 theme_type_variation = &"StageNumberLabel"
 
 [node name="PowerIcon" type="TextureRect" parent="." unique_id=481702496]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 280.0
-offset_top = 332.0
-offset_right = 304.0
-offset_bottom = 362.0
+offset_left = 200.0
+offset_top = 252.0
+offset_right = 224.0
+offset_bottom = 282.0
 mouse_filter = 2
 texture = ExtResource("4_vit")
 expand_mode = 1
@@ -114,10 +114,10 @@ expand_mode = 1
 [node name="CountTitle" type="Label" parent="." unique_id=273614256]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 330.0
-offset_top = 330.0
-offset_right = 520.0
-offset_bottom = 354.0
+offset_left = 250.0
+offset_top = 250.0
+offset_right = 440.0
+offset_bottom = 274.0
 theme_type_variation = &"StageSectionLabel"
 text = "今日剩余次数:"
 
@@ -125,28 +125,28 @@ text = "今日剩余次数:"
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
-offset_left = 470.0
-offset_top = 330.0
-offset_right = 520.0
-offset_bottom = 354.0
+offset_left = 390.0
+offset_top = 250.0
+offset_right = 440.0
+offset_bottom = 274.0
 theme_type_variation = &"StageNumberLabel"
 
 [node name="TotalNumber" type="Label" parent="." unique_id=1725962886]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 490.0
-offset_top = 330.0
-offset_right = 620.0
-offset_bottom = 354.0
+offset_left = 410.0
+offset_top = 250.0
+offset_right = 540.0
+offset_bottom = 274.0
 theme_type_variation = &"StageNumberLabel"
 
 [node name="Reset" type="TextureButton" parent="." unique_id=1089188910]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 530.0
-offset_top = 293.0
-offset_right = 630.0
-offset_bottom = 343.0
+offset_left = 450.0
+offset_top = 213.0
+offset_right = 550.0
+offset_bottom = 263.0
 texture_normal = ExtResource("8_reset")
 texture_pressed = ExtResource("9_resetp")
 ignore_texture_size = true
@@ -169,10 +169,10 @@ vertical_alignment = 1
 [node name="EnemyBg" type="TextureRect" parent="." unique_id=592205821]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 170.0
-offset_top = 349.61
-offset_right = 854.49
-offset_bottom = 430.0
+offset_left = 90.0
+offset_top = 269.61
+offset_right = 774.49
+offset_bottom = 350.0
 mouse_filter = 2
 texture = ExtResource("5_enemybg")
 expand_mode = 1
@@ -180,30 +180,30 @@ expand_mode = 1
 [node name="EnemyTitle" type="Label" parent="." unique_id=652646161]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 150.0
-offset_top = 403.0
-offset_right = 300.0
-offset_bottom = 427.0
+offset_left = 70.0
+offset_top = 323.0
+offset_right = 220.0
+offset_bottom = 347.0
 theme_type_variation = &"StageSectionLabel"
 text = "敌方阵容"
 
 [node name="AwardTitle" type="Label" parent="." unique_id=932279193]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 150.0
-offset_top = 483.0
-offset_right = 300.0
-offset_bottom = 507.0
+offset_left = 70.0
+offset_top = 403.0
+offset_right = 220.0
+offset_bottom = 427.0
 theme_type_variation = &"StageSectionLabel"
 text = "可能获得"
 
 [node name="GoButton" type="TextureButton" parent="." unique_id=35635508]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 728.05
-offset_top = 432.0
-offset_right = 827.95
-offset_bottom = 528.0
+offset_left = 648.05
+offset_top = 352.0
+offset_right = 747.95
+offset_bottom = 448.0
 texture_normal = ExtResource("6_go")
 ignore_texture_size = true
 stretch_mode = 0
@@ -240,10 +240,10 @@ stretch_mode = 0
 [node name="StarHBox" type="HBoxContainer" parent="." unique_id=1669370048]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 400.0
-offset_top = 179.67
-offset_right = 553.13
-offset_bottom = 224.0
+offset_left = 320.0
+offset_top = 99.67
+offset_right = 473.13
+offset_bottom = 144.0
 mouse_filter = 2
 theme_override_constants/separation = 11
 
@@ -275,10 +275,10 @@ stretch_mode = 5
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
-offset_left = 674.5
-offset_top = 279.0
-offset_right = 809.5
-offset_bottom = 429.0
+offset_left = 594.5
+offset_top = 199.0
+offset_right = 729.5
+offset_bottom = 349.0
 mouse_filter = 2
 
 [node name="SweepBg" type="TextureRect" parent="SweepCluster" unique_id=761668227]
@@ -348,10 +348,10 @@ vertical_alignment = 1
 [node name="EnemyBoxPos" type="Panel" parent="." unique_id=664232574]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 250.0
-offset_top = 378.0
-offset_right = 650.0
-offset_bottom = 458.0
+offset_left = 170.0
+offset_top = 298.0
+offset_right = 570.0
+offset_bottom = 378.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_empty")
 
@@ -366,10 +366,10 @@ theme_override_constants/separation = 6
 [node name="RewardBoxPos" type="Panel" parent="." unique_id=1540083313]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 249.0
-offset_top = 462.0
-offset_right = 600.0
-offset_bottom = 534.0
+offset_left = 169.0
+offset_top = 382.0
+offset_right = 520.0
+offset_bottom = 454.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_empty")
 

@@ -30,15 +30,15 @@ color = Color(0, 0, 0, 0.784314)
 mouse_filter = 0
 
 [node name="Light" type="Sprite2D" parent="."]
-position = Vector2(390, 0)
+position = Vector2(325.0, 0.0)
 texture = ExtResource("1_light")
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 3
-offset_left = 330.0
-offset_top = 158.0
-offset_right = 450.0
-offset_bottom = 188.0
+offset_left = 275.0
+offset_top = 118.5
+offset_right = 375.0
+offset_bottom = 141.0
 theme_override_font_sizes/font_size = 16
 mouse_filter = 2
 horizontal_alignment = 1
@@ -47,28 +47,28 @@ text = "失败"
 
 [node name="Back" type="TextureButton" parent="."]
 layout_mode = 3
-offset_left = 752.0
-offset_top = 159.0
-offset_right = 880.0
-offset_bottom = 281.0
+offset_left = 626.667
+offset_top = 119.25
+offset_right = 733.333
+offset_bottom = 210.75
 texture_normal = ExtResource("2_back")
 texture_pressed = ExtResource("3_back_p")
 
 [node name="Menu" type="TextureButton" parent="."]
 layout_mode = 3
-offset_left = 746.0
-offset_top = 406.0
-offset_right = 886.0
-offset_bottom = 528.0
+offset_left = 621.667
+offset_top = 304.5
+offset_right = 738.333
+offset_bottom = 396.0
 texture_normal = ExtResource("4_menu")
 texture_pressed = ExtResource("5_menu_p")
 
 [node name="BattleStatist" type="Button" parent="."]
 layout_mode = 3
-offset_left = 607.0
-offset_top = 135.0
-offset_right = 677.0
-offset_bottom = 185.0
+offset_left = 505.833
+offset_top = 101.25
+offset_right = 564.167
+offset_bottom = 138.75
 
 [node name="PromptHost" type="Control" parent="."]
 unique_name_in_owner = true

@@ -28,10 +28,10 @@ mouse_filter = 2
 [node name="Frame" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 215.0
-offset_top = 132.5
-offset_right = 745.0
-offset_bottom = 507.5
+offset_left = 135.0
+offset_top = 52.5
+offset_right = 665.0
+offset_bottom = 427.5
 texture = ExtResource("1_frame")
 patch_margin_left = 10
 patch_margin_top = 25
@@ -42,10 +42,10 @@ mouse_filter = 2
 [node name="AvatarScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 234.0
-offset_top = 135.0
-offset_right = 726.0
-offset_bottom = 500.0
+offset_left = 154.0
+offset_top = 55.0
+offset_right = 646.0
+offset_bottom = 420.0
 horizontal_scroll_mode = 0
 
 [node name="AvatarList" type="VBoxContainer" parent="AvatarScroll"]

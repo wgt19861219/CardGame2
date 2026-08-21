@@ -23,10 +23,10 @@ anchor_bottom = 1.0
 [node name="Frame" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 247.19
-offset_top = 193.82
-offset_right = 715.94
-offset_bottom = 457.41
+offset_left = 167.19
+offset_top = 113.82
+offset_right = 635.94
+offset_bottom = 377.41
 texture = ExtResource("1_frame")
 patch_margin_left = 20
 patch_margin_top = 30

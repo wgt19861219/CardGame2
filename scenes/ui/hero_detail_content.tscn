@@ -40,10 +40,10 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="BaseLayer" unique_id=1605552371]
 layout_mode = 0
-offset_left = 221.5
-offset_top = 35.0
-offset_right = 738.5
-offset_bottom = 605.0
+offset_left = 141.5
+offset_top = -45.0
+offset_right = 658.5
+offset_bottom = 525.0
 mouse_filter = 2
 texture = ExtResource("1_arm7d")
 expand_mode = 1
@@ -61,10 +61,10 @@ mouse_filter = 2
 [node name="NameBg" type="TextureRect" parent="BaseLayer" unique_id=1664043918]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 373.8
-offset_top = 383.1
-offset_right = 525.2
-offset_bottom = 422.9
+offset_left = 293.8
+offset_top = 303.1
+offset_right = 445.2
+offset_bottom = 342.9
 mouse_filter = 2
 texture = ExtResource("2_rpxrd")
 expand_mode = 1
@@ -72,69 +72,69 @@ expand_mode = 1
 [node name="TypeIcon" type="TextureRect" parent="BaseLayer" unique_id=1510124278]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 323.5
-offset_top = 381.0
-offset_right = 363.5
-offset_bottom = 421.0
+offset_left = 243.5
+offset_top = 301.0
+offset_right = 283.5
+offset_bottom = 341.0
 mouse_filter = 2
 expand_mode = 1
 
 [node name="NameLabel" type="Label" parent="BaseLayer" unique_id=1958532525]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 378.0
-offset_top = 391.0
-offset_right = 518.0
-offset_bottom = 419.0
+offset_left = 298.0
+offset_top = 311.0
+offset_right = 438.0
+offset_bottom = 339.0
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 
 [node name="StarGrey1" type="TextureRect" parent="BaseLayer" unique_id=1654457485]
 layout_mode = 0
-offset_left = 431.9
-offset_top = 289.1
-offset_right = 456.1
-offset_bottom = 314.9
+offset_left = 351.9
+offset_top = 209.1
+offset_right = 376.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey2" type="TextureRect" parent="BaseLayer" unique_id=380122176]
 layout_mode = 0
-offset_left = 451.9
-offset_top = 289.1
-offset_right = 476.1
-offset_bottom = 314.9
+offset_left = 371.9
+offset_top = 209.1
+offset_right = 396.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey3" type="TextureRect" parent="BaseLayer" unique_id=1936126234]
 layout_mode = 0
-offset_left = 471.9
-offset_top = 289.1
-offset_right = 496.1
-offset_bottom = 314.9
+offset_left = 391.9
+offset_top = 209.1
+offset_right = 416.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey4" type="TextureRect" parent="BaseLayer" unique_id=868172271]
 layout_mode = 0
-offset_left = 491.9
-offset_top = 289.1
-offset_right = 516.1
-offset_bottom = 314.9
+offset_left = 411.9
+offset_top = 209.1
+offset_right = 436.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("3_dnsxi")
 expand_mode = 1
 
 [node name="StarGrey5" type="TextureRect" parent="BaseLayer" unique_id=1926070244]
 layout_mode = 0
-offset_left = 511.9
-offset_top = 289.1
-offset_right = 536.1
-offset_bottom = 314.9
+offset_left = 431.9
+offset_top = 209.1
+offset_right = 456.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("3_dnsxi")
 expand_mode = 1
@@ -142,10 +142,10 @@ expand_mode = 1
 [node name="StarYellow1" type="TextureRect" parent="BaseLayer" unique_id=2071279257]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 431.9
-offset_top = 289.1
-offset_right = 456.1
-offset_bottom = 314.9
+offset_left = 351.9
+offset_top = 209.1
+offset_right = 376.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("4_j2r37")
 expand_mode = 1
@@ -153,10 +153,10 @@ expand_mode = 1
 [node name="StarYellow2" type="TextureRect" parent="BaseLayer" unique_id=1595927956]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 451.9
-offset_top = 289.1
-offset_right = 476.1
-offset_bottom = 314.9
+offset_left = 371.9
+offset_top = 209.1
+offset_right = 396.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("4_j2r37")
 expand_mode = 1
@@ -164,10 +164,10 @@ expand_mode = 1
 [node name="StarYellow3" type="TextureRect" parent="BaseLayer" unique_id=1739545107]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 471.9
-offset_top = 289.1
-offset_right = 496.1
-offset_bottom = 314.9
+offset_left = 391.9
+offset_top = 209.1
+offset_right = 416.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("4_j2r37")
 expand_mode = 1
@@ -175,10 +175,10 @@ expand_mode = 1
 [node name="StarYellow4" type="TextureRect" parent="BaseLayer" unique_id=563642089]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 491.9
-offset_top = 289.1
-offset_right = 516.1
-offset_bottom = 314.9
+offset_left = 411.9
+offset_top = 209.1
+offset_right = 436.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("4_j2r37")
 expand_mode = 1
@@ -186,10 +186,10 @@ expand_mode = 1
 [node name="StarYellow5" type="TextureRect" parent="BaseLayer" unique_id=1986775410]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 511.9
-offset_top = 289.1
-offset_right = 536.1
-offset_bottom = 314.9
+offset_left = 431.9
+offset_top = 209.1
+offset_right = 456.1
+offset_bottom = 234.9
 mouse_filter = 2
 texture = ExtResource("4_j2r37")
 expand_mode = 1
@@ -197,68 +197,68 @@ expand_mode = 1
 [node name="NameFrame" type="TextureRect" parent="BaseLayer" unique_id=678324230]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 373.8
-offset_top = 383.1
-offset_right = 525.2
-offset_bottom = 422.9
+offset_left = 293.8
+offset_top = 303.1
+offset_right = 445.2
+offset_bottom = 342.9
 mouse_filter = 2
 expand_mode = 1
 
 [node name="LevelTitle" type="Label" parent="BaseLayer" unique_id=818367256]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 243.5
-offset_top = 427.5
-offset_right = 293.5
-offset_bottom = 446.5
+offset_left = 163.5
+offset_top = 347.5
+offset_right = 213.5
+offset_bottom = 366.5
 theme_type_variation = &"BlackLabel18"
 text = "等级:"
 
 [node name="GsTitle" type="Label" parent="BaseLayer" unique_id=2037405354]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 346.5
-offset_top = 427.5
-offset_right = 396.5
-offset_bottom = 446.5
+offset_left = 266.5
+offset_top = 347.5
+offset_right = 316.5
+offset_bottom = 366.5
 theme_type_variation = &"BlackLabel18"
 text = "战力:"
 
 [node name="ExpTitle" type="Label" parent="BaseLayer" unique_id=1852477416]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 243.5
-offset_top = 455.5
-offset_right = 293.5
-offset_bottom = 474.5
+offset_left = 163.5
+offset_top = 375.5
+offset_right = 213.5
+offset_bottom = 394.5
 theme_type_variation = &"BlackLabel18"
 text = "经验:"
 
 [node name="LevelNum" type="Label" parent="BaseLayer" unique_id=310012726]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 293.5
-offset_top = 427.5
-offset_right = 343.5
-offset_bottom = 446.5
+offset_left = 213.5
+offset_top = 347.5
+offset_right = 263.5
+offset_bottom = 366.5
 theme_type_variation = &"WarnLabel"
 
 [node name="GsNum" type="Label" parent="BaseLayer" unique_id=299680256]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 416.5
-offset_top = 427.5
-offset_right = 503.25
-offset_bottom = 446.5
+offset_left = 336.5
+offset_top = 347.5
+offset_right = 423.25
+offset_bottom = 366.5
 theme_type_variation = &"WarnLabel"
 
 [node name="ExpNum" type="Label" parent="BaseLayer" unique_id=1905918452]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 296.5
-offset_top = 455.5
-offset_right = 423.25
-offset_bottom = 474.5
+offset_left = 216.5
+offset_top = 375.5
+offset_right = 343.25
+offset_bottom = 394.5
 theme_type_variation = &"WarnLabel"
 
 [node name="EquipSlotHost" type="Control" parent="BaseLayer" unique_id=1006655734]
@@ -274,10 +274,10 @@ mouse_filter = 2
 [node name="EquipSlotLeftColumn" type="VBoxContainer" parent="BaseLayer/EquipSlotHost" unique_id=353666156]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 252.0
-offset_top = 65.0
-offset_right = 346.0
-offset_bottom = 352.0
+offset_left = 172.0
+offset_top = -15.0
+offset_right = 266.0
+offset_bottom = 272.0
 mouse_filter = 2
 theme_override_constants/separation = 1
 
@@ -308,10 +308,10 @@ expand_mode = 1
 [node name="EquipSlotRightColumn" type="VBoxContainer" parent="BaseLayer/EquipSlotHost" unique_id=646686815]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 629.0
-offset_top = 64.0
-offset_right = 723.0
-offset_bottom = 351.0
+offset_left = 549.0
+offset_top = -16.0
+offset_right = 643.0
+offset_bottom = 271.0
 mouse_filter = 2
 theme_override_constants/separation = 1
 
@@ -342,10 +342,10 @@ expand_mode = 1
 [node name="StoneIcon" type="TextureRect" parent="BaseLayer" unique_id=5101001]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 232.5
-offset_top = 484.0
-offset_right = 280.5
-offset_bottom = 530.0
+offset_left = 152.5
+offset_top = 404.0
+offset_right = 200.5
+offset_bottom = 450.0
 mouse_filter = 2
 texture = ExtResource("6_yxfmg")
 expand_mode = 1
@@ -353,10 +353,10 @@ expand_mode = 1
 [node name="StoneBarBg" type="NinePatchRect" parent="BaseLayer" unique_id=5101002]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 279.5
-offset_top = 494.0
-offset_right = 459.5
-offset_bottom = 520.0
+offset_left = 199.5
+offset_top = 414.0
+offset_right = 379.5
+offset_bottom = 440.0
 mouse_filter = 2
 texture = ExtResource("7_xulm4")
 ; 源 herodetail/window.lua:2192 stone_bar_bg Scale9Sprite capInsets CCRectMake(20,1,102,24) scaleSize(180,26)，
@@ -369,10 +369,10 @@ patch_margin_bottom = 1
 [node name="StoneBar" type="TextureRect" parent="BaseLayer" unique_id=5101003]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 279.5
-offset_top = 494.0
-offset_right = 279.5
-offset_bottom = 520.0
+offset_left = 199.5
+offset_top = 414.0
+offset_right = 199.5
+offset_bottom = 440.0
 mouse_filter = 2
 texture = ExtResource("8_436n0")
 expand_mode = 1
@@ -380,10 +380,10 @@ expand_mode = 1
 [node name="StoneBarLabel" type="Label" parent="BaseLayer" unique_id=5101004]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 321.5
-offset_top = 494.0
-offset_right = 417.5
-offset_bottom = 520.0
+offset_left = 241.5
+offset_top = 414.0
+offset_right = 337.5
+offset_bottom = 440.0
 theme_override_font_sizes/font_size = 18
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
@@ -393,10 +393,10 @@ vertical_alignment = 1
 [node name="GetStoneBtn" type="TextureButton" parent="BaseLayer" unique_id=5101005]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 464.5
-offset_top = 487.0
-offset_right = 504.5
-offset_bottom = 527.0
+offset_left = 384.5
+offset_top = 407.0
+offset_right = 424.5
+offset_bottom = 447.0
 texture_normal = ExtResource("9_rasiu")
 texture_pressed = ExtResource("10_djwpd")
 ignore_texture_size = true
@@ -406,10 +406,10 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 608.0
-offset_top = 376.0
-offset_right = 708.0
-offset_bottom = 418.0
+offset_left = 528.0
+offset_top = 296.0
+offset_right = 628.0
+offset_bottom = 338.0
 
 [node name="UpgradeRankLabel" type="Label" parent="BaseLayer/UpgradeRankBtn" unique_id=686800648]
 unique_name_in_owner = true
@@ -428,10 +428,10 @@ vertical_alignment = 1
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
-offset_left = 608.0
-offset_top = 425.0
-offset_right = 708.0
-offset_bottom = 467.0
+offset_left = 528.0
+offset_top = 345.0
+offset_right = 628.0
+offset_bottom = 387.0
 
 [node name="AwakeLabel" type="Label" parent="BaseLayer/AwakeBtn" unique_id=700100002]
 unique_name_in_owner = true
@@ -450,10 +450,10 @@ vertical_alignment = 1
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 253.0
-offset_top = 526.0
-offset_right = 373.0
-offset_bottom = 575.0
+offset_left = 173.0
+offset_top = 446.0
+offset_right = 293.0
+offset_bottom = 495.0
 
 [node name="TabDetailLabel" type="Label" parent="BaseLayer/TabDetailBtn" unique_id=643380601]
 unique_name_in_owner = true
@@ -472,10 +472,10 @@ vertical_alignment = 1
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 414.0
-offset_top = 525.0
-offset_right = 534.0
-offset_bottom = 574.0
+offset_left = 334.0
+offset_top = 445.0
+offset_right = 454.0
+offset_bottom = 494.0
 
 [node name="TabCardLabel" type="Label" parent="BaseLayer/TabCardBtn" unique_id=1105052159]
 unique_name_in_owner = true
@@ -494,10 +494,10 @@ vertical_alignment = 1
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 588.0
-offset_top = 529.0
-offset_right = 708.0
-offset_bottom = 578.0
+offset_left = 508.0
+offset_top = 449.0
+offset_right = 628.0
+offset_bottom = 498.0
 
 [node name="TabSkillLabel" type="Label" parent="BaseLayer/TabSkillBtn" unique_id=1554135452]
 unique_name_in_owner = true
@@ -516,9 +516,9 @@ vertical_alignment = 1
 unique_name_in_owner = true
 z_index = 2
 layout_mode = 0
-offset_left = 889.0
+offset_left = 749.0
 offset_top = 22.0
-offset_right = 940.0
+offset_right = 800.0
 offset_bottom = 73.0
 texture_normal = ExtResource("11_udv1k")
 texture_pressed = ExtResource("12_byvlk")
@@ -529,10 +529,10 @@ unique_name_in_owner = true
 visible = false
 z_index = 16
 layout_mode = 0
-offset_left = 112.5
-offset_top = 342.5
-offset_right = 163.5
-offset_bottom = 417.5
+offset_left = 32.5
+offset_top = 262.5
+offset_right = 83.5
+offset_bottom = 337.5
 mouse_filter = 2
 texture_normal = ExtResource("16_arrow_l")
 ignore_texture_size = true
@@ -543,10 +543,10 @@ unique_name_in_owner = true
 visible = false
 z_index = 16
 layout_mode = 0
-offset_left = 796.5
-offset_top = 342.5
-offset_right = 847.5
-offset_bottom = 417.5
+offset_left = 716.5
+offset_top = 262.5
+offset_right = 767.5
+offset_bottom = 337.5
 mouse_filter = 2
 texture_normal = ExtResource("17_arrow_r")
 ignore_texture_size = true

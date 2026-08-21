@@ -32,10 +32,10 @@ mouse_filter = 2
 [node name="Frame" type="Panel" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 256.18
-offset_top = 215.08
-offset_right = 722.58
-offset_bottom = 504.92
+offset_left = 176.18
+offset_top = 135.08
+offset_right = 642.58
+offset_bottom = 424.92
 mouse_filter = 0
 theme_override_styles/panel = SubResource("sb_ssbuy_frame")
 

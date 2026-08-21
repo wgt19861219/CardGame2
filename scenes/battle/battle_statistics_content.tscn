@@ -29,10 +29,10 @@ color = Color(0, 0, 0, 0.705882)
 [node name="HurtBg" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 270.0
-offset_top = 140.0
-offset_right = 690.0
-offset_bottom = 500.0
+offset_left = 190.0
+offset_top = 60.0
+offset_right = 610.0
+offset_bottom = 420.0
 mouse_filter = 2
 texture = ExtResource("1_hurtbg")
 ; 源 hurtBg capInsets CCRectMake(15,20,45,15)，贴图 103x61 → top=61-20-15=26/bottom=20/right=103-15-45=43

@@ -29,10 +29,10 @@ mouse_filter = 2
 ; 等比修正为 157.35..802.65 / 111.2..528.8，裁剪区与贴图内框关系恢复源口径。
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 157.35
-offset_top = 111.2
-offset_right = 802.65
-offset_bottom = 528.8
+offset_left = 77.35
+offset_top = 31.2
+offset_right = 722.65
+offset_bottom = 448.8
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
@@ -43,10 +43,10 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 747.5
-offset_top = 107.0
-offset_right = 812.5
-offset_bottom = 173.0
+offset_left = 667.5
+offset_top = 27.0
+offset_right = 732.5
+offset_bottom = 93.0
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
@@ -56,10 +56,10 @@ ignore_texture_size = true
 [node name="IconHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 140.0
-offset_top = 180.0
-offset_right = 180.0
-offset_bottom = 220.0
+offset_left = 60.0
+offset_top = 100.0
+offset_right = 100.0
+offset_bottom = 140.0
 mouse_filter = 2
 
 ; 拥有数量（源 :307-317 "x"+amount size18 at (105,300) anchor(0,0.5) + 绿/红
@@ -68,10 +68,10 @@ mouse_filter = 2
 [node name="AmountLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 185.0
-offset_top = 246.0
-offset_right = 320.0
-offset_bottom = 274.0
+offset_left = 105.0
+offset_top = 166.0
+offset_right = 240.0
+offset_bottom = 194.0
 theme_type_variation = &"EquipDetailAmountLabel"
 mouse_filter = 2
 vertical_alignment = 1
@@ -84,10 +84,10 @@ vertical_alignment = 1
 [node name="ScrollClip" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 200.0
-offset_top = 126.0
-offset_right = 760.0
-offset_bottom = 513.0
+offset_left = 120.0
+offset_top = 46.0
+offset_right = 680.0
+offset_bottom = 433.0
 mouse_filter = 1
 horizontal_scroll_mode = 0
 

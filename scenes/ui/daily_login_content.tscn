@@ -18,10 +18,10 @@ mouse_filter = 2
 ; → top=202-50-50=102 bottom=50（批 2 修正旧 tscn top/bottom 互换）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 3
-offset_left = 191.0
-offset_top = 110.0
-offset_right = 769.0
-offset_bottom = 530.0
+offset_left = 111.0
+offset_top = 30.0
+offset_right = 689.0
+offset_bottom = 450.0
 texture = ExtResource("1_frame")
 patch_margin_left = 50
 patch_margin_top = 102
@@ -32,10 +32,10 @@ mouse_filter = 2
 ; title_bg 源 :764-774：中心 ccp(400,441)，445x79 ÷CS=347.32x61.66
 [node name="TitleBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 306.34
-offset_top = 88.17
-offset_right = 653.66
-offset_bottom = 149.83
+offset_left = 226.34
+offset_top = 8.17
+offset_right = 573.66
+offset_bottom = 69.83
 texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
@@ -43,10 +43,10 @@ mouse_filter = 2
 ; act_bg 源 :800-812：中心 ccp(400,420) fix_size(0,35)（宽 734÷CS 保持，高 35 直译）
 [node name="ActBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 193.42
-offset_top = 122.5
-offset_right = 766.58
-offset_bottom = 157.5
+offset_left = 113.42
+offset_top = 42.5
+offset_right = 686.58
+offset_bottom = 77.5
 texture = ExtResource("3_actbg")
 expand_mode = 1
 mouse_filter = 2
@@ -55,10 +55,10 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 729.63
-offset_top = 94.24
-offset_right = 780.37
-offset_bottom = 145.75
+offset_left = 649.63
+offset_top = 14.24
+offset_right = 700.37
+offset_bottom = 65.75
 texture_normal = ExtResource("4_close")
 texture_pressed = ExtResource("5_closep")
 ignore_texture_size = true
@@ -68,10 +68,10 @@ stretch_mode = 0
 [node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 430.0
-offset_top = 106.0
-offset_right = 530.0
-offset_bottom = 126.0
+offset_left = 350.0
+offset_top = 26.0
+offset_right = 450.0
+offset_bottom = 46.0
 theme_type_variation = &"DailyLoginTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -82,10 +82,10 @@ text = "X月签到奖励"
 [node name="ExplainBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 217.5
-offset_top = 135.0
-offset_right = 322.5
-offset_bottom = 185.0
+offset_left = 137.5
+offset_top = 55.0
+offset_right = 242.5
+offset_bottom = 105.0
 theme_type_variation = &"DailyLoginExplainBtn"
 
 ; explain_label 源 :858-873：explain 局部 (53,24) size18 ccc3(225,209,186) → 全铺居中
@@ -105,10 +105,10 @@ text = "奖励说明"
 [node name="SubheadPreLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 480.0
-offset_top = 154.0
-offset_right = 680.0
-offset_bottom = 174.0
+offset_left = 400.0
+offset_top = 74.0
+offset_right = 600.0
+offset_bottom = 94.0
 theme_type_variation = &"DailyLoginSubheadPreLabel"
 mouse_filter = 2
 vertical_alignment = 1
@@ -117,10 +117,10 @@ text = "本月已累计签到"
 [node name="SubheadNumLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 700.0
-offset_top = 154.0
-offset_right = 740.0
-offset_bottom = 174.0
+offset_left = 620.0
+offset_top = 74.0
+offset_right = 660.0
+offset_bottom = 94.0
 theme_type_variation = &"WhiteLabel16"
 mouse_filter = 2
 vertical_alignment = 1
@@ -129,10 +129,10 @@ text = "0"
 [node name="SubheadSufLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 750.0
-offset_top = 154.0
-offset_right = 790.0
-offset_bottom = 174.0
+offset_left = 670.0
+offset_top = 74.0
+offset_right = 710.0
+offset_bottom = 94.0
 theme_type_variation = &"DailyLoginSubheadSufLabel"
 mouse_filter = 2
 vertical_alignment = 1
@@ -142,10 +142,10 @@ text = "次"
 [node name="GridScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 220.0
-offset_top = 185.0
-offset_right = 740.0
-offset_bottom = 520.0
+offset_left = 140.0
+offset_top = 105.0
+offset_right = 660.0
+offset_bottom = 440.0
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 1
 

@@ -57,10 +57,10 @@ mouse_filter = 2
 ; 框（源 :2007-2016 equipupgrade_frame 916x580 at (400,230) 中心锚 → 中心 (480,330)）
 [node name="Frame" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 122.54
-offset_top = 103.66
-offset_right = 837.46
-offset_bottom = 556.34
+offset_left = 42.54
+offset_top = 23.66
+offset_right = 757.46
+offset_bottom = 476.34
 texture = ExtResource("2_frame")
 expand_mode = 1
 mouse_filter = 2
@@ -70,20 +70,20 @@ mouse_filter = 2
 [node name="HeroHeadHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 163.0
-offset_top = 168.0
-offset_right = 267.0
-offset_bottom = 272.0
+offset_left = 83.0
+offset_top = 88.0
+offset_right = 187.0
+offset_bottom = 192.0
 mouse_filter = 2
 
 ; 头像框（源 :2018-2027 hero_icon_frame_1 106x106 at (135,340) 中心锚 → 82.73 显示；
 ; fill 头像后 visible=false 照源 :1741 removeFromParent）
 [node name="HeroIcon" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 173.63
-offset_top = 178.63
-offset_right = 256.37
-offset_bottom = 261.37
+offset_left = 93.63
+offset_top = 98.63
+offset_right = 176.37
+offset_bottom = 181.37
 texture = ExtResource("3_heroicon")
 expand_mode = 1
 mouse_filter = 2
@@ -93,10 +93,10 @@ mouse_filter = 2
 [node name="HeroName" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 145.0
-offset_top = 153.0
-offset_right = 275.0
-offset_bottom = 177.0
+offset_left = 65.0
+offset_top = 73.0
+offset_right = 195.0
+offset_bottom = 97.0
 theme_type_variation = &"EatexpHeroNameLabel"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -108,10 +108,10 @@ text = "英雄名"
 [node name="EquipSlot0" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 277.0
-offset_top = 117.0
-offset_right = 353.0
-offset_bottom = 193.0
+offset_left = 197.0
+offset_top = 37.0
+offset_right = 273.0
+offset_bottom = 113.0
 mouse_filter = 0
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot0"]
@@ -127,10 +127,10 @@ mouse_filter = 2
 [node name="EquipSlot1" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 349.0
-offset_top = 117.0
-offset_right = 425.0
-offset_bottom = 193.0
+offset_left = 269.0
+offset_top = 37.0
+offset_right = 345.0
+offset_bottom = 113.0
 mouse_filter = 0
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot1"]
@@ -146,10 +146,10 @@ mouse_filter = 2
 [node name="EquipSlot2" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 277.0
-offset_top = 189.0
-offset_right = 353.0
-offset_bottom = 265.0
+offset_left = 197.0
+offset_top = 109.0
+offset_right = 273.0
+offset_bottom = 185.0
 mouse_filter = 0
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot2"]
@@ -165,10 +165,10 @@ mouse_filter = 2
 [node name="EquipSlot3" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 349.0
-offset_top = 189.0
-offset_right = 425.0
-offset_bottom = 265.0
+offset_left = 269.0
+offset_top = 109.0
+offset_right = 345.0
+offset_bottom = 185.0
 mouse_filter = 0
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot3"]
@@ -184,10 +184,10 @@ mouse_filter = 2
 [node name="EquipSlot4" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 277.0
-offset_top = 261.0
-offset_right = 353.0
-offset_bottom = 337.0
+offset_left = 197.0
+offset_top = 181.0
+offset_right = 273.0
+offset_bottom = 257.0
 mouse_filter = 0
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot4"]
@@ -203,10 +203,10 @@ mouse_filter = 2
 [node name="EquipSlot5" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 349.0
-offset_top = 261.0
-offset_right = 425.0
-offset_bottom = 337.0
+offset_left = 269.0
+offset_top = 181.0
+offset_right = 345.0
+offset_bottom = 257.0
 mouse_filter = 0
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot5"]
@@ -231,10 +231,10 @@ mouse_filter = 2
 ; → 左中 (425,145)，显示 153.76x32.0）
 [node name="AttNameBg" type="TextureRect" parent="AttHost"]
 layout_mode = 3
-offset_left = 425.0
-offset_top = 129.0
-offset_right = 578.76
-offset_bottom = 161.0
+offset_left = 345.0
+offset_top = 49.0
+offset_right = 498.76
+offset_bottom = 81.0
 texture = ExtResource("7_namebg")
 expand_mode = 1
 mouse_filter = 2
@@ -243,10 +243,10 @@ mouse_filter = 2
 [node name="AttNameLabel" type="Label" parent="AttHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 427.0
-offset_top = 135.0
-offset_right = 627.0
-offset_bottom = 155.0
+offset_left = 347.0
+offset_top = 55.0
+offset_right = 547.0
+offset_bottom = 75.0
 theme_type_variation = &"EquipStrenLabel18"
 mouse_filter = 2
 vertical_alignment = 1
@@ -255,10 +255,10 @@ vertical_alignment = 1
 [node name="AttLevelLabel" type="Label" parent="AttHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 427.0
-offset_top = 165.0
-offset_right = 627.0
-offset_bottom = 185.0
+offset_left = 347.0
+offset_top = 85.0
+offset_right = 547.0
+offset_bottom = 105.0
 theme_type_variation = &"EquipStrenAttLevelLabel"
 mouse_filter = 2
 vertical_alignment = 1
@@ -275,10 +275,10 @@ mouse_filter = 2
 [node name="BarBg" type="TextureRect" parent="BarHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 151.42
-offset_top = 338.63
-offset_right = 808.58
-offset_bottom = 357.37
+offset_left = 71.42
+offset_top = 258.63
+offset_right = 728.58
+offset_bottom = 277.37
 texture = ExtResource("8_barbg")
 expand_mode = 1
 mouse_filter = 2
@@ -288,10 +288,10 @@ mouse_filter = 2
 [node name="Bar" type="TextureRect" parent="BarHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 152.0
-offset_top = 338.0
-offset_right = 809.17
-offset_bottom = 356.0
+offset_left = 72.0
+offset_top = 258.0
+offset_right = 729.17
+offset_bottom = 276.0
 texture = SubResource("AtlasBar")
 expand_mode = 1
 mouse_filter = 2
@@ -300,10 +300,10 @@ mouse_filter = 2
 [node name="AnimBar" type="TextureRect" parent="BarHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 152.0
-offset_top = 338.0
-offset_right = 809.17
-offset_bottom = 356.0
+offset_left = 72.0
+offset_top = 258.0
+offset_right = 729.17
+offset_bottom = 276.0
 texture = SubResource("AtlasAnimBar")
 expand_mode = 1
 mouse_filter = 2
@@ -313,10 +313,10 @@ visible = false
 [node name="BarLevelLabel" type="Label" parent="BarHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 155.0
-offset_top = 315.0
-offset_right = 355.0
-offset_bottom = 335.0
+offset_left = 75.0
+offset_top = 235.0
+offset_right = 275.0
+offset_bottom = 255.0
 theme_type_variation = &"EquipStrenBarLevelLabel"
 mouse_filter = 2
 vertical_alignment = 1
@@ -325,10 +325,10 @@ vertical_alignment = 1
 [node name="NextLevelLabel" type="Label" parent="BarHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 605.0
-offset_top = 315.0
-offset_right = 805.0
-offset_bottom = 335.0
+offset_left = 525.0
+offset_top = 235.0
+offset_right = 725.0
+offset_bottom = 255.0
 theme_type_variation = &"EquipStrenBarLevelLabel"
 mouse_filter = 2
 horizontal_alignment = 2
@@ -338,10 +338,10 @@ vertical_alignment = 1
 [node name="EhcLabel" type="Label" parent="BarHost"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 380.0
-offset_top = 338.0
-offset_right = 580.0
-offset_bottom = 358.0
+offset_left = 300.0
+offset_top = 258.0
+offset_right = 500.0
+offset_bottom = 278.0
 theme_type_variation = &"EquipStrenEhcLabel"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -354,10 +354,10 @@ vertical_alignment = 1
 [node name="MaterialBg" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 150.0
-offset_top = 363.0
-offset_right = 810.0
-offset_bottom = 517.0
+offset_left = 70.0
+offset_top = 283.0
+offset_right = 730.0
+offset_bottom = 437.0
 texture = ExtResource("16_mbgwide")
 patch_margin_left = 10
 patch_margin_top = 60
@@ -369,10 +369,10 @@ mouse_filter = 2
 [node name="MaterialLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 255.0
-offset_top = 425.0
-offset_right = 555.0
-offset_bottom = 455.0
+offset_left = 175.0
+offset_top = 345.0
+offset_right = 475.0
+offset_bottom = 375.0
 theme_type_variation = &"EquipStrenMaterialLabel"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -385,10 +385,10 @@ visible = false
 [node name="MtClip" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 178.0
-offset_top = 363.0
-offset_right = 678.0
-offset_bottom = 518.0
+offset_left = 98.0
+offset_top = 283.0
+offset_right = 598.0
+offset_bottom = 438.0
 mouse_filter = 1
 clip_contents = true
 horizontal_scroll_mode = 0
@@ -408,10 +408,10 @@ mouse_filter = 2
 [node name="MoneyBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 683.34
-offset_top = 358.61
-offset_right = 806.66
-offset_bottom = 391.39
+offset_left = 603.34
+offset_top = 278.61
+offset_right = 726.66
+offset_bottom = 311.39
 texture = ExtResource("11_price")
 expand_mode = 1
 mouse_filter = 2
@@ -419,10 +419,10 @@ mouse_filter = 2
 [node name="NoCostLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 683.34
-offset_top = 365.0
-offset_right = 806.66
-offset_bottom = 385.0
+offset_left = 603.34
+offset_top = 285.0
+offset_right = 726.66
+offset_bottom = 305.0
 theme_type_variation = &"EquipStrenLabel18"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -433,10 +433,10 @@ text = "未添加材料"
 [node name="MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 681.5
-offset_top = 364.5
-offset_right = 708.5
-offset_bottom = 389.5
+offset_left = 601.5
+offset_top = 284.5
+offset_right = 628.5
+offset_bottom = 309.5
 texture = ExtResource("12_goldsm")
 expand_mode = 1
 mouse_filter = 2
@@ -445,10 +445,10 @@ visible = false
 [node name="MoneyLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 695.0
-offset_top = 367.0
-offset_right = 795.0
-offset_bottom = 387.0
+offset_left = 615.0
+offset_top = 287.0
+offset_right = 715.0
+offset_bottom = 307.0
 theme_type_variation = &"EquipStrenLabel18"
 mouse_filter = 2
 horizontal_alignment = 2
@@ -460,10 +460,10 @@ visible = false
 [node name="StrenBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 683.5
-offset_top = 392.5
-offset_right = 808.5
-offset_bottom = 437.5
+offset_left = 603.5
+offset_top = 312.5
+offset_right = 728.5
+offset_bottom = 357.5
 theme_type_variation = &"EquipStrenButton"
 mouse_filter = 0
 
@@ -483,10 +483,10 @@ text = "附魔"
 [node name="RmbBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 683.34
-offset_top = 441.61
-offset_right = 806.66
-offset_bottom = 474.39
+offset_left = 603.34
+offset_top = 361.61
+offset_right = 726.66
+offset_bottom = 394.39
 texture = ExtResource("11_price")
 expand_mode = 1
 mouse_filter = 2
@@ -494,10 +494,10 @@ mouse_filter = 2
 [node name="NoFastCostLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 683.34
-offset_top = 450.0
-offset_right = 806.66
-offset_bottom = 470.0
+offset_left = 603.34
+offset_top = 370.0
+offset_right = 726.66
+offset_bottom = 390.0
 theme_type_variation = &"EquipStrenLabel18"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -507,10 +507,10 @@ text = ""
 [node name="RmbIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 686.34
-offset_top = 447.12
-offset_right = 713.66
-offset_bottom = 472.88
+offset_left = 606.34
+offset_top = 367.12
+offset_right = 633.66
+offset_bottom = 392.88
 texture = ExtResource("13_rmb")
 expand_mode = 1
 mouse_filter = 2
@@ -518,10 +518,10 @@ mouse_filter = 2
 [node name="RmbLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 695.0
-offset_top = 450.0
-offset_right = 795.0
-offset_bottom = 470.0
+offset_left = 615.0
+offset_top = 370.0
+offset_right = 715.0
+offset_bottom = 390.0
 theme_type_variation = &"EquipStrenLabel18"
 mouse_filter = 2
 horizontal_alignment = 2
@@ -531,10 +531,10 @@ vertical_alignment = 1
 [node name="FastStrenBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 683.5
-offset_top = 477.5
-offset_right = 808.5
-offset_bottom = 522.5
+offset_left = 603.5
+offset_top = 397.5
+offset_right = 728.5
+offset_bottom = 442.5
 theme_type_variation = &"EquipStrenButton"
 mouse_filter = 0
 
@@ -553,10 +553,10 @@ text = "一键附魔"
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 116.12
-offset_top = 100.73
-offset_right = 173.88
-offset_bottom = 159.27
+offset_left = 36.12
+offset_top = 20.73
+offset_right = 93.88
+offset_bottom = 79.27
 texture_normal = ExtResource("4_back")
 texture_pressed = ExtResource("5_backp")
 ignore_texture_size = true
@@ -576,10 +576,10 @@ mouse_filter = 2
 [node name="NpcSprite" type="TextureRect" parent="TalkContainer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 613.8
-offset_top = 97.7
-offset_right = 822.2
-offset_bottom = 266.3
+offset_left = 533.8
+offset_top = 17.7
+offset_right = 742.2
+offset_bottom = 186.3
 texture = ExtResource("14_npc")
 expand_mode = 1
 mouse_filter = 2
@@ -587,10 +587,10 @@ mouse_filter = 2
 [node name="TalkFrame" type="NinePatchRect" parent="TalkContainer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 613.0
-offset_top = 255.0
-offset_right = 837.0
-offset_bottom = 331.0
+offset_left = 533.0
+offset_top = 175.0
+offset_right = 757.0
+offset_bottom = 251.0
 texture = ExtResource("15_talk")
 patch_margin_left = 30
 patch_margin_top = 48
@@ -602,10 +602,10 @@ mouse_filter = 2
 [node name="TalkLabel" type="Label" parent="TalkContainer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 625.0
-offset_top = 278.0
-offset_right = 825.0
-offset_bottom = 308.0
+offset_left = 545.0
+offset_top = 198.0
+offset_right = 745.0
+offset_bottom = 228.0
 theme_type_variation = &"EquipStrenTalkLabel"
 mouse_filter = 2
 horizontal_alignment = 0

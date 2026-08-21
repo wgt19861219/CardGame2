@@ -41,10 +41,10 @@ mouse_filter = 2
 ; 窗口框（源 frame Scale9Sprite main_vit_tips z=1）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 163.595
-offset_top = 219.375
-offset_right = 796.405
-offset_bottom = 461.565
+offset_left = 83.595
+offset_top = 139.375
+offset_right = 716.405
+offset_bottom = 381.565
 texture = ExtResource("1_frame")
 patch_margin_left = 18
 patch_margin_top = 31

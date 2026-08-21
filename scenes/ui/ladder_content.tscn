@@ -22,8 +22,8 @@ mouse_filter = 2
 [node name="FrameworkBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
@@ -33,10 +33,10 @@ mouse_filter = 2
 [node name="PvpFrame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 115.0
-offset_top = 152.6
-offset_right = 845.2
-offset_bottom = 547.4
+offset_left = 35.0
+offset_top = 72.6
+offset_right = 765.2
+offset_bottom = 467.4
 texture = ExtResource("4_frame")
 expand_mode = 1
 mouse_filter = 2
@@ -76,10 +76,10 @@ mouse_filter = 2
 [node name="TabBtn0" type="Button" parent="TabBarLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 393.0
-offset_top = 269.0
-offset_right = 489.0
-offset_bottom = 317.0
+offset_left = 313.0
+offset_top = 189.0
+offset_right = 409.0
+offset_bottom = 237.0
 theme_type_variation = &"LadderTabButton"
 mouse_filter = 0
 
@@ -96,10 +96,10 @@ mouse_filter = 2
 [node name="TabBtn1" type="Button" parent="TabBarLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 493.0
-offset_top = 269.0
-offset_right = 589.0
-offset_bottom = 317.0
+offset_left = 413.0
+offset_top = 189.0
+offset_right = 509.0
+offset_bottom = 237.0
 theme_type_variation = &"LadderTabButton"
 mouse_filter = 0
 
@@ -116,10 +116,10 @@ mouse_filter = 2
 [node name="TabBtn2" type="Button" parent="TabBarLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 590.0
-offset_top = 269.0
-offset_right = 686.0
-offset_bottom = 317.0
+offset_left = 510.0
+offset_top = 189.0
+offset_right = 606.0
+offset_bottom = 237.0
 theme_type_variation = &"LadderTabButton"
 mouse_filter = 0
 
@@ -136,10 +136,10 @@ mouse_filter = 2
 [node name="TabBtn3" type="Button" parent="TabBarLayer"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 707.0
-offset_top = 269.0
-offset_right = 803.0
-offset_bottom = 317.0
+offset_left = 627.0
+offset_top = 189.0
+offset_right = 723.0
+offset_bottom = 237.0
 theme_type_variation = &"LadderTabButton"
 mouse_filter = 0
 
@@ -167,10 +167,10 @@ mouse_filter = 2
 [node name="RankLabel" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 80.0
-offset_top = 281.0
-offset_right = 280.0
-offset_bottom = 305.0
+offset_left = 0.0
+offset_top = 201.0
+offset_right = 200.0
+offset_bottom = 225.0
 theme_type_variation = &"LadderDarkLabel20"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -180,10 +180,10 @@ text = "我的排名:"
 [node name="RankValue" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 230.0
-offset_top = 273.0
-offset_right = 340.0
-offset_bottom = 293.0
+offset_left = 150.0
+offset_top = 193.0
+offset_right = 260.0
+offset_bottom = 213.0
 theme_type_variation = &"LadderOrangeLabel20"
 vertical_alignment = 1
 mouse_filter = 2
@@ -193,10 +193,10 @@ mouse_filter = 2
 [node name="ArenaIcon" type="TextureRect" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 166.0
-offset_top = 179.0
-offset_right = 194.0
-offset_bottom = 205.0
+offset_left = 86.0
+offset_top = 99.0
+offset_right = 114.0
+offset_bottom = 125.0
 texture = ExtResource("8_arena")
 expand_mode = 1
 mouse_filter = 2
@@ -204,10 +204,10 @@ mouse_filter = 2
 [node name="ArenaValue" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 198.0
-offset_top = 182.0
-offset_right = 298.0
-offset_bottom = 202.0
+offset_left = 118.0
+offset_top = 102.0
+offset_right = 218.0
+offset_bottom = 122.0
 theme_type_variation = &"LadderOrangeLabel20"
 vertical_alignment = 1
 mouse_filter = 2
@@ -216,10 +216,10 @@ mouse_filter = 2
 [node name="GpsLabel" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 675.0
-offset_top = 180.0
-offset_right = 775.0
-offset_bottom = 204.0
+offset_left = 595.0
+offset_top = 100.0
+offset_right = 695.0
+offset_bottom = 124.0
 theme_type_variation = &"LadderDarkLabel20"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -229,10 +229,10 @@ text = "战斗力:"
 [node name="GpsValue" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 750.0
-offset_top = 180.0
-offset_right = 840.0
-offset_bottom = 204.0
+offset_left = 670.0
+offset_top = 100.0
+offset_right = 760.0
+offset_bottom = 124.0
 theme_type_variation = &"LadderOrangeLabel20"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -242,10 +242,10 @@ mouse_filter = 2
 [node name="LeftTimeLabel" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 106.0
-offset_top = 338.0
-offset_right = 306.0
-offset_bottom = 362.0
+offset_left = 26.0
+offset_top = 258.0
+offset_right = 226.0
+offset_bottom = 282.0
 theme_type_variation = &"LadderDarkLabel20"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -255,10 +255,10 @@ text = "今日剩余次数"
 [node name="LeftTimeNum" type="Label" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 156.0
-offset_top = 360.0
-offset_right = 256.0
-offset_bottom = 384.0
+offset_left = 76.0
+offset_top = 280.0
+offset_right = 176.0
+offset_bottom = 304.0
 theme_type_variation = &"LadderOrangeLabel20"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -269,10 +269,10 @@ mouse_filter = 2
 [node name="EnemyCard1" type="Control" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 285.7
-offset_top = 325.4
-offset_right = 454.3
-offset_bottom = 534.6
+offset_left = 205.7
+offset_top = 245.4
+offset_right = 374.3
+offset_bottom = 454.6
 mouse_filter = 2
 
 [node name="EnemyBg" type="TextureRect" parent="TabChallengeView/EnemyCard1"]
@@ -409,10 +409,10 @@ text = "挑战"
 [node name="EnemyCard2" type="Control" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 470.7
-offset_top = 325.4
-offset_right = 639.3
-offset_bottom = 534.6
+offset_left = 390.7
+offset_top = 245.4
+offset_right = 559.3
+offset_bottom = 454.6
 mouse_filter = 2
 
 [node name="EnemyBg" type="TextureRect" parent="TabChallengeView/EnemyCard2"]
@@ -543,10 +543,10 @@ text = "挑战"
 [node name="EnemyCard3" type="Control" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 655.7
-offset_top = 325.4
-offset_right = 824.3
-offset_bottom = 534.6
+offset_left = 575.7
+offset_top = 245.4
+offset_right = 744.3
+offset_bottom = 454.6
 mouse_filter = 2
 
 [node name="EnemyBg" type="TextureRect" parent="TabChallengeView/EnemyCard3"]
@@ -679,10 +679,10 @@ text = "挑战"
 [node name="RefreshBtn" type="Button" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 141.0
-offset_top = 483.4
-offset_right = 270.5
-offset_bottom = 532.6
+offset_left = 61.0
+offset_top = 403.4
+offset_right = 190.5
+offset_bottom = 452.6
 theme_type_variation = &"LadderChangeButton"
 mouse_filter = 0
 
@@ -700,10 +700,10 @@ mouse_filter = 2
 [node name="BuyBtn" type="Button" parent="TabChallengeView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 283.0
-offset_top = 483.4
-offset_right = 412.5
-offset_bottom = 532.6
+offset_left = 203.0
+offset_top = 403.4
+offset_right = 332.5
+offset_bottom = 452.6
 theme_type_variation = &"LadderWideButton"
 mouse_filter = 0
 
@@ -731,10 +731,10 @@ mouse_filter = 2
 [node name="RankFrame" type="NinePatchRect" parent="TabRankboardView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 215.0
-offset_top = 122.5
-offset_right = 745.0
-offset_bottom = 537.5
+offset_left = 135.0
+offset_top = 42.5
+offset_right = 665.0
+offset_bottom = 457.5
 texture = ExtResource("9_rankframe")
 patch_margin_left = 15
 patch_margin_top = 484
@@ -747,10 +747,10 @@ mouse_filter = 2
 [node name="TitleBg" type="TextureRect" parent="TabRankboardView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 306.5
-offset_top = 100.2
-offset_right = 653.5
-offset_bottom = 161.8
+offset_left = 226.5
+offset_top = 20.2
+offset_right = 573.5
+offset_bottom = 81.8
 texture = ExtResource("10_titlebg")
 expand_mode = 1
 mouse_filter = 2
@@ -758,10 +758,10 @@ mouse_filter = 2
 [node name="TitleLbl" type="Label" parent="TabRankboardView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 400.0
-offset_top = 119.0
-offset_right = 560.0
-offset_bottom = 143.0
+offset_left = 320.0
+offset_top = 39.0
+offset_right = 480.0
+offset_bottom = 63.0
 theme_type_variation = &"LadderTitleLabel24"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -772,10 +772,10 @@ text = "英雄榜"
 [node name="RankScroll" type="ScrollContainer" parent="TabRankboardView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 245.0
-offset_top = 160.0
-offset_right = 715.0
-offset_bottom = 520.0
+offset_left = 165.0
+offset_top = 80.0
+offset_right = 635.0
+offset_bottom = 440.0
 horizontal_scroll_mode = 0
 
 [node name="RankboardHost" type="Control" parent="TabRankboardView/RankScroll"]
@@ -797,10 +797,10 @@ mouse_filter = 2
 [node name="RecTitleBg" type="TextureRect" parent="TabRecordsView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 219.8
-offset_top = 100.5
-offset_right = 740.2
-offset_bottom = 139.5
+offset_left = 139.8
+offset_top = 20.5
+offset_right = 660.2
+offset_bottom = 59.5
 texture = ExtResource("11_rectitlebg")
 expand_mode = 1
 mouse_filter = 2
@@ -808,10 +808,10 @@ mouse_filter = 2
 [node name="RecTitleLbl" type="Label" parent="TabRecordsView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 400.0
-offset_top = 108.0
-offset_right = 560.0
-offset_bottom = 132.0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 480.0
+offset_bottom = 52.0
 theme_type_variation = &"LadderTitleLabel24"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -823,10 +823,10 @@ text = "对战记录"
 [node name="RecFrame" type="TextureRect" parent="TabRecordsView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 206.8
-offset_top = 143.5
-offset_right = 753.2
-offset_bottom = 548.5
+offset_left = 126.8
+offset_top = 63.5
+offset_right = 673.2
+offset_bottom = 468.5
 texture = ExtResource("9_rankframe")
 expand_mode = 1
 mouse_filter = 2
@@ -835,10 +835,10 @@ mouse_filter = 2
 [node name="RecScroll" type="ScrollContainer" parent="TabRecordsView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 240.0
-offset_top = 160.0
-offset_right = 730.0
-offset_bottom = 520.0
+offset_left = 160.0
+offset_top = 80.0
+offset_right = 650.0
+offset_bottom = 440.0
 horizontal_scroll_mode = 0
 
 [node name="RecordsHost" type="Control" parent="TabRecordsView/RecScroll"]
@@ -859,10 +859,10 @@ mouse_filter = 2
 [node name="LineupTitleLbl" type="Label" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 80.0
-offset_top = 204.0
-offset_right = 280.0
-offset_bottom = 228.0
+offset_left = 0.0
+offset_top = 124.0
+offset_right = 200.0
+offset_bottom = 148.0
 theme_type_variation = &"LadderDarkLabel20"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -873,46 +873,46 @@ mouse_filter = 2
 [node name="HeroSlot1" type="Control" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 227.0
-offset_top = 162.0
-offset_right = 331.0
-offset_bottom = 266.0
+offset_left = 147.0
+offset_top = 82.0
+offset_right = 251.0
+offset_bottom = 186.0
 mouse_filter = 2
 
 [node name="HeroSlot2" type="Control" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 318.0
-offset_top = 162.0
-offset_right = 422.0
-offset_bottom = 266.0
+offset_left = 238.0
+offset_top = 82.0
+offset_right = 342.0
+offset_bottom = 186.0
 mouse_filter = 2
 
 [node name="HeroSlot3" type="Control" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 409.0
-offset_top = 162.0
-offset_right = 513.0
-offset_bottom = 266.0
+offset_left = 329.0
+offset_top = 82.0
+offset_right = 433.0
+offset_bottom = 186.0
 mouse_filter = 2
 
 [node name="HeroSlot4" type="Control" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 501.0
-offset_top = 162.0
-offset_right = 605.0
-offset_bottom = 266.0
+offset_left = 421.0
+offset_top = 82.0
+offset_right = 525.0
+offset_bottom = 186.0
 mouse_filter = 2
 
 [node name="HeroSlot5" type="Control" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 593.0
-offset_top = 162.0
-offset_right = 697.0
-offset_bottom = 266.0
+offset_left = 513.0
+offset_top = 82.0
+offset_right = 617.0
+offset_bottom = 186.0
 mouse_filter = 2
 
 ; 调整按钮：源 adjustHero(675,327) tavern_button_normal cap(50,20,66,23)（:2937-2963）
@@ -920,10 +920,10 @@ mouse_filter = 2
 [node name="SetLineupBtn" type="Button" parent="TabLineupView"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 690.0
-offset_top = 208.4
-offset_right = 819.5
-offset_bottom = 257.6
+offset_left = 610.0
+offset_top = 128.4
+offset_right = 739.5
+offset_bottom = 177.6
 theme_type_variation = &"LadderWideButton"
 mouse_filter = 0
 
