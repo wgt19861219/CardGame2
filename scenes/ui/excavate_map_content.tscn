@@ -72,8 +72,8 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 0

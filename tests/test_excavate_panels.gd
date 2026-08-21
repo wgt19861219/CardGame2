@@ -873,12 +873,13 @@ func test_map_content_static_rects() -> void:
 	assert_almost_eq(fc.size.x, 800.0, 0.02, "frame_container w=800（scaleSize 直译）")
 	assert_almost_eq(fc.size.y, 480.47, 0.02, "frame_container h=480.47")
 	var bg: Control = content.get_node("Bg") as Control
-	# 实跑反馈修复（2026-08-17）：源 pushScene 全屏页语义，bg 铺满视口 960×640 + STOP
+	# 实跑反馈修复（2026-08-17）：源 pushScene 全屏页语义，bg 铺满视口 + STOP
 	# 挡点击穿透 shade（原 fix_wh 800×481 直译不满屏致主城透过/弹窗内点击误关窗）。
+	# viewport 迁移终审（2026-08-21）：铺满视口 = 800×480（tscn 960×640 脏值已清偿）。
 	assert_almost_eq(bg.position.x, 0.0, 0.02, "bg 铺满 offset_left=0")
 	assert_almost_eq(bg.position.y, 0.0, 0.02, "bg 铺满 offset_top=0")
-	assert_almost_eq(bg.size.x, 960.0, 0.02, "bg w=960（pushScene 全屏语义）")
-	assert_almost_eq(bg.size.y, 640.0, 0.02, "bg h=640")
+	assert_almost_eq(bg.size.x, 800.0, 0.02, "bg w=800（pushScene 全屏语义）")
+	assert_almost_eq(bg.size.y, 480.0, 0.02, "bg h=480")
 	assert_eq((bg as TextureRect).mouse_filter, Control.MOUSE_FILTER_STOP, "bg STOP 挡点击穿透（pushScene 页无点外关闭）")
 	var mslbl: TextureButton = content.get_node("%ResearchFrame/ResearchContainer/%ResearchButton/SearchLabel") as TextureButton
 	assert_eq(mslbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
@@ -1273,8 +1274,9 @@ func test_search_content_static_rects() -> void:
 	add_child(content)
 	var bg_s: Control = content.get_node("Bg") as Control
 	# 实跑反馈修复（2026-08-17）：pushScene 全屏页语义铺满视口 + STOP（同 map 件守卫）。
-	assert_almost_eq(bg_s.size.x, 960.0, 0.02, "search bg w=960 全屏")
-	assert_almost_eq(bg_s.size.y, 640.0, 0.02, "search bg h=640 全屏")
+	# viewport 迁移终审（2026-08-21）：铺满视口 = 800×480。
+	assert_almost_eq(bg_s.size.x, 800.0, 0.02, "search bg w=800 全屏")
+	assert_almost_eq(bg_s.size.y, 480.0, 0.02, "search bg h=480 全屏")
 	assert_eq((bg_s as TextureRect).mouse_filter, Control.MOUSE_FILTER_STOP, "search bg STOP 挡点击穿透")
 	var slbl: TextureButton = content.get_node("SearchFrame/SearchContainer/%SearchButton/SearchLabel") as TextureButton
 	assert_eq(slbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
