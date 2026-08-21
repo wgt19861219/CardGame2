@@ -7,16 +7,16 @@ extends RefCounted
 
 const ITEM_SCENE: PackedScene = preload("res://scenes/ui/shop_item.tscn")
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
+const OFFSET_X: float = 0.0    # Cocos 800×480 左下原点 → Godot 800×480 左上原点
+const BASE_Y: float = 480.0
 # 源 shop.lua:363-382 getItemPos：lineCount=ceil(N/2)；上排 y=oy，下排 y=oy-dy。
 const LIST_OX: float = 185.0
 const LIST_DX: float = 205.0
 const LIST_OY: float = 256.0
 const LIST_DY: float = 150.0
 const ITEM_SIZE: Vector2 = Vector2(204.0, 146.0)
-# 源 shop.lua createListLayer cliprect CCRectMake(65,35,670,325) → to_godot 左上 (145,200)，ItemLayer 裁剪层原点。
-const LIST_CLIP_ORIGIN: Vector2 = Vector2(145.0, 200.0)
+# 源 shop.lua createListLayer cliprect CCRectMake(65,35,670,325) → to_godot 左上 (65,120)，ItemLayer 裁剪层原点。
+const LIST_CLIP_ORIGIN: Vector2 = Vector2(65.0, 120.0)
 const UNKNOWN_NAME: String = "???"
 const SOLDOUT_OPACITY: float = 120.0 / 255.0   # 源 shop.lua refreshGoods setOpacity(120)
 # C7（2026-07-23）照源 shop.lua:468-486：saleIcon 打折标 + tagIcon hot/old 标（资源缺 Label 降级文案/配色）。

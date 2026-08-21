@@ -10,7 +10,7 @@ extends Control
 ## show/hide_button 摆动动画保留 procedural（position.x tween）。Control 组件 content 挂 panel 自身（坑 7）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_next_button_content.tscn")
-const GODOT_POS: Vector2 = Vector2(750.0, 300.0)  # 原 to_godot(670,260)=(670+80,560-260)，HUD 原生坐标
+const GODOT_POS: Vector2 = Vector2(670.0, 220.0)  # to_godot(670,260)=(670,480-260)，HUD 原生坐标（800×480 直译）
 const BUTTON_SCALE: float = 1.25
 const SWING_DIST: float = 30.0
 const SWING_DURATION: float = 0.65

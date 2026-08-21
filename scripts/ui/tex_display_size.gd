@@ -6,7 +6,7 @@ extends RefCounted
 ##
 ## Cocos 显示尺寸 = 纹理 × ContentScale。
 ## setContentScaleFactor（hello.lua:311）是 Director 级渲染缩放（设计分辨率→屏幕映射），
-## Godot 960×640 viewport 直接等价源设计分辨率，CS 被屏幕分辨率抵消，不影响 sprite 占屏比例。
+## Godot 800×480 viewport 直接等价源设计分辨率，CS 被屏幕分辨率抵消，不影响 sprite 占屏比例。
 ## 故 Godot 显示像素 = 纹理像素 × ContentScale（不除 CS）。
 ##
 ## ContentScale 规则（源 getSpriteOriginalScale :44-56）：

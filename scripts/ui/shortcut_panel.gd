@@ -17,20 +17,22 @@ extends Control
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tscn")
 
 const CONTENT_SCALE: float = 1.28125
-const SCREEN_H: float = 640.0
-const BOARD_CENTER_X: float = 900.0
-# 用户视觉偏好(2026-07-14):快捷栏"更上一点贴近顶部"。整个抽屉上移 100px(板顶 180→80 / toggle 200→100,底部留 100px 空白)。
-const BOARD_UP_OFFSET: float = -132.0           # 整个抽屉上移量(负=上)；-132 让下拉钮与货币栏上端平齐（top=26）
-const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶 180 + 上移 → 48
+const SCREEN_H: float = 480.0
+const BOARD_CENTER_X: float = 740.0   # 源 uires.lua shortcut_board_pos.x = winRight(800)-60
+# 960×640 时代抽屉上移 -132（下拉钮与货币栏平齐，640 屏天区补偿）；viewport 800×480 后
+# 源内容满屏无天区，上移会致板顶出屏，UP 归 0 回源观感（toggle 源直译 y=40 天然近货币栏 top≈30）。
+const BOARD_UP_OFFSET: float = 0.0
+const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶贴底（cocos 板底 y=0..460 → godot 20..480）
 const BOARD_WIDTH: float = 82.0
 # 收起态板高受控偏离（批 2 Task 8 NinePatch 化）：源 40（uires.lua height_min），但 Godot
 # NinePatchRect 最小尺寸=patch margin 和（top40+bottom25=65），40 会被引擎钳到 65；
 # 源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。收起态板被 toggle 钮覆盖视觉无感。
 const BOARD_H_MIN: float = 65.0
 const BOARD_H_MAX: float = 460.0
-const TOGGLE_CENTER: Vector2 = Vector2(900.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=68，下拉钮 top=26 与货币栏 top=26 上端平齐
-const BUTTON_CENTER_Y: Array[float] = [146.0, 236.0, 326.0, 416.0, 506.0]   # 间距 90（源 70~79 太挤，用户要加大）；整体随 BOARD_UP_OFFSET 上移对齐
+const TOGGLE_CENTER: Vector2 = Vector2(740.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
+const BUTTON_CENTER_Y: Array[float] = [57.0, 147.0, 237.0, 327.0, 417.0]   # 间距 90 用户偏好（源 PosY={382..83} 直译={98..397} 间距 70~79 太挤）；底钮 417=板底 480-63，较源直译 397 下移 20 贴板底
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
+const MAIN_TAG_CENTER: Vector2 = Vector2(TOGGLE_CENTER.x + 28.0, TOGGLE_CENTER.y - 22.0)   # 源 :318 ccp(pos_x+28, pos_y+22) → godot(768,18)
 const ANIM_DUR: float = 0.12
 const SHADE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.0)   # 透明检测区（源 out_board shortcut_board_rect 无视觉 shade，仅点击收起检测）
 const TOUCH_WIDTH: float = 100.0
@@ -102,6 +104,13 @@ func _build_content() -> void:
 	_toggle_up.position = toggle_topleft
 	_board.position = Vector2(BOARD_CENTER_X - BOARD_WIDTH / 2.0, BOARD_TOP_Y)
 	_board.size = Vector2(BOARD_WIDTH, BOARD_H_MIN)
+	# shade 静态 offset 仍系 960 口径（Task 4 迁 tscn），800 屏下 x=850 已出屏 → 点击收起
+	# 检测失效；此处运行时覆盖兜底（源 shortcut_board_rect：板中心线 touch_width=100 全高）。
+	_shade.position = Vector2(BOARD_CENTER_X - TOUCH_WIDTH / 2.0, 0.0)
+	_shade.size = Vector2(TOUCH_WIDTH, SCREEN_H)
+	# 主 tag 静态 offset 同系 960 口径（x=919.8 出屏，收起态红点不可见）→ 运行时覆盖
+	# 源直译中心（:318 toggle 右 28 / 上 22），size 沿用 tscn 固有（21/CS × 22/CS）。
+	_main_tag.position = MAIN_TAG_CENTER - _main_tag.size / 2.0
 
 
 func _toggle_open() -> void:

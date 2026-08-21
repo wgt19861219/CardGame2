@@ -7,8 +7,8 @@ extends PopWindow
 ## 数据源 EquipmentClassifier.classify_equip(照源 readequip.classifyEquip :481-537)。
 ## 静态节点(背景三层/12 tag+label/箭头/back/pageLabel/pageTitle)进 handbook_content.tscn
 ## (preload instantiate + get_node("%..")),panel 管状态 + 切 tag + 翻页 + 装备网格动态挂。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上):to_godot(cx,cy)=(cx×SC+OX, 640-cy×SC)
-## (源 pushScene 全屏缩放,SC=640/480=1.3333)。
+## 坐标源 cocos(800×480 左下) → Godot(800×480 左上):to_godot(cx,cy)=(cx, 480-cy)
+## (viewport 已 1:1 源设计分辨率,源 pushScene 全屏缩放不再需要,SC=1)。
 ##
 ## 2026-07-20 照源补全 5 项缺口:
 ## #1 点已解锁装备弹 EquipboardPanel(doSelectElement :105-109 equipcraft context=handbook)
@@ -42,10 +42,10 @@ const PRESS_SCALE: float = 0.95             # #5 源 doEquipTouch:120/doArrowTou
 const ARROW_CLICK_GAP: float = 0.5          # #5 源 doArrowTouch:246 canClick>0.5
 
 # ── 网格/贴图常量(源 :13-22 + createIcon :423-452,自 builder 迁入)──
-# (源 pushScene),不用 popup 居中(cx+80),改全屏缩放铺满. SC=640/480,OFFSET_X=400×SC-480(横向居中).
-const SCREEN_SCALE: float = 1.3333
-const OFFSET_X: float = -53.33
-const BASE_Y: float = 640.0
+# (源 pushScene),viewport 800×480 后全屏缩放不再需要(960×640 时代 SC=640/480、OFFSET_X=400×SC-480 已退役)。
+const SCREEN_SCALE: float = 1.0
+const OFFSET_X: float = 0.0
+const BASE_Y: float = 480.0
 const LEFT_FIRST: Vector2 = Vector2(196.0, 356.0)
 const RIGHT_FIRST: Vector2 = Vector2(476.0, 356.0)
 const GAP: Vector2 = Vector2(130.0, 115.0)
@@ -221,7 +221,7 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 	cell.custom_minimum_size = EQUIP_BG_SIZE
 	cell.size = EQUIP_BG_SIZE
 	cell.pivot_offset = EQUIP_BG_SIZE * 0.5   # 中心缩放(began setScale 0.95 围绕中心,源 anchor 0.5,0.5)
-	cell.scale = Vector2(SCREEN_SCALE, SCREEN_SCALE)   # 全屏放大(跟 book_bg ×SC,cell 内部源坐标自动放大)
+	cell.scale = Vector2(SCREEN_SCALE, SCREEN_SCALE)   # SC=1.0(viewport 已源设计分辨率,cell 源坐标直译)
 	var bg := TextureRect.new()
 	bg.texture = load(EQUIP_BG_RES) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -309,7 +309,7 @@ func _lstr(key: String) -> String:
 	return key
 
 
-# 源 pushScene 全屏缩放:cocos 800×480 → Godot 960×640(SC=640/480,横向 OFFSET_X 居中,自 builder 并入)。
+# 源 pushScene 全屏:cocos 800×480 → Godot 800×480(viewport 1:1 源设计分辨率,SC=1/OFFSET_X=0 直译,自 builder 并入)。
 func _to_godot(cx: float, cy: float) -> Vector2:
 	return Vector2(cx * SCREEN_SCALE + OFFSET_X, BASE_Y - cy * SCREEN_SCALE)
 

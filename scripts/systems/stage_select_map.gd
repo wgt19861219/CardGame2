@@ -3,7 +3,7 @@ extends RefCounted
 
 ## 关卡选择地图布局数据（Logic 层）— 照源 stageselectres.lua map + stageselect.lua getStageRes。
 ## 读 stageselect_map.json（extract_stageselect_map.py 生成），提供章节 stage 坐标 + icon 决策。
-## 坐标系：源 cocos(800×480 左下原点)，View 层用 to_godot(cx,cy)=(cx+80, 560-cy) 转换。
+## 坐标系：源 cocos(800×480 左下原点)，View 层用 to_godot(cx,cy)=(cx, 480-cy) 转换。
 
 const MAP_JSON: String = "res://resources/data/stageselect_map.json"
 const CHAPTER_MIN: int = 1

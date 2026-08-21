@@ -23,7 +23,7 @@ extends PopWindow
 ## stage_detail/battle_pause_layer 先例）：音效行 + 「消息提醒」分隔栏 + 4 排双列开关。
 ## 显示尺寸口径：uieditor scaleSize/fix_wh 即 cocos 点（音效 55×55、开关 65.63×46.09、
 ## notice_bg 527.5×34.375），不 ÷CS；贴图被源 fix_wh 拉伸（474→517 等）同款拉伸。
-## to_godot(x,y)=(x+80,560-y)，CS=1.28125。
+## to_godot(x,y)=(x,480-y)，CS=1.28125。
 
 const FRAME_RES: String = "res://assets/ui/alpha/HVGA/main_vit_tips.png"
 const TITLE_BG_RES: String = "res://assets/ui/alpha/HVGA/pvp/pvp_tip_title_bg.png"

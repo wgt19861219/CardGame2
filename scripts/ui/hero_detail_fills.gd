@@ -5,8 +5,8 @@ extends RefCounted
 ## 只做动态 fill：FCA 立绘/名条品质边框/星级/信息板/进阶按钮文字/碎片进度条。
 ## 静态结构与样式归 hero_detail_content.tscn + default_theme（禁建静态节点、禁样式 override）。
 
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
+const OFFSET_X: float = 0.0    # Cocos 800×480 左下原点 → Godot 800×480 左上原点
+const BASE_Y: float = 480.0
 
 # ---- name_frame 名条品质边框（源 player.lua:2121 name_frames 表 + getIconNameFrameByRank:2149）----
 # rank 1-22 → 帧编号（含重复条目保源语义：rank 10/11 同图、12-19 同图、20-22 同图）。

@@ -10,7 +10,7 @@ extends RefCounted
 ## 贴图口径（批3 Task 4/5 定稿）：显示 = 像素÷CS×条目CS（Prescaled=true 才施加）——
 ## stageselect_map_bg 系条目 Prescaled=true CS=2 → 468×254px → 730.54×396.49；
 ## stage-map-frame 条目 Prescaled=false 不施加 → 936×507px → 730.34×395.61；其余无条目只 ÷CS。
-## 坐标系：源 cocos(800×480 左下原点) → Godot = (cx+80, 560-cy)。
+## 坐标系：源 cocos(800×480 左下原点) → Godot 800×480 左上原点 = (cx, 480-cy)。
 
 const StageSelectMapClass = preload("res://scripts/systems/stage_select_map.gd")
 const TexSize = preload("res://scripts/ui/tex_display_size.gd")
@@ -31,25 +31,25 @@ const POINTER: String = "res://assets/ui/alpha/HVGA/stagepointer.png"
 const STAR_BG: String = "res://assets/ui/alpha/HVGA/stageselect_star_bg.png"
 const STAR: String = "res://assets/ui/alpha/HVGA/stageselect_star.png"
 
-# 源 clipStencil 712×372 @ cocos(44,20)（stageselect.lua:1610-1612）→ godot rect(124,168)。
+# 源 clipStencil 712×372 @ cocos(44,20)（stageselect.lua:1610-1612）→ godot rect(44,88)。
 # 2026-07-20 clip 903×471 系偏大口径（base×cs 漏÷CS）补偿，随口径修正一并撤销。
-const CLIP_RECT: Rect2 = Rect2(124.0, 168.0, 712.0, 372.0)
-const CLIP_OFFSET: Vector2 = Vector2(124.0, 168.0)
+const CLIP_RECT: Rect2 = Rect2(44.0, 88.0, 712.0, 372.0)
+const CLIP_OFFSET: Vector2 = Vector2(44.0, 88.0)
 # title（源 createTitleBg:939 titleBg ccp(397,393)、createTitleText:874 label 同位）
-# → godot 中心 (477,167)；2026-07-20 上移 117 系偏大 frame 补偿（frame top 101.5），
-# 修正后源 frame top 157.2，167 天然满足"frame 上边框附近跨边框稍下"偏好，恢复源位。
-const TITLE_CENTER: Vector2 = Vector2(477.0, 167.0)
+# → godot 中心 (397,87)；2026-07-20 上移 117 系偏大 frame 补偿（frame top 101.5），
+# 修正后源 frame top 157.2 偏好跨边框稍下，恢复源位。
+const TITLE_CENTER: Vector2 = Vector2(397.0, 87.0)
 # 星级布局（源 createStage spos :1242-1255，相对 star_bg 中心，cocos 中心锚 y 上正）
 const STAR_POS_SN: Array = [
 	[Vector2(37.0, 15.0)],
 	[Vector2(26.0, 18.0), Vector2(48.0, 18.0)],
 	[Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.0, 18.0)],
 ]
-# dots（源 stageselectres.lua:1493-1495：gap_x 20 / normal y 40 / elite y 45 → godot 520/515）
-const DOT_CENTER_X: float = 480.0
+# dots（源 stageselectres.lua:1493-1495 + getDotPos:76-86：中心 x=400 / gap_x 20 / normal y 40 / elite y 45 → godot 440/435）
+const DOT_CENTER_X: float = 400.0
 const DOT_GAP_X: float = 20.0
-const DOT_NORMAL_Y: float = 520.0
-const DOT_ELITE_Y: float = 515.0
+const DOT_NORMAL_Y: float = 440.0
+const DOT_ELITE_Y: float = 435.0
 
 # panel/builder 共享 meta key（panel 切换动画识别 frame/title/pointer/mask 节点用）。
 const META_FRAME: StringName = &"ss_frame"
@@ -59,7 +59,7 @@ const META_MASK: StringName = &"ss_mask"   # 钥匙关 current/passed 闪烁遮�
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
-	return Vector2(cx + 80.0, 560.0 - cy)
+	return Vector2(cx, 480.0 - cy)   # Cocos 800×480 左下原点 → Godot 800×480 左上原点
 
 
 ## 显示尺寸（批3定稿通用公式）：像素÷CS×条目CS（content_scale_of 已封装

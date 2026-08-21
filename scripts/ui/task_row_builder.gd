@@ -64,9 +64,9 @@ const LSTR_EMPTY_TASK: StringName = &"TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED"
 const LSTR_EMPTY_DAILY: StringName = &"TASK.YOU_HAVE_DONE_TODAYS_TASKS"
 
 
-# cocos(800×480 左下) → Godot(960×640 左上):cx+80, 560-cy（同 hero_detail_fills）。
+# cocos(800×480 左下) → Godot(800×480 左上): (cx, 480-cy)（同 hero_detail_fills）。
 static func to_godot(cx: float, cy: float) -> Vector2:
-	return Vector2(cx + 80.0, 560.0 - cy)
+	return Vector2(cx, 480.0 - cy)
 
 
 # 坐标转换:cocos bg 左下原点(y 向上)→ Godot 左上原点(y 向下)

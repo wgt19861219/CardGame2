@@ -12,7 +12,7 @@ extends Control
 ## setup instantiate + get_node("%AutoButton") as Button 取节点 + _apply_label fill on/off 文案。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_auto_button_content.tscn")
-const GODOT_POS: Vector2 = Vector2(814.0, 500.0)  # 原 to_godot(734,60)=(734+80,560-60)，HUD 原生坐标
+const GODOT_POS: Vector2 = Vector2(734.0, 420.0)  # to_godot(734,60)=(734,480-60)，HUD 原生坐标（800×480 直译）
 const LABEL_ON: String = "自动战斗 开"
 const LABEL_OFF: String = "自动战斗 关"
 

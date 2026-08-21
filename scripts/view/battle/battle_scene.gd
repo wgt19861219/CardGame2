@@ -37,8 +37,8 @@ const ExcavateBattle = preload("res://scripts/systems/excavate_battle.gd")
 const LadderBattle = preload("res://scripts/systems/ladder_battle.gd")
 const MAX_TICKS: int = 6000  # 防死循环（≥ time_limit 90s×fps 60=5400，覆盖 engine 自然 timeout）
 const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_length 常量内联）
-const BIG_HP_POS: Vector2 = Vector2(455.0, 120.0)  # 原 to_godot(375,440)=(375+80,560-440)，Boss 血条 HUD 原生坐标
-const RETURN_BTN_POS: Vector2 = Vector2(870.0, 20.0)   # 暂停键贴右上角（用户布局，贴图70×69，右边距20）
+const BIG_HP_POS: Vector2 = Vector2(375.0, 40.0)  # to_godot(375,440)=(375,480-440)，Boss 血条 HUD 原生坐标（800×480 直译）
+const RETURN_BTN_POS: Vector2 = Vector2(710.0, 20.0)   # 暂停键贴右上角（用户布局，贴图70×69，右边距20）
 
 signal next_wave_requested
 
@@ -441,8 +441,8 @@ func _start_player_walk_to_next_battle() -> float:
 	var maxtime: float = 0.0
 	if engine == null:
 		return maxtime
-	# 出屏目标 x（>屏宽 960 对应 logic x>880，取 WAVE_WALK_OFFSCREEN_X=900 确保出屏；
-	# 用 maxX 会停在 view 880 仍在屏内，切波瞬移到站位时被看见）。
+	# 出屏目标 x（>屏宽 800 对应 logic x>800，取 WAVE_WALK_OFFSCREEN_X=1050 确保出屏；
+	# 停在屏缘附近会半露右边缘，切波瞬移到站位时被看见）。
 	var target_x: float = BattleActor.WAVE_WALK_OFFSCREEN_X
 	for unit in engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
 		var wa: Variant = _actors_by_unit.get(unit)

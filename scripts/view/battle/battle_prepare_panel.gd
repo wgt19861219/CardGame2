@@ -6,7 +6,7 @@ extends Control
 ## gs 显示 + 开始战斗。单机化裁剪：雇佣兵/PVP 防守/公会倒计时/挖矿改阵。
 ## 重构（2026-07-17）：UI 静态节点（bg/list_frame/team_bg/5 bucket/4 tab/go/gs label）
 ## 固化进 battle_prepare_content.tscn（位置/size 编辑器可视化调）。panel instantiate + fill
-## 动态数据/样式 + 接业务信号。坐标源 cocos(800×480 左下) → Godot(960×640 左上) via (cx+80, 560-cy)。
+## 动态数据/样式 + 接业务信号。坐标源 cocos(800×480 左下) → Godot(800×480 左上) via (cx, 480-cy)。
 ##
 ## mode（源 battleprepare.lua:1746 self.mode = info.mode）：
 ##   "stage"（默认）= 普通关卡，_on_go_pressed 走 mgr.assemble_stage_battle 进 battle_scene。

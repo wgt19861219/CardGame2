@@ -15,9 +15,9 @@ const TEAM_MAX: int = 5
 const SWEEP_DEFAULT_NORMAL: int = 10
 const SWEEP_DEFAULT_ELITE: int = 3
 
-# 坐标换算（源 cocos 800×480 左下原点 → Godot 960×640 左上原点）。
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
+# 坐标换算（源 cocos 800×480 左下原点 → Godot 800×480 左上原点）。
+const OFFSET_X: float = 0.0
+const BASE_Y: float = 480.0
 # 次数数字色（源 checkEnabled:785-794 toccc3(16114110)/toccc3(16737841)）。
 const C_NUM: Color = Color(245.0 / 255.0, 225.0 / 255.0, 190.0 / 255.0)
 const C_DISABLE: Color = Color(1.0, 102.0 / 255.0, 49.0 / 255.0)

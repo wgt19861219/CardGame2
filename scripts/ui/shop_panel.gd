@@ -8,13 +8,13 @@ extends PopWindow
 ## 本文件只做业务 + 信号 + fill（fill 归 panel，旧 builder 退役；商品行 ShopRowBuilder）。
 ## 底框 + NPC 头像 + 标题底图/标题 + 刷新按钮 + 商品列表（两行 getItemPos）+ 购买闭环。
 ## 单机化：源 net shop_* → ShopManager Logic；NPC 对话 + 自动刷新时刻照源。
-## 坐标：源 cocos(800×480 左下)→Godot(960×640 左上) via (cx+80, 560-cy)；
+## 坐标：源 cocos(800×480 左下)→Godot(800×480 左上) via (cx, 480-cy)；
 ## PanelLayer 作 frame sprite Godot 等价（左上原点 = to_godot(framePos) - frame_size/2），子元素坐标相对 PanelLayer。
 ## CS：源 hello.lua:311 setContentScaleFactor=1.28125，CCSprite 显示=纹理/CS。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_content.tscn")
 const AUTO_REFRESH_CHECK_INTERVAL: float = 1.0   # _process 自动刷新轮询间隔（秒，源客户端 auto_refresh 轮询）
-# 两件套范式（2026-08-14）：fill 归 panel，builder 退役。坐标换算照源 cocos(800×480 左下)→Godot(960×640 左上)。
+# 两件套范式（2026-08-14）：fill 归 panel，builder 退役。坐标换算照源 cocos(800×480 左下)→Godot(800×480 左上)。
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 # 源 shop.lua:198 商品按下 setScale(0.95)。
 const ITEM_PRESS_SCALE: Vector2 = Vector2(0.95, 0.95)

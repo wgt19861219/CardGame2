@@ -10,7 +10,7 @@ extends PopWindow
 ## attach_bg 源 Scale9Sprite → NinePatchRect（cap 纹理像素直译），ok 按钮 TextureButton 整拉
 ## → Button theme variation（SB_pkg_hb 同图同 cap 复用，文字 Button.text 承载）。
 ## 货币附件行走 mail_currency_item.tscn 行模板；物品 icon 保留 ReadequipIcon 动态挂
-## %AttachHost（pos=0,0 保持 frame 局部坐标系）。源 cocos(800×480 左下)→Godot(960×640 左上)，
+## %AttachHost（pos=0,0 保持 frame 局部坐标系）。源 cocos(800×480 左下)→Godot(800×480 左上)，
 ## 显示尺寸=纹理px/CS(1.28125)。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_detail_content.tscn")

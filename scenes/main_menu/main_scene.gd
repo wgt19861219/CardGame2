@@ -135,7 +135,7 @@ func tutorial_try_complete(step: StringName) -> void:
 		_tutorial_view._refresh()
 
 # 4 层视差地图（createBottom/Middle/Top/VeryTopMap + 自定义拖拽）。
-# map = clip Control（960×MAP_H 区），4 容器由 MainMapBuilder 建，MainParallax 按系数横向位移。
+# map = clip Control（800×MAP_H 区），4 容器由 MainMapBuilder 建，MainParallax 按系数横向位移。
 # 拖拽：_gui_input 接空地点击（按钮 STOP 吞自己区域），改 top.x → parallax refresh 让 middle/bottom/verytop 跟。
 func _build_map() -> void:
 	var map := Control.new()

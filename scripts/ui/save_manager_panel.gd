@@ -18,7 +18,7 @@ extends PopWindow
 ##   - 源 _export_time 注入省略（var_to_str 格式存档带运行时时间戳无校验价值）。
 ##
 ## 两件套豁免：内容少（frame/title/close/3 按钮）procedural 挂 container，无独立 tscn
-## （修复轮 A 授权；后续若加快照 UI 再 tscn 化）。坐标照源直译 to_godot(x,y)=(x+80,560-y)。
+## （修复轮 A 授权；后续若加快照 UI 再 tscn 化）。坐标照源直译 to_godot(x,y)=(x,480-y)。
 ## 快捷栏红点同款判读：源 herosplit_tag（main_deal_tag）在源 savemanager/heropackage 均
 ## 恒隐藏死代码，本面板不设 tag。
 

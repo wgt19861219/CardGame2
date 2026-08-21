@@ -16,8 +16,8 @@ extends ColorRect
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_pause_layer_content.tscn")
 const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/"
 const BG_COLOR: Color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)
-const VIEW_SIZE: Vector2 = Vector2(960.0, 640.0)             # HVGA
-const CENTER: Vector2 = Vector2(480.0, 320.0)
+const VIEW_SIZE: Vector2 = Vector2(800.0, 480.0)             # 设计分辨率（源 HVGA 800×480）
+const CENTER: Vector2 = Vector2(400.0, 240.0)
 const ENTER_DURATION: float = 0.2
 const EXIT_DURATION: float = 0.2
 

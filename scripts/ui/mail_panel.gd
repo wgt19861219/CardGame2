@@ -10,7 +10,7 @@ extends PopWindow
 ## （frame/title/close/scroll/上下渐变遮罩 rect 固化）；邮件行走 mail_item.tscn 行模板
 ## （createMail:445-592 行结构直译），panel 仅 fill（bg un/read 换图、icon 三分支、
 ## name/from/date 文案）+ press setScale(0.95) 反馈。
-## 源 cocos(800×480 左下) → Godot(960×640 左上)：(cx+80, 560-cy)，显示尺寸=纹理px/CS(1.28125)。
+## 源 cocos(800×480 左下) → Godot(800×480 左上)：(cx, 480-cy)，显示尺寸=纹理px/CS(1.28125)。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_content.tscn")
 const ITEM_SCENE: PackedScene = preload("res://scenes/ui/mail_item.tscn")
