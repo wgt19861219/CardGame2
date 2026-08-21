@@ -236,8 +236,9 @@ func _find_entry(entry_id: String) -> Dictionary:
 func _build_hud() -> void:
 	HudOverlay.apply_identity("main")
 	# 每日签到入口按钮（dailylogin 按钮 clickHandler→showDailyLogin，仅 main 建）。
-	# 显示尺寸 ÷CS 散图口径（AGENTS.md 2026-08-15）：main_dailyreward 无 TextureConfig 条目，
-	# UiButton.make 内 tex_display_size 对散图偏大 1.28×（全项目 73 处共债待专项，此处手算覆盖）。
+	# 显示尺寸 ÷CS 散图口径（AGENTS.md 2026-08-15）：main_dailyreward 无 TextureConfig 条目；
+	# UiButton.make 内 tex_display_size 2026-08-21 Task5 已修正 ÷CS 同口径，此处手算保留
+	# （修正前 base×cs 对散图偏大 1.28×，曾手算覆盖）。
 	var dl_size: Vector2 = (load(DAILY_BTN_RES) as Texture2D).get_size() / DAILY_BTN_CONTENT_SCALE
 	var dl_btn := UiButton.make(DAILY_BTN_RES, DAILY_BTN_PRESS_RES, DAILY_BTN_CENTER)
 	dl_btn.size = dl_size

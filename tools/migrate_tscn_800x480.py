@@ -30,7 +30,7 @@ viewport 960x640 → 800x480（=源 Cocos 设计空间 1:1）。tscn 静态坐�
 安全约束（CLAUDE.md 反模式）：
   - 只改纯数值行（offset_left/top/right/bottom、Sprite2D position = Vector2(x, y)）
   - 禁碰结构行（[node/[ext_resource/[sub_resource/uid/load_steps/连接声明）
-  - 默认 --dry-run 预览；输出每文件改动计数与出屏审计
+  - 默认 dry-run 预览（不传参只预览，传 --write 才写盘）；输出每文件改动计数与出屏审计
 """
 import os
 import re
@@ -365,7 +365,8 @@ def _fmt(v):
 
 
 def main():
-    dry_run = '--dry-run' in sys.argv
+    # 默认 dry-run 预览（与 docstring 一致）；显式传 --write 才写盘。
+    dry_run = '--write' not in sys.argv
     only = None
     for a in sys.argv[1:]:
         if a.startswith('--only='):

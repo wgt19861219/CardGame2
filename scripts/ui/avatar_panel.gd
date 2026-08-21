@@ -13,7 +13,8 @@ extends PopWindow
 ## - 标题金/解锁提示同款 18 号色走 AvatarTitleLabel variation（受控 override 退役）
 ## - 照源补 free 组末尾解锁提示（ofavatar.lua:123-128 createUnlockPrompt，此前漏译）
 ## - 标题文案走 LSTR（源 type_title；worldcup"球队头像"此前硬编码"世界杯头像"不符）
-## - icon 显示 106/CS=82.73 手算（批 4 口径：无 TextureConfig 条目散图 ÷CS，勿调 tex_display_size）
+## - icon 显示 106/CS=82.73 手算（批 4 口径：无 TextureConfig 条目散图 ÷CS；2026-08-21
+##   Task5 后 tex_display_size 公式已同口径，此处保留手算不改）
 ## cocos(800×480 左下) → Godot(800×480 左上)：(cx, 480-cy)，CS=1.28125。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/avatar_content.tscn")

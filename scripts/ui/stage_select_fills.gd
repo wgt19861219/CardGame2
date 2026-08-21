@@ -64,7 +64,8 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 
 ## 显示尺寸（批3定稿通用公式）：像素÷CS×条目CS（content_scale_of 已封装
 ## "Prescaled=true 且 CS≠0 才施加"）。map_bg 系 Prescaled=true CS=2 与 frame 系
-## Prescaled=false 在此公式下自动分轨，勿用 TexDisplaySize.display_size（base×cs 漏÷CS 偏大）。
+## Prescaled=false 在此公式下自动分轨。2026-08-21 Task5 修正后 TexDisplaySize.display_size
+## 与本公式等价；本地保留因缺资源语义不同（本处返 ZERO，helper 返 45×45 fallback）。
 static func display_size(res: String) -> Vector2:
 	if res.is_empty() or not ResourceLoader.exists(res):
 		return Vector2.ZERO

@@ -21,7 +21,7 @@ extends PopWindow
 ## 2026-08-17 批4 Task 5 两件套改造:原 handbook 工厂类退役(文件已删),工厂/fill/常量全并入本类
 ## (合并后 code 311 行 < View 400 门槛,无需 fills helper);运行时主题 override 5 处清零
 ## (装备名 label 4 处 + tag label 1 处,转 HandbookEquipNameLabel/HandbookEntryLabel 两态 variation);
-## 装备 cell 显示尺寸按批4口径手算 纹理÷CS(原 TexDisplaySize 无条目不÷CS 致偏大 1.28×);
+## 装备 cell 显示尺寸按批4口径手算 纹理÷CS(TexDisplaySize 2026-08-21 Task5 修正后同口径);
 ## 补源 :445-447 装备名 label 宽>114 等比缩放。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/handbook_content.tscn")

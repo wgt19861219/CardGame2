@@ -70,8 +70,8 @@ const PLUS_ICON_RES: String = "res://assets/ui/alpha/HVGA/main_status_plus_icon_
 # cocos Texture:getContentSize() 返回点尺寸（像素/ContentScaleFactor）→ Sprite 显示=纹理÷CS
 # （图标 33.6×30.5/39×29.7/34.4×39、加号 36.7，占 48 高条 63-81% 不顶天；
 # 实证链：源码 resource_manager.createSprite→getSpriteFrame→texture:getContentSize
-# + 源截图实测 + 用户三轮验收。TexDisplaySize 的 base×cs 公式对无条目散图偏大 1.28×，
-# 其全局修复影响 73 处调用另行决策，此处局部口径）。
+# + 源截图实测 + 用户三轮验收。TexDisplaySize 公式 2026-08-21 Task5 已修正为
+# base/CS×cs 同本口径，此处局部手算保留不改）。
 const CONTENT_SCALE: float = 1.28125
 # = 源 money_bg/rmb_bg/vit_bg 中心 ccp(251,450)/(434,450)/(601,450)（statusbar.lua:719/787/853
 # createTitle common 型，getInfoBarType 非 shop 一律 common 含 main）。Task2 迁移：800 宽直译 x 不偏移

@@ -307,9 +307,12 @@ func _center_to_topleft(center: Vector2, btn: TextureButton) -> Vector2:
 
 
 func _button_size(btn: TextureButton) -> Vector2:
-	# :284-309 down/up toggle t="Sprite" config={} 无 fix → 显示=纹理/CS
-	if btn.texture_normal != null:
-		return TexDisplaySize.display_size(btn.texture_normal.resource_path)
+	# 中心定位用节点实际渲染 size（tscn 固化），与显示尺寸口径解耦：
+	# :284-309 toggle 系 t="Sprite" config={} 无 fix → 源显示=纹理/CS，但 tscn 固化 size
+	# 尚为纹理原尺寸口径（÷CS 迁移挂 Task 6）；TexDisplaySize.display_size 2026-08-21
+	# 恢复 ÷CS 后与之失配 1.28×，中心定位会偏 ~12px。按实际 size 定位无论 tscn 何口径都精确居中。
+	if btn.size.x > 0.0:
+		return btn.size
 	return Vector2(76.0, 76.0)   # 估算（无纹理降级，Phase 4 校准）
 
 
