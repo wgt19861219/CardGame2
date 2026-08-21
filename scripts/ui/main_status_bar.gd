@@ -29,6 +29,13 @@ const NAME_BG_RES: Array = [
 	"res://assets/ui/alpha/HVGA/main_head_name_bg_silver.png",
 	"res://assets/ui/alpha/HVGA/main_head_name_bg_gold.png",
 ]
+# 头像图（源 statusbar createHead head icon：Avatar[id].Picture + 圆形 mask）。
+# 2026-08-21 修复：此前 build 从未建头像图节点（只有框底/框边），换头像无从回传主界面。
+const HEAD_MASK_RES: String = "res://assets/ui/alpha/HVGA/main_head_mask.png"
+const PortraitMaskShader: Shader = preload("res://shaders/portrait_mask.gdshader")
+const HEAD_ICON_SIZE: float = 70.0   # 照 configure._add_head_icon 同款显示尺寸
+# icon 放中上（HEAD_SIZE 137×105：水平居中，name_bg/name 占底部 y72+）。
+const HEAD_ICON_POS: Vector2 = Vector2((137.0 - 70.0) * 0.5, 15.0)
 const VIP_BG_RES: String = "res://assets/ui/alpha/HVGA/recharge_vip_bg.png"
 const VIP_ICON_RES: String = "res://assets/ui/alpha/HVGA/recharge_vip_icon.png"
 # 货币条（源 createTitle getBarConfig：gold/rmb/vitality 三条）
@@ -77,6 +84,12 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 				h.call())
 	_add_texture_rect(head, HEAD_FRAME_RES[vip_idx], Vector2.ZERO, HEAD_SIZE, "head_bg")
+	# 头像图（head_bg 之上、head_frame 之下——源 addChild(head,3) < head_frame z=5 框纹盖头像缘；
+	# build 按 player.avatar 建图，refresh 按 avatar 参数换图。2026-08-21 补全，
+	# 此前 build 从未建头像图节点，换头像无从回传主界面）。
+	var head_icon := _build_head_icon(player, avatar_id_of(player))
+	head.add_child(head_icon)
+	refs["head_icon"] = head_icon
 	_add_texture_rect(head, HEAD_FRAME_BORDER_RES[vip_idx], Vector2.ZERO, HEAD_SIZE, "head_frame")
 	# 昵称底纹 name_bg（源 statusbar.lua:624 main_head_name_bg_silver/gold.png，叠加在 name Label 之下，
 	# 银金按 vip_idx 切换，参考 _refresh_head_frame 范式）。size 用纹理原始宽，高 20，居中 + 偏下覆盖 name 区。
@@ -133,6 +146,7 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	# 按住 vit_bg 显体力恢复进度提示卡（C12），松开销毁。vit 加号 Button STOP 独立命中不冲突。
 	if player != null and cm != null:
 		_attach_vit_prompt(refs["vitality"] as Label, parent, player, cm)
+	refs["_player"] = player   # _refresh_head_icon 查 Avatar 表用（GameData.player 单例不悬空）
 	return refs
 
 
@@ -230,6 +244,60 @@ static func refresh(refs: Dictionary, level: int, gold: int, diamond: int, vital
 		(refs["vip_icon"] as TextureRect).visible = vip > 0
 	# 头像框银/金切换（源 vip>0 用 gold 资源）
 	_refresh_head_frame(refs, vip_idx)
+	# 头像图随 avatar 参数换图（2026-08-21：换头像后 HudOverlay.refresh 回传主界面）。
+	_refresh_head_icon(refs, avatar)
+
+
+# 换头像后刷新 icon 贴图（refresh 调；meta 记当前 id，未变跳过防高频重载）。
+static func _refresh_head_icon(refs: Dictionary, avatar: int) -> void:
+	var icon: TextureRect = refs.get("head_icon", null)
+	if icon == null:
+		return
+	var aid: int = avatar if avatar > 0 else 1
+	if int(icon.get_meta(&"avatar_id", 0)) == aid:
+		return
+	icon.set_meta(&"avatar_id", aid)
+	icon.texture = _avatar_texture(refs.get("_player", null), aid)
+
+
+# 头像图节点（Avatar[id].Picture → TextureRect + portrait_mask shader 圆形裁剪，
+# configure._add_head_icon 同款范式；资源缺失返回空占位不挂）。
+static func _build_head_icon(player: PlayerData, avatar_id: int) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.name = "head_icon"
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.size = Vector2(HEAD_ICON_SIZE, HEAD_ICON_SIZE)
+	icon.position = HEAD_ICON_POS
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = PortraitMaskShader
+	mat.set_shader_parameter("mask_tex", load(HEAD_MASK_RES))
+	icon.material = mat
+	icon.texture = _avatar_texture(player, avatar_id)
+	icon.set_meta(&"avatar_id", avatar_id)   # 初始 meta（refresh 同 id 短路判定基准）
+	return icon
+
+
+# avatar id（0→默认 1，源 player.lua:378；player 可空——build_bars_only 之外均可传）。
+static func avatar_id_of(player: PlayerData) -> int:
+	if player == null:
+		return 1
+	return player.avatar if player.avatar > 0 else 1
+
+
+# Avatar 表查 Picture → Texture2D；查不到（表缺/player 空）返回 null 占位。
+static func _avatar_texture(player: PlayerData, avatar_id: int) -> Texture2D:
+	if player == null or player.cm == null:
+		return null
+	var pic: String = String(player.cm.get_raw_table(&"Avatar").get(str(avatar_id), {}).get("Picture", ""))
+	if pic.is_empty():
+		return null
+	var path: String = "res://assets/ui/" + pic.substr(3)   # UI/HERO/X.jpg → assets/ui/HERO/X.jpg
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
+
+
 
 
 # 头像框银/金资源切换（源 refreshHead:200-280）。

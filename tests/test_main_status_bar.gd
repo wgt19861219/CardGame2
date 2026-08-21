@@ -138,3 +138,64 @@ func test_currency_icons_keep_aspect_and_source_center() -> void:
 	for i in range(expected.size()):
 		assert_almost_eq((centers[i] as Vector2).x, (expected[i] as Vector2).x, 0.1, "图标中心 x 照源")
 		assert_almost_eq((centers[i] as Vector2).y, (expected[i] as Vector2).y, 0.1, "图标中心 y 照源")
+
+
+# ── 头像图回传（2026-08-21 修复轮：此前 build 从未建头像图节点，换头像无从回传主界面）──
+var _cm: ConfigManager
+
+
+func before_all() -> void:
+	_cm = ConfigManager.new()
+	_cm.load_all()
+
+
+func _make_pd() -> PlayerData:
+	var pd := PlayerData.new(_cm)
+	return pd
+
+
+func test_head_icon_assembled_with_player() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var pd := _make_pd()
+	pd.avatar = 1
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable(), pd, _cm)
+	var icon: TextureRect = refs.get("head_icon", null)
+	assert_not_null(icon, "头像图节点已建（head_icon）")
+	if icon != null:
+		assert_not_null(icon.texture, "Avatar[1].Picture 贴图已加载")
+		assert_eq(icon.get_meta(&"avatar_id", 0), 1, "meta 记初始 avatar id")
+
+
+func test_head_icon_refreshes_on_avatar_change() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var pd := _make_pd()
+	pd.avatar = 1
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable(), pd, _cm)
+	var icon: TextureRect = refs.get("head_icon", null)
+	if icon == null:
+		fail_test("head_icon 未建")
+		return
+	var before: Texture2D = icon.texture
+	pd.avatar = 2   # 换头像（Avatar 表 id=2 存在则贴图不同）
+	MainStatusBar.refresh(refs, pd.team_level, 0, 0, pd.vitality, pd.vitality_max, pd.player_name, pd.vip_level, pd.avatar)
+	assert_eq(icon.get_meta(&"avatar_id", 0), 2, "refresh 后 meta 更新为新 id")
+	if ResourceLoader.exists("res://assets/ui/HERO/" + String(_cm.get_raw_table(&"Avatar").get("2", {}).get("Picture", "")).get_file()):
+		assert_ne(icon.texture, before, "贴图已随 avatar 切换")
+
+
+func test_head_icon_refresh_skips_same_avatar() -> void:
+	# 同 id 刷新不重载（meta 短路防高频 refresh 重 load）。
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var pd := _make_pd()
+	pd.avatar = 1
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable(), pd, _cm)
+	var icon: TextureRect = refs.get("head_icon", null)
+	if icon == null:
+		fail_test("head_icon 未建")
+		return
+	var before: Texture2D = icon.texture
+	MainStatusBar.refresh(refs, pd.team_level, 0, 0, pd.vitality, pd.vitality_max, pd.player_name, pd.vip_level, pd.avatar)
+	assert_eq(icon.texture, before, "同 id 刷新不重载")

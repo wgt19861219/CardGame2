@@ -198,12 +198,19 @@ func set_team(inst_ids: Array[int]) -> void: team = inst_ids.duplicate()
 
 ## 设置玩家头像（照源 local_server.lua:1837-1845 set_avatar handler）。
 ## avatar_id 有效性由调用方（头像选择面板）保证，handler 照源不校验。
-func set_avatar(new_avatar: int) -> void: avatar = new_avatar
+## 2026-08-21 补 save_hook 标脏（此前换头像/改名均不落盘，重启丢失）。
+func set_avatar(new_avatar: int) -> void:
+	avatar = new_avatar
+	if save_hook.is_valid():
+		save_hook.call()
 
 
 ## 设置玩家名（照源 local_server.lua:1819-1833 set_name handler）。
 func set_player_name(new_name: String) -> void:
-	if new_name != "": player_name = new_name
+	if new_name != "":
+		player_name = new_name
+		if save_hook.is_valid():
+			save_hook.call()
 
 
 ## 抽卡（消耗钻石，返 chest_group 供产出 Logic）。免费跳过消耗。

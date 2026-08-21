@@ -93,9 +93,57 @@ func _build_content() -> void:
 	_add_frame()
 	_add_title()
 	_add_close_btn()
+	_build_snapshot_list()   # 2026-08-21 修复轮：源面板主体快照槽列表（此前裁剪致「没实现」体感）
 	for i in range(BTN_CENTERS.size()):
 		_add_action_btn(i)
 	_add_confirm_layer()
+
+
+# 快照槽列表（源 createWindow :560-586：最近 3 行 / 空列表占位文案）。
+# 行区屏幕坐标：源行 yPos 360/288/216（cocos 430×72）→ Godot y 200/272/344，left 265。
+const SNAP_ROW_POS: Array[Vector2] = [
+	Vector2(265.0, 200.0), Vector2(265.0, 272.0), Vector2(265.0, 344.0),
+]
+const SNAP_EMPTY_CENTER: Vector2 = Vector2(480.0, 280.0)   # 源 (400,280) 暂无存档记录
+const SNAP_EMPTY_TEXT: String = "暂无存档记录"
+var _snap_host: Control = null
+
+func _build_snapshot_list() -> void:
+	if _snap_host != null:
+		_snap_host.queue_free()
+	_snap_host = Control.new()
+	_snap_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var index: Array = SaveManagerSnapshots.read_index()
+	var shown: int = min(index.size(), SaveManagerSnapshots.MAX_SHOW)
+	if shown == 0:
+		var empty_lbl := Label.new()
+		empty_lbl.text = SNAP_EMPTY_TEXT
+		empty_lbl.add_theme_font_size_override("font_size", BTN_LABEL_FONT_SIZE)
+		empty_lbl.add_theme_color_override("font_color", SaveManagerSnapshots.EMPTY_COLOR)
+		empty_lbl.position = SNAP_EMPTY_CENTER - Vector2(60.0, 10.0)
+		empty_lbl.size = Vector2(120.0, 20.0)
+		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_snap_host.add_child(empty_lbl)
+	else:
+		var caps: Array = [FRAME_CAP_LEFT, FRAME_CAP_TOP, FRAME_CAP_RIGHT, FRAME_CAP_BOTTOM]
+		for i: int in range(shown):
+			var row: Control = SaveManagerSnapshots.build_row(index[i], i + 1, caps, GameData.config,
+				func(snapshot: Dictionary) -> void: _on_snapshot_clicked(snapshot))
+			row.position = SNAP_ROW_POS[i]
+			_snap_host.add_child(row)
+	container.add_child(_snap_host)
+
+
+# 行点击 → 恢复确认（复用导入确认层；源 doRestoreSave 前有恢复确认交互）。
+func _on_snapshot_clicked(snapshot: Dictionary) -> void:
+	var payload: Dictionary = SaveManagerSnapshots.snapshot_payload(snapshot)
+	if payload.is_empty():
+		_show_toast("快照文件缺失或格式无效")
+		return
+	_pending_import = payload
+	_confirm_layer.visible = true
+	_confirm.open(_on_confirm_ok)
 
 
 func _add_frame() -> void:
@@ -207,10 +255,15 @@ func _center_label(lbl: Label, center: Vector2) -> void:
 	lbl.position = center - sz * 0.5
 
 
-# ── 手动保存（源 doManualSave :106-123）──
+# ── 手动保存（源 doManualSave :106-123 + 快照生产：源 _nextSaveType="manual"
+## 使 saveGame 落盘时写快照；本项目等价=save() 后由面板写快照副本 + index 前插）──
 func _on_save_clicked() -> void:
 	var err: int = GameData.save()
 	if err == OK:
+		var content: String = _read_text(save_file_path)
+		if not content.is_empty():
+			SaveManagerSnapshots.save_snapshot(GameData.player, content)
+			_build_snapshot_list()   # 源保存成功 destroy+重开面板刷新列表 → 本地重建等价
 		_show_toast("手动保存成功")
 	else:
 		_show_toast("保存失败（错误码 %d）" % err)
