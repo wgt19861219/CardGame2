@@ -82,13 +82,13 @@ func test_enemy_card_children() -> void:
 
 func test_tab_bar_rect() -> void:
 	# 源顶部按钮行 y=267（reqRankData 461/showRewardInfo 361/reqRecordBoard 558/
-	# pvpShop 675）→ 4 tab 同行中心 y=293，96×48；800×480 后中心 y=293−80=213。
+	# pvpShop 675）→ 4 tab 同行，96×48；直译 y=480−267=213。
 	var c := _content()
 	var xs: Array[float] = [361.0, 461.0, 558.0, 675.0]
 	for i in 4:
 		var btn: Control = c.get_node("%TabBtn" + str(i)) as Control
 		assert_almost_eq(btn.position.x + btn.size.x / 2.0, xs[i], 0.5, "TabBtn%d 中心 x" % i)
-		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "TabBtn%d 中心 y=213（源 293−80）" % i)
+		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "TabBtn%d 中心 y=213（源 267，480−267）" % i)
 		assert_almost_eq(btn.size.y, 48.0, 0.5, "TabBtn%d 高 48" % i)
 
 
@@ -107,17 +107,17 @@ func test_scroll_clip_rect() -> void:
 
 
 func test_lineup_static_layout() -> void:
-	# 源 hero1-5 槽 (279/370/461/553/645,346)（基线等距无笔误，A 类 −80 平移）
-	# → 中心 y=源 214−80=134；adjustHero (755,233) → −80 后 (675,153)。
+	# 源 hero1-5 槽 (199/290/381/473/565,346)（基线等距无笔误）
+	# → 中心 y=480−346=134；adjustHero (675,327) → y=480−327=153。
 	var c := _content()
 	var xs: Array[float] = [199.0, 290.0, 381.0, 473.0, 565.0]
 	for i in 5:
 		var slot: Control = c.get_node("%HeroSlot" + str(i + 1)) as Control
 		assert_almost_eq(slot.position.x + slot.size.x / 2.0, xs[i], 0.5, "HeroSlot%d 中心 x" % (i + 1))
-		assert_almost_eq(slot.position.y + slot.size.y / 2.0, 134.0, 0.5, "HeroSlot%d 中心 y=134（源 214−80）" % (i + 1))
+		assert_almost_eq(slot.position.y + slot.size.y / 2.0, 134.0, 0.5, "HeroSlot%d 中心 y=134（源 346，480−346）" % (i + 1))
 	var btn: Control = c.get_node("%SetLineupBtn") as Control
-	assert_almost_eq(btn.position.x + btn.size.x / 2.0, 675.0, 0.5, "调整按钮中心 x=675（源 755−80，:2947）")
-	assert_almost_eq(btn.position.y + btn.size.y / 2.0, 153.0, 0.5, "调整按钮中心 y=153（源 233−80，:2947）")
+	assert_almost_eq(btn.position.x + btn.size.x / 2.0, 675.0, 0.5, "调整按钮中心 x=675（源 675 直译，:2947）")
+	assert_almost_eq(btn.position.y + btn.size.y / 2.0, 153.0, 0.5, "调整按钮中心 y=153（源 327，480−327，:2947）")
 
 
 # ── 范式守卫：UiScale9Button 退役 + variation 注册 ──

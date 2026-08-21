@@ -8,7 +8,7 @@
 
 - **引擎**：Godot 4.7（`D:\godot\Godot_v4.7-stable_win64_console.exe`）—— 由 4.6.3 升级（2026-06-24，GUT 9.6.0 兼容验证 185 单测全绿）
 - **渲染器**：gl_compatibility
-- **分辨率**：960×640 横屏 HVGA
+- **分辨率**：800×480 横屏（aspect=ignore 拉伸，复刻源实机 EXACT_FIT）
 - **语言**：GDScript（strict 类型）
 - **测试**：GUT v9.6.0
 - **Spine**：方案 C（JSON 解析器，复用旧版，无阻塞）
@@ -86,7 +86,7 @@
 - **panel.gd**：只做业务、信号 connect、fill（`get_node("%Xxx")` 取节点填动态数据）。fill 并入后逼近 View 550 行门槛时，fill 函数下沉独立 fills helper（如 `hero_detail_fills.gd`：纯数据绑定，禁建静态节点/禁样式 override）。
 - **动态行**（商品格/邮件行/任务行）：行模板 `*_item.tscn`（行内静态结构模板化）+ 轻量 `*_row_builder.gd`（只定位行+填数据+徽标切换，禁建静态结构）。
 - **theme 优先**：字号/颜色/描边走 `theme_type_variation`（`resources/themes/default_theme.tres`，试点后 41 个 variation）；按钮 Scale9 样式走 Button variation（normal/hover/pressed 三态入 theme），**禁**运行时 `add_theme_stylebox_override` 套样式（滚动条等 Godot 引擎缺口例外）。
-- **坐标照源直译**（Cocos 800×480 左下原点 → Godot 960×640 左上）：`to_godot(x,y)=(x+80, 560-y)`；带尺寸 `CCRect(x,y,w,h)` 左下角 → `offset_top=560-(cy+h)`；**贴图显示尺寸 = 纹理÷CS(1.28125) × TextureConfig 条目 ContentScale（无条目=÷CS）**——cocos `Texture:getContentSize()` 返回点尺寸（像素÷ContentScaleFactor），createSprite 再乘条目 scale（2026-08-15 货币栏三轮实证终版）；**条目 Prescaled=false 或 ContentScale=0 时不施加条目 CS，只乘代码显式 scale 累乘**（win32 路径 resource_manager.getSpriteOriginalScale，2026-08-16 批3 Task 4 五重证据定稿；crusade/dungeon 系 9 条即此类，Prescaled=true 域如 stageselect_map_bg 维持原公式）；✅ `tex_display_size.gd` 公式 2026-08-21 Task5 已修正为 `base/CS×cs` 与本条一致（此前 `base×cs` 漏除 CS 致无条目散图偏大 1.28×，挂账已清偿，20 处显式调用点复核零双重÷CS）；非正方形纹理须等比，勿强拉正方形 rect。
+- **坐标照源直译**（Cocos 800×480 左下原点 → Godot 800×480 左上）：`to_godot(x,y)=(x, 480-y)`；带尺寸 `CCRect(x,y,w,h)` 左下角 → `offset_top=480-(cy+h)`；**贴图显示尺寸 = 纹理÷CS(1.28125) × TextureConfig 条目 ContentScale（无条目=÷CS）**——cocos `Texture:getContentSize()` 返回点尺寸（像素÷ContentScaleFactor），createSprite 再乘条目 scale（2026-08-15 货币栏三轮实证终版）；**条目 Prescaled=false 或 ContentScale=0 时不施加条目 CS，只乘代码显式 scale 累乘**（win32 路径 resource_manager.getSpriteOriginalScale，2026-08-16 批3 Task 4 五重证据定稿；crusade/dungeon 系 9 条即此类，Prescaled=true 域如 stageselect_map_bg 维持原公式）；✅ `tex_display_size.gd` 公式 2026-08-21 Task5 已修正为 `base/CS×cs` 与本条一致（此前 `base×cs` 漏除 CS 致无条目散图偏大 1.28×，挂账已清偿，20 处显式调用点复核零双重÷CS）；非正方形纹理须等比，勿强拉正方形 rect。
 - **坐标系三坑（Task 5 三轮修复教训，全批次必查）**：① 源里元素坐标多为**场景空间**（含 draglist 子层），塞进面板局部空间必须减面板/裁剪层原点（shop 商品行曾整体偏移一个面板原点）；② 源 `createNode` 元素默认锚点 **(0.5,0.5)=中心**，tscn 中心定位用四锚同点+grow both（单侧锚点写法会钉死左上）；③ 可滚动列表源用 cliprect 裁剪 → Godot 用场景级裁剪层（`clip_contents=true`，rect=源 cliprect 的 to_godot 映射）。
 - **迁移发明元素要甄别**：源里没有的 UI（如 shop 的常驻花费标签/面板内货币行）删（受控裁剪，记录进验收记录），别当资产保留。
 - **主题链红线**：临时预览/测试场景**根节点必须 Control**——Control 主题解析沿 Control 祖先上溯，普通 Node 断链 → 回落引擎默认灰样式（曾致预览误判"按钮灰扁平"）。

@@ -57,7 +57,7 @@ const HOST_L: float = 150.0
 const HOST_T: float = 82.0
 const HOST_R: float = 220.0
 const HOST_B: float = 152.0
-# info 行：x=源 305 直译（anchor(0,0.5)），中心 y=源 365−22*(i-1) 再 −80 = 115/137/159。
+# info 行：x=源 305 直译（anchor(0,0.5)），中心 y=480−(365−22*(i-1))=115/137/159。
 const INFO_L: float = 305.0
 const INFO_CY: Array[float] = [115.0, 137.0, 159.0]
 # 右列按钮 130×55（源 615,385 / 615,312 / 615,222）。
