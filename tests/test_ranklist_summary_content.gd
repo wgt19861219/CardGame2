@@ -34,7 +34,7 @@ func test_frame_is_ninepatch_with_source_margins() -> void:
 func test_frame_position_centered() -> void:
 	var content := _instantiate()
 	var frame: NinePatchRect = content.get_node("Frame") as NinePatchRect
-	assert_eq(frame.position, Vector2(345.0, 201.0), "frame 左上 (345,201)（中心 (480,320)）")
+	assert_eq(frame.position, Vector2(265.0, 121.0), "frame 左上 (345,201)（中心 (480,320)）")
 	content.queue_free()
 
 

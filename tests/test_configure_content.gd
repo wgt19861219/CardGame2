@@ -31,65 +31,65 @@ const THEME_PATH: String = "res://resources/themes/default_theme.tres"
 const DELIMITER_PATH: String = "res://assets/ui/alpha/HVGA/serverselect_delimiter.png"
 
 # frame：源 setContentSize(620,380) 终值，anchor(0.5,1)@(394,455)。
-const FRAME_L: float = 164.0
-const FRAME_T: float = 105.0
-const FRAME_R: float = 784.0
-const FRAME_B: float = 485.0
+const FRAME_L: float = 84.0
+const FRAME_T: float = 25.0
+const FRAME_R: float = 704.0
+const FRAME_B: float = 405.0
 const FRAME_CAP_TOP: int = 26
 const FRAME_CAP_BOTTOM: int = 20
 const FRAME_CAP_RIGHT: int = 43
 # close：源 (690,435) 中心，65×66 ÷CS。
-const CLOSE_CX: float = 770.0
-const CLOSE_CY: float = 125.0
+const CLOSE_CX: float = 690.0
+const CLOSE_CY: float = 45.0
 const CLOSE_W: float = 50.73
 const CLOSE_H: float = 51.52
 # 头区（源 pattern/bg @(185,360)、frame @(200,360)、icon @(185,363)）。
-const HEAD_PATTERN_CX: float = 265.0
-const HEAD_PATTERN_CY: float = 200.0
+const HEAD_PATTERN_CX: float = 185.0
+const HEAD_PATTERN_CY: float = 120.0
 const HEAD_PATTERN_DISPLAY: float = 133.46
 const HEAD_BG_W: float = 78.05
 const HEAD_BG_H: float = 81.95
 const HEAD_FRAME_W: float = 109.27
 const HEAD_FRAME_H: float = 81.17
-const HEAD_FRAME_CX: float = 280.0
+const HEAD_FRAME_CX: float = 200.0
 # head icon 70×70（源 getHeadIcon length=70），中心 (265,197)（源 185,363）。
-const HOST_L: float = 230.0
-const HOST_T: float = 162.0
-const HOST_R: float = 300.0
-const HOST_B: float = 232.0
+const HOST_L: float = 150.0
+const HOST_T: float = 82.0
+const HOST_R: float = 220.0
+const HOST_B: float = 152.0
 # info 行：x=385（源 anchor(0,0.5)@305 +80），中心 y 195/217/239（源 365-22*(i-1)）。
-const INFO_L: float = 385.0
-const INFO_CY: Array[float] = [195.0, 217.0, 239.0]
+const INFO_L: float = 305.0
+const INFO_CY: Array[float] = [115.0, 137.0, 159.0]
 # 右列按钮 130×55（源 615,385 / 615,312 / 615,222）。
-const RIGHT_BTN_L: float = 630.0
-const RIGHT_BTN_R: float = 760.0
-const CHANGE_NAME_T: float = 147.5
-const CHANGE_HEAD_T: float = 220.5
-const SAVE_MANAGER_T: float = 310.5
+const RIGHT_BTN_L: float = 550.0
+const RIGHT_BTN_R: float = 680.0
+const CHANGE_NAME_T: float = 67.5
+const CHANGE_HEAD_T: float = 140.5
+const SAVE_MANAGER_T: float = 230.5
 # setup 180×55（源 200,115 = buttonHeight-height-60）。
-const SETUP_L: float = 190.0
-const SETUP_T: float = 417.5
-const SETUP_R: float = 370.0
-const SETUP_B: float = 472.5
+const SETUP_L: float = 110.0
+const SETUP_T: float = 337.5
+const SETUP_R: float = 290.0
+const SETUP_B: float = 392.5
 # lang 100×60 @ select_server 中心 (473,445)（单机化重排）；label 中心 +(88,0)。
 const LANG_L: float = 423.0
 const LANG_T: float = 415.0
 const LANG_R: float = 523.0
 const LANG_B: float = 475.0
-const LANG_LABEL_CX: float = 561.0
-const LANG_LABEL_CY: float = 442.5
+const LANG_LABEL_CX: float = 481.0
+const LANG_LABEL_CY: float = 362.5
 # 分隔线 600×2 中心 x=390 → (170,~)~(770,~)；中心 y 280/410/475（源 600-320/150/85）。
-const LINE_L: float = 170.0
-const LINE_R: float = 770.0
+const LINE_L: float = 90.0
+const LINE_R: float = 690.0
 const LINE_PATCH_LEFT: int = 170
 const LINE_PATCH_RIGHT: int = 275
 const LINE_PATCH_TOP: int = 1
 const LINE_PATCH_BOTTOM: int = 1
 # name：源 name_bg fix_wh 225×30 中心 (450,150)；name label 中心同 bg，宽上限 180（:114-116）。
-const NAME_BG_L: float = 337.5
-const NAME_BG_T: float = 135.0
-const NAME_BG_R: float = 562.5
-const NAME_BG_B: float = 165.0
+const NAME_BG_L: float = 257.5
+const NAME_BG_T: float = 55.0
+const NAME_BG_R: float = 482.5
+const NAME_BG_B: float = 85.0
 const NAME_LABEL_L: float = 360.0
 const NAME_LABEL_R: float = 540.0
 
@@ -248,9 +248,9 @@ func test_bottom_row_layout() -> void:
 	assert_almost_eq(setup.offset_bottom, SETUP_B, 0.5, "setup 底")
 	assert_eq(setup.theme_type_variation, &"ConfigureActionBtn", "setup variation")
 	var lang: TextureButton = _find(inst, "LangBtn") as TextureButton
-	assert_almost_eq((lang.offset_left + lang.offset_right) * 0.5, 473.0, 0.5, "lang 中心 x（select_server 393+80）")
-	assert_almost_eq((lang.offset_top + lang.offset_bottom) * 0.5, 442.5, 0.5, "lang 中心 y（底对齐底排 472.5，100x60 高于 55 按钮）")
-	assert_almost_eq(lang.offset_bottom, 472.5, 0.5, "lang 底与 setup 底齐（不压 FacebookLine 474）")
+	assert_almost_eq((lang.offset_left + lang.offset_right) * 0.5, 393.0, 0.5, "lang 中心 x（select_server 393+80）")
+	assert_almost_eq((lang.offset_top + lang.offset_bottom) * 0.5, 362.5, 0.5, "lang 中心 y（底对齐底排 472.5，100x60 高于 55 按钮）")
+	assert_almost_eq(lang.offset_bottom, 392.5, 0.5, "lang 底与 setup 底齐（不压 FacebookLine 474）")
 	assert_almost_eq(lang.offset_bottom - lang.offset_top, 60.0, 0.5, "lang 高 60 照源 scaleSize")
 	assert_eq(lang.stretch_mode, TextureButton.STRETCH_SCALE, "lang 显式 stretch_mode=0")
 	var label: Label = _find(inst, "LangLabel") as Label
@@ -261,7 +261,7 @@ func test_bottom_row_layout() -> void:
 func test_delimiter_lines() -> void:
 	# 三条分隔线：贴图（HC 复用）600×2 直译 + patch L170/T1/R275/B1（455×3 cap(170,1,10,1)）
 	var inst := _content()
-	var cases: Dictionary = {"SocietyLine": 280.0, "LanguageLine": 410.0, "FacebookLine": 475.0}
+	var cases: Dictionary = {"SocietyLine": 200.0, "LanguageLine": 330.0, "FacebookLine": 395.0}
 	for n: String in cases:
 		var line: NinePatchRect = _find(inst, n) as NinePatchRect
 		assert_not_null(line, "%s 存在" % n)
@@ -288,8 +288,8 @@ func test_name_label_style() -> void:
 	assert_almost_eq(bg.offset_right, NAME_BG_R, 0.5, "name_bg 右")
 	assert_almost_eq(bg.offset_bottom, NAME_BG_B, 0.5, "name_bg 底（30 高）")
 	var label: Label = _find(inst, "NameLabel") as Label
-	assert_almost_eq((label.offset_left + label.offset_right) * 0.5, 450.0, 0.5, "name label 中心 x 同 bg（源 370+80）")
-	assert_almost_eq((label.offset_top + label.offset_bottom) * 0.5, 150.0, 0.5, "name label 中心 y（源 410 → 560-410）")
+	assert_almost_eq((label.offset_left + label.offset_right) * 0.5, 370.0, 0.5, "name label 中心 x 同 bg（源 370+80）")
+	assert_almost_eq((label.offset_top + label.offset_bottom) * 0.5, 70.0, 0.5, "name label 中心 y（源 410 → 560-410）")
 	assert_almost_eq(label.offset_right - label.offset_left, 180.0, 0.5, "name label 宽上限 180（源 :114-116 scale 限制）")
 	assert_eq(label.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "name label 居中（源中心锚点）")
 	assert_eq(label.theme_type_variation, &"ConfigureNameLabel", "name label variation（白 20 黑影）")

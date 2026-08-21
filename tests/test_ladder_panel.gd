@@ -45,8 +45,8 @@ func test_pvp_frame_rect() -> void:
 	# 936×506px ÷1.28125 = 730.2×394.9。
 	var c := _content()
 	var frame: Control = c.get_node("%PvpFrame") as Control
-	assert_almost_eq(frame.position.x + frame.size.x / 2.0, 480.0, 0.5, "pvp_frame 中心 x=480")
-	assert_almost_eq(frame.position.y + frame.size.y / 2.0, 350.0, 0.5, "pvp_frame 中心 y=350")
+	assert_almost_eq(frame.position.x + frame.size.x / 2.0, 400.0, 0.5, "pvp_frame 中心 x=480")
+	assert_almost_eq(frame.position.y + frame.size.y / 2.0, 270.0, 0.5, "pvp_frame 中心 y=350")
 	assert_almost_eq(frame.size.x, 730.2, 0.5, "pvp_frame 宽 936/CS")
 	assert_almost_eq(frame.size.y, 394.9, 0.5, "pvp_frame 高 506/CS")
 
@@ -55,11 +55,11 @@ func test_enemy_cards_rect() -> void:
 	# 源 enemy1-3Bg pvp_enemy_bg.png pos(290/475/660,130)（默认中心锚）→ 中心
 	# (370/555/740,430)；216×268px ÷CS = 168.6×209.3。
 	var c := _content()
-	var xs: Array[float] = [370.0, 555.0, 740.0]
+	var xs: Array[float] = [290.0, 475.0, 660.0]
 	for i in 3:
 		var card: Control = c.get_node("%EnemyCard" + str(i + 1)) as Control
 		assert_almost_eq(card.position.x + card.size.x / 2.0, xs[i], 0.5, "卡%d 中心 x" % (i + 1))
-		assert_almost_eq(card.position.y + card.size.y / 2.0, 430.0, 0.5, "卡%d 中心 y" % (i + 1))
+		assert_almost_eq(card.position.y + card.size.y / 2.0, 350.0, 0.5, "卡%d 中心 y" % (i + 1))
 		assert_almost_eq(card.size.x, 168.6, 0.5, "卡%d 宽 216/CS" % (i + 1))
 		assert_almost_eq(card.size.y, 209.3, 0.5, "卡%d 高 268/CS" % (i + 1))
 
@@ -83,11 +83,11 @@ func test_tab_bar_rect() -> void:
 	# 源顶部按钮行 y=267（reqRankData 461/showRewardInfo 361/reqRecordBoard 558/
 	# pvpShop 675）→ 4 tab 同行中心 y=293，96×48。
 	var c := _content()
-	var xs: Array[float] = [441.0, 541.0, 638.0, 755.0]
+	var xs: Array[float] = [361.0, 461.0, 558.0, 675.0]
 	for i in 4:
 		var btn: Control = c.get_node("%TabBtn" + str(i)) as Control
 		assert_almost_eq(btn.position.x + btn.size.x / 2.0, xs[i], 0.5, "TabBtn%d 中心 x" % i)
-		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 293.0, 0.5, "TabBtn%d 中心 y=293" % i)
+		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "TabBtn%d 中心 y=293" % i)
 		assert_almost_eq(btn.size.y, 48.0, 0.5, "TabBtn%d 高 48" % i)
 
 
@@ -96,26 +96,26 @@ func test_scroll_clip_rect() -> void:
 	# record cliprect(160,40,490,360) → (240,160,730,520)。
 	var c := _content()
 	var rs: Control = c.get_node("%RankScroll") as Control
-	assert_almost_eq(rs.position.x, 245.0, 0.5, "rank clip x=165+80")
-	assert_almost_eq(rs.position.y, 160.0, 0.5, "rank clip top=560-(40+360)")
+	assert_almost_eq(rs.position.x, 165.0, 0.5, "rank clip x=165+80")
+	assert_almost_eq(rs.position.y, 80.0, 0.5, "rank clip top=560-(40+360)")
 	assert_almost_eq(rs.size.x, 470.0, 0.5, "rank clip 宽 470")
 	assert_almost_eq(rs.size.y, 360.0, 0.5, "rank clip 高 360")
 	var rec: Control = c.get_node("%RecScroll") as Control
-	assert_almost_eq(rec.position.x, 240.0, 0.5, "record clip x=160+80")
+	assert_almost_eq(rec.position.x, 160.0, 0.5, "record clip x=160+80")
 	assert_almost_eq(rec.size.x, 490.0, 0.5, "record clip 宽 490")
 
 
 func test_lineup_static_layout() -> void:
 	# 源 hero1-5 槽 (199/290/381/473/565,346) → 中心 y=214；adjustHero (675,327) → (755,233)。
 	var c := _content()
-	var xs: Array[float] = [279.0, 370.0, 461.0, 553.0, 645.0]
+	var xs: Array[float] = [199.0, 290.0, 381.0, 473.0, 565.0]
 	for i in 5:
 		var slot: Control = c.get_node("%HeroSlot" + str(i + 1)) as Control
 		assert_almost_eq(slot.position.x + slot.size.x / 2.0, xs[i], 0.5, "HeroSlot%d 中心 x" % (i + 1))
-		assert_almost_eq(slot.position.y + slot.size.y / 2.0, 214.0, 0.5, "HeroSlot%d 中心 y=214" % (i + 1))
+		assert_almost_eq(slot.position.y + slot.size.y / 2.0, 134.0, 0.5, "HeroSlot%d 中心 y=214" % (i + 1))
 	var btn: Control = c.get_node("%SetLineupBtn") as Control
-	assert_almost_eq(btn.position.x + btn.size.x / 2.0, 755.0, 0.5, "调整按钮中心 x=755（源 :2947）")
-	assert_almost_eq(btn.position.y + btn.size.y / 2.0, 233.0, 0.5, "调整按钮中心 y=233（源 :2947）")
+	assert_almost_eq(btn.position.x + btn.size.x / 2.0, 675.0, 0.5, "调整按钮中心 x=755（源 :2947）")
+	assert_almost_eq(btn.position.y + btn.size.y / 2.0, 153.0, 0.5, "调整按钮中心 y=233（源 :2947）")
 
 
 # ── 范式守卫：UiScale9Button 退役 + variation 注册 ──

@@ -194,8 +194,8 @@ func test_content_static_tree() -> void:
 	add_child_autofree(inst)
 	# frame（578x420 中心 to_godot(400,240)=(480,320)；cap 正确公式 top=202-50-50=102 bottom=50）
 	var frame: NinePatchRect = inst.get_node("Frame") as NinePatchRect
-	assert_almost_eq(frame.offset_left, 191.0, 0.1, "Frame 左 = 480-578/2")
-	assert_almost_eq(frame.offset_top, 110.0, 0.1, "Frame 顶 = 320-420/2")
+	assert_almost_eq(frame.offset_left, 111.0, 0.1, "Frame 左 = 480-578/2")
+	assert_almost_eq(frame.offset_top, 30.0, 0.1, "Frame 顶 = 320-420/2")
 	assert_almost_eq(frame.size.x, 578.0, 0.1, "Frame 宽照源 scaleSize 578")
 	assert_almost_eq(frame.size.y, 420.0, 0.1, "Frame 高照源 scaleSize 420")
 	assert_eq(frame.patch_margin_left, 50, "Frame cap left=源 cap.x=50")
@@ -206,8 +206,8 @@ func test_content_static_tree() -> void:
 	var title_bg: TextureRect = inst.get_node("TitleBg") as TextureRect
 	assert_almost_eq(title_bg.size.x, 347.32, 0.1, "TitleBg 宽 = 445/CS")
 	assert_almost_eq(title_bg.size.y, 61.66, 0.1, "TitleBg 高 = 79/CS")
-	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 480.0, 0.1, "TitleBg 中心 x=480")
-	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 119.0, 0.1, "TitleBg 中心 y=560-441")
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 400.0, 0.1, "TitleBg 中心 x=480")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 39.0, 0.1, "TitleBg 中心 y=560-441")
 	# act_bg（fix_size(0,35)：宽=734÷CS=573.17，高 35 直译，中心 (480,140)）
 	var act_bg: TextureRect = inst.get_node("ActBg") as TextureRect
 	assert_almost_eq(act_bg.size.x, 573.17, 0.1, "ActBg 宽 = 734/CS（fix_size w=0 保持）")
@@ -216,35 +216,35 @@ func test_content_static_tree() -> void:
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq(close_btn.size.x, 50.73, 0.01, "CloseBtn 宽 = 65/CS")
 	assert_almost_eq(close_btn.size.y, 51.51, 0.01, "CloseBtn 高 = 66/CS")
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 755.0, 0.1, "CloseBtn 中心 x=755")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 120.0, 0.1, "CloseBtn 中心 y=560-440")
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 675.0, 0.1, "CloseBtn 中心 x=755")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 40.0, 0.1, "CloseBtn 中心 y=560-440")
 	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch=SCALE（4.7 默认 KEEP 原尺寸溢出）")
 	# title label（中心 (480,116)，variation 接管色/字号，源无描边）
 	var title_lbl: Label = inst.get_node("%TitleLabel") as Label
-	assert_almost_eq(title_lbl.position.x + title_lbl.size.x * 0.5, 480.0, 0.1, "TitleLabel 中心 x=480")
-	assert_almost_eq(title_lbl.position.y + title_lbl.size.y * 0.5, 116.0, 2.0,
+	assert_almost_eq(title_lbl.position.x + title_lbl.size.x * 0.5, 400.0, 0.1, "TitleLabel 中心 x=480")
+	assert_almost_eq(title_lbl.position.y + title_lbl.size.y * 0.5, 36.0, 2.0,
 		"TitleLabel 中心 y=560-444（容差 2：Godot 18 号行高 23>rect 20 的度量差，非错位）")
 	assert_eq(String(title_lbl.theme_type_variation), "DailyLoginTitleLabel", "TitleLabel 走 variation")
 	# explain 按钮（105x50 中心 to_godot(190,400)=(270,160)，theme 三态接管 Scale9）
 	var explain_btn: Button = inst.get_node("%ExplainBtn") as Button
 	assert_almost_eq(explain_btn.size.x, 105.0, 0.01, "ExplainBtn 宽照源 scaleSize 105")
 	assert_almost_eq(explain_btn.size.y, 50.0, 0.01, "ExplainBtn 高照源 scaleSize 50")
-	assert_almost_eq(explain_btn.position.x + explain_btn.size.x * 0.5, 270.0, 0.1, "ExplainBtn 中心 x=270")
-	assert_almost_eq(explain_btn.position.y + explain_btn.size.y * 0.5, 160.0, 0.1, "ExplainBtn 中心 y=560-400")
+	assert_almost_eq(explain_btn.position.x + explain_btn.size.x * 0.5, 190.0, 0.1, "ExplainBtn 中心 x=270")
+	assert_almost_eq(explain_btn.position.y + explain_btn.size.y * 0.5, 80.0, 0.1, "ExplainBtn 中心 y=560-400")
 	assert_eq(String(explain_btn.theme_type_variation), "DailyLoginExplainBtn", "ExplainBtn 走三态 variation")
 	var explain_lbl: Label = explain_btn.get_node("%ExplainLabel") as Label
 	assert_eq(String(explain_lbl.theme_type_variation), "DailyLoginExplainLabel", "ExplainLabel 走 variation")
 	# subhead 3 label（源 createSubhead :653-720，中心 y=560-386+10=174-10=164）
 	var pre_lbl: Label = inst.get_node("%SubheadPreLabel") as Label
-	assert_almost_eq(pre_lbl.position.y + pre_lbl.size.y * 0.5, 164.0, 2.0,
+	assert_almost_eq(pre_lbl.position.y + pre_lbl.size.y * 0.5, 84.0, 2.0,
 		"SubheadPreLabel 垂直中心 164（容差 2：16 号行高度量差）")
 	assert_eq(String(pre_lbl.theme_type_variation), "DailyLoginSubheadPreLabel", "SubheadPreLabel 走 variation")
 	# 滚动区（draglist rect CCRectMake(140,40,520,335) → 220~740 x 185~520）
 	var scroll: ScrollContainer = inst.get_node("%GridScroll") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 220.0, 0.1, "GridScroll 左 = 140+80")
-	assert_almost_eq(scroll.offset_top, 185.0, 0.1, "GridScroll 顶 = 560-(40+335)")
-	assert_almost_eq(scroll.offset_right, 740.0, 0.1, "GridScroll 右 = 660+80")
-	assert_almost_eq(scroll.offset_bottom, 520.0, 0.1, "GridScroll 底 = 560-40")
+	assert_almost_eq(scroll.offset_left, 140.0, 0.1, "GridScroll 左 = 140+80")
+	assert_almost_eq(scroll.offset_top, 105.0, 0.1, "GridScroll 顶 = 560-(40+335)")
+	assert_almost_eq(scroll.offset_right, 660.0, 0.1, "GridScroll 右 = 660+80")
+	assert_almost_eq(scroll.offset_bottom, 440.0, 0.1, "GridScroll 底 = 560-40")
 	# 网格底板常驻（createList board Scale9 reward_bg 71x71 cap(15,15,24,25)：
 	# 正确公式 left=15 top=71-15-25=31 right=71-15-24=32 bottom=15）
 	var grid_content: Control = scroll.get_node("GridContent") as Control
@@ -354,8 +354,8 @@ func test_grid_fill_semantics() -> void:
 func test_cell_global_position() -> void:
 	var panel: DailyLoginPanel = _make_panel()
 	var day1: TextureButton = panel._cells[0]
-	assert_almost_eq(day1.global_position.x + day1.size.x * 0.5, 278.0, 0.5, "day1 格心 global x=278")
-	assert_almost_eq(day1.global_position.y + day1.size.y * 0.5, 241.0, 0.5, "day1 格心 global y=241")
+	assert_almost_eq(day1.global_position.x + day1.size.x * 0.5, 198.0, 0.5, "day1 格心 global x=278")
+	assert_almost_eq(day1.global_position.y + day1.size.y * 0.5, 161.0, 0.5, "day1 格心 global y=241")
 	panel.remove_window()
 	panel.get_parent().queue_free()
 

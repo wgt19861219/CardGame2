@@ -45,10 +45,10 @@ func test_content_static_tree() -> void:
 	add_child_autofree(inst)
 	# Scroll（源 dragLayer 全屏 800×480 → 视口直译 (80,80)-(880,560)，只横滚）。
 	var scroll: ScrollContainer = inst.get_node("%Scroll") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 80.0, 0.1, "Scroll 左 = cocos x0+80")
-	assert_almost_eq(scroll.offset_top, 80.0, 0.1, "Scroll 顶 = 560-480")
-	assert_almost_eq(scroll.offset_right, 880.0, 0.1, "Scroll 右 = cocos x800+80")
-	assert_almost_eq(scroll.offset_bottom, 560.0, 0.1, "Scroll 底 = 560-0")
+	assert_almost_eq(scroll.offset_left, 0.0, 0.1, "Scroll 左 = cocos x0+80")
+	assert_almost_eq(scroll.offset_top, 0.0, 0.1, "Scroll 顶 = 560-480")
+	assert_almost_eq(scroll.offset_right, 800.0, 0.1, "Scroll 右 = cocos x800+80")
+	assert_almost_eq(scroll.offset_bottom, 480.0, 0.1, "Scroll 底 = 560-0")
 	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "竖滚禁用（源纯横向拖拽）")
 	# ScrollContent（源 dragContainer：内容局部 y=480-cocos_y，初始内容 800×480）。
 	var content: Control = inst.get_node("%ScrollContent") as Control
@@ -95,30 +95,30 @@ func test_mainlayer_static_tree() -> void:
 	# Light1/2（源 light 495×260px/CS pos(400,210) → 中心 (480,350) 386.44×202.93）。
 	for light_name in ["%Light1", "%Light2"]:
 		var light: TextureRect = inst.get_node(light_name) as TextureRect
-		assert_almost_eq(light.position.x + light.size.x * 0.5, 480.0, 0.1,
+		assert_almost_eq(light.position.x + light.size.x * 0.5, 400.0, 0.1,
 			light_name + " 中心 x = to_godot(400,210).x")
-		assert_almost_eq(light.position.y + light.size.y * 0.5, 350.0, 0.1,
+		assert_almost_eq(light.position.y + light.size.y * 0.5, 270.0, 0.1,
 			light_name + " 中心 y = to_godot(400,210).y")
 		assert_almost_eq(light.size.x, 386.44, 0.1, light_name + " 宽 = 495/CS（条目 Prescaled=false 不施加）")
 		assert_almost_eq(light.size.y, 202.93, 0.1, light_name + " 高 = 260/CS")
 		assert_eq(light.mouse_filter, Control.MOUSE_FILTER_IGNORE, "光效装饰不吞点击")
 	# Frame（源 crusade_map_frame 1029×566px 无条目 → 803.12×441.75 中心(480,350)）。
 	var frame: TextureRect = inst.get_node("%Frame") as TextureRect
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 0.1, "Frame 中心 x")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 350.0, 0.1, "Frame 中心 y")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 400.0, 0.1, "Frame 中心 x")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 270.0, 0.1, "Frame 中心 y")
 	assert_almost_eq(frame.size.x, 803.12, 0.1, "Frame 宽 = 1029/CS")
 	assert_almost_eq(frame.size.y, 441.75, 0.1, "Frame 高 = 566/CS")
 	# TitleBg（源 crusade_title_bg 510×118px → 398.05×92.10 中心(402,395.3)→(482,164.7)）。
 	var title_bg: TextureRect = inst.get_node("%TitleBg") as TextureRect
-	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 482.0, 0.1, "TitleBg 中心 x = to_godot(402,·)")
-	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 164.7, 0.1, "TitleBg 中心 y = 560-395.3")
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 402.0, 0.1, "TitleBg 中心 x = to_godot(402,·)")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 84.7, 0.1, "TitleBg 中心 y = 560-395.3")
 	assert_almost_eq(title_bg.size.x, 398.05, 0.1, "TitleBg 宽 = 510/CS")
 	assert_almost_eq(title_bg.size.y, 92.10, 0.1, "TitleBg 高 = 118/CS")
 	# BottomFrame（源 bottom(402,55) 空容器 + bottomframe Scale9 reset_bg cap(20,20,18,18)
 	# scaleSize(560,58) → 中心(482,505)；批 1 cap 公式（贴图 75×75）：T=75-20-18=37）。
 	var bottom: NinePatchRect = inst.get_node("%BottomFrame") as NinePatchRect
-	assert_almost_eq(bottom.position.x + bottom.size.x * 0.5, 482.0, 0.1, "BottomFrame 中心 x = to_godot(402,55).x")
-	assert_almost_eq(bottom.position.y + bottom.size.y * 0.5, 505.0, 0.1, "BottomFrame 中心 y = 560-55")
+	assert_almost_eq(bottom.position.x + bottom.size.x * 0.5, 402.0, 0.1, "BottomFrame 中心 x = to_godot(402,55).x")
+	assert_almost_eq(bottom.position.y + bottom.size.y * 0.5, 425.0, 0.1, "BottomFrame 中心 y = 560-55")
 	assert_almost_eq(bottom.size.x, 560.0, 0.1, "BottomFrame 宽 = 源 scaleSize 直译")
 	assert_almost_eq(bottom.size.y, 58.0, 0.1, "BottomFrame 高 = 源 scaleSize 直译")
 	assert_eq(bottom.patch_margin_left, 20, "cap left = cap.x")
@@ -144,8 +144,8 @@ func test_project_adaptation_layers() -> void:
 	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "TextureButton stretch_mode=0 显式（批 2 方法论）")
 	# TitleLabel（项目适配模式区分文字，叠源 titleBg 中心 (482,164.7)，走 theme variation）。
 	var title: Label = inst.get_node("%TitleLabel") as Label
-	assert_almost_eq(title.position.x + title.size.x * 0.5, 482.0, 0.5, "TitleLabel 叠 TitleBg 中心")
-	assert_almost_eq(title.position.y + title.size.y * 0.5, 164.7, 0.5, "TitleLabel 叠 TitleBg 中心")
+	assert_almost_eq(title.position.x + title.size.x * 0.5, 402.0, 0.5, "TitleLabel 叠 TitleBg 中心")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, 84.7, 0.5, "TitleLabel 叠 TitleBg 中心")
 	assert_eq(String(title.theme_type_variation), "TitleLabel", "TitleLabel 走 TitleLabel variation（字号/颜色禁 tscn 直写）")
 	# 迁移发明 ResultLabel（源无"共 N 个 boss"对应物）已删。
 	assert_false(inst.has_node("%ResultLabel"), "迁移发明 ResultLabel 已删（受控裁剪）")
@@ -208,8 +208,8 @@ func test_boss_positions_use_crusade_pos() -> void:
 	# global 级防 parenting：boss1 显示尺寸 = crusade_stage_1 239×213px/CS = 186.54×166.24
 	# → 中心 (240,288)（cocos 世界 (25+135,12+260)=(160,272) → to_godot=(240,288) 铁证）。
 	var center: Vector2 = first_btn.global_position + first_btn.size * 0.5
-	assert_almost_eq(center.x, 240.0, 0.1, "首 boss 中心 x = to_godot(160,·).x（crusadeBossPos[0][0]+sub 中心）")
-	assert_almost_eq(center.y, 288.0, 0.1, "首 boss 中心 y = to_godot(·,272).y")
+	assert_almost_eq(center.x, 160.0, 0.1, "首 boss 中心 x = to_godot(160,·).x（crusadeBossPos[0][0]+sub 中心）")
+	assert_almost_eq(center.y, 208.0, 0.1, "首 boss 中心 y = to_godot(·,272).y")
 	# Sub 内相对定位（源 boss 挂 sub：bpos 相对 sub 中心，y 上正 → godot 负）。
 	assert_almost_eq(first_btn.position.x, 135.0 - 186.54 * 0.5, 0.1, "boss Sub 内 x = bpos.x-半宽（中心锚）")
 	assert_almost_eq(first_btn.position.y, -(260.0 + 166.24 * 0.5), 0.1, "boss Sub 内 y = -(bpos.y+半高)（cocos y 上正）")

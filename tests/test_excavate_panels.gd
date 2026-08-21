@@ -76,29 +76,29 @@ func test_explain_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_explain_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
 	var frame: Control = content.get_node("Frame") as Control
-	assert_almost_eq(frame.position.x, 205.0, 0.02, "frame offset_left=205")
-	assert_almost_eq(frame.position.y, 130.31, 0.02, "frame offset_top=130.31")
+	assert_almost_eq(frame.position.x, 125.0, 0.02, "frame offset_left=205")
+	assert_almost_eq(frame.position.y, 50.31, 0.02, "frame offset_top=130.31")
 	assert_almost_eq(frame.size.x, 548.44, 0.02, "frame w=548.44（scaleSize 直译）")
 	assert_almost_eq(frame.size.y, 378.91, 0.02, "frame h=378.91")
 	var title_bg: Control = content.get_node("TitleBg") as Control
-	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 478.44, 0.02, "title_bg 中心 x=478.44")
-	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 170.16, 0.02, "title_bg 中心 y=170.16")
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 398.44, 0.02, "title_bg 中心 x=478.44")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 90.16, 0.02, "title_bg 中心 y=170.16")
 	assert_almost_eq(title_bg.size.x, 480.47, 0.02, "title_bg w=480.47")
 	var title: Control = content.get_node("%TitleLabel") as Control
-	assert_almost_eq(title.position.x + title.size.x * 0.5, 476.09, 0.02, "title 中心 x=476.09")
-	assert_almost_eq(title.position.y + title.size.y * 0.5, 170.16, 0.02, "title 中心 y=170.16")
+	assert_almost_eq(title.position.x + title.size.x * 0.5, 396.09, 0.02, "title 中心 x=476.09")
+	assert_almost_eq(title.position.y + title.size.y * 0.5, 90.16, 0.02, "title 中心 y=170.16")
 	var close_btn: Control = content.get_node("%CloseBtn") as Control
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 739.38, 0.02, "close 中心 x=739.38")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 149.84, 0.02, "close 中心 y=149.84 骑框右上")
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 659.38, 0.02, "close 中心 x=739.38")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 69.84, 0.02, "close 中心 y=149.84 骑框右上")
 	# 纵横比守卫（对齐 scan_texture_aspect 8% 判据）：显示 49.22/52.34=0.9404 vs 纹理 65/66=0.9848 偏差 4.5%
 	var tex: Texture2D = (content.get_node("%CloseBtn") as TextureButton).texture_normal
 	var ratio_dev: float = abs(close_btn.size.x / close_btn.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
 	assert_lt(ratio_dev, 0.08, "close 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
 	var scroll: Control = content.get_node("%ScrollHost") as Control
-	assert_almost_eq(scroll.position.x, 240.0, 0.02, "scroll offset_left=240（cliprect 156.25+3.75 内边距烘入，场景 160）")
-	assert_almost_eq(scroll.position.y, 210.0, 0.02, "scroll offset_top=210（200.63+9.37 内边距烘入，场景 350）")
-	assert_almost_eq(scroll.position.x + scroll.size.x, 722.19, 0.02, "scroll 右缘=clip 右 722.19")
-	assert_almost_eq(scroll.position.y + scroll.size.y, 483.44, 0.02, "scroll 底缘=clip 底 483.44")
+	assert_almost_eq(scroll.position.x, 160.0, 0.02, "scroll offset_left=240（cliprect 156.25+3.75 内边距烘入，场景 160）")
+	assert_almost_eq(scroll.position.y, 130.0, 0.02, "scroll offset_top=210（200.63+9.37 内边距烘入，场景 350）")
+	assert_almost_eq(scroll.position.x + scroll.size.x, 642.19, 0.02, "scroll 右缘=clip 右 722.19")
+	assert_almost_eq(scroll.position.y + scroll.size.y, 403.44, 0.02, "scroll 底缘=clip 底 483.44")
 	# ScrollContainer 接管子项 position（恒滚动偏移 0），源内边距已烘进 scroll rect
 	var list_host: Control = content.get_node("%ListHost") as Control
 	assert_almost_eq(list_host.position.x, 0.0, 0.02, "ListHost x=0（滚动接管，边距在 scroll rect）")
@@ -211,8 +211,8 @@ func test_giveup_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_giveup_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
 	var frame: Control = content.get_node("Frame") as Control
-	assert_almost_eq(frame.position.x, 231.56, 0.02, "frame offset_left=231.56")
-	assert_almost_eq(frame.position.y, 185.62, 0.02, "frame offset_top=185.62")
+	assert_almost_eq(frame.position.x, 151.56, 0.02, "frame offset_left=231.56")
+	assert_almost_eq(frame.position.y, 105.62, 0.02, "frame offset_top=185.62")
 	assert_almost_eq(frame.size.x, 500.0, 0.02, "frame w=500（initWindow 下限）")
 	assert_almost_eq(frame.size.y, 280.0, 0.02, "frame h=180+nh*1.28")
 	var del: Control = frame.get_node("Delimeter") as Control
@@ -339,10 +339,10 @@ func test_history_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_history_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
 	var frame: Control = content.get_node("Frame") as Control
-	assert_almost_eq(frame.position.x, 189.375, 0.02, "frame offset_left=189.375")
-	assert_almost_eq(frame.position.y, 142.89, 0.02, "frame offset_top=142.89")
-	assert_almost_eq(frame.position.x + frame.size.x, 758.125, 0.02, "frame 右缘=758.125")
-	assert_almost_eq(frame.position.y + frame.size.y, 552.11, 0.02, "frame 底缘=552.11")
+	assert_almost_eq(frame.position.x, 109.375, 0.02, "frame offset_left=189.375")
+	assert_almost_eq(frame.position.y, 62.89, 0.02, "frame offset_top=142.89")
+	assert_almost_eq(frame.position.x + frame.size.x, 678.125, 0.02, "frame 右缘=758.125")
+	assert_almost_eq(frame.position.y + frame.size.y, 472.11, 0.02, "frame 底缘=552.11")
 	var title_bg: Control = frame.get_node("TitleBg") as Control
 	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 270.31, 0.02, "title_bg frame 局部中心 x=270.31")
 	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 10.39, 0.02, "title_bg frame 局部中心 y=10.39")
@@ -352,8 +352,8 @@ func test_history_content_static_rects() -> void:
 	assert_almost_eq(title.position.x + title.size.x * 0.5, title_bg.size.x * 0.5, 0.02, "title 居中 title_bg（源中心 (260.55,19.53)≈几何中心）")
 	assert_almost_eq(title.position.y + title.size.y * 0.5, title_bg.size.y * 0.5, 0.02, "title 垂直居中")
 	var close_btn: Control = content.get_node("%CloseBtn") as Control
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 758.91, 0.02, "close 中心 x=758.91")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 170.94, 0.02, "close 中心 y=170.94")
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 678.91, 0.02, "close 中心 x=758.91")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 90.94, 0.02, "close 中心 y=170.94")
 	assert_almost_eq(close_btn.size.x, 57.81, 0.02, "close w=57.81")
 	assert_almost_eq(close_btn.size.y, 58.59, 0.02, "close h=58.59")
 	# 纵横比守卫：close 57.81/58.59=0.9867 vs 纹理 65/66=0.9848
@@ -361,10 +361,10 @@ func test_history_content_static_rects() -> void:
 	var close_dev: float = abs(close_btn.size.x / close_btn.size.y - float(close_tex.get_width()) / float(close_tex.get_height())) / (float(close_tex.get_width()) / float(close_tex.get_height()))
 	assert_lt(close_dev, 0.08, "close 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (close_dev * 100.0))
 	var scroll: Control = content.get_node("%HistoryScroll") as Control
-	assert_almost_eq(scroll.position.x, 215.0, 0.02, "scroll offset_left=215（clip 左 208.91+item 左 6.09 烘入）")
-	assert_almost_eq(scroll.position.y, 158.0, 0.02, "scroll offset_top=158（clip 顶 153.75+首行顶差 4.25 烘入）")
-	assert_almost_eq(scroll.position.x + scroll.size.x, 747.97, 0.02, "scroll 右缘=clip 右 747.97")
-	assert_almost_eq(scroll.position.y + scroll.size.y, 532.66, 0.02, "scroll 底缘=clip 底 532.66")
+	assert_almost_eq(scroll.position.x, 135.0, 0.02, "scroll offset_left=215（clip 左 208.91+item 左 6.09 烘入）")
+	assert_almost_eq(scroll.position.y, 78.0, 0.02, "scroll offset_top=158（clip 顶 153.75+首行顶差 4.25 烘入）")
+	assert_almost_eq(scroll.position.x + scroll.size.x, 667.97, 0.02, "scroll 右缘=clip 右 747.97")
+	assert_almost_eq(scroll.position.y + scroll.size.y, 452.66, 0.02, "scroll 底缘=clip 底 532.66")
 	# 绘制序守卫（防重排反盖）：框最底层（源 z=1）→ 滚动区（源 z=5）→ 关闭钮最上层
 	# （源 z=20>5；重叠角 scroll 左上 730-748x158-200 需 close 绘制于 scroll 之上可点，
 	# 审查 Important 修复 2026-08-17）
@@ -561,19 +561,19 @@ func test_battle_report_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_battle_report_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
 	var frame: Control = content.get_node("Frame") as Control
-	assert_almost_eq(frame.position.x, 147.97, 0.02, "frame offset_left=147.97")
-	assert_almost_eq(frame.position.y, 109.22, 0.02, "frame offset_top=109.22")
+	assert_almost_eq(frame.position.x, 67.97, 0.02, "frame offset_left=147.97")
+	assert_almost_eq(frame.position.y, 29.22, 0.02, "frame offset_top=109.22")
 	assert_almost_eq(frame.size.x, 703.13, 0.02, "frame w=703.13")
 	assert_almost_eq(frame.size.y, 434.38, 0.02, "frame h=434.38")
 	var enemy_title: Control = content.get_node("%EnemyTitle") as Control
-	assert_almost_eq(enemy_title.position.x + enemy_title.size.x * 0.5, 319.06, 0.02, "left_title 中心 x=319.06")
-	assert_almost_eq(enemy_title.position.y + enemy_title.size.y * 0.5, 133.44, 0.02, "left_title 中心 y=133.44")
+	assert_almost_eq(enemy_title.position.x + enemy_title.size.x * 0.5, 239.06, 0.02, "left_title 中心 x=319.06")
+	assert_almost_eq(enemy_title.position.y + enemy_title.size.y * 0.5, 53.44, 0.02, "left_title 中心 y=133.44")
 	var self_title: Control = content.get_node("%SelfTitle") as Control
-	assert_almost_eq(self_title.position.x + self_title.size.x * 0.5, 634.69, 0.02, "right_title 中心 x=634.69")
-	assert_almost_eq(self_title.position.y + self_title.size.y * 0.5, 133.44, 0.02, "right_title 中心 y=133.44")
+	assert_almost_eq(self_title.position.x + self_title.size.x * 0.5, 554.69, 0.02, "right_title 中心 x=634.69")
+	assert_almost_eq(self_title.position.y + self_title.size.y * 0.5, 53.44, 0.02, "right_title 中心 y=133.44")
 	var title_bg: Control = content.get_node("TitleBg") as Control
-	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 476.87, 0.02, "title_bg 中心 x=476.87")
-	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 170.15, 0.02, "title_bg 中心 y=170.15")
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 396.87, 0.02, "title_bg 中心 x=476.87")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 90.15, 0.02, "title_bg 中心 y=170.15")
 	assert_almost_eq(title_bg.size.x, 314.84, 0.02, "title_bg w=314.84（scaleSize 直译）")
 	assert_almost_eq(title_bg.size.y, 11.72, 0.02, "title_bg h=11.72")
 	var title_label: Control = content.get_node("%TitleLabel") as Control
@@ -582,24 +582,24 @@ func test_battle_report_content_static_rects() -> void:
 	assert_almost_eq(title_label.position.y + title_label.size.y * 0.5, title_bg.size.y * 0.5, 0.02,
 		"title 垂直居中")
 	var vs_icon: Control = content.get_node("VsIcon") as Control
-	assert_almost_eq(vs_icon.position.x + vs_icon.size.x * 0.5, 476.87, 0.02, "vs_icon 中心 x=476.87")
-	assert_almost_eq(vs_icon.position.y + vs_icon.size.y * 0.5, 242.81, 0.02, "vs_icon 中心 y=242.81")
+	assert_almost_eq(vs_icon.position.x + vs_icon.size.x * 0.5, 396.87, 0.02, "vs_icon 中心 x=476.87")
+	assert_almost_eq(vs_icon.position.y + vs_icon.size.y * 0.5, 162.81, 0.02, "vs_icon 中心 y=242.81")
 	assert_almost_eq(vs_icon.size.x, 44.53, 0.02, "vs_icon w=44.53（fix_wh 直译）")
 	assert_almost_eq(vs_icon.size.y, 36.72, 0.02, "vs_icon h=36.72")
 	var vs_tex: Texture2D = (content.get_node("VsIcon") as TextureRect).texture
 	var vs_dev: float = abs(vs_icon.size.x / vs_icon.size.y - float(vs_tex.get_width()) / float(vs_tex.get_height())) / (float(vs_tex.get_width()) / float(vs_tex.get_height()))
 	assert_lt(vs_dev, 0.08, "vs_icon 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (vs_dev * 100.0))
 	var enemy_ctn: Control = content.get_node("%EnemyContainer") as Control
-	assert_almost_eq(enemy_ctn.position.x, 163.59, 0.02, "left_container offset_left=163.59")
-	assert_almost_eq(enemy_ctn.position.y, 181.09, 0.02, "left_container offset_top=181.09")
+	assert_almost_eq(enemy_ctn.position.x, 83.59, 0.02, "left_container offset_left=163.59")
+	assert_almost_eq(enemy_ctn.position.y, 101.09, 0.02, "left_container offset_top=181.09")
 	assert_almost_eq(enemy_ctn.size.x, 312.5, 0.02, "left_container w=312.5（scaleSize 直译）")
 	assert_almost_eq(enemy_ctn.size.y, 125.0, 0.02, "left_container h=125")
 	var self_ctn: Control = content.get_node("%SelfContainer") as Control
-	assert_almost_eq(self_ctn.position.x, 479.22, 0.02, "right_container offset_left=479.22（局部 315.63）")
-	assert_almost_eq(self_ctn.position.y, 181.87, 0.02, "right_container offset_top=181.87（局部 -0.78）")
+	assert_almost_eq(self_ctn.position.x, 399.22, 0.02, "right_container offset_left=479.22（局部 315.63）")
+	assert_almost_eq(self_ctn.position.y, 101.87, 0.02, "right_container offset_top=181.87（局部 -0.78）")
 	var close_btn: Control = content.get_node("%CloseBtn") as Control
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 832.34, 0.02, "close 中心 x=832.34")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 127.19, 0.02, "close 中心 y=127.19")
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 752.34, 0.02, "close 中心 x=832.34")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 47.19, 0.02, "close 中心 y=127.19")
 	assert_almost_eq(close_btn.size.x, 49.22, 0.02, "close w=49.22（fix_wh 直译）")
 	assert_almost_eq(close_btn.size.y, 52.34, 0.02, "close h=52.34")
 	# 纵横比守卫：49.22/52.34=0.9403 vs 纹理 65/66=0.9848 偏差 4.5%（源轻微拉伸照源）
@@ -821,8 +821,8 @@ func test_map_frame_source_fidelity() -> void:
 		return
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
 		"frame 贴图归源 excavate_main_frame")
-	assert_almost_eq(frame.size.x, 733.59, 0.02, "frame w=733.59（fix_wh 直译，A 债 #6）")
-	assert_almost_eq(frame.size.y, 454.69, 0.02, "frame h=454.69")
+	assert_almost_eq(frame.size.x, 572.88, 0.02, "frame w=733.59（fix_wh 直译，A 债 #6）")
+	assert_almost_eq(frame.size.y, 355.12, 0.02, "frame h=454.69")
 	var tex: Texture2D = frame.texture
 	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
 	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
@@ -831,8 +831,8 @@ func test_map_frame_source_fidelity() -> void:
 	if frame_bg != null:
 		assert_eq(frame_bg.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png",
 			"frame_bg 贴图归源 excavate_main_bg")
-		assert_almost_eq(frame_bg.size.x, 733.59, 0.02, "frame_bg w=733.59（fix_wh 直译）")
-		assert_almost_eq(frame_bg.size.y, 454.69, 0.02, "frame_bg h=454.69")
+		assert_almost_eq(frame_bg.size.x, 572.88, 0.02, "frame_bg w=733.59（fix_wh 直译）")
+		assert_almost_eq(frame_bg.size.y, 355.12, 0.02, "frame_bg h=454.69")
 	var title: TextureRect = content.get_node_or_null("FrameContainer/Title") as TextureRect
 	assert_not_null(title, "Title 存在且为 TextureRect")
 	if title == null:
@@ -868,8 +868,8 @@ func test_map_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_map_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
 	var fc: Control = content.get_node("FrameContainer") as Control
-	assert_almost_eq(fc.position.x, 76.875, 0.02, "frame_container offset_left=76.875")
-	assert_almost_eq(fc.position.y, 75.625, 0.02, "frame_container offset_top=75.625")
+	assert_almost_eq(fc.position.x, -3.125, 0.02, "frame_container offset_left=76.875")
+	assert_almost_eq(fc.position.y, -4.375, 0.02, "frame_container offset_top=75.625")
 	assert_almost_eq(fc.size.x, 800.0, 0.02, "frame_container w=800（scaleSize 直译）")
 	assert_almost_eq(fc.size.y, 480.47, 0.02, "frame_container h=480.47")
 	var bg: Control = content.get_node("Bg") as Control
@@ -961,16 +961,16 @@ func test_map_content_static_rects() -> void:
 	var lack_num: Label = lack_ctn.get_node("%LackNumber") as Label
 	assert_almost_eq(lack_num.position.x, 121.09, 0.02, "lack_number 左缘 x=121.09（源 anchor(0,0.5)）")
 	var left: Control = content.get_node("%LeftButton") as Control
-	assert_almost_eq(left.position.x + left.size.x * 0.5, 143.28, 0.02, "left_button 中心 x=143.28（to_godot(63.28)）")
-	assert_almost_eq(left.position.y + left.size.y * 0.5, 342.81, 0.02, "left_button 中心 y=342.81（560-217.19）")
+	assert_almost_eq(left.position.x + left.size.x * 0.5, 63.28, 0.02, "left_button 中心 x=143.28（to_godot(63.28)）")
+	assert_almost_eq(left.position.y + left.size.y * 0.5, 262.81, 0.02, "left_button 中心 y=342.81（560-217.19）")
 	assert_almost_eq(left.size.x, 42.97, 0.02, "left_button w=42.97（fix_wh 直译）")
 	var right: Control = content.get_node("%RightButton") as Control
-	assert_almost_eq(right.position.x + right.size.x * 0.5, 815.94, 0.02, "right_button 中心 x=815.94（to_godot(735.94)）")
-	assert_almost_eq(right.position.y + right.size.y * 0.5, 342.03, 0.02, "right_button 中心 y=342.03（560-217.97）")
+	assert_almost_eq(right.position.x + right.size.x * 0.5, 735.94, 0.02, "right_button 中心 x=815.94（to_godot(735.94)）")
+	assert_almost_eq(right.position.y + right.size.y * 0.5, 262.03, 0.02, "right_button 中心 y=342.03（560-217.97）")
 	assert_true((content.get_node("%RightButton") as TextureButton).flip_h, "right_button flip_h（源 flip=x）")
 	var fog: Control = content.get_node("%SearchFog") as Control
-	assert_almost_eq(fog.position.x + fog.size.x * 0.5, 476.88, 0.02, "search_fog 中心 x=476.88（to_godot(396.88)）")
-	assert_almost_eq(fog.size.x, 702.34, 0.02, "search_fog w=702.34（fix_wh 直译）")
+	assert_almost_eq(fog.position.x + fog.size.x * 0.5, 396.88, 0.02, "search_fog 中心 x=476.88（to_godot(396.88)）")
+	assert_almost_eq(fog.size.x, 547.90, 0.02, "search_fog w=702.34（fix_wh 直译）")
 	assert_almost_eq(fog.modulate.a, 0.0, 0.005, "search_fog opacity=0（源 config.opacity=0，fill 淡入）")
 	# 绘制序守卫（防反盖）：源 z bg=0 < frame_container=5（内：frame_bg=1 < 动态矿点
 	# clipNode=2 < info_layer=15 < frame=20 < title=24 < page_tag/back=30）< 根级
@@ -1227,8 +1227,8 @@ func test_search_frame_source_fidelity() -> void:
 		return
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
 		"frame 贴图归源 excavate_main_frame")
-	assert_almost_eq(frame.size.x, 733.59, 0.02, "frame w=733.59（fix_wh 直译，A 债 #1）")
-	assert_almost_eq(frame.size.y, 454.69, 0.02, "frame h=454.69")
+	assert_almost_eq(frame.size.x, 572.88, 0.02, "frame w=733.59（fix_wh 直译，A 债 #1）")
+	assert_almost_eq(frame.size.y, 355.13, 0.02, "frame h=454.69")
 	var tex: Texture2D = frame.texture
 	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
 	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
@@ -1282,8 +1282,8 @@ func test_search_content_static_rects() -> void:
 	assert_almost_eq(slbl.size.x, 87.0, 0.02, "SearchLabel w=87（word_search 原尺寸）")
 	assert_almost_eq(slbl.size.y, 25.0, 0.02, "SearchLabel h=25")
 	var fc: Control = content.get_node("FrameContainer") as Control
-	assert_almost_eq(fc.position.x, 76.875, 0.02, "frame_container offset_left=76.875")
-	assert_almost_eq(fc.position.y, 75.625, 0.02, "frame_container offset_top=75.625")
+	assert_almost_eq(fc.position.x, -3.125, 0.02, "frame_container offset_left=76.875")
+	assert_almost_eq(fc.position.y, -4.375, 0.02, "frame_container offset_top=75.625")
 	assert_almost_eq(fc.size.x, 800.0, 0.02, "frame_container w=800（scaleSize 直译）")
 	assert_almost_eq(fc.size.y, 480.47, 0.02, "frame_container h=480.47")
 	var frame: Control = fc.get_node("Frame") as Control
@@ -1307,35 +1307,35 @@ func test_search_content_static_rects() -> void:
 	var back_dev: float = abs(back_btn.size.x / back_btn.size.y - float(back_tex.get_width()) / float(back_tex.get_height())) / (float(back_tex.get_width()) / float(back_tex.get_height()))
 	assert_lt(back_dev, 0.08, "back 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (back_dev * 100.0))
 	var icon: Control = content.get_node("%SearchIcon") as Control
-	assert_almost_eq(icon.position.x + icon.size.x * 0.5, 480.0, 0.02, "search_icon 中心 x=480（to_godot(400)）")
-	assert_almost_eq(icon.position.y + icon.size.y * 0.5, 305.31, 0.02, "search_icon 中心 y=305.31（560-254.69）")
-	assert_almost_eq(icon.size.x, 100.78, 0.02, "search_icon w=100.78（fix_wh 直译）")
-	assert_almost_eq(icon.size.y, 102.34, 0.02, "search_icon h=102.34")
+	assert_almost_eq(icon.position.x + icon.size.x * 0.5, 400.0, 0.02, "search_icon 中心 x=480（to_godot(400)）")
+	assert_almost_eq(icon.position.y + icon.size.y * 0.5, 225.31, 0.02, "search_icon 中心 y=305.31（560-254.69）")
+	assert_almost_eq(icon.size.x, 78.82, 0.02, "search_icon w=100.78（fix_wh 直译）")
+	assert_almost_eq(icon.size.y, 79.61, 0.02, "search_icon h=102.34")
 	var histroy: Control = content.get_node("%HistroyButton") as Control
-	assert_almost_eq(histroy.position.x + histroy.size.x * 0.5, 234.69, 0.02, "histroy 中心 x=234.69（to_godot(154.69)）")
-	assert_almost_eq(histroy.position.y + histroy.size.y * 0.5, 478.75, 0.02, "histroy 中心 y=478.75（560-81.25）")
+	assert_almost_eq(histroy.position.x + histroy.size.x * 0.5, 154.69, 0.02, "histroy 中心 x=234.69（to_godot(154.69)）")
+	assert_almost_eq(histroy.position.y + histroy.size.y * 0.5, 398.75, 0.02, "histroy 中心 y=478.75（560-81.25）")
 	assert_almost_eq(histroy.size.x, 117.19, 0.02, "histroy w=117.19（scaleSize 直译）")
 	assert_almost_eq(histroy.size.y, 53.13, 0.02, "histroy h=53.13")
 	var explain: Control = content.get_node("%ExplainButton") as Control
-	assert_almost_eq(explain.position.x + explain.size.x * 0.5, 330.78, 0.02, "explain 中心 x=330.78（to_godot(250.78)）")
+	assert_almost_eq(explain.position.x + explain.size.x * 0.5, 250.78, 0.02, "explain 中心 x=330.78（to_godot(250.78)）")
 	assert_almost_eq(explain.size.x, 66.41, 0.02, "explain w=66.41（scaleSize 直译）")
 	var search_frame: Control = content.get_node("SearchFrame") as Control
-	assert_almost_eq(search_frame.position.x + search_frame.size.x * 0.5, 717.5, 0.02, "search_frame 中心 x=717.5（to_godot(637.5)）")
-	assert_almost_eq(search_frame.position.y + search_frame.size.y * 0.5, 460.78, 0.02, "search_frame 中心 y=460.78（560-99.22）")
+	assert_almost_eq(search_frame.position.x + search_frame.size.x * 0.5, 637.5, 0.02, "search_frame 中心 x=717.5（to_godot(637.5)）")
+	assert_almost_eq(search_frame.position.y + search_frame.size.y * 0.5, 380.78, 0.02, "search_frame 中心 y=460.78（560-99.22）")
 	assert_almost_eq(search_frame.size.x, 171.88, 0.02, "search_frame w=171.88（scaleSize 直译）")
 	assert_almost_eq(search_frame.size.y, 101.56, 0.02, "search_frame h=101.56")
 	var search_btn: Control = content.get_node("%SearchButton") as Control
 	assert_almost_eq(search_btn.size.x, 140.63, 0.02, "search_button w=140.63（scaleSize 直译）")
 	assert_almost_eq(search_btn.size.y, 50.78, 0.02, "search_button h=50.78")
 	var btn_center: Vector2 = search_btn.get_global_rect().get_center()
-	assert_almost_eq(btn_center.x, 718.28, 0.02, "search_button 全局中心 x=718.28（cy=-21.88 越界挂下）")
-	assert_almost_eq(btn_center.y, 478.75, 0.02, "search_button 全局中心 y=478.75")
+	assert_almost_eq(btn_center.x, 638.28, 0.02, "search_button 全局中心 x=718.28（cy=-21.88 越界挂下）")
+	assert_almost_eq(btn_center.y, 398.75, 0.02, "search_button 全局中心 y=478.75")
 	var gold: Control = content.get_node("%GoldIcon") as Control
 	var gold_tex: Texture2D = (content.get_node("%GoldIcon") as TextureRect).texture
 	var gold_dev: float = abs(gold.size.x / gold.size.y - float(gold_tex.get_width()) / float(gold_tex.get_height())) / (float(gold_tex.get_width()) / float(gold_tex.get_height()))
 	assert_lt(gold_dev, 0.08, "gold 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (gold_dev * 100.0))
 	var cost: Control = content.get_node("%CostLabel") as Control
-	assert_almost_eq(cost.get_global_rect().position.x + cost.size.x, 765.94, 0.02, "cost 右缘全局 x=765.94（源 anchor(1,0.5)@48.44）")
+	assert_almost_eq(cost.get_global_rect().position.x + cost.size.x, 685.94, 0.02, "cost 右缘全局 x=765.94（源 anchor(1,0.5)@48.44）")
 	# 绘制序守卫（防反盖）：源 z bg=0 < frame_container=5 < 同 z=10 组按声明序
 	# （search_icon→histroy→explain→search_frame）
 	assert_lt(content.get_node("Bg").get_index(), fc.get_index(), "bg 声明序先于 frame_container（z 0<5）")
@@ -1441,8 +1441,8 @@ func test_team_content_static_rects() -> void:
 	var content: Control = (load("res://scenes/ui/excavate_team_content.tscn") as PackedScene).instantiate() as Control
 	add_child(content)
 	var frame: Control = content.get_node("Frame") as Control
-	assert_almost_eq(frame.position.x, 163.595, 0.02, "frame offset_left=163.595")
-	assert_almost_eq(frame.position.y, 219.375, 0.02, "frame offset_top=219.375")
+	assert_almost_eq(frame.position.x, 83.595, 0.02, "frame offset_left=163.595")
+	assert_almost_eq(frame.position.y, 139.375, 0.02, "frame offset_top=219.375")
 	var fc: Control = content.get_node("Frame/FrameContainer") as Control
 	assert_almost_eq(fc.position.x, 316.41, 0.02, "frame_container offset_left=316.41（frame 局部）")
 	assert_almost_eq(fc.position.y, -57.03, 0.02, "frame_container offset_top=-57.03")
@@ -1600,7 +1600,7 @@ func test_team_fill_mine_and_monster() -> void:
 		"monster：野怪名 LSTR fill（源 :325 row[Player Name]）")
 	var frame2: Control = panel2.container.get_node("ExcavateTeamContent/Frame") as Control
 	assert_almost_eq(frame2.size.y, 206.87, 0.02, "monster：frame 高 265px÷1.28=206.87（源 :531 DGSizeMake）")
-	assert_almost_eq(frame2.get_rect().get_center().y, 340.47, 0.02, "monster：frame 保持中心（Cocos setContentSize 中心锚不动）")
+	assert_almost_eq(frame2.get_rect().get_center().y, 260.47, 0.02, "monster：frame 保持中心（Cocos setContentSize 中心锚不动）")
 	assert_almost_eq(fc2.position.y, -57.03 + 27.34, 0.02, "monster：frame_container 下移 35px÷1.28=27.34（源 :530）")
 	assert_gt((fc2.get_node("HeroSlot1") as Control).get_child_count(), 0, "monster：槽1 已填敌英雄")
 	panel2.remove_window()

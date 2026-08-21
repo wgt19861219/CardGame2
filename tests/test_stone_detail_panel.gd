@@ -263,10 +263,10 @@ func test_content_getway_clip_layer() -> void:
 	if clip == null:
 		return
 	assert_true(clip.clip_contents, "GetwayClip 开 clip_contents（源 cliprect 语义）")
-	assert_almost_eq(clip.offset_left, 337.5, 0.1, "clip 左 = 337.5 + cliprect.x")
-	assert_almost_eq(clip.offset_top, 262.0, 0.1, "clip 顶 = 512 - (85+165)")
-	assert_almost_eq(clip.offset_right, 622.5, 0.1, "clip 右 = 面板 infoContainer 右缘")
-	assert_almost_eq(clip.offset_bottom, 427.0, 0.1, "clip 底 = 512 - 85")
+	assert_almost_eq(clip.offset_left, 257.5, 0.1, "clip 左 = 337.5 + cliprect.x")
+	assert_almost_eq(clip.offset_top, 182.0, 0.1, "clip 顶 = 512 - (85+165)")
+	assert_almost_eq(clip.offset_right, 542.5, 0.1, "clip 右 = 面板 infoContainer 右缘")
+	assert_almost_eq(clip.offset_bottom, 347.0, 0.1, "clip 底 = 512 - 85")
 
 
 func test_getway_item_template_static_tree() -> void:
@@ -394,7 +394,7 @@ func test_amount_right2_chain() -> void:
 	var paren: Label = panel._content.get_node("%AmountLParen") as Label
 	var amt: Label = panel._content.get_node("%AmountLabel") as Label
 	var need: Label = panel._content.get_node("%AmountNeedLabel") as Label
-	assert_almost_eq(paren.position.x, 437.5, 0.1, "pre 左 = _g(100,275).x")
+	assert_almost_eq(paren.position.x, 357.5, 0.1, "pre 左 = _g(100,275).x")
 	assert_almost_eq(amt.position.x, paren.position.x + paren.get_combined_minimum_size().x, 0.5,
 		"amount 紧跟 pre 右缘（right2）")
 	assert_almost_eq(need.position.x, amt.position.x + amt.get_combined_minimum_size().x, 0.5,

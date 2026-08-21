@@ -39,8 +39,8 @@ func test_window_layout_follows_source() -> void:
 	var inst: Control = scene.instantiate() as Control
 	add_child_autofree(inst)
 	var frame: Control = inst.get_node("Frame") as Control
-	assert_almost_eq(frame.offset_left, 131.17, 0.5, "frame 左=源中心 x-半宽")
-	assert_almost_eq(frame.offset_top, 95.54, 0.5, "frame 顶=源中心 y-半高")
+	assert_almost_eq(frame.offset_left, 51.17, 0.5, "frame 左=源中心 x-半宽")
+	assert_almost_eq(frame.offset_top, 15.54, 0.5, "frame 顶=源中心 y-半高")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 702.34, 0.5, "frame 宽=源 fix_wh w")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 447.66, 0.5, "frame 高=源 fix_wh h")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
@@ -65,17 +65,17 @@ func test_window_layout_follows_source() -> void:
 	assert_eq(detail.get_parent(), frame, "detail 挂 Frame（防 parenting 回归）")
 	var hero_scroll: ScrollContainer = inst.get_node("%HeroScroll") as ScrollContainer
 	assert_eq(hero_scroll.get_parent(), frame, "hero_scroll 挂 Frame（防 parenting 回归）")
-	assert_almost_eq(frame.global_position.x, 131.17, 0.5, "frame 全局左=131.17")
-	assert_almost_eq(frame.global_position.y, 95.54, 0.5, "frame 全局顶=95.54")
-	assert_almost_eq(close.global_position.y, 95.54 - 1.56, 0.5, "close 全局顶=frame 顶-1.56（骑 frame 顶边照源）")
-	assert_almost_eq(close.global_position.x, 131.17 + 650.4, 0.5, "close 全局左=frame 左+650.4")
+	assert_almost_eq(frame.global_position.x, 51.17, 0.5, "frame 全局左=131.17")
+	assert_almost_eq(frame.global_position.y, 15.54, 0.5, "frame 全局顶=95.54")
+	assert_almost_eq(close.global_position.y, 15.54 - 1.56, 0.5, "close 全局顶=frame 顶-1.56（骑 frame 顶边照源）")
+	assert_almost_eq(close.global_position.x, 51.17 + 650.4, 0.5, "close 全局左=frame 左+650.4")
 	assert_true(explain.global_position.x > frame.global_position.x, "explain 全局左在 frame 左界内（误挂 root 时探出 111px）")
-	assert_almost_eq(detail.global_position.x, 131.17 + 351.17, 0.5, "detail 全局左=frame 左+351.17")
+	assert_almost_eq(detail.global_position.x, 51.17 + 351.17, 0.5, "detail 全局左=frame 左+351.17")
 	assert_almost_eq(frame.get_global_rect().end.y - detail.get_global_rect().end.y, 223.83, 0.5,
 		"detail 全局底=frame 底-223.83（源 Layer anchor(0,0) at y-up 223.83）")
 	assert_true(frame.get_global_rect().encloses(detail.get_global_rect()), "detail 容器整体在 frame 内")
-	assert_almost_eq(hero_scroll.global_position.x, 131.17 + 155.0, 0.5, "hero_scroll 全局左=frame 左+155")
-	assert_almost_eq(hero_scroll.global_position.y, 95.54 + 60.0, 0.5, "hero_scroll 全局顶=frame 顶+60")
+	assert_almost_eq(hero_scroll.global_position.x, 51.17 + 155.0, 0.5, "hero_scroll 全局左=frame 左+155")
+	assert_almost_eq(hero_scroll.global_position.y, 15.54 + 60.0, 0.5, "hero_scroll 全局顶=frame 顶+60")
 
 
 # DetailContainer 内照源（detail 局部坐标，容器高 78.13 → gy=78.13-y）：
@@ -109,7 +109,7 @@ func test_window_detail_layout_follows_source() -> void:
 	assert_almost_eq(split.offset_right - split.offset_left, 128.91, 0.5, "分解按钮宽=源 scaleSize 128.91")
 	# 审查修复守卫（2026-08-15 Important）：detail 子树随 DetailContainer 挂 Frame 后的
 	# global 级验证——子节点全局位置 = frame 原点 + detail 局部（防 parenting 回归连带偏移）。
-	assert_almost_eq(detail.global_position.x, 131.17 + 351.17, 0.5, "detail 全局左=frame 内 351.17")
+	assert_almost_eq(detail.global_position.x, 51.17 + 351.17, 0.5, "detail 全局左=frame 内 351.17")
 	assert_almost_eq(title_bg.global_position.x - detail.global_position.x, -172.66, 0.5,
 		"title_bg 全局=detail 局部 -172.66（源负坐标）")
 	assert_almost_eq(title_bg.global_position.y - detail.global_position.y, -128.9, 0.5,
@@ -306,8 +306,8 @@ func test_confirm_layout_follows_source() -> void:
 	var inst: Control = scene.instantiate() as Control
 	add_child_autofree(inst)
 	var frame: NinePatchRect = inst.get_node("Frame") as NinePatchRect
-	assert_almost_eq((frame.offset_left + frame.offset_right) / 2.0, 403.13 + 80.0, 0.5, "frame 中心 x=483.13")
-	assert_almost_eq((frame.offset_top + frame.offset_bottom) / 2.0, 560.0 - 233.59, 0.5, "frame 中心 y=326.41")
+	assert_almost_eq((frame.offset_left + frame.offset_right) / 2.0, 403.13, 0.5, "frame 中心 x=483.13")
+	assert_almost_eq((frame.offset_top + frame.offset_bottom) / 2.0, 480.0 - 233.59, 0.5, "frame 中心 y=326.41")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 462.5, 0.5, "frame 宽=源 scaleSize 462.5")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 329.69, 0.5, "frame 高=源 scaleSize 329.69")
 	assert_almost_eq(frame.patch_margin_left, 58.59, 0.5, "frame 左 margin=源 cap.x")
@@ -419,25 +419,25 @@ func test_explain_layout_follows_source() -> void:
 	var inst: Control = scene.instantiate() as Control
 	add_child_autofree(inst)
 	var frame: NinePatchRect = inst.get_node("Frame") as NinePatchRect
-	assert_almost_eq(frame.offset_left, 125.0 + 80.0, 0.5, "frame 左=源世界 x+80")
-	assert_almost_eq(frame.offset_top, 560.0 - 429.69, 0.5, "frame 顶=560-源世界顶 y")
+	assert_almost_eq(frame.offset_left, 125.0, 0.5, "frame 左=源世界 x+80")
+	assert_almost_eq(frame.offset_top, 480.0 - 429.69, 0.5, "frame 顶=560-源世界顶 y")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 548.44, 0.5, "frame 宽=源 scaleSize 548.44")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 378.91, 0.5, "frame 高=源 scaleSize 378.91")
 	assert_almost_eq(frame.patch_margin_left, 17.19, 0.5, "frame 左 margin=源 cap.x")
 	assert_almost_eq(frame.patch_margin_top, 61.0 - 17.19 - 15.63, 0.5, "frame 顶 margin=纹高-cap")
 	assert_almost_eq(frame.patch_margin_bottom, 17.19, 0.5, "frame 底 margin=源 cap.y")
 	var title_bg: NinePatchRect = inst.get_node("TitleBg") as NinePatchRect
-	assert_almost_eq((title_bg.offset_left + title_bg.offset_right) / 2.0, 398.44 + 80.0, 0.5,
+	assert_almost_eq((title_bg.offset_left + title_bg.offset_right) / 2.0, 398.44, 0.5,
 		"title_bg 中心 x=478.44（世界）")
 	assert_almost_eq(title_bg.offset_right - title_bg.offset_left, 480.47, 0.5, "title_bg 宽=源 scaleSize 480.47")
 	assert_almost_eq(title_bg.patch_margin_top, 44.0 - 34.38, 0.5, "title_bg 顶 margin=纹高-cap")
 	assert_almost_eq(title_bg.patch_margin_bottom, 0.0, 0.5, "title_bg 底 margin=源 cap.y=0")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 659.38 + 80.0, 0.5, "close 中心 x=739.38（世界）")
+	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 659.38, 0.5, "close 中心 x=739.38（世界）")
 	assert_almost_eq(close.offset_right - close.offset_left, 49.22, 0.5, "close 宽=源 fix_wh 49.22")
 	var scroll: ScrollContainer = inst.get_node("%ScrollHost") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 156.25 + 80.0, 0.5, "scroll 左=cliprect x*0.78125+80")
-	assert_almost_eq(scroll.offset_top, 560.0 - 76.56 - 282.81, 0.5, "scroll 顶=560-cliprect 顶底")
+	assert_almost_eq(scroll.offset_left, 156.25, 0.5, "scroll 左=cliprect x*0.78125+80")
+	assert_almost_eq(scroll.offset_top, 480.0 - 76.56 - 282.81, 0.5, "scroll 顶=560-cliprect 顶底")
 	assert_almost_eq(scroll.offset_right - scroll.offset_left, 485.94, 0.5, "scroll 宽=cliprect 宽")
 	assert_almost_eq(scroll.offset_bottom - scroll.offset_top, 282.81, 0.5, "scroll 高=cliprect 高")
 

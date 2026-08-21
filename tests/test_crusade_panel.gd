@@ -111,8 +111,8 @@ func test_scroll_clip_rect_matches_source() -> void:
 	var content: Control = panel.container.get_child(0) as Control
 	var scroll: ScrollContainer = content.get_node("%Scroll") as ScrollContainer
 	var r: Rect2 = scroll.get_rect()
-	assert_almost_eq(r.position.x, 96.44, 0.01, "clip 视口 x=16.44+80（源 insetL 18）")
-	assert_almost_eq(r.position.y, 147.12, 0.01, "clip 视口 y=560-412.88（源 insetT 18）")
+	assert_almost_eq(r.position.x, 16.44, 0.01, "clip 视口 x=16.44+80（源 insetL 18）")
+	assert_almost_eq(r.position.y, 67.12, 0.01, "clip 视口 y=560-412.88（源 insetT 18）")
 	assert_almost_eq(r.size.x, 757.12, 0.01, "clip 视口宽 =803.12-18-28（源 clipW）")
 	assert_almost_eq(r.size.y, 405.76, 0.01, "clip 视口高 =441.75-18-18（源 clipH）")
 	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "纵向禁滚（源仅横向拖拽）")
@@ -488,17 +488,17 @@ func test_rule_static_structure() -> void:
 	var frame: NinePatchRect = content.get_node("%RuleFrame") as NinePatchRect
 	assert_almost_eq(frame.size.x, 550.0, 0.01, "RuleFrame 宽 550（源 scaleSize）")
 	assert_almost_eq(frame.size.y, 360.0, 0.01, "RuleFrame 高 360")
-	assert_almost_eq(frame.position.x, 205.0, 0.01, "RuleFrame x=480-275（源 pos(400,240) 中心）")
-	assert_almost_eq(frame.position.y, 140.0, 0.01, "RuleFrame y=320-180")
+	assert_almost_eq(frame.position.x, 125.0, 0.01, "RuleFrame x=480-275（源 pos(400,240) 中心）")
+	assert_almost_eq(frame.position.y, 60.0, 0.01, "RuleFrame y=320-180")
 	var scroll: ScrollContainer = content.get_node("%RuleScroll") as ScrollContainer
 	var sr: Rect2 = scroll.get_rect()
-	assert_almost_eq(sr.position.x, 220.0, 0.01, "RuleScroll x=140+80（源 cliprect x=140）")
-	assert_almost_eq(sr.position.y, 220.0, 0.01, "RuleScroll y=560-340（源 cliprect 顶 y=340）")
+	assert_almost_eq(sr.position.x, 140.0, 0.01, "RuleScroll x=140+80（源 cliprect x=140）")
+	assert_almost_eq(sr.position.y, 140.0, 0.01, "RuleScroll y=560-340（源 cliprect 顶 y=340）")
 	assert_almost_eq(sr.size.x, 500.0, 0.01, "RuleScroll 宽 500（源 cliprect w）")
 	assert_almost_eq(sr.size.y, 250.0, 0.01, "RuleScroll 高 250")
 	var close_btn: TextureButton = content.get_node("%RuleCloseBtn") as TextureButton
 	assert_not_null(close_btn, "RuleCloseBtn 存在（源 closeRuleInfo SpriteButton）")
-	assert_almost_eq(close_btn.get_rect().get_center().x, 739.0, 0.5, "关闭钮 x（源局部 (534,340)）")
+	assert_almost_eq(close_btn.get_rect().get_center().x, 659.0, 0.5, "关闭钮 x（源局部 (534,340)）")
 	var title_bg: TextureRect = content.get_node("%RuleTitleBg") as TextureRect
 	assert_almost_eq(title_bg.size.x, 474.0 / CS * 1.3, 0.5, "标题底宽 =474px/CS×1.3（源 scalexy）")
 	panel.remove_window()

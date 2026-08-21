@@ -147,8 +147,8 @@ func test_content_static_tree() -> void:
 	var frame: TextureRect = inst.get_node("Frame") as TextureRect
 	assert_almost_eq(frame.size.x, 328.59, 0.5, "Frame 宽 = 421px/CS")
 	assert_almost_eq(frame.size.y, 422.24, 0.5, "Frame 高 = 541px/CS")
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 0.5, "Frame 中心 x = 400+80")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 320.0, 0.5, "Frame 中心 y = 560-240")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 400.0, 0.5, "Frame 中心 x = 400+80")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 240.0, 0.5, "Frame 中心 y = 560-240")
 	var ok_btn: Button = frame.get_node("%OkBtn") as Button
 	assert_almost_eq(ok_btn.size.x, 165.0, 0.5, "OkBtn 宽 = scaleSize 165")
 	assert_almost_eq(ok_btn.size.y, 45.0, 0.5, "OkBtn 高 = scaleSize 45")

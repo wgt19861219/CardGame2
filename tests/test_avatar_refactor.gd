@@ -25,15 +25,15 @@ const THEME_PATH: String = "res://resources/themes/default_theme.tres"
 const FRAME_CAP_TOP: int = 25
 const FRAME_CAP_BOTTOM: int = 10
 # 源 scaleSize(530,375) 中心(400,240) → Godot 中心(480,320)。
-const FRAME_L: float = 215.0
-const FRAME_T: float = 132.5
+const FRAME_L: float = 135.0
+const FRAME_T: float = 52.5
 const FRAME_W: float = 530.0
 const FRAME_H: float = 375.0
 # 源 cliprect(154,60,492,365) to_godot 直译。
-const SCROLL_L: float = 234.0
-const SCROLL_T: float = 135.0
-const SCROLL_R: float = 726.0
-const SCROLL_B: float = 500.0
+const SCROLL_L: float = 154.0
+const SCROLL_T: float = 55.0
+const SCROLL_R: float = 646.0
+const SCROLL_B: float = 420.0
 # hero_icon_frame_1 106×106 / CS = 82.73（无 TextureConfig 条目，÷CS 轨道）。
 const ICON_DISPLAY: float = 82.73
 # 源 LSTR 键（ofavatar.lua:9-13 + :124）。

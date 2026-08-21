@@ -118,8 +118,8 @@ func test_confirm_static_rects() -> void:
 	add_child(inst)
 	var frame: NinePatchRect = inst.get_node("%Frame") as NinePatchRect
 	assert_almost_eq(frame.size.x, 468.75, 0.5, "frame 宽 = DG(600)（widthMax w=600）")
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 481.56, 0.5, "frame 中心 x = 80+401.56（声明表）")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 325.62, 0.5, "frame 中心 y = 560-234.38")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 401.56, 0.5, "frame 中心 x = 80+401.56（声明表）")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 245.62, 0.5, "frame 中心 y = 560-234.38")
 	# capInsets CCRectMake(19.53,19.53,46.88,11.72) 纹理 103x61 → int 取整
 	assert_almost_eq(float(frame.patch_margin_left), 20.0, 0.5, "patch_left=round(19.53)")
 	assert_almost_eq(float(frame.patch_margin_right), 37.0, 0.5, "patch_right=round(103-19.53-46.88)")

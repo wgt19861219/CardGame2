@@ -22,13 +22,13 @@ func _slot_center(inst: Control, i: int) -> Vector2:
 func test_slot_hosts_2cols_3rows() -> void:
 	var inst: Control = _instantiate_content()
 	# 源 1-based i=1 中心 cocos(235,405) → Godot to_godot(235+80, 560-405)=(315,155)
-	assert_almost_eq(_slot_center(inst, 0).x, 315.0, 0.5, "i=1 第1行左 (315,155)")
-	assert_almost_eq(_slot_center(inst, 0).y, 155.0, 0.5, "i=1 第1行左 y=155")
-	assert_almost_eq(_slot_center(inst, 1).x, 387.0, 0.5, "i=2 第1行右 (387,155)")
-	assert_almost_eq(_slot_center(inst, 2).y, 227.0, 0.5, "i=3 第2行左 y=227")
-	assert_almost_eq(_slot_center(inst, 3).x, 387.0, 0.5, "i=4 第2行右 (387,227)")
-	assert_almost_eq(_slot_center(inst, 4).y, 299.0, 0.5, "i=5 第3行左 y=299")
-	assert_almost_eq(_slot_center(inst, 5).x, 387.0, 0.5, "i=6 第3行右 (387,299)")
+	assert_almost_eq(_slot_center(inst, 0).x, 235.0, 0.5, "i=1 第1行左 (315,155)")
+	assert_almost_eq(_slot_center(inst, 0).y, 75.0, 0.5, "i=1 第1行左 y=155")
+	assert_almost_eq(_slot_center(inst, 1).x, 307.0, 0.5, "i=2 第1行右 (387,155)")
+	assert_almost_eq(_slot_center(inst, 2).y, 147.0, 0.5, "i=3 第2行左 y=227")
+	assert_almost_eq(_slot_center(inst, 3).x, 307.0, 0.5, "i=4 第2行右 (387,227)")
+	assert_almost_eq(_slot_center(inst, 4).y, 219.0, 0.5, "i=5 第3行左 y=299")
+	assert_almost_eq(_slot_center(inst, 5).x, 307.0, 0.5, "i=6 第3行右 (387,299)")
 
 
 func test_slot_hosts_spacing() -> void:

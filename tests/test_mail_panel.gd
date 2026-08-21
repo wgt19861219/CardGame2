@@ -76,25 +76,25 @@ func test_content_static_tree() -> void:
 	var frame: TextureRect = inst.get_node("Frame") as TextureRect
 	assert_almost_eq(frame.size.x, 396.49, 0.5, "Frame 宽 = 508px/CS")
 	assert_almost_eq(frame.size.y, 445.66, 0.5, "Frame 高 = 571px/CS")
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 0.5, "Frame 中心 x = 400+80")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 320.0, 0.5, "Frame 中心 y = 560-240")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 400.0, 0.5, "Frame 中心 x = 400+80")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 240.0, 0.5, "Frame 中心 y = 560-240")
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq(close_btn.size.x, 50.73, 0.5, "CloseBtn 宽 = 65px/CS")
 	assert_almost_eq(close_btn.size.y, 51.51, 0.5, "CloseBtn 高 = 66px/CS")
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 676.75, 0.5,
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 596.75, 0.5,
 		"CloseBtn 中心 x = 201.75+395+80（frame 左下原点直译）")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 122.86, 0.5,
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 42.86, 0.5,
 		"CloseBtn 中心 y = 560-(17.17+420)")
 	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch=SCALE（默认 KEEP 溢出）")
 	var title_bg: TextureRect = inst.get_node("TitleBg") as TextureRect
 	assert_almost_eq(title_bg.size.x, 328.59, 0.5, "TitleBg 宽 = 421px/CS")
-	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 481.75, 0.5,
+	assert_almost_eq(title_bg.position.x + title_bg.size.x * 0.5, 401.75, 0.5,
 		"TitleBg 中心 x = 201.75+200+80")
 	var scroll: ScrollContainer = inst.get_node("%MailScroll") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 301.75, 0.5, "MailScroll 左 = cliprect 直译")
-	assert_almost_eq(scroll.offset_top, 152.83, 0.5, "MailScroll 顶 = 560-(37.17+370)")
-	assert_almost_eq(scroll.offset_right, 661.75, 0.5, "MailScroll 右 = 301.75+360")
-	assert_almost_eq(scroll.offset_bottom, 522.83, 0.5, "MailScroll 底 = 560-37.17")
+	assert_almost_eq(scroll.offset_left, 221.75, 0.5, "MailScroll 左 = cliprect 直译")
+	assert_almost_eq(scroll.offset_top, 72.83, 0.5, "MailScroll 顶 = 560-(37.17+370)")
+	assert_almost_eq(scroll.offset_right, 581.75, 0.5, "MailScroll 右 = 301.75+360")
+	assert_almost_eq(scroll.offset_bottom, 442.83, 0.5, "MailScroll 底 = 560-37.17")
 	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO, "纵向滚动启用（源 draglist）")
 	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "横向禁滚")
 

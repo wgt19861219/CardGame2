@@ -52,14 +52,14 @@ func test_goods_list_in_scroll_container() -> void:
 	assert_not_null(scroll, "商品列表在 ScrollContainer 内（源 draglist 横滚）")
 	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO, "横向滚动启用")
 	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "纵向禁滚（单行商品）")
-	assert_almost_eq(scroll.offset_left, 145.0, 0.5, "裁剪层左 = 65+80（cliprect 直译）")
-	assert_almost_eq(scroll.offset_top, 200.0, 0.5, "裁剪层顶 = 560-(35+325)")
-	assert_almost_eq(scroll.offset_right, 815.0, 0.5, "裁剪层右 = 735+80")
-	assert_almost_eq(scroll.offset_bottom, 525.0, 0.5, "裁剪层底 = 560-35")
+	assert_almost_eq(scroll.offset_left, 65.0, 0.5, "裁剪层左 = 65+80（cliprect 直译）")
+	assert_almost_eq(scroll.offset_top, 120.0, 0.5, "裁剪层顶 = 560-(35+325)")
+	assert_almost_eq(scroll.offset_right, 735.0, 0.5, "裁剪层右 = 735+80")
+	assert_almost_eq(scroll.offset_bottom, 445.0, 0.5, "裁剪层底 = 560-35")
 	var first: Control = panel._item_layer.get_child(0) as Control
-	assert_almost_eq(first.global_position.x, 170.0, 0.5, "首格全局 x = 90+80（getItemPos ox=90）")
-	assert_almost_eq(first.global_position.y, 238.28, 0.5, "首格全局 y = 560-(35+286.72)（oy=35 底对齐）")
-	assert_almost_eq((panel._item_layer.get_child(1) as Control).global_position.x, 382.0, 0.5,
+	assert_almost_eq(first.global_position.x, 90.0, 0.5, "首格全局 x = 90+80（getItemPos ox=90）")
+	assert_almost_eq(first.global_position.y, 158.28, 0.5, "首格全局 y = 560-(35+286.72)（oy=35 底对齐）")
+	assert_almost_eq((panel._item_layer.get_child(1) as Control).global_position.x, 302.0, 0.5,
 		"次格全局 x = 170+212（dx）")
 	panel.free()
 
@@ -93,20 +93,20 @@ func test_content_static_tree() -> void:
 	var frame: TextureRect = inst.get_node("Frame") as TextureRect
 	assert_almost_eq(frame.size.x, 624.49, 0.5, "Frame 宽 = 800px/CS（旧值 800 未÷CS）")
 	assert_almost_eq(frame.size.y, 374.51, 0.5, "Frame 高 = 480px/CS")
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 0.5, "Frame 中心 x = 400+80")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 340.0, 0.5, "Frame 中心 y = 560-220")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 400.0, 0.5, "Frame 中心 x = 400+80")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 260.0, 0.5, "Frame 中心 y = 560-220")
 	var title_img: TextureRect = inst.get_node("TitleImg") as TextureRect
 	assert_almost_eq(title_img.size.x, 200.49, 0.5, "TitleImg 宽 = 257px/CS")
 	assert_almost_eq(title_img.size.y, 35.9, 0.5, "TitleImg 高 = 46px/CS")
-	assert_almost_eq(title_img.position.x + title_img.size.x * 0.5, 483.0, 0.5, "TitleImg 中心 x = 403+80")
-	assert_almost_eq(title_img.position.y + title_img.size.y * 0.5, 178.0, 0.5, "TitleImg 中心 y = 560-382")
+	assert_almost_eq(title_img.position.x + title_img.size.x * 0.5, 403.0, 0.5, "TitleImg 中心 x = 403+80")
+	assert_almost_eq(title_img.position.y + title_img.size.y * 0.5, 98.0, 0.5, "TitleImg 中心 y = 560-382")
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq(close_btn.size.x, 57.76, 0.5, "CloseBtn 宽 = 74px/CS（package 惯例）")
 	assert_almost_eq(close_btn.size.y, 58.54, 0.5, "CloseBtn 高 = 75px/CS")
 	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch=SCALE（4.7 默认 KEEP 溢出）")
 	var scroll: ScrollContainer = inst.get_node("%GoodsScroll") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 145.0, 0.5, "GoodsScroll 左照源 cliprect")
-	assert_almost_eq(scroll.offset_top, 200.0, 0.5, "GoodsScroll 顶照源 cliprect")
+	assert_almost_eq(scroll.offset_left, 65.0, 0.5, "GoodsScroll 左照源 cliprect")
+	assert_almost_eq(scroll.offset_top, 120.0, 0.5, "GoodsScroll 顶照源 cliprect")
 	# 迁移发明删除守卫：StoneLabel（源无）
 	assert_eq(inst.find_children("StoneLabel", "Control", true, false).size(), 0,
 		"StoneLabel 迁移发明已删（受控裁剪）")

@@ -176,8 +176,8 @@ func test_content_herosplit_static_follows_source() -> void:
 	if btn == null:
 		return
 	assert_eq(btn.theme_type_variation, &"HeroPackageSplitBtn", "herosplit 走 9 宫格 variation")
-	assert_almost_eq((btn.offset_left + btn.offset_right) / 2.0, 775.0, 0.5, "herosplit 中心 x=775（源 695 无 offsetx）")
-	assert_almost_eq((btn.offset_top + btn.offset_bottom) / 2.0, 500.0, 0.5, "herosplit 中心 y=500")
+	assert_almost_eq((btn.offset_left + btn.offset_right) / 2.0, 695.0, 0.5, "herosplit 中心 x=775（源 695 无 offsetx）")
+	assert_almost_eq((btn.offset_top + btn.offset_bottom) / 2.0, 420.0, 0.5, "herosplit 中心 y=500")
 	assert_almost_eq(btn.offset_right - btn.offset_left, 120.0 * 0.78125, 0.5, "herosplit 宽=DG(120)=93.75")
 	assert_almost_eq(btn.offset_bottom - btn.offset_top, 75.0 * 0.78125, 0.5, "herosplit 高=DG(75)=58.59")
 	var icon: TextureRect = btn.get_node_or_null("%HerosplitIcon") as TextureRect
@@ -200,10 +200,10 @@ func test_content_herosplit_static_follows_source() -> void:
 func test_content_tab_labels_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var expects: Dictionary = {
-		"TabAllLabel": Vector2(770.0, 195.0),
-		"TabFrontLabel": Vector2(770.0, 256.0),
-		"TabMiddleLabel": Vector2(770.0, 316.0),
-		"TabBackLabel": Vector2(770.0, 376.0),
+		"TabAllLabel": Vector2(690.0, 115.0),
+		"TabFrontLabel": Vector2(690.0, 176.0),
+		"TabMiddleLabel": Vector2(690.0, 236.0),
+		"TabBackLabel": Vector2(690.0, 296.0),
 	}
 	for name in expects:
 		var lbl: Label = inst.get_node("%" + name) as Label
