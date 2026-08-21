@@ -1,6 +1,6 @@
 extends GutTest
 # MainParallax 视差（照源 ui/main.lua:238 refreshMapPos + :195 bgHorizontalScroll + :116 doDragMapTouch）。
-# 4 容器按系数：top（基准 1）/ middle（sea 0.4）/ bottom（sky 0.3）/ verytop（0.9），top.x∈[_map_min_x,212]（mapWidth=1062→-50）。
+# 4 容器按系数：top（基准 1）/ middle（sea 0.4）/ bottom（sky 0.3）/ verytop（0.9），top.x∈[_map_min_x,212]（SCREEN_W=800，mapWidth=1222→-210）。
 
 var _parallax: MainParallax
 var _top: Control
@@ -19,7 +19,7 @@ func before_each() -> void:
 	add_child(_bottom)
 	add_child(_verytop)
 	_parallax = MainParallax.new()
-	_parallax.setup(_top, _middle, _bottom, _verytop, 1222.0)   # mapWidth=1222 → _map_min_x = 960-1222+212 = -50（模拟双向拖）
+	_parallax.setup(_top, _middle, _bottom, _verytop, 1222.0)   # mapWidth=1222 → _map_min_x = 800-1222+212 = -210（模拟双向拖）
 
 
 func after_each() -> void:
@@ -49,14 +49,14 @@ func test_refresh_clamp_max() -> void:
 	assert_almost_eq(_verytop.position.x, 190.8, 0.01, "verytop = 0.9 × 212")
 
 
-# 源 clamp 下界：top.x 超下界 → clamp _map_min_x(-50)，其余 = 系数×(-50)（源 :249-261 联动 map_min_x）。
+# 源 clamp 下界：top.x 超下界 → clamp _map_min_x(-210)，其余 = 系数×(-210)（源 :249-261 联动 map_min_x）。
 func test_refresh_clamp_min() -> void:
-	_top.position.x = -100.0
+	_top.position.x = -300.0
 	_parallax.refresh()
-	assert_almost_eq(_top.position.x, -50.0, 0.01, "top clamp 到 _map_min_x -50")
-	assert_almost_eq(_middle.position.x, -20.0, 0.01, "middle = 0.4 × -50")
-	assert_almost_eq(_bottom.position.x, -15.0, 0.01, "bottom = 0.3 × -50")
-	assert_almost_eq(_verytop.position.x, -45.0, 0.01, "verytop = 0.9 × -50")
+	assert_almost_eq(_top.position.x, -210.0, 0.01, "top clamp 到 _map_min_x -210")
+	assert_almost_eq(_middle.position.x, -84.0, 0.01, "middle = 0.4 × -210")
+	assert_almost_eq(_bottom.position.x, -63.0, 0.01, "bottom = 0.3 × -210")
+	assert_almost_eq(_verytop.position.x, -189.0, 0.01, "verytop = 0.9 × -210")
 
 
 # 源 doDragMapTouch moved:144-158：top.x += delta，refresh 让其余按系数跟。

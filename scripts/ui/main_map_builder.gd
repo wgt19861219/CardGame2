@@ -7,7 +7,7 @@ extends RefCounted
 ## z 顺序：bottom < middle < top < veryTop（源 addChild 顺序）。返回容器引用供 MainParallax + 按钮挂载。
 
 const MAP_W: float = 2400.0
-const MAP_H: float = 640.0   # grass/mountain/cloud/side 整体下移（_from_bottom 640 基准，grass 放屏底 160~640）
+const MAP_H: float = 480.0   # 源设计高：grass/mountain 铺满 0~480（Task2 自 640 迁回，_from_bottom 480 基准直译源 ccp）
 const BG_DIR: String = "res://assets/ui/alpha/HVGA/"
 const CONTENT_SCALE: float = 1.28125
 const SPINE_DIR: String = "res://assets/spine"

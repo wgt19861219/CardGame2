@@ -12,12 +12,13 @@ const UIConstants := preload("res://resources/constants/ui_constants.gd")
 ## - vitality 加号按钮 → buyVitality（vitality_plus_handler）
 ## - rmb 加号单机化裁剪（充值无单机等价；diamond_plus_handler 空→加号 IGNORE）
 
-# C13 坐标基准核查结论：statusbar 是 framework HUD 层（标准 UI），走 to_godot(cx,cy)=(cx+80,560-cy)
-# （源 800×480 左下原点 → Godot 960×640 左上原点 + 居中偏移 80）；非 main_scene ENTRIES 的 MAP_H-cocos_y
-# 基准（map 全屏背景适配，950×640 整张图）。两者不冲突——ENTRIES 是 map 装饰，statusbar 是 framework HUD。
+# 坐标基准（Task2 迁移）：statusbar 是 framework HUD 层（标准 UI），源 800×480 左下原点 →
+# Godot 800×480 左上原点直译 (cx, 480-cy)，无 960×640 居中偏移；ENTRIES 是 map 装饰走
+# main_scene 同口径 480-cocos_y。两者统一为源设计分辨率直译。
 # 2026-08-21 用户指示贴屏幕左上角：框图（容器内 (0,13.8)~(109.3,95)）左移上移至
 # 屏 (5,5) 起距 5px 边距 → 容器原点 (5,-8.8) → 容器中心 HEAD_POS=(73.5,43.7)。
-# （源 head_bg_pos=ccp(winLeft+70,434) 距左 70/距顶 46，用户偏好更贴角，受控偏离）
+# （源 head_bg_pos=ccp(winLeft+70,434) 距左 70/距顶 46，用户偏好更贴角，受控偏离；
+#  贴角定位与 viewport 高无关，Task2 迁移不动。）
 const HEAD_POS: Vector2 = Vector2(73.5, 43.7)
 const HEAD_SIZE: Vector2 = Vector2(137.0, 105.0)
 const HEAD_FRAME_RES: Array = [
@@ -72,9 +73,12 @@ const PLUS_ICON_RES: String = "res://assets/ui/alpha/HVGA/main_status_plus_icon_
 # + 源截图实测 + 用户三轮验收。TexDisplaySize 的 base×cs 公式对无条目散图偏大 1.28×，
 # 其全局修复影响 73 处调用另行决策，此处局部口径）。
 const CONTENT_SCALE: float = 1.28125
-# = (331,110)/(514,110)/(681,110)。源不等距：money→rmb 间距 183，rmb→vit 间距 167（旧版改等距 183 违反源）。
-const BAR_POS_X: Array = [331.0, 514.0, 681.0]
-const BAR_Y: float = 50.0
+# = 源 money_bg/rmb_bg/vit_bg 中心 ccp(251,450)/(434,450)/(601,450)（statusbar.lua:719/787/853
+# createTitle common 型，getInfoBarType 非 shop 一律 common 含 main）。Task2 迁移：800 宽直译 x 不偏移
+# （旧 [331,514,681] 为 +80 居中偏移）；y=480-450=30（旧 50 为 960x640 等比近似）。
+# 源不等距：money→rmb 间距 183，rmb→vit 间距 167（旧版改等距 183 违反源）。
+const BAR_POS_X: Array = [251.0, 434.0, 601.0]
+const BAR_Y: float = 30.0
 const BAR_SIZE: Vector2 = Vector2(178.0, 48.0)
 const VIT_BAR_SIZE: Vector2 = Vector2(145.0, 48.0)
 # 货币图标中心点（源 statusbar.lua createTitle，bar 局部坐标，Sprite 默认锚点 0.5,0.5）：
@@ -181,7 +185,8 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 
 
 # 仅货币条（无头像）— 非 main 场景用（源 framework.createTitle 所有场景建货币条，createHead 只 main）。
-# bar_pos_x/bar_y 由调用方传源 common 中心点（heroScene：cocos(251,434,601) y450 → godot [331,514,681] y110）。
+# bar_pos_x/bar_y 由调用方传源 common 中心点（源 cocos(251,434,601) y450 → godot 直译 [251,434,601] y30；
+# HudOverlay 传本类常量 BAR_POS_X/BAR_Y）。
 # parent: 挂载父节点（子场景直接挂 panel/scene）
 # gold_plus_handler: 金币"+"回调（照源 statusbar.lua:42-49 registerTitleTouchHandler，子场景也开 midas）
 static func build_bars_only(parent: Control, bar_pos_x: Array, bar_y: float, vitality_plus_handler: Callable = Callable(), gold_plus_handler: Callable = Callable()) -> Dictionary:

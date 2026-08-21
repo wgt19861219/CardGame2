@@ -9,7 +9,7 @@ extends RefCounted
 const SKY_COEFF: float = 0.3
 const SEA_COEFF: float = 0.4
 const VERYTOP_COEFF: float = 0.9
-const SCREEN_W: float = 960.0       # Godot viewport 宽（源 800 内容在 960 视口，可拖范围 = mapWidth - 视口宽）
+const SCREEN_W: float = 800.0       # Godot viewport 宽 = 源设计宽 800（Task2 迁移自 960；可拖范围 = mapWidth - 视口宽）
 const MAP_MAX_X: float = 212.0
 const VT_MAX_X: float = 212.0
 const VT_MIN_OFFSET: float = 0.0

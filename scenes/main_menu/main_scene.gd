@@ -2,9 +2,10 @@ extends Control
 
 ## 主界面（View 层 Step 4.2）：游戏入口。拖拽地图 + 入口按钮 + 状态栏。
 ## View 纯 UI：建 UI + 按钮→SceneManager + 状态栏（HudOverlay 手动 refresh，GameData 只读）。
-## 业务逻辑在 Logic/Data 层。布局坐标复用旧版 mainres.lua（800x480→960x640）。
+## 业务逻辑在 Logic/Data 层。布局坐标用 mainres.lua 直译（viewport 800x480 = 设计分辨率，
+## godot_y = 480 - cocos_y，Task2 迁移贴底基准，无 960x640 补差）。
 
-const MAP_H: float = 640.0   # grass + 按钮 + mountain/cloud/side/lightning 整体下移 104（grass 放屏底 56~536→160~640，图标 godot_y=MAP_H-cocos_y 跟着下移）
+const MAP_H: float = 480.0   # 设计高 480：grass/mountain 铺满 0~480（Task2 自 640 迁回，图标 godot_y=480-cocos_y）
 const BG_INIT_OFFSET: float = -300.0   # 初始视角偏移
 const TutorialGuideView = preload("res://scripts/ui/tutorial_guide_view.gd")
 const MainButtonFactory = preload("res://scripts/ui/main_button_factory.gd")
@@ -24,17 +25,17 @@ const TutorialManager = preload("res://scripts/systems/tutorial_manager.gd")
 # lightning 背景装饰 FCA（非按钮纯装饰；挂 topContainer）
 const FCA_LIGHTNING_RES: String = "effect/eff_UI_Main_Lightning"
 const FCA_LIGHTNING_ANI: String = "res://assets/anim_frames/effect/eff_UI_Main_Lightning.ani"
-const LIGHTNING_POS: Array = [205, 310]       # Godot(205, MAP_H-330=310)
+const LIGHTNING_POS: Array = [205, 150]       # Godot(205, MAP_H-330=150)；源 mainres.lua:58 lightning ccp(205,330)
 const LIGHTNING_GAP: Array = [1.71, 1.71, 1.71, 3, 10]  # gap/loop 序列
 const EXCAVATE_WIN_TEXT: String = "占领成功！矿点开始产出资源"     # excavate 战斗胜利 Toast（_maybe_resume_excavate）
 const EXCAVATE_LOSE_TEXT: String = "战斗失败，再接再厉"          # excavate 战斗失败 Toast
-# 每日签到入口按钮（源 uires.lua:53 dailylogin_pos=ori_pos=ccp(220,392)，头像 head_bg_pos=ccp(70,434)，
-# 相对 delta(150,-42)→Godot y 翻转即 (+150,+42)。头像定版 HEAD_POS(150,66)——C13(89e57b2) 修 (70,52)→
-# (150,126) 与 f32fcd0 HUD 精调 126→66 两轮均漏同步本按钮，旧值 (220,94) 压头像致重叠。
-# 中心=(150+150, 66+42)=(300,108)。
+# 每日签到入口按钮（源 uires.lua:53 dailylogin_pos=ori_pos=ccp(220,392)；statusbar.lua:383 createTitleButton
+# t="Sprite" 无 anchor 覆盖 → readnode 用 CCSprite 默认锚(0.5,0.5) 即中心点）。Task2 迁移改源绝对定位：
+# godot 中心 = (220, 480-392=88)（800x480 直译）。旧值 (300,108) 是"头像(150,66)+源 delta(150,42)"的
+# 相对头像布局；cf2c48f 头像改贴左上角后该相对基准失效，且源本就是绝对坐标，故回归源口径。
 const DAILY_BTN_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_1.png"
 const DAILY_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_2.png"
-const DAILY_BTN_CENTER: Vector2 = Vector2(300.0, 108.0)
+const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 88.0)
 const DAILY_BTN_CONTENT_SCALE: float = 1.28125   # 散图显示=纹理÷CS（main_dailyreward 无 TextureConfig 条目，同 main_status_bar 口径）
 # 15 入口按钮数据外移 main_scene_entries.gd（控 LINT005 ≤400，第九轮 P1-B 入口接线）。
 const MainSceneEntries = preload("res://scripts/ui/main_scene_entries.gd")
@@ -140,7 +141,7 @@ func _build_map() -> void:
 	var map := Control.new()
 	map.set_anchors_preset(Control.PRESET_FULL_RECT)
 	map.offset_top = 0.0   # map 延伸到顶（statusbar 透明叠加，露 mountain 天；满 design statusbar 叠加，非独立占区）
-	map.offset_bottom = 0.0   # map 满高 640（statusbar 透明叠加，grass 放屏底不被裁）
+	map.offset_bottom = 0.0   # map 满高 480（statusbar 透明叠加，grass 0~480 铺满不被裁）
 	map.clip_contents = true
 	map.mouse_filter = Control.MOUSE_FILTER_STOP   # 接收空地拖拽（按钮 STOP 吞自己区域）
 	map.gui_input.connect(_on_map_gui_input)   # 拖拽连 map（_gui_input 虚函数挂根 Control，map STOP 吞输入致根永不触发）
@@ -212,7 +213,7 @@ func _make_entry(e: Dictionary) -> Button:
 	var e_resolved: Dictionary = e.duplicate()
 	if GameData.config != null:
 		e_resolved["title"] = GameData.config.get_lstr(String(e["title"]))
-	e_resolved["pos"] = [float(e["pos"][0]), float(e["pos"][1]) + 104.0]   # 按钮 godot_y 下移 104 跟随 grass（grass 放屏底 MAP_H=640，ENTRIES pos 旧 536 基准补差 640-536）
+	e_resolved["pos"] = [float(e["pos"][0]), float(e["pos"][1])]   # pos 已是 godot 中心（480-cocos_y 直译，Task2 迁移去掉旧 640 基准 +104 补差）
 	return MainButtonFactory.make_entry(e_resolved, _on_entry_pressed.bind(String(e["id"])), is_locked)
 
 
