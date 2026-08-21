@@ -199,3 +199,42 @@ func test_head_icon_refresh_skips_same_avatar() -> void:
 	var before: Texture2D = icon.texture
 	MainStatusBar.refresh(refs, pd.team_level, 0, 0, pd.vitality, pd.vitality_max, pd.player_name, pd.vip_level, pd.avatar)
 	assert_eq(icon.texture, before, "同 id 刷新不重载")
+
+
+# 头像位置照源直译守卫（2026-08-21 用户反馈「图标没在框里」后修正回归防护）：
+# 源 head_icon_pos=ccp(40,54)（uires.lua:41，中心锚、cocos 左下原点）
+# → Godot 左上 (5,16)（HEAD_POS(150,66) 中心 - HEAD_SIZE/2 = (81.5,13.5) 框原点）。
+func test_head_icon_position_from_source() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var pd := _make_pd()
+	pd.avatar = 1
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable(), pd, _cm)
+	var icon: TextureRect = refs.get("head_icon", null)
+	if icon == null:
+		fail_test("head_icon 未建")
+		return
+	# 2026-08-21 三修：icon 等比（高随贴图 70×h/w），左上随比例浮动 → 断言中心恒 (40,51)
+	#（源 head_icon_pos=ccp(40,54) 中心锚直译）。宽恒 70。
+	var center: Vector2 = icon.position + icon.size * 0.5
+	assert_almost_eq(center.x, 40.0, 0.01, "icon 中心 x=40（源锚）")
+	assert_almost_eq(center.y, 51.0, 0.01, "icon 中心 y=51（源 105-54）")
+	assert_almost_eq(icon.size.x, 70.0, 0.01, "icon 宽恒 70（源 length）")
+
+
+# 框贴图显示尺寸照源直译守卫（2026-08-21 二次修正回归防护）：
+# 源 readnode head_bg/head_frame anchor(0,0)@cocos(0,10) 无 scaleSize → 贴图
+# 140×104px ÷CS=109.3×81.2；旧实现铺满 137×105 拉伸 1.26× 致盾窗错位。
+func test_head_bg_frame_not_stretched() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var pd := _make_pd()
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable(), pd, _cm)
+	var head: Control = refs["head"]
+	var bg: TextureRect = head.get_node_or_null("head_bg")
+	if bg == null:
+		fail_test("head_bg 未建")
+		return
+	assert_almost_eq(bg.size.x, 109.3, 0.1, "框贴图宽 109.3（贴图÷CS 不拉伸）")
+	assert_almost_eq(bg.size.y, 81.2, 0.1, "框贴图高 81.2")
+	assert_almost_eq(bg.position.y, 13.8, 0.1, "框贴图顶 13.8（源 cocos y10 底部抬升）")
