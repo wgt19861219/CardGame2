@@ -28,9 +28,12 @@ ThemeManager="*res://scripts/autoload/theme_manager.gd"
 
 [display]
 
-window/size/viewport_width=960
-window/size/viewport_height=640
+window/size/viewport_width=800
+window/size/viewport_height=480
+window/size/window_width_override=1600
+window/size/window_height_override=960
 window/stretch/mode="canvas_items"
+window/stretch/aspect="ignore"
 
 [editor_plugins]
 
