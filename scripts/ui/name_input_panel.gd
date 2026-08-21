@@ -82,4 +82,5 @@ func _on_confirm() -> void:
 		return
 	_pd.set_player_name(new_name)
 	GameData.mark_save_dirty()
+	HudOverlay.refresh()   # 2026-08-21：改名回传主界面 HUD 昵称（同换头像回传链）
 	remove_window()

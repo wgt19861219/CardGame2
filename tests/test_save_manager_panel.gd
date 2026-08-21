@@ -43,3 +43,77 @@ func test_text_roundtrip() -> void:
 	assert_eq(err, OK, "写文件 OK")
 	assert_eq(SaveManagerPanel._read_text("user://sm_test_roundtrip.txt"), "hello-sm", "读回一致")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://sm_test_roundtrip.txt"))
+
+
+# ── 快照槽系统（2026-08-21 修复轮：源面板主体，此前裁剪致「没实现」体感）──
+
+func _make_pd_for_snap() -> PlayerData:
+	var pd := PlayerData.new(cm)
+	return pd
+
+
+func test_snapshot_index_roundtrip_and_roll() -> void:
+	var index: Array = []
+	for i in range(SaveManagerSnapshots.MAX_KEEP + 2):
+		index.append({"time": 1000 + i, "type": "manual", "level": i, "team": []})
+	SaveManagerSnapshots.write_index(index)
+	var loaded: Array = SaveManagerSnapshots.read_index()
+	assert_eq(loaded.size(), SaveManagerSnapshots.MAX_KEEP + 2, "index 往返保数量")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots.INDEX_PATH))
+
+
+func test_snapshot_save_snapshot_inserts_and_trims() -> void:
+	var pd := _make_pd_for_snap()
+	var idx: Array = []
+	for i in range(SaveManagerSnapshots.MAX_KEEP):
+		idx.append({"time": 9000 + i, "type": "manual", "level": 1, "team": []})
+	SaveManagerSnapshots.write_index(idx)
+	# 新快照前插 → 超限截断（最旧 9000 被删）。
+	var new_idx: Array = SaveManagerSnapshots.save_snapshot(pd, '{"hero_manager": {"heroes": {}}}')
+	assert_eq(new_idx.size(), SaveManagerSnapshots.MAX_KEEP, "截断到 MAX_KEEP")
+	assert_gt(int(new_idx[0]["time"]), 9000 + SaveManagerSnapshots.MAX_KEEP - 1, "新快照在队首")
+	# 恢复载荷可校验（快照文件已写）。
+	var payload: Dictionary = SaveManagerSnapshots.snapshot_payload(new_idx[0])
+	assert_false(payload.is_empty(), "快照文件载荷有效（含 hero_manager）")
+	# 清理快照文件。
+	for e in new_idx:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots.SNAP_PATH_FMT % int(e["time"])))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots.INDEX_PATH))
+
+
+func test_snapshot_panel_assembles_list() -> void:
+	var panel := _make_panel()
+	# 无 index → 「暂无存档记录」占位（源 :581-586）。
+	assert_not_null(panel._snap_host, "快照列表宿主已建")
+	assert_eq(panel._snap_host.get_child_count(), 1, "空列表 → 占位文案 1 节点")
+
+
+func test_set_avatar_marks_dirty() -> void:
+	# 2026-08-21：换头像/改名落盘（save_hook 标脏），治「重启丢失」。
+	var pd := _make_pd_for_snap()
+	var called: Array[int] = [0]
+	pd.save_hook = func() -> void: called[0] += 1
+	pd.set_avatar(3)
+	assert_eq(pd.avatar, 3, "avatar 已设")
+	assert_eq(called[0], 1, "set_avatar 触发 save_hook")
+	pd.set_player_name("新名字")
+	assert_eq(pd.player_name, "新名字", "名字已设")
+	assert_eq(called[0], 2, "set_player_name 触发 save_hook")
+
+
+# 快照时间本地时区守卫（2026-08-21 实机抓出显示差 8h：UTC dict 未加 bias）。
+func test_snapshot_header_uses_local_time() -> void:
+	var now_unix: int = int(Time.get_unix_time_from_system())
+	var row: Control = SaveManagerSnapshots.build_row(
+		{"time": now_unix, "type": "manual", "level": 1, "team": []}, 1,
+		[15, 26, 43, 20], cm, Callable())
+	var header: Label = null
+	for c in row.get_children():
+		if c is Label and (c as Label).text.begins_with("#1"):
+			header = c
+			break
+	if header == null:
+		fail_test("header 标签未建")
+		return
+	var local_hour: int = Time.get_time_dict_from_system().get("hour", -1)
+	assert_true(header.text.contains("%02d:" % local_hour), "header 小时=本地时区（含 %02d:）" % local_hour)

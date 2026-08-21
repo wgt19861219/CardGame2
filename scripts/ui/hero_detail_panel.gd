@@ -33,9 +33,6 @@ const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 c
 const BASE_SLIDE_OFFSET: float = 178.0   # doMove 140（window.lua:300 container 右移）。目标 1:1 框偏大（CS 遗漏）。CloseBtn 移出 base 固定屏幕右上（不随 base），base 自由：178 让 bg left=399.5，card/popup 框与 bg 留 gap 10
 # doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
 const TAB_POP_OFFSET_X: float = -200.0
-# card 入场旋转（源 card.lua:17,45 doPopCard CCRotateTo(0.2, 360*rotate_amount ± 90)）：切 card tab 时 CardFrame 从 90° 旋回 0°。
-const CARD_POP_ROTATION: float = 90.0
-const CARD_POP_DURATION: float = 0.2
 # 进阶交互 LSTR（Toast 文案，常量在 HeroDetailUpgradeFx）
 const LSTR_MAX_RANK: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
 const LSTR_NEED_EQUIP: StringName = &"HERODETAIL.HERO_NEEDS_TO_WEAR_COMPLETE_EQUIPMENTS_FOR_ADVANCE"
@@ -337,9 +334,6 @@ func _show_tab_content(key: String) -> void:
 	# 进入 skill tab 时 fill 技能点信息栏（源 skillstren.lua createInformationBar:476-486）。
 	if key == TAB_SKILL:
 		_refresh_skill_point_bar()
-	# 进入 card tab 时播 CardFrame 旋转入场（源 card.lua:17 doPopCard CCRotateTo 90°）。
-	if key == TAB_CARD:
-		_play_card_pop_rotation()
 
 
 # 切 tab 选中态 variation：选中 → HeroDetailTabActive，未选 → HeroDetailTab。
@@ -347,17 +341,6 @@ func _set_tab_selected(selected_key: String) -> void:
 	for key in _tab_buttons:
 		var btn: Button = _tab_buttons[key] as Button
 		btn.theme_type_variation = TAB_VARIATION_ACTIVE if key == selected_key else TAB_VARIATION
-
-
-# CardFrame 旋转入场：90° 旋回 0°（0.2s）。pivot 居中（.tscn offset 固化 size 315×545；layout 未结算时回退常量）。
-func _play_card_pop_rotation() -> void:
-	var frame: Control = (_tab_views.get("card", null) as Control).get_node_or_null("%CardFrame") as Control
-	if frame == null:
-		return
-	var frame_size: Vector2 = frame.size if frame.size.x > 1.0 else HeroDetailTabs.CARD_FRAME_SIZE
-	frame.pivot_offset = frame_size * 0.5
-	frame.rotation = deg_to_rad(CARD_POP_ROTATION)
-	create_tween().tween_property(frame, "rotation", 0.0, CARD_POP_DURATION).set_ease(Tween.EASE_OUT)
 
 
 # doMove/doMoveBack container CCMoveTo 0.2s（在树+非止态才动画，首次 _build_content 不在树直接设止态）。

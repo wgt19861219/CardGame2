@@ -179,7 +179,9 @@ func _style_scrollbar() -> void:
 
 
 # 点选 set_avatar → destroy（源 doSendSet :258-265 单机化：直写 PlayerData + toast）。
+# 2026-08-21 补 HudOverlay.refresh——换头像回传主界面 HUD 头像框（icon 随 avatar 换图）。
 func _on_avatar_selected(aid: int) -> void:
 	_pd.set_avatar(aid)
+	HudOverlay.refresh()
 	Toast.show_message("头像已设置")
 	remove_window()
