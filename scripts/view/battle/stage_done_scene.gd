@@ -17,7 +17,7 @@ const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
 
 # 静态节点（bg/shelter/light/star×3/info_bg 父/replay/next/HeroHost/LootHost）坐标已固化进
 # stage_done_scene.tscn（2026-08-05 合并 content.tscn）。这里仅保留动态节点（hero/loot icon 间距、bar 偏移）所需常量。
-# Cocos 800×480（左下原点）→ Godot 960×640（左上原点）等比转换：x*1.2, (480-y)*1.333
+# 坐标口径：旧 960×640 时代等比转换（x*1.2, (480-y)*1.333）已退役无调用方；viewport 800×480 后按源坐标直译（y 翻转：godot_y = 480 - cocos_y）。
 # hero/loot 起始坐标（HERO_ORI/LOOT_ORI）已搬进 %HeroHost/%LootHost 的 position，可视化调。
 const HERO_GAP_X: float = 110.0
 const LOOT_GAP_X: float = 84.0

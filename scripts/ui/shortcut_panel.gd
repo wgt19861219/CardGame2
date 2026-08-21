@@ -30,7 +30,7 @@ const BOARD_WIDTH: float = 82.0
 const BOARD_H_MIN: float = 65.0
 const BOARD_H_MAX: float = 460.0
 const TOGGLE_CENTER: Vector2 = Vector2(740.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
-const BUTTON_CENTER_Y: Array[float] = [57.0, 147.0, 237.0, 327.0, 417.0]   # 间距 90 用户偏好（源 PosY={382..83} 直译={98..397} 间距 70~79 太挤）；底钮 417=板底 480-63，较源直译 397 下移 20 贴板底
+const BUTTON_CENTER_Y: Array[float] = [57.0, 147.0, 237.0, 327.0, 417.0]   # 间距 90 用户偏好（源静态表 PosY={382..83}，uires.lua:18 s_b_offset_y=-20 + :37-38 运行时循环叠加 → 实际 {362,287,217,142,63}，直译={118..417}，间距 70~79 太挤）；底钮 417=480-63 恰为源运行时直译（贴板底）
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
 const MAIN_TAG_CENTER: Vector2 = Vector2(TOGGLE_CENTER.x + 28.0, TOGGLE_CENTER.y - 22.0)   # 源 :318 ccp(pos_x+28, pos_y+22) → godot(768,18)
 const ANIM_DUR: float = 0.12
