@@ -151,3 +151,42 @@ func test_resource_trial_groups() -> void:
 	assert_eq(by_key.int.groups, [20003], "int→20003")
 	assert_eq(by_key.exp.groups, [20001], "exp→20001")
 	assert_eq(by_key.money.groups, [20002], "money→20002")
+
+
+# ---- HUD identity 恢复（2026-08-20 排查轮：嵌套链头像透显同款根因）----
+
+# 链 A：task 快跳（task_panel 反射 _open_exercise_panel）→ 关闭 exercise，
+# 应恢复打开前 identity（task）。旧行为 _exit_tree 无条件恢复 main → task 还在
+# 显示时 main 版含头像 HUD 顶层恢复 → 头像透过 task 面板。
+func test_identity_restore_to_opener() -> void:
+	HudOverlay.apply_identity("task")
+	var panel := ExercisePanel.new()
+	add_child(panel)
+	assert_eq(HudOverlay.get_identity(), "exercise", "打开应切 exercise")
+	remove_child(panel)   # 立即触发 _exit_tree（CloseBtn queue_free 走同一恢复函数）
+	assert_eq(HudOverlay.get_identity(), "task", "关闭应恢复打开前 identity（task，非 main）")
+	panel.free()
+	HudOverlay.apply_identity("main")   # 还原测试环境
+
+
+# 链 B：exercise 选副本 → dungeonMap 打开。exercise 须先出树恢复 identity 再执行
+# 回调开 dungeonMap——顺序反了会有双错：① dungeonMap 记录到已死的 "exercise"；
+# ② exercise _exit_tree 恢复会盖掉 dungeonMap 的 identity（头像透过 dungeonMap）。
+func test_identity_handover_to_dungeon() -> void:
+	HudOverlay.apply_identity("main")
+	var panel := ExercisePanel.new()
+	add_child(panel)
+	var follow_box: Array = []   # GDScript lambda 值捕获，用 Array 引用容器带出窗口
+	panel.set_entry_callback(func(_k: String, _g: Array) -> void:
+		var w := PopWindow.new("dungeonMap", {})
+		w.hud_identity = "dungeonMap"
+		w.show_window(self)
+		follow_box.append(w))
+	panel._on_entry_pressed(ExercisePanel.ENTRY_KEYS[0])
+	var follow := follow_box[0] as PopWindow
+	assert_eq(HudOverlay.get_identity(), "dungeonMap", "dungeonMap 打开后 identity 归它（不被 exercise 恢复盖回）")
+	assert_eq(follow._hud_identity_prev, "main", "dungeonMap 记录的 prev 应为 main（exercise 已先交还）")
+	follow.remove_window()
+	assert_eq(HudOverlay.get_identity(), "main", "dungeonMap 关闭恢复 main")
+	panel.free()
+	HudOverlay.apply_identity("main")   # 还原测试环境

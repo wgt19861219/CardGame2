@@ -41,7 +41,7 @@ func test_transparent_shade() -> void:
 	w.queue_free()
 
 
-# HUD identity：非空时 show 切换 / remove 恢复 main（原 8 份 override 收敛）。
+# HUD identity：非空时 show 切换 / remove 恢复打开前 identity（原 8 份 override 收敛）。
 func test_hud_identity_lifecycle() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -51,8 +51,50 @@ func test_hud_identity_lifecycle() -> void:
 	w.show_window(root)
 	assert_eq(HudOverlay.get_identity(), "crusade", "show_window 应切 hud_identity")
 	w.remove_window()
-	assert_eq(HudOverlay.get_identity(), "main", "remove_window 应恢复 main")
+	assert_eq(HudOverlay.get_identity(), "main", "从 main 打开，remove_window 应恢复 main")
 	root.queue_free()
+
+
+# 嵌套弹窗 identity 恢复（2026-08-20 用户反馈：背包→图鉴→返回，HUD 恢复 main 致主界面
+# 头像透过背包显示）。内层 remove_window 应恢复其打开时的 identity（外层弹窗值），非硬编码 main。
+func test_hud_identity_nested_restore() -> void:
+	var root := Node.new()
+	add_child(root)
+	HudOverlay.apply_identity("main")
+	var outer := PopWindow.new("pkg", {})
+	outer.hud_identity = "package"
+	outer.show_window(root)
+	assert_eq(HudOverlay.get_identity(), "package", "外层 show_window 应切 package")
+	var inner := PopWindow.new("handbook", {})
+	inner.hud_identity = "handbook"
+	inner.show_window(root)
+	assert_eq(HudOverlay.get_identity(), "handbook", "内层 show_window 应切 handbook")
+	inner.remove_window()
+	assert_eq(HudOverlay.get_identity(), "package", "内层 remove_window 应恢复外层 package（非 main）")
+	outer.remove_window()
+	assert_eq(HudOverlay.get_identity(), "main", "外层 remove_window 应回 main")
+	root.queue_free()
+
+
+# 条件恢复（非 LIFO 兜底）：外层先关时不越权覆盖内层的 identity。
+# 场景：外层 A（identity=X）与内层 B（identity=Y）同显，A 先 remove——A 不该把
+# identity 拉回自己的记录值（会盖掉 B 的 HUD 规则，如 main 版头像透过 B 显示）。
+func test_hud_identity_no_hijack_on_early_outer_close() -> void:
+	var root := Node.new()
+	add_child(root)
+	HudOverlay.apply_identity("main")
+	var outer := PopWindow.new("o", {})
+	outer.hud_identity = "crusade"
+	outer.show_window(root)
+	var inner := PopWindow.new("i", {})
+	inner.hud_identity = "task"
+	inner.show_window(root)
+	outer.remove_window()   # 外层先关：identity 归 inner，outer 不得拉走
+	assert_eq(HudOverlay.get_identity(), "task", "外层先关不得覆盖内层 identity")
+	inner.remove_window()
+	assert_eq(HudOverlay.get_identity(), "crusade", "内层关闭恢复其记录值")
+	root.queue_free()
+	HudOverlay.apply_identity("main")   # 还原测试环境
 
 
 # 音效开关：默认关不播；play_open_sfx=true 时经 AudioPlayer 播 common_popup_window（默认 false 保持旧无音效面板行为）。

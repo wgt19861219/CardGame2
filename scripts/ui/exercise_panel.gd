@@ -28,6 +28,7 @@ const ENTRY_KEYS: Array = [
 ]
 
 var _on_entry_selected: Callable  # 回调：func(key: String, groups: Array[int])
+var _prev_identity: String = ""   # 打开前 HudOverlay identity（_exit_tree 恢复用）
 
 
 func _ready() -> void:
@@ -39,12 +40,17 @@ func _ready() -> void:
 		var btn := content.get_node(String(entry.btn)) as BaseButton
 		btn.pressed.connect(_on_entry_pressed.bind(entry))
 	# HudOverlay 切 identity=exercise（Control 非 PopWindow，无 setup_panel，从 GameData 取）。
+	# 先记录打开前 identity（task 快跳反射链进来时为 "task"），关闭恢复该值而非硬编码 main，
+	# 否则外层面板还在显示时 main 版含头像 HUD 顶层恢复 → 头像透显（2026-08-20 排查轮）。
+	_prev_identity = HudOverlay.get_identity()
 	HudOverlay.apply_identity("exercise")
 
 
 func _exit_tree() -> void:
-	# exercise 是 Control 非 PopWindow，_exit_tree 恢复 HudOverlay identity=main。
-	HudOverlay.apply_identity("main")
+	# 恢复打开前 identity；仅当 identity 仍归 exercise 时恢复（选副本时 dungeonMap 已接管，
+	# 不越权覆盖）。exercise 是 Control 非 PopWindow，走 _exit_tree 而非 remove_window。
+	if HudOverlay.get_identity() == "exercise":
+		HudOverlay.apply_identity(_prev_identity)
 
 
 func set_entry_callback(cb: Callable) -> void:
@@ -53,6 +59,10 @@ func set_entry_callback(cb: Callable) -> void:
 
 func _on_entry_pressed(entry: Dictionary) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
+	# 先出树交还 identity 再回调开 dungeonMap（顺序反了双错：dungeonMap 会记录到已死的
+	# "exercise"；本面板 _exit_tree 的恢复会盖掉 dungeonMap 的 identity → 头像透过副本地图）。
+	if is_inside_tree():
+		get_parent().remove_child(self)
+	queue_free()
 	if _on_entry_selected.is_valid():
 		_on_entry_selected.call(String(entry.key), entry.groups)
-	queue_free()

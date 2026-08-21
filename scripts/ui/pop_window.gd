@@ -23,9 +23,12 @@ var _swallow: bool = true
 var play_open_sfx: bool = false
 # shade 全透明且不吞点击（原 10 文件静态 shade_layer.color.a=0 + IGNORE hack；pushScene 型面板 tscn 已带全屏 bg）。
 var transparent_shade: bool = false
-# HudOverlay identity（非空时 show_window 切换 / remove_window 恢复 "main"；原 8 份 remove_window override 样板。
+# HudOverlay identity（非空时 show_window 切换 / remove_window 恢复打开前记录值；
+# 原 8 份 remove_window override 样板。嵌套弹窗（如 package→handbook）关内层恢复外层
+# identity 而非硬编码 main，否则 main 版含头像 HUD 透过外层弹窗显示（2026-08-20 用户反馈）。
 # 动态 identity/恢复的面板（battle_prepare 记 _prev_identity、package 构造传入）不适用，保留各自 override）。
 var hud_identity: String = ""
+var _hud_identity_prev: String = "main"   # show_window 打开前 identity（remove 恢复用；默认 main=旧行为兜底）
 
 
 func _init(p_identity: String = "", p_param: Dictionary = {}) -> void:
@@ -75,14 +78,17 @@ func show_window(parent: Node) -> void:
 	if play_open_sfx:
 		AudioPlayer.play_sfx(OPEN_SFX_NAME)
 	if hud_identity != "":
+		_hud_identity_prev = HudOverlay.get_identity()
 		HudOverlay.apply_identity(hud_identity)
 	for h in _on_enter_handlers:
 		h.call()
 
 
 func remove_window() -> void:
-	if hud_identity != "":
-		HudOverlay.apply_identity("main")
+	# 条件恢复：仅当 identity 仍归本面板时恢复记录值——嵌套面板外层先关时不越权
+	# 覆盖内层 identity（否则外层恢复值会把内层的 HUD 规则拉错，如 main 版头像透显）。
+	if hud_identity != "" and HudOverlay.get_identity() == hud_identity:
+		HudOverlay.apply_identity(_hud_identity_prev)
 	for h in _on_exit_handlers:
 		h.call()
 	queue_free()
