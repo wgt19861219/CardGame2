@@ -4,8 +4,9 @@ extends GutTest
 ##   mainPanelLayer(:1933-3050 挑战+防守阵容两 tab 的源) / rankPanelLayer(:1601 排行弹层)
 ##   / recordPanelLayer(:1702 记录弹层)；heroInfoLayer/rewardPanelLayer/rewardInfoPanelLayer
 ##   未迁移（批5 长尾披露）。
-## 坐标照源直译：to_godot(x,y)=(x+80,560-y)；贴图显示尺寸=像素÷1.28125（pvp 系无
-## TextureConfig 条目）；卡内/行内子坐标点值直译 y'=H-y。
+## 坐标（Task2 viewport 800×480 后）：期望=源 800×480 坐标直译（旧 to_godot(x,y)=(x+80,
+## 560-y) 已废）；贴图显示尺寸=像素÷1.28125（pvp 系无 TextureConfig 条目）；卡内/行内
+## 子坐标点值直译 y'=H-y。
 
 const CONTENT_PATH: String = "res://scenes/ui/ladder_content.tscn"
 const PANEL_PATH: String = "res://scripts/ui/ladder_panel.gd"
@@ -81,41 +82,42 @@ func test_enemy_card_children() -> void:
 
 func test_tab_bar_rect() -> void:
 	# 源顶部按钮行 y=267（reqRankData 461/showRewardInfo 361/reqRecordBoard 558/
-	# pvpShop 675）→ 4 tab 同行中心 y=293，96×48。
+	# pvpShop 675）→ 4 tab 同行中心 y=293，96×48；800×480 后中心 y=293−80=213。
 	var c := _content()
 	var xs: Array[float] = [361.0, 461.0, 558.0, 675.0]
 	for i in 4:
 		var btn: Control = c.get_node("%TabBtn" + str(i)) as Control
 		assert_almost_eq(btn.position.x + btn.size.x / 2.0, xs[i], 0.5, "TabBtn%d 中心 x" % i)
-		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "TabBtn%d 中心 y=293" % i)
+		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "TabBtn%d 中心 y=213（源 293−80）" % i)
 		assert_almost_eq(btn.size.y, 48.0, 0.5, "TabBtn%d 高 48" % i)
 
 
 func test_scroll_clip_rect() -> void:
-	# 源 rank draglist cliprect(165,40,470,360) → (245,160,715,520)；
-	# record cliprect(160,40,490,360) → (240,160,730,520)。
+	# 源 rank draglist cliprect(165,40,470,360) → 直译 (165,80)~(635,440)；
+	# record cliprect(160,40,490,360) → 直译 (160,80)~(650,440)。
 	var c := _content()
 	var rs: Control = c.get_node("%RankScroll") as Control
-	assert_almost_eq(rs.position.x, 165.0, 0.5, "rank clip x=165+80")
-	assert_almost_eq(rs.position.y, 80.0, 0.5, "rank clip top=560-(40+360)")
+	assert_almost_eq(rs.position.x, 165.0, 0.5, "rank clip x=源 165 直译")
+	assert_almost_eq(rs.position.y, 80.0, 0.5, "rank clip top=480-(40+360)")
 	assert_almost_eq(rs.size.x, 470.0, 0.5, "rank clip 宽 470")
 	assert_almost_eq(rs.size.y, 360.0, 0.5, "rank clip 高 360")
 	var rec: Control = c.get_node("%RecScroll") as Control
-	assert_almost_eq(rec.position.x, 160.0, 0.5, "record clip x=160+80")
+	assert_almost_eq(rec.position.x, 160.0, 0.5, "record clip x=源 160 直译")
 	assert_almost_eq(rec.size.x, 490.0, 0.5, "record clip 宽 490")
 
 
 func test_lineup_static_layout() -> void:
-	# 源 hero1-5 槽 (199/290/381/473/565,346) → 中心 y=214；adjustHero (675,327) → (755,233)。
+	# 源 hero1-5 槽 (279/370/461/553/645,346)（基线等距无笔误，A 类 −80 平移）
+	# → 中心 y=源 214−80=134；adjustHero (755,233) → −80 后 (675,153)。
 	var c := _content()
 	var xs: Array[float] = [199.0, 290.0, 381.0, 473.0, 565.0]
 	for i in 5:
 		var slot: Control = c.get_node("%HeroSlot" + str(i + 1)) as Control
 		assert_almost_eq(slot.position.x + slot.size.x / 2.0, xs[i], 0.5, "HeroSlot%d 中心 x" % (i + 1))
-		assert_almost_eq(slot.position.y + slot.size.y / 2.0, 134.0, 0.5, "HeroSlot%d 中心 y=214" % (i + 1))
+		assert_almost_eq(slot.position.y + slot.size.y / 2.0, 134.0, 0.5, "HeroSlot%d 中心 y=134（源 214−80）" % (i + 1))
 	var btn: Control = c.get_node("%SetLineupBtn") as Control
-	assert_almost_eq(btn.position.x + btn.size.x / 2.0, 675.0, 0.5, "调整按钮中心 x=755（源 :2947）")
-	assert_almost_eq(btn.position.y + btn.size.y / 2.0, 153.0, 0.5, "调整按钮中心 y=233（源 :2947）")
+	assert_almost_eq(btn.position.x + btn.size.x / 2.0, 675.0, 0.5, "调整按钮中心 x=675（源 755−80，:2947）")
+	assert_almost_eq(btn.position.y + btn.size.y / 2.0, 153.0, 0.5, "调整按钮中心 y=153（源 233−80，:2947）")
 
 
 # ── 范式守卫：UiScale9Button 退役 + variation 注册 ──

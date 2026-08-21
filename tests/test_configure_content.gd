@@ -57,7 +57,7 @@ const HOST_L: float = 150.0
 const HOST_T: float = 82.0
 const HOST_R: float = 220.0
 const HOST_B: float = 152.0
-# info 行：x=385（源 anchor(0,0.5)@305 +80），中心 y 195/217/239（源 365-22*(i-1)）。
+# info 行：x=源 305 直译（anchor(0,0.5)），中心 y=源 365−22*(i-1) 再 −80 = 115/137/159。
 const INFO_L: float = 305.0
 const INFO_CY: Array[float] = [115.0, 137.0, 159.0]
 # 右列按钮 130×55（源 615,385 / 615,312 / 615,222）。
@@ -72,10 +72,7 @@ const SETUP_T: float = 337.5
 const SETUP_R: float = 290.0
 const SETUP_B: float = 392.5
 # lang 100×60 @ select_server 中心 (473,445)（单机化重排）；label 中心 +(88,0)。
-const LANG_L: float = 423.0
-const LANG_T: float = 415.0
-const LANG_R: float = 523.0
-const LANG_B: float = 475.0
+# （Task7 清理：LANG_L/T/R/B 与 NAME_LABEL_L/R 六常量基线即零引用死常量，删。）
 const LANG_LABEL_CX: float = 481.0
 const LANG_LABEL_CY: float = 362.5
 # 分隔线 600×2 中心 x=390 → (170,~)~(770,~)；中心 y 280/410/475（源 600-320/150/85）。
@@ -90,8 +87,6 @@ const NAME_BG_L: float = 257.5
 const NAME_BG_T: float = 55.0
 const NAME_BG_R: float = 482.5
 const NAME_BG_B: float = 85.0
-const NAME_LABEL_L: float = 360.0
-const NAME_LABEL_R: float = 540.0
 
 # 单机化裁剪（联机残留守卫）：公会/登出/google/360/换服/facebook/web 按钮 + 账号 ID 行。
 const CUT_NODES: Array[String] = [
@@ -136,10 +131,10 @@ func test_frame_rect_and_cap() -> void:
 	# frame 620×380 终值 + cap 防反写（top=26/bottom=20，批内通病）
 	var inst := _content()
 	var frame: NinePatchRect = _find(inst, "Frame") as NinePatchRect
-	assert_almost_eq(frame.offset_left, FRAME_L, 0.5, "frame 左（源 84+80）")
-	assert_almost_eq(frame.offset_top, FRAME_T, 0.5, "frame 顶（源 455 → 560-455）")
-	assert_almost_eq(frame.offset_right, FRAME_R, 0.5, "frame 右（源 704+80）")
-	assert_almost_eq(frame.offset_bottom, FRAME_B, 0.5, "frame 底（源 455-380 → 560-75）")
+	assert_almost_eq(frame.offset_left, FRAME_L, 0.5, "frame 左（源 84 直译）")
+	assert_almost_eq(frame.offset_top, FRAME_T, 0.5, "frame 顶（480-455=25）")
+	assert_almost_eq(frame.offset_right, FRAME_R, 0.5, "frame 右（源 704 直译）")
+	assert_almost_eq(frame.offset_bottom, FRAME_B, 0.5, "frame 底（480-75=405）")
 	assert_eq(frame.patch_margin_top, FRAME_CAP_TOP, "cap top=H-y-h=61-20-15（防反写）")
 	assert_eq(frame.patch_margin_bottom, 20, "cap bottom=y=20（防反写）")
 	assert_eq(frame.patch_margin_right, FRAME_CAP_RIGHT, "cap right=W-x-w=103-15-45")
@@ -162,8 +157,8 @@ func test_head_zone_display_sizes() -> void:
 	var pattern: TextureRect = _find(inst, "HeadPattern") as TextureRect
 	assert_almost_eq(pattern.size.x, HEAD_PATTERN_DISPLAY, 0.5, "pattern 171÷CS 宽")
 	assert_almost_eq(pattern.size.y / pattern.size.x, 1.0, 0.01, "pattern 正方形等比")
-	assert_almost_eq((pattern.offset_left + pattern.offset_right) * 0.5, HEAD_PATTERN_CX, 0.5, "pattern 中心 x（源 185+80）")
-	assert_almost_eq((pattern.offset_top + pattern.offset_bottom) * 0.5, HEAD_PATTERN_CY, 0.5, "pattern 中心 y（源 560-360）")
+	assert_almost_eq((pattern.offset_left + pattern.offset_right) * 0.5, HEAD_PATTERN_CX, 0.5, "pattern 中心 x（源 185 直译）")
+	assert_almost_eq((pattern.offset_top + pattern.offset_bottom) * 0.5, HEAD_PATTERN_CY, 0.5, "pattern 中心 y（480-360=120）")
 	var bg: TextureRect = _find(inst, "HeadBg") as TextureRect
 	assert_almost_eq(bg.size.x, HEAD_BG_W, 0.5, "bg 100÷CS 宽")
 	assert_almost_eq(bg.size.y, HEAD_BG_H, 0.5, "bg 105÷CS 高（非正方形等比 20:21）")
@@ -171,7 +166,7 @@ func test_head_zone_display_sizes() -> void:
 	var frame: TextureRect = _find(inst, "HeadFrame") as TextureRect
 	assert_almost_eq(frame.size.x, HEAD_FRAME_W, 0.5, "frame 140÷CS 宽")
 	assert_almost_eq(frame.size.y, HEAD_FRAME_H, 0.5, "frame 104÷CS 高（等比 140:104）")
-	assert_almost_eq((frame.offset_left + frame.offset_right) * 0.5, HEAD_FRAME_CX, 0.5, "frame 中心 x（源 200+80，右移 15 突出）")
+	assert_almost_eq((frame.offset_left + frame.offset_right) * 0.5, HEAD_FRAME_CX, 0.5, "frame 中心 x（源 200 直译，右移 15 突出）")
 
 
 func test_head_icon_draw_order() -> void:
@@ -205,7 +200,7 @@ func test_head_icon_host_rect() -> void:
 	var inst := _content()
 	var host: Control = _find(inst, "HeadIconHost") as Control
 	assert_almost_eq(host.offset_left, HOST_L, 0.5, "host 左")
-	assert_almost_eq(host.offset_top, HOST_T, 0.5, "host 顶（源 363 → 560-363-35）")
+	assert_almost_eq(host.offset_top, HOST_T, 0.5, "host 顶（480-363-35=82）")
 	assert_almost_eq(host.offset_right, HOST_R, 0.5, "host 右")
 	assert_almost_eq(host.offset_bottom, HOST_B, 0.5, "host 底")
 
@@ -215,7 +210,7 @@ func test_info_lines_layout() -> void:
 	var inst := _content()
 	for i in 3:
 		var line: Label = _find(inst, "InfoLine" + str(i + 1)) as Label
-		assert_almost_eq(line.offset_left, INFO_L, 0.5, "InfoLine%d 左（源 305+80）" % (i + 1))
+		assert_almost_eq(line.offset_left, INFO_L, 0.5, "InfoLine%d 左（源 305 直译）" % (i + 1))
 		var cy: float = (line.offset_top + line.offset_bottom) * 0.5
 		assert_almost_eq(cy, INFO_CY[i], 0.5, "InfoLine%d 中心 y" % (i + 1))
 		assert_eq(line.theme_type_variation, &"InfoLineLabel", "InfoLine%d variation" % (i + 1))
@@ -231,7 +226,7 @@ func test_right_column_buttons_layout() -> void:
 	var names: Array[String] = ["ChangeNameBtn", "ChangeHeadBtn", "SaveManagerBtn"]
 	for i in 3:
 		var btn: Button = _find(inst, names[i]) as Button
-		assert_almost_eq(btn.offset_left, RIGHT_BTN_L, 0.5, "%s 左（源 615-65+80）" % names[i])
+		assert_almost_eq(btn.offset_left, RIGHT_BTN_L, 0.5, "%s 左（源 615−65=550）" % names[i])
 		assert_almost_eq(btn.offset_right, RIGHT_BTN_R, 0.5, "%s 右（130 宽）" % names[i])
 		assert_almost_eq(btn.offset_top, tops[i], 0.5, "%s 顶" % names[i])
 		assert_almost_eq(btn.offset_bottom - btn.offset_top, 55.0, 0.5, "%s 高 55" % names[i])
@@ -242,13 +237,13 @@ func test_bottom_row_layout() -> void:
 	# setup 180×55 照源 (200,115)；lang 100×60 占 select_server 位；label 中心 +88
 	var inst := _content()
 	var setup: Button = _find(inst, "SetupBtn") as Button
-	assert_almost_eq(setup.offset_left, SETUP_L, 0.5, "setup 左（源 200-90+80）")
-	assert_almost_eq(setup.offset_top, SETUP_T, 0.5, "setup 顶（源 115 → 560-115-27.5）")
+	assert_almost_eq(setup.offset_left, SETUP_L, 0.5, "setup 左（源中心 200−半宽 90=110）")
+	assert_almost_eq(setup.offset_top, SETUP_T, 0.5, "setup 顶（480−115−27.5）")
 	assert_almost_eq(setup.offset_right, SETUP_R, 0.5, "setup 右（180 宽）")
 	assert_almost_eq(setup.offset_bottom, SETUP_B, 0.5, "setup 底")
 	assert_eq(setup.theme_type_variation, &"ConfigureActionBtn", "setup variation")
 	var lang: TextureButton = _find(inst, "LangBtn") as TextureButton
-	assert_almost_eq((lang.offset_left + lang.offset_right) * 0.5, 393.0, 0.5, "lang 中心 x（select_server 393+80）")
+	assert_almost_eq((lang.offset_left + lang.offset_right) * 0.5, 393.0, 0.5, "lang 中心 x（单机化重排占 select_server 位）")
 	assert_almost_eq((lang.offset_top + lang.offset_bottom) * 0.5, 362.5, 0.5, "lang 中心 y（底对齐底排 472.5，100x60 高于 55 按钮）")
 	assert_almost_eq(lang.offset_bottom, 392.5, 0.5, "lang 底与 setup 底齐（不压 FacebookLine 474）")
 	assert_almost_eq(lang.offset_bottom - lang.offset_top, 60.0, 0.5, "lang 高 60 照源 scaleSize")
@@ -284,12 +279,12 @@ func test_name_label_style() -> void:
 	var inst := _content()
 	var bg: TextureRect = _find(inst, "NameBg") as TextureRect
 	assert_almost_eq(bg.offset_left, NAME_BG_L, 0.5, "name_bg 左（源 fix_wh 225 直译）")
-	assert_almost_eq(bg.offset_top, NAME_BG_T, 0.5, "name_bg 顶（源 410 → 560-410-15）")
+	assert_almost_eq(bg.offset_top, NAME_BG_T, 0.5, "name_bg 顶（480-410-15=55）")
 	assert_almost_eq(bg.offset_right, NAME_BG_R, 0.5, "name_bg 右")
 	assert_almost_eq(bg.offset_bottom, NAME_BG_B, 0.5, "name_bg 底（30 高）")
 	var label: Label = _find(inst, "NameLabel") as Label
-	assert_almost_eq((label.offset_left + label.offset_right) * 0.5, 370.0, 0.5, "name label 中心 x 同 bg（源 370+80）")
-	assert_almost_eq((label.offset_top + label.offset_bottom) * 0.5, 70.0, 0.5, "name label 中心 y（源 410 → 560-410）")
+	assert_almost_eq((label.offset_left + label.offset_right) * 0.5, 370.0, 0.5, "name label 中心 x 同 bg（源 370 直译）")
+	assert_almost_eq((label.offset_top + label.offset_bottom) * 0.5, 70.0, 0.5, "name label 中心 y（480-410=70）")
 	assert_almost_eq(label.offset_right - label.offset_left, 180.0, 0.5, "name label 宽上限 180（源 :114-116 scale 限制）")
 	assert_eq(label.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "name label 居中（源中心锚点）")
 	assert_eq(label.theme_type_variation, &"ConfigureNameLabel", "name label variation（白 20 黑影）")
