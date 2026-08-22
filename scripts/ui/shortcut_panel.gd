@@ -23,7 +23,7 @@ const BOARD_CENTER_X: float = 750.0   # 源 740（uires.lua winRight-60）；用
 # 源内容满屏无天区，上移会致板顶出屏，UP 归 0 回源观感（toggle 源直译 y=40 天然近货币栏 top≈30）。
 const BOARD_UP_OFFSET: float = 0.0
 const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶贴底（cocos 板底 y=0..460 → godot 20..480）
-const BOARD_WIDTH: float = 82.0
+const BOARD_WIDTH: float = 92.0   # 用户 2026-08-22 反馈"边框宽度不够"：82 与按钮 81.8 贴死无镶框感，加宽 92 左右各留 5 边（受控偏离，源 scaleSize=82）
 # 收起态板高受控偏离（批 2 Task 8 NinePatch 化）：源 40（uires.lua height_min），但 Godot
 # NinePatchRect 最小尺寸=patch margin 和（top40+bottom25=65），40 会被引擎钳到 65；
 # 源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。收起态板被 toggle 钮覆盖视觉无感。

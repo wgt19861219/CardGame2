@@ -256,7 +256,7 @@ func test_first_button_not_overlapping_toggle() -> void:
 # ── 按钮/toggle ×0.8 受控偏离守卫（2026-08-22 用户决策：源设计按钮 102 宽压板 82 观感不佳，
 #    统一缩小收入板内；中心位置不动）──
 
-# 展开态按钮视觉 rect 全部收入板 [709,791]（板 x=750±41，2026-08-22 用户指示整体右移 10），且彼此垂直不叠（源间距 75/70/75/79）。
+# 展开态按钮视觉 rect 全部收入板 [704,796]（板 x=750±46，2026-08-22 加宽 92 镶框裹按钮），且彼此垂直不叠（源间距 75/70/75/79）。
 func test_buttons_scaled_visual_rect_inside_board() -> void:
 	var panel := _make_panel()
 	panel._apply_open_instant()
@@ -264,11 +264,11 @@ func test_buttons_scaled_visual_rect_inside_board() -> void:
 		var btn: TextureButton = panel._buttons[BUTTON_KEYS[i]]
 		assert_almost_eq(btn.scale.x, ShortcutPanel.BUTTON_SCALE, 0.001, "%s 按钮统一 ×0.8（受控偏离：用户决策 2026-08-22 源设计按钮压板观感不佳）" % BUTTON_KEYS[i])
 		var visual_w: float = btn.size.x * btn.scale.x
-		assert_lte(visual_w, 82.0, "%s 按钮视觉宽 %.2f ≤ 板宽 82（旧 102.24 压板出框 20px）" % [BUTTON_KEYS[i], visual_w])
+		assert_lte(visual_w, 88.0, "%s 按钮视觉宽 %.2f ≤ 板宽 92-2x2 边（旧 102.24 压板出框 20px；板 2026-08-22 加宽 92 镶框）" % [BUTTON_KEYS[i], visual_w])
 		var left: float = btn.position.x
 		var right: float = btn.position.x + visual_w
-		assert_gte(left, 709.0, "%s 视觉左缘 %.2f ≥ 板左 709" % [BUTTON_KEYS[i], left])
-		assert_lte(right, 791.0, "%s 视觉右缘 %.2f ≤ 板右 791" % [BUTTON_KEYS[i], right])
+		assert_gte(left, 704.0, "%s 视觉左缘 %.2f ≥ 板左 704" % [BUTTON_KEYS[i], left])
+		assert_lte(right, 796.0, "%s 视觉右缘 %.2f ≤ 板右 796" % [BUTTON_KEYS[i], right])
 	# 相邻按钮视觉 rect 垂直不叠（中心距 75/70/75/79 vs 半高和 ≤63）
 	for i in range(BUTTON_KEYS.size() - 1):
 		var a: TextureButton = panel._buttons[BUTTON_KEYS[i]]
