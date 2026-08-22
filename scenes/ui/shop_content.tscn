@@ -109,6 +109,10 @@ offset_bottom = 116.0
 texture_normal = ExtResource("2_refresh")
 texture_pressed = ExtResource("3_refreshp")
 ignore_texture_size = true
+; stretch_mode=0 显式（系统债四案）：默认 KEEP 纹理 146x75 原像素直显偏大 28%，
+; 且纹理从控件左上起画致可见中心 (547,95) 与居中文字中心 (531,87) 错开（文字不居中）。
+; size 114x58.5=纹理÷CS 源直译，SCALE 后纹理缩放到 size，文字（满锚居中）恢复对齐。
+stretch_mode = 0
 
 [node name="RefreshLabel" type="Label" parent="PanelLayer/RefreshBtn"]
 layout_mode = 3
