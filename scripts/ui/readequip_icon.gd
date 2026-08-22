@@ -13,7 +13,9 @@ const DEFAULT_ICON: String = "res://assets/ui/alpha/HVGA/gocha.png"
 const FRAGMENT_BG_PATH: String = "res://assets/ui/alpha/HVGA/fragment_bg.png"
 const SOULSTONE_TAG_PATH: String = "res://assets/ui/alpha/HVGA/equip_soulstone_tag.png"
 const TICK_PATH: String = "res://assets/ui/alpha/HVGA/fragment_tick.png"
-const FRAME_COLORS: Array[String] = ["white", "green", "blue", "purple", "orange"]
+# 源 readequip.lua:3-10 frame_res 六档：quality5 无专属图复用 purple、6=orange。
+# 旧表只写 5 档致 quality5 误映 orange（2026-08-22 用户反馈边框颜色错档）。
+const FRAME_COLORS: Array[String] = ["white", "green", "blue", "purple", "purple", "orange"]
 const HERO_DEFAULT_QUALITY: int = 1
 const ICON_SIZE: float = 72.0
 # 子元素定位照源逻辑坐标系（y 向上，frame 逻辑尺寸 94/CS×95/CS≈73.4×74.1，2026-08-22 重写）：
