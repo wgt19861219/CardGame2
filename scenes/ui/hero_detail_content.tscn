@@ -280,71 +280,81 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-
-[node name="EquipSlotLeftColumn" type="VBoxContainer" parent="BaseLayer/EquipSlotHost" unique_id=353666156]
+; 装备槽 6 格平铺照源直译（源 window.lua getEquipIconPos：x=255+289*((i-1)%2)、
+; y=385-70*floor((i-1)/2)，frame anchor(0.5,0.5) 中心定位挂 self.container z=9，
+; container 全屏=BaseLayer 局部系；Godot y=480-y）。源 createIcon 无 length → frame
+; 显示=纹理 94×95÷CS=73.37×74.17（TexDisplaySize SOP 口径，equip_frame 无 TextureConfig
+; 条目）；行中心距 70 vs 高 74.17 微叠 4px 紧挨观感（源同）。旧 VBox 列（separation=1
+; 紧挨 96 间距 + top=-15 出屏顶 + 左右出 Bg 框）系 960 时代口径 2026-08-22 回源作废。
+; 槽号-位置：i 奇数左列 x=255（1/3/5 上中下），偶数右列 x=544（2/4/6）。
+[node name="EquipSlot1" type="TextureRect" parent="BaseLayer/EquipSlotHost" unique_id=353666157]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(73.37, 74.17)
 layout_mode = 0
-offset_left = 172.0
-offset_top = -15.0
-offset_right = 266.0
-offset_bottom = 272.0
-mouse_filter = 2
-theme_override_constants/separation = 1
-
-[node name="EquipSlot1" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotLeftColumn" unique_id=353666157]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(94, 95)
-layout_mode = 2
+offset_left = 218.32
+offset_top = 57.92
+offset_right = 291.69
+offset_bottom = 132.09
 mouse_filter = 2
 texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
-[node name="EquipSlot3" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotLeftColumn" unique_id=545256893]
+[node name="EquipSlot3" type="TextureRect" parent="BaseLayer/EquipSlotHost" unique_id=545256893]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(94, 95)
-layout_mode = 2
-mouse_filter = 2
-texture = ExtResource("5_qtsdm")
-expand_mode = 1
-
-[node name="EquipSlot5" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotLeftColumn" unique_id=823588371]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(94, 95)
-layout_mode = 2
-mouse_filter = 2
-texture = ExtResource("5_qtsdm")
-expand_mode = 1
-
-[node name="EquipSlotRightColumn" type="VBoxContainer" parent="BaseLayer/EquipSlotHost" unique_id=646686815]
-unique_name_in_owner = true
+custom_minimum_size = Vector2(73.37, 74.17)
 layout_mode = 0
-offset_left = 549.0
-offset_top = -16.0
-offset_right = 643.0
-offset_bottom = 271.0
-mouse_filter = 2
-theme_override_constants/separation = 1
-
-[node name="EquipSlot2" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotRightColumn" unique_id=646686816]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(94, 95)
-layout_mode = 2
+offset_left = 218.32
+offset_top = 127.92
+offset_right = 291.69
+offset_bottom = 202.09
 mouse_filter = 2
 texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
-[node name="EquipSlot4" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotRightColumn" unique_id=1032196593]
+[node name="EquipSlot5" type="TextureRect" parent="BaseLayer/EquipSlotHost" unique_id=823588371]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(94, 95)
-layout_mode = 2
+custom_minimum_size = Vector2(73.37, 74.17)
+layout_mode = 0
+offset_left = 218.32
+offset_top = 197.92
+offset_right = 291.69
+offset_bottom = 272.09
 mouse_filter = 2
 texture = ExtResource("5_qtsdm")
 expand_mode = 1
 
-[node name="EquipSlot6" type="TextureRect" parent="BaseLayer/EquipSlotHost/EquipSlotRightColumn" unique_id=1510603513]
+[node name="EquipSlot2" type="TextureRect" parent="BaseLayer/EquipSlotHost" unique_id=646686816]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(94, 95)
-layout_mode = 2
+custom_minimum_size = Vector2(73.37, 74.17)
+layout_mode = 0
+offset_left = 507.32
+offset_top = 57.92
+offset_right = 580.69
+offset_bottom = 132.09
+mouse_filter = 2
+texture = ExtResource("5_qtsdm")
+expand_mode = 1
+
+[node name="EquipSlot4" type="TextureRect" parent="BaseLayer/EquipSlotHost" unique_id=1032196593]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(73.37, 74.17)
+layout_mode = 0
+offset_left = 507.32
+offset_top = 127.92
+offset_right = 580.69
+offset_bottom = 202.09
+mouse_filter = 2
+texture = ExtResource("5_qtsdm")
+expand_mode = 1
+
+[node name="EquipSlot6" type="TextureRect" parent="BaseLayer/EquipSlotHost" unique_id=1510603513]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(73.37, 74.17)
+layout_mode = 0
+offset_left = 507.32
+offset_top = 197.92
+offset_right = 580.69
+offset_bottom = 272.09
 mouse_filter = 2
 texture = ExtResource("5_qtsdm")
 expand_mode = 1

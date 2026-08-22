@@ -462,6 +462,60 @@ func test_equips_persist_across_tabs() -> void:
 	root.queue_free()
 
 
+# 装备槽 6 格位置照源直译守卫（2026-08-22 出框修复：旧 VBox 列 top=-15 出屏顶、
+# 左 172/右 643 出主 bg 框，系 960 时代口径）。源 window.lua getEquipIconPos：
+# x=255+289*((i-1)%2)、y=385-70*floor((i-1)/2)，frame anchor(0.5,0.5) 中心定位挂
+# self.container（=BaseLayer 局部系，Godot y=480-y）；槽显示尺寸=纹理 94×95÷CS
+# =73.37×74.17（TexDisplaySize SOP：equip_frame 无 TextureConfig 条目 → ÷CS）。
+# 期望中心：i 奇数 x=255（1/3/5 上中下）、偶数 x=544（2/4/6）；y={95,165,235}。
+func test_equip_slot_positions_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	const EXPECTED_X: Array[float] = [255.0, 544.0, 255.0, 544.0, 255.0, 544.0]
+	const EXPECTED_Y: Array[float] = [95.0, 95.0, 165.0, 165.0, 235.0, 235.0]
+	var base: Control = panel.container.get_node("HeroDetailContent/BaseLayer") as Control
+	for i in range(6):
+		var slot: TextureRect = base.get_node("%EquipSlot" + str(i + 1)) as TextureRect
+		assert_not_null(slot, "EquipSlot%d 存在" % (i + 1))
+		if slot == null:
+			continue
+		var center: Vector2 = slot.position + slot.size / 2.0
+		assert_almost_eq(center.x, EXPECTED_X[i], 0.5, "槽 %d 中心 x=%d（源 getEquipIconPos 直译）" % [i + 1, EXPECTED_X[i]])
+		assert_almost_eq(center.y, EXPECTED_Y[i], 0.5, "槽 %d 中心 y=%d（源 y=385/315/245 → 480-y）" % [i + 1, EXPECTED_Y[i]])
+		assert_almost_eq(slot.size.x, 73.37, 0.1, "槽 %d 宽=94÷CS=73.37（旧 94 px 直用出框）" % (i + 1))
+		assert_almost_eq(slot.size.y, 74.17, 0.1, "槽 %d 高=95÷CS=74.17" % (i + 1))
+	panel.remove_window()
+	root.queue_free()
+
+
+# 装备槽 6 格全在主 bg（herodetail-bg）框内（症状 3 修复主断言：出框=左右溢 bg 边 26.5/41.5px
+# + 顶出屏）。bg 显示 517×570÷CS=403.9×445.1 中心 (400,240) → rect (198.5,17.5)-(601.5,462.5)。
+func test_equip_slots_inside_main_bg() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var base: Control = panel.container.get_node("HeroDetailContent/BaseLayer") as Control
+	var bg: TextureRect = base.get_node("Bg") as TextureRect
+	assert_not_null(bg, "主 bg 存在（BaseLayer/Bg）")
+	var bg_rect: Rect2 = bg.get_rect()
+	for i in range(6):
+		var slot: TextureRect = base.get_node("%EquipSlot" + str(i + 1)) as TextureRect
+		if slot == null:
+			continue
+		var slot_rect: Rect2 = slot.get_rect()
+		assert_true(bg_rect.encloses(slot_rect), "槽 %d rect %s ⊆ 主 bg rect %s（旧布局左右溢框+顶出屏）" % [i + 1, slot_rect, bg_rect])
+	# 装备图标挂载后视觉（×1/CS）也收在槽内：icon 视觉 rect = 槽 rect（frame 94×95÷CS）
+	panel.remove_window()
+	root.queue_free()
+
+
 # StoneBarBg 九宫格守卫（批 2 Task 8 复检 B 类修复）：源 herodetail/window.lua:2192
 # stone_bar_bg Scale9Sprite capInsets CCRectMake(20,1,102,24) scaleSize(180,26)，
 # 贴图 heropackage_soulstone_progress_bg 204×34 PIL 实测

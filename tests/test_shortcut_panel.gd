@@ -147,13 +147,14 @@ func test_tag_nodes_present_and_sized() -> void:
 
 
 # 语义化防 parenting：按钮 tag 必须挂在按钮内右上区（源 tagPos 子坐标：距左 68~75、距底 60~65）。
+# 2026-08-22 BUTTON_SCALE ×0.8 后 tag 随按钮缩放，断言用视觉 rect（size×scale）。
 func test_button_tags_in_button_upper_right() -> void:
 	var panel := _make_panel()
 	for key in BUTTON_KEYS:
 		var btn: TextureButton = panel._buttons[key]
 		var tag: TextureRect = panel._tags[key]
-		var tag_center: Vector2 = tag.global_position + tag.size / 2.0
-		var btn_rect: Rect2 = Rect2(btn.global_position, btn.size)
+		var tag_center: Vector2 = tag.global_position + tag.size * tag.scale / 2.0
+		var btn_rect: Rect2 = Rect2(btn.global_position, btn.size * btn.scale)
 		assert_true(btn_rect.has_point(tag_center), "%s tag 中心在按钮 rect 内" % key)
 		assert_gt(tag_center.x, btn_rect.position.x + btn_rect.size.x / 2.0, "%s tag 中心在按钮右半" % key)
 		assert_lt(tag_center.y, btn_rect.position.y + btn_rect.size.y / 2.0, "%s tag 中心在按钮上半" % key)
@@ -161,9 +162,10 @@ func test_button_tags_in_button_upper_right() -> void:
 
 
 # 主 tag 偏移照源 :318 ccp(shortcut_pos_x+28, shortcut_pos_y+22)（y 翻转）——防 parenting 语义断言。
+# toggle 中心用视觉口径（position + size×scale/2；×0.8 后 toggle 视觉中心仍 (740,40)）。
 func test_main_tag_beside_toggle_upper_right() -> void:
 	var panel := _make_panel()
-	var toggle_center: Vector2 = panel._toggle_down.global_position + panel._toggle_down.size / 2.0
+	var toggle_center: Vector2 = panel._toggle_down.global_position + panel._toggle_down.size * panel._toggle_down.scale / 2.0
 	var tag_center: Vector2 = panel._main_tag.global_position + panel._main_tag.size / 2.0
 	var offset: Vector2 = tag_center - toggle_center
 	assert_almost_eq(offset.x, 28.0, 0.02, "主 tag 中心在 toggle 右 +28（源 pos_x+28）")
@@ -232,18 +234,58 @@ func test_button_center_y_source_direct() -> void:
 	const EXPECTED_Y: Array[float] = [118.0, 193.0, 263.0, 338.0, 417.0]
 	for i in BUTTON_KEYS.size():
 		var btn: TextureButton = panel._buttons[BUTTON_KEYS[i]]
-		var center_y: float = btn.position.y + btn.size.y / 2.0
+		# 中心=视觉口径（position + size×scale/2；×0.8 缩放不改 size 但改视觉 rect）
+		var center_y: float = btn.position.y + btn.size.y * btn.scale.y / 2.0
 		assert_almost_eq(center_y, EXPECTED_Y[i], 0.5, "%s 按钮中心 y=%d（源 PosY %d 直译 480-y）" % [BUTTON_KEYS[i], EXPECTED_Y[i], [362, 287, 217, 142, 63][i]])
 	panel.queue_free()
 
 
 # 首按钮与 toggle 不叠（源 toggle ccp(740,440)→y=40 恒定；首钮 118 与其相距 78）。
+# 中心均用视觉口径（size×scale/2）。
 func test_first_button_not_overlapping_toggle() -> void:
 	var panel := _make_panel()
 	panel._apply_open_instant()
 	var first: TextureButton = panel._buttons[BUTTON_KEYS[0]]
-	var first_center_y: float = first.position.y + first.size.y / 2.0
-	var toggle_center_y: float = panel._toggle_down.position.y + panel._toggle_down.size.y / 2.0
+	var first_center_y: float = first.position.y + first.size.y * first.scale.y / 2.0
+	var toggle_center_y: float = panel._toggle_down.position.y + panel._toggle_down.size.y * panel._toggle_down.scale.y / 2.0
 	assert_almost_eq(toggle_center_y, 40.0, 0.5, "toggle 中心 y=40（源 shortcut_pos_y 440 直译）")
 	assert_gt(first_center_y - toggle_center_y, 60.0, "首钮(118)与 toggle(40) 垂直间距 ≥60（实际 78，源同；旧等距 90 时仅 17 叠死）")
+	panel.queue_free()
+
+
+# ── 按钮/toggle ×0.8 受控偏离守卫（2026-08-22 用户决策：源设计按钮 102 宽压板 82 观感不佳，
+#    统一缩小收入板内；中心位置不动）──
+
+# 展开态按钮视觉 rect 全部收入板 [699,781]（板 x=740±41），且彼此垂直不叠（源间距 75/70/75/79）。
+func test_buttons_scaled_visual_rect_inside_board() -> void:
+	var panel := _make_panel()
+	panel._apply_open_instant()
+	for i in BUTTON_KEYS.size():
+		var btn: TextureButton = panel._buttons[BUTTON_KEYS[i]]
+		assert_almost_eq(btn.scale.x, ShortcutPanel.BUTTON_SCALE, 0.001, "%s 按钮统一 ×0.8（受控偏离：用户决策 2026-08-22 源设计按钮压板观感不佳）" % BUTTON_KEYS[i])
+		var visual_w: float = btn.size.x * btn.scale.x
+		assert_lte(visual_w, 82.0, "%s 按钮视觉宽 %.2f ≤ 板宽 82（旧 102.24 压板出框 20px）" % [BUTTON_KEYS[i], visual_w])
+		var left: float = btn.position.x
+		var right: float = btn.position.x + visual_w
+		assert_gte(left, 699.0, "%s 视觉左缘 %.2f ≥ 板左 699" % [BUTTON_KEYS[i], left])
+		assert_lte(right, 781.0, "%s 视觉右缘 %.2f ≤ 板右 781" % [BUTTON_KEYS[i], right])
+	# 相邻按钮视觉 rect 垂直不叠（中心距 75/70/75/79 vs 半高和 ≤63）
+	for i in range(BUTTON_KEYS.size() - 1):
+		var a: TextureButton = panel._buttons[BUTTON_KEYS[i]]
+		var b: TextureButton = panel._buttons[BUTTON_KEYS[i + 1]]
+		var a_bottom: float = a.position.y + a.size.y * a.scale.y
+		assert_lt(a_bottom, b.position.y, "%s 底缘 %.2f < %s 顶缘（间距宽松不叠）" % [BUTTON_KEYS[i], a_bottom, BUTTON_KEYS[i + 1]])
+	panel.queue_free()
+
+
+# toggle ×0.8 后视觉宽 ≤ 板宽（旧 88.98 比板宽 82 大 7px，"黑色边框宽度不够"根源）。
+func test_toggle_scaled_fits_board_width() -> void:
+	var panel := _make_panel()
+	for toggle in [panel._toggle_down, panel._toggle_up]:
+		var t: TextureButton = toggle as TextureButton
+		assert_almost_eq(t.scale.x, ShortcutPanel.BUTTON_SCALE, 0.001, "toggle 统一 ×0.8")
+		var visual_w: float = t.size.x * t.scale.x
+		assert_lte(visual_w, 82.0, "toggle 视觉宽 %.2f ≤ 板宽 82（旧 88.98 出框 7px）" % visual_w)
+		var center_x: float = t.position.x + visual_w / 2.0
+		assert_almost_eq(center_x, 740.0, 0.5, "toggle 视觉中心 x=740（源 shortcut_board_pos.x 直译不动）")
 	panel.queue_free()
