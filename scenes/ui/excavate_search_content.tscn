@@ -138,10 +138,10 @@ offset_right = 723.438
 offset_bottom = 431.562
 modulate = Color(1, 1, 1, 0.784314)
 texture = ExtResource("8_sframe")
-patch_margin_left = 23
-patch_margin_top = 32
-patch_margin_right = 32
-patch_margin_bottom = 23
+patch_margin_left = 18
+patch_margin_top = 25
+patch_margin_right = 25
+patch_margin_bottom = 18
 mouse_filter = 2
 
 [node name="SearchContainer" type="Control" parent="SearchFrame"]

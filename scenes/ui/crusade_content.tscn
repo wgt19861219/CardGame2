@@ -251,10 +251,10 @@ offset_top = 396.0
 offset_right = 682.0
 offset_bottom = 454.0
 texture = ExtResource("12_resetbg")
-patch_margin_left = 20
-patch_margin_top = 37
-patch_margin_right = 37
-patch_margin_bottom = 20
+patch_margin_left = 16
+patch_margin_top = 29
+patch_margin_right = 29
+patch_margin_bottom = 16
 mouse_filter = 2
 
 ; 源 showrule Scale9Button（bottom 局部 (-210,0) → 世界 (192,55) → Godot 中心 (272,505)，
@@ -480,10 +480,10 @@ offset_top = 60.0
 offset_right = 675.0
 offset_bottom = 420.0
 texture = ExtResource("20_vit")
-patch_margin_left = 15
-patch_margin_top = 26
-patch_margin_right = 43
-patch_margin_bottom = 20
+patch_margin_left = 12
+patch_margin_top = 20
+patch_margin_right = 34
+patch_margin_bottom = 16
 mouse_filter = 2
 
 ; 源 heroInfo（pvp_tip_title_bg 474×44px/CS×(1.3,1.1)=480.94×37.77 中心局部 (275,320) →

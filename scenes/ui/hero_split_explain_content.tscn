@@ -43,10 +43,10 @@ offset_top = 50.31
 offset_right = 673.44
 offset_bottom = 429.22
 texture = ExtResource("1_vit")
-patch_margin_left = 17
-patch_margin_top = 28
-patch_margin_right = 39
-patch_margin_bottom = 17
+patch_margin_left = 13
+patch_margin_top = 22
+patch_margin_right = 30
+patch_margin_bottom = 13
 mouse_filter = 2
 
 ; 标题条（源 title_bg pvp_tip_title_bg Scale9 480.47x39.06 中心世界 (398.44,389.84)
@@ -58,9 +58,9 @@ offset_top = 70.63
 offset_right = 638.67
 offset_bottom = 109.69
 texture = ExtResource("2_pvptitle")
-patch_margin_left = 109
-patch_margin_top = 10
-patch_margin_right = 208
+patch_margin_left = 85
+patch_margin_top = 8
+patch_margin_right = 163
 patch_margin_bottom = 0
 mouse_filter = 2
 

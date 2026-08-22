@@ -22,10 +22,10 @@ func test_frame_is_ninepatch_with_source_margins() -> void:
 	var content := _instantiate()
 	var frame: NinePatchRect = content.get_node("Frame") as NinePatchRect
 	assert_not_null(frame, "Frame 节点为 NinePatchRect（源 Scale9Sprite 九宫格）")
-	assert_eq(frame.patch_margin_left, 16, "patch_margin_left=16（DG cap x=15.625）")
-	assert_eq(frame.patch_margin_top, 26, "patch_margin_top=26（H-y-h=61-15.625-19.531）")
-	assert_eq(frame.patch_margin_right, 44, "patch_margin_right=44（W-x-w=103-15.625-42.969）")
-	assert_eq(frame.patch_margin_bottom, 16, "patch_margin_bottom=16（DG cap y=15.625）")
+	assert_eq(frame.patch_margin_left, 12, "patch_margin_left=12（DG cap x=15.625 ÷CS）")
+	assert_eq(frame.patch_margin_top, 20, "patch_margin_top=20（H-y-h=61-15.625-19.531=25.84 ÷CS）")
+	assert_eq(frame.patch_margin_right, 35, "patch_margin_right=35（W-x-w=103-15.625-42.969=44.41 ÷CS）")
+	assert_eq(frame.patch_margin_bottom, 12, "patch_margin_bottom=12（DG cap y=15.625 ÷CS）")
 	assert_eq(frame.size, Vector2(270.0, 238.0), "显示尺寸 270×238（源 DGSizeMake(345,305)×0.78125=269.53×238.28）")
 	content.queue_free()
 

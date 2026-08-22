@@ -33,10 +33,10 @@ offset_top = 52.5
 offset_right = 665.0
 offset_bottom = 427.5
 texture = ExtResource("1_frame")
-patch_margin_left = 10
-patch_margin_top = 25
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="AvatarScroll" type="ScrollContainer" parent="."]

@@ -259,10 +259,10 @@ func test_panel_rows_after_setup() -> void:
 		first_row = rows.get_child(1) as Control   # 跳过 MyselfSpacer 取首行
 	var board: NinePatchRect = first_row.get_child(0) as NinePatchRect
 	assert_not_null(board, "行板 NinePatchRect（源 Scale9Sprite board）")
-	assert_eq(board.patch_margin_left, 65, "patch left=65（源 cap x=65 DG 裸值直译，非 ×CS：65×CS=83.28≠65）")
-	assert_eq(board.patch_margin_top, 47, "patch top=47（H-y-h=97-25-25）")
-	assert_eq(board.patch_margin_right, 28, "patch right=28（W-x-w=638-65-545）")
-	assert_eq(board.patch_margin_bottom, 25, "patch bottom=25（源 cap y=25 DG 裸值直译，非 ×CS）")
+	assert_eq(board.patch_margin_left, 40, "patch left=40（DG 65 ×0.78125=50.78 纹理px ÷CS）")
+	assert_eq(board.patch_margin_top, 45, "patch top=45（DG 25→19.53px，H-y-h=57.94px ÷CS）")
+	assert_eq(board.patch_margin_right, 126, "patch right=126（DG 545→425.78px，W-x-w=161.44px ÷CS，右侧装饰段）")
+	assert_eq(board.patch_margin_bottom, 15, "patch bottom=15（DG 25→19.53px ÷CS）")
 	assert_almost_eq(board.size.x, 507.81, 0.5, "行板宽 507.81（源 DGSizeMake(650,95)）")
 	assert_almost_eq(board.size.y, 74.22, 0.5, "行板高 74.22")
 	assert_almost_eq(first_row.custom_minimum_size.y, 74.22, 0.5, "行高 74.22（源 itemSize dy 105DG-板 95DG 余量内）")

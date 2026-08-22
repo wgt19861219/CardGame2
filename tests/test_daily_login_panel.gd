@@ -198,10 +198,10 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(frame.offset_top, 30.0, 0.1, "Frame 顶 = 320-420/2")
 	assert_almost_eq(frame.size.x, 578.0, 0.1, "Frame 宽照源 scaleSize 578")
 	assert_almost_eq(frame.size.y, 420.0, 0.1, "Frame 高照源 scaleSize 420")
-	assert_eq(frame.patch_margin_left, 50, "Frame cap left=源 cap.x=50")
-	assert_eq(frame.patch_margin_top, 102, "Frame cap top=202-50-50=102（批1公式，旧值 50 互换）")
-	assert_eq(frame.patch_margin_right, 224, "Frame cap right=752-50-478=224")
-	assert_eq(frame.patch_margin_bottom, 50, "Frame cap bottom=源 cap.y=50（旧值 102 互换）")
+	assert_eq(frame.patch_margin_left, 39, "Frame cap left=源 cap.x=50")
+	assert_eq(frame.patch_margin_top, 80, "Frame cap top=202-50-50=102（批1公式，旧值 50 互换）")
+	assert_eq(frame.patch_margin_right, 175, "Frame cap right=752-50-478=224")
+	assert_eq(frame.patch_margin_bottom, 39, "Frame cap bottom=源 cap.y=50（旧值 102 互换）")
 	# title_bg（445x79 ÷CS=347.32x61.66，中心 (480,119)）
 	var title_bg: TextureRect = inst.get_node("TitleBg") as TextureRect
 	assert_almost_eq(title_bg.size.x, 347.32, 0.1, "TitleBg 宽 = 445/CS")
@@ -250,10 +250,10 @@ func test_content_static_tree() -> void:
 	var grid_content: Control = scroll.get_node("GridContent") as Control
 	assert_not_null(grid_content, "GridContent 常驻（fill 只设尺寸+挂 cell）")
 	var reward_bg: NinePatchRect = grid_content.get_node("RewardBg") as NinePatchRect
-	assert_eq(reward_bg.patch_margin_left, 15, "RewardBg cap left=15")
-	assert_eq(reward_bg.patch_margin_top, 31, "RewardBg cap top=71-15-25=31（批1公式）")
-	assert_eq(reward_bg.patch_margin_right, 32, "RewardBg cap right=71-15-24=32")
-	assert_eq(reward_bg.patch_margin_bottom, 15, "RewardBg cap bottom=源 cap.y=15")
+	assert_eq(reward_bg.patch_margin_left, 12, "RewardBg cap left=15")
+	assert_eq(reward_bg.patch_margin_top, 24, "RewardBg cap top=71-15-25=31（批1公式）")
+	assert_eq(reward_bg.patch_margin_right, 25, "RewardBg cap right=71-15-24=32")
+	assert_eq(reward_bg.patch_margin_bottom, 12, "RewardBg cap bottom=源 cap.y=15")
 
 
 # cell 模板静态树（照源 createRewardItem :222-378）：

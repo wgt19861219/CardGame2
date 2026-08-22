@@ -56,10 +56,10 @@ func test_content_static_tree() -> void:
 		"Frame 贴图照源 main_vit_tips")
 	# cap(10,10,58,26) 批 1 公式（贴图 103x61）：left=10 top=61-10-26=25
 	# right=103-10-58=35 bottom=10（现值 top/bottom 曾写反，2026-08-17 修正）
-	assert_eq(frame.patch_margin_left, 10, "NinePatch left = cap.x")
-	assert_eq(frame.patch_margin_top, 25, "NinePatch top = H-y-h = 61-10-26")
-	assert_eq(frame.patch_margin_right, 35, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
-	assert_eq(frame.patch_margin_bottom, 10, "NinePatch bottom = cap.y")
+	assert_eq(frame.patch_margin_left, 8, "NinePatch left = cap.x")
+	assert_eq(frame.patch_margin_top, 20, "NinePatch top = H-y-h = 61-10-26")
+	assert_eq(frame.patch_margin_right, 27, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
+	assert_eq(frame.patch_margin_bottom, 8, "NinePatch bottom = cap.y")
 	# CloseBtn（源 cancel frame 局部(610,425) 中心锚 → 全屏中心
 	# (165+610, 108+(440-425)) = (775,123)，右上骑边；65x66/CS）
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton

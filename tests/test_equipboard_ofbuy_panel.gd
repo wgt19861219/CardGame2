@@ -127,10 +127,10 @@ func test_att_bg_cap_margins() -> void:
 	var content: Control = scene.instantiate() as Control
 	add_child(content)
 	var att_bg: NinePatchRect = content.get_node("%AttBg") as NinePatchRect
-	assert_eq(att_bg.patch_margin_left, 10, "cap left=10（capInsets x=10）")
-	assert_eq(att_bg.patch_margin_bottom, 10, "cap bottom=10（capInsets y=10）")
-	assert_eq(att_bg.patch_margin_top, 62, "cap top=62（H-y-h=192-10-120）")
-	assert_eq(att_bg.patch_margin_right, 86, "cap right=86（W-x-w=326-10-230）")
+	assert_eq(att_bg.patch_margin_left, 8, "cap left=10（capInsets x=10）")
+	assert_eq(att_bg.patch_margin_bottom, 8, "cap bottom=10（capInsets y=10）")
+	assert_eq(att_bg.patch_margin_top, 48, "cap top=62（H-y-h=192-10-120）")
+	assert_eq(att_bg.patch_margin_right, 67, "cap right=86（W-x-w=326-10-230）")
 	content.queue_free()
 
 

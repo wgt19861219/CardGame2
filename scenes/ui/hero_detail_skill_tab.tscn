@@ -77,10 +77,10 @@ mouse_filter = 2
 texture = ExtResource("2_bg1")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 15
-patch_margin_top = 15
-patch_margin_right = 30
-patch_margin_bottom = 30
+patch_margin_left = 12
+patch_margin_top = 23
+patch_margin_right = 23
+patch_margin_bottom = 12
 
 [node name="Skill1Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
@@ -146,10 +146,10 @@ mouse_filter = 2
 texture = ExtResource("3_bg2")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 15
-patch_margin_top = 15
-patch_margin_right = 30
-patch_margin_bottom = 30
+patch_margin_left = 12
+patch_margin_top = 23
+patch_margin_right = 23
+patch_margin_bottom = 12
 
 [node name="Skill2Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
@@ -215,10 +215,10 @@ mouse_filter = 2
 texture = ExtResource("2_bg1")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 15
-patch_margin_top = 15
-patch_margin_right = 30
-patch_margin_bottom = 30
+patch_margin_left = 12
+patch_margin_top = 23
+patch_margin_right = 23
+patch_margin_bottom = 12
 
 [node name="Skill3Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
@@ -284,10 +284,10 @@ mouse_filter = 2
 texture = ExtResource("3_bg2")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 15
-patch_margin_top = 15
-patch_margin_right = 30
-patch_margin_bottom = 30
+patch_margin_left = 12
+patch_margin_top = 23
+patch_margin_right = 23
+patch_margin_bottom = 12
 
 [node name="Skill4Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true

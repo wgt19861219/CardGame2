@@ -38,10 +38,10 @@ offset_top = 35.0
 offset_right = 577.5
 offset_bottom = 215.0
 texture = ExtResource("1_frame")
-patch_margin_left = 10
-patch_margin_top = 25
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="Title" type="Label" parent="Frame"]
@@ -63,10 +63,10 @@ offset_top = 64.0
 offset_right = 265.0
 offset_bottom = 106.0
 texture = ExtResource("2_namebg")
-patch_margin_left = 12
-patch_margin_top = 23
-patch_margin_right = 23
-patch_margin_bottom = 10
+patch_margin_left = 9
+patch_margin_top = 18
+patch_margin_right = 18
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="RollBtn" type="TextureButton" parent="Frame"]

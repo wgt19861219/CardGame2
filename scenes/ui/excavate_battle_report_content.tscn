@@ -39,10 +39,10 @@ offset_top = 29.215
 offset_right = 771.095
 offset_bottom = 463.595
 texture = ExtResource("1_frame")
-patch_margin_left = 22
-patch_margin_top = 28
-patch_margin_right = 42
-patch_margin_bottom = 21
+patch_margin_left = 17
+patch_margin_top = 22
+patch_margin_right = 33
+patch_margin_bottom = 16
 mouse_filter = 2
 
 ; 左侧标题（源 left_title OFFENCE 进攻方=敌方，z=2；text fill）
@@ -84,10 +84,10 @@ offset_top = 84.29
 offset_right = 554.29
 offset_bottom = 96.01
 texture = ExtResource("2_titlebg")
-patch_margin_left = 74
+patch_margin_left = 58
 patch_margin_top = 0
-patch_margin_right = 133
-patch_margin_bottom = 0
+patch_margin_right = 104
+patch_margin_bottom = 9
 mouse_filter = 2
 
 ; 第 N 战标题（条目表 title_label size23 ccc3(253,210,17)，text fill）

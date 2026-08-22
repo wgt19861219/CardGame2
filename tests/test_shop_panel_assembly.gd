@@ -138,8 +138,8 @@ func test_talk_bubble_assembled() -> void:
 	var talk_bg: NinePatchRect = panel.get("_talk_bg") as NinePatchRect
 	assert_not_null(talk_bg, "_talk_bg 取自 .tscn %TalkBg（源 shop.lua:33-44）")
 	assert_true(talk_bg.texture != null, "talk_bg 用 shop_talk_bg.png 纹理")
-	assert_eq(talk_bg.patch_margin_left, 30, "cap 30（源 capInsets 30,15,110,26）")
-	assert_eq(talk_bg.patch_margin_right, 87, "cap 右=227-30-110")
+	assert_eq(talk_bg.patch_margin_left, 23, "cap 30÷CS=23.4（源 capInsets 30,15,110,26）")
+	assert_eq(talk_bg.patch_margin_right, 68, "cap 右=87÷CS=67.9（T/B 同步修正反写）")
 	assert_almost_eq(talk_bg.modulate.a, 0.0, 0.01, "talk_bg 初始 modulate.a=0（随 talk 淡入）")
 	panel.free()
 

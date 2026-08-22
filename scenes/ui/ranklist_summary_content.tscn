@@ -28,10 +28,10 @@ offset_right = 535.0
 offset_bottom = 359.0
 mouse_filter = 2
 texture = ExtResource("1_frame")
-patch_margin_left = 16
-patch_margin_top = 26
-patch_margin_right = 44
-patch_margin_bottom = 16
+patch_margin_left = 12
+patch_margin_top = 20
+patch_margin_right = 35
+patch_margin_bottom = 12
 
 ; head DGccp(52,272)=(40.63,212.5) 中心 + fix_size DG(65,65)=(50.78,50.78)
 ; → (15.24,0.39)-(66.02,51.17) 取整（avatar 动态挂 host）

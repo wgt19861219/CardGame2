@@ -27,10 +27,10 @@ offset_top = 28.0
 offset_right = 715.0
 offset_bottom = 468.0
 texture = ExtResource("1_frame")
-patch_margin_left = 10
-patch_margin_top = 25
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="LangHost" type="Control" parent="Frame"]

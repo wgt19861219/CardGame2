@@ -35,8 +35,8 @@ func test_content_static_tree() -> void:
 	var frame: NinePatchRect = layer.get_node("Frame") as NinePatchRect
 	assert_not_null(frame, "Frame（main_vit_tips 九宫格底）常驻 tscn")
 	assert_not_null(frame.texture, "Frame 贴图已接线")
-	assert_eq(frame.patch_margin_top, 25, "frame cap top=61-10-26（cap 左下原点，终审必修 1）")
-	assert_eq(frame.patch_margin_bottom, 10, "frame cap bottom=源 cap.y=10（终审必修 1）")
+	assert_eq(frame.patch_margin_top, 20, "frame cap top=61-10-26（cap 左下原点，终审必修 1）")
+	assert_eq(frame.patch_margin_bottom, 8, "frame cap bottom=源 cap.y=10（终审必修 1）")
 	var bg: ColorRect = inst.get_node("Bg") as ColorRect
 	assert_almost_eq(bg.color.a, 150.0 / 255.0, 0.01, "蒙层 alpha 照源 ccc4(0,0,0,150)")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton

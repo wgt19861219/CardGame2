@@ -59,10 +59,10 @@ func test_explain_frame_source_fidelity() -> void:
 	assert_not_null(frame.texture, "frame 有贴图")
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
 		"frame 贴图归源 main_vit_tips（explainwindow 通用窗，弃 excavate_main_frame 误用）")
-	assert_eq(frame.patch_margin_left, 17, "cap left=17.19 取整 17")
-	assert_eq(frame.patch_margin_bottom, 17, "cap bottom=17.19 取整 17")
-	assert_eq(frame.patch_margin_right, 39, "cap right=38.93 取整 39")
-	assert_eq(frame.patch_margin_top, 28, "cap top=28.18 取整 28")
+	assert_eq(frame.patch_margin_left, 13, "cap left=17.19 取整 17")
+	assert_eq(frame.patch_margin_bottom, 13, "cap bottom=17.19 取整 17")
+	assert_eq(frame.patch_margin_right, 30, "cap right=38.93 取整 39")
+	assert_eq(frame.patch_margin_top, 22, "cap top=28.18 取整 28")
 	content.queue_free()
 
 
@@ -197,10 +197,10 @@ func test_giveup_frame_source_fidelity() -> void:
 	assert_not_null(frame.texture, "frame 有贴图")
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
 		"frame 贴图归源 main_vit_tips（弃 excavate_main_frame 误用）")
-	assert_eq(frame.patch_margin_left, 20, "cap left=19.53 取整 20")
-	assert_eq(frame.patch_margin_bottom, 20, "cap bottom=19.53 取整 20")
-	assert_eq(frame.patch_margin_right, 37, "cap right=36.59 取整 37")
-	assert_eq(frame.patch_margin_top, 30, "cap top=29.75 取整 30")
+	assert_eq(frame.patch_margin_left, 15, "cap left=19.53÷CS=15.24 取整 15")
+	assert_eq(frame.patch_margin_bottom, 15, "cap bottom=19.53÷CS 取整 15")
+	assert_eq(frame.patch_margin_right, 29, "cap right=36.59÷CS=28.56 取整 29")
+	assert_eq(frame.patch_margin_top, 23, "cap top=29.75÷CS=23.22 取整 23")
 	content.queue_free()
 
 
@@ -395,8 +395,8 @@ func test_history_item_template_structure() -> void:
 	assert_almost_eq(board.position.x, 0.0, 0.02, "board offset_left=0（中心 257.03=半宽）")
 	assert_almost_eq(board.size.x, 514.06, 0.02, "board w=514.06（scaleSize 直译）")
 	assert_almost_eq(board.size.y, 74.22, 0.02, "board h=74.22")
-	assert_eq(board.patch_margin_left, 68, "cap left=67.97 取整 68")
-	assert_eq(board.patch_margin_right, 199, "cap right=533-67.97-265.63=199.4 取整 199")
+	assert_eq(board.patch_margin_left, 53, "cap left=67.97÷CS=53.05 取整 53")
+	assert_eq(board.patch_margin_right, 156, "cap right=199.4÷CS=155.68 取整 156")
 	assert_lte(board.patch_margin_top + board.patch_margin_bottom, board.size.y, "纵向 margin 非退化（源退化九宫格已按比例钳制）")
 	var tag_win: Control = item.get_node("%TagWin") as Control
 	assert_almost_eq(tag_win.position.x + tag_win.size.x * 0.5, 27.34, 0.02, "tag 中心 x=27.34")
@@ -539,10 +539,10 @@ func test_battle_report_frame_source_fidelity() -> void:
 		"frame 贴图归源 main_vit_tips（弃 excavate_main_frame 误用，A 债 #4）")
 	assert_almost_eq(frame.size.x, 703.13, 0.02, "frame w=703.13（scaleSize 直译）")
 	assert_almost_eq(frame.size.y, 434.38, 0.02, "frame h=434.38")
-	assert_eq(frame.patch_margin_left, 22, "cap left=21.88 取整 22")
-	assert_eq(frame.patch_margin_bottom, 21, "cap bottom=21.09 取整 21")
-	assert_eq(frame.patch_margin_right, 42, "cap right=42.06 取整 42")
-	assert_eq(frame.patch_margin_top, 28, "cap top=28.19 取整 28")
+	assert_eq(frame.patch_margin_left, 17, "cap left=21.88÷CS=17.08 取整 17")
+	assert_eq(frame.patch_margin_bottom, 16, "cap bottom=21.09÷CS=16.46 取整 16")
+	assert_eq(frame.patch_margin_right, 33, "cap right=42.06÷CS=32.83 取整 33")
+	assert_eq(frame.patch_margin_top, 22, "cap top=28.19÷CS=22 取整 22")
 	content.queue_free()
 
 
@@ -921,9 +921,9 @@ func test_map_content_static_rects() -> void:
 		assert_almost_eq(tag_bg.size.x, 210.94, 0.02, "tag_bg w=210.94（scaleSize 直译）")
 		assert_almost_eq(tag_bg.size.y, 30.47, 0.02, "tag_bg h=30.47")
 		assert_eq(tag_bg.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_cycle_bg.png", "tag_bg 贴图归源")
-		assert_eq(tag_bg.patch_margin_left, 16, "cap left=15.63 取整 16")
-		assert_eq(tag_bg.patch_margin_right, 32, "cap right=60-15.63-12.5=31.87 取整 32")
-		assert_eq(tag_bg.patch_margin_top, 9, "cap top=39-0-29.69=9.31 取整 9")
+		assert_eq(tag_bg.patch_margin_left, 12, "cap left=15.63 取整 16")
+		assert_eq(tag_bg.patch_margin_right, 25, "cap right=60-15.63-12.5=31.87 取整 32")
+		assert_eq(tag_bg.patch_margin_top, 7, "cap top=39-0-29.69=9.31 取整 9")
 		assert_eq(tag_bg.patch_margin_bottom, 0, "cap bottom=0（源 y=0）")
 		assert_almost_eq(tag_bg.position.x + tag_bg.size.x * 0.5, ptc.size.x * 0.5, 0.02, "tag_bg 居中容器（源 pos(0,0) 中心锚）")
 	var il: Control = fc.get_node("InfoLayer") as Control
@@ -935,8 +935,8 @@ func test_map_content_static_rects() -> void:
 		assert_almost_eq(explain_bg.position.x + explain_bg.size.x, 742.97, 0.02, "explain_bg 右缘 x=742.97（源 anchor(1,1)）")
 		assert_almost_eq(explain_bg.position.y + explain_bg.size.y, 79.69, 0.02, "explain_bg 底缘 y=79.69（480.47-400.78）")
 		assert_almost_eq(explain_bg.size.x, 281.25, 0.02, "explain_bg w=281.25（scaleSize 直译）")
-		assert_eq(explain_bg.patch_margin_left, 133, "cap left=132.81 取整 133")
-		assert_eq(explain_bg.patch_margin_right, 58, "cap right=281-132.81-89.84=58.35 取整 58")
+		assert_eq(explain_bg.patch_margin_left, 104, "cap left=132.81 取整 133")
+		assert_eq(explain_bg.patch_margin_right, 46, "cap right=281-132.81-89.84=58.35 取整 58")
 	var histroy: Control = il.get_node("%HistroyButton") as Control
 	assert_almost_eq(histroy.position.x + histroy.size.x * 0.5, 154.69, 0.02, "histroy 中心 x=154.69（info_layer 局部）")
 	assert_almost_eq(histroy.position.y + histroy.size.y * 0.5, 400.0, 0.02, "histroy 中心 y=400（480.47-80.47）")
@@ -1256,10 +1256,10 @@ func test_search_frame_source_fidelity() -> void:
 	if search_frame != null:
 		assert_eq(search_frame.texture.resource_path, "res://assets/ui/alpha/HVGA/crusade/crusade_reset_bg.png",
 			"search_frame 贴图归源 crusade_reset_bg")
-		assert_eq(search_frame.patch_margin_left, 23, "cap left=23.44 取整 23")
-		assert_eq(search_frame.patch_margin_bottom, 23, "cap bottom=23.44 取整 23")
-		assert_eq(search_frame.patch_margin_right, 32, "cap right=75-23.44-19.53=32.03 取整 32")
-		assert_eq(search_frame.patch_margin_top, 32, "cap top=32.03 取整 32")
+		assert_eq(search_frame.patch_margin_left, 18, "cap left=23.44 取整 23")
+		assert_eq(search_frame.patch_margin_bottom, 18, "cap bottom=23.44 取整 23")
+		assert_eq(search_frame.patch_margin_right, 25, "cap right=75-23.44-19.53=32.03 取整 32")
+		assert_eq(search_frame.patch_margin_top, 25, "cap top=32.03 取整 32")
 		assert_almost_eq(search_frame.modulate.a, 200.0 / 255.0, 0.005, "opacity=200/255（源 config.opacity）")
 	# 受控裁剪守卫：history_red_tag 不建（源 refreshHistoryTag 依赖服务器已读标记
 	# checkUnreadExcavateHistory，数据层无对应状态恒不可见，照 history 批 vit_button 口径）
@@ -1436,10 +1436,10 @@ func test_team_frame_source_fidelity() -> void:
 		"frame 贴图归源 main_vit_tips（弃 excavate_main_frame 误用）")
 	assert_almost_eq(frame.size.x, 632.81, 0.02, "frame w=632.81（scaleSize 直译）")
 	assert_almost_eq(frame.size.y, 242.19, 0.02, "frame h=242.19")
-	assert_eq(frame.patch_margin_left, 18, "cap left=17.97 取整 18")
-	assert_eq(frame.patch_margin_bottom, 19, "cap bottom=18.75 取整 19")
-	assert_eq(frame.patch_margin_right, 38, "cap right=38.15 取整 38")
-	assert_eq(frame.patch_margin_top, 31, "cap top=30.53 取整 31")
+	assert_eq(frame.patch_margin_left, 14, "cap left=17.97÷CS=14.02 取整 14")
+	assert_eq(frame.patch_margin_bottom, 15, "cap bottom=18.75÷CS=14.64 取整 15")
+	assert_eq(frame.patch_margin_right, 30, "cap right=38.15÷CS=29.79 取整 30")
+	assert_eq(frame.patch_margin_top, 24, "cap top=30.53÷CS=23.83 取整 24")
 	content.queue_free()
 
 

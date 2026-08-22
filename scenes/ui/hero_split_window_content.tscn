@@ -85,10 +85,10 @@ offset_top = 62.11
 offset_right = 330.86
 offset_bottom = 230.08
 texture = ExtResource("4_listbg")
-patch_margin_left = 14
-patch_margin_top = 64
-patch_margin_right = 203
-patch_margin_bottom = 16
+patch_margin_left = 11
+patch_margin_top = 50
+patch_margin_right = 159
+patch_margin_bottom = 12
 mouse_filter = 2
 
 ; 分隔线（源 delimeter chat_delimeter fix_wh 455x2.34 中心 (74.22,68.75)）

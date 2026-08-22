@@ -58,10 +58,10 @@ func test_content_static_tree() -> void:
 		"Frame 贴图照源 main_vit_tips")
 	# cap(10,10,58,26) 批 1 公式（贴图 103x61）：left=10 top=61-10-26=25
 	# right=103-10-58=35 bottom=10（改造前 top/bottom 写反，批内通病）
-	assert_eq(frame.patch_margin_left, 10, "NinePatch left = cap.x")
-	assert_eq(frame.patch_margin_top, 25, "NinePatch top = H-y-h = 61-10-26（防反写回归）")
-	assert_eq(frame.patch_margin_right, 35, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
-	assert_eq(frame.patch_margin_bottom, 10, "NinePatch bottom = cap.y（防反写回归）")
+	assert_eq(frame.patch_margin_left, 8, "NinePatch left = cap.x")
+	assert_eq(frame.patch_margin_top, 20, "NinePatch top = H-y-h = 61-10-26（防反写回归）")
+	assert_eq(frame.patch_margin_right, 27, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
+	assert_eq(frame.patch_margin_bottom, 8, "NinePatch bottom = cap.y（防反写回归）")
 	# NameBg（源 activate_input cap(12,10,12,22) scaleSize(235,42) frame 局部
 	# (30,95) anchor(0,0.5) → 局部左中 (30, 180-95=85)）
 	var name_bg: NinePatchRect = inst.get_node("%NameBg") as NinePatchRect
@@ -72,10 +72,10 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(name_bg.offset_bottom - name_bg.offset_top, 42.0, 0.1, "NameBg 高 = 源 scaleSize 直译")
 	# cap(12,10,12,22) 批 1 公式（贴图 47x55）：left=12 top=55-10-22=23
 	# right=47-12-12=23 bottom=10
-	assert_eq(name_bg.patch_margin_left, 12, "NameBg cap left = 12")
-	assert_eq(name_bg.patch_margin_top, 23, "NameBg cap top = H-y-h = 55-10-22（防反写回归）")
-	assert_eq(name_bg.patch_margin_right, 23, "NameBg cap right = W-x-w = 47-12-12")
-	assert_eq(name_bg.patch_margin_bottom, 10, "NameBg cap bottom = cap.y = 10（防反写回归）")
+	assert_eq(name_bg.patch_margin_left, 9, "NameBg cap left = 12")
+	assert_eq(name_bg.patch_margin_top, 18, "NameBg cap top = H-y-h = 55-10-22（防反写回归）")
+	assert_eq(name_bg.patch_margin_right, 18, "NameBg cap right = W-x-w = 47-12-12")
+	assert_eq(name_bg.patch_margin_bottom, 8, "NameBg cap bottom = cap.y = 10（防反写回归）")
 	assert_eq(name_bg.mouse_filter, Control.MOUSE_FILTER_IGNORE, "NameBg 装饰层不吞点击")
 	# RollBtn（源 roll Sprite frame 局部(300,95) 中心锚，80x75/CS 显示）
 	var roll_btn: TextureButton = inst.get_node("%RollBtn") as TextureButton

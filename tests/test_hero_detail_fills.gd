@@ -22,7 +22,7 @@ func test_skill_desc_capinsets_converted() -> void:
 	## 源 skillstren.lua:20 capInsets = CCRectMake(20, 52, 200, 5)（左下原点），贴图 345x101，
 	## 公式 L=x/T=H-y-h/R=W-x-w/B=y → 20/44/125/52（禁止回退为源值直传 20/52/200/5）。
 	var tabs: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_tabs.gd")
-	assert_true(tabs.contains("patch_margin_left = 20"), "margin_left 须为 20")
-	assert_true(tabs.contains("patch_margin_top = 44"), "margin_top 须为 44（=101-52-5，源值直传 52 是未换算）")
-	assert_true(tabs.contains("patch_margin_right = 125"), "margin_right 须为 125（=345-20-200，源值直传 200 是未换算）")
-	assert_true(tabs.contains("patch_margin_bottom = 52"), "margin_bottom 须为 52（=源 y）")
+	assert_true(tabs.contains("patch_margin_left = 16"), "margin_left 须为 16（÷CS）")
+	assert_true(tabs.contains("patch_margin_top = 34"), "margin_top 须为 34（=44 纹理px ÷CS）")
+	assert_true(tabs.contains("patch_margin_right = 98"), "margin_right 须为 98（=125 纹理px ÷CS）")
+	assert_true(tabs.contains("patch_margin_bottom = 41"), "margin_bottom 须为 41（=52 纹理px ÷CS）")

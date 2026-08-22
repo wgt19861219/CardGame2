@@ -47,10 +47,10 @@ offset_top = 81.95
 offset_right = 632.42
 offset_bottom = 445.23
 texture = ExtResource("1_frame")
-patch_margin_left = 66
-patch_margin_top = 150
-patch_margin_right = 191
-patch_margin_bottom = 94
+patch_margin_left = 52
+patch_margin_top = 117
+patch_margin_right = 149
+patch_margin_bottom = 73
 mouse_filter = 2
 
 ; title_bg（源 Scale9 → NinePatch，宽向拉伸 1.59x 保角）
@@ -61,9 +61,9 @@ offset_top = 118.67
 offset_right = 579.69
 offset_bottom = 130.39
 texture = ExtResource("2_titlebg")
-patch_margin_left = 78
+patch_margin_left = 61
 patch_margin_top = 3
-patch_margin_right = 141
+patch_margin_right = 110
 patch_margin_bottom = 0
 mouse_filter = 2
 

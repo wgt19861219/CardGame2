@@ -142,10 +142,10 @@ offset_top = 49.0
 offset_right = 441.0
 offset_bottom = 105.0
 texture = ExtResource("6_talkbg")
-patch_margin_left = 30
-patch_margin_top = 15
-patch_margin_right = 87
-patch_margin_bottom = 33
+patch_margin_left = 23
+patch_margin_top = 26
+patch_margin_right = 68
+patch_margin_bottom = 12
 mouse_filter = 2
 modulate = Color(1, 1, 1, 0)
 
