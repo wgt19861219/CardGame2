@@ -164,12 +164,13 @@ mouse_filter = 0
 
 [node name="SearchLabel" type="TextureButton" parent="SearchFrame/SearchContainer/SearchButton"]
 layout_mode = 0
-; 源 DGButton 无 fix_wh → 显示=纹理 87×25÷CS=68×20，中心保持按钮几何中心 (70.31,25.39)（父局部）。
-; 受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（2026-08-17 决策，尺寸随 CS 口径归位）。
-offset_left = 36.3086
-offset_top = 15.3906
-offset_right = 104.3086
-offset_bottom = 35.3906
+; 源 excavatesearch.lua:368 fix_wh={w=140.8437778125, h=52.5536484375} 显式声明，显示=fix_wh 值=140.84×52.55
+; （91a46f3 断言"无 fix_wh ÷CS=68×20"漏查 config 段，审查二轮翻案回源）；中心保持按钮几何中心 (70.31,25.39)（父局部）。
+; 受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（2026-08-17 决策）。
+offset_left = -0.1133
+offset_top = -0.8862
+offset_right = 140.7305
+offset_bottom = 51.6674
 texture_normal = ExtResource("9_slbl")
 texture_pressed = ExtResource("9_slbl")
 ignore_texture_size = true

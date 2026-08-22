@@ -884,13 +884,15 @@ func test_map_content_static_rects() -> void:
 	var mslbl: TextureButton = content.get_node("%ResearchFrame/ResearchContainer/%ResearchButton/SearchLabel") as TextureButton
 	assert_eq(mslbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
 		"map SearchLabel 接线文字图 word_search（实跑反馈修复同 search 件）")
-	# 2026-08-22 溢出修复二轮：源 DGButton 无 fix_wh → 显示=纹理÷CS（map 件同 search 件口径）。
-	assert_almost_eq(mslbl.size.x, 68.0, 0.02, "map SearchLabel w=68（87px÷CS）")
-	assert_almost_eq(mslbl.size.y, 20.0, 0.02, "map SearchLabel h=20（25px÷CS）")
-	# ResearchLabel（另一块探索图标）：同口径 141×53px÷CS=110×41，中心保持按钮几何中心 (70.32,25.39)。
+	# 2026-08-22 溢出修复三轮（审查 Critical 翻案）：源 excavatemap.lua:854 fix_wh={w=140.8437778125, h=52.5536484375}
+	# 显式声明，显示=fix_wh 值（91a46f3 与审查二轮引用 :864 base 段断言"无 fix_wh"均漏看 config 段）。
+	assert_almost_eq(mslbl.size.x, 140.84, 0.02, "map SearchLabel w=140.84（源 fix_wh 显式声明）")
+	assert_almost_eq(mslbl.size.y, 52.55, 0.02, "map SearchLabel h=52.55（源 fix_wh 显式声明）")
+	# ResearchLabel：源 excavatemap.lua:880 fix_wh={w=141.328125, h=52.734375} 显式声明，显示=fix_wh 值=141.33×52.73，
+	# 中心保持按钮几何中心 (70.32,25.39)（源 position ccp(70.31,·) anchor 0.5，0.01 历史舍入）。
 	var rlbl: TextureButton = content.get_node("%ResearchFrame/ResearchContainer/%ResearchButton/ResearchLabel") as TextureButton
-	assert_almost_eq(rlbl.size.x, 110.0, 0.02, "ResearchLabel w=110（141px÷CS，旧 141 纹理直用偏大 1.28×）")
-	assert_almost_eq(rlbl.size.y, 41.0, 0.02, "ResearchLabel h=41（53px÷CS）")
+	assert_almost_eq(rlbl.size.x, 141.33, 0.02, "ResearchLabel w=141.33（源 fix_wh 显式声明，91a46f3 ÷CS=110 系漏查）")
+	assert_almost_eq(rlbl.size.y, 52.73, 0.02, "ResearchLabel h=52.73（源 fix_wh 显式声明）")
 	assert_almost_eq(rlbl.position.x + rlbl.size.x * 0.5, 70.32, 0.02, "ResearchLabel 中心 x=70.32（源 ccp(70.31,·) 保持）")
 	assert_almost_eq(rlbl.position.y + rlbl.size.y * 0.5, 25.39, 0.02, "ResearchLabel 中心 y=25.39（按钮几何中心）")
 	var frame: Control = fc.get_node("Frame") as Control
@@ -1290,10 +1292,11 @@ func test_search_content_static_rects() -> void:
 	var slbl: TextureButton = content.get_node("SearchFrame/SearchContainer/%SearchButton/SearchLabel") as TextureButton
 	assert_eq(slbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
 		"SearchLabel 接线文字图 word_search（源在库未接线的本地化遗留，受控偏离）")
-	# 2026-08-22 溢出修复二轮：源 DGButton 无 fix_wh → 显示=纹理÷CS=68×20（旧 87×25 系纹理直用；
+	# 2026-08-22 溢出修复三轮（审查 Critical 翻案）：源 excavatesearch.lua:368 fix_wh={w=140.8437778125, h=52.5536484375}
+	# 显式声明，显示=fix_wh 值=140.84×52.55（91a46f3 断言"无 fix_wh ÷CS=68×20"漏查 config 段；
 	# 中心保持按钮几何中心 (70.31,25.39)）。
-	assert_almost_eq(slbl.size.x, 68.0, 0.02, "SearchLabel w=68（word_search 87px÷CS）")
-	assert_almost_eq(slbl.size.y, 20.0, 0.02, "SearchLabel h=20（25px÷CS）")
+	assert_almost_eq(slbl.size.x, 140.84, 0.02, "SearchLabel w=140.84（源 fix_wh 显式声明）")
+	assert_almost_eq(slbl.size.y, 52.55, 0.02, "SearchLabel h=52.55（源 fix_wh 显式声明）")
 	var fc: Control = content.get_node("FrameContainer") as Control
 	assert_almost_eq(fc.position.x, -3.125, 0.02, "frame_container offset_left=76.875")
 	assert_almost_eq(fc.position.y, -4.375, 0.02, "frame_container offset_top=75.625")

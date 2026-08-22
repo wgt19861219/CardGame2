@@ -5,6 +5,14 @@ extends SceneTree
 ## 遍历 scenes/**/*.tscn，instantiate 后检测 TextureRect/NinePatchRect/Sprite2/TextureButton：
 ## 显示 size ≈ 纹理原始像素（±2px）者为嫌疑（正确口径应为 纹理÷1.28125，除非有显式放大语义）。
 ## 输出 JSON 报告供人工甄别（容器拉伸/scale=1.28 类会标注）。
+##
+## 甄别口径（人工复核必读，2026-08-22 excavate 翻案教训固化）：源 Axmol config 的显式
+## fix_wh/scaleSize 声明优先于"纹理÷CS"推算——有 fix_wh 时显示=fix_wh 值本身（readnode.lua
+## 以 setScaleX(wh.w/contentSize.width) 抵消纹理尺寸，与 CS 无关）。本检测器只见 Godot 侧
+## size≈纹理px，无法感知源侧显式声明；命中项定性前必须人工回源核
+## Content/src/ui/uieditor/*.lua 对应节点的 config 段（引用节点 base 段行号会漏看 config 段，
+## 91a46f3 与审查二轮均栽在此）。同类翻案先例：excavate ExplainBg（scaleSize 直译）与
+## SearchLabel/ResearchLabel（fix_wh 显式尺寸）——两类同根因：显式声明 > 纹理÷CS。
 
 const REPORT_PATH := "res://.superpowers/sdd/tex_px_report.json"
 const SCAN_DIRS := ["res://scenes/ui", "res://scenes/battle", "res://scenes/main_menu", "res://scenes/hero"]
@@ -53,10 +61,6 @@ func _scan_file(path: String) -> void:
 		elif node is TextureButton:
 			var tb := node as TextureButton
 			tex = tb.texture_normal if tb.texture_normal != null else tb.texture_pressed
-			if tex == null or not (tb.ignore_texture_size or tb.stretch_mode == TextureButton.STRETCH_KEEP):
-				# TextureButton 默认 min size=纹理（非显式设定不算滥用）
-				if tex != null and tb.ignore_texture_size:
-					tex = tex
 		if tex == null or c == null:
 			continue
 		var ts: Vector2 = tex.get_size()
@@ -64,7 +68,6 @@ func _scan_file(path: String) -> void:
 		if ts == Vector2.ZERO or cs == Vector2.ZERO:
 			continue
 		var eff := c.get_global_rect()  # 含父链 scale 的实际显示
-		var note := ""
 		if node is TextureButton and not (node as TextureButton).ignore_texture_size:
 			continue  # 默认行为，跳过
 		var dx: float = abs(eff.size.x - ts.x)
@@ -77,7 +80,6 @@ func _scan_file(path: String) -> void:
 				"tex_px": [roundi(ts.x), roundi(ts.y)],
 				"display": [roundi(eff.size.x), roundi(eff.size.y)],
 				"should_be": [roundi(ts.x / CS), roundi(ts.y / CS)],
-				"note": note,
 			})
 	root.remove_child(inst)
 	inst.free()

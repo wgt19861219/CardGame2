@@ -193,12 +193,14 @@ mouse_filter = 0
 [node name="SearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-; 源 excavatemap.lua:864 DGButton 无 fix_wh → 显示=纹理 87×25÷CS=68×20；中心保持按钮几何中心
-; (70.31,25.39)（父局部）。受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（同 search 面板）。
-offset_left = 36.3086
-offset_top = 15.3906
-offset_right = 104.3086
-offset_bottom = 35.3906
+; 源 excavatemap.lua:854 fix_wh={w=140.8437778125, h=52.5536484375} 显式声明，显示=fix_wh 值=140.84×52.55
+; （91a46f3 与审查二轮均引用 :864 base 段断言"无 fix_wh"，漏看 config 段，三轮实测回源翻案）；
+; 中心保持按钮几何中心 (70.31,25.39)（父局部，源 position ccp(70.31,·) anchor 0.5）。
+; 受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（同 search 面板）。
+offset_left = -0.1133
+offset_top = -0.8862
+offset_right = 140.7305
+offset_bottom = 51.6674
 texture_normal = ExtResource("19_srch")
 texture_pressed = ExtResource("19_srch")
 ignore_texture_size = true
@@ -209,12 +211,13 @@ visible = false
 [node name="ResearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-; 源 excavatemap.lua:890 DGButton 无 fix_wh → 显示=纹理 141×53÷CS=110×41（旧值 141×53 纹理直用）；
-; 中心保持按钮几何中心 (70.32,25.39)（父局部）。
-offset_left = 15.32
-offset_top = 4.89
-offset_right = 125.32
-offset_bottom = 45.89
+; 源 excavatemap.lua:880 fix_wh={w=141.328125, h=52.734375} 显式声明，显示=fix_wh 值=141.33×52.73
+; （91a46f3 断言"无 fix_wh ÷CS=110×41"漏查 config 段，审查二轮翻案回源）；中心保持按钮几何中心
+; (70.32,25.39)（父局部，源 position ccp(70.31,·) anchor 0.5，0.01 为历史舍入）。
+offset_left = -0.3441
+offset_top = -0.9772
+offset_right = 140.9841
+offset_bottom = 51.7572
 texture_normal = ExtResource("21_ano")
 texture_pressed = ExtResource("22_anop")
 ignore_texture_size = true
