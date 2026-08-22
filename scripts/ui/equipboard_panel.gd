@@ -27,7 +27,9 @@ const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 # = 中心；icon 右边 50+36=86 正好接 name x=92（佐证中心语义）。源中心(50,328) → Godot 中心(50,57)
 # → Control 左上 = 中心 - size/2 = (50-36, 57-36) = (14,21)（ICON_SIZE=72，readequip_icon.gd:19）。
 const ICON_POS: Vector2 = Vector2(14.0, 21.0)
-const ICON_SCALE: float = 0.8   # 用户视觉偏好缩小（源 createIcon 无 scale，原 size 显示）
+# 用户视觉偏好：定稿时产物 frame 原像素 94 直显 ×0.8=75.2（用户验收观感）；9bc640e 统一
+# ÷CS 后产物显示 94/CS=73.37，×0.8 会缩到 58.7——乘回 CS 恢复 75.2 基数（2026-08-22 修）。
+const ICON_SCALE: float = 0.8 * 1.28125
 # att_bg 顶边固定（icon 正下方；源 att_bg anchor 0.5,1 顶固定 ccp(143,287) → Godot 顶 y=385-287=98，向下扩）。
 const ATT_TOP: float = 98.0
 # name 框宽上限（源 board.lua:338 长名溢出 scale 缩小）：NameLabel offset 92→300 = 208px。

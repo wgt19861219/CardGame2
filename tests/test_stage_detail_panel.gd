@@ -199,8 +199,9 @@ func test_create_enemy_wraps_in_control_into_hbox() -> void:
 
 # create_reward（Task 9 修复后）：HBox 一帧后重置直接子项 scale（实测 0.7→1.0，
 # frame 94×95 原像素渲染底 557 压 Frame2 底 553）→ wrapper 承载 HBox 排布（72 槽
-# +8 sep=80 步进照源），内层 icon 在 wrapper 内保 scale=1/CS（源 createIcon 无
-# length → frame 原样 px/CS=73.37×74.14）且底对齐 wrapper 底（源 anchor(0.5,0)）。
+# +8 sep=80 步进照源），内层 icon 在 wrapper 内保 scale（源 createIcon 无
+# length → frame 显示 px/CS=73.37×74.14，内部 _load_sprite 已 ÷CS，2026-08-22
+# 摘除外层双重 ÷CS）且底对齐 wrapper 底（源 anchor(0.5,0)）。
 func test_create_reward_adds_control_to_hbox() -> void:
 	var panel := _make_panel()
 	var hbox := HBoxContainer.new()
@@ -210,11 +211,34 @@ func test_create_reward_adds_control_to_hbox() -> void:
 	var wrapper: Control = hbox.get_child(0) as Control
 	assert_almost_eq(wrapper.custom_minimum_size.x, 72.0, 0.01, "wrapper 72 槽（HBox 步进 72+8=80 照源 ox 步进 80）")
 	var icon: Control = wrapper.get_child(0) as Control
-	assert_almost_eq(icon.scale.x, 1.0 / CS, 0.001, "icon scale=1/CS 保住（wrapper 非 Container 不重置；修复前直接挂 HBox 被重置 1.0）")
+	assert_almost_eq(icon.scale.x, 1.0, 0.001, "物品奖励 icon scale=1.0（显示已由 create_icon 内部 ÷CS；4de6c27 外层 INV_CS 系双重缩小已摘）")
 	# icon 底对齐 wrapper 底：position.y = 72 - 95/CS（frame 视觉高 74.14，底=wrapper 底）。
 	assert_almost_eq(icon.position.y, 72.0 - 95.0 / CS, 0.01, "icon 底对齐 wrapper 底（源 anchor(0.5,0) 底锚）")
-	var visual_bottom: float = wrapper.position.y + icon.position.y + 95.0 * icon.scale.y
+	var visual_bottom: float = wrapper.position.y + icon.position.y + 95.0 / CS * icon.scale.y
 	assert_almost_eq(visual_bottom, 72.0, 0.01, "frame 视觉底 = wrapper 底（不再压 Frame2 底框 553）")
+	panel.remove_window()
+	hbox.queue_free()
+
+
+# hero 奖励三件（源 :1199-1200 createIcon(id,nil,4) 强制紫框 + doWhenEnter :1911-1918
+# 整体 0.9 + 叠 getIconFrameByRank 框；Unit 1 = Hero、Initial Rank=1 → hero_icon_frame_1）。
+func test_create_reward_hero_purple_frame_rank_overlay() -> void:
+	var panel := _make_panel()
+	var hbox := HBoxContainer.new()
+	add_child(hbox)
+	panel.create_reward(hbox, [{"item_id": 1}], cm)
+	assert_eq(hbox.get_child_count(), 1, "1 个 hero 奖励 wrapper")
+	var icon: Control = (hbox.get_child(0) as Control).get_child(0) as Control
+	assert_almost_eq(icon.scale.x, 0.9, 0.001, "hero 奖励整体 0.9（源 doWhenEnter setScale(0.9)）")
+	assert_almost_eq(icon.position.y, 72.0 - 95.0 / CS * 0.9, 0.01, "hero 0.9 后视觉底仍贴 wrapper 底（底锚收缩）")
+	var frame := icon.get_child(0) as Sprite2D
+	assert_not_null(frame, "第 0 子是 frame Sprite2D")
+	var frame_path: String = String(frame.texture.resource_path)
+	assert_true(frame_path.ends_with("equip_frame_purple.png"), "hero 奖励强制紫框（源 createIcon(id,nil,4) 覆写 hero 默认白），实际 %s" % frame_path)
+	var overlay := icon.get_child(icon.get_child_count() - 1) as Sprite2D
+	assert_not_null(overlay, "末位子是 rank 叠框 Sprite2D")
+	var overlay_path: String = String(overlay.texture.resource_path)
+	assert_true(overlay_path.ends_with("hero_icon_frame_1.png"), "叠 rank 框（Initial Rank=1 → frame_1，源 getIconFrameByRank）")
 	panel.remove_window()
 	hbox.queue_free()
 
@@ -227,11 +251,12 @@ func test_builder_retired_and_new_whitelist() -> void:
 	assert_false(FileAccess.file_exists(BUILDER_PATH), "builder 文件不存在")
 	var panel_src: String = FileAccess.get_file_as_string(PANEL_PATH)
 	assert_false(panel_src.contains("stage_detail_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
-	# .new( 白名单（宽口径含带参构造）：panel 并入 builder 后恰 7 处——
+	# .new( 白名单（宽口径含带参构造）：panel 并入 builder 后恰 8 处——
 	# BattlePreparePanel/StageResetConfirm 弹窗 2 + ReadheroIcon/Control wrapper×2
-	# （敌方头像 + Task 9 奖励 wrapper）/Sprite2D tag/Label fallback。
+	# （敌方头像 + Task 9 奖励 wrapper）/Sprite2D tag/Label fallback/
+	# Sprite2D rank 叠框（2026-08-22 hero 奖励照源 doWhenEnter 补）。
 	var panel_new: PackedStringArray = _collect_new_calls(panel_src)
-	assert_eq(panel_new.size(), 7, "panel .new( 恰 7 处（2 弹窗 + 5 动态图标件）")
+	assert_eq(panel_new.size(), 8, "panel .new( 恰 8 处（2 弹窗 + 6 动态图标件）")
 	var joined: String = "\n".join(panel_new)
 	assert_true(joined.contains("BattlePreparePanel.new("), "出战弹窗在白名单")
 	assert_true(joined.contains("StageResetConfirm.new("), "重置确认弹窗在白名单")

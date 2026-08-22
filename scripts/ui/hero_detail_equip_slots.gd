@@ -11,7 +11,9 @@ extends RefCounted
 ## 源 4 张 tagText 横幅素材（herodetail-equip-nowned 等）源 res 缺失 → 不画横幅（忠实源运行时表现）。
 
 const EQUIP_SLOT_COUNT: int = 6
-const EQUIP_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)
+# 源 setSpriteGray（resource_manager.lua:871-876）：setCascadeColorEnabled(true) + ccc3(100,100,100)
+# + setOpacity(180) —— 级联整棵子树（含 frame）。Godot modulate 天生级联子节点，一式等价。
+const EQUIP_GRAY_MODULATE: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 # TexDisplaySize SOP 口径（2026-08-22）：源 createSprite 对无 TextureConfig 条目纹理
 # 显示=纹理÷CS（setContentScaleFactor 615/480 下 getContentSize 返回点尺寸），equip_frame
 # 94×95 显示 73.37×74.17。ReadequipIcon 的 frame Sprite2D 系原尺寸渲染（全局口径债），
@@ -35,7 +37,7 @@ const LOCK_TOAST_TEXT: String = "该装备槽尚未解锁"
 
 
 # createEquipIcons（herodetail/window.lua:1071-1098）6 槽全显示 + createEquipIcon（:1110-1135）三态：
-# ceid>0 已穿戴（画强化星级）/ eid>0 未穿戴配方灰显（只灰 icon）/ eid==0 无配方 lock 占位。
+# ceid>0 已穿戴（画强化星级）/ eid>0 未穿戴配方强制白框整树灰 / eid==0 无配方 lock 占位。
 # createEquipTag（:995-1064）状态角标：ceid<=0 and eid>0 时按 getHeroEquipState 画 wear/cannotwear 角标。
 static func show_equips(hero: HeroInstance, cm: Variant, pd: PlayerData, base_layer: Control, on_open: Callable) -> void:
 	if hero == null:
@@ -66,7 +68,8 @@ static func show_equips(hero: HeroInstance, cm: Variant, pd: PlayerData, base_la
 # createEquipIcon 三态（herodetail/window.lua:1110-1135）：
 # ceid>0：createHeroItem 画强化星级（源 :1119 createHeroItem + :1120 getEquipLevel，本项目传 level 给 create_icon）
 # eid==0：getUnknownIcon lock 占位（源 :1122，本项目 _create_lock_icon）
-# 其他（eid>0 且 ceid==0）：createIcon + setSpriteGray（源 :1124-1125，本项目 _apply_gray_to_icon_only）
+# 其他（eid>0 且 ceid==0）：createIcon(eid,nil,1) 强制白框 + setSpriteGray 整树灰
+# （源 :1124-1125；2026-08-22 修正——旧实现"只灰子节点保彩框"系对 setSpriteGray 级联语义的误读）
 static func create_equip_slot_icon(slot: int, ceid: int, eid: int, hero: HeroInstance, cm: Variant, pd: PlayerData) -> Control:
 	if ceid > 0:
 		# 已穿戴：传 level 画强化蓝星（源 createHeroItem 第3参 nil → show_gray=false，只画蓝星不画灰星）
@@ -79,10 +82,10 @@ static func create_equip_slot_icon(slot: int, ceid: int, eid: int, hero: HeroIns
 		var lock_icon: Control = _create_lock_icon(cm)
 		lock_icon.set_meta(&"equip_slot", true)
 		return lock_icon
-	# 有配方未装：灰显 icon（源 setSpriteGray(icon) 只灰 icon，frame 保持彩色）
-	var icon: Control = ReadequipIcon.create_icon(eid, 1, cm)
+	# 有配方未装：强制白框（源 :1124 createIcon(eid,nil,1) quality 覆写表品质）+ 整树灰（源 :1125）
+	var icon: Control = ReadequipIcon.create_icon(eid, 1, cm, 0, false, 1)
 	icon.set_meta(&"equip_slot", true)
-	_apply_gray_to_icon_only(icon)
+	_apply_gray(icon)
 	return icon
 
 
@@ -115,14 +118,9 @@ static func _create_lock_icon(cm: Variant) -> Control:
 	return container
 
 
-# 灰显修正（源 window.lua:1124-1125 setSpriteGray(icon)）：只灰 icon 子节点，frame 保持彩色。
-# create_icon 的 container 下第 0 个子节点是 frame（Sprite2D），其余是 icon/amount/stars。
-# 灰化 icon 而非整体 modulate，保 frame 品质色可辨（源视觉语义）。
-static func _apply_gray_to_icon_only(container: Control) -> void:
-	for i in range(1, container.get_child_count()):
-		var child: Node = container.get_child(i)
-		if child is CanvasItem:
-			(child as CanvasItem).modulate = EQUIP_GRAY_MODULATE
+# 源 setSpriteGray 级联等价（resource_manager.lua:871-876）：整树含 frame 一并灰化暗化。
+static func _apply_gray(container: Control) -> void:
+	container.modulate = EQUIP_GRAY_MODULATE
 
 
 # 状态角标（源 herodetail/window.lua:1051-1061 createEquipTag tagIcon）：

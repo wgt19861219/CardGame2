@@ -18,11 +18,12 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/mail_overfull_popup_
 # 测试用：frame 贴图路径（_has_tex 递归扫 TextureRect.resource_path 比对）。
 const FRAME_TEX: String = "res://assets/ui/alpha/HVGA/common/common_alert_bg.png"
 # 溢出物品 icon 缩放（源 overfull.lua:79 createIconWithAmount(id, 60, amount) → 显示 60 点）：
-# ReadequipIcon 的 frame Sprite2D 按纹理原尺寸渲染（equip_frame 94×95px，hero_detail 装备槽
-# 同口径），故 scale 基准取纹理像素宽 94 而非 container 72（task-11 修，mail_detail 同款）。
+# 9bc640e 起 create_icon 内部 _load_sprite 统一 ÷CS（frame 显示 94/CS），分母 = 94/CS
+# （旧 60/94 系原像素口径，统一后双重 ÷CS 实显 46.8，2026-08-22 修，mail_detail 同款）。
 const FRAME_TEX_W: float = 94.0
 const FRAME_TEX_H: float = 95.0
-const ICON_SCALE: float = 60.0 / FRAME_TEX_W
+const CS: float = 1.28125
+const ICON_SCALE: float = 60.0 / (FRAME_TEX_W / CS)
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
 const LSTR_TITLE_KEY: String = "mailoverfull.1.10.1.003"
 const TITLE_FALLBACK: String = "超额提醒"
@@ -88,9 +89,9 @@ func _fill_overfull_grid(content: Control) -> void:
 		var icon: Control = ReadequipIcon.create_icon(item_id, amount, _cm)
 		icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
 		# GridContainer 的 fit_child_in_rect 会重置直接 child 的 scale（task-11 实测）→
-		# 包 wrapper：外层 min size=视觉盒（60×60.64，sep 8 不再叠格），内层 icon 保 scale
+		# 包 wrapper：外层 min size=视觉盒（60×60.64，基数=产物显示 94/CS，2026-08-22 双重÷CS修），内层 icon 保 scale
 		var wrapper := Control.new()
-		wrapper.custom_minimum_size = Vector2(FRAME_TEX_W, FRAME_TEX_H) * ICON_SCALE
+		wrapper.custom_minimum_size = Vector2(FRAME_TEX_W, FRAME_TEX_H) / CS * ICON_SCALE
 		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrapper.add_child(icon)
 		grid.add_child(wrapper)

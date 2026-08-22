@@ -77,11 +77,12 @@ const BOX_END_SCALE: float = 0.5
 const BOX_ANIM_SEC: float = 0.3
 const BOX_DRIFT_Y_ONE: float = 110.0
 const BOX_DRIFT_Y_TEN: float = 120.0
-# ReadequipIcon frame 按纹理原尺寸渲染（94×95px，AGENTS 反模式#1）。源 icon 布点是中心锚
-# （Cocos sprite 默认 0.5,0.5，readequip.lua:758 length 语义）+ 源显示尺寸 = 纹理÷CS ≈ 73×74 点。
-# 宿主补偿：终态 scale=÷CS、position = 中心点 - 渲染半尺寸（左上角语义）。
+# 源 icon 布点是中心锚（Cocos sprite 默认 0.5,0.5，readequip.lua:758 length 语义）+ 源显示
+# 尺寸 = 纹理÷CS ≈ 73×74 点。9bc640e 起 create_icon 内部 _load_sprite 统一 ÷CS（frame 已显示
+# 73.4），终态 scale=ONE 不再宿主补偿（旧 1/CS 系原像素口径，统一后双重 ÷CS 实显 57.3，
+# 2026-08-22 修）；position = 中心点 - 显示半尺寸（左上角语义）。
 const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
-const ICON_END_SCALE: Vector2 = Vector2(1.0 / CONTENT_SCALE, 1.0 / CONTENT_SCALE)
+const ICON_END_SCALE: Vector2 = Vector2.ONE
 const SHADOW_RES: String = "res://assets/ui/alpha/HVGA/tavern_get_item_bg_light_white.png"
 const SHADOW_POS: Vector2 = Vector2(35.0, 35.0)
 const SHADOW_FADE_SEC: float = 0.4
@@ -181,9 +182,9 @@ func _loot_spawn() -> Vector2:
 
 
 # 源 icon 布点是中心锚；ReadequipIcon Control position 是左上角——中心点换算左上原点
-# （frame 94×95 原尺寸渲染 × 终态 ÷CS scale = 73.4×74.2 ≈ 源 72×72 点框）。
+# （frame 显示 = 94×95÷CS = 73.4×74.2 ≈ 源点框，create_icon 内部已统一 ÷CS）。
 func _icon_origin(center: Vector2) -> Vector2:
-	return center - FRAME_TEX_SIZE * ICON_END_SCALE.x * 0.5
+	return center - FRAME_TEX_SIZE / CONTENT_SCALE * 0.5
 
 
 # + 同英雄（isHero）amount 降序（把 amount 大的同英雄 loot 提前）。

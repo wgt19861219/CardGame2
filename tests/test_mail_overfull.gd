@@ -194,5 +194,5 @@ func test_overfull_grid_icon_scale_and_minsize() -> void:
 	assert_almost_eq(wrapper0.custom_minimum_size.x, 60.0, 0.01, "wrapper min 宽=视觉宽（格子贴合）")
 	assert_almost_eq(wrapper0.custom_minimum_size.y, 95.0 * 60.0 / 94.0, 0.01, "wrapper min 高=视觉高 60.64")
 	var icon0: Control = wrapper0.get_child(0)
-	assert_almost_eq(icon0.scale.x, 60.0 / 94.0, 0.0001, "icon scale=60/94（视觉宽 60，内层不被容器重置）")
+	assert_almost_eq(icon0.scale.x, 60.0 / (94.0 / 1.28125), 0.0001, "icon scale=60/(94/CS)（视觉宽 60，内层不被容器重置；2026-08-22 双重÷CS修）")
 	popup.free()

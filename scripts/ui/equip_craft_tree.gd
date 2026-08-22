@@ -46,9 +46,11 @@ const BOARD_ICON_POS: Vector2 = Vector2(5.0, 5.0)
 # 按钮纹理（源 :1008/:1018 package_button 双层 Sprite + Label）
 const CRAFT_BTN_RES: String = "res://assets/ui/alpha/HVGA/package_button.png"
 const CRAFT_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/package_button_down.png"
-# 图标缩放（源 createIcon(id, size) → ReadequipIcon 72px 基底 × scale）
-const ROOT_ICON_SCALE: float = 60.0 / 72.0
-const CHILD_ICON_SCALE: float = 45.0 / 72.0
+# 图标缩放（源 createIcon(id, size) length 语义：源产物逻辑宽 94/CS=73.37 × scale = size）。
+# 9bc640e 起 create_icon 内部 _load_sprite 统一 ÷CS（产物显示 73.37），分母用 94/CS
+# （旧 /72 系 container 口径，统一后 root/child 实显 61.2/45.9 偏大 2%，2026-08-22 顺修）。
+const ROOT_ICON_SCALE: float = 60.0 / (94.0 / CONTENT_SCALE)
+const CHILD_ICON_SCALE: float = 45.0 / (94.0 / CONTENT_SCALE)
 const ROOT_ICON_NO_RECIPE_SCALE: float = 0.6
 # ── 颜色（源 ccc3；静态色走 default_theme variation，动态切换色 fill modulate）──
 const COLOR_RED: Color = Color(1.0, 0.0, 0.0)

@@ -8,13 +8,14 @@ extends RefCounted
 
 # 源 board.lua:320 icon@frame(50,328)；本项目 IconHost 相对 EquipLayer 左上（equipboard 范式实测）
 const ICON_POS: Vector2 = Vector2(14.0, 21.0)
-# 源 equipcraft.lua:1031 readequip.createIcon(id, 60)（72px 基底 × 60/72）
-const ROOT_ICON_SCALE: float = 60.0 / 72.0
+# 源 equipcraft.lua:1031 readequip.createIcon(id, 60)（length 语义：产物显示 94/CS=73.37 × scale=60；
+# 9bc640e 统一 ÷CS 后分母改 94/CS，2026-08-22 修双重缩小，equip_craft_tree 同款）
+const ROOT_ICON_SCALE: float = 60.0 / (94.0 / 1.28125)
 # 源 board.lua:60 拥有量 "EQUIPINFO.HAVE %d EQUIPINFO.ITEM"
 const LSTR_HAVE: String = "EQUIPINFO.HAVE"
 const LSTR_ITEM: String = "EQUIPINFO.ITEM"
 # 历史栏（源 equipcraft.lua:843-872：ori=(55,350) + arrow 分隔；icon 40px）
-const HISTORY_ICON_SCALE: float = 40.0 / 72.0
+const HISTORY_ICON_SCALE: float = 40.0 / (94.0 / 1.28125)
 const HISTORY_ARROW_PATH: String = "res://assets/ui/alpha/HVGA/view_history_arrow.png"
 # history layer 挂 %HistoryClip（源 draglist cliprect 原点 bg 局部 (12,300)），origin 相对 clip
 # = 源 (55-12, 380-350) = (43, 30)（Godot 顶起 y 向下）。

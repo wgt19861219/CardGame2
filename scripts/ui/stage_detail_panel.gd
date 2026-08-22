@@ -410,27 +410,62 @@ func _add_boss_tag(icon: ReadheroIcon) -> void:
 
 # 奖励：照源 createReward:1193-1211，createIcon(id) 无 length → frame 原样 px/CS
 # （73.37×74.14，源 anchor(0.5,0) 底对齐 pos(205+80(i-1),50)，步进 80）。
-# ReadequipIcon frame Sprite2D 按纹理原像素渲染（94×95px）→ scale=1/CS 补偿（批2 口径，
-# daily 同值）。Task 9 修复：HBox 一帧后重置直接子项 scale（实测 0.7→1.0，图标
+# 显示尺寸由 ReadequipIcon._load_sprite 内部 ÷CS（9bc640e 统一口径）。
+# Task 9 修复：HBox 一帧后重置直接子项 scale（实测 0.7→1.0，图标
 # 渲染底 557 压 Frame2 底 553）→ wrapper 承载 HBox 排布（72 槽+8 sep=80 步进照源），
 # 内层 icon 在 wrapper（非容器）内保 scale 且底对齐 wrapper 底（源底锚语义）。
 const REWARD_FRAME_PX: Vector2 = Vector2(94.0, 95.0)
 const REWARD_SLOT: float = 72.0  # = ReadequipIcon.ICON_SIZE（HBox 步进 72+8=80 照源）
+# hero 奖励观感三件（源 stagedetail.lua:1199-1200 紫框 createIcon(id,nil,4) +
+# doWhenEnter :1911-1918 整体 setScale(0.9) + 叠 getIconFrameByRank 框于局部 (41,40)）。
+# rank→hero_icon_frame_N 复用 ReadheroIcon._frame_id_by_rank（RANK_FRAME_IDS 照源
+# player.lua frames 表；Unit 表 Initial Rank 全表=1 → 实际恒 frame_1）。
+const HERO_REWARD_QUALITY: int = 4
+const HERO_REWARD_SCALE: float = 0.9
+const HERO_RANK_FRAME_CENTER_UP: Vector2 = Vector2(41.0, 40.0)
+const HERO_RANK_FRAME_DIR: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_"
 
 func create_reward(parent: Node, drops: Array, cm: Variant) -> void:
 	for d in drops:
 		var item_id: int = int(d.get("item_id", 0))
 		if item_id == 0:
 			continue
-		var icon: Control = ReadequipIcon.create_icon(item_id, 1, cm)
-		var vis_size: Vector2 = REWARD_FRAME_PX * INV_CS
 		var wrapper := Control.new()
 		wrapper.custom_minimum_size = Vector2(REWARD_SLOT, REWARD_SLOT)
 		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.scale = Vector2(INV_CS, INV_CS)
-		icon.position = Vector2((REWARD_SLOT - vis_size.x) * 0.5, REWARD_SLOT - vis_size.y)
+		var vis_size: Vector2 = REWARD_FRAME_PX * INV_CS
+		var icon: Control
+		var scale_factor: float = 1.0
+		if ReadequipIcon.is_hero_id(item_id, cm):
+			# 源 :1199-1200 hero 奖励强制紫框（quality=4 覆写 hero 默认白）；
+			# :1911-1918 整体 0.9 + 叠 rank 框（底锚语义：底贴 wrapper 底、绕底收缩）。
+			icon = ReadequipIcon.create_icon(item_id, 1, cm, 0, false, HERO_REWARD_QUALITY)
+			scale_factor = HERO_REWARD_SCALE
+			_add_hero_rank_frame(icon, item_id, cm)
+		else:
+			icon = ReadequipIcon.create_icon(item_id, 1, cm)
+		# 显示尺寸已由 create_icon 内部 _load_sprite 统一 ÷CS（9bc640e）；外层不再补偿——
+		# 4de6c27 的外层 INV_CS 在统一后成双重 ÷CS（图标实显 57.9 而非 73.4），2026-08-22 摘除。
+		icon.scale = Vector2(scale_factor, scale_factor)
+		icon.position = Vector2((REWARD_SLOT - vis_size.x * scale_factor) * 0.5, REWARD_SLOT - vis_size.y * scale_factor)
 		wrapper.add_child(icon)
 		parent.add_child(wrapper)
+
+
+# hero 奖励叠 rank 框（源 doWhenEnter :1911-1918：Hero.getIconFrameByRank(Initial Rank)
+# 叠加于 reward icon 局部 (41,40)，anchor(0.5,0.5) cocos y 上 → Godot centered + y 翻）。
+# add_child 排最后 → 渲染在紫框/内容之上（源同序）。
+func _add_hero_rank_frame(icon: Control, item_id: int, cm: Variant) -> void:
+	var rank: int = int(cm.get_raw_table("Unit").get(str(item_id), {}).get("Initial Rank", 1))
+	var path: String = HERO_RANK_FRAME_DIR + str(ReadheroIcon._frame_id_by_rank(rank)) + ".png"
+	if not ResourceLoader.exists(path):
+		return
+	var frame := Sprite2D.new()
+	frame.texture = load(path) as Texture2D
+	frame.scale = Vector2(INV_CS, INV_CS)
+	frame.centered = true
+	frame.position = Vector2(HERO_RANK_FRAME_CENTER_UP.x, REWARD_FRAME_PX.y * INV_CS - HERO_RANK_FRAME_CENTER_UP.y)
+	icon.add_child(frame)
 
 
 # 星级：照源 createStars:1212-1261，星星已静态化进 .tscn（%StarHBox 下 Star1/2/3）。

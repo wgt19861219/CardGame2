@@ -31,11 +31,11 @@ const GOLD_ICON: String = "res://assets/ui/alpha/HVGA/goldicon_small.png"
 const ITEM_ICON_COLS: int = 4
 const ITEM_ICON_SIZE: float = 65.0
 # 物品附件 icon 缩放（源 content.lua:141 createIconWithAmount(id, 60, amount) → 显示 60 点）：
-# ReadequipIcon 的 frame Sprite2D 按纹理原尺寸渲染（equip_frame 94×95px，hero_detail 装备槽
-# 同口径），故 scale 基准取纹理像素宽 94 而非 container 72 → 视觉 60×60.64（task-11 修）。
+# 9bc640e 起 create_icon 内部 _load_sprite 统一 ÷CS（frame 显示 94/CS），分母 = 94/CS
+# （旧 60/94 系原像素口径，统一后双重 ÷CS 实显 46.8，2026-08-22 修，mail_overfull 同款）。
 const FRAME_TEX_W: float = 94.0
 const FRAME_TEX_H: float = 95.0
-const ICON_SCALE: float = 60.0 / FRAME_TEX_W
+const ICON_SCALE: float = 60.0 / (FRAME_TEX_W / CS)
 # P1（2026-07-16）：UI 文案 cm.get_lstr 化（源 LSTR key，GameData.config 解析，fallback 中文兜底）。
 const LSTR_ATTACH_KEY: String = "MAILBOX.ATTACHMENTS_"
 const ATTACH_FALLBACK: String = "附件"
@@ -145,7 +145,7 @@ func _add_currency_row(y: float, icon_path: String, amount: int) -> void:
 
 
 func _add_item_attach(y: float, items: Array) -> float:
-	var vis_h: float = FRAME_TEX_H * ICON_SCALE   # icon 视觉高（95×60/94 = 60.64）
+	var vis_h: float = FRAME_TEX_H / CS * ICON_SCALE   # icon 视觉高（95/CS 显示 ×scale = 60.64）
 	for i in range(items.size()):
 		var item: Dictionary = items[i]
 		var item_id: int = int(item.get("id", 0))
