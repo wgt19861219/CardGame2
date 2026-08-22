@@ -337,6 +337,57 @@ func test_card_frame_display_size_within_screen() -> void:
 	host.free()
 
 
+# card tab 内容回源守卫（2026-08-22）：止态定位链 = card.lua:150 container(-200,0)（window.lua:513
+# pop endPos）+ ui.container 中心 ccp(400,240)（card.lua:135）→ 卡片 container 中心全局 cocos (200,240)，
+# 左下角 (79,30)。子节点照源局部直译：frame 覆盖 (0,0)-(245.9,425.4)；name anchor(0,0.5)@(55,72)；
+# line anchor(1,0.5)@(242,60)；star 中心 (25+14i,27)；close 全局 (320,430)。
+# 源实机图 screenshots/ui_align/final_axmol_herodetail_800x480.png 实测卡框 (79,24.6)~(324.9,450)。
+func test_card_tab_content_source_layout() -> void:
+	var view: Control = load("res://scenes/ui/hero_detail_card_tab.tscn").instantiate() as Control
+	view.offset_left = -200.0   # 实例止态（hero_detail_content.tscn 同款）
+	view.offset_right = -200.0
+	var host := Control.new()
+	host.offset_right = 800.0
+	host.offset_bottom = 480.0
+	host.add_child(view)
+	add_child(host)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 1
+	HeroDetailTabs.fill_card_view(view, hero, cm)
+	await get_tree().process_frame
+	# CardFrame：全局 (79,24.63)~(524.90,450)（container 左下 (79,30) + frame 覆盖 (0,0)-(245.9,425.4)）。
+	var frame: Control = view.get_node("%CardFrame") as Control
+	var rect: Rect2 = frame.get_global_rect()
+	assert_almost_eq(rect.position.x, 79.0, 0.1, "CardFrame 左缘 = container 左下角 x 79")
+	assert_almost_eq(rect.position.y, 24.63, 0.1, "CardFrame 顶 = 450-425.37")
+	assert_almost_eq(rect.end.x, 324.9, 0.1, "CardFrame 右缘 79+245.90")
+	assert_almost_eq(rect.end.y, 450.0, 0.1, "CardFrame 底 = container 底 480-30")
+	# CardNameBgLine：右缘 = container 右缘全局 79+242 = 321（源 anchor(1,0.5)@ccp(242,60)）。
+	var line: Control = view.get_node("%CardNameBgLine") as Control
+	var line_rect: Rect2 = line.get_global_rect()
+	assert_almost_eq(line_rect.end.x, 321.0, 0.1, "名字条右缘 = container 右缘 321")
+	assert_almost_eq((line_rect.position.y + line_rect.end.y) * 0.5, 390.0, 0.15, "名字条中心 y=450-60")
+	# CardNameLabel：左缘 = 79+55 = 134（源 anchor(0,0.5)@ccp(55,72)）。
+	var name_lbl: Control = view.get_node("%CardNameLabel") as Control
+	assert_almost_eq(name_lbl.get_global_rect().position.x, 134.0, 0.1, "卡名左缘 = 79+55")
+	# CardCloseBtn：中心 (320,50)（源 close (520,430) 挂 card.container(-200,0) → 全局 (320,430)）。
+	var close_btn: Control = view.get_node("%CardCloseBtn") as Control
+	var close_rect: Rect2 = close_btn.get_global_rect()
+	assert_almost_eq((close_rect.position.x + close_rect.end.x) * 0.5, 320.0, 0.1, "关闭按钮中心 x=320")
+	# star1 中心：CONTAINER_ORIGIN(279,450)+(25,-27) → 全局 (104,423)（源 ccp(25,27) container 局部）。
+	var star1: CanvasItem = null
+	for c in view.get_children():
+		if c is TextureRect and (c as TextureRect).texture != null \
+				and (c as TextureRect).texture.resource_path.contains("card_star_big"):
+			star1 = c as CanvasItem
+			break
+	if hero.stars >= 1 and star1 != null:
+		var star_rect: Rect2 = star1.get_global_rect()
+		assert_almost_eq((star_rect.position.x + star_rect.end.x) * 0.5, 104.0, 0.1, "星1 中心 x=79+25")
+		assert_almost_eq((star_rect.position.y + star_rect.end.y) * 0.5, 423.0, 0.1, "星1 中心 y=450-27")
+	host.free()
+
+
 # 切 detail tab → detail view visible + skill view hidden + 属性 label 显示（源 doClickDetail → setOpenMode("att")）。
 # Phase B：tab 内容常驻（不 free），切 tab 只切 visible，故查 visible + 各 view 子树内容。
 func test_switch_to_detail() -> void:

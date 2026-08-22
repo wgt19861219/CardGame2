@@ -469,10 +469,12 @@ vertical_alignment = 1
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 173.0
-offset_top = 446.0
-offset_right = 293.0
-offset_bottom = 495.0
+; 源 window.lua:1402 createBottomButtons detail @bg 局部 ccp(75,42) scaleSize(120,49)（挂 ui.bg，
+; bg 左下 (198.05,17.45)）→ 中心 Godot (273.05,420.55)。旧值 y 446~495 系 1.28 时代遗留（底缘超屏 15px）。
+offset_left = 213.05
+offset_top = 396.05
+offset_right = 333.05
+offset_bottom = 445.05
 
 [node name="TabDetailLabel" type="Label" parent="BaseLayer/TabDetailBtn" unique_id=643380601]
 unique_name_in_owner = true
@@ -491,10 +493,11 @@ vertical_alignment = 1
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 334.0
-offset_top = 445.0
-offset_right = 454.0
-offset_bottom = 494.0
+; 源 window.lua:1485-1489 card @bg 局部 ccp(200,42) scaleSize(120,49) → 中心 Godot (398.05,420.55)。
+offset_left = 338.05
+offset_top = 396.05
+offset_right = 458.05
+offset_bottom = 445.05
 
 [node name="TabCardLabel" type="Label" parent="BaseLayer/TabCardBtn" unique_id=1105052159]
 unique_name_in_owner = true
@@ -513,10 +516,12 @@ vertical_alignment = 1
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 508.0
-offset_top = 449.0
-offset_right = 628.0
-offset_bottom = 498.0
+; 源 window.lua:1562-1567 skill @bg 局部 ccp(326,42) scaleSize(120,49) → 中心 Godot (524.05,420.55)。
+; 旧值底缘 498 超屏 18px（视觉"按钮行贴/溢面板底缘"根因）。
+offset_left = 464.05
+offset_top = 396.05
+offset_right = 584.05
+offset_bottom = 445.05
 
 [node name="TabSkillLabel" type="Label" parent="BaseLayer/TabSkillBtn" unique_id=1554135452]
 unique_name_in_owner = true
@@ -535,6 +540,8 @@ vertical_alignment = 1
 unique_name_in_owner = true
 z_index = 2
 layout_mode = 0
+; 固定屏幕右上不随 BaseLayer doMove 平移（前轮显性行为决策，panel.gd:33 注释；源 window.lua:1975
+; close 挂 ui.bg 随 container 动——若回源随 base 属行为变更，需用户确认，本轮不动）。
 offset_left = 749.0
 offset_top = 22.0
 offset_right = 800.0
@@ -582,7 +589,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-; 止态 -200 = 源 pop endPos（window.lua:513）；card 子节点已 +125 平移保现状视觉（card tab 回源另立任务）。
+; 止态 -200 = 源 pop endPos（window.lua:513）；子节点 = getHeroCard container 局部坐标直译（2026-08-22 内容回源）。
 offset_left = -200.0
 offset_right = -200.0
 grow_horizontal = 2

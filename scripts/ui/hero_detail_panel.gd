@@ -30,7 +30,7 @@ const TAB_DETAIL: String = "detail"
 const TAB_CARD: String = "card"
 const TAB_SKILL: String = "skill"
 const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 card 图鉴（setOpenMode(nil)=doMoveBack 无 tab，用户要进显图鉴）
-const BASE_SLIDE_OFFSET: float = 140.0   # doMove 140（window.lua:300 container 右移）源值直译。旧 178 系 bg 纹理直用时代 140×1.28 的 CS 遗漏补偿——2026-08-22 Bg ÷CS 修正后回归；card 态 bg left=338.5 与 card 框右缘 328 留 gap 10.5（源同）。CloseBtn 移出 base 固定屏幕右上（不随 base）
+const BASE_SLIDE_OFFSET: float = 140.0   # doMove 140（window.lua:300 container 右移）源值直译。旧 178 系 bg 纹理直用时代 140×1.28 的 CS 遗漏补偿——2026-08-22 Bg ÷CS 修正后回归；card 态 bg left=338.5 与 card 框右缘 324.9（2026-08-22 内容回源实测）留 gap 13.6（源同）。CloseBtn 移出 base 固定屏幕右上（不随 base）
 # doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
 const TAB_POP_OFFSET_X: float = -200.0
 # 进阶交互 LSTR（Toast 文案，常量在 HeroDetailUpgradeFx）
