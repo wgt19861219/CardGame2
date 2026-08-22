@@ -33,8 +33,10 @@ const ENEMY_LEN_BOSS: float = 80.0
 const ENEMY_BOSS_OX: float = 5.0  # 源 :1169 boss 额外偏移
 # boss 标签源 ccp(52,20)（icon 104×104 局部左下原点）→ Godot 左上 y = 104-20-42.93。
 const BOSS_TAG_POS: Vector2 = Vector2(52.0, 41.07)
-# TitleBg 细条 Scale9 中心直译（源 titlepos ccp(400,355) → godot(480,205)），size 随 stage_type。
-const TITLE_BG_CENTER: Vector2 = Vector2(480.0, 205.0)
+# TitleBg 细条 Scale9 中心直译（源 titlepos ccp(400,355) → godot(400,125)=480-355），size 随 stage_type。
+# 2026-08-22 巡检订正：旧 (480,205) 系 960×640 口径残留（viewport 迁移漏网），运行时 fill 覆盖
+# 了 tscn 本正确的 (148,119)-(652,131) 固化位，致细条横穿 Detail 文本区。
+const TITLE_BG_CENTER: Vector2 = Vector2(400.0, 125.0)
 
 var stage_id: int = 0
 var mgr: StageManager = null

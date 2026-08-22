@@ -29,9 +29,10 @@ var _content: Control = null
 var _sound_btn: TextureButton = null
 var _sound_on: bool = true
 var _on_dismiss: Callable = Callable()
+var _on_exit: Callable = Callable()
 
 
-func setup(ui_layer: Node, sound_on: bool, on_dismiss: Callable = Callable()) -> void:
+func setup(ui_layer: Node, sound_on: bool, on_dismiss: Callable = Callable(), on_exit: Callable = Callable()) -> void:
 	color = BG_COLOR
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截下层点击（源 pauseLayer 触摸吞）
 	position = Vector2.ZERO
@@ -39,6 +40,7 @@ func setup(ui_layer: Node, sound_on: bool, on_dismiss: Callable = Callable()) ->
 	ui_layer.add_child(self)
 	_sound_on = sound_on
 	_on_dismiss = on_dismiss
+	_on_exit = on_exit
 	_build_content()
 	_wire_signals()
 	_play_enter_tween()
@@ -58,10 +60,15 @@ func _build_content() -> void:
 
 
 # 信号接线（自 battle_scene:395-396 下沉，三审 MAJOR-R1：battle_scene 代码行 399/400 净 ≤ +1）。
-# sound_toggled 直连 AudioPlayer.toggle_sound；exit/resume 回调经 setup 参数注入。
+# sound_toggled 直连 AudioPlayer.toggle_sound；resume→dismiss 回调、exit→exit 回调经 setup
+# 注入（2026-08-22 巡检：exit 旧接 dismiss 只清层解锁战斗继续=玩家无法中途放弃；源
+# battle_scene.lua:230-245 exit 按钮 = 放弃战斗 popScene。on_exit 缺省回落 dismiss 兼容）。
 func _wire_signals() -> void:
-	if _on_dismiss.is_valid():
+	if _on_exit.is_valid():
+		exit_requested.connect(_on_exit)
+	elif _on_dismiss.is_valid():
 		exit_requested.connect(_on_dismiss)
+	if _on_dismiss.is_valid():
 		resume_requested.connect(_on_dismiss)
 	sound_toggled.connect(_on_sound_toggled)
 

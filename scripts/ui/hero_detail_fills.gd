@@ -129,12 +129,15 @@ static func _name_frame_no(rank: int) -> int:
 
 
 static func _type_icon_res(attrib: String) -> String:
+	# Unit 表 "Main Attrib" 实际值是三短键 STR/AGI/INT（Unit.json 亲证；源 herodetail/
+	# param.lua:17-21 type_icon 键同三短键）。2026-08-22 巡检订正：旧 match 用
+	# HERO_EQUIP.* 长键永不命中 → %TypeIcon 永不填图（白板）。
 	match attrib:
-		"HERO_EQUIP.STRENGTH":
+		"STR":
 			return "res://assets/ui/alpha/HVGA/icon_str.png"
-		"HERO_EQUIP.AGILITY":
+		"AGI":
 			return "res://assets/ui/alpha/HVGA/icon_agi.png"
-		"HERO_EQUIP.INTELLIGENCE":
+		"INT":
 			return "res://assets/ui/alpha/HVGA/icon_int.png"
 	return ""
 

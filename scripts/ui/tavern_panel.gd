@@ -344,13 +344,21 @@ func _add_magic_icon(scroll: Control, tid: int, cx: float, cy: float) -> void:
 
 
 func _make_hero_preview_icon(tid: int) -> Control:
-	var unit: Variant = _cm.get_raw_table(&"Unit").get(str(tid), {})
-	var hero_name: String = str(unit.get("Name", str(tid))) if unit is Dictionary else str(tid)
-	var lbl := Label.new()
-	lbl.text = hero_name
-	lbl.custom_minimum_size = Vector2(60, 40)
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return lbl
+	# 源 tavern.lua:1307/1318/1332/1344 readhero.createIcon({id=id, length=38}).icon：
+	# 头像图标（品质框，info 无 rank → 源默认 1；length=38 → container 104 缩 38/104）。
+	# 2026-08-22 巡检订正：旧 Label 文本降级（位置/布局照源唯独内容是文字）。包 38×38
+	# Control wrapper 参与容器布局，ReadheroIcon 挂内部 scale 居中。
+	var wrap := Control.new()
+	wrap.custom_minimum_size = Vector2(38.0, 38.0)
+	wrap.size = Vector2(38.0, 38.0)
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon := ReadheroIcon.new()
+	icon.setup({"id": tid, "rank": 1}, _cm)
+	var s: float = 38.0 / ReadheroIcon.CONTAINER_SIZE.x
+	icon.scale = Vector2(s, s)
+	icon.position = -ReadheroIcon.CONTAINER_SIZE * s * 0.5
+	wrap.add_child(icon)
+	return wrap
 
 
 func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten: bool) -> void:

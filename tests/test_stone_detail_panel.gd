@@ -377,7 +377,7 @@ func test_getway_row_layout_follows_source() -> void:
 	assert_not_null(icon.texture, "stage 图标已 fill")
 	assert_almost_eq(icon.position.y + icon.size.y * 0.5, 52.3 - 25.0 / 1.28125, 0.5,
 		"icon 中心 y = 行高 - 25/CS")
-	assert_almost_eq(icon.size.y, 75.0 / 1.28125, 0.5, "icon 高 = 源 fix_height 75/CS")
+	assert_almost_eq(icon.size.y, 75.0, 0.5, "icon 高 = 源 fix_height 75 逻辑点（readnode ss=fix_h/逻辑高，2026-08-22 巡检订正旧 75/CS）")
 	panel.remove_window()
 	root.queue_free()
 

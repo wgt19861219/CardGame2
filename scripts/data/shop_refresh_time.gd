@@ -6,6 +6,7 @@ extends RefCounted
 ## 单机化：源 ed.getServerTime() → 调用方传 now_ts（Time.get_unix_time_from_system()，可注入测）。
 
 const SECS_PER_DAY: int = 86400
+const SECS_PER_MIN: int = 60
 const SHOP_TABLE: StringName = &"Shop"
 const HMS_SEC_IDX: int = 2   # "H:M:S" split 后 sec 索引（hour/min 索引 0/1 在 lint 白名单）
 
@@ -31,15 +32,18 @@ static func parse_hms(hms: String) -> Dictionary:
 	}
 
 
-## 今天 hms 时刻的 unix ts（源 ed.getTimeByTodayHMS）。utc=false 取本地日期。
+## 今天 hms 时刻的 unix ts（源 time.lua:47 getTimeByTodayHMS = 本地今天零点 + H*M*S）。
+## Godot 两 Time API 均 UTC 语义（headless 实测：ts=0 拆 hour=0 / epoch0 组回 ts=0），
+## 本地日期须 +bias 拆解、组回后 -bias 还原（与 daily_login_manager/_local_date 同口径）。
 static func today_ts(hms: String, now_ts: int) -> int:
-	var nd: Dictionary = Time.get_datetime_dict_from_unix_time(now_ts)   # 返本地时间 dict
+	var off_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	var nd: Dictionary = Time.get_datetime_dict_from_unix_time(now_ts + off_min * SECS_PER_MIN)
 	var parts: Dictionary = parse_hms(hms)
 	var d: Dictionary = {
 		"year": int(nd["year"]), "month": int(nd["month"]), "day": int(nd["day"]),
 		"hour": int(parts["hour"]), "minute": int(parts["min"]), "second": int(parts["sec"]),
 	}
-	return int(Time.get_unix_time_from_datetime_dict(d))
+	return int(Time.get_unix_time_from_datetime_dict(d)) - off_min * SECS_PER_MIN
 
 
 ## 下一个自动刷新点（源 getShopNextAutoRefreshPoint:148-177）。

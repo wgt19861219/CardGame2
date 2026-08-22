@@ -4,7 +4,8 @@ extends PopWindow
 ## 排行榜摘要弹窗（View 层）— 照源 ranklist/userpvpsummary.lua create :18-207。
 ## main_vit_tips frame 345×305 + 头像 + name/level + 上轮排名 + 总战力。
 ## NPC 假数据简化：源 win_cnt/heroes(5 英雄图标)/guild 目标 NPC 无数据，跳过（下轮 NPC 假数据扩展）。
-## 坐标源 ccp(400,240) → 目标 _to_godot(480,320) → frame 左上。
+## 坐标源 ccp(400,240) → Godot 中心 (400,240)（=480-240，viewport 迁移后 (x,480-y) 直译；
+## 2026-08-22 巡检勘误：旧注释"(480,320)"系 960×640 口径残留）→ frame 左上。
 ##
 ## 重构（2026-07-18，hero_detail 范式）：frame + 5 Label 静态化进
 ## scenes/ui/ranklist_summary_content.tscn（位置/size 编辑器可视化调）；avatar 动态（按 avatar id

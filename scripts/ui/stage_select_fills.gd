@@ -242,8 +242,11 @@ static func _current_sid(info: Dictionary, mode: String) -> int:
 ## create/mode 调，:325/:1618）。z 序：titleBg z=21 压 modeContainer z=20（源 :941），
 ## ModeLayer 声明在 FrameLayer 后 → z_index 200 absolute 提到 mode 之上。
 static func create_frame(container: Control, mode: String) -> void:
-	var frame_y: float = 355.0 if mode == "normal" else 353.0
-	var frame: CanvasItem = _make_centered_at(container, _frame_res(mode), Vector2(480.0, frame_y))
+	# 源 stageselect.lua:967-969 frame ccp(400,207)/normal ccp(400,205) → godot (400,275/273)。
+	# 2026-08-22 巡检订正：旧 (480,355/353) 是 960×640 旧口径残留（viewport 迁移漏网——本页
+	# 不在 6 页对照内），frame 显示 730.34×395.61 右溢屏 45px/下溢屏 73px。
+	var frame_y: float = 275.0 if mode == "normal" else 273.0
+	var frame: CanvasItem = _make_centered_at(container, _frame_res(mode), Vector2(400.0, frame_y))
 	if frame != null:
 		frame.set_meta(META_FRAME, true)
 	var title_bg: CanvasItem = _make_centered_at(container, _title_bg_res(mode), TITLE_CENTER)

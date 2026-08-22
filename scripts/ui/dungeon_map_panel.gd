@@ -48,7 +48,9 @@ const DUNGEON_DIFF_OFFSET: int = 1000
 const STAGE_IMG_COUNT: int = 15
 # 源 :609-612 box setScale(0.8)；:212 换 open 图只 setTexture 不改 rect（尺寸恒 closed 口径）。
 const BOX_SCALE: float = 0.8
-const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
+# 源 setSpriteGray（resource_manager.lua:871-877）= ccc3(100,100,100)+opacity 180
+# （2026-08-22 巡检订正：旧 (0.4,0.4,0.4) 色值偏且缺 alpha）。
+const GRAY_MODULATE := Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 
 var player: PlayerData = null
 var stage_manager: StageManager = null
@@ -58,7 +60,6 @@ var group_ids: Array[int] = []
 var bosses: Array = []                  # boss 数据（base_id/name/difficulties/section_idx）
 var group_counts: Dictionary = {}
 var group_offsets: Dictionary = {}
-var opened_chests: Dictionary = {}
 var boss_buttons: Array[TextureButton] = []
 var box_rects_by_idx: Dictionary = {}
 var fog_rects: Array[TextureRect] = []
@@ -148,7 +149,9 @@ func _fill_section_boxes(sub: Control, section: int) -> void:
 		box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		box.position = _sub_local_top_left(boxp, box_sz)
 		box.size = box_sz
-		box.gui_input.connect(Callable(self, "_on_box_gui_input").bind(boss_idx))
+		# 源 dungeon_map.lua:211-213 宝箱无点击事件（通关自动换图）——手动开箱系迁移
+		# 发明已删（2026-08-22 巡检照源订正，重复发奖一并取消：实际奖励走结算 exit_dungeon）。
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		sub.add_child(box)
 		box_rects_by_idx[boss_idx] = box
 
@@ -214,13 +217,14 @@ func _refresh_boss_states() -> void:
 	for i in range(1, bosses.size() + 1):
 		var boss: Dictionary = bosses[i - 1]
 		var base_id: int = int(boss["base_id"])
-		var unlocked: bool = ExerciseManager.is_boss_unlocked(bosses, stage_manager.progress, i)
-		boss_buttons[i - 1].modulate = GRAY_MODULATE if not unlocked else Color(1, 1, 1)
+		# 源 dungeon_map.lua:207-209 已通关 boss 灰化表"已完成"（cleared→setSpriteGray）；
+		# 未解锁仅点击静默（:184）不灰。2026-08-22 巡检订正：旧"未解锁灰"与源完全相反。
+		# 宝箱通关即自动换 open 图（源 :211-213 box and cleared→setTexture(open)）。
+		var cleared_boss: bool = ExerciseManager.is_boss_cleared(stage_manager.progress, base_id)
+		boss_buttons[i - 1].modulate = GRAY_MODULATE if cleared_boss else Color(1, 1, 1)
 		var box: TextureRect = box_rects_by_idx.get(i, null)
 		if box != null and is_instance_valid(box):
-			var cleared: bool = ExerciseManager.is_boss_cleared(stage_manager.progress, base_id)
-			var opened: bool = bool(opened_chests.get(base_id, false))
-			box.texture = _load_tex(BOX_OPEN_TEX if (cleared and opened) else BOX_CLOSED_TEX)
+			box.texture = _load_tex(BOX_OPEN_TEX if cleared_boss else BOX_CLOSED_TEX)
 	_refresh_fog()
 
 
@@ -296,8 +300,8 @@ func _on_degree_selected(idx: int, diff: Dictionary) -> void:
 		return
 	var asm_r: Dictionary = stage_manager.assemble_stage_battle(lookup_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
-		# 项目 assemble_stage_battle 统一返 ok，toast 文案项目自定（无源 LSTR key）。
-		Toast.show_message("体力不足或装配失败")
+		# 2026-08-22 巡检接入每日次数/钥匙/等级检查后 error 分码（文案项目自定，无源 LSTR key）。
+		Toast.show_message(_enter_error_text(str(asm_r.get("error", ""))))
 		return
 	GameData.battle_context = {
 		"engine": asm_r["engine"], "battle_info": asm_r["battle_info"],
@@ -305,6 +309,23 @@ func _on_degree_selected(idx: int, diff: Dictionary) -> void:
 	}
 	remove_window()
 	SceneManager.change_scene("res://scenes/battle/battle_scene.tscn")
+
+
+func _enter_error_text(err: String) -> String:
+	match err:
+		"no_attempts":
+			return "今日次数已用完"
+		"not_enough_keys":
+			return "钥匙不足"
+		"not_enough_coins":
+			return "龙鳞硬币不足，无法购买次数"
+		"heroic_prereq":
+			return "需先通关对应普通副本"
+		"level_lock":
+			return "等级不足"
+		"no_vitality":
+			return "体力不足"
+	return "装配失败"
 
 
 ## 上场英雄 tid 列表（player.team inst_id → tid；空则取前 TEAM_MAX 个，照 crusade_panel 范式）。
@@ -326,47 +347,6 @@ func _team_tids() -> Array[int]:
 
 func _on_degree_close() -> void:
 	_active_popup = null
-
-
-func _on_box_gui_input(event: InputEvent, idx: int) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_open_chest(idx)
-
-
-func _open_chest(idx: int) -> void:
-	if idx < 1 or idx > bosses.size():
-		return
-	var boss: Dictionary = bosses[idx - 1]
-	var base_id: int = int(boss["base_id"])
-	if bool(opened_chests.get(base_id, false)):
-		return
-	if not ExerciseManager.is_boss_cleared(stage_manager.progress, base_id):
-		Toast.show_message("通关后可开启宝箱")
-		return
-	opened_chests[base_id] = true
-	var box: TextureRect = box_rects_by_idx.get(idx, null)
-	if box != null and is_instance_valid(box):
-		box.texture = _load_tex(BOX_OPEN_TEX)
-		# 开箱弹跳是项目交互反馈（源 :212 只换图）；rect 恒 closed 口径不随 open 图变。
-		if is_inside_tree():
-			var tw := create_tween()
-			tw.tween_property(box, "scale", Vector2(1.1, 1.1), 0.1)
-			tw.tween_property(box, "scale", Vector2(0.9, 0.9), 0.1)
-			tw.tween_property(box, "scale", Vector2(1.0, 1.0), 0.1)
-	var stage_data: Dictionary = stage_manager.config.get_raw_table(&"StageDungeon").get(str(base_id), {})
-	for i in range(1, 8):
-		var reward_id: int = int(stage_data.get(&"UI reward" + str(i), 0))
-		if reward_id != 0:
-			player.add_item(reward_id)
-			Toast.show_message(_reward_display_name(reward_id))
-
-
-func _reward_display_name(item_id: int) -> String:
-	var row: Dictionary = stage_manager.config.get_raw_table(&"Item").get(str(item_id), {})
-	var n: String = String(row.get("Display Name", ""))
-	if n.length() > 0:
-		return n
-	return "Item:%d" % item_id
 
 
 ## 资源安全加载（exists 预检，避 headless 未 import 时 push_error）。

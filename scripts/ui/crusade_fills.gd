@@ -124,6 +124,7 @@ static func parse_rule_text(raw: String) -> String:
 	return s
 
 
+## open 态档位（源 crusade.lua:23-26 boxImg 换图只认 5/10/15：15=gold、5/10=silver）。
 static func box_tier(i: int) -> String:
 	if i == 15:
 		return "gold"
@@ -132,9 +133,21 @@ static func box_tier(i: int) -> String:
 	return "bronze"
 
 
+## closed 态档位（源 crusadeconfig.lua 初始配置另一套口径：box3/5/9/12=silver_closed
+## [cfg:115/:193/:232]、box10=gold_closed [cfg:206]、box15=gold）。2026-08-22 巡检订正：
+## 旧统一用 boxImg 档致未领取时 box3/9/12 显铜（应银）、box10 显银（应金）。
+static func box_tier_closed(i: int) -> String:
+	if i == 10 or i == 15:
+		return "gold"
+	if i == 3 or i == 5 or i == 9 or i == 12:
+		return "silver"
+	return "bronze"
+
+
 static func box_texture(player: PlayerData, i: int) -> String:
 	var state: String = "open" if player.crusade_manager.is_stage_rewarded(i) else "closed"
-	return BOX_TEX_DIR + box_tier(i) + "_" + state + ".png"
+	var tier: String = box_tier(i) if state == "open" else box_tier_closed(i)
+	return BOX_TEX_DIR + tier + "_" + state + ".png"
 
 
 ## 源 battle 按钮两态贴图（crusadeconfig:285-286：normal=crusade_stage_N.png，
@@ -179,3 +192,98 @@ static func _lstr(cm: Variant, key: String, fallback: String) -> String:
 		var v: String = cm.get_lstr(key)
 		return v if v != key else fallback
 	return fallback
+
+
+# ── 未通关宝箱悬停预览浮层（源 initRewardUI crusade.lua:247-297 + 声明 crusadeconfig.lua:1101-1198）──
+# 2026-08-22 巡检重做：旧 result_label 文本降级。Scale9 main_vit_tips 底中
+# (400,280)（源 ccp(400,200) anchor(0.5,0)），行 y：金币 h-20 / 随机宝箱 h-55 /
+# 物品 h-90(h-125 图标)，高 88 无物品 / 155 有；scale 0→1 弹出（panel 侧 tween）。
+const REWARD_BG_RES: String = "res://assets/ui/alpha/HVGA/main_vit_tips.png"
+const REWARD_GOLD_ICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon.png"
+const REWARD_RANDOM_ICON_RES: String = "res://assets/ui/alpha/HVGA/handbook_icon_lock.png"
+const REWARD_PREVIEW_W: float = 170.0
+const REWARD_PREVIEW_H_PLAIN: float = 88.0
+const REWARD_PREVIEW_H_ITEM: float = 155.0
+const REWARD_PREVIEW_BOTTOM_Y: float = 280.0
+const LSTR_RANDOM_REWARD: String = "CRUSADECONFIG.MYSTERIOUS_REWARD"
+const LSTR_ITEM_REWARD: String = "CRUSADECONFIG.REWARDS_FOR_THIS_PASS_"
+
+
+static func build_reward_preview(host: Control, slots: Array, cm: Variant) -> Control:
+	var gold: int = 0
+	var has_box: bool = false
+	var item_id: int = 0
+	var item_amt: int = 0
+	for s in slots:
+		match String(s.get("type", "")):
+			"gold":
+				gold = int(s["amount"])
+			"chestbox":
+				has_box = true
+			"item":
+				item_id = int(s.get("id", 0))
+				item_amt = int(s["amount"])
+	var has_item: bool = item_id > 0
+	var h: float = REWARD_PREVIEW_H_ITEM if has_item else REWARD_PREVIEW_H_PLAIN
+	var layer := Control.new()
+	layer.position = Vector2(400.0 - REWARD_PREVIEW_W * 0.5, REWARD_PREVIEW_BOTTOM_Y - h)
+	layer.size = Vector2(REWARD_PREVIEW_W, h)
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(layer)
+	_add_scale9_bg(layer, h)
+	_add_sprite_row(layer, REWARD_GOLD_ICON_RES, Vector2(42.0, h - 20.0), 0.65)
+	_add_label(layer, str(gold), Vector2(115.0, h - 20.0))
+	if has_box:
+		_add_sprite_row(layer, REWARD_RANDOM_ICON_RES, Vector2(40.0, h - 55.0), 0.5)
+		_add_label(layer, _lstr(cm, LSTR_RANDOM_REWARD, "神秘的奖励"), Vector2(115.0, h - 55.0))
+	if has_item:
+		_add_label(layer, _lstr(cm, LSTR_ITEM_REWARD, "本关奖励"), Vector2(85.0, h - 90.0))
+		var stone_host := Control.new()
+		stone_host.position = Vector2(40.0, h - 125.0)
+		stone_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(stone_host)
+		var stone: Control = ReadequipIcon.create_hero_stone_icon(item_id, 0, cm)
+		var stone_scale: float = 50.0 / (94.0 / CONTENT_SCALE)   # 源 createHeroStone(param1,50)
+		stone.scale = Vector2(stone_scale, stone_scale)
+		stone.position = -stone.size * stone_scale * 0.5
+		stone_host.add_child(stone)
+		_add_label(layer, "x%d" % item_amt, Vector2(115.0, h - 125.0))
+	return layer
+
+
+static func _add_scale9_bg(layer: Control, h: float) -> void:
+	var bg := NinePatchRect.new()
+	bg.texture = _load_tex(REWARD_BG_RES) as Texture2D
+	if bg.texture != null:
+		var tw: float = float(bg.texture.get_width())
+		var th: float = float(bg.texture.get_height())
+		bg.patch_margin_left = int(15.0 / CONTENT_SCALE)
+		bg.patch_margin_bottom = int(20.0 / CONTENT_SCALE)
+		bg.patch_margin_right = int((tw - 60.0) / CONTENT_SCALE)
+		bg.patch_margin_top = int((th - 35.0) / CONTENT_SCALE)
+	bg.size = Vector2(REWARD_PREVIEW_W, h)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(bg)
+
+
+static func _add_sprite_row(layer: Control, res: String, center: Vector2, scale: float) -> void:
+	var tex: Texture2D = _load_tex(res) as Texture2D
+	if tex == null:
+		return
+	var sz: Vector2 = tex.get_size() / CONTENT_SCALE * scale
+	var rect := TextureRect.new()
+	rect.texture = tex
+	rect.size = sz
+	rect.position = center - sz * 0.5
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+
+
+static func _add_label(layer: Control, text: String, center: Vector2) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.theme_type_variation = &"BtnLabel"
+	lbl.position = center
+	lbl.size = Vector2(0.0, 0.0)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(lbl)

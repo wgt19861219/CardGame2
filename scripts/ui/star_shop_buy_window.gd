@@ -13,9 +13,10 @@ extends PopWindow
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/star_shop_buy_window_content.tscn")
 const SHOW_SEC: float = 0.2
 const GOODS_NAME_LSTR: Array[String] = ["PARAMETER.SMALL_PLANET_DEBRIS_BOX", "PARAMETER.MEDIUM_STELLAR_SUITCASE", "PARAMETER.LARGE_INTERSTELLAR_GALLERY"]
-# 灵魂石 icon（源 :100-102 createIcon(id,45) anchor(0,0) at(0,0)，项目 72px 基准缩放）
+# 灵魂石 icon（源 :100-102 createIcon(id,45) anchor(0,0) at(0,0)；9bc640e 统一 ÷CS 后
+# 产物显示 94/CS≈73.37，基准用产物显示宽——2026-08-22 巡检订正旧 72 基准）
 const ICON_SIDE: float = 45.0
-const ICON_BASE: float = 72.0
+const ICON_BASE: float = 94.0 / 1.28125
 const ICON_HOST_SIDE: float = 42.97
 
 var shop_mgr: ShopManager

@@ -392,12 +392,16 @@ func create_pause_layer() -> void:
 	pause_locks["pauseButton"] = true; is_paused = pause_locks.values().has(true)
 	AudioPlayer.set_bgm_volume(0.25)
 	var layer := BattlePauseLayer.new()
-	layer.setup(ui_layer, AudioPlayer.sound_switch, _on_pause_dismissed)
+	# 第 4 参 exit 回调=放弃战斗（源 :230-245 exit→:331-344 popScene；2026-08-22 巡检：
+	# 旧与 resume 同效致玩家无法中途放弃）。多行 lambda 避免新增成员函数（代码行贴线）。
+	layer.setup(ui_layer, AudioPlayer.sound_switch, _on_pause_dismissed, func() -> void:
+		_clear_pause_layer()
+		BattleSceneFinalizer.abort_battle(self))
 	pause_layer = layer
 
 
-# pause 退出/恢复同效（清层 + 解锁）：原两回调体相同，合一。单机化仅 pauseButton 一种 reason；
-# resume 设 false 非 erase（源 :174）。has(true) = 源 :777-780 any(v)。
+# pause 恢复（清层 + 解锁；exit 走 abort_battle 见 create_pause_layer 第 4 参）。
+# 单机化仅 pauseButton 一种 reason；resume 设 false 非 erase（源 :174）。has(true) = 源 :777-780 any(v)。
 func _on_pause_dismissed() -> void:
 	_clear_pause_layer(); pause_locks["pauseButton"] = false; is_paused = pause_locks.values().has(true)
 

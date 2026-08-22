@@ -26,6 +26,9 @@ static func route(parent: Node, key: String) -> void:
 		"task":
 			MainSceneEntryRouter.open_task(parent)
 		"todoList":
-			Toast.show_message("「每日任务」待实现")
+			# 源 framework.lua:649-653 doClickDailyjob → dailyTask 面板；本项目 TaskPanel
+			# 的每日列表（_fill_daily_list 照源 dailyTask:initTaskList）即等价物
+			# （2026-08-22 巡检接线：旧 Toast 占位与 shortcut 红点判定自相矛盾）。
+			MainSceneEntryRouter.open_task(parent)
 		_:
 			pass

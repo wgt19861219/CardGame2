@@ -43,6 +43,7 @@ offset_top = 90.0
 offset_right = 130.0
 offset_bottom = 125.0
 mouse_filter = 0
+theme_type_variation = &"ShopConfirmBtn"
 
 [node name="OkBtn" type="Button" parent="Frame"]
 unique_name_in_owner = true
@@ -52,3 +53,4 @@ offset_top = 90.0
 offset_right = 260.0
 offset_bottom = 125.0
 mouse_filter = 0
+theme_type_variation = &"ShopConfirmBtn"

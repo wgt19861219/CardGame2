@@ -16,11 +16,11 @@ extends PopWindow
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipdetail_content.tscn")
 const ITEM_CELL_SCENE: PackedScene = preload("res://scenes/ui/equipdetail_item_cell.tscn")
 
-# 源 icon 尺寸：装备段 readequip.createIcon(id, 40)（72 容器缩 40/72）、
-# 英雄段 readhero.getIcon({id,rank,length=40})（104 容器缩 40/104）、
-# 获取途径段 :259 setScale(60/w)（宽恒 60 等比）。
+# 源 icon 尺寸：装备段 readequip.createIcon(id, 40)（9bc640e 统一 ÷CS 后产物显示
+# 94/CS≈73.37，基准用产物显示宽而非旧 72）、英雄段 readhero.getIcon({id,rank,length=40})
+# （104 容器缩 40/104）、获取途径段 :259 setScale(60/w)（宽恒 60 等比）。
 const SMALL_ICON_SIZE: float = 40.0
-const EQUIP_ICON_BASE: float = 72.0
+const EQUIP_ICON_BASE: float = 94.0 / 1.28125
 const HERO_ICON_BASE: float = 104.0
 const GET_WAY_ICON_SIZE: float = 60.0
 # 源 :171/213/264 name 内容宽 > 195 → 等比缩到 195
@@ -92,13 +92,13 @@ func _build_content() -> void:
 	_fill_icon()
 
 
-# 装备图标 + 拥有数量（源 createIcon :298-318：readequip.createIcon(id) at
-# (80,360) + "x"+amount 直设绿/红 + 黑影(0,1)——影走 variation）。
+# 装备图标 + 拥有数量（源 createIcon :298-318：readequip.createIcon(id) 无 length →
+# 显示原尺寸 94/CS≈73.37×74.12，中心 (120+offsetX,360)=(80,360)→_g(80,120) + "x"+amount
+# 直设绿/红 + 黑影(0,1)——影走 variation。2026-08-22 巡检修：旧 40/72 缩到 40.8 比源小 45%；
+# 产物 container 72 居中于 IconHost 中心 (80,120) → position = (20,20)-(36,36)。
 func _fill_icon() -> void:
 	var icon: Control = ReadequipIcon.create_icon(_equip_id, 0, cm)
-	var scale_factor: float = SMALL_ICON_SIZE / EQUIP_ICON_BASE
-	icon.scale = Vector2(scale_factor, scale_factor)
-	icon.custom_minimum_size = Vector2(SMALL_ICON_SIZE, SMALL_ICON_SIZE)
+	icon.position = Vector2(-16.0, -16.0)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_icon_host.add_child(icon)
 	var amount: int = int(pd.items.get(_equip_id, 0))

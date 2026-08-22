@@ -23,12 +23,12 @@ const ITEM_LOCAL_Y: float = 38.28
 const ITEM_DX: float = 212.0
 const LIST_MIN_W: float = 1100.0
 const LIST_MIN_H: float = 325.0
-# 灵魂石 icon（源 :571 createIcon(stone_id, 46) → 显示 46 点）：ReadequipIcon 的 frame
-# Sprite2D 按纹理原尺寸渲染（94×95px，hero_detail 装备槽同口径），故 scale 基准取纹理
-# 像素宽 94 而非 container 72（task-11 修：旧 72 基准致视觉 1.28× 偏大溢出容器）
+# 灵魂石 icon（源 :571 createIcon(stone_id, 46) → 显示 46 点）：9bc640e 起 create_icon
+# 内部 _load_sprite 统一 ÷CS（产物 frame 显示 94/CS≈73.37），外层基准须用产物显示宽
+# 而非纹理像素 94（2026-08-22 巡检修：旧 94 基准再 ÷CS 致双重缩小 35.9 vs 源 46）。
 const STONE_ICON_SIDE: float = 46.0
-const STONE_ICON_BASE: float = 94.0
-const STONE_FRAME_H: float = 95.0
+const STONE_ICON_BASE: float = 94.0 / 1.28125
+const STONE_FRAME_H: float = 95.0 / 1.28125
 const STONE_HOST_SIDE: float = 45.31
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const STAR_BOX_RES: Array[String] = ["shop_star_box_1.png", "shop_star_box_2.png", "shop_star_box_3.png"]

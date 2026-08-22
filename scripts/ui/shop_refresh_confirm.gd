@@ -10,9 +10,6 @@ extends Control
 ## content 挂 panel 自身（同 shortcut_panel 范式）。cancel/ok 普通 Button 运行时套 Scale9 样式。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_refresh_confirm_content.tscn")
-const UPGRADE_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade.png"
-const UPGRADE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png"
-const UPGRADE_CAP: Rect2 = Rect2(20.0, 20.0, 40.0, 29.0)
 const CANCEL_LSTR: String = "CHATCONFIG.CANCEL"
 const CONFIRM_LSTR: String = "CHATCONFIG.CONFIRM"
 const CANCEL_FALLBACK: String = "取消"   # cm 未注入降级（源同样中文）
@@ -40,19 +37,18 @@ func set_message(text: String, p_cm: Variant = null) -> void:
 
 
 # 建 UI 内容：静态节点（shade/frame/msg/cancel/ok）从 .tscn instantiate（位置/size .tscn 固化）。
-# cancel/ok 是普通 Button，运行时 UiScale9Button.apply_with_label 套九宫格样式（照源 cap）。
+# cancel/ok 按钮样式走 theme variation ShopConfirmBtn（tscn 声明三态，2026-08-22 巡检迁移
+# 旧运行时 UiScale9Button.apply_with_label，照 MailOverfullBtn 先例），此处只填文字。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	add_child(content)
 	_msg_label = content.get_node("%MsgLabel") as Label
 	_msg_label.text = _msg_text
-	var cancel_text: String = _lstr(CANCEL_LSTR, CANCEL_FALLBACK)
 	var cancel: Button = content.get_node("%CancelBtn") as Button
-	UiScale9Button.apply_with_label(cancel, UPGRADE_RES, UPGRADE_PRESS_RES, UPGRADE_CAP, cancel_text)
+	cancel.text = _lstr(CANCEL_LSTR, CANCEL_FALLBACK)
 	cancel.pressed.connect(queue_free)
-	var ok_text: String = _lstr(CONFIRM_LSTR, CONFIRM_FALLBACK)
 	var ok: Button = content.get_node("%OkBtn") as Button
-	UiScale9Button.apply_with_label(ok, UPGRADE_RES, UPGRADE_PRESS_RES, UPGRADE_CAP, ok_text)
+	ok.text = _lstr(CONFIRM_LSTR, CONFIRM_FALLBACK)
 	ok.pressed.connect(_on_ok)
 
 

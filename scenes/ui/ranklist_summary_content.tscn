@@ -5,7 +5,8 @@
 ; 批4 修正（批2 滚清单"ranklist Frame DG 直译尺寸复核"落地）：
 ; - frame scaleSize = ed.DGSizeMake(345,305) = (269.53,238.28) 点（readnode setContentSize 直译，
 ;   DGSizeMake 已含 x0.78125）→ 旧 345x305 为 DG 值未乘系数，修正为 270x238；
-; - pos ccp(400,240) 中心锚 → Godot 中心 (480,320) → (345.23,200.86)-(614.77,439.14)；
+; - pos ccp(400,240) 中心锚 → Godot 中心 (400,240)（viewport 迁移后 (x,480-y) 直译，
+;   2026-08-22 巡检勘误：下行旧值 (480,320) 系 960×640 口径残留，节点值已正确）；
 ; - 子元素同口径：DGccp x0.78125 点 + content 层 y-up → Godot y_down = 238.28-y_up。
 ; 披露维持（NPC 假数据缺）：win_cnt 行/heroes 5 英雄图标/guild 行（源 :113-202）。
 ; 其余 = px/CS。

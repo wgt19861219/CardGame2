@@ -31,6 +31,7 @@ var progress: Dictionary = {}  # stage_id(int) -> stars(int)，通关星数
 var max_normal: int = 0        # 最远通关普通关
 var dungeon_bosses_cleared: Dictionary = {}
 var act_times: Dictionary = {}  # 副本组当日次数（源 getActTimes/addActTimes，group→count）
+var act_times_reset_ts: int = 0  # act_times 跨日清零锚点（StageDungeonLogic.check_act_times_daily_reset）
 # 章节星数奖励已领记录（key "chapter_tier" → true）。源 player.lua:911 _chapter_star_claimed。
 # 注：本项目 StageManager 不由 GameData 持久化（既有 stage 进度同此限制），claimed 会话内有效。
 var chapter_star_claimed: Dictionary = {}
@@ -106,17 +107,13 @@ func enter_stage(sid: int, _player: PlayerData) -> Dictionary: return {"ok": tru
 func enter_act_stage(stage_id: int, stage_group: int, player: PlayerData, rng: BattleRng) -> Dictionary:
 	var table: StringName = &"StageDungeon" if StageData.is_dungeon_stage(stage_id) else &"Stage"
 	var cfg: Dictionary = config.get_raw_table(table).get(str(stage_id), {})
-	if cfg.is_empty():
-		return {"ok": false, "error": "invalid_stage"}
-	if player.team_level < int(cfg.get("Unlock Level", 0)):
-		return {"ok": false, "error": "level_lock"}
+	if cfg.is_empty(): return {"ok": false, "error": "invalid_stage"}
+	if player.team_level < int(cfg.get("Unlock Level", 0)): return {"ok": false, "error": "level_lock"}
 	if StageData.is_dungeon_stage(stage_id):
 		var err: String = StageDungeonLogic.check_enter_dungeon(self, stage_id, stage_group, player, config)
-		if err != "":
-			return {"ok": false, "error": err}
+		if err != "": return {"ok": false, "error": err}
 	var vit_cost: int = maxi(int(cfg.get("Vitality Cost", 0)) - int(cfg.get("Vit Return", 0)), 0)
-	if vit_cost > 0 and not player.spend_vitality(vit_cost):
-		return {"ok": false, "error": "no_vitality"}
+	if vit_cost > 0 and not player.spend_vitality(vit_cost): return {"ok": false, "error": "no_vitality"}
 	return {"ok": true, "rseed": rng.get_seed(), "loots": generate_loot_list(stage_id, rng), "stage_id": stage_id}
 
 
@@ -153,6 +150,12 @@ func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int]
 	if StageData.is_dungeon_stage(sid) or StageAccount.stage_type(sid) in ["act", "raid"]:
 		var table: StringName = &"StageDungeon" if StageData.is_dungeon_stage(sid) else &"Stage"
 		var cfg: Dictionary = config.get_raw_table(table).get(str(sid), {})
+		if StageData.is_dungeon_stage(sid):
+			# 每日次数/钥匙/前置/等级全查（enter_act_stage 同款；源 dungeon_map.lua:499-504
+			# enterStage 即计次；2026-08-22 巡检接线：旧只查体力致 DailyLimit 失效）。
+			var err: String = StageDungeonLogic.check_enter_dungeon(self, sid, StageDungeonLogic.DUNGEON_BOSS_BASE + sid % StageDungeonLogic.DUNGEON_BOSS_MOD, player, config)
+			if err != "":
+				return {"ok": false, "error": err}
 		var vit_cost: int = maxi(int(cfg.get("Vitality Cost", 0)) - int(cfg.get("Vit Return", 0)), 0)
 		if vit_cost > 0 and not player.spend_vitality(vit_cost):
 			return {"ok": false, "error": "no_vitality"}
@@ -181,13 +184,11 @@ func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, play
 func _collect_hero_hp_mp(eng: BattleEngine) -> Dictionary:
 	var hp_mp: Dictionary = {}
 	for u in eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
-		var tid: int = int(u.tid)
-		var hp_max: int = int(u.attribs.get(&"HP", 1))
-		var mp_max: int = int(u.attribs.get(&"MP", 1))
-		# ceil 对齐 battle_engine_result.gd:26（源 _hp_perc 万分比 ceil，setHp 不丢血）
-		var hp_perc: int = clampi(int(ceil(float(u.hp) / float(maxi(hp_max, 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX)
-		var mp_perc: int = clampi(int(ceil(float(u.mp) / float(maxi(mp_max, 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX)
-		hp_mp[tid] = {"hp": hp_perc, "mp": mp_perc}
+		# ceil 对齐 battle_engine_result.gd:25（源 _hp_perc 万分比 ceil，setHp 不丢血）
+		hp_mp[int(u.tid)] = {
+			"hp": clampi(int(ceil(float(u.hp) / float(maxi(int(u.attribs.get(&"HP", 1)), 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX),
+			"mp": clampi(int(ceil(float(u.mp) / float(maxi(int(u.attribs.get(&"MP", 1)), 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX),
+		}
 	return hp_mp
 
 
@@ -384,7 +385,7 @@ func _record_stage_dailyjob(player: PlayerData, sid: int) -> void:
 
 ## 存档序列化。
 func to_dict() -> Dictionary:
-	return {"progress": progress.duplicate(true), "max_normal": max_normal, "chapter_star_claimed": chapter_star_claimed.duplicate(true), "sweep_loot_record": sweep_loot_record.duplicate(true), "dungeon_bosses_cleared": dungeon_bosses_cleared.duplicate(true), "act_times": act_times.duplicate(true)}
+	return {"progress": progress.duplicate(true), "max_normal": max_normal, "chapter_star_claimed": chapter_star_claimed.duplicate(true), "sweep_loot_record": sweep_loot_record.duplicate(true), "dungeon_bosses_cleared": dungeon_bosses_cleared.duplicate(true), "act_times": act_times.duplicate(true), "act_times_reset_ts": act_times_reset_ts}
 
 static func from_dict(data: Dictionary, cm: ConfigManager) -> StageManager:
 	var mgr := StageManager.new(cm)
@@ -394,4 +395,5 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> StageManager:
 	mgr.sweep_loot_record = data.get("sweep_loot_record", {})
 	mgr.dungeon_bosses_cleared = data.get("dungeon_bosses_cleared", {})
 	mgr.act_times = data.get("act_times", {})
+	mgr.act_times_reset_ts = int(data.get("act_times_reset_ts", 0))
 	return mgr

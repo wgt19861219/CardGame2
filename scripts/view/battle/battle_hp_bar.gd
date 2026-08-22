@@ -8,6 +8,7 @@ extends Node2D
 ## BigHpBar（Boss 多血段 :137-384）+ FloatingBar 组（:385-602）后续会话。
 
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
+const CONTENT_SCALE: float = 1.28125   # 源 createSprite 显示=px÷CS（hp 条族无 TextureConfig 条目）
 const OFFSET: Vector2 = Vector2(6.0, 1.0)
 const EPSILON: float = 0.001
 const HP_INC_SPEED: float = 0.5
@@ -47,10 +48,14 @@ func _setup(unit: Variant, bar_type: String, color: String) -> void:
 	_background = _load_sprite("hp_gray.png")
 	if _background:
 		add_child(_background)
+		# ÷CS：源 ed.createSprite 显示=纹理px÷CS（hp_bar.lua:16-19）。bg.scale 级联子层
+		# （mid/fg/mask/star 局部坐标即点空间，源语义直译；2026-08-22 巡检根修：旧原像素
+		# 直显整条偏大 1.28×）。
+		_background.scale = Vector2.ONE / CONTENT_SCALE
 		# 源 :61/68/71 fg/mid anchorPoint(0,0)+ccp(6,1)——ed.createSprite 默认锚点左下，
 		# 即从 bg 左下角内缩 (6,1)。Godot bg centered=true 原点=中心 → 左上对齐需 -bg_half
 		# 再加内缩（y-up/y-down 的 1px 差忽略；mask 源 pos(0,0) 仅 -bg_half）。
-		var bg_half: Vector2 = _background.texture.get_size() * 0.5 if _background.texture != null else Vector2.ZERO
+		var bg_half: Vector2 = _background.texture.get_size() / CONTENT_SCALE * 0.5 if _background.texture != null else Vector2.ZERO
 		_midlayer = _load_sprite("hp_yellow.png")
 		if _midlayer:
 			_midlayer.centered = false

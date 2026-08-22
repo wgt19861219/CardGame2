@@ -8,6 +8,11 @@ extends GutTest
 
 func _reset_vitality() -> void:
 	GameData.player.vitality = GameData.player.vitality_max
+	# 2026-08-22 巡检接入每日限制/钥匙/等级检查（check_enter_dungeon）后，同"不测经济"
+		# 原则预置足额条件：钥匙 500 + 等级 100（StageDungeon UnlockLevel 最高 100[53021 末关]，
+	# 旧默认 level 1 会 level_lock 假失败）。
+	GameData.player.dungeonpoint = 500
+	GameData.player.team_level = 100
 
 func test_dungeon_battle_e2e_51013_diff2() -> void:
 	# 51013 = 50013 纳克萨玛斯首关 diff2（HP% 缩放 ×1.5）。boss=6 末日使者，m=[40,42,17]

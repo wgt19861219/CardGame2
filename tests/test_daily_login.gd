@@ -11,14 +11,93 @@ func before_all() -> void:
 
 func test_first_login_frequency() -> void:
 	var mgr := DailyLoginManager.new()
-	# last_ts=0 → _is_consecutive_day 返 true → frequency+1 = 0+1 = 1（首次登录算第1天）
-	assert_eq(mgr.get_login_frequency(1000), 1, "首次登录 frequency=1（last_ts=0 视为连续")
+	# last_ts=0 → _is_reset_apart 返 true → frequency+1 = 0+1 = 1（首次登录算第1天）
+	assert_eq(mgr.get_login_frequency(1000), 1, "首次登录 frequency=1（last_ts=0 视为跨线）")
 
 
 func test_reward_status_common_first_time() -> void:
 	var mgr := DailyLoginManager.new()
-	# last_ts=0 → _is_consecutive_day 返 true → "common" 可领
+	# last_ts=0 → _is_reset_apart 返 true → "common" 可领
 	assert_eq(mgr.get_reward_status(1000), "common", "首次登录可领")
+
+
+# ── 5:00 重置线（源 time.lua:299 reset_time={h=5,m=0} + :366 checkBOA）──
+
+# 本地今天 h:m 的 ts（_local_date 同口径：+bias 拆、-bias 组）。
+func _local_ts(h: int, m: int = 0) -> int:
+	var off: int = int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+	var d: Dictionary = Time.get_datetime_dict_from_unix_time(int(Time.get_unix_time_from_system()) + off)
+	d["hour"] = h
+	d["minute"] = m
+	d["second"] = 0
+	return int(Time.get_unix_time_from_datetime_dict(d)) - off
+
+
+# 同日号跨 5:00 线（3:00→8:00）= 新重置段，frequency+1
+func test_reset_line_same_day_cross() -> void:
+	var mgr := DailyLoginManager.new()
+	mgr.frequency = 3
+	mgr.last_login_ts = _local_ts(3, 0)
+	assert_eq(mgr.get_login_frequency(_local_ts(8, 0)), 4, "同日 3:00→8:00 跨 5:00 线 frequency+1")
+	assert_eq(mgr.get_reward_status(_local_ts(8, 0)), "common", "跨线后可再领")
+
+
+# 同段未跨线（1:00→4:00 均在 5:00 前）frequency 不变、状态 received
+func test_reset_line_same_segment() -> void:
+	var mgr := DailyLoginManager.new()
+	mgr.frequency = 3
+	mgr.status = "all"
+	mgr.last_login_ts = _local_ts(1, 0)
+	assert_eq(mgr.get_login_frequency(_local_ts(4, 0)), 3, "1:00→4:00 未跨线 frequency 不变")
+	assert_eq(mgr.get_reward_status(_local_ts(4, 0)), "received", "同段已领状态保持")
+
+
+# 异日号同段（昨天 1:00→今天 2:00 均在各自日 5:00 前 before 段）= 跨线（源异日号同段 true）
+func test_reset_line_cross_midnight_same_segment() -> void:
+	var mgr := DailyLoginManager.new()
+	mgr.frequency = 3
+	mgr.last_login_ts = _local_ts(2, 0) - 86400 - 3600   # 今天 2:00 往前 25h = 昨天 1:00（before 段）
+	var today_2 := _local_ts(2, 0)
+	assert_true(int(DailyLoginManager._local_date(mgr.last_login_ts).get("day", 0)) != int(DailyLoginManager._local_date(today_2).get("day", 0)), "构造校验：确为异日号")
+	assert_eq(mgr.get_login_frequency(today_2), 4, "昨天 1:00→今天 2:00 异日号同段=跨线 +1")
+
+
+# 异日号异段（昨天 23:00→今天 2:00：23:00 属"昨日段"、2:00 也属"昨日段"（今日 5:00 前）
+# ——源 checkTwoDateod 异日号异段=false，语义自洽：未跨任何 5:00 线不算隔天）
+func test_reset_line_cross_midnight_diff_segment_no_reset() -> void:
+	var mgr := DailyLoginManager.new()
+	mgr.frequency = 3
+	mgr.status = "all"
+	mgr.last_login_ts = _local_ts(2, 0) - 3 * 3600   # 今天 2:00 往前 3h = 昨天 23:00
+	assert_eq(mgr.get_login_frequency(_local_ts(2, 0)), 3, "昨天 23:00→今天 2:00 未跨 5:00 线 frequency 不变")
+	assert_eq(mgr.get_reward_status(_local_ts(2, 0)), "received", "同段已领状态保持")
+
+
+# 月重置（源 checkTwoDateom：较晚者 day==1 且跨线 → frequency=1）
+func test_month_reset_on_day1() -> void:
+	var off: int = int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+	var now_local: Dictionary = Time.get_datetime_dict_from_unix_time(int(Time.get_unix_time_from_system()) + off)
+	var day1_8am := {"year": now_local["year"], "month": now_local["month"], "day": 1, "hour": 8, "minute": 0, "second": 0}
+	var day1_8am_ts: int = int(Time.get_unix_time_from_datetime_dict(day1_8am)) - off
+	var prev_month_end_23: int = day1_8am_ts - 9 * 3600   # 1 日 8:00 往前 9h = 上月末 23:00（两者均 after 段，跨 1 日 5:00 线）
+	var mgr := DailyLoginManager.new()
+	mgr.frequency = 7
+	mgr.last_login_ts = prev_month_end_23
+	assert_eq(int(DailyLoginManager._local_date(day1_8am_ts).get("day", 0)), 1, "构造校验：较晚者 day==1")
+	assert_eq(mgr.get_login_frequency(day1_8am_ts), 1, "上月末 23:00→本月 1 日 8:00 跨线且 day==1 月重置 frequency=1")
+
+
+# 非月初跨月不重置（源：checkTwoDateom false → checkTwoDateod true → frq+1 继续累计）
+func test_cross_month_not_day1_keeps_frequency() -> void:
+	var off: int = int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+	var now_local: Dictionary = Time.get_datetime_dict_from_unix_time(int(Time.get_unix_time_from_system()) + off)
+	var day15_2am := {"year": now_local["year"], "month": now_local["month"], "day": 15, "hour": 2, "minute": 0, "second": 0}
+	var day15_2am_ts: int = int(Time.get_unix_time_from_datetime_dict(day15_2am)) - off
+	var long_ago: int = day15_2am_ts - 40 * 86400   # 40 天前（必跨月且较晚者 day==15 ≠ 1）
+	var mgr := DailyLoginManager.new()
+	mgr.frequency = 7
+	mgr.last_login_ts = long_ago
+	assert_eq(mgr.get_login_frequency(day15_2am_ts), 8, "隔 40 天回来（非月初）不重置，frq+1 继续累计（源语义）")
 
 
 func test_claim_reward_success() -> void:

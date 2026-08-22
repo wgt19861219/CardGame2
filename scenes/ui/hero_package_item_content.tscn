@@ -30,10 +30,13 @@ expand_mode = 1
 [node name="HeadHost" type="Control" parent="." unique_id=2113479301]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = -19.5
-offset_top = -1.5
-offset_right = -19.5
-offset_bottom = -1.5
+; 源 heroitem.lua:27-28 head.icon anchor(0,0)@(7,9) 挂 bg 局部（bg 点空间）→ cell 纹理px 空间
+; = bg.offset(-26.5,-11.5) + (7,9)×1.28125 = (-17.53, 0.03)。2026-08-22 巡检订正（旧 -19.5/-1.5
+; 为源点直抄漏 ×CS）。
+offset_left = -17.53
+offset_top = 0.03
+offset_right = -17.53
+offset_bottom = 0.03
 mouse_filter = 2
 
 ; mark 属性图标（源 heroitem.lua:38-42 icon_str/agi/int scale0.8 等比；位置为 d50674d 照源验收值，

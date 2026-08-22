@@ -64,14 +64,19 @@ static func _apply_style(btn: Button, res_normal: String, res_pressed: String, c
 
 
 # Godot StyleBoxTexture texture_margin 四边：left=x, top=tex.h-y-h, right=tex.w-x-w, bottom=y（源 CCRect 左下原点，垂直翻转换算）。
+# margin 须 ÷CS(1.28125) 取整（cap px 是纹理像素口径，边框显示=px÷CS 点；shortcut_content/
+# battle_statistics_panel 双先例——2026-08-22 巡检订正：旧直传 px 致九宫格边框偏大 1.28×）。
+const CONTENT_SCALE: float = 1.28125
+
+
 static func _make_sb(res: String, cap_insets: Rect2) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
 	var tex: Texture2D = load(res) as Texture2D
 	sb.texture = tex
-	sb.texture_margin_left = cap_insets.position.x
-	sb.texture_margin_bottom = cap_insets.position.y
+	sb.texture_margin_left = int(cap_insets.position.x / CONTENT_SCALE)
+	sb.texture_margin_bottom = int(cap_insets.position.y / CONTENT_SCALE)
 	if tex != null:
-		sb.texture_margin_right = tex.get_width() - cap_insets.position.x - cap_insets.size.x
-		sb.texture_margin_top = tex.get_height() - cap_insets.position.y - cap_insets.size.y
+		sb.texture_margin_right = int((tex.get_width() - cap_insets.position.x - cap_insets.size.x) / CONTENT_SCALE)
+		sb.texture_margin_top = int((tex.get_height() - cap_insets.position.y - cap_insets.size.y) / CONTENT_SCALE)
 	sb.draw_center = true
 	return sb

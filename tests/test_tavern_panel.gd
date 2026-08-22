@@ -303,13 +303,15 @@ func test_builder_retired() -> void:
 	assert_false(text.contains("tavern_board_builder"), "panel 无 builder 残留引用")
 
 
-# panel 零静态构造（宽口径白名单）：magic 预览 hero icon 降级 Label.new( ×1 +
-# 抽卡结果弹窗 PopTavernLoot.new( ×1（批5 弹窗组件实例化），board 静态结构全在 tscn。
+# panel 零静态构造（宽口径白名单）：magic 预览 hero icon ReadheroIcon 工厂（2026-08-22
+# 巡检改图形头像，旧 Label 降级已删）+ Control wrapper ×1 + 抽卡结果弹窗 PopTavernLoot ×1。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
-	assert_eq(text.count("Label.new("), 1, "仅 1 处 Label.new(（magic 预览 hero icon 降级标签）")
+	assert_eq(text.count("Label.new("), 0, "零 Label.new(（magic 预览旧文本降级已删，2026-08-22 巡检）")
+	assert_eq(text.count("ReadheroIcon.new("), 1, "仅 1 处 ReadheroIcon.new(（magic 预览头像工厂）")
+	assert_eq(text.count("Control.new("), 1, "仅 1 处 Control.new(（预览 38×38 wrapper 参与容器布局）")
 	assert_eq(text.count("PopTavernLoot.new("), 1, "仅 1 处 PopTavernLoot.new(（抽卡结果弹窗，批5 组件）")
-	assert_eq(text.count(".new("), 2, "宽口径 .new( 总数 = 白名单之和（Label 1 + PopTavernLoot 1）")
+	assert_eq(text.count(".new("), 3, "宽口径 .new( 总数 = 白名单之和（ReadheroIcon 1 + Control 1 + PopTavernLoot 1）")
 
 
 # content tscn 静态树（A 轨无脚本）：根不绑脚本 + BoardHost 下 3 张完整 board 静态装配。

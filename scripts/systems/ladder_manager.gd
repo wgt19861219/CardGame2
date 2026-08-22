@@ -121,17 +121,38 @@ static func get_pvp_gs(player: Variant) -> int:
 
 func ensure_pvp() -> void:
 	if pvp.is_empty():
-		pvp = {"rank": RANK_INIT, "gs": 0, "left_count": LEFT_COUNT_DEFAULT, "buy_times": 0, "last_bt_time": 0, "highest_rank": RANK_INIT, "enemies": [], "records": [], "defend_lineup": [], "last_oppo_rank": RANK_INIT}
+		pvp = {"rank": RANK_INIT, "gs": 0, "left_count": LEFT_COUNT_DEFAULT, "buy_times": 0, "last_bt_time": 0, "highest_rank": RANK_INIT, "enemies": [], "records": [], "defend_lineup": [], "last_oppo_rank": RANK_INIT, "last_reset_day": 0}
+
+
+## 跨日重置挑战/购买次数（源 pvp 服务器每日重置 left_count；单机化本地跨日，照
+## excavate_manager 范式——2026-08-22 巡检接线：旧 _open_panel 无条件回满致花钻购买
+## 次数机制自相矛盾，已删）。
+func _check_daily_reset(now: int) -> void:
+	var today: int = _local_day_key(now, int(Time.get_time_zone_from_system().get("bias", 0)))
+	if int(pvp.get("last_reset_day", 0)) != today:
+		pvp["last_reset_day"] = today
+		pvp["left_count"] = LEFT_COUNT_DEFAULT
+		pvp["buy_times"] = 0
+
+
+const DAY_KEY_YEAR_WEIGHT: int = 10000
+const DAY_KEY_MONTH_WEIGHT: int = 100
+const SECONDS_PER_MINUTE: int = 60
+
+
+static func _local_day_key(ts: int, off_min: int) -> int:
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + off_min * SECONDS_PER_MINUTE)
+	return int(dt["year"]) * DAY_KEY_YEAR_WEIGHT + int(dt["month"]) * DAY_KEY_MONTH_WEIGHT + int(dt["day"])
 
 
 func handle(obj: Dictionary, player: PlayerData, cm: ConfigManager, rng: BattleRng, now: int) -> Dictionary:
 	ensure_pvp()
+	_check_daily_reset(now)
 	pvp["gs"] = get_pvp_gs(player)
 	var reply: Dictionary = {}
 	if obj.has("_query_rankboard"):
 		reply["_query_rankboard"] = _cmd_query_rankboard(player)
 	if obj.has("_open_panel"):
-		pvp["left_count"] = LEFT_COUNT_DEFAULT
 		pvp["enemies"] = generate_ai_opponents(int(pvp["rank"]), player.team_level, OPPONENT_COUNT, cm, rng)
 		if (pvp["defend_lineup"] as Array).is_empty():
 			pvp["defend_lineup"] = _default_defend_lineup(player)

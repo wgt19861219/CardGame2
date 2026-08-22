@@ -48,15 +48,12 @@ const SKILL_ICON_FRAME_SIZE: Vector2 = Vector2(26.5, 26.8)   # 白框显示尺�
 # CardArtName 称号 Label（源 readhero.lua:1102-1110）：max_width=180 size=14 暖白 ccc3(233,232,213)。
 const CARD_ART_NAME_MAX_WIDTH: float = 180.0
 const CARD_ART_NAME_COLOR: Color = Color(233.0 / 255.0, 232.0 / 255.0, 213.0 / 255.0, 1.0)
-const SKILL_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)
-const SKILL_ICON_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)   # 技能图标可点击区
-const SKILL_BTN_SIZE: Vector2 = Vector2(80.0, 28.0)
+# 源 setSpriteGray（resource_manager.lua:871-877）= ccc3(100,100,100)+opacity 180 级联
+# （skillstren.lua:434 locked 技能灰显；2026-08-22 巡检订正：旧 (0.4,0.4,0.4,1.0) 缺 alpha）。
+const SKILL_GRAY_MODULATE: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 const SKILL_DESC_POS: Vector2 = Vector2(400.0, 100.0)      # 描述弹板位置
 const SKILL_GROWTH_COLOR: Color = Color(1.0, 0.81, 0.07)
 const SKILL_TIP_RES: String = "res://assets/ui/alpha/HVGA/herodetail-skill-tip.png"
-const SKILL_UP_BTN_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_1.png"
-const SKILL_UP_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/herodetail_skill_upgrade_button_2.png"
-const SKILL_UP_BTN_SIZE: Vector2 = Vector2(40.0, 40.0)
 const UI_PATH_PREFIX: String = "UI/"
 const UI_PATH_REPLACE: String = "res://assets/ui/"
 
@@ -258,51 +255,10 @@ static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 # ==================== skill 行绘制（图标 + 升级按钮）====================
 
 # skill_tab 静态化后 panel fill 用：加载技能图标纹理（动态，每技能不同）。
-# create_skill_icon/create_skill_upgrade_button 保留兼容（DescHost 等），skill_tab 改 .tscn + 本函数 fill。
+# create_skill_icon/create_skill_upgrade_button 已删（skill tab .tscn 静态化后零调用方，
+# 2026-08-22 巡检清死代码；SKILL_GRAY_MODULATE 保留供 upgrade_fx 引用）。
 static func load_skill_icon(icon_res: String) -> Texture2D:
 	return _load_ui_texture(icon_res)
-
-
-# 边框 Sprite2D（equip_frame_white centered）+ 图标 TextureButton（可点击 → 描述弹板）。
-# locked=true 灰显（源 skillstren.lua:434 setSpriteGray）。icon_pos/on_click 由 panel 传入。
-static func create_skill_icon(skill_host: Control, icon_res: String, icon_pos: Vector2, locked: bool, slot: int, on_click: Callable) -> void:
-	var tex: Texture2D = _load_ui_texture(icon_res)
-	if tex == null:
-		return
-	var frame := Sprite2D.new()
-	frame.texture = _load_texture(EQUIP_FRAME_WHITE_PATH)
-	if frame.texture != null:
-		frame.position = icon_pos
-		if locked:
-			frame.modulate = SKILL_GRAY_MODULATE
-		skill_host.add_child(frame)
-		frame.set_meta(&"tab_content", true)
-	var btn := TextureButton.new()
-	btn.texture_normal = tex
-	btn.texture_hover = tex
-	btn.ignore_texture_size = true
-	btn.size = SKILL_ICON_BTN_SIZE
-	btn.position = icon_pos - SKILL_ICON_BTN_SIZE * 0.5   # TextureButton 左上 = 中心 - size/2
-	if locked:
-		btn.modulate = SKILL_GRAY_MODULATE
-	btn.pressed.connect(on_click)
-	btn.set_meta(&"skill_icon", true)   # 标记技能图标（测试区分 vs close/action 按钮图）
-	skill_host.add_child(btn)
-
-
-# pos = 按钮 godot 左上基准（panel 算好传入，center = pos + SKILL_BTN_SIZE/2）。
-# on_click = 升级回调（panel 传 Callable(self,"_on_skill_upgrade_clicked").bind(idx)）。
-static func create_skill_upgrade_button(skill_host: Control, pos: Vector2, on_click: Callable) -> void:
-	var btn := TextureButton.new()
-	btn.texture_normal = load(SKILL_UP_BTN_RES) as Texture2D
-	btn.texture_pressed = load(SKILL_UP_BTN_PRESS_RES) as Texture2D
-	btn.ignore_texture_size = true
-	btn.size = SKILL_UP_BTN_SIZE
-	btn.position = pos + SKILL_BTN_SIZE * 0.5 - SKILL_UP_BTN_SIZE * 0.5
-	skill_host.add_child(btn)
-	btn.set_meta(&"tab_content", true)   # 标记 tab 内容（测试识别）
-	btn.set_meta(&"skill_upgrade", true)   # 标记技能升级按钮（测试识别）
-	btn.pressed.connect(on_click)
 
 
 # ==================== 技能描述弹板（源 skillstren.lua:14 createDescBoard）====================

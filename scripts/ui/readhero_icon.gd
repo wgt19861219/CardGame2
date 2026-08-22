@@ -24,10 +24,10 @@ const STAR_BASE_X: float = 47.0
 # 旧值 6=顶部，错；源本意 star 贴 container 底部）。
 const STAR_Y: float = 98.0
 const STAR_Z: int = 5
-# ⚠️源 cocos 左下原点：bg y=15 anchor(0,0) → bg 下边距底 15，label y=26 anchor(0.5,0.5) → label 中心距底 26。
-# Godot 左上原点翻转：bg 下边 y = CONTAINER_SIZE.y - 15 = 89（bg 高 34，上边 y=55）；label 中心 y = 104 - 26 = 78。
-# （修 2026-07-18 y 翻转 bug，旧值 (2,15)/(18,26) 直接抄 cocos=顶部，错；源本意 level 贴 container 底部）。
-const LEVEL_BG_POS: Vector2 = Vector2(2.0, 55.0)
+# ⚠️源 cocos 左下原点：bg anchor(0,0) x=2（LEVEL_BG_LEFT）；label y=26 anchor(0.5,0.5) → label 中心距底 26。
+# Godot 左上原点翻转：bg 上边 y 动态算（显示高随 ÷CS，见 _create_level）；label 中心 y = 104 - 26 = 78。
+# （修 2026-07-18 y 翻转 bug；2026-08-22 巡检根修改按显示高动态算）。
+const LEVEL_BG_LEFT: float = 2.0
 const LEVEL_LABEL_POS: Vector2 = Vector2(18.0, 78.0)
 const LEVEL_FONT_SIZE: int = 14
 const LEVEL_Z: int = 25
@@ -46,10 +46,13 @@ const DEAD_POS: Vector2 = Vector2(44.0, 39.0)
 const HP_PERC_DENOM: float = 10000.0
 const SHADE_ALPHA: float = 150.0 / 255.0
 const DEAD_Z: int = 10
-# 贴图显示尺寸 = 原始像素 ÷ CS（源 createSprite 等价，照 readequip_icon 口径；crusade 条无 TextureConfig 条目）。
-# 2026-08-19 修：原实现原尺寸显示致条粗 1.28×（10px 高 vs 源 7.8 点），血/蓝条中心距 7 < 条高 10
-# 互相叠 3px 糊在头像上——源 7.8 高 vs 7 距仅微叠 0.8 点不可见。
+# 贴图显示尺寸 = 原始像素 ÷ CS（源 createSprite/createClippingNode 等价，TextureConfig 无
+# HERO 系条目亲证）。2026-08-19 修 bar；2026-08-22 巡检根修补齐其余三类（portrait/star/
+# levelBg 原像素直显偏大 1.28×，portrait 133px > frame 109 破框——与 readequip_icon
+# _load_sprite 统一 ÷CS 同思路，本文件是漏掉的另一半）。
 const CONTENT_SCALE: float = 1.28125
+# 源 levelBg anchor(0,0) 下边距 container 底 15（cocos）——上边 y 随显示高（÷CS）变。
+const LEVEL_BG_BOTTOM: float = 15.0
 
 const RANK_FRAME_IDS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12]
 
@@ -80,6 +83,12 @@ func setup(info: Dictionary, p_cm: Variant = null) -> void:
 	var level: Variant = info.get("level", null)
 	var hp: Variant = info.get("hp", null)
 	var mp: Variant = info.get("mp", null)
+	# 源 :375-433 可选 text/textColor/state/length（2026-08-22 巡检补齐：组内调用均 idle
+	# 无视觉损失，战斗结算/crusade 需 splited 态时可直传）。
+	var text: Variant = info.get("text", null)
+	var state: String = String(info.get("state", ""))
+	var length_v: Variant = info.get("length", null)
+	var with_shade: bool = bool(info.get("withShade", false))
 	icon = Node2D.new()
 	add_child(icon)
 	ori_icon = _create_portrait(id, p_cm)
@@ -91,7 +100,68 @@ func setup(info: Dictionary, p_cm: Variant = null) -> void:
 	_create_stars(star_count)
 	if level != null:
 		_create_level(int(level))
+	if text != null:
+		_create_text_label(str(text), info.get("textColor", Color.WHITE))
+	if state != "":
+		hp = null   # 源 :411 stateRes 命中时 info.hp=nil（状态罩替代血条）
+		with_shade = true
+		_create_state_label(state, p_cm)
+	if with_shade:
+		var shade := ColorRect.new()
+		shade.color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)
+		shade.size = CONTAINER_SIZE
+		shade.position = Vector2.ZERO
+		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.add_child(shade)
 	_add_hp_info(hp, mp)
+	if length_v != null:
+		var len_f: float = float(length_v)
+		icon.scale = Vector2(len_f / CONTAINER_SIZE.x, len_f / CONTAINER_SIZE.x)   # 源 :431-433 container:setScale(length/w)
+
+
+# 源 :375-383 textLabel：24 号底部（anchor(0.5,0) y=12%高）+textColor+黑描边 2。
+func _create_text_label(text: String, color: Variant) -> void:
+	var tl := Label.new()
+	tl.text = text
+	tl.add_theme_font_size_override("font_size", 24)
+	tl.add_theme_color_override("font_color", color if color is Color else Color.WHITE)
+	tl.add_theme_color_override("font_outline_color", Color.BLACK)
+	tl.add_theme_constant_override("outline_size", 2)
+	tl.position = Vector2(CONTAINER_SIZE.x * 0.5, CONTAINER_SIZE.y * 0.12)
+	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.add_child(tl)
+
+
+# 源 :399-429 stateLabel：hire/mining 状态字图（÷CS）@(40,65) z10；splited 文本 20 号
+# ccc3(240,220,188)（LSTR readhero.1.10.1.001，cm null 时回退 key）。
+const STATE_RES: Dictionary = {
+	"hire": "res://assets/ui/alpha/HVGA/herostatus_text_hire.png",
+	"mining": "res://assets/ui/alpha/HVGA/herostatus_text_mining.png",
+}
+const STATE_SPLITED_LSTR: String = "readhero.1.10.1.001"
+
+
+func _create_state_label(state: String, cm: Variant) -> void:
+	if STATE_RES.has(state):
+		var s := Sprite2D.new()
+		s.texture = _load_tex(String(STATE_RES[state]))
+		s.scale = Vector2.ONE / CONTENT_SCALE
+		s.position = Vector2(40.0, 65.0)
+		s.z_index = 10
+		icon.add_child(s)
+	elif state == "splited":
+		var lbl := Label.new()
+		var txt: String = STATE_SPLITED_LSTR
+		if cm != null:
+			var v: String = cm.get_lstr(STATE_SPLITED_LSTR)
+			if v != STATE_SPLITED_LSTR:
+				txt = v
+		lbl.text = txt
+		lbl.add_theme_font_size_override("font_size", 20)
+		lbl.add_theme_color_override("font_color", Color(240.0 / 255.0, 220.0 / 255.0, 188.0 / 255.0))
+		lbl.position = Vector2(40.0, 65.0)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.add_child(lbl)
 
 
 func _create_portrait(id: int, cm: Variant) -> Node2D:
@@ -103,6 +173,9 @@ func _create_portrait(id: int, cm: Variant) -> Node2D:
 	var path: String = (portrait_res as String).replace(CLIP_PATH_PREFIX, CLIP_PATH_REPLACE)
 	var sprite := Sprite2D.new()
 	sprite.texture = _load_tex(path)
+	# ÷CS：源 createClippingNode 将 stencil/portrait 缩放到点尺寸（px÷CS≈103.8 < frame
+	# 109 框包住头像）；原像素 133 直显会破框（2026-08-22 巡检根修）。
+	sprite.scale = Vector2.ONE / CONTENT_SCALE
 	sprite.position = CONTAINER_SIZE * 0.5
 	var mat := ShaderMaterial.new()
 	mat.shader = PortraitMaskShader
@@ -121,6 +194,7 @@ func _create_unknow() -> Node2D:
 	node.add_child(bg)
 	var qm := Sprite2D.new()
 	qm.texture = _load_tex(UNKNOW_PATH)
+	qm.scale = Vector2.ONE / CONTENT_SCALE   # ÷CS 同 portrait 口径（2026-08-22 巡检根修）
 	qm.position = CONTAINER_SIZE * 0.5
 	node.add_child(qm)
 	return node
@@ -151,21 +225,24 @@ func _create_stars(star_count: int) -> void:
 	for i in range(star_count, 0, -1):
 		var s := Sprite2D.new()
 		s.texture = _load_tex(STAR_PATH)
+		s.scale = Vector2.ONE / CONTENT_SCALE   # 源 createSprite 显示=px÷CS（2026-08-22 巡检根修）
 		s.position = Vector2(STAR_BASE_X + STAR_DX * (float(i) - ci), STAR_Y)
 		s.z_index = STAR_Z
 		icon.add_child(s)
 		stars.append(s)
 
 
-# Godot Label position 是左上角无 anchor：size=bg_size 框 + position=LEVEL_LABEL_POS-bg_size/2 + CENTER 对齐
-# 让文字中心 = 源中心 Godot (18,78)（104-26=78）。旧实现误用 LEVEL_BG_POS 致中心 (23.5,72) 偏 (+5.5,-6)。
+# Godot Label position 是左上角无 anchor：size=bg 显示框 + position=LEVEL_LABEL_POS-显示/2 + CENTER
+# 对齐让文字中心 = 源中心 Godot (18,78)（104-26=78）。旧实现误用 LEVEL_BG_POS 致中心 (23.5,72) 偏 (+5.5,-6)。
+# 2026-08-22 巡检根修：bg 显示=px÷CS，上边 y 随显示高动态算（源下边距底 15）。
 func _create_level(level: int) -> void:
 	var bg_tex: Texture2D = _load_tex(LEVEL_BG_PATH)
-	var bg_size: Vector2 = bg_tex.get_size() if bg_tex != null else Vector2(43.0, 34.0)
+	var bg_size: Vector2 = (bg_tex.get_size() / CONTENT_SCALE) if bg_tex != null else Vector2(43.0, 34.0) / CONTENT_SCALE
 	var bg := Sprite2D.new()
 	bg.texture = bg_tex
 	bg.centered = false
-	bg.position = LEVEL_BG_POS
+	bg.scale = Vector2.ONE / CONTENT_SCALE
+	bg.position = Vector2(LEVEL_BG_LEFT, CONTAINER_SIZE.y - LEVEL_BG_BOTTOM - bg_size.y)
 	icon.add_child(bg)
 	var lbl := Label.new()
 	level_label = lbl

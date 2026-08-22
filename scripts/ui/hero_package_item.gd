@@ -46,7 +46,9 @@ const NAME_CENTER_X: float = 177.0
 const NAME_POS_Y: float = 72.0
 const NAME_MAX_W: float = 100.0
 const NAME_FALLBACK: String = "?"
-const GRAY_MODULATE: Color = Color(0.5, 0.5, 0.5, 1.0)
+# 源 setSpriteGray（resource_manager.lua:871-877）= ccc3(100,100,100)+opacity 180 级联整树
+# （2026-08-22 巡检订正：旧 (0.5,0.5,0.5,1.0) 色值与 alpha 均不等价）。
+const GRAY_MODULATE: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 const CLIP_PREFIX: String = "UI/"
 const CLIP_REPLACE: String = "res://assets/ui/"
 const MARK_RES: Dictionary = {
@@ -137,7 +139,9 @@ func _cache_nodes() -> void:
 		_equip_slots.append(_content.get_node("%EquipSlot" + str(i + 1)) as TextureRect)
 
 
-# HeadHost 已在 _place(HEAD_POS) 烘焙位置，head position=0 挂 host。
+# HeadHost 已在 _place(HEAD_POS) 烘焙位置（cell 纹理 px 空间 = 源点 ×CS），head position=0 挂 host。
+# head ×CS 抵消 cell 整体 scale=1/CS（ReadheroIcon 按点空间设计；2026-08-22 巡检根修——
+# 不抵消则 frame 双重缩小 85 vs 源 109，框缩在头像中圈）。
 func _fill_head() -> void:
 	if is_miss:
 		head = ReadheroIcon.new()
@@ -145,6 +149,7 @@ func _fill_head() -> void:
 	else:
 		head = ReadheroIcon.create_icon_by_hero(_entry as HeroInstance, cm)
 	head.position = Vector2.ZERO
+	head.scale = Vector2.ONE * CONTENT_SCALE
 	(_content.get_node("%HeadHost") as Control).add_child(head)
 
 

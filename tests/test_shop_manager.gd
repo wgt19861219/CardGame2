@@ -213,13 +213,15 @@ func test_buy_star_soldout() -> void:
 
 # ---- 自动刷新时刻（照源 local_server.lua:1219 + up.proto:260 auto_refresh）----
 
-# 构造今天 h:m:s 的 ts（与 ShopRefreshTime 同基准 utc=false 本地）
+# 构造本地今天 h:m:s 的 ts（today_ts 同口径：+bias 拆本地、组回 -bias；两 Time API 均 UTC
+# ——2026-08-22 巡检同步：旧 epoch-UTC 基准与修复后本地口径 today_ts 失配 8h）。
 func _ts(h: int, m: int = 0, s: int = 0) -> int:
-	var d: Dictionary = Time.get_datetime_dict_from_unix_time(0)
+	var off: int = int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+	var d: Dictionary = Time.get_datetime_dict_from_unix_time(int(Time.get_unix_time_from_system()) + off)
 	d["hour"] = h
 	d["minute"] = m
 	d["second"] = s
-	return int(Time.get_unix_time_from_datetime_dict(d))
+	return int(Time.get_unix_time_from_datetime_dict(d)) - off
 
 
 # init_auto_refresh：首次开店设 ts（源 local_server:1219）；已有不重设；Shop6 Refresh Times 空不设
