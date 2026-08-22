@@ -159,7 +159,7 @@ static func _add_title(btn: Button, title_text: String, is_locked: bool = false)
 	label.size = title.size
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font", TITLE_FONT_SIZE)
+	label.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)   # Label 字号主题项名是 font_size（"font" 是 Font 类型项，写错键不生效）
 	label.clip_text = true
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_child(label)

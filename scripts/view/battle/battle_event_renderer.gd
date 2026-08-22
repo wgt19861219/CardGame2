@@ -72,7 +72,7 @@ static func _dispatch(e: BattleEvent, actors_by_unit: Dictionary) -> void:
 			if actor.has_method("on_npc_death"):
 				actor.on_npc_death()
 		BattleEvent.Type.ZSPEED:
-			if "z_speed" in actor:
-				actor.z_speed = e.value
-			elif "zSpeed" in actor:
-				actor.zSpeed = e.value
+			# BattleActor 属性为 _z_speed（无 z_speed/zSpeed 公开属性，旧两候选名均
+			# 不命中被静默丢弃→DOTsr 振荡悬浮失效；2026-08-22 巡检改方法分发）。
+			if actor.has_method("set_z_speed"):
+				actor.set_z_speed(e.value)

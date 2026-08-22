@@ -26,8 +26,11 @@ const READ_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist
 const UNREAD_BG_TEX: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_unread_bg.png"
 # 行内 icon 等比显示（源 createMail 无 fix_wh → 显示=纹理px/CS）
 const ICON_BG_CENTER: Vector2 = Vector2(45.0, 45.0)
-# 装备 icon 缩放（ReadequipIcon 72px 基准 → 源 createIcon 默认档；EquipHost 46.8 容纳）
-const EQUIP_ICON_SCALE: Vector2 = Vector2(0.65, 0.65)
+# 装备 icon（源 mailbox.lua:559-561 createIcon(iconid) 无 length 无 setScale → 显示原
+# 尺寸 94/CS≈73.37，与同行 IconBg 同宽；中心 (45,46)。产物 container 72 居中于 EquipHost
+# 中心 (45,44) → position = (45,44)-(36,36)-(21.6,20.6)。2026-08-22 巡检修订：旧 scale 0.65
+# 缩到 47.7 比源小 35% 且无源依据）。
+const EQUIP_ICON_LOCAL: Vector2 = Vector2(-12.6, -12.6)
 # 源 mailbox.lua:126-132 行 press setScale(0.95)（press→缩 0.95，release→回弹 1.0）。
 const ROW_PRESS_SCALE: Vector2 = Vector2(0.95, 0.95)
 const ROW_PRESS_SEC: float = 0.1
@@ -90,7 +93,7 @@ func _fill_icon(row: TextureButton, mail: Dictionary) -> void:
 	var iconid: int = int(mail.get("iconid", 0))
 	if iconid > 0:
 		var equip_icon: Control = ReadequipIcon.create_icon(iconid, 1, pd.cm)
-		equip_icon.scale = EQUIP_ICON_SCALE
+		equip_icon.position = EQUIP_ICON_LOCAL
 		equip_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		(row.get_node("%EquipHost") as Control).add_child(equip_icon)
 		(row.get_node("%EquipHost") as CanvasItem).visible = true

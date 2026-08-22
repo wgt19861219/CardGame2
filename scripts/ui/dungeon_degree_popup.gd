@@ -20,7 +20,9 @@ const CELL_X0: float = 10.76
 const CELL_DX: float = 170.0
 const CELL_TOP: float = 83.90
 const BTN_DISPLAY_SIZE := Vector2(172.49, 152.20)
-const GRAY_MODULATE := Color(0.4, 0.4, 0.4)
+# 源 setSpriteGray 等价（resource_manager.lua:871-877 ccc3(100,100,100)+opacity 180；
+# 2026-08-22 巡检订正：旧 (0.4,0.4,0.4) 缺 alpha 分量）。
+const GRAY_MODULATE := Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 const ICON_DIR: String = "res://assets/ui/alpha/HVGA/act/act_icon_difficulty_"
 const CONTENT_SCALE: float = 1.28125
 

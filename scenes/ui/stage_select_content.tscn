@@ -6,7 +6,8 @@
 ; 构造挂 %MapLayerHost/%FrameLayer/%DotContainer——旧死占位 FramePlaceholder/
 ; TitleBgPlaceholder（运行时被 init 清掉的双头管理债）删除。
 ; 贴图口径（批3定稿）：显示 = 像素÷CS×条目CS（Prescaled=true 才施加）；本板贴图均
-; 无条目 → 像素÷1.28125。坐标：cocos(800×480 左下) → godot = (x+80, 560-y)。
+; 无条目 → 像素÷1.28125。坐标：cocos(800×480 左下) → godot = (x, 480-y)（viewport
+; 迁移后统一口径；旧"(x+80,560-y)"系 960×640 信箱映射残留，2026-08-22 巡检勘误）。
 ; toggle 129×67px÷CS×0.9（源 refreshModeButtonPosition :245-247 setScale(0.9)；
 ; normal(345,350)/elite(455,350)/guild(489,350) 为 guild 隐藏布局，源 :240-243）。
 [gd_scene load_steps=8 format=3]

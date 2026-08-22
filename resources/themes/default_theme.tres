@@ -1713,3 +1713,14 @@ LadderTimeLabel20/font_sizes/font_size = 20
 LadderCreamLabel18/base_type = &"Label"
 LadderCreamLabel18/colors/font_color = Color(1, 0.917647, 0.776471, 1)
 LadderCreamLabel18/font_sizes/font_size = 18
+; 商店刷新确认框双按钮（2026-08-22 巡检：运行时 UiScale9Button.apply_with_label 退役迁移，
+; 照 MailOverfullBtn 先例；样式复用 SB_upgrade_n/p[herodetail-upgrade 三态，equip_strengthen
+; 先例 cap(20,20,53,29)]，字色/字号同 overfull 确认系 ccc3(239,230,209) 20）
+ShopConfirmBtn/base_type = &"Button"
+ShopConfirmBtn/colors/font_color = Color(0.937255, 0.901961, 0.819608, 1)
+ShopConfirmBtn/font_sizes/font_size = 20
+ShopConfirmBtn/styles/normal = SubResource("SB_upgrade_n")
+ShopConfirmBtn/styles/hover = SubResource("SB_upgrade_n")
+ShopConfirmBtn/styles/pressed = SubResource("SB_upgrade_p")
+ShopConfirmBtn/styles/disabled = SubResource("SB_upgrade_n")
+ShopConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")

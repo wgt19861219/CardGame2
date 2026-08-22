@@ -271,8 +271,8 @@ func test_frame_position_matches_source() -> void:
 			break
 	assert_not_null(frame, "normal frame 建出（stage-map-frame.png）")
 	if frame != null:
-		assert_almost_eq(frame.position.y + frame.size.y * 0.5, 355.0, 1.5, "normal frame 中心 y≈355（源 ccp(400,205)→godot）")
-		assert_almost_eq(frame.position.x + frame.size.x * 0.5, 480.0, 1.5, "normal frame 中心 x=480")
+		assert_almost_eq(frame.position.y + frame.size.y * 0.5, 275.0, 1.5, "normal frame 中心 y≈275（源 ccp(400,205)→godot 480-205；旧 355 系 960 口径残留 2026-08-22 巡检订正）")
+		assert_almost_eq(frame.position.x + frame.size.x * 0.5, 400.0, 1.5, "normal frame 中心 x=400")
 		assert_almost_eq(frame.size.x, 936.0 / CS, 0.5, "frame 宽 = 936px÷CS（Prescaled=false 条目不施加，偏大补丁撤销）")
 		assert_almost_eq(frame.size.y, 507.0 / CS, 0.5, "frame 高 = 507px÷CS")
 

@@ -29,6 +29,7 @@ const LOOT_SIZE: Vector2 = Vector2(85.0, 44.0)
 const GOLD_TEXT_POS: Vector2 = Vector2(33.0, 22.0)
 const LOOT_TEXT_POS: Vector2 = Vector2(25.0, 22.0)
 const ICON_RIGHT_OFFSET: float = 4.0
+const CONTENT_SCALE: float = 1.28125   # 源 createSprite 显示=px÷CS（icon 尺寸口径，2026-08-22 巡检根修）
 const LOOT_HOLO_POS: Vector2 = Vector2(24.0, 24.0)
 const LOOT_HOLO_INIT_SCALE: float = 0.4
 const GOLD_PULSE_DURATION: float = 0.1
@@ -69,9 +70,11 @@ func _apply_kind_layout() -> void:
 		var tex: Texture2D = _load_tex(icon_path)
 		if tex != null:
 			_icon.texture = tex
+			# icon 显示=px÷CS（marker_size/offset 是点常量，旧 tex px 直混算偏大 1.28×）。
+			_icon.scale = Vector2.ONE / CONTENT_SCALE
 			_icon.position = Vector2(
-				marker_size.x - ICON_RIGHT_OFFSET - float(tex.get_width()),
-				marker_size.y * 0.5 - float(tex.get_height()) * 0.5
+				marker_size.x - ICON_RIGHT_OFFSET - float(tex.get_width()) / CONTENT_SCALE,
+				marker_size.y * 0.5 - float(tex.get_height()) / CONTENT_SCALE * 0.5
 			)
 	if _text != null:
 		_text.position = text_center - LABEL_BOX * 0.5

@@ -29,6 +29,7 @@ const AI_NAMES: Array[String] = [
 
 var cur_stage: int = 1
 var reset_times: int = 0
+var last_reset_ts: int = 0   # 跨日清零锚点（check_daily_reset；0=未记录，旧档兼容）
 var hero_hp_perc: Dictionary = {}   # tid(int) -> hp%(0-1)
 var hero_mp_perc: Dictionary = {}   # tid(int) -> mp%
 var cleared_stages: Dictionary = {}  # stage(int) -> bool
@@ -57,6 +58,31 @@ func fight(won: bool, hp_perc_map: Dictionary, mp_perc_map: Dictionary, stage: i
 const RESET_MAX_PER_DAY: int = 10
 func get_reset_left() -> int:
 	return RESET_MAX_PER_DAY - reset_times
+
+
+## 跨日重置 reset_times（源 crusade.lua:536-538 leftTime=10-_reset_times 服务器每日重置；
+## 单机化本地跨日清零，照 excavate_manager.check_search_day_reset 范式。2026-08-22 巡检接线）。
+func check_daily_reset(now: int) -> void:
+	if reset_times > 0 and _crossed_day(last_reset_ts, now):
+		reset_times = 0
+		last_reset_ts = now
+
+
+const DAY_KEY_YEAR_WEIGHT: int = 10000
+const DAY_KEY_MONTH_WEIGHT: int = 100
+const SECONDS_PER_MINUTE: int = 60
+
+
+static func _crossed_day(last_ts: int, now: int) -> bool:
+	if last_ts <= 0:
+		return true
+	var off_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	return _local_day_key(last_ts, off_min) != _local_day_key(now, off_min)
+
+
+static func _local_day_key(ts: int, off_min: int) -> int:
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + off_min * SECONDS_PER_MINUTE)
+	return int(dt["year"]) * DAY_KEY_YEAR_WEIGHT + int(dt["month"]) * DAY_KEY_MONTH_WEIGHT + int(dt["day"])
 
 
 ## 分组 reset：满血 + 回到层 1 + 清进度（reset_times++，走数据驱动重置）。
@@ -232,6 +258,7 @@ func to_dict() -> Dictionary:
 	return {
 		"cur_stage": cur_stage,
 		"reset_times": reset_times,
+		"last_reset_ts": last_reset_ts,
 		"hero_hp_perc": hero_hp_perc.duplicate(true),
 		"hero_mp_perc": hero_mp_perc.duplicate(true),
 		"cleared_stages": cleared_stages.duplicate(true),
@@ -244,6 +271,7 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> CrusadeManager:
 	var mgr := CrusadeManager.new(cm)
 	mgr.cur_stage = int(data.get("cur_stage", 1))
 	mgr.reset_times = int(data.get("reset_times", 0))
+	mgr.last_reset_ts = int(data.get("last_reset_ts", 0))
 	mgr.hero_hp_perc = data.get("hero_hp_perc", {})
 	mgr.hero_mp_perc = data.get("hero_mp_perc", {})
 	mgr.cleared_stages = data.get("cleared_stages", {})

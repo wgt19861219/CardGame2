@@ -129,8 +129,9 @@ func test_hp_bar_foreground_aligned_to_bg_left() -> void:
 	if bg == null or fg == null or bg.texture == null or fg.texture == null:
 		fail_test("bar 节点/贴图缺失")
 		return
-	var bg_size: Vector2 = bg.texture.get_size()
+	# ÷CS 显示口径（2026-08-22 巡检根修：bg.scale=1/CS + bg_half 用显示尺寸 px/CS）
+	var bg_size: Vector2 = bg.texture.get_size() / 1.28125
 	var expect_left: float = -bg_size.x * 0.5 + 6.0   # bg centered=true 原点=中心 → 左上=-half+OFFSET
 	assert_almost_eq(fg.position.x, expect_left, 0.1, "fg 左上 x = bg 左缘+6（非中心起画）")
 	assert_almost_eq(fg.position.y, -bg_size.y * 0.5 + 1.0, 0.1, "fg 左上 y = bg 上缘+1")
-	assert_lte(fg.position.x + fg.texture.get_size().x, bg_size.x * 0.5, "fg 满格右缘 ≤ bg 右缘")
+	assert_lte(fg.position.x + fg.texture.get_size().x / 1.28125, bg_size.x * 0.5, "fg 满格右缘 ≤ bg 右缘")

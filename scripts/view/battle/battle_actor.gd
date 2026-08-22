@@ -46,6 +46,12 @@ var _interp_to: Vector2 = Vector2.ZERO
 var _interp_alpha: float = 0.0
 var _z_speed: Variant = null
 var _height: float = 0.0
+
+
+## ZSPEED 事件入口（源 DOTsr.lua:5-11 每帧写 actor.zSpeed 振荡悬浮）——renderer 按
+## has_method 分发（2026-08-22 巡检：旧按属性名探测两候选均不命中被静默丢弃）。
+func set_z_speed(v: float) -> void:
+	_z_speed = v
 var _effects: Dictionary = {}
 var _shader_stack: Array[String] = []
 var _shader_keys: Dictionary = {}      # T4：Logic token → push_shader 返回槽位（keyed 变体用）
@@ -142,7 +148,9 @@ func update_view(dt: float) -> void:
 		if _height < 0.0:
 			_z_speed = null
 			_height = 0.0
-	position = BattleViewCoords.to_view_position(logic_pos.x, logic_pos.y, -_height)
+	# 击飞高度正=屏幕上方（源 unit.lua:1785 toViewPosition(pos, h) 正号直传；
+	# 2026-08-22 巡检订正：旧负号致击飞单位向屏幕下方坠）。
+	position = BattleViewCoords.to_view_position(logic_pos.x, logic_pos.y, _height)
 	z_index = -int(float(model.position.y))
 	if bar_group != null:
 		bar_group.update(dt)

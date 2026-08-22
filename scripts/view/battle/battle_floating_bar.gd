@@ -7,6 +7,7 @@ extends Node2D
 ## 平滑逻辑同 BattleHpBar（减血立即/回血渐增/mid 滞后）。HpBar（大血条 hero_panel 用）与 FloatingBar（小血条单位用）并存。
 
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
+const CONTENT_SCALE: float = 1.28125   # 源 createSprite 显示=px÷CS（floating 条族无条目）
 const EPSILON: float = 0.001
 const HIDE_DELAY: float = 1.5
 const DEATH_HIDE_CAP: float = 0.5
@@ -58,10 +59,13 @@ func _setup(unit: Variant, bar_type: String) -> void:
 		var camp_key: String = str(int(_unit.camp))
 		_midlayer = _load_sprite(String(cfg.get("mid", "")))
 		_foreground = _load_sprite(String((cfg.get("fg", {}) as Dictionary).get(camp_key, "")))
+		# ÷CS：源 createSprite 显示=px÷CS（2026-08-22 巡检根修，旧原像素直显偏大 1.28×）；
+		# bg.scale 级联子层，子局部坐标即点空间。
+		_background.scale = Vector2.ONE / CONTENT_SCALE
 		# bg centered=true（原点在贴图中心）；fg/mid centered=false 需左对齐 bg：
-		# position = -bg尺寸/2，让 fg 左上角对齐 bg 左上角（否则 fg 从 bg 中心向右画只显示右半）。
+		# position = -bg显示/2，让 fg 左上角对齐 bg 左上角（否则 fg 从 bg 中心向右画只显示右半）。
 		var bg_tex: Texture2D = _background.texture
-		var bg_half: Vector2 = (bg_tex.get_size() * 0.5) if bg_tex != null else Vector2.ZERO
+		var bg_half: Vector2 = (bg_tex.get_size() / CONTENT_SCALE * 0.5) if bg_tex != null else Vector2.ZERO
 		if _midlayer:
 			_midlayer.centered = false
 			_midlayer.position = -bg_half

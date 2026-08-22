@@ -49,7 +49,37 @@ static func check_heroic_prereq(group_id: int, mgr: StageManager, cm: ConfigMana
 	return {"ok": true, "prereq_group": 0}
 
 
+const DAY_KEY_YEAR_WEIGHT: int = 10000    # 本地自然日序号（照 excavate_manager._local_day_key）
+const DAY_KEY_MONTH_WEIGHT: int = 100
+const SECONDS_PER_MINUTE: int = 60
+
+
+## act_times 跨日清零（源 DailyLimit 每日语义，服务器每日重置→单机本地跨日；锚点
+## mgr.act_times_reset_ts。2026-08-22 巡检接线）。
+static func check_act_times_daily_reset(mgr: StageManager, now: int) -> void:
+	if mgr.act_times.is_empty():
+		return
+	if mgr.act_times_reset_ts <= 0 or _crossed_day(mgr.act_times_reset_ts, now):
+		mgr.act_times.clear()
+		mgr.act_times_reset_ts = now
+
+
+static func _crossed_day(last_ts: int, now: int) -> bool:
+	if last_ts <= 0:
+		return true
+	var off_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	return _local_day_key(last_ts, off_min) != _local_day_key(now, off_min)
+
+
+static func _local_day_key(ts: int, off_min: int) -> int:
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + off_min * SECONDS_PER_MINUTE)
+	return int(dt["year"]) * DAY_KEY_YEAR_WEIGHT + int(dt["month"]) * DAY_KEY_MONTH_WEIGHT + int(dt["day"])
+
+
 static func check_enter_dungeon(mgr: StageManager, stage_id: int, stage_group: int, player: PlayerData, cm: ConfigManager) -> String:
+	# Unlock Level 不在此查（enter_act_stage 外层 :111 查 + dungeon_degree_popup UI 层
+	# unlock_level 拦截；2026-08-22 巡检曾挪入后退回——保持原职责分工）。
+	check_act_times_daily_reset(mgr, int(Time.get_unix_time_from_system()))
 	var prereq: Dictionary = check_heroic_prereq(stage_group, mgr, cm)
 	if not bool(prereq.get("ok", true)):
 		return "heroic_prereq"

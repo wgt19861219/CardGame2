@@ -21,7 +21,7 @@ const HINT_OFFSET_Y: float = -30.0
 const HINT_OFFSET_BOX_X: float = 40.0
 const HINT_FLOAT_DELTA: float = 10.0
 const HINT_FLOAT_TIME: float = 0.5
-const ENEMY_ICON_SCALE: float = 0.65
+const ENEMY_ICON_SCALE: float = 0.8   # 源 crusade.lua:231 heroIcon.icon:setScale(0.8)（2026-08-22 巡检照源订正旧 0.65）
 const ENEMY_ICON_GAP: int = 5
 const ENEMY_HP_FULL: int = 10000
 const CRUSADE_HERO_MIN_LEVEL: int = 20
@@ -130,6 +130,9 @@ func _fill_stage_grid() -> void:
 func _fill_lefttime() -> void:
 	if player == null or player.crusade_manager == null:
 		return
+	# 跨日清零 reset_times（源 crusade.lua:536-538 服务器每日重置；单机化本地跨日，
+	# 2026-08-22 巡检接线）。
+	player.crusade_manager.check_daily_reset(int(Time.get_unix_time_from_system()))
 	var left: int = player.crusade_manager.get_reset_left()
 	var lbl: Label = _content.get_node("%LefttimeLabel") as Label
 	lbl.text = _lstr(LSTR_LEFTTIME_KEY, LSTR_LEFTTIME_FALLBACK) % left
@@ -201,7 +204,9 @@ func _on_box_pressed(i: int) -> void:
 	if cm_mgr.is_stage_cleared(i):
 		_apply_box_reward(i)
 		return
-	if not _is_stage_locked(i):
+	# 源 hintBoxDown（crusade.lua:407-423）雾视野内未通关宝箱可预览：cur<=3 则 index<=3
+	# 可预览（边界 3/6/9/12）——i <= ceil(cur/3)*3。2026-08-22 巡检照源订正旧锁判定。
+	if i <= ceili(float(cm_mgr.cur_stage) / 3.0) * 3:
 		_show_reward_preview(i)
 
 
@@ -222,26 +227,47 @@ func _apply_box_reward(stage: int) -> void:
 	_refresh_stage_states()
 
 
+var _reward_preview: Control = null
+
+
 func _show_reward_preview(i: int) -> void:
-	var slots: Array = player.crusade_manager.draw_reward_slots(i)
+	# 源 initRewardUI（crusade.lua:247-297）读配置表 battleReward（数据预览非运行时领取）——
+	# 用 CrusadeRewardsData.get_reward_slots 无副作用版（旧误用 draw_reward_slots 带领取
+	# 标记副作用）。浮层构建下沉 CrusadeFills；2026-08-22 巡检重做旧 result_label 文本降级。
+	_clear_reward_preview()
+	var slots: Array = CrusadeRewardsData.get_reward_slots(player.cm, i, 1, false)
 	if slots.is_empty():
-		result_label.text = "第 " + str(i) + " 关 暂无奖励预览"
 		return
-	var preview_text: String = "第 " + str(i) + " 关 预览："
-	for s in slots:
-		preview_text += String(s["type"]) + "×" + str(s["amount"]) + " "
-	result_label.text = preview_text
+	_reward_preview = CrusadeFills.build_reward_preview(_content, slots, player.cm)
+	if is_inside_tree():
+		_reward_preview.pivot_offset = _reward_preview.size * 0.5
+		_reward_preview.scale = Vector2.ZERO
+		var tw := create_tween()   # 源 :294-296 CCScaleTo(0.1,1)
+		tw.tween_property(_reward_preview, "scale", Vector2.ONE, 0.1)
 
 
-## 源 refreshFog（:42-67）：fog_i visible = cur <= 3×i（四层叠放随进度消散）。
+func _clear_reward_preview() -> void:
+	if _reward_preview != null:
+		_reward_preview.queue_free()
+		_reward_preview = null
+
+
+## 源 refreshFog（:42-67）：fog_i visible = cur <= 3×i（四层叠放随进度消散）；
+## 消散走 1.5s FadeOut（refreshFogAnimation :68-88，2026-08-22 巡检补译）。
 func _refresh_fog() -> void:
 	if fog_rects.size() < 4 or player == null or player.crusade_manager == null:
 		return
+	_clear_reward_preview()
 	var cur: int = player.crusade_manager.cur_stage
-	fog_rects[0].visible = cur <= 3
-	fog_rects[1].visible = cur <= 6
-	fog_rects[2].visible = cur <= 9
-	fog_rects[3].visible = cur <= 12
+	for k in range(4):
+		var fog: TextureRect = fog_rects[k]
+		if cur <= (k + 1) * 3:
+			fog.modulate.a = 1.0
+			fog.visible = true
+		elif fog.visible and fog.modulate.a > 0.0:
+			var tw := create_tween()
+			tw.tween_property(fog, "modulate:a", 0.0, 1.5)
+			tw.tween_callback(func() -> void: fog.visible = false)
 
 
 func _refresh_enemy_preview(stage: int) -> void:
@@ -338,7 +364,9 @@ func _shake_box() -> void:
 	if not is_inside_tree() or player == null or player.crusade_manager == null:
 		return
 	var prev: int = player.crusade_manager.cur_stage - 1
-	if prev < 1 or not player.crusade_manager.is_stage_cleared(prev):
+	# 源 crusade.lua:31 battleState=="passed"（通关未领）才摇，"rewarded" 不摇——
+	# 2026-08-22 巡检订正：cleared 含已领，旧条件致已领宝箱永久摇。
+	if prev < 1 or not player.crusade_manager.is_stage_cleared(prev) or player.crusade_manager.is_stage_rewarded(prev):
 		return
 	_bounce_box_at(prev - 1, SHAKE_SCALE_PEAK, SHAKE_DURATION)
 

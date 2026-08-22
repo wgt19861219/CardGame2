@@ -14,8 +14,9 @@ const ROOT_ICON_SCALE: float = 60.0 / (94.0 / 1.28125)
 # 源 board.lua:60 拥有量 "EQUIPINFO.HAVE %d EQUIPINFO.ITEM"
 const LSTR_HAVE: String = "EQUIPINFO.HAVE"
 const LSTR_ITEM: String = "EQUIPINFO.ITEM"
-# 历史栏（源 equipcraft.lua:843-872：ori=(55,350) + arrow 分隔；icon 40px）
-const HISTORY_ICON_SCALE: float = 40.0 / (94.0 / 1.28125)
+# 历史栏（源 equipcraft.lua:843-872：ori=(55,350) + arrow 分隔；createSmallIcon →
+# readequip.lua:877 createIcon(id,38) → 显示 38 点，2026-08-22 巡检订正旧注释 40）
+const HISTORY_ICON_SCALE: float = 38.0 / (94.0 / 1.28125)
 const HISTORY_ARROW_PATH: String = "res://assets/ui/alpha/HVGA/view_history_arrow.png"
 # history layer 挂 %HistoryClip（源 draglist cliprect 原点 bg 局部 (12,300)），origin 相对 clip
 # = 源 (55-12, 380-350) = (43, 30)（Godot 顶起 y 向下）。

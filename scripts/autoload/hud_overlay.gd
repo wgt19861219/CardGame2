@@ -26,8 +26,6 @@ const ShortcutRouter = preload("res://scripts/ui/shortcut_router.gd")
 const HUD_LAYER: int = 150   # 高于 PopWindow z_index=100，低于 Toast layer=200
 const STATUS_BAR_H: float = 52.0   # StatusBar 容器高度（照 main_scene 原 BAR_H，货币条绝对坐标在其外）
 const MAIN_IDENTITY: String = "main"
-const SHORTCUT_HIDDEN_IDENTITIES: Array[String] = ["crusade", "battle"]
-const SHORTCUT_HIDDEN_SUFFIXES: Array[String] = ["GWMode"]
 const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle", "battleprepare", "handbook"]   # 整体隐藏 HUD（battle_scene/battle_prepare/handbook 源里无 HUD——handbook extends basescene 非 framework，2026-08-18 用户实跑反馈）
 # 通知轮询间隔（秒）：5 定时提醒到点检测（源 localnotify 手机推送 → 单机游戏内 Toast，
 # 30s 粒度足够——源时间点粒度为分钟；2026-08-21 SetupPanel 二轮）。
@@ -190,13 +188,3 @@ func _on_shortcut_open(key: String) -> void:
 	if scene == null:
 		return
 	ShortcutRouter.route(scene, key)
-
-
-# 源 framework.lua:994-1004 shortcut 显隐规则
-func _should_hide_shortcut(identity: String) -> bool:
-	if identity in SHORTCUT_HIDDEN_IDENTITIES:
-		return true
-	for suffix in SHORTCUT_HIDDEN_SUFFIXES:
-		if identity.ends_with(suffix):
-			return true
-	return false

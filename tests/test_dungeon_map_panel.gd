@@ -182,9 +182,10 @@ func test_panel_boss_unlocked_first() -> void:
 	# 首关恒解锁（modulate 白色，非灰）
 	var first_btn: TextureButton = panel.boss_buttons[0]
 	assert_eq(first_btn.modulate, Color(1, 1, 1), "首关 unlocked（白色 modulate）")
-	# 第 2 关未解锁（progress 空，前置未通关）→ 灰
+	# 源 dungeon_map.lua:207-209 已通关 boss 才灰化表"已完成"；未解锁不灰（:184 仅点击
+	# 静默）——2026-08-22 巡检订正：旧断言"未解锁灰"与源相反。
 	var second_btn: TextureButton = panel.boss_buttons[1]
-	assert_eq(second_btn.modulate, Color(0.4, 0.4, 0.4), "第 2 关 locked（灰色 modulate）")
+	assert_eq(second_btn.modulate, Color(1, 1, 1), "第 2 关未解锁不灰（源灰化=已通关）")
 	panel.free()
 
 
@@ -271,18 +272,8 @@ func test_fade_out_fog_immediate_when_not_in_tree() -> void:
 	panel.free()
 
 
-# 照源 dungeon_map.lua:251-256 openChest reward 显示 Item 表 Display Name，无则 fallback。
-func test_reward_display_name_fallback() -> void:
-	var panel := _make_panel("em", [50005, 50006, 50007])
-	assert_eq(panel._reward_display_name(99999), "Item:99999", "无 Item 表时 fallback Item:<id>（源 :255）")
-	panel.free()
-
-
-func test_reward_display_name_uses_item_table() -> void:
-	var panel := _make_panel("em", [50005, 50006, 50007])
-	var name: String = panel._reward_display_name(1)
-	assert_true(name.length() > 0, "_reward_display_name 永返非空（源 :253-255 row or fallback）")
-	panel.free()
+# 手动开箱链（含 _reward_display_name）已随 2026-08-22 巡检照源删除（源 dungeon_map.lua
+# :211-213 通关自动换图，奖励走结算 exit_dungeon 非 map 层），对应两测试一并移除。
 
 
 # 静态美术层（2026-08-16 两件套）：原 CrusadePanelBuilder procedural 5 类美术

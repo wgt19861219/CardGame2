@@ -140,7 +140,10 @@ static func play_craft_effect(panel) -> void:
 		var fly_count: int = min(amount, 5)
 		for i in range(fly_count):
 			var element: Control = ReadequipIcon.create_icon(int(nodeid[k]), 0, panel.cm)
-			element.scale = Vector2(EquipCraftTree.CHILD_ICON_SCALE, EquipCraftTree.CHILD_ICON_SCALE)
+			# 源 equipcraft.lua:420 createSmallIcon → readequip.lua:877 createIcon(id,38)
+			# 飞行元素 38 点（2026-08-22 巡检订正：误用树子节点 45 档）。
+			var fly_scale: float = 38.0 / (94.0 / 1.28125)
+			element.scale = Vector2(fly_scale, fly_scale)
 			element.position = (children[k] as Control).position
 			panel._tree.add_child(element)
 			var tw: Tween = panel.create_tween().set_parallel(false)

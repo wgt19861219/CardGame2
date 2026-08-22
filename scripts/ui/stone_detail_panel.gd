@@ -48,7 +48,7 @@ const GETWAY_DY: float = 50.0
 const MAX_DROPS: int = 3   # 数据表 Drop 1..3（grep 确认 Drop 4 不存在，同 equipcraft）
 # ── 行内动态布局（静态定位已在行模板；board 显示 242.7x52.3 = 311x67 ÷ CS）──
 const CS: float = 1.28125
-const STAGE_ICON_FIX_H: float = 75.0 / CS   # 源 :307 fix_height=75
+const STAGE_ICON_FIX_H: float = 75.0    # 源 :307 fix_height=75（readnode :201 ss=fix_h/逻辑高，显示高恒 75 点，勿再 ÷CS——2026-08-22 巡检订正）
 const BOARD_NAME_MAX_W: float = 160.0 / CS  # 源 :351 max_width=160
 const ELITE_GAP: float = 6.0 / CS           # 源 :338 right2 offset=6
 
@@ -119,10 +119,10 @@ func _hero_display_name() -> String:
 
 
 # 碎片图标（源 createIcon :147-175 readequip.createIcon(sid) at (60,290) 中心锚）：
-# 动态品质框+数量角标走工厂，挂零尺寸点 host 后负半偏移居中（shop IconHost 同款）。
+# 动态品质框挂零尺寸点 host 后负半偏移居中（shop IconHost 同款）。源用 createIcon 非
+# createIconWithAmount → 无数量角标（拥有量由下方 "(X/Y)" 行承担，2026-08-22 巡检订正）。
 func _fill_stone_icon() -> void:
-	var amount: int = ReadheroHandbook.get_stone_amount(_tid, cm, _hero_mgr)
-	var icon: Control = ReadequipIcon.create_icon(_stone_id, amount, cm)
+	var icon: Control = ReadequipIcon.create_icon(_stone_id, 0, cm)
 	icon.position = -icon.size * 0.5
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stone_icon_host.add_child(icon)

@@ -13,6 +13,7 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_big_hp_bar_content.tscn")
 const GUILD_DIR: String = "res://assets/ui/alpha/HVGA/guild/"
+const CONTENT_SCALE: float = 1.28125   # 源 createSprite 显示=px÷CS（guild 条族无 TextureConfig 条目）
 const EPSILON: float = 0.001
 const INC_SPEED: float = 0.3
 const BG_SCALE_FACTOR: float = 0.9
@@ -49,6 +50,9 @@ func _setup(unit: Variant, length: float) -> void:
 	# Phase A 静态化：6 个 Sprite2D + centered + bg/transition/boss_frame 贴图固化进 .tscn
 	# （content 挂 self — Control 组件坑 7）；position 0,0、动态贴图、scale 由 _layout/resetForeground 设。
 	var content := CONTENT_SCENE.instantiate()
+	# ÷CS：源 createSprite 显示=px÷CS（2026-08-22 巡检根修，旧原像素直显整条偏大 1.28×）；
+	# content 根整体缩放，内部 _layout 的 px 空间数学保持自洽。
+	content.scale = Vector2.ONE / CONTENT_SCALE
 	add_child(content)
 	_background = content.get_node("%Background") as Sprite2D
 	_midlayer = content.get_node("%Midlayer") as Sprite2D

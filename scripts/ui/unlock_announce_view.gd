@@ -79,7 +79,7 @@ func _setup_panel(cfg: Dictionary) -> void:
 	var label: Label = _panel.get_node("%Label") as Label
 	label.text = String(cfg.get("text", ""))
 	label.add_theme_color_override("font_color", TutorialData.UNLOCK_FONT_COLOR)
-	label.add_theme_font_size_override("font", FONT_SIZE)
+	label.add_theme_font_size_override("font_size", FONT_SIZE)   # 字号主题项名 font_size（旧 "font" 写错键不生效）
 
 
 # icon_res step 静态 TextureRect（源 tutorialmaker.lua:96 createSprite 无 fix_size → sprite 显示=texture/CS）

@@ -17,7 +17,9 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipboard_ofbuy_con
 
 # icon 定位（源 board.lua:320 ccp(50,328) 中心锚 → 左上 (14,21)，同 EquipboardPanel 实证口径）
 const ICON_POS: Vector2 = Vector2(14.0, 21.0)
-const ICON_SCALE: float = 0.8   # 用户视觉偏好缩小（同 EquipboardPanel；源 createIcon 无 scale）
+# 用户视觉偏好：EquipboardPanel 定稿 0.8×CS=75.2 基数（9bc640e 统一 ÷CS 后乘回 CS，
+# 2026-08-22 修——ofbuy 漏跟姊妹文件同批修复，旧 0.8 缩到 58.7）；源 createIcon 无 scale。
+const ICON_SCALE: float = 0.8 * CONTENT_SCALE
 # name 长名缩放（源 board.lua:338-341 w>160 → setScale(160/w)）
 const NAME_MAX_W: float = 160.0
 # att_bg 高度自适应（源 board.lua:263 setContentSize(bw, attListHeight + 12)）

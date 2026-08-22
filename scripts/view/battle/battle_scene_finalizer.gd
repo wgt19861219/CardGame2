@@ -13,6 +13,17 @@ const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"
 const UnitSpriteScript = preload("res://scripts/view/battle/unit_sprite.gd")
 
 
+# 中途放弃战斗（源 battle_scene.lua:230-245 exit 按钮 → :331-344 exit()=exitStage(2,true)
+# +popScene 回上一场景：不算胜负、不结算奖励；已扣的体力/副本次数照扣=源 enterStage 即计
+# 次语义。2026-08-22 巡检接线：项目无场景栈且一切入口面板挂 main（stage_select 亦
+# PopWindow），统一回 main_scene（同结算页 goto_main_scene 惯例）。
+static func abort_battle(scene) -> void:
+	GameData.mark_save_dirty()
+	GameData.battle_context.clear()
+	_clear_battle_resources()
+	SceneManager.change_scene(MAIN_SCENE_PATH)
+
+
 # 切场景前清战斗静态缓存：UnitSprite._atlas_cache/FcaAnimation._cache 持 atlas+Image+FCA 解析数据
 # 生产从不清理 → 111 resources leak；BattlePopup._record 持 BattleUnit 对象图 → 5018 ObjectDB。
 static func _clear_battle_resources() -> void:

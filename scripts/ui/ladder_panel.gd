@@ -398,11 +398,16 @@ func _fill_lineup_tab() -> void:
 	var lineup: Array = reply["_open_panel"]["lineup"] as Array
 	_lineup_title.text = "%s（%d 英雄）" % [_cm.get_lstr("PVP.DEFENSIVE_TEAM_"), lineup.size()]
 	for i in mini(5, lineup.size()):
-		# 源 readhero.createIconByID(id)（完整英雄头像含框）→ ReadheroIcon 等价
-		#（lineup 无 rank/stars/level 数据，用默认 1/0/不显）。
-		var icon := ReadheroIcon.new()
-		icon.setup({"id": int(lineup[i]), "rank": 1, "stars": 0}, _cm)
-		(_lineup_slots[i] as Control).add_child(icon)
+		# 源 pvp.lua initDefandHeroList readhero.createIconByID(id) 按玩家英雄实例取
+		# rank/stars → 框档随实际品质（2026-08-22 巡检订正：旧恒 rank=1/stars=0 档显错；
+		# lineup 存 tid，反查实例，无实例（已分解等）降级默认）。
+		var hero: HeroInstance = _player.hero_manager.find_hero_by_tid(int(lineup[i]))
+		if hero != null:
+			(_lineup_slots[i] as Control).add_child(ReadheroIcon.create_icon_by_hero(hero, _cm))
+		else:
+			var fallback := ReadheroIcon.new()
+			fallback.setup({"id": int(lineup[i]), "rank": 1, "stars": 0}, _cm)
+			(_lineup_slots[i] as Control).add_child(fallback)
 
 
 func _on_set_lineup() -> void:

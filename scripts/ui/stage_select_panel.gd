@@ -24,8 +24,10 @@ const ARROW_BOB_TIME: float = 1.0
 const ARROW_BOB_DX: float = 10.0
 const POINTER_BOB_TIME: float = 0.5
 const POINTER_BOB_DY: float = 10.0
-const MASK_BLINK_TIME: float = 0.6
-const MASK_ALPHA_MIN: float = 0.3
+# 源 stageselect.lua:1234-1237 CCFadeTo(1,0)+CCFadeTo(1,255)：1s 完全淡出↔1s 回满，周期 2s
+# （2026-08-22 巡检订正：旧 0.6s/0.3↔1.0 周期 1.2s 且不完全消失）。
+const MASK_BLINK_TIME: float = 1.0
+const MASK_ALPHA_MIN: float = 0.0
 const MASK_ALPHA_MAX: float = 1.0
 const META_FRAME: StringName = StageSelectFills.META_FRAME
 const META_TITLE: StringName = StageSelectFills.META_TITLE
