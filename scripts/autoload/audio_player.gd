@@ -31,7 +31,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	_load_sound_cfg()
+	# 测试隔离（2026-08-21，照 GameData._test_mode 同款）：check.sh GODOT_TEST_MODE=1
+	# 下不读用户 audio.cfg——用户实跑关音效（sound_on=false 持久化）曾致 9 个 SFX
+	# 用例短路全挂（测试自建实例 _ready 读到 false）。测试态保持默认开。
+	if OS.get_environment("GODOT_TEST_MODE") == "" and not Engine.is_editor_hint():
+		_load_sound_cfg()
 	for i in range(SFX_POOL_SIZE):
 		var p := AudioStreamPlayer.new()
 		p.volume_db = linear_to_db(SFX_VOLUME)

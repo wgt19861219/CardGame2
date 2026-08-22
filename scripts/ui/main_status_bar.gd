@@ -15,7 +15,10 @@ const UIConstants := preload("res://resources/constants/ui_constants.gd")
 # C13 坐标基准核查结论：statusbar 是 framework HUD 层（标准 UI），走 to_godot(cx,cy)=(cx+80,560-cy)
 # （源 800×480 左下原点 → Godot 960×640 左上原点 + 居中偏移 80）；非 main_scene ENTRIES 的 MAP_H-cocos_y
 # 基准（map 全屏背景适配，950×640 整张图）。两者不冲突——ENTRIES 是 map 装饰，statusbar 是 framework HUD。
-const HEAD_POS: Vector2 = Vector2(150.0, 66.0)
+# 2026-08-21 用户指示贴屏幕左上角：框图（容器内 (0,13.8)~(109.3,95)）左移上移至
+# 屏 (5,5) 起距 5px 边距 → 容器原点 (5,-8.8) → 容器中心 HEAD_POS=(73.5,43.7)。
+# （源 head_bg_pos=ccp(winLeft+70,434) 距左 70/距顶 46，用户偏好更贴角，受控偏离）
+const HEAD_POS: Vector2 = Vector2(73.5, 43.7)
 const HEAD_SIZE: Vector2 = Vector2(137.0, 105.0)
 const HEAD_FRAME_RES: Array = [
 	"res://assets/ui/alpha/HVGA/main_head_bg_silver.png",   # VIP=0 银色
@@ -34,8 +37,26 @@ const NAME_BG_RES: Array = [
 const HEAD_MASK_RES: String = "res://assets/ui/alpha/HVGA/main_head_mask.png"
 const PortraitMaskShader: Shader = preload("res://shaders/portrait_mask.gdshader")
 const HEAD_ICON_SIZE: float = 70.0   # 照 configure._add_head_icon 同款显示尺寸
-# icon 放中上（HEAD_SIZE 137×105：水平居中，name_bg/name 占底部 y72+）。
-const HEAD_ICON_POS: Vector2 = Vector2((137.0 - 70.0) * 0.5, 15.0)
+# icon 位置照源直译：head_icon_pos=ccp(40,54)（uires.lua:41，container 内中心锚、
+# cocos 左下原点）→ Godot 中心 (40, 105-54)=(40,51)，左上 =(40-35, 51-35)=(5,16)。
+# 头像在框左部圆窗（右侧留给等级/昵称区）。2026-08-21 修正：旧值 (33.5,15) 水平
+# 居中拍脑袋致偏右 28.5 出框。
+const HEAD_ICON_CENTER: Vector2 = Vector2(40.0, 51.0)   # 源锚点 (40,54) cocos → Godot 中心
+# 框贴图显示尺寸照源直译（statusbar.lua:239-262 readnode：head_bg/head_frame 均
+# anchor(0,0)@cocos(0,10)，无 scaleSize → 贴图 140×104px ÷CS=109.3×81.2 点尺寸显示，
+# 不铺满 137×105 容器）→ Godot pos=(0, 105-10-81.2)=(0,13.8)。2026-08-21 二次修正：
+# 旧实现铺满 HEAD_SIZE 拉伸 1.26×，盾窗随放大错位致头像「不在框里」。
+const HEAD_BG_DISPLAY: Vector2 = Vector2(109.3, 81.2)
+const HEAD_BG_POS: Vector2 = Vector2(0.0, 13.8)
+# 昵称底纹（165×47px ÷CS；中心 (64,7) → Godot 中心 (64,98)，突出框下方）。
+const NAME_BG_DISPLAY: Vector2 = Vector2(128.8, 36.7)
+# 昵称/等级字号与色（源 :643/:661 size16 + ccc3(241,235,206)）。
+const NAME_FONT_SIZE: int = 16
+const NAME_MAX_WIDTH: float = 110.0   # 源 :653 超宽缩放阈值
+const NAME_LEVEL_COLOR: Color = Color(241.0 / 255.0, 235.0 / 255.0, 206.0 / 255.0)
+# VIP 角标（源 :580-593 ÷CS 点尺寸）。
+const VIP_BG_DISPLAY: Vector2 = Vector2(73.4, 26.5)
+const VIP_ICON_DISPLAY: Vector2 = Vector2(28.9, 18.0)
 const VIP_BG_RES: String = "res://assets/ui/alpha/HVGA/recharge_vip_bg.png"
 const VIP_ICON_RES: String = "res://assets/ui/alpha/HVGA/recharge_vip_icon.png"
 # 货币条（源 createTitle getBarConfig：gold/rmb/vitality 三条）
@@ -83,45 +104,54 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 		head.gui_input.connect(func(ev: InputEvent) -> void:
 			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 				h.call())
-	_add_texture_rect(head, HEAD_FRAME_RES[vip_idx], Vector2.ZERO, HEAD_SIZE, "head_bg")
+	_add_texture_rect(head, HEAD_FRAME_RES[vip_idx], HEAD_BG_POS, HEAD_BG_DISPLAY, "head_bg")
 	# 头像图（head_bg 之上、head_frame 之下——源 addChild(head,3) < head_frame z=5 框纹盖头像缘；
 	# build 按 player.avatar 建图，refresh 按 avatar 参数换图。2026-08-21 补全，
 	# 此前 build 从未建头像图节点，换头像无从回传主界面）。
 	var head_icon := _build_head_icon(player, avatar_id_of(player))
 	head.add_child(head_icon)
 	refs["head_icon"] = head_icon
-	_add_texture_rect(head, HEAD_FRAME_BORDER_RES[vip_idx], Vector2.ZERO, HEAD_SIZE, "head_frame")
-	# 昵称底纹 name_bg（源 statusbar.lua:624 main_head_name_bg_silver/gold.png，叠加在 name Label 之下，
-	# 银金按 vip_idx 切换，参考 _refresh_head_frame 范式）。size 用纹理原始宽，高 20，居中 + 偏下覆盖 name 区。
-	# HEAD_SIZE=137×105，name Label pos=(20,75)；name_bg 横跨底部，垂直覆盖 name Label 行。
-	var name_bg_size: Vector2 = Vector2(HEAD_SIZE.x - 6.0, 22.0)
-	var name_bg: TextureRect = _add_texture_rect(head, NAME_BG_RES[vip_idx], Vector2(3.0, 72.0), name_bg_size, "name_bg")
+	_add_texture_rect(head, HEAD_FRAME_BORDER_RES[vip_idx], HEAD_BG_POS, HEAD_BG_DISPLAY, "head_frame")
+	# 昵称底纹 name_bg（2026-08-21 三修照源直译 statusbar.lua:279-286：中心锚
+	# ccp(64,7) + 贴图 165×47px ÷CS=128.8×36.7 点尺寸——名字条在头像框**下方突出**，
+	# 比框宽横跨两侧；旧值 (3,72) 贴框内底部致遮挡框下缘=「框被压扁」观感）。
+	var name_bg: TextureRect = _add_texture_rect(head, NAME_BG_RES[vip_idx],
+		Vector2(64.0 - NAME_BG_DISPLAY.x * 0.5, 98.0 - NAME_BG_DISPLAY.y * 0.5),
+		NAME_BG_DISPLAY, "name_bg")
 	refs["name_bg"] = name_bg
-	# 昵称 Label
+	# 昵称 Label（源 :640-649：parent name_bg mediate 居中，size=16 色(241,235,206)
+	# 黑影 (0,2)；超宽 110 缩放 :653-655）。
 	var name_lbl := Label.new()
 	name_lbl.text = "Player"
-	name_lbl.position = Vector2(20.0, 75.0)
-	name_lbl.size = Vector2(HEAD_SIZE.x - 40.0, 18.0)
+	name_lbl.position = Vector2(64.0 - HEAD_SIZE.x * 0.5, 98.0 - 9.0)
+	name_lbl.size = Vector2(HEAD_SIZE.x, 18.0)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 15)
+	name_lbl.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
+	name_lbl.add_theme_color_override("font_color", NAME_LEVEL_COLOR)
+	name_lbl.add_theme_color_override("font_shadow_color", Color.BLACK)
+	name_lbl.add_theme_constant_override("shadow_offset_y", 2)
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(name_lbl)
 	refs["name"] = name_lbl
-	# P1-15：等级 Label（源 statusbar.lua:658 level ccp(82,37) size=16）
+	# 等级 Label（2026-08-21 三修照源 :657-667：纯数字文本（无 "Lv." 前缀），
+	# 中心 ccp(82,37) → Godot (82,68)，size=16 色(241,235,206)；旧值 (12,55) 带
+	# 前缀错位。框右侧徽章区）。
 	var level_lbl := Label.new()
-	level_lbl.text = "Lv.1"
-	level_lbl.position = Vector2(12.0, 55.0)
-	# 走 BodyLabel 变体（default_theme.tres：font_size=16 继承 Label 默认 + 白字 + outline_size=2 黑描边）
-	# outline 是行为变化但视觉更清晰（status bar HUD 层加描边改进，非回归）。
-	level_lbl.theme_type_variation = &"BodyLabel"
+	level_lbl.text = "1"
+	level_lbl.position = Vector2(62.0, 59.0)
+	level_lbl.size = Vector2(40.0, 18.0)
+	level_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_lbl.add_theme_font_size_override("font_size", NAME_FONT_SIZE)
+	level_lbl.add_theme_color_override("font_color", NAME_LEVEL_COLOR)
+	level_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(level_lbl)
 	refs["level"] = level_lbl
-	# VIP 角标（VIP>0 显示）
-	var vip_bg := _add_texture_rect(head, VIP_BG_RES, Vector2(90.0, 18.0), Vector2(50.0, 50.0), "vip_bg")
+	# VIP 角标（VIP>0 显示；2026-08-21 三修照源 :580-593 中心锚 ccp(90,58)/(85,58)
+	# → Godot 中心 (90,47)/(85,47)，贴图 ÷CS 点尺寸 73.4×26.5/28.9×18；旧 50×50 拉伸方图）
+	var vip_bg := _add_texture_rect(head, VIP_BG_RES, Vector2(90.0 - VIP_BG_DISPLAY.x * 0.5, 47.0 - VIP_BG_DISPLAY.y * 0.5), VIP_BG_DISPLAY, "vip_bg")
 	vip_bg.visible = false
 	refs["vip_bg"] = vip_bg
-	# VIP icon（源 statusbar.lua:591 recharge_vip_icon.png，叠加在 vip_bg 上）
-	var vip_icon := _add_texture_rect(head, VIP_ICON_RES, Vector2(90.0, 18.0), Vector2(50.0, 50.0), "vip_icon")
+	var vip_icon := _add_texture_rect(head, VIP_ICON_RES, Vector2(85.0 - VIP_ICON_DISPLAY.x * 0.5, 47.0 - VIP_ICON_DISPLAY.y * 0.5), VIP_ICON_DISPLAY, "vip_icon")
 	vip_icon.visible = false
 	refs["vip_icon"] = vip_icon
 	var vip_lbl := Label.new()
@@ -232,7 +262,14 @@ static func refresh(refs: Dictionary, level: int, gold: int, diamond: int, vital
 		(refs["name"] as Label).text = name
 	# P1-15：等级 Label 更新（源 self.playerLevel）
 	if refs.has("level"):
-		(refs["level"] as Label).text = "Lv.%d" % level
+		(refs["level"] as Label).text = str(level)   # 2026-08-21 三修：源 :660 纯数字（无 Lv. 前缀）
+	if refs.has("name"):
+		# 源 :653-655 昵称超宽 110 缩放（防溢出名字条）。
+		var nl: Label = refs["name"] as Label
+		nl.scale = Vector2.ONE
+		var nw: float = nl.get_minimum_size().x
+		if nw > NAME_MAX_WIDTH:
+			nl.scale.x = NAME_MAX_WIDTH / nw
 	# VIP 角标显示切换（源 visible = self.vip > 0）
 	var vip_idx: int = 1 if vip > 0 else 0
 	if refs.has("vip"):
@@ -267,7 +304,7 @@ static func _build_head_icon(player: PlayerData, avatar_id: int) -> TextureRect:
 	icon.name = "head_icon"
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = Vector2(HEAD_ICON_SIZE, HEAD_ICON_SIZE)
-	icon.position = HEAD_ICON_POS
+	icon.position = HEAD_ICON_CENTER - Vector2(HEAD_ICON_SIZE, HEAD_ICON_SIZE) * 0.5   # 等比分支再校正
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
 	mat.shader = PortraitMaskShader
@@ -275,6 +312,14 @@ static func _build_head_icon(player: PlayerData, avatar_id: int) -> TextureRect:
 	icon.material = mat
 	icon.texture = _avatar_texture(player, avatar_id)
 	icon.set_meta(&"avatar_id", avatar_id)   # 初始 meta（refresh 同 id 短路判定基准）
+	# 等比：贴图非正方形不强拉方形（源 setScale(length/宽) 等比，高=70×h/w）；
+	# 中心保持源锚 (40,51)。2026-08-21 三修（压扁感修正）。
+	if icon.texture != null:
+		var ts: Vector2 = icon.texture.get_size()
+		if ts.x > 1.0:
+			var h_eq: float = HEAD_ICON_SIZE * ts.y / ts.x
+			icon.size = Vector2(HEAD_ICON_SIZE, h_eq)
+			icon.position = Vector2(HEAD_ICON_CENTER.x - HEAD_ICON_SIZE * 0.5, HEAD_ICON_CENTER.y - h_eq * 0.5)
 	return icon
 
 
