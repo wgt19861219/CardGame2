@@ -18,7 +18,7 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tsc
 
 const CONTENT_SCALE: float = 1.28125
 const SCREEN_H: float = 480.0
-const BOARD_CENTER_X: float = 730.0   # 源 740（uires.lua winRight-60）；用户 2026-08-22 观感反馈板偏右，整体左移 10（受控偏离：按钮 ×0.8 缩入板内后视觉重心较源右移 ~7，730 补偿对齐源观感重心）
+const BOARD_CENTER_X: float = 750.0   # 源 740（uires.lua winRight-60）；用户 2026-08-22 指示"向右移动一点"（首轮误判为左移已纠正），整体右移 10
 # 960×640 时代抽屉上移 -132（下拉钮与货币栏平齐，640 屏天区补偿）；viewport 800×480 后
 # 源内容满屏无天区，上移会致板顶出屏，UP 归 0 回源观感（toggle 源直译 y=40 天然近货币栏 top≈30）。
 const BOARD_UP_OFFSET: float = 0.0
