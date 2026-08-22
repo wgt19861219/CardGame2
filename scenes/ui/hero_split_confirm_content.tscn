@@ -40,10 +40,10 @@ offset_top = 81.57
 offset_right = 634.38
 offset_bottom = 411.26
 texture = ExtResource("1_alert")
-patch_margin_left = 59
-patch_margin_top = 150
-patch_margin_right = 195
-patch_margin_bottom = 86
+patch_margin_left = 46
+patch_margin_top = 117
+patch_margin_right = 152
+patch_margin_bottom = 67
 mouse_filter = 2
 
 ; 标题条（源 title_bg herodetail-title-mark Scale9 359.38x11.72 中心 (229.69,288.28)
@@ -55,9 +55,9 @@ offset_top = 35.55
 offset_right = 409.38
 offset_bottom = 47.27
 texture = ExtResource("2_titlemark")
-patch_margin_left = 78
+patch_margin_left = 61
 patch_margin_top = 3
-patch_margin_right = 141
+patch_margin_right = 110
 patch_margin_bottom = 0
 mouse_filter = 2
 

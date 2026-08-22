@@ -28,10 +28,10 @@ offset_top = 110.0
 offset_right = 752.5
 offset_bottom = 410.0
 texture = ExtResource("1_frame")
-patch_margin_left = 10
-patch_margin_top = 25
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 ; 标题（源 :314-323 title frame 局部(352,272) 中心锚 → Frame 内中心(352,28)；

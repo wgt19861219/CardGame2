@@ -127,10 +127,10 @@ func test_window_ninepatch_margins_follow_source() -> void:
 	var inst: Control = scene.instantiate() as Control
 	add_child_autofree(inst)
 	var list_bg: NinePatchRect = inst.get_node("%DetailContainer/ListBg") as NinePatchRect
-	assert_almost_eq(list_bg.patch_margin_left, 14.06, 0.5, "list_bg 左 margin=源 cap.x")
-	assert_almost_eq(list_bg.patch_margin_top, 216.0 - 15.63 - 136.72, 0.5, "list_bg 顶 margin=纹高-cap")
-	assert_almost_eq(list_bg.patch_margin_right, 858.0 - 14.06 - 640.63, 0.5, "list_bg 右 margin=纹宽-cap")
-	assert_almost_eq(list_bg.patch_margin_bottom, 15.63, 0.5, "list_bg 底 margin=源 cap.y")
+	assert_almost_eq(list_bg.patch_margin_left, 11.0, 0.5, "list_bg 左 margin=源 cap.x ÷CS")
+	assert_almost_eq(list_bg.patch_margin_top, 50.0, 0.5, "list_bg 顶 margin=纹高-cap ÷CS")
+	assert_almost_eq(list_bg.patch_margin_right, 159.0, 0.5, "list_bg 右 margin=纹宽-cap ÷CS")
+	assert_almost_eq(list_bg.patch_margin_bottom, 12.0, 0.5, "list_bg 底 margin=源 cap.y ÷CS")
 	var title_bg: NinePatchRect = inst.get_node("%DetailContainer/TitleBg") as NinePatchRect
 	assert_almost_eq(title_bg.patch_margin_left, 78.13, 0.5, "title_bg 左 margin=源 cap.x")
 	assert_almost_eq(title_bg.patch_margin_top, 15.0 - 11.72, 0.5, "title_bg 顶 margin=纹高-cap")
@@ -310,9 +310,9 @@ func test_confirm_layout_follows_source() -> void:
 	assert_almost_eq((frame.offset_top + frame.offset_bottom) / 2.0, 480.0 - 233.59, 0.5, "frame 中心 y=326.41")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 462.5, 0.5, "frame 宽=源 scaleSize 462.5")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 329.69, 0.5, "frame 高=源 scaleSize 329.69")
-	assert_almost_eq(frame.patch_margin_left, 58.59, 0.5, "frame 左 margin=源 cap.x")
-	assert_almost_eq(frame.patch_margin_top, 252.0 - 85.94 - 15.63, 0.5, "frame 顶 margin=纹高-cap")
-	assert_almost_eq(frame.patch_margin_bottom, 85.94, 0.5, "frame 底 margin=源 cap.y")
+	assert_almost_eq(frame.patch_margin_left, 46.0, 0.5, "frame 左 margin=源 cap.x ÷CS")
+	assert_almost_eq(frame.patch_margin_top, 117.0, 0.5, "frame 顶 margin=纹高-cap ÷CS")
+	assert_almost_eq(frame.patch_margin_bottom, 67.0, 0.5, "frame 底 margin=源 cap.y ÷CS")
 	var title_bg: NinePatchRect = frame.get_node("TitleBg") as NinePatchRect
 	assert_almost_eq((title_bg.offset_left + title_bg.offset_right) / 2.0, 229.69, 0.5, "title_bg 中心 x=229.69（frame 局部）")
 	assert_almost_eq((title_bg.offset_top + title_bg.offset_bottom) / 2.0, 329.69 - 288.28, 0.5,
@@ -423,14 +423,14 @@ func test_explain_layout_follows_source() -> void:
 	assert_almost_eq(frame.offset_top, 480.0 - 429.69, 0.5, "frame 顶=560-源世界顶 y")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 548.44, 0.5, "frame 宽=源 scaleSize 548.44")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 378.91, 0.5, "frame 高=源 scaleSize 378.91")
-	assert_almost_eq(frame.patch_margin_left, 17.19, 0.5, "frame 左 margin=源 cap.x")
-	assert_almost_eq(frame.patch_margin_top, 61.0 - 17.19 - 15.63, 0.5, "frame 顶 margin=纹高-cap")
-	assert_almost_eq(frame.patch_margin_bottom, 17.19, 0.5, "frame 底 margin=源 cap.y")
+	assert_almost_eq(frame.patch_margin_left, 13.0, 0.5, "frame 左 margin=源 cap.x ÷CS")
+	assert_almost_eq(frame.patch_margin_top, 22.0, 0.5, "frame 顶 margin=纹高-cap ÷CS")
+	assert_almost_eq(frame.patch_margin_bottom, 13.0, 0.5, "frame 底 margin=源 cap.y ÷CS")
 	var title_bg: NinePatchRect = inst.get_node("TitleBg") as NinePatchRect
 	assert_almost_eq((title_bg.offset_left + title_bg.offset_right) / 2.0, 398.44, 0.5,
 		"title_bg 中心 x=478.44（世界）")
 	assert_almost_eq(title_bg.offset_right - title_bg.offset_left, 480.47, 0.5, "title_bg 宽=源 scaleSize 480.47")
-	assert_almost_eq(title_bg.patch_margin_top, 44.0 - 34.38, 0.5, "title_bg 顶 margin=纹高-cap")
+	assert_almost_eq(title_bg.patch_margin_top, 7.51, 0.5, "title_bg 顶 margin=纹高-cap ÷CS（44-34.38=9.62px）")
 	assert_almost_eq(title_bg.patch_margin_bottom, 0.0, 0.5, "title_bg 底 margin=源 cap.y=0")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 659.38, 0.5, "close 中心 x=739.38（世界）")

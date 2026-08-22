@@ -30,11 +30,11 @@ static func show(parent: Control, player: PlayerData, cm: ConfigManager) -> Dict
 	bg.texture = load(TIPS_BG_RES)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# NinePatchRect 九宫格：源 framework.lua:96 CCRectMake(15,20,45,15)，贴图 103×61 PIL 实测，
-	# 正确公式（批 1 fde903b）：left=x/bottom=y/right=W-x-w/top=H-y-h → L15/B20/R43/T26（旧值 top/bottom/right 错）。
-	bg.patch_margin_left = 15
-	bg.patch_margin_top = 26
-	bg.patch_margin_right = 43
-	bg.patch_margin_bottom = 20
+	# 纹理px L15/T26/R43/B20（批 1 fde903b 公式）；patch 须 ÷CS 取整 → L12/T20/R34/B16。
+	bg.patch_margin_left = 12
+	bg.patch_margin_top = 20
+	bg.patch_margin_right = 34
+	bg.patch_margin_bottom = 16
 	container.add_child(bg)
 	var lbl := Label.new()
 	lbl.text = _build_text(player, cm)

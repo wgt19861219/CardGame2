@@ -41,12 +41,13 @@ const LSTR_SOUND_OFF: String = "BATTLE_SCENE.SOUND__OFF"
 
 # frame：源 setup.lua Scale9 544.53×390.63 @(128.13,42.97) → Godot (208.13,126.41)。
 const FRAME_RECT: Rect2 = Rect2(208.13, 126.41, 544.53, 390.63)
-# cap 照 setup.lua 直译：capInsets(11.72,11.72,54.69,23.44) 显示值×CS → L15/T15/w70/h30
-# → R=103-15-70=18 / B=61-15-30=16（2026-08-21 修正：此前误用 savemanager.lua 源 cap）。
-const FRAME_CAP_LEFT: int = 15
-const FRAME_CAP_TOP: int = 15
-const FRAME_CAP_RIGHT: int = 18
-const FRAME_CAP_BOTTOM: int = 16
+# cap 照 setup.lua：capInsets(11.72,11.72,54.69,23.44)（点单位）＝ 纹理px L15/T15/w70/h30，
+# R=103-15-70=18 / B=61-15-30=16（2026-08-21 修正源引用；2026-08-22 patch ÷CS 观感专项）。
+# patch_margin 须显示点值 = 纹理px÷CS(1.28125) 取整 → L9/T12/R14/B9。
+const FRAME_CAP_LEFT: int = 9
+const FRAME_CAP_TOP: int = 12
+const FRAME_CAP_RIGHT: int = 14
+const FRAME_CAP_BOTTOM: int = 9
 # title_bg：517.34×34.375，源 frame 内中心 (275,359.38) → 局部 top=390.63-359.38=31.25。
 const TITLE_BG_RECT: Rect2 = Rect2(16.33, 14.06, 517.34, 34.375)
 const TITLE_FONT_SIZE: int = 18

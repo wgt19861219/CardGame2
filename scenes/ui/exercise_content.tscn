@@ -56,10 +56,10 @@ layout_mode = 3
 offset_right = 705.0
 offset_bottom = 300.0
 texture = ExtResource("3_vittips")
-patch_margin_left = 10
-patch_margin_top = 25
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 ; 标题照源 title（exercise.lua:763-776）readnode 默认中心锚，场景(399.5,342) → PanelLayer

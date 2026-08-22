@@ -316,11 +316,11 @@ static func build_skill_desc(hero: HeroInstance, slot: int, cm: Variant) -> Cont
 	var bg := NinePatchRect.new()
 	bg.texture = _load_texture(SKILL_TIP_RES)
 	# 源 skillstren.lua:20 capInsets = CCRectMake(20, 52, 200, 5)（左下原点中间拉伸区），
-	# 贴图 345x101：L=x=20 / T=H-y-h=101-52-5=44 / R=W-x-w=345-20-200=125 / B=y=52
-	bg.patch_margin_left = 20
-	bg.patch_margin_top = 44
-	bg.patch_margin_right = 125
-	bg.patch_margin_bottom = 52
+	# 贴图 345x101 纹理px：L=20 / T=44 / R=125 / B=52；patch 须 ÷CS 取整 → 16/34/98/41。
+	bg.patch_margin_left = 16
+	bg.patch_margin_top = 34
+	bg.patch_margin_right = 98
+	bg.patch_margin_bottom = 41
 	bg.position = SKILL_DESC_POS
 	bg.size = Vector2(280.0, 100.0)
 	var lbl := Label.new()

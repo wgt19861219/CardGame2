@@ -128,10 +128,10 @@ func test_confirm_static_rects() -> void:
 	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 401.56, 0.5, "frame 中心 x = 80+401.56（声明表）")
 	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 245.62, 0.5, "frame 中心 y = 560-234.38")
 	# capInsets CCRectMake(19.53,19.53,46.88,11.72) 纹理 103x61 → int 取整
-	assert_almost_eq(float(frame.patch_margin_left), 20.0, 0.5, "patch_left=round(19.53)")
-	assert_almost_eq(float(frame.patch_margin_right), 37.0, 0.5, "patch_right=round(103-19.53-46.88)")
-	assert_almost_eq(float(frame.patch_margin_top), 30.0, 0.5, "patch_top=round(61-19.53-11.72)")
-	assert_almost_eq(float(frame.patch_margin_bottom), 20.0, 0.5, "patch_bottom=round(19.53)")
+	assert_almost_eq(float(frame.patch_margin_left), 15.0, 0.5, "patch_left=round(19.53÷CS)")
+	assert_almost_eq(float(frame.patch_margin_right), 29.0, 0.5, "patch_right=round(36.59÷CS)")
+	assert_almost_eq(float(frame.patch_margin_top), 23.0, 0.5, "patch_top=round(29.75÷CS)")
+	assert_almost_eq(float(frame.patch_margin_bottom), 15.0, 0.5, "patch_bottom=round(19.53÷CS)")
 	var ok_btn: Button = frame.get_node("%OkBtn") as Button
 	assert_almost_eq(ok_btn.size.x, 125.0, 0.5, "OkBtn 宽 = 源 scaleSize 125")
 	assert_almost_eq(ok_btn.size.y, 54.69, 0.5, "OkBtn 高 = 源 scaleSize 54.69")

@@ -151,10 +151,10 @@ offset_top = -19.53
 offset_right = 742.97
 offset_bottom = 79.69
 texture = ExtResource("11_ibg")
-patch_margin_left = 133
-patch_margin_top = 23
-patch_margin_right = 58
-patch_margin_bottom = 45
+patch_margin_left = 104
+patch_margin_top = 18
+patch_margin_right = 46
+patch_margin_bottom = 35
 mouse_filter = 2
 
 [node name="ResearchFrame" type="NinePatchRect" parent="FrameContainer/InfoLayer"]
@@ -166,10 +166,10 @@ offset_right = 723.4375
 offset_bottom = 432.03125
 modulate = Color(1, 1, 1, 0.784314)
 texture = ExtResource("15_rframe")
-patch_margin_left = 23
-patch_margin_top = 32
-patch_margin_right = 32
-patch_margin_bottom = 23
+patch_margin_left = 18
+patch_margin_top = 25
+patch_margin_right = 25
+patch_margin_bottom = 18
 mouse_filter = 2
 
 [node name="ResearchContainer" type="Control" parent="FrameContainer/InfoLayer/ResearchFrame"]
@@ -462,9 +462,9 @@ offset_top = 23.83
 offset_right = 144.535
 offset_bottom = 54.3
 texture = ExtResource("12_tbg")
-patch_margin_left = 16
-patch_margin_top = 9
-patch_margin_right = 32
+patch_margin_left = 12
+patch_margin_top = 7
+patch_margin_right = 25
 patch_margin_bottom = 0
 mouse_filter = 2
 

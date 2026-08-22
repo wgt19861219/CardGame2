@@ -106,9 +106,9 @@ func test_bg_patch_margins() -> void:
 		var bg: NinePatchRect = container.get_child(0) as NinePatchRect
 		assert_not_null(bg, "container 首子为 NinePatchRect 背景")
 		if bg != null:
-			assert_eq(bg.patch_margin_left, 15, "patch_margin_left=15（源 cap x=15）")
-			assert_eq(bg.patch_margin_top, 26, "patch_margin_top=26（H-y-h=61-20-15）")
-			assert_eq(bg.patch_margin_right, 43, "patch_margin_right=43（W-x-w=103-15-45）")
-			assert_eq(bg.patch_margin_bottom, 20, "patch_margin_bottom=20（源 cap y=20）")
+			assert_eq(bg.patch_margin_left, 12, "patch_margin_left=15（源 cap x=15）")
+			assert_eq(bg.patch_margin_top, 20, "patch_margin_top=26（H-y-h=61-20-15）")
+			assert_eq(bg.patch_margin_right, 34, "patch_margin_right=43（W-x-w=103-15-45）")
+			assert_eq(bg.patch_margin_bottom, 16, "patch_margin_bottom=20（源 cap y=20）")
 	VitPromptCard.destroy_prompt(ref)
 	host.queue_free()

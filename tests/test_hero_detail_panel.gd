@@ -530,9 +530,9 @@ func test_stone_bar_bg_ninepatch_margins() -> void:
 	var bg: NinePatchRect = panel.container.find_children("StoneBarBg", "NinePatchRect", true, false)[0] as NinePatchRect
 	assert_not_null(bg, "StoneBarBg 为 NinePatchRect（源 Scale9Sprite）")
 	if bg != null:
-		assert_eq(bg.patch_margin_left, 20, "L=20（源 cap x=20）")
-		assert_eq(bg.patch_margin_top, 9, "T=9（H-y-h=34-1-24）")
-		assert_eq(bg.patch_margin_right, 82, "R=82（W-x-w=204-20-102）")
+		assert_eq(bg.patch_margin_left, 16, "L=20（源 cap x=20）")
+		assert_eq(bg.patch_margin_top, 7, "T=9（H-y-h=34-1-24）")
+		assert_eq(bg.patch_margin_right, 64, "R=82（W-x-w=204-20-102）")
 		assert_eq(bg.patch_margin_bottom, 1, "B=1（源 cap y=1）")
 		assert_eq(bg.size, Vector2(180.0, 26.0), "显示尺寸 180×26 保持（源 scaleSize）")
 	panel.remove_window()

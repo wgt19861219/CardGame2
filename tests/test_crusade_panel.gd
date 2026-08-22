@@ -470,10 +470,10 @@ func test_rule_layer_frame_patch_margins() -> void:
 		panel.remove_window()
 		root.queue_free()
 		return
-	assert_eq(frame.patch_margin_left, 15, "patch_margin_left=15（源 cap x=15）")
-	assert_eq(frame.patch_margin_top, 26, "patch_margin_top=26（H-y-h=61-20-15）")
-	assert_eq(frame.patch_margin_right, 43, "patch_margin_right=43（W-x-w=103-15-45）")
-	assert_eq(frame.patch_margin_bottom, 20, "patch_margin_bottom=20（源 cap y=20）")
+	assert_eq(frame.patch_margin_left, 12, "patch_margin_left=15（源 cap x=15）")
+	assert_eq(frame.patch_margin_top, 20, "patch_margin_top=26（H-y-h=61-20-15）")
+	assert_eq(frame.patch_margin_right, 34, "patch_margin_right=43（W-x-w=103-15-45）")
+	assert_eq(frame.patch_margin_bottom, 16, "patch_margin_bottom=20（源 cap y=20）")
 	panel.remove_window()
 	root.queue_free()
 

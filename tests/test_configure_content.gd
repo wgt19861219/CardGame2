@@ -35,9 +35,9 @@ const FRAME_L: float = 84.0
 const FRAME_T: float = 25.0
 const FRAME_R: float = 704.0
 const FRAME_B: float = 405.0
-const FRAME_CAP_TOP: int = 26
-const FRAME_CAP_BOTTOM: int = 20
-const FRAME_CAP_RIGHT: int = 43
+const FRAME_CAP_TOP: int = 20
+const FRAME_CAP_BOTTOM: int = 16
+const FRAME_CAP_RIGHT: int = 34
 # close：源 (690,435) 中心，65×66 ÷CS。
 const CLOSE_CX: float = 690.0
 const CLOSE_CY: float = 45.0
@@ -78,8 +78,8 @@ const LANG_LABEL_CY: float = 362.5
 # 分隔线 600×2 中心 x=390 → (170,~)~(770,~)；中心 y 280/410/475（源 600-320/150/85）。
 const LINE_L: float = 90.0
 const LINE_R: float = 690.0
-const LINE_PATCH_LEFT: int = 170
-const LINE_PATCH_RIGHT: int = 275
+const LINE_PATCH_LEFT: int = 133
+const LINE_PATCH_RIGHT: int = 215
 const LINE_PATCH_TOP: int = 1
 const LINE_PATCH_BOTTOM: int = 1
 # name：源 name_bg fix_wh 225×30 中心 (450,150)；name label 中心同 bg，宽上限 180（:114-116）。
@@ -136,7 +136,7 @@ func test_frame_rect_and_cap() -> void:
 	assert_almost_eq(frame.offset_right, FRAME_R, 0.5, "frame 右（源 704 直译）")
 	assert_almost_eq(frame.offset_bottom, FRAME_B, 0.5, "frame 底（480-75=405）")
 	assert_eq(frame.patch_margin_top, FRAME_CAP_TOP, "cap top=H-y-h=61-20-15（防反写）")
-	assert_eq(frame.patch_margin_bottom, 20, "cap bottom=y=20（防反写）")
+	assert_eq(frame.patch_margin_bottom, 16, "cap bottom=y=20（防反写）")
 	assert_eq(frame.patch_margin_right, FRAME_CAP_RIGHT, "cap right=W-x-w=103-15-45")
 
 

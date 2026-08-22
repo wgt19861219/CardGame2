@@ -36,9 +36,9 @@ offset_top = 10.51
 offset_right = 514.06
 offset_bottom = 84.73
 texture = ExtResource("1_board")
-patch_margin_left = 68
+patch_margin_left = 53
 patch_margin_top = 50
-patch_margin_right = 199
+patch_margin_right = 156
 patch_margin_bottom = 24
 mouse_filter = 2
 

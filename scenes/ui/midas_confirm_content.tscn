@@ -28,10 +28,10 @@ offset_top = 113.82
 offset_right = 635.94
 offset_bottom = 377.41
 texture = ExtResource("1_frame")
-patch_margin_left = 20
-patch_margin_top = 30
-patch_margin_right = 37
-patch_margin_bottom = 20
+patch_margin_left = 15
+patch_margin_top = 23
+patch_margin_right = 29
+patch_margin_bottom = 15
 mouse_filter = 2
 
 ; 分隔线（源 delimeter initWindow DGccp(w/2,100) → frame 局部中心(234.4,185.5)）

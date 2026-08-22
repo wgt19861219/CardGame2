@@ -45,10 +45,10 @@ func test_content_static_rects() -> void:
 	assert_almost_eq(frame.size.y, 245.0, 0.5, "Frame 高 = 源 scaleSize 245")
 	# capInsets CCRectMake(10,10,58,26) 纹理 103x61 → left=10 right=103-10-58=35
 	# top=61-10-26=25 bottom=10（批 1 公式，修正旧 tscn 10/10/10/10）
-	assert_almost_eq(float(frame.patch_margin_left), 10.0, 0.5, "Frame patch_left=10")
-	assert_almost_eq(float(frame.patch_margin_right), 35.0, 0.5, "Frame patch_right=35")
-	assert_almost_eq(float(frame.patch_margin_top), 25.0, 0.5, "Frame patch_top=25")
-	assert_almost_eq(float(frame.patch_margin_bottom), 10.0, 0.5, "Frame patch_bottom=10")
+	assert_almost_eq(float(frame.patch_margin_left), 8.0, 0.5, "Frame patch_left=8（÷CS）")
+	assert_almost_eq(float(frame.patch_margin_right), 27.0, 0.5, "Frame patch_right=27（÷CS）")
+	assert_almost_eq(float(frame.patch_margin_top), 20.0, 0.5, "Frame patch_top=20（÷CS）")
+	assert_almost_eq(float(frame.patch_margin_bottom), 8.0, 0.5, "Frame patch_bottom=8（÷CS）")
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 596.9, 0.5,
 		"CloseBtn 中心 x = 80+524*0.78125+187.5")

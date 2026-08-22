@@ -95,10 +95,10 @@ offset_right = 270.22
 offset_bottom = 247.85
 mouse_filter = 2
 texture = ExtResource("2_attbg")
-patch_margin_left = 10
-patch_margin_top = 62
-patch_margin_right = 86
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 48
+patch_margin_right = 67
+patch_margin_bottom = 8
 
 ; 源 board.lua:250-259 att_list ChaosNode anchor(0,1)@ccp(22,282) → 左 22、顶 103；
 ; 行间距 offset=2 → separation 2；行内容（属性/描述/碎片）fill procedural 挂载

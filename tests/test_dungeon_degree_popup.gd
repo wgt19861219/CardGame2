@@ -35,10 +35,10 @@ func test_content_static_tree() -> void:
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
 		"Frame 贴图照源 main_vit_tips")
 	# cap(10,10,58,26) 批 1 公式（贴图 103x61）：left=10 top=61-10-26=25 right=103-10-58=35 bottom=10
-	assert_eq(frame.patch_margin_left, 10, "NinePatch left = cap.x")
-	assert_eq(frame.patch_margin_top, 25, "NinePatch top = H-y-h = 61-10-26")
-	assert_eq(frame.patch_margin_right, 35, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
-	assert_eq(frame.patch_margin_bottom, 10, "NinePatch bottom = cap.y")
+	assert_eq(frame.patch_margin_left, 8, "NinePatch left = cap.x")
+	assert_eq(frame.patch_margin_top, 20, "NinePatch top = H-y-h = 61-10-26")
+	assert_eq(frame.patch_margin_right, 27, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
+	assert_eq(frame.patch_margin_bottom, 8, "NinePatch bottom = cap.y")
 	# CloseBtn（源 close 中心(750,350)，65x66 像素/CS = 50.73x51.51 → [804.63,184.24,855.37,235.76]）
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_almost_eq(close_btn.offset_left, 724.63, 0.1, "CloseBtn 左 = 830-50.73/2（to_godot(750,350)）")

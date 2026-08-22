@@ -112,17 +112,17 @@ func test_hurt_bg_patch_margins() -> void:
 	var hurt_bg: NinePatchRect = panel._hurt_bg as NinePatchRect
 	assert_not_null(hurt_bg, "HurtBg 为 NinePatchRect")
 	if hurt_bg != null:
-		assert_eq(hurt_bg.patch_margin_left, 15, "HurtBg L=15（源 cap x=15）")
-		assert_eq(hurt_bg.patch_margin_top, 26, "HurtBg T=26（H-y-h=61-20-15）")
-		assert_eq(hurt_bg.patch_margin_right, 43, "HurtBg R=43（W-x-w=103-15-45）")
-		assert_eq(hurt_bg.patch_margin_bottom, 20, "HurtBg B=20（源 cap y=20）")
+		assert_eq(hurt_bg.patch_margin_left, 12, "HurtBg L=15（源 cap x=15）")
+		assert_eq(hurt_bg.patch_margin_top, 20, "HurtBg T=26（H-y-h=61-20-15）")
+		assert_eq(hurt_bg.patch_margin_right, 34, "HurtBg R=43（W-x-w=103-15-45）")
+		assert_eq(hurt_bg.patch_margin_bottom, 16, "HurtBg B=20（源 cap y=20）")
 	var hurt_bg1: NinePatchRect = panel._hurt_bg.get_node("HurtBg1") as NinePatchRect
 	assert_not_null(hurt_bg1, "HurtBg1 为 NinePatchRect")
 	if hurt_bg1 != null:
-		assert_eq(hurt_bg1.patch_margin_left, 15, "HurtBg1 L=15（源 cap x=15）")
+		assert_eq(hurt_bg1.patch_margin_left, 12, "HurtBg1 L=12（cap 15÷CS）")
 		assert_eq(hurt_bg1.patch_margin_top, 0, "HurtBg1 T=0（cap 越界 clamp：max(27-20-15,0)）")
-		assert_eq(hurt_bg1.patch_margin_right, 101, "HurtBg1 R=101（W-x-w=161-15-45）")
-		assert_eq(hurt_bg1.patch_margin_bottom, 20, "HurtBg1 B=20（源 cap y=20）")
+		assert_eq(hurt_bg1.patch_margin_right, 79, "HurtBg1 R=79（101px÷CS）")
+		assert_eq(hurt_bg1.patch_margin_bottom, 16, "HurtBg1 B=16（cap 20÷CS）")
 	panel.queue_free()
 
 
@@ -132,10 +132,10 @@ func test_bar_bg_patch_margins() -> void:
 	assert_true(bar_bg is NinePatchRect, "bar 底条为 NinePatchRect（源 ui1 Scale9Sprite）")
 	if bar_bg is NinePatchRect:
 		var npr: NinePatchRect = bar_bg as NinePatchRect
-		assert_eq(npr.patch_margin_left, 12, "bar L=12（源 cap x=12）")
-		assert_eq(npr.patch_margin_top, 3, "bar T=3（H-y-h=11-4-4）")
-		assert_eq(npr.patch_margin_right, 65, "bar R=65（W-x-w=89-12-12）")
-		assert_eq(npr.patch_margin_bottom, 4, "bar B=4（源 cap y=4）")
+		assert_eq(npr.patch_margin_left, 9, "bar L=12（源 cap x=12）")
+		assert_eq(npr.patch_margin_top, 2, "bar T=3（H-y-h=11-4-4）")
+		assert_eq(npr.patch_margin_right, 51, "bar R=65（W-x-w=89-12-12）")
+		assert_eq(npr.patch_margin_bottom, 3, "bar B=4（源 cap y=4）")
 	assert_eq(bar_bg.size, Vector2(137.0, 15.0), "bar 尺寸 137×15（源 scaleSize）")
 	bar_bg.queue_free()
 	panel.queue_free()

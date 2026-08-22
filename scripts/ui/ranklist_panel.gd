@@ -26,12 +26,13 @@ const SUB_UNSEL_PRESS: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_su
 # 行板（源 initCommonItemHandler :780-793：自己 ranklist_me_bg / 他人 pvp_rank_bg_high）。
 const ROW_BOARD_SELF: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_me_bg.png"
 const ROW_BOARD_OTHER: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
-# 行板九宫格（源 capInsets DGRectMake(65,25,545,25) × 贴图 638x97px：
-# left=65 / top=97-25-25=47 / right=638-65-545=28 / bottom=25）。
-const BOARD_PATCH_L: int = 65
-const BOARD_PATCH_T: int = 47
-const BOARD_PATCH_R: int = 28
-const BOARD_PATCH_B: int = 25
+# 行板九宫格（源 ranklist.lua:584 capInsets = ed.DGRectMake(65,25,545,25)——DG 单位 ×0.78125
+# = CC(50.78,19.53,425.78,19.53)，贴图 638x97px 纹理px 边界 L50.78/T57.94/R161.44/B19.53，
+# patch 须再 ÷CS 取整 → 40/45/126/15（右侧 1/4 为固定装饰段，与纹理占比 25.3% 一致）。
+const BOARD_PATCH_L: int = 40
+const BOARD_PATCH_T: int = 45
+const BOARD_PATCH_R: int = 126
+const BOARD_PATCH_B: int = 15
 # 源 scaleSize DGSizeMake(650,95) = (507.81,74.22) 点。
 const BOARD_SIZE: Vector2 = Vector2(507.81, 74.22)
 # 行内布局（源 board 局部 DGccp ×0.78125 + y-up→y-down 翻转，board 高 74.22）：

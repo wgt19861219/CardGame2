@@ -28,12 +28,12 @@ const CLOSE_PRESS_RES: String = "res://assets/ui/alpha/HVGA/common/common_tips_b
 const CONTENT_SCALE: float = 1.28125   # 纹理像素 ÷CS = Godot 显示尺寸（无 TextureConfig 条目）
 
 # frame：源 Scale9Sprite cap(15,20,45,15) 467×280 anchor(0.5,1)@(400,380)（贴图 103×61，
-# cap 直译 L15/T26/R43/B20 与 configure_content.tscn Frame 同款）→ Godot (246.5,180)~(713.5,460)。
+# 纹理px L15/T26/R43/B20；patch 须 ÷CS 取整 → L12/T20/R34/B16，同 configure Frame）。
 const FRAME_RECT: Rect2 = Rect2(246.5, 180.0, 467.0, 280.0)
-const FRAME_CAP_LEFT: int = 15
-const FRAME_CAP_TOP: int = 26
-const FRAME_CAP_RIGHT: int = 43
-const FRAME_CAP_BOTTOM: int = 20
+const FRAME_CAP_LEFT: int = 12
+const FRAME_CAP_TOP: int = 20
+const FRAME_CAP_RIGHT: int = 34
+const FRAME_CAP_BOTTOM: int = 16
 # title：源 (400,390) 中心锚 size22 金(255,220,100) 黑阴影(0,2) → Godot 中心 (480,170)。
 const TITLE_CENTER: Vector2 = Vector2(480.0, 170.0)
 const TITLE_FONT_SIZE: int = 22

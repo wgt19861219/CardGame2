@@ -86,10 +86,10 @@ func test_frame_ninepatch_margins() -> void:
 	add_child_autofree(inst)
 	var frame: NinePatchRect = inst.get_node("Frame") as NinePatchRect
 	assert_not_null(frame, "Frame 是 NinePatchRect（源 Scale9 cap(66.41,93.75,335.94,7.81)）")
-	assert_eq(frame.patch_margin_left, 66, "Frame left = round(cap x 66.41)")
-	assert_eq(frame.patch_margin_top, 150, "Frame top = round(H-y-h = 252-93.75-7.81 = 150.44)")
-	assert_eq(frame.patch_margin_right, 191, "Frame right = round(W-x-w = 593-66.41-335.94 = 190.65)")
-	assert_eq(frame.patch_margin_bottom, 94, "Frame bottom = round(cap y 93.75)")
+	assert_eq(frame.patch_margin_left, 52, "Frame left = round(cap x 66.41 ÷CS)")
+	assert_eq(frame.patch_margin_top, 117, "Frame top = round(150.44px ÷CS)")
+	assert_eq(frame.patch_margin_right, 149, "Frame right = round(190.65px ÷CS)")
+	assert_eq(frame.patch_margin_bottom, 73, "Frame bottom = round(cap y 93.75 ÷CS)")
 	assert_almost_eq(frame.size.x, 463.28, 0.5, "Frame 显示宽 = scaleSize 463.28（保持）")
 	assert_almost_eq(frame.size.y, 363.28, 0.5, "Frame 显示高 = scaleSize 363.28（保持）")
 	# title_bg 同为声明表 Scale9Sprite → NinePatchRect
@@ -97,8 +97,8 @@ func test_frame_ninepatch_margins() -> void:
 	# top=15-0-11.72=3.28 right=289-78.13-69.53=141.34（round：78/3/141/0）
 	var title_bg: NinePatchRect = inst.get_node("TitleBg") as NinePatchRect
 	assert_not_null(title_bg, "TitleBg 是 NinePatchRect（源 Scale9 cap(78.13,0,69.53,11.72)）")
-	assert_eq(title_bg.patch_margin_left, 78, "TitleBg left = round(cap x 78.13)")
-	assert_eq(title_bg.patch_margin_right, 141, "TitleBg right = round(289-78.13-69.53 = 141.34)")
+	assert_eq(title_bg.patch_margin_left, 61, "TitleBg left = round(cap x 78.13)")
+	assert_eq(title_bg.patch_margin_right, 110, "TitleBg right = round(289-78.13-69.53 = 141.34)")
 	assert_almost_eq(title_bg.size.x, 359.38, 0.5, "TitleBg 宽 = scaleSize 359.38（宽向 1.59x 拉伸保角）")
 	assert_almost_eq(title_bg.size.y, 11.72, 0.5, "TitleBg 高 = scaleSize 11.72")
 

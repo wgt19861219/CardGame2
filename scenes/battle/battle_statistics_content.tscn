@@ -36,10 +36,10 @@ offset_bottom = 420.0
 mouse_filter = 2
 texture = ExtResource("1_hurtbg")
 ; 源 hurtBg capInsets CCRectMake(15,20,45,15)，贴图 103x61 → top=61-20-15=26/bottom=20/right=103-15-45=43
-patch_margin_left = 15
-patch_margin_top = 26
-patch_margin_right = 43
-patch_margin_bottom = 20
+patch_margin_left = 12
+patch_margin_top = 20
+patch_margin_right = 34
+patch_margin_bottom = 16
 axis_stretch_mode = 0
 
 [node name="HurtBg1" type="NinePatchRect" parent="HurtBg"]
@@ -52,10 +52,10 @@ mouse_filter = 2
 texture = ExtResource("2_hurtbg1")
 ; 源 hurtBg1 capInsets CCRectMake(15,20,45,15)（源从 hurtBg 复制），贴图 161x27：cap 底 20+高 15=35 越界（>27），
 ; Cocos 越界 clamp 等价 → top=max(27-20-15,0)=0/bottom=20/right=161-15-45=101
-patch_margin_left = 15
+patch_margin_left = 12
 patch_margin_top = 0
-patch_margin_right = 101
-patch_margin_bottom = 20
+patch_margin_right = 79
+patch_margin_bottom = 16
 axis_stretch_mode = 0
 
 [node name="CExit" type="TextureButton" parent="HurtBg"]

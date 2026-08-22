@@ -112,5 +112,5 @@ func test_delimiters_assembled() -> void:
 # frame cap 直译守卫（setup.lua capInsets 直译，防回退 savemanager 错源）。
 func test_frame_cap_from_setup_source() -> void:
 	var src_text := FileAccess.get_file_as_string("res://scripts/ui/setup_panel.gd")
-	assert_true(src_text.contains("FRAME_CAP_RIGHT: int = 18"), "cap R=18（setup.lua 直译）")
-	assert_true(src_text.contains("FRAME_CAP_TOP: int = 15"), "cap T=15（setup.lua 直译）")
+	assert_true(src_text.contains("FRAME_CAP_RIGHT: int = 14"), "cap R=14（setup.lua cap px÷CS）")
+	assert_true(src_text.contains("FRAME_CAP_TOP: int = 12"), "cap T=12（setup.lua cap px÷CS）")

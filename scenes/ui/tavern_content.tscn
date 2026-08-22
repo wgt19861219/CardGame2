@@ -751,10 +751,10 @@ offset_top = 120.0
 offset_right = 147.0
 offset_bottom = 170.0
 texture = ExtResource("23_herobg")
-patch_margin_left = 10
-patch_margin_top = 35
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 27
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="DropBgRight" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
@@ -764,10 +764,10 @@ offset_top = 120.0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("23_herobg")
-patch_margin_left = 10
-patch_margin_top = 35
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 27
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="DropBgDay" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
@@ -777,10 +777,10 @@ offset_top = 412.5
 offset_right = 182.0
 offset_bottom = 487.5
 texture = ExtResource("23_herobg")
-patch_margin_left = 10
-patch_margin_top = 35
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 27
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="DayTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
@@ -801,10 +801,10 @@ offset_top = 334.5
 offset_right = 182.0
 offset_bottom = 409.5
 texture = ExtResource("23_herobg")
-patch_margin_left = 10
-patch_margin_top = 35
-patch_margin_right = 35
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 27
+patch_margin_right = 27
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="MonthTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]

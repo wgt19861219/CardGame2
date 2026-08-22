@@ -31,8 +31,8 @@ const MATERIAL_BG_WIDE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/eq
 const MATERIAL_BG_NARROW_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_material_bg.png"
 const MATERIAL_BG_WIDE_RECT: Rect2 = Rect2(150.0, 363.0, 660.0, 154.0)
 const MATERIAL_BG_NARROW_RECT: Rect2 = Rect2(155.0, 363.0, 520.0, 154.0)
-const MATERIAL_BG_WIDE_MARGIN: Vector2i = Vector2i(208, 60)
-const MATERIAL_BG_NARROW_MARGIN: Vector2i = Vector2i(160, 60)
+const MATERIAL_BG_WIDE_MARGIN: Vector2i = Vector2i(162, 47)
+const MATERIAL_BG_NARROW_MARGIN: Vector2i = Vector2i(125, 47)
 # 费用区动态色（源 refreshStrenCost :526-529 红/白切换）
 const COST_COLOR_SHORT: Color = Color(1.0, 0.0, 0.0)
 const COST_COLOR_OK: Color = Color(1.0, 1.0, 1.0)
@@ -152,10 +152,11 @@ static func show_material_bg(panel, slot: int) -> void:
 	var tex: Texture2D = load(MATERIAL_BG_NARROW_RES if narrow else MATERIAL_BG_WIDE_RES) as Texture2D
 	if tex != null:
 		bg.texture = tex
-	bg.patch_margin_left = 10
+	# patch 须 ÷CS(1.28125) 取整：cap 纹理px L/B=10 → 8；R/T 走 margin 常量（同上 ÷CS）。
+	bg.patch_margin_left = 8
 	bg.patch_margin_top = margin.y
 	bg.patch_margin_right = margin.x
-	bg.patch_margin_bottom = 10
+	bg.patch_margin_bottom = 8
 	bg.offset_left = rect.position.x
 	bg.offset_top = rect.position.y
 	bg.offset_right = rect.position.x + rect.size.x

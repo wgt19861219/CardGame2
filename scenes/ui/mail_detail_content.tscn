@@ -39,18 +39,18 @@ texture = ExtResource("1_frame")
 expand_mode = 1
 mouse_filter = 2
 
-; title_bg（源 Scale9 → NinePatch，宽 300 拉伸 1.25x 保角）
+; title_bg（源 Scale9 无 fix_wh → 显示=纹理 308x34÷CS=240.5x26.5；旧 300x34 系纹理 px 直抄）
 [node name="TitleBg" type="NinePatchRect" parent="Frame"]
 layout_mode = 3
-offset_left = 14.29
-offset_top = 25.24
-offset_right = 314.29
-offset_bottom = 59.24
+offset_left = 44.06
+offset_top = 28.97
+offset_right = 284.53
+offset_bottom = 55.51
 texture = ExtResource("2_titlebg")
-patch_margin_left = 10
-patch_margin_top = 18
-patch_margin_right = 81
-patch_margin_bottom = 10
+patch_margin_left = 8
+patch_margin_top = 14
+patch_margin_right = 63
+patch_margin_bottom = 8
 mouse_filter = 2
 
 [node name="Title" type="Label" parent="Frame"]
@@ -133,10 +133,10 @@ offset_top = 218.24
 offset_right = 320.0
 offset_bottom = 300.0
 texture = ExtResource("4_attachbg")
-patch_margin_left = 5
-patch_margin_top = 13
-patch_margin_right = 13
-patch_margin_bottom = 5
+patch_margin_left = 4
+patch_margin_top = 10
+patch_margin_right = 10
+patch_margin_bottom = 4
 mouse_filter = 2
 
 ; attach_title「附件」（源 @ (30,y-15) 垂直中心 y-15 → godot 中心 422.24-(204-15)=233.24）

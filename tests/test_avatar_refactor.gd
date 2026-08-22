@@ -20,10 +20,10 @@ const CONTENT_PATH: String = "res://scenes/ui/avatar_content.tscn"
 const TITLE_ITEM_PATH: String = "res://scenes/ui/avatar_title_item.tscn"
 const PANEL_PATH: String = "res://scripts/ui/avatar_panel.gd"
 const THEME_PATH: String = "res://resources/themes/default_theme.tres"
-# 源 cap(10,10,58,26) 批 1 公式（贴图 103×61）：left=10 top=61-10-26=25
-# right=103-10-58=35 bottom=10（改造前 tscn top/bottom 写反，批内通病第三例）。
-const FRAME_CAP_TOP: int = 25
-const FRAME_CAP_BOTTOM: int = 10
+# 源 cap(10,10,58,26) 批 1 公式（贴图 103×61）：纹理px left=10 top=25 right=35 bottom=10，
+# patch 须 ÷CS(1.28125) 取整（观感专项）→ 8/20/27/8。
+const FRAME_CAP_TOP: int = 20
+const FRAME_CAP_BOTTOM: int = 8
 # 源 scaleSize(530,375) 中心(400,240) → 800×480 直译中心(400,240)，L/T=(400−265, 240−187.5)。
 const FRAME_L: float = 135.0
 const FRAME_T: float = 52.5
@@ -99,10 +99,10 @@ func test_avatar_content_frame_cap_fixed() -> void:
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, FRAME_H, 0.1, "Frame 高直译")
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
 		"Frame 贴图照源 main_vit_tips")
-	assert_eq(frame.patch_margin_left, 10, "NinePatch left = cap.x")
+	assert_eq(frame.patch_margin_left, 8, "NinePatch left = cap.x")
 	assert_eq(frame.patch_margin_top, FRAME_CAP_TOP,
 		"NinePatch top = H-y-h = 61-10-26 = 25（防反写回归）")
-	assert_eq(frame.patch_margin_right, 35, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
+	assert_eq(frame.patch_margin_right, 27, "NinePatch right = W-x-w = 103-10-58（水平不反转）")
 	assert_eq(frame.patch_margin_bottom, FRAME_CAP_BOTTOM,
 		"NinePatch bottom = cap.y = 10（防反写回归）")
 
