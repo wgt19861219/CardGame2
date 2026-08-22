@@ -103,11 +103,11 @@ func test_board_is_ninepatch_with_source_margins() -> void:
 	var panel := _make_panel()
 	var board: NinePatchRect = panel._board as NinePatchRect
 	assert_not_null(board, "Board 节点为 NinePatchRect（源 Scale9Sprite 九宫格）")
-	assert_eq(board.patch_margin_left, 0, "patch_margin_left=0（源 cap x=0）")
-	assert_eq(board.patch_margin_top, 40, "patch_margin_top=40（H-y-h=91-25-26）")
-	assert_eq(board.patch_margin_right, 44, "patch_margin_right=44（W-x-w=106-0-62）")
-	assert_eq(board.patch_margin_bottom, 25, "patch_margin_bottom=25（源 cap y=25）")
-	assert_eq(board.size, Vector2(82.0, 65.0), "收起态 82×65（受控偏离：NinePatch min size=margin 和 65>源 40）")
+	assert_eq(board.patch_margin_left, 8, "patch_margin_left=8（受控偏离 2026-08-22：源 cap 0/44 在窄板下九宫格挤压渲染异常，对称 8/12 修）")
+	assert_eq(board.patch_margin_top, 12, "patch_margin_top=12（受控偏离，同上）")
+	assert_eq(board.patch_margin_right, 8, "patch_margin_right=8（受控偏离，同上）")
+	assert_eq(board.patch_margin_bottom, 12, "patch_margin_bottom=12（受控偏离，同上）")
+	assert_eq(board.size, Vector2(92.0, 65.0), "收起态 92×65（板 2026-08-22 加宽 92 镶框裹按钮，受控偏离）")
 	panel.queue_free()
 
 
