@@ -199,7 +199,7 @@ static func fill_action_labels(base: Control, hero: HeroInstance, cm: Variant) -
 
 # sa/sn 来自 ReadheroHandbook.get_stone_amount/get_stone_need；is_max_star 时 label 变「已进化到顶级」+ 隐藏 stone_bar/get_stone/evolve 按钮。
 const STONE_BAR_W: float = 180.0
-const STONE_BAR_OFFSET_X: float = 279.5   # StoneBar offset_left（bg 偏移 221.5 + 源局部 58）
+const STONE_BAR_OFFSET_X: float = 256.5   # StoneBar 起始左缘（=StoneBarBg 左缘 198.5+源局部 58，tscn 已同值；旧 279.5 系 960 口径遗留）
 const LSTR_MAX_STAR: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
 static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_mgr: HeroManager) -> void:
 	var stone_icon: TextureRect = base.get_node("%StoneIcon") as TextureRect

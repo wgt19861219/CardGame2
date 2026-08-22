@@ -164,10 +164,12 @@ mouse_filter = 0
 
 [node name="SearchLabel" type="TextureButton" parent="SearchFrame/SearchContainer/SearchButton"]
 layout_mode = 0
-offset_left = 26.8086
-offset_top = 12.8906
-offset_right = 113.8086
-offset_bottom = 37.8906
+; 源 DGButton 无 fix_wh → 显示=纹理 87×25÷CS=68×20，中心保持按钮几何中心 (70.31,25.39)（父局部）。
+; 受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（2026-08-17 决策，尺寸随 CS 口径归位）。
+offset_left = 36.3086
+offset_top = 15.3906
+offset_right = 104.3086
+offset_bottom = 35.3906
 texture_normal = ExtResource("9_slbl")
 texture_pressed = ExtResource("9_slbl")
 ignore_texture_size = true

@@ -17,18 +17,18 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+offset_left =  -200
+offset_right =  -200
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
 [node name="EditPlaceholder" type="ReferenceRect" parent="." unique_id=786915829]
 layout_mode = 0
-offset_left = 157.05
-offset_top = 27.32
-offset_right = 402.95
-offset_bottom = 452.68
+offset_left =   282.05
+offset_top =  27.32
+offset_right =   527.95
+offset_bottom =  452.68
 mouse_filter = 2
 border_color = Color(0, 1, 0.7, 1)
 border_width = 2.0
@@ -37,10 +37,10 @@ border_width = 2.0
 unique_name_in_owner = true
 z_index = 1
 layout_mode = 0
-offset_left = 157.05
-offset_top = 27.32
-offset_right = 402.95
-offset_bottom = 452.68
+offset_left =   282.05
+offset_top =  27.32
+offset_right =   527.95
+offset_bottom =  452.68
 mouse_filter = 2
 expand_mode = 1
 
@@ -56,10 +56,10 @@ mouse_filter = 2
 
 [node name="PH_ArtPlaceholder" type="ColorRect" parent="CardArtHost" unique_id=1491769480]
 layout_mode = 0
-offset_left = 163.32
-offset_top = 34.39
-offset_right = 396.68
-offset_bottom = 445.61
+offset_left =   288.32
+offset_top =  34.39
+offset_right =   521.68
+offset_bottom =  445.61
 mouse_filter = 2
 color = Color(0.2, 0.2, 0.3, 0.6)
 
@@ -67,19 +67,19 @@ color = Color(0.2, 0.2, 0.3, 0.6)
 unique_name_in_owner = true
 z_index = 3
 layout_mode = 0
-offset_left = 200.0
-offset_top = 405.76
-offset_right = 340.49
-offset_bottom = 416.68
+offset_left =   325
+offset_top =  405.76
+offset_right =   465.49
+offset_bottom =  416.68
 
 [node name="CardNameBgLine" type="TextureRect" parent="." unique_id=1828308982]
 unique_name_in_owner = true
 z_index = 2
 layout_mode = 0
-offset_left = 343.64
-offset_top = 388.32
-offset_right = 399.05
-offset_bottom = 396.91
+offset_left =   468.64
+offset_top =  388.32
+offset_right =   524.05
+offset_bottom =  396.91
 mouse_filter = 2
 expand_mode = 1
 
@@ -87,20 +87,20 @@ expand_mode = 1
 unique_name_in_owner = true
 z_index = 3
 layout_mode = 0
-offset_left = 217.56
-offset_top = 347.71
-offset_right = 342.44
-offset_bottom = 366.44
+offset_left =   342.56
+offset_top =  347.71
+offset_right =   467.44
+offset_bottom =  366.44
 theme_override_font_sizes/font_size = 22
 
 [node name="CardCloseBtn" type="TextureButton" parent="." unique_id=400100100]
 unique_name_in_owner = true
 z_index = 4
 layout_mode = 0
-offset_left = 358.05
-offset_top = 33.67
-offset_right = 397.86
-offset_bottom = 72.47
+offset_left =   483.05
+offset_top =  33.67
+offset_right =   522.86
+offset_bottom =  72.47
 mouse_filter = 0
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")

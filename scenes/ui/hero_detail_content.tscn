@@ -40,10 +40,12 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="BaseLayer" unique_id=1605552371]
 layout_mode = 0
-offset_left = 141.5
-offset_top = -45.0
-offset_right = 658.5
-offset_bottom = 525.0
+; 源 window.lua:1964 bg ccp(400,240) 中心锚；显示=纹理 517×570÷CS=403.9×445.1（实机底边 y≈462 验证）。
+; 旧值 141.5/-45/658.5/525 系纹理原值直用（偏大 1.28×，底缘 525 溢屏）。
+offset_left = 198.5
+offset_top = 17.5
+offset_right = 601.5
+offset_bottom = 462.5
 mouse_filter = 2
 texture = ExtResource("1_arm7d")
 expand_mode = 1
@@ -61,10 +63,11 @@ mouse_filter = 2
 [node name="NameBg" type="TextureRect" parent="BaseLayer" unique_id=1664043918]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 293.8
-offset_top = 303.1
-offset_right = 445.2
-offset_bottom = 342.9
+; 源 window.lua:2002 name_bg ccp(228,202) 挂 ui.bg（纹理左下角锚）→ 中心 (198.5+228,462.5-202)=(426.5,260.5)。
+offset_left = 350.8
+offset_top = 240.6
+offset_right = 502.2
+offset_bottom = 280.4
 mouse_filter = 2
 texture = ExtResource("2_rpxrd")
 expand_mode = 1
@@ -72,20 +75,22 @@ expand_mode = 1
 [node name="TypeIcon" type="TextureRect" parent="BaseLayer" unique_id=1510124278]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 243.5
-offset_top = 301.0
-offset_right = 283.5
-offset_bottom = 341.0
+; 源 window.lua:2013 type_icon ccp(122,204) 挂 ui.bg → 中心 (320.5,258.5)。
+offset_left = 300.5
+offset_top = 238.5
+offset_right = 340.5
+offset_bottom = 278.5
 mouse_filter = 2
 expand_mode = 1
 
 [node name="NameLabel" type="Label" parent="BaseLayer" unique_id=1958532525]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 298.0
-offset_top = 311.0
-offset_right = 438.0
-offset_bottom = 339.0
+; 源 createHeroName：name 居 name_bg 中心（nbx±65 钳宽）→ 随 NameBg 平移。
+offset_left = 355.0
+offset_top = 248.5
+offset_right = 495.0
+offset_bottom = 276.5
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 
@@ -197,68 +202,73 @@ expand_mode = 1
 [node name="NameFrame" type="TextureRect" parent="BaseLayer" unique_id=678324230]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 293.8
-offset_top = 303.1
-offset_right = 445.2
-offset_bottom = 342.9
+; 源 attributes 段 name_frame @name_bg 位置（createInfoBoard readnode）→ 同 NameBg rect。
+offset_left = 350.8
+offset_top = 240.6
+offset_right = 502.2
+offset_bottom = 280.4
 mouse_filter = 2
 expand_mode = 1
 
 [node name="LevelTitle" type="Label" parent="BaseLayer" unique_id=818367256]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 163.5
-offset_top = 347.5
-offset_right = 213.5
-offset_bottom = 366.5
+; 源 window.lua:2022 max_level_title anchor(0,0.5)@(22,168) 挂 ui.bg → 左缘 220.5、中心 y 294.5。
+offset_left = 220.5
+offset_top = 285.0
+offset_right = 270.5
+offset_bottom = 304.0
 theme_type_variation = &"BlackLabel18"
 text = "等级:"
 
 [node name="GsTitle" type="Label" parent="BaseLayer" unique_id=2037405354]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 266.5
-offset_top = 347.5
-offset_right = 316.5
-offset_bottom = 366.5
+; 源 window.lua:2040 gs_title anchor(0,0.5)@(125,168) → 左缘 323.5、中心 y 294.5。
+offset_left = 323.5
+offset_top = 285.0
+offset_right = 373.5
+offset_bottom = 304.0
 theme_type_variation = &"BlackLabel18"
 text = "战力:"
 
 [node name="ExpTitle" type="Label" parent="BaseLayer" unique_id=1852477416]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 163.5
-offset_top = 375.5
-offset_right = 213.5
-offset_bottom = 394.5
+; 源 window.lua:2055 exp_title anchor(0,0.5)@(22,140) → 左缘 220.5、中心 y 322.5。
+offset_left = 220.5
+offset_top = 313.0
+offset_right = 270.5
+offset_bottom = 332.0
 theme_type_variation = &"BlackLabel18"
 text = "经验:"
 
 [node name="LevelNum" type="Label" parent="BaseLayer" unique_id=310012726]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 213.5
-offset_top = 347.5
-offset_right = 263.5
-offset_bottom = 366.5
+; 数值随行：title 右缘 +0（源 getRightSidePos 语义，fill 动态定位不改 rect）。
+offset_left = 270.5
+offset_top = 285.0
+offset_right = 320.5
+offset_bottom = 304.0
 theme_type_variation = &"WarnLabel"
 
 [node name="GsNum" type="Label" parent="BaseLayer" unique_id=299680256]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 336.5
-offset_top = 347.5
-offset_right = 423.25
-offset_bottom = 366.5
+offset_left = 393.5
+offset_top = 285.0
+offset_right = 480.25
+offset_bottom = 304.0
 theme_type_variation = &"WarnLabel"
 
 [node name="ExpNum" type="Label" parent="BaseLayer" unique_id=1905918452]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 216.5
-offset_top = 375.5
-offset_right = 343.25
-offset_bottom = 394.5
+offset_left = 273.5
+offset_top = 313.0
+offset_right = 400.25
+offset_bottom = 332.0
 theme_type_variation = &"WarnLabel"
 
 [node name="EquipSlotHost" type="Control" parent="BaseLayer" unique_id=1006655734]
@@ -342,10 +352,12 @@ expand_mode = 1
 [node name="StoneIcon" type="TextureRect" parent="BaseLayer" unique_id=5101001]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 152.5
-offset_top = 404.0
-offset_right = 200.5
-offset_bottom = 450.0
+; 源 window.lua:2185 stone ccp(35,98) 挂 ui.bg（2381 readnode）→ cocos 子坐标=父纹理左下角
+; → Godot 中心 (198.5+35, 462.5-98)=(233.5,364.5)；size=纹理 48×46÷CS=37×36。
+offset_left = 215.0
+offset_top = 346.5
+offset_right = 252.0
+offset_bottom = 382.5
 mouse_filter = 2
 texture = ExtResource("6_yxfmg")
 expand_mode = 1
@@ -353,10 +365,11 @@ expand_mode = 1
 [node name="StoneBarBg" type="NinePatchRect" parent="BaseLayer" unique_id=5101002]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 199.5
-offset_top = 414.0
-offset_right = 379.5
-offset_bottom = 440.0
+; 源 window.lua:2192 anchor(0,0.5)@ccp(58,98) → 左缘 198.5+58=256.5，中心 y 364.5。
+offset_left = 256.5
+offset_top = 351.5
+offset_right = 436.5
+offset_bottom = 377.5
 mouse_filter = 2
 texture = ExtResource("7_xulm4")
 ; 源 herodetail/window.lua:2192 stone_bar_bg Scale9Sprite capInsets CCRectMake(20,1,102,24) scaleSize(180,26)，
@@ -369,10 +382,11 @@ patch_margin_bottom = 1
 [node name="StoneBar" type="TextureRect" parent="BaseLayer" unique_id=5101003]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 199.5
-offset_top = 414.0
-offset_right = 199.5
-offset_bottom = 440.0
+; 源 window.lua:1694 ClippingNode 内 anchor(0,0) 从 bar_bg 左缘起按比例增长；fill 改 offset_right。
+offset_left = 256.5
+offset_top = 351.5
+offset_right = 256.5
+offset_bottom = 377.5
 mouse_filter = 2
 texture = ExtResource("8_436n0")
 expand_mode = 1
@@ -380,10 +394,11 @@ expand_mode = 1
 [node name="StoneBarLabel" type="Label" parent="BaseLayer" unique_id=5101004]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 241.5
-offset_top = 414.0
-offset_right = 337.5
-offset_bottom = 440.0
+; 源 window.lua:2211 stone_bar_label ccp(148,98)（bar 中心）→ Godot 中心 (346.5,364.5)。
+offset_left = 298.5
+offset_top = 351.5
+offset_right = 394.5
+offset_bottom = 377.5
 theme_override_font_sizes/font_size = 18
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_y = 2
@@ -393,10 +408,11 @@ vertical_alignment = 1
 [node name="GetStoneBtn" type="TextureButton" parent="BaseLayer" unique_id=5101005]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 384.5
-offset_top = 407.0
-offset_right = 424.5
-offset_bottom = 447.0
+; 源 window.lua:2228 get_stone ccp(263,98) → Godot 中心 (461.5,364.5)；size=纹理 40×40÷CS=31×31。
+offset_left = 446.0
+offset_top = 349.0
+offset_right = 477.0
+offset_bottom = 380.0
 texture_normal = ExtResource("9_rasiu")
 texture_pressed = ExtResource("10_djwpd")
 ignore_texture_size = true
@@ -406,10 +422,12 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"HeroDetailTab"
 layout_mode = 0
-offset_left = 528.0
-offset_top = 296.0
-offset_right = 628.0
-offset_bottom = 338.0
+; 源 window.lua:2095 upgrade Scale9Sprite @(335,155) 挂 ui.bg，scaleSize(100,42)
+; → 中心 (198.5+335,462.5-155)=(533.5,307.5)（2026-08-22 Bg ÷CS 后回源；旧 528..628 系 960 时代遗留）。
+offset_left = 483.5
+offset_top = 286.5
+offset_right = 583.5
+offset_bottom = 328.5
 
 [node name="UpgradeRankLabel" type="Label" parent="BaseLayer/UpgradeRankBtn" unique_id=686800648]
 unique_name_in_owner = true
@@ -428,10 +446,11 @@ vertical_alignment = 1
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
-offset_left = 528.0
-offset_top = 345.0
-offset_right = 628.0
-offset_bottom = 387.0
+; 随 UpgradeRankBtn 同步平移（源 2 按钮垂直堆叠关系保持，相对 Δ 不变）。
+offset_left = 483.5
+offset_top = 335.5
+offset_right = 583.5
+offset_bottom = 377.5
 
 [node name="AwakeLabel" type="Label" parent="BaseLayer/AwakeBtn" unique_id=700100002]
 unique_name_in_owner = true
@@ -529,10 +548,12 @@ unique_name_in_owner = true
 visible = false
 z_index = 16
 layout_mode = 0
-offset_left = 32.5
-offset_top = 262.5
-offset_right = 83.5
-offset_bottom = 337.5
+; 源 window.lua:1854 left_arrow ccp(58,180) animLayer 全局 → Godot 中心 (58,300)；
+; size=纹理 51×75÷CS=40×59（旧值 51×75 纹理直用）。
+offset_left = 38.0
+offset_top = 270.5
+offset_right = 78.0
+offset_bottom = 329.5
 mouse_filter = 2
 texture_normal = ExtResource("16_arrow_l")
 ignore_texture_size = true
@@ -543,10 +564,11 @@ unique_name_in_owner = true
 visible = false
 z_index = 16
 layout_mode = 0
-offset_left = 716.5
-offset_top = 262.5
-offset_right = 767.5
-offset_bottom = 337.5
+; 源 window.lua:1868 right_arrow ccp(742,180) → Godot 中心 (742,300)；size=40×59（÷CS）。
+offset_left = 722.0
+offset_top = 270.5
+offset_right = 762.0
+offset_bottom = 329.5
 mouse_filter = 2
 texture_normal = ExtResource("17_arrow_r")
 ignore_texture_size = true
@@ -560,8 +582,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+; 止态 -200 = 源 pop endPos（window.lua:513）；card 子节点已 +125 平移保现状视觉（card tab 回源另立任务）。
+offset_left = -200.0
+offset_right = -200.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -573,8 +596,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+; 止态 -200 = 源 pop endPos（window.lua:430，覆盖 create 时 container(48,0) 初始位）；子节点=源 attributes.lua 声明坐标直译。
+offset_left = -200.0
+offset_right = -200.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -586,8 +610,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+; 止态 -200 = 源 pop endPos（window.lua:386）；子节点=源 skillstren.lua 声明坐标直译。
+offset_left = -200.0
+offset_right = -200.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2

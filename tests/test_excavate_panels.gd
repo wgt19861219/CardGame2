@@ -884,6 +884,15 @@ func test_map_content_static_rects() -> void:
 	var mslbl: TextureButton = content.get_node("%ResearchFrame/ResearchContainer/%ResearchButton/SearchLabel") as TextureButton
 	assert_eq(mslbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
 		"map SearchLabel 接线文字图 word_search（实跑反馈修复同 search 件）")
+	# 2026-08-22 溢出修复二轮：源 DGButton 无 fix_wh → 显示=纹理÷CS（map 件同 search 件口径）。
+	assert_almost_eq(mslbl.size.x, 68.0, 0.02, "map SearchLabel w=68（87px÷CS）")
+	assert_almost_eq(mslbl.size.y, 20.0, 0.02, "map SearchLabel h=20（25px÷CS）")
+	# ResearchLabel（另一块探索图标）：同口径 141×53px÷CS=110×41，中心保持按钮几何中心 (70.32,25.39)。
+	var rlbl: TextureButton = content.get_node("%ResearchFrame/ResearchContainer/%ResearchButton/ResearchLabel") as TextureButton
+	assert_almost_eq(rlbl.size.x, 110.0, 0.02, "ResearchLabel w=110（141px÷CS，旧 141 纹理直用偏大 1.28×）")
+	assert_almost_eq(rlbl.size.y, 41.0, 0.02, "ResearchLabel h=41（53px÷CS）")
+	assert_almost_eq(rlbl.position.x + rlbl.size.x * 0.5, 70.32, 0.02, "ResearchLabel 中心 x=70.32（源 ccp(70.31,·) 保持）")
+	assert_almost_eq(rlbl.position.y + rlbl.size.y * 0.5, 25.39, 0.02, "ResearchLabel 中心 y=25.39（按钮几何中心）")
 	var frame: Control = fc.get_node("Frame") as Control
 	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 402.34, 0.02, "frame 局部中心 x=402.34")
 	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 246.88, 0.02, "frame 局部中心 y=246.88（480.47-233.59）")
@@ -1281,8 +1290,10 @@ func test_search_content_static_rects() -> void:
 	var slbl: TextureButton = content.get_node("SearchFrame/SearchContainer/%SearchButton/SearchLabel") as TextureButton
 	assert_eq(slbl.texture_normal.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_word_search.png",
 		"SearchLabel 接线文字图 word_search（源在库未接线的本地化遗留，受控偏离）")
-	assert_almost_eq(slbl.size.x, 87.0, 0.02, "SearchLabel w=87（word_search 原尺寸）")
-	assert_almost_eq(slbl.size.y, 25.0, 0.02, "SearchLabel h=25")
+	# 2026-08-22 溢出修复二轮：源 DGButton 无 fix_wh → 显示=纹理÷CS=68×20（旧 87×25 系纹理直用；
+	# 中心保持按钮几何中心 (70.31,25.39)）。
+	assert_almost_eq(slbl.size.x, 68.0, 0.02, "SearchLabel w=68（word_search 87px÷CS）")
+	assert_almost_eq(slbl.size.y, 20.0, 0.02, "SearchLabel h=20（25px÷CS）")
 	var fc: Control = content.get_node("FrameContainer") as Control
 	assert_almost_eq(fc.position.x, -3.125, 0.02, "frame_container offset_left=76.875")
 	assert_almost_eq(fc.position.y, -4.375, 0.02, "frame_container offset_top=75.625")

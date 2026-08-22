@@ -218,3 +218,32 @@ func test_check_button_tag_all_keys_return_bool() -> void:
 		var v: bool = panel._check_button_tag(key)
 		assert_true(v == true or v == false, "%s 分发返回 bool 不崩" % key)
 	panel.queue_free()
+
+
+# ── 按钮列 y 回源守卫（2026-08-22 溢出修复二轮：作废旧坐标时代等距 90 历史调整）──
+# 源 uires.lua:26-31 shortcutBoardButtonPosY={382,307,237,162,83} + :18 s_b_offset_y=-20 + :37-38
+# 运行时循环叠加 → {362,287,217,142,63}（framework.lua popBoardWithoutAnim:427 setPosition 直用）；
+# Godot y=480-PosY → {118,193,263,338,417}，间距不等距 75/70/75/79。首钮与 toggle（y=40）
+# 垂直间距 78（源同），旧等距值首钮 57 与 toggle 40 叠死。
+
+func test_button_center_y_source_direct() -> void:
+	var panel := _make_panel()
+	panel._apply_open_instant()
+	const EXPECTED_Y: Array[float] = [118.0, 193.0, 263.0, 338.0, 417.0]
+	for i in BUTTON_KEYS.size():
+		var btn: TextureButton = panel._buttons[BUTTON_KEYS[i]]
+		var center_y: float = btn.position.y + btn.size.y / 2.0
+		assert_almost_eq(center_y, EXPECTED_Y[i], 0.5, "%s 按钮中心 y=%d（源 PosY %d 直译 480-y）" % [BUTTON_KEYS[i], EXPECTED_Y[i], [362, 287, 217, 142, 63][i]])
+	panel.queue_free()
+
+
+# 首按钮与 toggle 不叠（源 toggle ccp(740,440)→y=40 恒定；首钮 118 与其相距 78）。
+func test_first_button_not_overlapping_toggle() -> void:
+	var panel := _make_panel()
+	panel._apply_open_instant()
+	var first: TextureButton = panel._buttons[BUTTON_KEYS[0]]
+	var first_center_y: float = first.position.y + first.size.y / 2.0
+	var toggle_center_y: float = panel._toggle_down.position.y + panel._toggle_down.size.y / 2.0
+	assert_almost_eq(toggle_center_y, 40.0, 0.5, "toggle 中心 y=40（源 shortcut_pos_y 440 直译）")
+	assert_gt(first_center_y - toggle_center_y, 60.0, "首钮(118)与 toggle(40) 垂直间距 ≥60（实际 78，源同；旧等距 90 时仅 17 叠死）")
+	panel.queue_free()

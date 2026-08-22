@@ -10,28 +10,34 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+; 本地=源 container 系直译（attributes.lua create 时 container(48,0) 仅为初始位，pop endPos
+; =ccp(-200,0)（window.lua:430）覆盖之 → 显示止态 container=源局部+(-200)，与 skill tab 同构）。
+offset_left = -200.0
+offset_right = -200.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
 [node name="EditPlaceholder" type="ReferenceRect" parent="." unique_id=983757955]
 layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
+offset_left = 256.0
+offset_top = 17.5
+offset_right = 544.0
+offset_bottom = 462.5
 mouse_filter = 2
 border_color = Color(0, 1, 0.7, 1)
 border_width = 2.0
 
 [node name="PopupBg" type="TextureRect" parent="." unique_id=794667800]
 layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
+; 源 attributes.lua:600 bg herodetail-detail-popup ccp(400,240) 挂 container（pop 止态 -200 与
+; skill 同构，create 时 container(48,0) 被 endPos 覆盖，不并入）；显示=纹理 369×570÷CS=288×445
+;（旧值 369×570 纹理直用，底缘 605 溢屏 125px；一度并入 +48 的 304..592 已撤——显示止态源全局
+; 中心 (200,240)，48 系 popBack 退出位非显示位，2026-08-22 二轮复核纠正）。
+offset_left = 256.0
+offset_top = 17.5
+offset_right = 544.0
+offset_bottom = 462.5
 mouse_filter = 2
 texture = ExtResource("1_popup")
 expand_mode = 1
@@ -39,10 +45,12 @@ expand_mode = 1
 [node name="AttribListHost" type="ScrollContainer" parent="." unique_id=901391735]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 125.0
-offset_top = 60.0
-offset_right = 435.0
-offset_bottom = 580.0
+; 源 attributes.lua:627 draglist cliprect CCRectMake(18,15,249,415) 相对 popup 左下角
+; → Cocos 显示止态全局 (74,32.5)-(323,447.5) → 本地（+200 归一）(274,32.5)-(523,447.5)。
+offset_left = 274.0
+offset_top = 32.5
+offset_right = 523.0
+offset_bottom = 447.5
 mouse_filter = 0
 horizontal_scroll_mode = 0
 

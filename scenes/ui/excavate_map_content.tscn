@@ -193,10 +193,12 @@ mouse_filter = 0
 [node name="SearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 26.8086
-offset_top = 12.8906
-offset_right = 113.8086
-offset_bottom = 37.8906
+; 源 excavatemap.lua:864 DGButton 无 fix_wh → 显示=纹理 87×25÷CS=68×20；中心保持按钮几何中心
+; (70.31,25.39)（父局部）。受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（同 search 面板）。
+offset_left = 36.3086
+offset_top = 15.3906
+offset_right = 104.3086
+offset_bottom = 35.3906
 texture_normal = ExtResource("19_srch")
 texture_pressed = ExtResource("19_srch")
 ignore_texture_size = true
@@ -207,10 +209,12 @@ visible = false
 [node name="ResearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = -0.345
-offset_top = -0.975
-offset_right = 140.985
-offset_bottom = 51.755
+; 源 excavatemap.lua:890 DGButton 无 fix_wh → 显示=纹理 141×53÷CS=110×41（旧值 141×53 纹理直用）；
+; 中心保持按钮几何中心 (70.32,25.39)（父局部）。
+offset_left = 15.32
+offset_top = 4.89
+offset_right = 125.32
+offset_bottom = 45.89
 texture_normal = ExtResource("21_ano")
 texture_pressed = ExtResource("22_anop")
 ignore_texture_size = true

@@ -432,3 +432,35 @@ func test_stone_bar_bg_ninepatch_margins() -> void:
 		assert_eq(bg.size, Vector2(180.0, 26.0), "显示尺寸 180×26 保持（源 scaleSize）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── 溢出修复二轮守卫（2026-08-22）：detail tab 框位回源 ──
+# 源链：attributes.lua:600 bg ccp(400,240) 挂 container；create 时 container(48,0) 仅为初始位，
+# window.lua:430 pop endPos=ccp(-200,0) 覆盖之 → 显示止态源全局中心 (200,240)、底缘 y=462.5；
+# 48 不得并入子节点（一度并入致显示中心 248 偏右 48，已纠）。显示=纹理 369×570÷CS=288×445。
+func test_detail_tab_popup_rect_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	# 不调 _show_tab_content（树内会起 0.2s tween）；tscn 实例已固化止态 -200，直接断言。
+	var tab: Control = panel.container.find_children("TabDetailView", "Control", true, false)[0] as Control
+	assert_not_null(tab, "TabDetailView 存在")
+	if tab == null:
+		return
+	assert_almost_eq(tab.offset_left, -200.0, 0.5, "tab 止态 offset=-200（源 pop endPos）")
+	var popup: Control = tab.get_node("PopupBg") as Control
+	assert_almost_eq(popup.size.x, 288.0, 0.5, "PopupBg w=288（369px÷CS，旧 369 纹理直用溢屏）")
+	assert_almost_eq(popup.size.y, 445.0, 0.5, "PopupBg h=445（570px÷CS）")
+	# 显示止态全局底缘 = 本地 462.5 + 根 -200（y 不受 x 偏移影响）→ 462.5 ≤480 入屏。
+	assert_almost_eq(popup.position.y + popup.size.y, 462.5, 0.5, "PopupBg 显示底缘 y=462.5（570÷CS 居中 240，入屏）")
+	# 显示止态全局中心 x = 本地 400 + 根 -200 = 200（源 bg 全局 400 + container(-200)）。
+	assert_almost_eq(popup.get_global_rect().get_center().x, 200.0, 0.5, "PopupBg 显示中心 x=200（源 400+(-200)，勿并入 48）")
+	var list_host: Control = tab.get_node("AttribListHost") as Control
+	assert_almost_eq(list_host.size.x, 249.0, 0.5, "draglist clip w=249（源 CCRect 直译）")
+	assert_almost_eq(list_host.size.y, 415.0, 0.5, "draglist clip h=415")
+	assert_almost_eq(list_host.get_global_rect().position.x, 74.0, 0.5, "draglist 显示左缘 x=74（源 bg 左下角 56+18）")
+	panel.remove_window()
+	root.queue_free()
