@@ -43,10 +43,10 @@ offset_bottom = 113.0
 mouse_filter = 0
 texture = ExtResource("1_board")
 ; 源 shortcut.lua:273 Scale9Sprite capInsets CCRectMake(0,25,62,26)，贴图 106x91 → top=91-25-26=40/bottom=25/right=106-62=44
-patch_margin_left = 8
-patch_margin_top = 12
-patch_margin_right = 8
-patch_margin_bottom = 12
+patch_margin_left = 0
+patch_margin_top = 40
+patch_margin_right = 44
+patch_margin_bottom = 25
 
 [node name="ToggleDown" type="TextureButton" parent="."]
 unique_name_in_owner = true

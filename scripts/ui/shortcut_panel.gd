@@ -18,28 +18,23 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tsc
 
 const CONTENT_SCALE: float = 1.28125
 const SCREEN_H: float = 480.0
-const BOARD_CENTER_X: float = 750.0   # 源 740（uires.lua winRight-60）；用户 2026-08-22 指示"向右移动一点"（首轮误判为左移已纠正），整体右移 10
+const BOARD_CENTER_X: float = 740.0   # 源 uires.lua shortcut_board_pos.x = winRight(800)-60
 # 960×640 时代抽屉上移 -132（下拉钮与货币栏平齐，640 屏天区补偿）；viewport 800×480 后
 # 源内容满屏无天区，上移会致板顶出屏，UP 归 0 回源观感（toggle 源直译 y=40 天然近货币栏 top≈30）。
 const BOARD_UP_OFFSET: float = 0.0
 const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶贴底（cocos 板底 y=0..460 → godot 20..480）
-const BOARD_WIDTH: float = 92.0   # 用户 2026-08-22 反馈"边框宽度不够"：82 与按钮 81.8 贴死无镶框感，加宽 92 左右各留 5 边（受控偏离，源 scaleSize=82）
+const BOARD_WIDTH: float = 82.0
 # 收起态板高受控偏离（批 2 Task 8 NinePatch 化）：源 40（uires.lua height_min），但 Godot
 # NinePatchRect 最小尺寸=patch margin 和（top40+bottom25=65），40 会被引擎钳到 65；
 # 源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。收起态板被 toggle 钮覆盖视觉无感。
 const BOARD_H_MIN: float = 65.0
 const BOARD_H_MAX: float = 460.0
-const TOGGLE_CENTER: Vector2 = Vector2(BOARD_CENTER_X, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
+const TOGGLE_CENTER: Vector2 = Vector2(740.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
 # 源运行时直译（uires.lua:26-31 静态表 PosY={382,307,237,162,83} + :18 s_b_offset_y=-20
 # + :37-38 循环叠加 → 运行时 {362,287,217,142,63}；Godot y=480-PosY）。间距不等距 75/70/75/79。
 # 旧等距 90（{57,147,237,327,417}）系旧坐标时代"太挤"的历史调整——首钮 57 与 toggle 40 叠死（2026-08-22 作废回源）；
 # 回源后首钮 118 与 toggle 40 相距 78（源同），底钮 417=480-63 贴板底。
 const BUTTON_CENTER_Y: Array[float] = [118.0, 193.0, 263.0, 338.0, 417.0]
-# 受控偏离（用户决策 2026-08-22）：源设计按钮显示宽 102.24（131px÷CS）压过板宽 82（源实机
-# 按钮即压板），用户拍板"太大、挤不下"，统一 ×0.8：按钮 102.24→81.79、toggle 88.98→71.18
-# 均收入板内 [699,781]；中心位置（PosY/toggle）不动，源 5 按钮间距不等距 75/70/75/79 保持。
-# 红点 tag 系按钮子节点随缩放；触摸区 = TextureButton 缩放后 global rect 自动跟随视觉。
-const BUTTON_SCALE: float = 0.8
 const BUTTON_ORIGIN_CENTER: Vector2 = TOGGLE_CENTER   # 收起叠点 = 切换钮位置（源 button_ori_pos）
 const MAIN_TAG_CENTER: Vector2 = Vector2(TOGGLE_CENTER.x + 28.0, TOGGLE_CENTER.y - 22.0)   # 源 :318 ccp(pos_x+28, pos_y+22) → godot(768,18)
 const ANIM_DUR: float = 0.12
@@ -101,14 +96,9 @@ func _build_content() -> void:
 	_toggle_down.pressed.connect(_toggle_open)
 	_toggle_up = content.get_node("%ToggleUp") as TextureButton
 	_toggle_up.pressed.connect(_toggle_open)
-	# 受控偏离 ×0.8（BUTTON_SCALE，2026-08-22 用户决策）：toggle 与 5 按钮统一缩小收入板宽 82。
-	# tscn 固化 size 不动（显示尺寸口径单一来源在常量），运行时设 scale；红点 tag 随父缩放。
-	_toggle_down.scale = Vector2(BUTTON_SCALE, BUTTON_SCALE)
-	_toggle_up.scale = Vector2(BUTTON_SCALE, BUTTON_SCALE)
 	for key in BUTTON_KEYS:
 		var btn: TextureButton = content.get_node("%" + String(BUTTON_NODE_NAMES[key])) as TextureButton
 		btn.pressed.connect(_on_button_pressed.bind(key))
-		btn.scale = Vector2(BUTTON_SCALE, BUTTON_SCALE)
 		_buttons[key] = btn
 		_tags[key] = content.get_node("%" + String(TAG_NODE_NAMES[key])) as TextureRect
 	_main_tag = content.get_node("%Tag") as TextureRect
@@ -325,10 +315,8 @@ func _button_size(btn: TextureButton) -> Vector2:
 	# :284-309 toggle 系 t="Sprite" config={} 无 fix → 源显示=纹理/CS，但 tscn 固化 size
 	# 尚为纹理原尺寸口径（÷CS 迁移挂 Task 6）；TexDisplaySize.display_size 2026-08-21
 	# 恢复 ÷CS 后与之失配 1.28×，中心定位会偏 ~12px。按实际 size 定位无论 tscn 何口径都精确居中。
-	# 2026-08-22 BUTTON_SCALE 受控偏离：scale 不改 size，视觉尺寸 = size×scale，
-	# 中心定位须按视觉口径（否则视觉中心偏 size×(1-scale)/2 ≈ 10px）。
 	if btn.size.x > 0.0:
-		return btn.size * btn.scale
+		return btn.size
 	return Vector2(76.0, 76.0)   # 估算（无纹理降级，Phase 4 校准）
 
 
