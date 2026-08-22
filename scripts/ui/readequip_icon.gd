@@ -16,11 +16,20 @@ const TICK_PATH: String = "res://assets/ui/alpha/HVGA/fragment_tick.png"
 const FRAME_COLORS: Array[String] = ["white", "green", "blue", "purple", "orange"]
 const HERO_DEFAULT_QUALITY: int = 1
 const ICON_SIZE: float = 72.0
-const ICON_OFFSET: Vector2 = Vector2(9.0, 9.0)
-const AMOUNT_POS: Vector2 = Vector2(40.0, 50.0)
-const STONE_ICON_POS: Vector2 = Vector2(36.0, 38.0)
-const SOULSTONE_TAG_POS: Vector2 = Vector2(15.0, 60.0)
-const TICK_TAG_POS: Vector2 = Vector2(4.0, 4.0)
+# 子元素定位照源逻辑坐标系（y 向上，frame 逻辑尺寸 94/CS×95/CS≈73.4×74.1，2026-08-22 重写）：
+# 装备内图中心 (36,39)（readequip.lua:721/:727）；hero 头像同位 + s2=(frame逻辑宽-9)/头宽缩放（:733-738）；
+# 魂石头像中心 (36,38.5)（:593）+ s2 同（:600）；魂石 tag 中心 (15,60)（:597）；
+# 数量标签右缘 (68,18)（:806 anchor(1,0.5)）；tick 角标左下 (4,4)（:871 anchor(0,0)）。
+# 旧常量 (9,9)/(36,38)/(15,60)/(40,50)/(4,4) 直抄未翻 y 未适配逻辑系，2026-08-22 魂石观感回归后作废。
+const EQUIP_CENTER_UP: Vector2 = Vector2(36.0, 39.0)
+const STONE_CENTER_UP: Vector2 = Vector2(36.0, 38.5)
+const STONE_TAG_CENTER_UP: Vector2 = Vector2(15.0, 60.0)
+const AMOUNT_RIGHT_X: float = 68.0
+const AMOUNT_CENTER_Y_UP: float = 18.0
+const TICK_POS_UP: Vector2 = Vector2(4.0, 4.0)
+const FRAME_INSET: float = 9.0   # 源 s2=(frame逻辑宽-9)/内容宽 → 内容显示 64.4
+const GOCHA_BG_PATH: String = "res://assets/ui/alpha/HVGA/gocha.png"
+const FRAGMENT_TAG_PATH: String = "res://assets/ui/alpha/HVGA/fragment_tag.png"
 # 装备强化星级（源 createIconWithLevel:1202-1231）：垂直单列 blue(level 颗)/grey(show_gray 到 ml)。
 # star_bg（equipupgrade_equip_bg.png）本项目缺 → 降级不画底图。
 const STAR_BLUE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_star_blue.png"
@@ -33,8 +42,45 @@ const HALF: float = 0.5              # 星中心定位偏移
 const CONTENT_SCALE: float = 1.28125
 
 
+# sprite 显示尺寸（_load_sprite 已 scale=1/CS → 显示=纹理/CS 逻辑点）。
+static func _vis_size(s: Sprite2D) -> Vector2:
+	if s.texture == null:
+		return Vector2.ZERO
+	return s.texture.get_size() * s.scale.x
+
+
+# 源中心点定位（cocos y 向上、anchor 0.5）→ Godot 左上：pos = (cx, frame逻辑高-cy) - 半显示尺寸。
+static func _place_center(s: Sprite2D, center_up: Vector2, frame_h: float) -> void:
+	s.position = Vector2(center_up.x, frame_h - center_up.y) - _vis_size(s) * 0.5
+
+
+# 头像/魂石内容缩放到 frame 逻辑宽-9（源 s2 语义）：sprite.scale 总值 = 目标宽/纹理px
+# （= 源 (1/CS)×s2 的代数化简，显示=目标宽）。
+static func _fit_inset(s: Sprite2D, frame_w: float) -> void:
+	if s.texture == null or s.texture.get_size().x <= 0.0:
+		return
+	var target: float = frame_w - FRAME_INSET
+	s.scale = Vector2(target / s.texture.get_size().x, target / s.texture.get_size().x)
+
+
 # 创建图标节点（品质边框 + 内 Icon + 数量 Label + 可选星级）。id 为 equip id 或 hero tid。
 static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_gray: bool = false) -> Control:
+	# 源 :705-712 按 Equip.Category 分流：碎片/魂石走专用图标（帧/衬底/tag/内缩各不同）。
+	# 2026-08-22 照源补分流——此前商店魂石/碎片商品误走装备分支致观感错。
+	# 源 createIconWithLevel:1206 星级在分流后统一加于 bg（魂石带星），两分支补 _add_stars。
+	if not _is_hero(id, cm):
+		var category: String = String(cm.get_raw_table("Equip").get(str(id), {}).get("Category", ""))
+		var diverted: Control = null
+		if category == "EQUIP.SOUL_STONE":
+			diverted = create_hero_stone_icon(id, amount, cm)
+		elif category == "EQUIP.FRAGMENT":
+			diverted = create_fragment_icon(id, amount, cm)
+		if diverted != null:
+			if level > 0 or show_gray:
+				_add_stars(diverted, id, level, show_gray, cm)
+				diverted.set_meta(&"quality", _get_quality(id, false, cm))
+				diverted.set_meta(&"is_hero", false)
+			return diverted
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	container.size = Vector2(ICON_SIZE, ICON_SIZE)
@@ -42,15 +88,26 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 	var quality: int = _get_quality(id, is_hero, cm)
 	var frame := _load_sprite(FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
 	container.add_child(frame)
+	# 源 :719-722 equip 分支有 gocha 衬底 z=-2（frame 之下、内容之上）——此前漏画。
+	var gocha := _load_sprite(GOCHA_BG_PATH, DEFAULT_ICON)
+	container.add_child(gocha)
+	var frame_h: float = _vis_size(frame).y
+	var frame_w: float = _vis_size(frame).x
 	var icon_path := _get_icon_path(id, is_hero, cm)
 	if icon_path != "":
 		var icon := _load_sprite(icon_path, DEFAULT_ICON)
-		icon.position = ICON_OFFSET
+		# hero 头像缩放到 frame宽-9（源 :733-738 itemType=="hero" s2）；装备内图无缩放（源无该分支 s2）。
+		if is_hero:
+			_fit_inset(icon, frame_w)
+		_place_center(icon, EQUIP_CENTER_UP, frame_h)
 		container.add_child(icon)
 	if amount > 1:
 		var lbl := Label.new()
 		lbl.text = "x" + str(amount)
-		lbl.position = AMOUNT_POS
+		# 源 :803-807 anchor(1,0.5) (68,18)：右缘距左 68、中心距底 18（Label 数字图降级，口径对齐）。
+		lbl.size = Vector2(56.0, 16.0)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
 		container.add_child(lbl)
 	if level > 0 or show_gray:
 		_add_stars(container, id, level, show_gray, cm)
@@ -139,20 +196,61 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant) -> Control
 	var quality: int = _get_quality(id, false, cm)
 	var frame := _load_sprite(FRAGMENT_FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
 	container.add_child(frame)
+	var frame_h: float = _vis_size(frame).y
+	var frame_w: float = _vis_size(frame).x
+	# 源 :578-581 equipBg=fragment_bg anchor(0,0)(0,0) frame 左下→Godot 左上（centered=false 默认）。
 	var bg := _load_sprite(FRAGMENT_BG_PATH, DEFAULT_ICON)
 	container.add_child(bg)
 	var icon_path := _get_icon_path(id, false, cm)
 	if icon_path != "":
 		var icon := _load_sprite(icon_path, DEFAULT_ICON)
-		icon.position = STONE_ICON_POS
+		_fit_inset(icon, frame_w)   # 源 :600 s2=(frame逻辑宽-9)/stone宽
+		_place_center(icon, STONE_CENTER_UP, frame_h)
 		container.add_child(icon)
 	var tag := _load_sprite(SOULSTONE_TAG_PATH, DEFAULT_ICON)
-	tag.position = SOULSTONE_TAG_POS
+	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
 	container.add_child(tag)
 	if amount > 1:
 		var lbl := Label.new()
 		lbl.text = "x" + str(amount)
-		lbl.position = AMOUNT_POS
+		lbl.size = Vector2(56.0, 16.0)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
+		container.add_child(lbl)
+	return container
+
+
+# 创建碎片图标（照源 createFragment :538-568）：与魂石同构但内缩 -12、tag 用 fragment_tag、
+# 内容中心 (36,38)。源用 fragment_stencil 圆形 clip，本项目同魂石简化不 mask（Phase 4 校准补）。
+static func create_fragment_icon(id: int, amount: int, cm: Variant) -> Control:
+	var container := Control.new()
+	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
+	container.size = Vector2(ICON_SIZE, ICON_SIZE)
+	var quality: int = _get_quality(id, false, cm)
+	var frame := _load_sprite(FRAGMENT_FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
+	container.add_child(frame)
+	var frame_h: float = _vis_size(frame).y
+	var frame_w: float = _vis_size(frame).x
+	var bg := _load_sprite(FRAGMENT_BG_PATH, DEFAULT_ICON)
+	container.add_child(bg)
+	var icon_path := _get_icon_path(id, false, cm)
+	if icon_path != "":
+		var icon := _load_sprite(icon_path, DEFAULT_ICON)
+		# 源 :562 s2=(frame逻辑宽-12)/icon宽 → 显示 61.4（碎片比魂石 -9 略小）
+		if icon.texture != null and icon.texture.get_size().x > 0.0:
+			var target: float = frame_w - 12.0
+			icon.scale = Vector2(target / icon.texture.get_size().x, target / icon.texture.get_size().x)
+		_place_center(icon, Vector2(36.0, 38.0), frame_h)
+		container.add_child(icon)
+	var tag := _load_sprite(FRAGMENT_TAG_PATH, DEFAULT_ICON)
+	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
+	container.add_child(tag)
+	if amount > 1:
+		var lbl := Label.new()
+		lbl.text = "x" + str(amount)
+		lbl.size = Vector2(56.0, 16.0)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
 		container.add_child(lbl)
 	return container
 
@@ -171,7 +269,9 @@ static func create_icon_with_tag(tid: int, amount: int, cm: Variant, pd: PlayerD
 
 static func _add_tick_tag(container: Control) -> void:
 	var tick := _load_sprite(TICK_PATH, DEFAULT_ICON)
-	tick.position = TICK_TAG_POS
+	# 源 :869-871 anchor(0,0) (4,4) frame 左下 → Godot 左上 y = frame逻辑高-4-tick显示高。
+	var frame_h: float = 95.0 / CONTENT_SCALE   # tick 只挂在 create_hero_stone_icon 产物上（fragment_frame 95px）
+	tick.position = Vector2(TICK_POS_UP.x, frame_h - TICK_POS_UP.y - _vis_size(tick).y)
 	container.add_child(tick)
 
 
