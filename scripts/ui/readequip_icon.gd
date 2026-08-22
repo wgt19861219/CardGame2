@@ -214,5 +214,9 @@ static func _load_sprite(path: String, fallback: String) -> Sprite2D:
 	var res_path := path if ResourceLoader.exists(path) else fallback
 	if ResourceLoader.exists(res_path):
 		sprite.texture = load(res_path)
+		# 源显示 = 纹理 px ÷ CS（hello.lua:311）。Sprite2D 无拉伸语义（纹理原像素直显），
+		# 不折算则 frame 92px 直画 92（源 71.8），图标大 1.28× 溢出 72 容器压文字
+		# （2026-08-22 商店行重叠根因，纹理px直用系统债家族）。统一 scale 回显示口径。
+		sprite.scale = Vector2(1.0 / CONTENT_SCALE, 1.0 / CONTENT_SCALE)
 	sprite.centered = false
 	return sprite

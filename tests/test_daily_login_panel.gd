@@ -375,7 +375,8 @@ func test_item_icon_centered_in_board() -> void:
 	assert_gt(target_day, -1, "当月表含 Item/Hero 奖励")
 	var cell: TextureButton = panel._cells[target_day]
 	var icon: Control = (cell.get_node("%IconHost") as TextureRect).get_child(0) as Control
-	assert_almost_eq(icon.scale.x, 1.0 / 1.28125, 0.0001, "icon scale=1/CS（视觉 73.37×74.13）")
+	# create_icon 内部 _load_sprite 已统一 ÷CS（2026-08-22 根修），scale=1 即视觉 73.37×74.13
+	assert_almost_eq(icon.scale.x, 1.0, 0.0001, "icon scale=1（_load_sprite 内部 ÷CS，视觉 73.37×74.13）")
 	var vis: Vector2 = Vector2(94.0, 95.0) / 1.28125
 	assert_almost_eq(icon.position.x + vis.x * 0.5, 51.0, 0.1, "icon 视觉中心 x=51（源 :334 ccp(51,52)）")
 	assert_almost_eq(icon.position.y + vis.y * 0.5, 49.5, 0.1, "icon 视觉中心 y=49.5（52 y 翻转）")

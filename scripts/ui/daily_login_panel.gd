@@ -191,9 +191,9 @@ func _fill_icon(host: TextureRect, data: Dictionary) -> void:
 			if icon != null:
 				icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				host.add_child(icon)
-				# 源显示原点尺寸（无 length）→ scale=1/CS 使视觉=73.37×74.13；
+				# 源显示原点尺寸（无 length）→ create_icon 内部 _load_sprite 已统一 ÷CS
+				# （2026-08-22 根修），frame 视觉 = 73.37×74.13，此处不再二次 ÷CS；
 				# 中心 (51,52) y-up → godot (51,49.5)，左上 = 中心 - 半视觉盒
-				icon.scale = Vector2.ONE / CONTENT_SCALE
 				icon.position = ICON_CENTER_LOCAL - FRAME_TEX_SIZE / CONTENT_SCALE * 0.5
 		return
 	var res_path: String = String(STATIC_ICON_MAP.get(type, ""))

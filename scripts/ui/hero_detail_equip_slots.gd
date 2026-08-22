@@ -53,9 +53,8 @@ static func show_equips(hero: HeroInstance, cm: Variant, pd: PlayerData, base_la
 			continue
 		slot_host.texture = null
 		icon.position = Vector2.ZERO
-		# frame ÷CS 显示口径补偿（CONTENT_SCALE 注释）：icon 整树 ×1/CS，frame 视觉
-		# 94/CS × 95/CS = 73.37×74.17 = 槽 host 尺寸（.tscn 源直译），lock/角标随树缩放。
-		icon.scale = Vector2(1.0 / CONTENT_SCALE, 1.0 / CONTENT_SCALE)
+		# frame ÷CS 显示口径：create_icon 内部 _load_sprite 已统一 ÷CS（2026-08-22 根修），
+		# frame 视觉 94/CS × 95/CS = 73.37×74.17 = 槽 host 尺寸（.tscn 源直译），此处不再二次 ÷CS。
 		# 状态角标（源 createEquipTag：仅 ceid<=0 and eid>0 时画，isEquiped/ignore 不画）
 		if ceid <= 0 and eid > 0:
 			var state: Dictionary = EquipdetailQuery.get_hero_equip_state(hero, i, cm, pd)
