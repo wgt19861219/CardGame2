@@ -70,9 +70,10 @@ func _scan_file(path: String) -> void:
 		var eff := c.get_global_rect()  # 含父链 scale 的实际显示
 		if node is TextureButton and not (node as TextureButton).ignore_texture_size:
 			continue  # 默认行为，跳过
-		var dx: float = abs(eff.size.x - ts.x)
-		var dy: float = abs(eff.size.y - ts.y)
-		if dx <= 2.0 and dy <= 2.0:
+		# 近似匹配：|显示-纹理px| < 纹理px*6%（覆盖手调/舍入的 px 直用变体）；已 ÷CS 的差 ~22% 不命中
+		var dxp: float = abs(eff.size.x - ts.x) / max(ts.x, 1.0)
+		var dyp: float = abs(eff.size.y - ts.y) / max(ts.y, 1.0)
+		if dxp <= 0.06 and dyp <= 0.06:
 			_results.append({
 				"scene": path.replace("res://", ""),
 				"node": String(c.name),
