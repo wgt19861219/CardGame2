@@ -30,6 +30,12 @@ const TICK_POS_UP: Vector2 = Vector2(4.0, 4.0)
 const FRAME_INSET: float = 9.0   # 源 s2=(frame逻辑宽-9)/内容宽 → 内容显示 64.4
 const GOCHA_BG_PATH: String = "res://assets/ui/alpha/HVGA/gocha.png"
 const FRAGMENT_TAG_PATH: String = "res://assets/ui/alpha/HVGA/fragment_tag.png"
+# 圆形裁剪（源 createClippingNode：CCClippingNode + stencil 拉伸至内容尺寸 → shader 等价，
+# portrait_mask.gdshader 同款，readhero_icon 已用）。魂石/碎片默认 alphaThreshold=0.5
+# （源 createClippingNodeOnly 默认），hero 头像 equip_stencil 0.02（源 :727）。
+const PortraitMaskShader: Shader = preload("res://shaders/portrait_mask.gdshader")
+const FRAGMENT_STENCIL_PATH: String = "res://assets/ui/alpha/HVGA/fragment_stencil.png"
+const EQUIP_STENCIL_PATH: String = "res://assets/ui/alpha/HVGA/equip_stencil.png"
 # 装备强化星级（源 createIconWithLevel:1202-1231）：垂直单列 blue(level 颗)/grey(show_gray 到 ml)。
 # star_bg（equipupgrade_equip_bg.png）本项目缺 → 降级不画底图。
 const STAR_BLUE_RES: String = "res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_star_blue.png"
@@ -61,6 +67,17 @@ static func _fit_inset(s: Sprite2D, frame_w: float) -> void:
 		return
 	var target: float = frame_w - FRAME_INSET
 	s.scale = Vector2(target / s.texture.get_size().x, target / s.texture.get_size().x)
+
+
+# 圆形裁剪（源 CCClippingNode + stencil 拉伸至内容尺寸 → UV 对齐直接同 UV 采样）。
+static func _apply_stencil(s: Sprite2D, stencil_path: String, threshold: float) -> void:
+	if s.texture == null or not ResourceLoader.exists(stencil_path):
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = PortraitMaskShader
+	mat.set_shader_parameter("mask_tex", load(stencil_path))
+	mat.set_shader_parameter("alpha_threshold", threshold)
+	s.material = mat
 
 
 # 创建图标节点（品质边框 + 内 Icon + 数量 Label + 可选星级）。id 为 equip id 或 hero tid。
@@ -96,9 +113,11 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 	var icon_path := _get_icon_path(id, is_hero, cm)
 	if icon_path != "":
 		var icon := _load_sprite(icon_path, DEFAULT_ICON)
-		# hero 头像缩放到 frame宽-9（源 :733-738 itemType=="hero" s2）；装备内图无缩放（源无该分支 s2）。
+		# hero 头像缩放到 frame宽-9（源 :733-738 itemType=="hero" s2）+ 圆形裁剪
+		# （源 :727 createClippingNode(equip_stencil, 0.02)）；装备内图无缩放无裁剪（源同）。
 		if is_hero:
 			_fit_inset(icon, frame_w)
+			_apply_stencil(icon, EQUIP_STENCIL_PATH, 0.02)
 		_place_center(icon, EQUIP_CENTER_UP, frame_h)
 		container.add_child(icon)
 	if amount > 1:
@@ -206,6 +225,7 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant) -> Control
 		var icon := _load_sprite(icon_path, DEFAULT_ICON)
 		_fit_inset(icon, frame_w)   # 源 :600 s2=(frame逻辑宽-9)/stone宽
 		_place_center(icon, STONE_CENTER_UP, frame_h)
+		_apply_stencil(icon, FRAGMENT_STENCIL_PATH, 0.5)   # 源 :592 createClippingNode(fragment_stencil) 默认 0.5
 		container.add_child(icon)
 	var tag := _load_sprite(SOULSTONE_TAG_PATH, DEFAULT_ICON)
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
@@ -241,6 +261,7 @@ static func create_fragment_icon(id: int, amount: int, cm: Variant) -> Control:
 			var target: float = frame_w - 12.0
 			icon.scale = Vector2(target / icon.texture.get_size().x, target / icon.texture.get_size().x)
 		_place_center(icon, Vector2(36.0, 38.0), frame_h)
+		_apply_stencil(icon, FRAGMENT_STENCIL_PATH, 0.5)   # 源 :552 createClippingNode(fragment_stencil)
 		container.add_child(icon)
 	var tag := _load_sprite(FRAGMENT_TAG_PATH, DEFAULT_ICON)
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
