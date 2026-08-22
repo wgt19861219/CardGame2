@@ -651,8 +651,9 @@ func test_way_title_label_variation_wired() -> void:
 
 
 # HistoryClip 照源 draglist cliprect CCRectMake(12,300,265,80)（equipcraft.lua:804，bg 局部）
-# → CraftWindow 中心空间 _gl 映射：left=12-184.5=-172.5 / top=246.5-380=-133.5 /
-# right=277-184.5=92.5 / bottom=246.5-300=-53.5
+# → CraftWindow 中心空间 _gl 映射（2026-08-22 溢出修复：bg 半尺寸用显示口径 144.0/192.39 =
+# equip_craft_bg 369×493px ÷2÷CS；旧值 184.5/246.5 为纹理 px 半尺寸直用，历史区整体偏下 54 点）：
+# left=12-144.0=-131.99 / top=192.39-380=-187.61 / right=277-144.0=133.0 / bottom=192.39-300=-107.61
 func test_content_history_clip_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var clip: Control = inst.get_node_or_null("%HistoryClip") as Control
@@ -660,10 +661,10 @@ func test_content_history_clip_follows_source() -> void:
 	if clip == null:
 		return
 	assert_true(clip.clip_contents, "clip_contents=true（源 draglist 裁剪）")
-	assert_almost_eq(clip.offset_left, -172.5, 0.1, "clip left（bg 局部 x12 → 中心空间）")
-	assert_almost_eq(clip.offset_top, -133.5, 0.1, "clip top（bg 局部 y380 → 中心空间）")
-	assert_almost_eq(clip.offset_right, 92.5, 0.1, "clip right（bg 局部 x277）")
-	assert_almost_eq(clip.offset_bottom, -53.5, 0.1, "clip bottom（bg 局部 y300）")
+	assert_almost_eq(clip.offset_left, -131.99, 0.1, "clip left（bg 局部 x12 → 中心空间）")
+	assert_almost_eq(clip.offset_top, -187.61, 0.1, "clip top（bg 局部 y380 → 中心空间）")
+	assert_almost_eq(clip.offset_right, 133.0, 0.1, "clip right（bg 局部 x277）")
+	assert_almost_eq(clip.offset_bottom, -107.61, 0.1, "clip bottom（bg 局部 y300）")
 
 
 # history layer 挂 %HistoryClip（裁剪生效），origin 相对 clip 原点（源 icon@listLayer (43+58*len,50)）

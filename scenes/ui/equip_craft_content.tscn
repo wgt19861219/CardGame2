@@ -120,14 +120,16 @@ layout_mode = 3
 mouse_filter = 2
 
 ; 历史栏裁剪层（源 equipcraft.lua:799-816 draglist cliprect CCRectMake(12,300,265,80)，bg 局部
-; → CraftWindow 中心空间：left=12-184.5 / top=246.5-380 / right=277-184.5 / bottom=246.5-300）
+; → CraftWindow 中心空间：left=12-144.0 / top=192.39-380 / right=277-144.0 / bottom=192.39-300；
+; 半尺寸 144.0/192.39 = equip_craft_bg 369×493px ÷2÷CS（2026-08-22 溢出修复：旧值按 px 半尺寸
+; 184.5/246.5 换算，历史区整体偏下 54 点悬空离 bg 底缘）
 [node name="HistoryClip" type="Control" parent="CraftWindow"]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = -172.5
-offset_top = -133.5
-offset_right = 92.5
-offset_bottom = -53.5
+offset_left = -131.99
+offset_top = -187.61
+offset_right = 133.0
+offset_bottom = -107.61
 clip_contents = true
 mouse_filter = 2
 

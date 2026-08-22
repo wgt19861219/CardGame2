@@ -66,8 +66,11 @@ const LSTR_CHAPTER_D: String = "EQUIPCRAFT._CHAPTER__D"
 # ── craftWindow(bg)局部坐标翻转 ──────────────────────────────────────
 # panel._craft_window 代表 bg 中心（position=_g(CRAFT_WINDOW_POS)，bg.position=-size/2 对齐中心），
 # 故 bg 局部(cx,cy) → Godot 相对中心 = (cx - BG_HALF_W, BG_HALF_H - cy)。照源 equipcraft.lua:949-952。
-const BG_HALF_W: float = 184.5   # equip_craft_bg 369/2
-const BG_HALF_H: float = 246.5   # equip_craft_bg 493/2
+# bg 局部坐标系 = 显示点空间（equip_craft_bg 纹理 369×493px ÷CS = 288.0×384.8 点，源 cliprect
+# 12,300→380 贴 384.8 底缘可证），半尺寸 = 144.0/192.4。旧值 184.5/246.5 为纹理 px 半尺寸直用，
+# 树内容整体偏移 (+40.5, 54.1) 出 bg 框（2026-08-22 溢出修复清查修正）。
+const BG_HALF_W: float = 369.0 / 2.0 / CONTENT_SCALE
+const BG_HALF_H: float = 493.0 / 2.0 / CONTENT_SCALE
 # 金币 cost 区装饰（源 equipcraft.lua:1110-1114）：equip_craft_money_bg 框 + goldicon。
 const COST_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_craft_money_bg.png"
 const COST_GOLDICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon.png"

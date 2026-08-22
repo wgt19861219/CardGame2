@@ -7,14 +7,17 @@ extends RefCounted
 ## 不含 panel 状态，全 static + 参数化，panel 传 host + on_click Callable。
 ## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback + HeroDetailFills.to_godot（避 class_name 循环）。
 
+const CONTENT_SCALE: float = 1.28125
 # 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
 const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center 世界 cocos（container center = frame center）
 # Art setScale(420/ArtH) 显示高=container 高 420（readhero.lua:1134）。frame 镂空区 PIL 实测 294×372 居中偏上 77px。
-# 项目 CardFrame .tscn offset (122.5,47.5)→(437.5,592.5) size 315×545 照源原尺寸（不放大，旧 369×570 偏大用户反馈）。
-const CONTAINER_ORIGIN: Vector2 = Vector2(138.5, 539.5)   # container 左下角 Godot（保留兼容旧调用，Art fill 不再用）
+# 项目 CardFrame .tscn offset 2026-08-22 溢出修复改为显示口径 (157.05,27.32)→(402.95,452.68)
+# size 245.90×425.37 = card_bg 纹理 315×545px ÷CS（源 getHeroCard container 242×420 点；旧值
+# 315×545 为纹理 px 直用，960×640 视口时代合法，迁 800×480 后底缘 592.5 超屏 112.5px）。
+const CONTAINER_ORIGIN: Vector2 = Vector2(169.56, 411.32)   # card 局部 cocos(0,0) 基准 Godot（type/skill/star fill 定位，整组 ÷CS 变换）
 const CONTAINER_SIZE: Vector2 = Vector2(335.0, 417.0)   # 旧镂空区估算（保留兼容，Art fill 不再用）
 const CONTAINER_LOGIC_HEIGHT: float = 282.0   # 保留兼容（旧 Art fill 用），新 Art 公式改用 CARD_HOLE_SIZE
-const CARD_FRAME_SIZE: Vector2 = Vector2(315.0, 545.0)   # CardFrame 阶级框 size 照源 PNG IHDR（offset 122.5,47.5→437.5,592.5）
+const CARD_FRAME_SIZE: Vector2 = Vector2(315.0 / CONTENT_SCALE, 545.0 / CONTENT_SCALE)   # CardFrame 显示尺寸（card_bg 纹理 ÷CS = 245.90×425.37）
 # Art 内缩量（像素）：Art size = CardFrame size - INSET*2，让 Art 4 角落在 frame 圆角装饰内圈不超出。
 # PIL 实测 CardFrame 4 角圆角半径约 8px，Art 之前 = frame size 时 4 角凸出 frame 圆角外 5px（38px² 面积），
 # 内缩 8px 后 Art 4 角在 frame 圆角装饰内圈，0 凸出（牺牲少量边缘 Art 内容换边角整齐）。
@@ -26,9 +29,10 @@ const CARD_FRAME_INSET: float = 8.0
 const CARD_HOLE_SIZE: Vector2 = Vector2(294.0, 467.0)   # 保留（PIL alpha<128 实测，作参考）
 const COORD_SX: float = 1.0
 const COORD_SY: float = 1.0
-# Art center 对齐 CardFrame center (280,320)，让 Art 相对 frame 上下对称铺满。
+# Art center 对齐 CardFrame center (280,240)（2026-08-22 溢出修复：center y 320→240 入屏），
+# 让 Art 相对 frame 上下对称铺满。
 # （先前对齐镂空 center (279, 290.5) 致 Art 偏上：顶超出 frame 11px + 底距 frame 47px，用户反馈"顶超出底留白"）
-const ART_CENTER: Vector2 = Vector2(280.0, 320.0)   # Art 显示中心 = CardFrame center
+const ART_CENTER: Vector2 = Vector2(280.0, 240.0)   # Art 显示中心 = CardFrame center
 const ART_MODULATE: Color = Color(1.0, 1.0, 1.0)   # 原始不提亮（暗根因=层级：TabCardView z-1 被 BaseLayer Bg 盖，改 z 解决非提亮）
 const ART_MASK_RES: String = "res://assets/ui/alpha/HVGA/art_mask.png"
 # 源 readhero.lua:992 card_type_icon（big 版）：type → 类型图标资源。
@@ -38,15 +42,18 @@ const CARD_TYPE_ICON_RES: Dictionary = {
 	"INT": "res://assets/ui/alpha/HVGA/card/card_att_int_big.png",
 }
 const CARD_STAR_RES: String = "res://assets/ui/alpha/HVGA/card/card_star_big.png"
-const CARD_STAR_SIZE: Vector2 = Vector2(23.0, 24.0)
+# 源 readhero.lua:1152-1157 star setScale(0.5)：显示 = 纹理 46×48px ×0.5 ÷CS = 17.95×18.73 点
+# （旧值 23×24 为 tex_px×0.5 直用，px 坐标系下视觉正确，坐标系迁显示口径后同步 ÷CS）。
+const CARD_STAR_SIZE: Vector2 = Vector2(23.0 / CONTENT_SCALE, 24.0 / CONTENT_SCALE)
 const EQUIP_FRAME_WHITE_PATH: String = "res://assets/ui/alpha/HVGA/equip_frame_white.png"
 # 名字底纹条（源 readhero.lua:1141-1148）：name 像素宽 > NAME_BG_SHORT_THRESHOLD 用 short 版，否则 long 版。
 const CARD_NAME_BG_SHORT_RES: String = "res://assets/ui/alpha/HVGA/card/card_name_bg_short.png"
 const CARD_NAME_BG_LONG_RES: String = "res://assets/ui/alpha/HVGA/card/card_name_bg_long.png"
 const CARD_NAME_BG_SHORT_THRESHOLD: float = 120.0   # 源 readhero.lua:1143 阈值
-const CARD_NAME_BG_SHORT_W: float = 71.0   # PIL 实测 short.png IHDR 宽
-const CARD_NAME_BG_LONG_W: float = 151.0   # PIL 实测 long.png IHDR 宽
-const CARD_NAME_BG_H: float = 11.0   # PIL 实测 short/long.png IHDR 高
+# short/long.png IHDR 71×151×11px，显示 = ÷CS（2026-08-22 溢出修复：旧值 IHDR px 直用）。
+const CARD_NAME_BG_SHORT_W: float = 71.0 / CONTENT_SCALE
+const CARD_NAME_BG_LONG_W: float = 151.0 / CONTENT_SCALE
+const CARD_NAME_BG_H: float = 11.0 / CONTENT_SCALE
 # skill icon equip_frame_white 白边框相对 icon 偏移（源 readhero.lua:1016 pos ccp(30,29) 相对 icon 中心 60×60 区）。
 # PIL 实测 equip_frame_white.png 94×95，icon size 22×22。frame 居中盖 icon → frame pos = icon pos - (frame_size-icon_size)/2。
 const SKILL_ICON_FRAME_SIZE: Vector2 = Vector2(40.0, 40.0)   # frame 显示尺寸（略大于 icon 22，源 frame 60 区盖 32 icon 比例 1.875×）
@@ -114,10 +121,11 @@ static func _fill_card_name(name_label: Label, art_label: Label, bg_line: Textur
 	var bg_tex: Texture2D = _load_texture(bg_res)
 	bg_line.texture = bg_tex
 	# 重设 offset_left/right 让 bg 右对齐 anchor(1,0.5)（源 ccp(242,60) anchor(1,0.5) 右锚定）。
-	# frame 内右锚点 Godot x = 122.5 + 242 = 364.5；bg 宽按选贴图。
+	# frame 内右锚点 Godot x = 157.05 + 242 = 399.05（CardFrame left 显示值 + 源局部点值 242
+	# = container 宽即右缘）；bg 宽按选贴图。
 	var bg_w: float = CARD_NAME_BG_SHORT_W if use_short else CARD_NAME_BG_LONG_W
-	bg_line.offset_right = 364.5
-	bg_line.offset_left = 364.5 - bg_w
+	bg_line.offset_right = 399.05
+	bg_line.offset_left = 399.05 - bg_w
 
 
 # 用 Label 当前 font 量字符串像素宽（font 未就绪时回退 char 数 ×8 近似，保证有底纹）。

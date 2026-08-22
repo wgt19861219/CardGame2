@@ -317,6 +317,26 @@ func test_default_tab_card() -> void:
 	root.queue_free()
 
 
+# CardFrame 显示尺寸口径守卫（2026-08-22 溢出修复）：card_bg_*.png 纹理 315×545px，源 getHeroCard
+# container 242×420 点（readhero.lua:1038），显示 = 纹理÷CS = 245.90×425.37；旧 rect 315×545 为
+# 纹理 px 直用（960×640 视口时代合法），迁 800×480 后底缘 592.5 超屏 112.5px。center y 320→240 后入屏。
+func test_card_frame_display_size_within_screen() -> void:
+	var view: Control = load("res://scenes/ui/hero_detail_card_tab.tscn").instantiate() as Control
+	var host := Control.new()
+	host.offset_right = 800.0
+	host.offset_bottom = 480.0
+	host.add_child(view)
+	add_child(host)
+	await get_tree().process_frame
+	var frame: Control = view.get_node("%CardFrame") as Control
+	var rect: Rect2 = frame.get_global_rect()
+	assert_almost_eq(rect.size.x, 315.0 / 1.28125, 0.1, "CardFrame 宽 = 纹理 315px ÷CS")
+	assert_almost_eq(rect.size.y, 545.0 / 1.28125, 0.1, "CardFrame 高 = 纹理 545px ÷CS")
+	assert_true(rect.end.y <= 480.0, "CardFrame 底缘入屏（旧值 592.5 超屏 112.5px）")
+	assert_true(rect.position.y >= 0.0, "CardFrame 顶缘入屏")
+	host.free()
+
+
 # 切 detail tab → detail view visible + skill view hidden + 属性 label 显示（源 doClickDetail → setOpenMode("att")）。
 # Phase B：tab 内容常驻（不 free），切 tab 只切 visible，故查 visible + 各 view 子树内容。
 func test_switch_to_detail() -> void:

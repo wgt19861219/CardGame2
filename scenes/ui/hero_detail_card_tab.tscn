@@ -1,5 +1,11 @@
 [gd_scene format=3 uid="uid://ca2d7tab8a01r" load_steps=3]
 
+; card 图鉴 tab（源 herodetail/card.lua 弹窗 + readhero.lua:1023 getHeroCard）。
+; 2026-08-22 溢出修复：CardFrame 等整组 rect 由纹理 px 口径（315×545）修正为显示口径
+; （card_bg_*.png 纹理 ÷CS=1.28125 → 245.90×425.37，源 getHeroCard container 242×420 点），
+; 卡片中心 (280,320)→(280,240)：旧 center y=320 + 545 高在 960×640 视口内合法，迁 800×480
+; 后底缘 592.5 超屏 112.5px；÷CS + y=240 后底缘 452.68 入屏，观感比例 = 960 时代用户调定值。
+
 [ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
 [ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
 
@@ -19,10 +25,10 @@ mouse_filter = 2
 
 [node name="EditPlaceholder" type="ReferenceRect" parent="." unique_id=786915829]
 layout_mode = 0
-offset_left = 122.5
-offset_top = 47.5
-offset_right = 437.5
-offset_bottom = 592.5
+offset_left = 157.05
+offset_top = 27.32
+offset_right = 402.95
+offset_bottom = 452.68
 mouse_filter = 2
 border_color = Color(0, 1, 0.7, 1)
 border_width = 2.0
@@ -31,10 +37,10 @@ border_width = 2.0
 unique_name_in_owner = true
 z_index = 1
 layout_mode = 0
-offset_left = 122.5
-offset_top = 47.5
-offset_right = 437.5
-offset_bottom = 592.5
+offset_left = 157.05
+offset_top = 27.32
+offset_right = 402.95
+offset_bottom = 452.68
 mouse_filter = 2
 expand_mode = 1
 
@@ -50,10 +56,10 @@ mouse_filter = 2
 
 [node name="PH_ArtPlaceholder" type="ColorRect" parent="CardArtHost" unique_id=1491769480]
 layout_mode = 0
-offset_left = 130.5
-offset_top = 56.5
-offset_right = 429.5
-offset_bottom = 583.5
+offset_left = 163.32
+offset_top = 34.39
+offset_right = 396.68
+offset_bottom = 445.61
 mouse_filter = 2
 color = Color(0.2, 0.2, 0.3, 0.6)
 
@@ -61,19 +67,19 @@ color = Color(0.2, 0.2, 0.3, 0.6)
 unique_name_in_owner = true
 z_index = 3
 layout_mode = 0
-offset_left = 177.5
-offset_top = 532.5
-offset_right = 357.5
-offset_bottom = 546.5
+offset_left = 200.0
+offset_top = 405.76
+offset_right = 340.49
+offset_bottom = 416.68
 
 [node name="CardNameBgLine" type="TextureRect" parent="." unique_id=1828308982]
 unique_name_in_owner = true
 z_index = 2
 layout_mode = 0
-offset_left = 293.5
-offset_top = 527.0
-offset_right = 364.5
-offset_bottom = 538.0
+offset_left = 343.64
+offset_top = 388.32
+offset_right = 399.05
+offset_bottom = 396.91
 mouse_filter = 2
 expand_mode = 1
 
@@ -81,20 +87,20 @@ expand_mode = 1
 unique_name_in_owner = true
 z_index = 3
 layout_mode = 0
-offset_left = 200.0
-offset_top = 458.0
-offset_right = 360.0
-offset_bottom = 482.0
+offset_left = 217.56
+offset_top = 347.71
+offset_right = 342.44
+offset_bottom = 366.44
 theme_override_font_sizes/font_size = 22
 
 [node name="CardCloseBtn" type="TextureButton" parent="." unique_id=400100100]
 unique_name_in_owner = true
 z_index = 4
 layout_mode = 0
-offset_left = 380.0
-offset_top = 55.0
-offset_right = 431.0
-offset_bottom = 106.0
+offset_left = 358.05
+offset_top = 33.67
+offset_right = 397.86
+offset_bottom = 72.47
 mouse_filter = 0
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")

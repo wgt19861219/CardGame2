@@ -23,6 +23,13 @@ func test_fill_history_empty() -> void:
 	host.free()
 
 
+# ratio 图标高口径守卫（2026-08-22 溢出修复）：源 midas.lua:494 fix_height = ed.DGLen(30)
+# （readnode.lua:8 DGLen = len/1.28）= 23.4375 点，与行模板 TokenIcon（同源值，tscn 已 ÷）一致；
+# 旧值 30.0 漏除 DGLen 系数偏大 28%（assets 缺 midas_crip* 图走 Label 降级，本断言锁常量口径）。
+func test_ratio_icon_height_uses_dglen() -> void:
+	assert_almost_eq(MidasFills.RATIO_ICON_H, 30.0 / 1.28, 0.01, "RATIO_ICON_H = DGLen(30) = 23.4375")
+
+
 func test_fill_history_mounts_rows() -> void:
 	var host := VBoxContainer.new()
 	add_child(host)

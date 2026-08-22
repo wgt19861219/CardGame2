@@ -71,6 +71,23 @@ func test_row_press_scale_constant() -> void:
 	assert_almost_eq(TaskRowBuilder.ROW_PRESS_SCALE.y, 0.98, 0.001, "row press scale y=0.98 照源")
 
 
+# bg 显示尺寸口径守卫（2026-08-22 溢出修复）：task_board.png 纹理 638×123px，源 createSprite
+# 显示 = 纹理÷CS = 498.05×96.0 点（[[content-scale-factor]]）；旧值 638/123 为纹理 px 直用，
+# 行偏大 1.28× 致行背景超滚动区。BG_H 同时是 bg_pos 行内 y 换算基准。
+func test_row_bg_display_size_divided_by_cs() -> void:
+	assert_almost_eq(TaskRowBuilder.BG_W, 638.0 / 1.28125, 0.01, "BG_W = task_board 纹理 638px ÷CS")
+	assert_almost_eq(TaskRowBuilder.BG_H, 123.0 / 1.28125, 0.01, "BG_H = task_board 纹理 123px ÷CS = 96.0")
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "", "reward": [],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable())
+	var bg: TextureRect = row as TextureRect
+	assert_almost_eq(bg.custom_minimum_size.x, 638.0 / 1.28125, 0.1, "bg custom_minimum_size.x = 显示宽")
+	assert_almost_eq(bg.custom_minimum_size.y, 96.0, 0.1, "bg custom_minimum_size.y = 显示高 96.0")
+	row.free()
+
+
 # bg pivot 居中（Control scale 绕中心，源 anchor 0.5,0.5 等价）。
 func test_row_bg_pivot_centered() -> void:
 	var task: Dictionary = {

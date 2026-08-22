@@ -35,9 +35,11 @@ const TYPE_ICON_RES := {
 	"GuildCoin": "res://assets/ui/alpha/HVGA/money_guildtoken_small.png",
 }
 
-# ---- bg 尺寸（task_board.png 实测 638×123，行内坐标基准）----
-const BG_W: int = 638
-const BG_H: int = 123
+# ---- bg 尺寸：task_board.png 纹理 638×123px，源 createSprite 显示 = 纹理÷CS = 498.0×96.0 点
+# （[[content-scale-factor]] 口径；旧值 638/123 为纹理 px 直用，行偏大 1.28× 致行背景超滚动区，
+#  2026-08-22 溢出修复清查修正；BG_H 同时是行内 y 换算基准，见 bg_pos）。----
+const BG_W: float = 638.0 / CONTENT_SCALE
+const BG_H: float = 123.0 / CONTENT_SCALE
 
 # ---- 行内坐标（cocos，bg 左下原点 y 向上）----
 const C_NAME: Vector2 = Vector2(95.0, 71.0)
