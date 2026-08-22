@@ -552,9 +552,10 @@ z_index = 2
 layout_mode = 0
 ; 固定屏幕右上不随 BaseLayer doMove 平移（前轮显性行为决策，panel.gd:33 注释；源 window.lua:1975
 ; close 挂 ui.bg 随 container 动——若回源随 base 属行为变更，需用户确认，本轮不动）。
-offset_left = 749.0
+; 用户 2026-08-22 反馈贴死屏右有裁切感，左移 15 留边距。
+offset_left = 734.0
 offset_top = 22.0
-offset_right = 800.0
+offset_right = 785.0
 offset_bottom = 73.0
 texture_normal = ExtResource("11_udv1k")
 texture_pressed = ExtResource("12_byvlk")
