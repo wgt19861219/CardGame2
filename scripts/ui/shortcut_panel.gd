@@ -18,7 +18,7 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shortcut_content.tsc
 
 const CONTENT_SCALE: float = 1.28125
 const SCREEN_H: float = 480.0
-const BOARD_CENTER_X: float = 740.0   # 源 uires.lua shortcut_board_pos.x = winRight(800)-60
+const BOARD_CENTER_X: float = 730.0   # 源 740（uires.lua winRight-60）；用户 2026-08-22 观感反馈板偏右，整体左移 10（受控偏离：按钮 ×0.8 缩入板内后视觉重心较源右移 ~7，730 补偿对齐源观感重心）
 # 960×640 时代抽屉上移 -132（下拉钮与货币栏平齐，640 屏天区补偿）；viewport 800×480 后
 # 源内容满屏无天区，上移会致板顶出屏，UP 归 0 回源观感（toggle 源直译 y=40 天然近货币栏 top≈30）。
 const BOARD_UP_OFFSET: float = 0.0
@@ -29,7 +29,7 @@ const BOARD_WIDTH: float = 82.0
 # 源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。收起态板被 toggle 钮覆盖视觉无感。
 const BOARD_H_MIN: float = 65.0
 const BOARD_H_MAX: float = 460.0
-const TOGGLE_CENTER: Vector2 = Vector2(740.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
+const TOGGLE_CENTER: Vector2 = Vector2(BOARD_CENTER_X, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
 # 源运行时直译（uires.lua:26-31 静态表 PosY={382,307,237,162,83} + :18 s_b_offset_y=-20
 # + :37-38 循环叠加 → 运行时 {362,287,217,142,63}；Godot y=480-PosY）。间距不等距 75/70/75/79。
 # 旧等距 90（{57,147,237,327,417}）系旧坐标时代"太挤"的历史调整——首钮 57 与 toggle 40 叠死（2026-08-22 作废回源）；

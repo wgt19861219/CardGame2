@@ -317,6 +317,11 @@ func _show_tab_content(key: String) -> void:
 	_current_tab = key
 	_set_tab_selected(key)
 	_slide_base_to(BASE_SLIDE_OFFSET)
+	# card 视图（含默认态）隐藏主 CloseBtn（受控偏离：源 card 态主 close 随 container +140 移至屏右缘
+	# 仍显示，与 card 层独立 CardCloseBtn 同屏成双；用户 2026-08-22 反馈"关闭按钮多了一个"，只留 card 层的）。
+	var main_close: BaseButton = _base_layer.get_parent().get_node_or_null("%CloseBtn") as BaseButton
+	if main_close != null:
+		main_close.visible = key != TAB_CARD
 	# tab layer pop endPos=ccp(-200,0)（window.lua:386/430/513 三 tab 同值）：tab 内容从左滑入，
 	# 止态 -200（源 doOpenDetail/Skill/Card pop 终点）。旧 -75 系 960 口径迁移遗留（2026-08-22 回源；
 	# detail/skill 子节点已按源声明坐标直译，card 子节点 +125 平移保现状视觉）。
@@ -361,6 +366,10 @@ func _close_tab() -> void:
 	for k in _tab_views:
 		(_tab_views[k] as CanvasItem).visible = false
 	_hide_skill_desc()
+	# 回主视图恢复主 CloseBtn（card 视图曾隐藏）。
+	var main_close: BaseButton = _base_layer.get_parent().get_node_or_null("%CloseBtn") as BaseButton
+	if main_close != null:
+		main_close.visible = true
 
 
 # ---- 信号→Logic 便捷封装 ----
