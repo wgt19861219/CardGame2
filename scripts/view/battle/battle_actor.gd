@@ -11,7 +11,7 @@ extends Node2D
 const BAR_SCALE: float = 0.6666666666666666
 const BAR_HP_Y: float = -114.5   # 源 Cocos y=114.5（向上），Godot 左上原点翻转为负（头顶）
 const BAR_SHIELD_Y: float = -110.0
-const BOSS_BAR_POS: Vector2 = Vector2(435.0, 134.0)  # 原 to_godot(355,426)=(355+80,560-426)，Boss 护盾条 HUD 原生坐标
+const BOSS_BAR_POS: Vector2 = Vector2(355.0, 54.0)  # to_godot(355,426)=(355,480-426)，Boss 护盾条 HUD 原生坐标（800×480 直译）
 const BAR_Z: int = 999
 const MANUALLY_CAST_SCALE: float = 1.35
 const GRAVITY: float = -1800.0
@@ -20,8 +20,8 @@ const ANIM_RATE_2X: float = 2.0
 const NEXT_BATTLE_WALK_SPEEDER: float = 1.75
 const ENTER_WALK_SPEEDER: float = 1.75   # 入场走路加速（复用切波系数）
 const ENTER_ARRIVE_THRESHOLD: float = 5.0  # 入场到位判定阈值（logic 单位）
-# 切波走路出屏目标 x（view 屏宽 960，OFFSET_X=80 → logic x>880 出屏）。
-# 取 1050（view 1130，出屏 170px）确保角色（宽约 130px）完全藏在屏外，停在 900（view 980）会半露右边缘。
+# 切波走路出屏目标 x（view 屏宽 800，OFFSET_X=0 → logic x>800 出屏）。
+# 取 1050（view 1050，出屏 250px）确保角色（宽约 130px）完全藏在屏外，停在 850 会半露右边缘。
 const WAVE_WALK_OFFSCREEN_X: float = 1050.0
 
 # 入场走路完成（BattleScene 计数归零后解冻 engine）。

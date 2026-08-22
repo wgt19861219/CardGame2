@@ -31,10 +31,10 @@ mouse_filter = 2
 
 [node name="Frame" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 315.7083
-offset_top = 108.978
-offset_right = 644.2917
-offset_bottom = 531.022
+offset_left = 235.708
+offset_top = 28.978
+offset_right = 564.292
+offset_bottom = 451.022
 texture = ExtResource("1_frame")
 expand_mode = 1
 mouse_filter = 2

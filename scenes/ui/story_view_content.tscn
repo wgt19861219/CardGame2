@@ -14,30 +14,30 @@ mouse_filter = 2
 
 [node name="ShadowBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 0.0
-offset_top = 200.0
-offset_right = 960.0
-offset_bottom = 800.0
+offset_left = -80.0
+offset_top = 120.0
+offset_right = 880.0
+offset_bottom = 720.0
 texture = ExtResource("1_shadow")
 expand_mode = 1
 mouse_filter = 2
 
 [node name="StoryBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 114.73
-offset_top = 442.24
-offset_right = 845.27
-offset_bottom = 557.76
+offset_left = 34.73
+offset_top = 362.24
+offset_right = 765.27
+offset_bottom = 477.76
 texture = ExtResource("2_bg")
 expand_mode = 1
 mouse_filter = 2
 
 [node name="Arrow" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 778.29
-offset_top = 509.46
-offset_right = 801.71
-offset_bottom = 530.54
+offset_left = 698.29
+offset_top = 429.46
+offset_right = 721.71
+offset_bottom = 450.54
 texture = ExtResource("3_arrow")
 expand_mode = 1
 modulate = Color(1, 1, 1, 0.5)
@@ -46,10 +46,10 @@ mouse_filter = 2
 [node name="NameFrame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 187.07
-offset_top = 416.2
-offset_right = 432.93
-offset_bottom = 463.8
+offset_left = 107.07
+offset_top = 336.2
+offset_right = 352.93
+offset_bottom = 383.8
 texture = ExtResource("4_namebg")
 expand_mode = 1
 mouse_filter = 2
@@ -57,10 +57,10 @@ mouse_filter = 2
 [node name="Name" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 260.0
-offset_top = 428.0
-offset_right = 460.0
-offset_bottom = 458.0
+offset_left = 180.0
+offset_top = 348.0
+offset_right = 380.0
+offset_bottom = 378.0
 theme_override_colors/font_color = Color(0.458824, 0.301961, 0, 1)
 theme_override_font_sizes/font_size = 24
 mouse_filter = 2
@@ -69,10 +69,10 @@ text = ""
 [node name="Content" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 480.0
-offset_top = 500.0
-offset_right = 1080.0
-offset_bottom = 620.0
+offset_left = 400.0
+offset_top = 420.0
+offset_right = 1000.0
+offset_bottom = 540.0
 theme_override_colors/font_color = Color(0.458824, 0.301961, 0, 1)
 theme_override_font_sizes/font_size = 22
 mouse_filter = 2

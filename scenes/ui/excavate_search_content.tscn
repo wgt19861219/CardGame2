@@ -37,8 +37,9 @@
 ; checkUnreadExcavateHistory，数据层无对应状态恒不可见，节点不建，照 history 批
 ; vit_button 同口径）；源 :121-127 label 超宽 scale 钳制（中文 88<100/44<50 恒不触发）省略。
 ; text 为编辑器预览默认，panel fill 覆盖（LSTR）。
-; 实跑反馈修复（2026-08-17）：Bg 照源 pushScene 全屏语义恢复 960×640 铺满 + STOP
-; （原 fix_wh 800×481 直译不满屏致主城透过、弹窗内点击穿透 shade 误关窗）；SearchLabel
+; 实跑反馈修复（2026-08-17）：Bg 照源 pushScene 全屏语义恢复铺满 + STOP
+; （原 fix_wh 800×481 直译不满屏致主城透过、弹窗内点击穿透 shade 误关窗；当时按
+; 960×640 视口写 960×640 铺满，2026-08-21 viewport 800×480 终审清偿为 800×480）；SearchLabel
 ; 弃 2 色块占位贴图（icon_search_1 系源资产即色块）改接在库文字图 excavate_word_search
 ; （87×25，源未接线的本地化遗留资产，受控偏离）。
 
@@ -51,18 +52,18 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 0
 
 [node name="FrameContainer" type="Control" parent="."]
 layout_mode = 0
-offset_left = 76.875
-offset_top = 75.625
-offset_right = 876.875
-offset_bottom = 556.09375
+offset_left = -3.125
+offset_top = -4.375
+offset_right = 796.875
+offset_bottom = 476.094
 mouse_filter = 2
 
 [node name="FrameBg" type="TextureRect" parent="FrameContainer"]
@@ -77,10 +78,10 @@ mouse_filter = 2
 
 [node name="Frame" type="TextureRect" parent="FrameContainer"]
 layout_mode = 0
-offset_left = 35.546875
-offset_top = 19.53125
-offset_right = 769.140625
-offset_bottom = 474.21875
+offset_left = 115.9
+offset_top = 69.31
+offset_right = 688.78
+offset_bottom = 424.44
 texture = ExtResource("3_frame")
 expand_mode = 1
 mouse_filter = 2
@@ -99,10 +100,10 @@ mouse_filter = 2
 [node name="SearchIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 429.609375
-offset_top = 254.140625
-offset_right = 530.390625
-offset_bottom = 356.484375
+offset_left = 360.59
+offset_top = 185.51
+offset_right = 439.41
+offset_bottom = 265.12
 texture = ExtResource("5_mag")
 expand_mode = 1
 mouse_filter = 2
@@ -110,10 +111,10 @@ mouse_filter = 2
 [node name="HistroyButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 176.09375
-offset_top = 452.1875
-offset_right = 293.28125
-offset_bottom = 505.3125
+offset_left = 96.0938
+offset_top = 372.188
+offset_right = 213.281
+offset_bottom = 425.312
 theme_type_variation = &"ExcavateNavBtn"
 mouse_filter = 0
 text = "防守记录"
@@ -121,20 +122,20 @@ text = "防守记录"
 [node name="ExplainButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 297.578125
-offset_top = 452.1875
-offset_right = 363.984375
-offset_bottom = 505.3125
+offset_left = 217.578
+offset_top = 372.188
+offset_right = 283.984
+offset_bottom = 425.312
 theme_type_variation = &"ExcavateNavBtn"
 mouse_filter = 0
 text = "规则"
 
 [node name="SearchFrame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 631.5625
-offset_top = 410.0
-offset_right = 803.4375
-offset_bottom = 511.5625
+offset_left = 551.562
+offset_top = 330.0
+offset_right = 723.438
+offset_bottom = 431.562
 modulate = Color(1, 1, 1, 0.784314)
 texture = ExtResource("8_sframe")
 patch_margin_left = 23
@@ -163,10 +164,13 @@ mouse_filter = 0
 
 [node name="SearchLabel" type="TextureButton" parent="SearchFrame/SearchContainer/SearchButton"]
 layout_mode = 0
-offset_left = 26.8086
-offset_top = 12.8906
-offset_right = 113.8086
-offset_bottom = 37.8906
+; 源 excavatesearch.lua:368 fix_wh={w=140.8437778125, h=52.5536484375} 显式声明，显示=fix_wh 值=140.84×52.55
+; （91a46f3 断言"无 fix_wh ÷CS=68×20"漏查 config 段，审查二轮翻案回源）；中心保持按钮几何中心 (70.31,25.39)（父局部）。
+; 受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（2026-08-17 决策）。
+offset_left = -0.1133
+offset_top = -0.8862
+offset_right = 140.7305
+offset_bottom = 51.6674
 texture_normal = ExtResource("9_slbl")
 texture_pressed = ExtResource("9_slbl")
 ignore_texture_size = true

@@ -124,3 +124,12 @@ func test_refresh_beyond_size_safe() -> void:
 	ReadequipIcon.refresh_stars(icon, ml + 10)   # 超 ml 不崩
 	assert_true(true, "refresh 超 ml 不崩（break 守卫）")
 	icon.free()
+
+
+# 品质→边框颜色映射（源 readequip.lua:3-10 frame_res 六档,quality5 复用 purple）。
+func test_frame_color_six_tiers() -> void:
+	var expect: Array[String] = ["white", "green", "blue", "purple", "purple", "orange"]
+	for q in range(1, 7):
+		assert_eq(ReadequipIcon._frame_color(q), expect[q - 1], "quality=%d → %s" % [q, expect[q - 1]])
+	assert_eq(ReadequipIcon._frame_color(0), "white", "quality=0 clamp 到 white")
+	assert_eq(ReadequipIcon._frame_color(99), "orange", "quality>6 clamp 到 orange")

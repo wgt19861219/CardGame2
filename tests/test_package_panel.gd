@@ -266,8 +266,8 @@ func test_content_static_tree() -> void:
 	add_child_autofree(inst)
 	# equipbg（439x491 ÷CS=342.63x383.22，中心 to_godot(500,213)=(580,347)）
 	var bg: TextureRect = inst.get_node("Bg") as TextureRect
-	assert_almost_eq(bg.offset_left, 408.68, 0.1, "Bg 左 = 580-342.63/2")
-	assert_almost_eq(bg.offset_top, 155.39, 0.1, "Bg 顶 = 347-383.22/2")
+	assert_almost_eq(bg.offset_left, 328.68, 0.1, "Bg 左 = 580-342.63/2")
+	assert_almost_eq(bg.offset_top, 75.39, 0.1, "Bg 顶 = 347-383.22/2")
 	assert_almost_eq(bg.size.x, 342.63, 0.1, "Bg 宽 = 439/CS")
 	assert_almost_eq(bg.size.y, 383.22, 0.1, "Bg 高 = 491/CS")
 	# CloseBtn（backbtn 74x75 ÷CS=57.76x58.54，位置照批 1 惯例 (20,15)，源靠 framework 返回）
@@ -279,26 +279,26 @@ func test_content_static_tree() -> void:
 	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch=SCALE（纹理缩到 /CS 尺寸）")
 	# tab 按钮（classbtn 134x75 ÷CS=104.61x58.54；press 中心 (786,197+60k)）
 	var tab_all: TextureButton = inst.get_node("%TabAllBtn") as TextureButton
-	assert_almost_eq(tab_all.offset_left, 733.7, 0.1, "TabAllBtn 左 = 786-104.61/2")
-	assert_almost_eq(tab_all.offset_top, 167.73, 0.1, "TabAllBtn 顶 = 197-58.54/2")
+	assert_almost_eq(tab_all.offset_left, 653.7, 0.1, "TabAllBtn 左 = 786-104.61/2")
+	assert_almost_eq(tab_all.offset_top, 87.73, 0.1, "TabAllBtn 顶 = 197-58.54/2")
 	assert_almost_eq(tab_all.size.x, 104.61, 0.1, "TabAllBtn 宽 = 134/CS（非旧 90 压缩）")
 	assert_almost_eq(tab_all.size.y, 58.54, 0.1, "TabAllBtn 高 = 75/CS")
 	assert_eq(tab_all.stretch_mode, TextureButton.STRETCH_SCALE, "tab stretch=SCALE（tscn 自足，非运行时设置）")
 	var tab_stone: TextureButton = inst.get_node("%TabStoneBtn") as TextureButton
-	assert_almost_eq(tab_stone.offset_top, 347.73, 0.1, "TabStoneBtn 顶 = 197+180-58.54/2（dy=60 第4行）")
+	assert_almost_eq(tab_stone.offset_top, 267.73, 0.1, "TabStoneBtn 顶 = 197+180-58.54/2（dy=60 第4行）")
 	# tab label（源 label 中心 x=ox+5 → 791，y 与 press 同 197+60k；size20 shadow(42,31,22)）
 	var lbl_all: Label = inst.get_node("%TabAllLabel") as Label
-	assert_almost_eq(lbl_all.offset_left, 741.0, 0.1, "TabAllLabel 左 = 791-100/2（照源 ox+5 右偏 5）")
-	assert_almost_eq(lbl_all.offset_top, 182.0, 0.1, "TabAllLabel 顶 = 197-30/2")
+	assert_almost_eq(lbl_all.offset_left, 661.0, 0.1, "TabAllLabel 左 = 791-100/2（照源 ox+5 右偏 5）")
+	assert_almost_eq(lbl_all.offset_top, 102.0, 0.1, "TabAllLabel 顶 = 197-30/2")
 	assert_almost_eq(lbl_all.size.x, 100.0, 0.1, "TabAllLabel 宽 100")
 	assert_almost_eq(lbl_all.size.y, 30.0, 0.1, "TabAllLabel 高 30")
 	var lbl_consume: Label = inst.get_node("%TabConsumeLabel") as Label
-	assert_almost_eq(lbl_consume.offset_top, 422.0, 0.1, "TabConsumeLabel 顶 = 437-30/2（第5行）")
+	assert_almost_eq(lbl_consume.offset_top, 342.0, 0.1, "TabConsumeLabel 顶 = 437-30/2（第5行）")
 	assert_eq(String(lbl_all.theme_type_variation), "PackageTabLabel", "tab label 走 PackageTabLabel variation")
 	# handbook 按钮（Scale9 scaleSize 92x58 中心 to_godot(716,55)=(796,505)）
 	var hb: Button = inst.get_node("%HandbookBtn") as Button
-	assert_almost_eq(hb.offset_left, 750.0, 0.01, "HandbookBtn 左 = 796-92/2")
-	assert_almost_eq(hb.offset_top, 476.0, 0.01, "HandbookBtn 顶 = 505-58/2")
+	assert_almost_eq(hb.offset_left, 670.0, 0.01, "HandbookBtn 左 = 796-92/2")
+	assert_almost_eq(hb.offset_top, 396.0, 0.01, "HandbookBtn 顶 = 505-58/2")
 	assert_almost_eq(hb.size.x, 92.0, 0.01, "HandbookBtn 宽照源 scaleSize 92")
 	assert_almost_eq(hb.size.y, 58.0, 0.01, "HandbookBtn 高照源 scaleSize 58")
 	assert_eq(String(hb.theme_type_variation), "PackageHandbookBtn", "handbook 走 PackageHandbookBtn 三态 variation")
@@ -310,10 +310,10 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(hb_icon.position.y + hb_icon.size.y * 0.5, 27.0, 0.01, "HandbookIcon 中心 y=58-31（局部 y 翻转）")
 	# 滚动区（draglist rect CCRectMake(355,35,295,355) → 435~730 x 170~525）
 	var scroll: ScrollContainer = inst.get_node("%ScrollHost") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 435.0, 0.1, "ScrollHost 左 = 355+80")
-	assert_almost_eq(scroll.offset_top, 170.0, 0.1, "ScrollHost 顶 = 560-(35+355)")
-	assert_almost_eq(scroll.offset_right, 730.0, 0.1, "ScrollHost 右 = 650+80")
-	assert_almost_eq(scroll.offset_bottom, 525.0, 0.1, "ScrollHost 底 = 560-35")
+	assert_almost_eq(scroll.offset_left, 355.0, 0.1, "ScrollHost 左 = 355+80")
+	assert_almost_eq(scroll.offset_top, 90.0, 0.1, "ScrollHost 顶 = 560-(35+355)")
+	assert_almost_eq(scroll.offset_right, 650.0, 0.1, "ScrollHost 右 = 650+80")
+	assert_almost_eq(scroll.offset_bottom, 445.0, 0.1, "ScrollHost 底 = 560-35")
 	assert_true(scroll.clip_contents, "ScrollHost 裁剪（源 cliprect 等价）")
 	# 网格（cell 视觉 = frame 纹理 94×95px ×(74/95)=73.22×74.0（task-11 修，loadEquip 无
 	# length 原点尺寸 ≈÷CS）→ 起点局部 (1.39,10.0) 由 MarginHost 承载 + separation 2/6
@@ -551,9 +551,9 @@ func test_tab_global_position() -> void:
 	var panel := _make_panel("package", pd)
 	panel.show_window(root)
 	var tab_all: TextureButton = panel._tab_buttons["all"] as TextureButton
-	assert_almost_eq(tab_all.global_position.x, 733.7, 0.5, "TabAllBtn global x（防 parenting 错位）")
-	assert_almost_eq(tab_all.global_position.y, 167.73, 0.5, "TabAllBtn global y")
+	assert_almost_eq(tab_all.global_position.x, 653.7, 0.5, "TabAllBtn global x（防 parenting 错位）")
+	assert_almost_eq(tab_all.global_position.y, 87.73, 0.5, "TabAllBtn global y")
 	var hb: Button = panel._content.get_node("%HandbookBtn") as Button
-	assert_almost_eq(hb.global_position.x, 750.0, 0.5, "HandbookBtn global x")
+	assert_almost_eq(hb.global_position.x, 670.0, 0.5, "HandbookBtn global x")
 	panel.remove_window()
 	root.queue_free()

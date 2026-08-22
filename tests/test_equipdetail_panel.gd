@@ -194,8 +194,8 @@ func test_scroll_clip_rect() -> void:
 	var inst: Control = scene.instantiate() as Control
 	add_child_autofree(inst)
 	var clip: ScrollContainer = inst.get_node("%ScrollClip") as ScrollContainer
-	assert_almost_eq(clip.offset_top, 126.0, 0.5, "clip 顶 = 560-(47+387)")
-	assert_almost_eq(clip.offset_bottom, 513.0, 0.5, "clip 底 = 560-47")
+	assert_almost_eq(clip.offset_top, 46.0, 0.5, "clip 顶 = 560-(47+387)")
+	assert_almost_eq(clip.offset_bottom, 433.0, 0.5, "clip 底 = 560-47")
 	assert_almost_eq(clip.size.x, 560.0, 1.0, "clip 宽 = 源面板 560（内容宽）")
 	assert_eq(clip.horizontal_scroll_mode, 0, "禁水平滚动（源仅 canDragY）")
 
@@ -210,8 +210,8 @@ func test_bg_rect_aspect_ratio() -> void:
 	var bg: TextureRect = inst.get_node("Bg") as TextureRect
 	assert_almost_eq(bg.offset_right - bg.offset_left, 645.3, 0.5, "Bg 宽 645.3 = 827÷CS")
 	assert_almost_eq(bg.offset_bottom - bg.offset_top, 417.6, 0.5, "Bg 高 417.6 = 535÷CS")
-	assert_almost_eq((bg.offset_left + bg.offset_right) * 0.5, 480.0, 0.5, "Bg 中心 x=480")
-	assert_almost_eq((bg.offset_top + bg.offset_bottom) * 0.5, 320.0, 0.5, "Bg 中心 y=320")
+	assert_almost_eq((bg.offset_left + bg.offset_right) * 0.5, 400.0, 0.5, "Bg 中心 x=480")
+	assert_almost_eq((bg.offset_top + bg.offset_bottom) * 0.5, 240.0, 0.5, "Bg 中心 y=320")
 
 
 # 三段标题（源 :146/182/223 createttf 24 号 ccc3(250,205,16)）走

@@ -262,7 +262,8 @@ func _fill_cost_row() -> void:
 		push_warning("PopTavernLoot: cost icon 缺失: " + icon_res)
 		return
 	_cost_icon.texture = icon_tex
-	# 显示尺寸 = 纹理原始像素 ÷ CS（无 TextureConfig 条目，批5 口径手算；TexDisplaySize 现公式偏大 1.28×）
+	# 显示尺寸 = 纹理原始像素 ÷ CS（无 TextureConfig 条目，批5 口径手算；2026-08-21 Task5
+	# 后 TexDisplaySize.display_size 已同口径，保留手算）
 	var icon_size: Vector2 = icon_tex.get_size() / CONTENT_SCALE
 	_cost_icon.size = icon_size
 	var icon_center: Vector2 = _g(Vector2(COST_LABEL_POS.x, COST_ICON_Y))   # (320, 512)

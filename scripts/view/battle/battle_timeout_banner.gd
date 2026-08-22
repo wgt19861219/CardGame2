@@ -8,7 +8,7 @@ extends RefCounted
 const TIMEOVER_TEX_PATH: String = "res://assets/ui/alpha/HVGA/battletext_timeover.png"
 const TIMEOVER_DELAY: float = 0.5         # 横幅显示后切结算的延迟（照源 ScaleTo 弹出时长）
 const TIMEOVER_POP_DURATION: float = 0.3
-const TIMEOVER_POS: Vector2 = Vector2(560.0, 460.0)  # 原 to_godot(480,100)=(480+80,560-100)，HUD 原生坐标
+const TIMEOVER_POS: Vector2 = Vector2(480.0, 380.0)  # to_godot(480,100)=(480,480-100)，HUD 原生坐标（800×480 直译）
 
 
 # 超时结束判定：stage 模式 + stage_ended 由 time_limit 归零触发 + last_result==RESULT_TIMEOUT。

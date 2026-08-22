@@ -12,9 +12,9 @@ extends RefCounted
 const SLOT_COUNT: int = 6
 const SLOT_DIM_ALPHA: float = 75.0 / 255.0
 # 属性动态行（源 createAttList :1366-1414 + refreshAttListPos :1334-1364）：
-# 首行左端 x=347+80=427（源 ox=347），行距=att label 内容高（源 :1362 y -= att.height）。
-const ATT_LIST_LEFT: float = 427.0
-const ATT_LIST_TOP: float = 205.0   # 源 oy=355 → 560-355
+# 首行左端 x=347（源 ox=347 直译），行距=att label 内容高（源 :1362 y -= att.height）。
+const ATT_LIST_LEFT: float = 347.0
+const ATT_LIST_TOP: float = 125.0   # 源 oy=355 → 480-355
 const ATT_PRE_GAP: float = 5.0      # 源 :1352 pre→att 间隔 5
 # 经验条（源 createExpBar :1109-1223）：progress_1/2 原始 842x24，显示=÷CS；
 # bar 左中 (72,213)→(152,347) 高 18（源 textureRect 高 18），满宽=底条显示宽。

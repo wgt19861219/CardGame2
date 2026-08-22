@@ -5,8 +5,8 @@ extends RefCounted
 ## 只做动态 fill：FCA 立绘/名条品质边框/星级/信息板/进阶按钮文字/碎片进度条。
 ## 静态结构与样式归 hero_detail_content.tscn + default_theme（禁建静态节点、禁样式 override）。
 
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
+const OFFSET_X: float = 0.0    # Cocos 800×480 左下原点 → Godot 800×480 左上原点
+const BASE_Y: float = 480.0
 
 # ---- name_frame 名条品质边框（源 player.lua:2121 name_frames 表 + getIconNameFrameByRank:2149）----
 # rank 1-22 → 帧编号（含重复条目保源语义：rank 10/11 同图、12-19 同图、20-22 同图）。
@@ -199,7 +199,7 @@ static func fill_action_labels(base: Control, hero: HeroInstance, cm: Variant) -
 
 # sa/sn 来自 ReadheroHandbook.get_stone_amount/get_stone_need；is_max_star 时 label 变「已进化到顶级」+ 隐藏 stone_bar/get_stone/evolve 按钮。
 const STONE_BAR_W: float = 180.0
-const STONE_BAR_OFFSET_X: float = 279.5   # StoneBar offset_left（bg 偏移 221.5 + 源局部 58）
+const STONE_BAR_OFFSET_X: float = 256.5   # StoneBar 起始左缘（=StoneBarBg 左缘 198.5+源局部 58，tscn 已同值；旧 279.5 系 960 口径遗留）
 const LSTR_MAX_STAR: StringName = &"HERODETAIL.HAVE_EVOLVED_TO_TOP"
 static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_mgr: HeroManager) -> void:
 	var stone_icon: TextureRect = base.get_node("%StoneIcon") as TextureRect

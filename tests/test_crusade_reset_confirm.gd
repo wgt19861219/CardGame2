@@ -28,8 +28,8 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(shade.color.a, 150.0 / 255.0, 0.001, "Shade alpha=150/255（源 ccc4 a=150）")
 	# bg（源 :40-43 dialog_bg 447x283 像素÷CS=348.88x220.88 点，中心 ccp(400,240)→(480,320)）
 	var bg: TextureRect = inst.get_node("Bg") as TextureRect
-	assert_almost_eq(bg.offset_left, 305.56, 0.1, "Bg 左 = 480-348.88/2")
-	assert_almost_eq(bg.offset_top, 209.56, 0.1, "Bg 顶 = 320-220.88/2")
+	assert_almost_eq(bg.offset_left, 225.56, 0.1, "Bg 左 = 480-348.88/2")
+	assert_almost_eq(bg.offset_top, 129.56, 0.1, "Bg 顶 = 320-220.88/2")
 	assert_almost_eq(bg.size.x, 348.88, 0.1, "Bg 宽 = 447/CS")
 	assert_almost_eq(bg.size.y, 220.88, 0.1, "Bg 高 = 283/CS")
 	assert_eq(bg.texture.resource_path, "res://assets/ui/alpha/HVGA/dialog_bg.png", "Bg 贴图照源 dialog_bg")

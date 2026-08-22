@@ -30,10 +30,10 @@ mouse_filter = 2
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 0
-offset_left = 336.0
-offset_top = 127.5
-offset_right = 624.0
-offset_bottom = 512.5
+offset_left = 256.0
+offset_top = 47.5
+offset_right = 544.0
+offset_bottom = 432.5
 mouse_filter = 0
 
 [node name="Bg" type="TextureRect" parent="Frame"]

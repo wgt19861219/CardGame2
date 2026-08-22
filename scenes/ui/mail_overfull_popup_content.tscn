@@ -42,10 +42,10 @@ color = Color(0, 0, 0, 0.5)
 ; frame（源 Scale9 → NinePatch，显示 463.28x363.28 保持）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 3
-offset_left = 249.14
-offset_top = 161.95
-offset_right = 712.42
-offset_bottom = 525.23
+offset_left = 169.14
+offset_top = 81.95
+offset_right = 632.42
+offset_bottom = 445.23
 texture = ExtResource("1_frame")
 patch_margin_left = 66
 patch_margin_top = 150
@@ -56,10 +56,10 @@ mouse_filter = 2
 ; title_bg（源 Scale9 → NinePatch，宽向拉伸 1.59x 保角）
 [node name="TitleBg" type="NinePatchRect" parent="."]
 layout_mode = 3
-offset_left = 300.31
-offset_top = 198.67
-offset_right = 659.69
-offset_bottom = 210.39
+offset_left = 220.31
+offset_top = 118.67
+offset_right = 579.69
+offset_bottom = 130.39
 texture = ExtResource("2_titlebg")
 patch_margin_left = 78
 patch_margin_top = 3
@@ -70,10 +70,10 @@ mouse_filter = 2
 [node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 300.0
-offset_top = 185.97
-offset_right = 660.0
-offset_bottom = 219.97
+offset_left = 220.0
+offset_top = 105.97
+offset_right = 580.0
+offset_bottom = 139.97
 theme_type_variation = &"MailOverfullTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -84,10 +84,10 @@ text = "超额提醒"
 [node name="LeftBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 331.18
-offset_top = 444.38
-offset_right = 452.27
-offset_bottom = 499.07
+offset_left = 251.18
+offset_top = 364.38
+offset_right = 372.27
+offset_bottom = 419.07
 theme_type_variation = &"MailOverfullBtn"
 text = "强行领取"
 
@@ -95,10 +95,10 @@ text = "强行领取"
 [node name="RightBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 506.96
-offset_top = 443.59
-offset_right = 628.05
-offset_bottom = 498.28
+offset_left = 426.96
+offset_top = 363.59
+offset_right = 548.05
+offset_bottom = 418.28
 theme_type_variation = &"MailOverfullBtn"
 text = "稍后领取"
 
@@ -107,10 +107,10 @@ text = "稍后领取"
 [node name="DescScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 299.92
-offset_top = 243.98
-offset_right = 655.39
-offset_bottom = 423.67
+offset_left = 219.92
+offset_top = 163.98
+offset_right = 575.39
+offset_bottom = 343.67
 horizontal_scroll_mode = 0
 
 [node name="DescVBox" type="VBoxContainer" parent="DescScroll"]

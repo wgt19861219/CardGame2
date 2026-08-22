@@ -23,6 +23,13 @@ func test_fill_history_empty() -> void:
 	host.free()
 
 
+# ratio 图标高口径守卫（2026-08-22 溢出修复）：源 midas.lua:494 fix_height = ed.DGLen(30)
+# （readnode.lua:8 DGLen = len/1.28）= 23.4375 点，与行模板 TokenIcon（同源值，tscn 已 ÷）一致；
+# 旧值 30.0 漏除 DGLen 系数偏大 28%（assets 缺 midas_crip* 图走 Label 降级，本断言锁常量口径）。
+func test_ratio_icon_height_uses_dglen() -> void:
+	assert_almost_eq(MidasFills.RATIO_ICON_H, 30.0 / 1.28, 0.01, "RATIO_ICON_H = DGLen(30) = 23.4375")
+
+
 func test_fill_history_mounts_rows() -> void:
 	var host := VBoxContainer.new()
 	add_child(host)
@@ -118,8 +125,8 @@ func test_confirm_static_rects() -> void:
 	add_child(inst)
 	var frame: NinePatchRect = inst.get_node("%Frame") as NinePatchRect
 	assert_almost_eq(frame.size.x, 468.75, 0.5, "frame 宽 = DG(600)（widthMax w=600）")
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 481.56, 0.5, "frame 中心 x = 80+401.56（声明表）")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 325.62, 0.5, "frame 中心 y = 560-234.38")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 401.56, 0.5, "frame 中心 x = 80+401.56（声明表）")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 245.62, 0.5, "frame 中心 y = 560-234.38")
 	# capInsets CCRectMake(19.53,19.53,46.88,11.72) 纹理 103x61 → int 取整
 	assert_almost_eq(float(frame.patch_margin_left), 20.0, 0.5, "patch_left=round(19.53)")
 	assert_almost_eq(float(frame.patch_margin_right), 37.0, 0.5, "patch_right=round(103-19.53-46.88)")

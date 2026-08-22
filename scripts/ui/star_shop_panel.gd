@@ -10,13 +10,14 @@ extends PopWindow
 ## （frame/title 图÷CS 照源 rect + draglist cliprect 直译），商品格 8 节点模板化
 ## scenes/ui/star_shop_item.tscn（itemstarshop.lua 声明表直译，item_press 由 root
 ## pressed 态承担），panel 仅 fill（LSTR 文案/box 图/价格色/售罄态）。
-## 源 cocos(800×480 左下) → Godot 场景空间 (cx+80, 560-cy)；CS=1.28125。
+## 源 cocos(800×480 左下) → Godot 场景空间 (cx, 480-cy)；CS=1.28125。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/star_shop_content.tscn")
 const ITEM_SCENE: PackedScene = preload("res://scenes/ui/star_shop_item.tscn")
 
 # 商品行布局（源 createStarList :512-531：getItemPos ox=90 oy=35 dx=212，listLayer=场景
-# 原点；ItemLayer 挂裁剪层 (145,200) 内 → 局部 x = 90+80-145 = 25、行顶 = 560-(35+286.72)-200 = 38.28）
+# 原点；ItemLayer 挂裁剪层 (145,200)【960 口径，Task 4 迁 tscn 后为 (65,120)】内 →
+# 局部 x = 90-65 = 25、行顶 = 480-(35+286.72)-120 = 38.28——双侧同迁差值不变，局部值不变）
 const ITEM_LOCAL_X: float = 25.0
 const ITEM_LOCAL_Y: float = 38.28
 const ITEM_DX: float = 212.0

@@ -317,6 +317,77 @@ func test_default_tab_card() -> void:
 	root.queue_free()
 
 
+# CardFrame 显示尺寸口径守卫（2026-08-22 溢出修复）：card_bg_*.png 纹理 315×545px，源 getHeroCard
+# container 242×420 点（readhero.lua:1038），显示 = 纹理÷CS = 245.90×425.37；旧 rect 315×545 为
+# 纹理 px 直用（960×640 视口时代合法），迁 800×480 后底缘 592.5 超屏 112.5px。center y 320→240 后入屏。
+func test_card_frame_display_size_within_screen() -> void:
+	var view: Control = load("res://scenes/ui/hero_detail_card_tab.tscn").instantiate() as Control
+	var host := Control.new()
+	host.offset_right = 800.0
+	host.offset_bottom = 480.0
+	host.add_child(view)
+	add_child(host)
+	await get_tree().process_frame
+	var frame: Control = view.get_node("%CardFrame") as Control
+	var rect: Rect2 = frame.get_global_rect()
+	assert_almost_eq(rect.size.x, 315.0 / 1.28125, 0.1, "CardFrame 宽 = 纹理 315px ÷CS")
+	assert_almost_eq(rect.size.y, 545.0 / 1.28125, 0.1, "CardFrame 高 = 纹理 545px ÷CS")
+	assert_true(rect.end.y <= 480.0, "CardFrame 底缘入屏（旧值 592.5 超屏 112.5px）")
+	assert_true(rect.position.y >= 0.0, "CardFrame 顶缘入屏")
+	host.free()
+
+
+# card tab 内容回源守卫（2026-08-22）：止态定位链 = card.lua:150 container(-200,0)（window.lua:513
+# pop endPos）+ ui.container 中心 ccp(400,240)（card.lua:135）→ 卡片 container 中心全局 cocos (200,240)，
+# 左下角 (79,30)。子节点照源局部直译：frame 覆盖 (0,0)-(245.9,425.4)；name anchor(0,0.5)@(55,72)；
+# line anchor(1,0.5)@(242,60)；star 中心 (25+14i,27)；close 全局 (320,430)。
+# 源实机图 screenshots/ui_align/final_axmol_herodetail_800x480.png 实测卡框 (79,24.6)~(324.9,450)。
+func test_card_tab_content_source_layout() -> void:
+	var view: Control = load("res://scenes/ui/hero_detail_card_tab.tscn").instantiate() as Control
+	view.offset_left = -200.0   # 实例止态（hero_detail_content.tscn 同款）
+	view.offset_right = -200.0
+	var host := Control.new()
+	host.offset_right = 800.0
+	host.offset_bottom = 480.0
+	host.add_child(view)
+	add_child(host)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 1
+	HeroDetailTabs.fill_card_view(view, hero, cm)
+	await get_tree().process_frame
+	# CardFrame：全局 (79,24.63)~(524.90,450)（container 左下 (79,30) + frame 覆盖 (0,0)-(245.9,425.4)）。
+	var frame: Control = view.get_node("%CardFrame") as Control
+	var rect: Rect2 = frame.get_global_rect()
+	assert_almost_eq(rect.position.x, 79.0, 0.1, "CardFrame 左缘 = container 左下角 x 79")
+	assert_almost_eq(rect.position.y, 24.63, 0.1, "CardFrame 顶 = 450-425.37")
+	assert_almost_eq(rect.end.x, 324.9, 0.1, "CardFrame 右缘 79+245.90")
+	assert_almost_eq(rect.end.y, 450.0, 0.1, "CardFrame 底 = container 底 480-30")
+	# CardNameBgLine：右缘 = container 右缘全局 79+242 = 321（源 anchor(1,0.5)@ccp(242,60)）。
+	var line: Control = view.get_node("%CardNameBgLine") as Control
+	var line_rect: Rect2 = line.get_global_rect()
+	assert_almost_eq(line_rect.end.x, 321.0, 0.1, "名字条右缘 = container 右缘 321")
+	assert_almost_eq((line_rect.position.y + line_rect.end.y) * 0.5, 390.0, 0.15, "名字条中心 y=450-60")
+	# CardNameLabel：左缘 = 79+55 = 134（源 anchor(0,0.5)@ccp(55,72)）。
+	var name_lbl: Control = view.get_node("%CardNameLabel") as Control
+	assert_almost_eq(name_lbl.get_global_rect().position.x, 134.0, 0.1, "卡名左缘 = 79+55")
+	# CardCloseBtn：中心 (320,50)（源 close (520,430) 挂 card.container(-200,0) → 全局 (320,430)）。
+	var close_btn: Control = view.get_node("%CardCloseBtn") as Control
+	var close_rect: Rect2 = close_btn.get_global_rect()
+	assert_almost_eq((close_rect.position.x + close_rect.end.x) * 0.5, 320.0, 0.1, "关闭按钮中心 x=320")
+	# star1 中心：CONTAINER_ORIGIN(279,450)+(25,-27) → 全局 (104,423)（源 ccp(25,27) container 局部）。
+	var star1: CanvasItem = null
+	for c in view.get_children():
+		if c is TextureRect and (c as TextureRect).texture != null \
+				and (c as TextureRect).texture.resource_path.contains("card_star_big"):
+			star1 = c as CanvasItem
+			break
+	if hero.stars >= 1 and star1 != null:
+		var star_rect: Rect2 = star1.get_global_rect()
+		assert_almost_eq((star_rect.position.x + star_rect.end.x) * 0.5, 104.0, 0.1, "星1 中心 x=79+25")
+		assert_almost_eq((star_rect.position.y + star_rect.end.y) * 0.5, 423.0, 0.1, "星1 中心 y=450-27")
+	host.free()
+
+
 # 切 detail tab → detail view visible + skill view hidden + 属性 label 显示（源 doClickDetail → setOpenMode("att")）。
 # Phase B：tab 内容常驻（不 free），切 tab 只切 visible，故查 visible + 各 view 子树内容。
 func test_switch_to_detail() -> void:
@@ -391,6 +462,60 @@ func test_equips_persist_across_tabs() -> void:
 	root.queue_free()
 
 
+# 装备槽 6 格位置照源直译守卫（2026-08-22 出框修复：旧 VBox 列 top=-15 出屏顶、
+# 左 172/右 643 出主 bg 框，系 960 时代口径）。源 window.lua getEquipIconPos：
+# x=255+289*((i-1)%2)、y=385-70*floor((i-1)/2)，frame anchor(0.5,0.5) 中心定位挂
+# self.container（=BaseLayer 局部系，Godot y=480-y）；槽显示尺寸=纹理 94×95÷CS
+# =73.37×74.17（TexDisplaySize SOP：equip_frame 无 TextureConfig 条目 → ÷CS）。
+# 期望中心：i 奇数 x=255（1/3/5 上中下）、偶数 x=544（2/4/6）；y={95,165,235}。
+func test_equip_slot_positions_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	const EXPECTED_X: Array[float] = [255.0, 544.0, 255.0, 544.0, 255.0, 544.0]
+	const EXPECTED_Y: Array[float] = [95.0, 95.0, 165.0, 165.0, 235.0, 235.0]
+	var base: Control = panel.container.get_node("HeroDetailContent/BaseLayer") as Control
+	for i in range(6):
+		var slot: TextureRect = base.get_node("%EquipSlot" + str(i + 1)) as TextureRect
+		assert_not_null(slot, "EquipSlot%d 存在" % (i + 1))
+		if slot == null:
+			continue
+		var center: Vector2 = slot.position + slot.size / 2.0
+		assert_almost_eq(center.x, EXPECTED_X[i], 0.5, "槽 %d 中心 x=%d（源 getEquipIconPos 直译）" % [i + 1, EXPECTED_X[i]])
+		assert_almost_eq(center.y, EXPECTED_Y[i], 0.5, "槽 %d 中心 y=%d（源 y=385/315/245 → 480-y）" % [i + 1, EXPECTED_Y[i]])
+		assert_almost_eq(slot.size.x, 73.37, 0.1, "槽 %d 宽=94÷CS=73.37（旧 94 px 直用出框）" % (i + 1))
+		assert_almost_eq(slot.size.y, 74.17, 0.1, "槽 %d 高=95÷CS=74.17" % (i + 1))
+	panel.remove_window()
+	root.queue_free()
+
+
+# 装备槽 6 格全在主 bg（herodetail-bg）框内（症状 3 修复主断言：出框=左右溢 bg 边 26.5/41.5px
+# + 顶出屏）。bg 显示 517×570÷CS=403.9×445.1 中心 (400,240) → rect (198.5,17.5)-(601.5,462.5)。
+func test_equip_slots_inside_main_bg() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var base: Control = panel.container.get_node("HeroDetailContent/BaseLayer") as Control
+	var bg: TextureRect = base.get_node("Bg") as TextureRect
+	assert_not_null(bg, "主 bg 存在（BaseLayer/Bg）")
+	var bg_rect: Rect2 = bg.get_rect()
+	for i in range(6):
+		var slot: TextureRect = base.get_node("%EquipSlot" + str(i + 1)) as TextureRect
+		if slot == null:
+			continue
+		var slot_rect: Rect2 = slot.get_rect()
+		assert_true(bg_rect.encloses(slot_rect), "槽 %d rect %s ⊆ 主 bg rect %s（旧布局左右溢框+顶出屏）" % [i + 1, slot_rect, bg_rect])
+	# 装备图标挂载后视觉（×1/CS）也收在槽内：icon 视觉 rect = 槽 rect（frame 94×95÷CS）
+	panel.remove_window()
+	root.queue_free()
+
+
 # StoneBarBg 九宫格守卫（批 2 Task 8 复检 B 类修复）：源 herodetail/window.lua:2192
 # stone_bar_bg Scale9Sprite capInsets CCRectMake(20,1,102,24) scaleSize(180,26)，
 # 贴图 heropackage_soulstone_progress_bg 204×34 PIL 实测
@@ -410,5 +535,37 @@ func test_stone_bar_bg_ninepatch_margins() -> void:
 		assert_eq(bg.patch_margin_right, 82, "R=82（W-x-w=204-20-102）")
 		assert_eq(bg.patch_margin_bottom, 1, "B=1（源 cap y=1）")
 		assert_eq(bg.size, Vector2(180.0, 26.0), "显示尺寸 180×26 保持（源 scaleSize）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ── 溢出修复二轮守卫（2026-08-22）：detail tab 框位回源 ──
+# 源链：attributes.lua:600 bg ccp(400,240) 挂 container；create 时 container(48,0) 仅为初始位，
+# window.lua:430 pop endPos=ccp(-200,0) 覆盖之 → 显示止态源全局中心 (200,240)、底缘 y=462.5；
+# 48 不得并入子节点（一度并入致显示中心 248 偏右 48，已纠）。显示=纹理 369×570÷CS=288×445。
+func test_detail_tab_popup_rect_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	# 不调 _show_tab_content（树内会起 0.2s tween）；tscn 实例已固化止态 -200，直接断言。
+	var tab: Control = panel.container.find_children("TabDetailView", "Control", true, false)[0] as Control
+	assert_not_null(tab, "TabDetailView 存在")
+	if tab == null:
+		return
+	assert_almost_eq(tab.offset_left, -200.0, 0.5, "tab 止态 offset=-200（源 pop endPos）")
+	var popup: Control = tab.get_node("PopupBg") as Control
+	assert_almost_eq(popup.size.x, 288.0, 0.5, "PopupBg w=288（369px÷CS，旧 369 纹理直用溢屏）")
+	assert_almost_eq(popup.size.y, 445.0, 0.5, "PopupBg h=445（570px÷CS）")
+	# 显示止态全局底缘 = 本地 462.5 + 根 -200（y 不受 x 偏移影响）→ 462.5 ≤480 入屏。
+	assert_almost_eq(popup.position.y + popup.size.y, 462.5, 0.5, "PopupBg 显示底缘 y=462.5（570÷CS 居中 240，入屏）")
+	# 显示止态全局中心 x = 本地 400 + 根 -200 = 200（源 bg 全局 400 + container(-200)）。
+	assert_almost_eq(popup.get_global_rect().get_center().x, 200.0, 0.5, "PopupBg 显示中心 x=200（源 400+(-200)，勿并入 48）")
+	var list_host: Control = tab.get_node("AttribListHost") as Control
+	assert_almost_eq(list_host.size.x, 249.0, 0.5, "draglist clip w=249（源 CCRect 直译）")
+	assert_almost_eq(list_host.size.y, 415.0, 0.5, "draglist clip h=415")
+	assert_almost_eq(list_host.get_global_rect().position.x, 74.0, 0.5, "draglist 显示左缘 x=74（源 bg 左下角 56+18）")
 	panel.remove_window()
 	root.queue_free()

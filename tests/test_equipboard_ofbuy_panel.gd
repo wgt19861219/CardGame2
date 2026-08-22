@@ -64,8 +64,8 @@ func test_static_rects_source_translation() -> void:
 	add_child(content)
 	var frame: Control = content.get_node("%Frame") as Control
 	# 源 frame 中心 ccp(400,240) → to_godot(480,320) → 左上 (336,127.5)，288×385
-	assert_almost_eq(frame.offset_left, 336.0, 0.01, "Frame offset_left=336（源 frame 中心居屏）")
-	assert_almost_eq(frame.offset_top, 127.5, 0.01, "Frame offset_top=127.5")
+	assert_almost_eq(frame.offset_left, 256.0, 0.01, "Frame offset_left=336（源 frame 中心居屏）")
+	assert_almost_eq(frame.offset_top, 47.5, 0.01, "Frame offset_top=127.5")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 288.0, 0.01, "Frame 宽 288（369px÷CS）")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 385.0, 0.01, "Frame 高 385（493px÷CS）")
 	# 源 name anchor(0,0.5)@ccp(92,345) → 左 92、垂直中心 40 → (92,25)；w>160 缩放 → 框宽 160

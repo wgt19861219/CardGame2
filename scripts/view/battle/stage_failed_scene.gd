@@ -15,7 +15,7 @@ extends Control
 ## light 旋转 tween / prompt ≤2 Label 挂 %PromptHost。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_failed_content.tscn")
-# Cocos 800×480（左下原点）→ Godot 960×640（左上原点）等比转换：x*1.2, (480-y)*1.333
+# 坐标口径：旧 960×640 时代等比转换（x*1.2, (480-y)*1.333）已退役无调用方；viewport 800×480 后按源坐标直译（y 翻转：godot_y = 480 - cocos_y）。
 # P1-16 battleStatist 战斗统计按钮位置常量（贴图/CAP/路径走公共 helper；本场景独有的位置/偏移）。
 const BATTLE_STATIST_POS: Vector2 = Vector2(642.0, 160.0)
 const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 26.0)

@@ -20,8 +20,8 @@ mouse_filter = 2
 [node name="FrameworkBg" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
@@ -40,10 +40,10 @@ ignore_texture_size = true
 [node name="PanelLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 129.0
-offset_top = 123.0
-offset_right = 831.0
-offset_bottom = 547.0
+offset_left = 49.0
+offset_top = 43.0
+offset_right = 751.0
+offset_bottom = 467.0
 mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="PanelLayer"]
@@ -109,6 +109,10 @@ offset_bottom = 116.0
 texture_normal = ExtResource("2_refresh")
 texture_pressed = ExtResource("3_refreshp")
 ignore_texture_size = true
+; stretch_mode=0 显式（系统债四案）：默认 KEEP 纹理 146x75 原像素直显偏大 28%，
+; 且纹理从控件左上起画致可见中心 (547,95) 与居中文字中心 (531,87) 错开（文字不居中）。
+; size 114x58.5=纹理÷CS 源直译，SCALE 后纹理缩放到 size，文字（满锚居中）恢复对齐。
+stretch_mode = 0
 
 [node name="RefreshLabel" type="Label" parent="PanelLayer/RefreshBtn"]
 layout_mode = 3
@@ -181,9 +185,9 @@ vertical_alignment = 1
 [node name="ItemLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 145.0
-offset_top = 200.0
-offset_right = 815.0
-offset_bottom = 525.0
+offset_left = 65.0
+offset_top = 120.0
+offset_right = 735.0
+offset_bottom = 445.0
 clip_contents = true
 mouse_filter = 2

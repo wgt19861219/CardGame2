@@ -28,8 +28,8 @@ func test_content_static_tree() -> void:
 	# Frame（源 Scale9 main_vit_tips cap(10,10,58,26) scaleSize(705,300) 中心(400,220)
 	# → Godot (480,340) → [480-352.5, 340-150, 480+352.5, 340+150]）
 	var frame: NinePatchRect = inst.get_node("%Frame") as NinePatchRect
-	assert_almost_eq(frame.offset_left, 127.5, 0.1, "Frame 左 = 480-705/2（to_godot(400,220)）")
-	assert_almost_eq(frame.offset_top, 190.0, 0.1, "Frame 顶 = 340-300/2")
+	assert_almost_eq(frame.offset_left, 47.5, 0.1, "Frame 左 = 480-705/2（to_godot(400,220)）")
+	assert_almost_eq(frame.offset_top, 110.0, 0.1, "Frame 顶 = 340-300/2")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 705.0, 0.1, "Frame 宽 = 源 scaleSize 直译")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 300.0, 0.1, "Frame 高 = 源 scaleSize 直译")
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
@@ -41,8 +41,8 @@ func test_content_static_tree() -> void:
 	assert_eq(frame.patch_margin_bottom, 10, "NinePatch bottom = cap.y")
 	# CloseBtn（源 close 中心(750,350)，65x66 像素/CS = 50.73x51.51 → [804.63,184.24,855.37,235.76]）
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq(close_btn.offset_left, 804.63, 0.1, "CloseBtn 左 = 830-50.73/2（to_godot(750,350)）")
-	assert_almost_eq(close_btn.offset_top, 184.24, 0.1, "CloseBtn 顶 = 210-51.51/2")
+	assert_almost_eq(close_btn.offset_left, 724.63, 0.1, "CloseBtn 左 = 830-50.73/2（to_godot(750,350)）")
+	assert_almost_eq(close_btn.offset_top, 104.24, 0.1, "CloseBtn 顶 = 210-51.51/2")
 	assert_almost_eq(close_btn.offset_right - close_btn.offset_left, 50.73, 0.1, "CloseBtn 宽 = 65/CS")
 	assert_almost_eq(close_btn.offset_bottom - close_btn.offset_top, 51.51, 0.1, "CloseBtn 高 = 66/CS")
 	assert_eq(close_btn.texture_pressed.resource_path,

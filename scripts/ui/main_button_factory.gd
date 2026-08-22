@@ -22,6 +22,10 @@ const RoundButton = preload("res://scripts/ui/round_button.gd")
 const FcaAnimation = preload("res://scripts/ui/fca_animation.gd")
 const AtlasSprite = preload("res://scripts/ui/atlas_sprite.gd")
 const FCA_ANI_DIR: String = "res://assets/anim_frames/effect/"   # eff_UI_*.ani FCA 序列帧目录
+# 建筑图标整体缩小系数（照源 ui/main.lua:404 FCA_SCALE=0.9，commit f7ac295 2026-08-21
+# "主界面建筑图标整体缩小10%"）。源 createMainFca:419 setScale((v.scale or 1)*FCA_SCALE) 对
+# Spine 与 FCA 两种 node 都生效（Node::setScale），故 Godot 端 _add_spine/_add_fca 双路径都乘。
+const FCA_SCALE: float = 0.9
 
 
 ## 建入口按钮（照源 createMainButton + createMainFca）。e = ENTRIES 条目，on_pressed = 点击回调，is_locked = 未解锁灰显。
@@ -79,7 +83,9 @@ static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
 	var sk_scale: float = float(e.get("scale", 1.0))
 	var sk := SpineSkeleton.new()
 	# （0.39 仅 LegendAminationEffect/.abc 自家系统用；createFcaNode:581 Type_Spine 走 createAnimation，:589 FCA 走 LegendAminationEffect）。
-	sk.scale = Vector2(sk_scale, sk_scale)   # load_skeleton:37 自动翻 y（Spine y 上 → Godot y 下）
+	# 净 scale = v.scale × FCA_SCALE(0.9)（照源 main.lua:419 setScale((v.scale or 1)*FCA_SCALE)）；
+	# load_skeleton:37 自动翻 y 并保留 |scale|（0.9v, 0.9v) → (0.9v, -0.9v)）。
+	sk.scale = Vector2(sk_scale * FCA_SCALE, sk_scale * FCA_SCALE)
 	btn.add_child(sk)
 	if sk.load_skeleton(SPINE_DIR + "/" + String(e["res"]), String(e["res"])):
 		sk.position = Vector2(btn.size.x * 0.5, btn.size.y * 0.5)   # Button 中心 = 源按钮 pos（CCSprite 中心点）
@@ -103,9 +109,11 @@ static func _add_fca(btn: Button, res: String, sk_scale: float) -> Node2D:
 		atlas.unload()   # 失败分支 fca 未持有 atlas，显式释放纹理缓存
 		fca.queue_free()
 		return null
-	# 非 CC 标准覆盖）。_create_sprites 已设 fca.scale=_coord_scale(0.39)，此处 ×v.scale 叠加。
-	# net a/b/c/d = (0.39×v.scale)/0.39 × 原始 = v.scale×原始（正常缩放，避反向 ×1/0.39 放大 2.05× 致 starshop 超大）。
-	fca.scale = fca.scale * sk_scale
+	# 非 CC 标准覆盖）。_create_sprites 已设 fca.scale=_coord_scale(0.39)，此处 ×v.scale×FCA_SCALE 叠加
+	# （照源 main.lua:419 setScale((v.scale or 1)*FCA_SCALE)，FCA node 同样被 setScale）。
+	# net a/b/c/d = (0.39×v.scale×0.9)/0.39 × 原始 = v.scale×0.9×原始（与源 LegendAnimation batchNode
+	# 链一致：readFrames ÷0.39 + batchNode ×0.39 抵消，净系数全在外层 setScale；避反向 ×1/0.39 放大 2.05×）。
+	fca.scale = fca.scale * sk_scale * FCA_SCALE
 	btn.add_child(fca)
 	fca.position = Vector2(btn.size.x * 0.5, btn.size.y * 0.5)
 	fca.play(LOOP_ACTION, true)

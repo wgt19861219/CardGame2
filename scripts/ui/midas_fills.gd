@@ -21,7 +21,9 @@ const RATIO_TEXT: Dictionary = {1: "", 2: " ×2!", 3: " ×3!", 4: " ×10!!"}
 const RATIO_COLOR: Dictionary = {
 	1: Color.WHITE, 2: Color(1.0, 0.4, 0.7), 3: Color(1.0, 0.4, 0.7), 4: Color(1.0, 0.36, 0.27),
 }
-const RATIO_ICON_H: float = 30.0
+# 源 midas.lua:494 fix_height = ed.DGLen(30)（readnode.lua:8 DGLen = len/1.28）= 23.4375 点。
+# 旧值 30.0 漏除 DGLen 系数，比例图标高偏大 28%（2026-08-22 溢出修复清查修正）。
+const RATIO_ICON_H: float = 30.0 / 1.28
 const LSTR_USE := "MIDAS.USE"
 const LSTR_GET := "ADDEQUIP.GET"
 # 确认弹窗 3 行 LSTR（源 createMultiWindow :563/:584/:598/:631）。

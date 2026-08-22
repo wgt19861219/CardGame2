@@ -23,8 +23,8 @@ const AFFIXCOUNT_PATH: String = "res://resources/data/AffixCount.json"
 # 源 name 长度上限（:395-398 gsub UTF-8 首字节计数 = 字符数 > 13 拒绝）
 const NAME_MAX_LENGTH: int = 13
 # main_vit_tips 103x61，scaleSize(355,180) 中心(400,355) → Godot 中心(480,205)
-const FRAME_L: float = 302.5
-const FRAME_T: float = 115.0
+const FRAME_L: float = 222.5
+const FRAME_T: float = 35.0
 const FRAME_W: float = 355.0
 const FRAME_H: float = 180.0
 # naming_button_roll 80x75 → /CS = 62.44x58.54（与源 hit 区 :83 62x59 吻合）
@@ -130,14 +130,14 @@ func test_global_position_guard() -> void:
 	add_child_autofree(inst)
 	await get_tree().process_frame
 	var ok_btn: Control = inst.get_node("%OkBtn") as Control
-	assert_almost_eq(ok_btn.global_position.x + ok_btn.size.x * 0.5, 537.5, 0.5,
+	assert_almost_eq(ok_btn.global_position.x + ok_btn.size.x * 0.5, 457.5, 0.5,
 		"OkBtn 全屏中心 x = 302.5+235（frame 局部→全屏防 parenting 错位）")
-	assert_almost_eq(ok_btn.global_position.y + ok_btn.size.y * 0.5, 260.0, 0.5,
+	assert_almost_eq(ok_btn.global_position.y + ok_btn.size.y * 0.5, 180.0, 0.5,
 		"OkBtn 全屏中心 y = 115+145")
 	var roll_btn: Control = inst.get_node("%RollBtn") as Control
-	assert_almost_eq(roll_btn.global_position.x + roll_btn.size.x * 0.5, 602.5, 0.5,
+	assert_almost_eq(roll_btn.global_position.x + roll_btn.size.x * 0.5, 522.5, 0.5,
 		"RollBtn 全屏中心 x = 302.5+300")
-	assert_almost_eq(roll_btn.global_position.y + roll_btn.size.y * 0.5, 200.0, 0.5,
+	assert_almost_eq(roll_btn.global_position.y + roll_btn.size.y * 0.5, 120.0, 0.5,
 		"RollBtn 全屏中心 y = 115+85")
 
 

@@ -12,6 +12,11 @@ extends RefCounted
 
 const EQUIP_SLOT_COUNT: int = 6
 const EQUIP_GRAY_MODULATE: Color = Color(0.4, 0.4, 0.4, 1.0)
+# TexDisplaySize SOP 口径（2026-08-22）：源 createSprite 对无 TextureConfig 条目纹理
+# 显示=纹理÷CS（setContentScaleFactor 615/480 下 getContentSize 返回点尺寸），equip_frame
+# 94×95 显示 73.37×74.17。ReadequipIcon 的 frame Sprite2D 系原尺寸渲染（全局口径债），
+# 本面板挂载处对 icon 整树 ×1/CS 补偿（等价源 bg:setScale 缩整树），视觉对齐槽 host。
+const CONTENT_SCALE: float = 1.28125
 
 # 装备图标 container 逻辑尺寸（与 ReadequipIcon.ICON_SIZE 对齐）
 const ICON_SIZE: float = 72.0
@@ -48,6 +53,8 @@ static func show_equips(hero: HeroInstance, cm: Variant, pd: PlayerData, base_la
 			continue
 		slot_host.texture = null
 		icon.position = Vector2.ZERO
+		# frame ÷CS 显示口径：create_icon 内部 _load_sprite 已统一 ÷CS（2026-08-22 根修），
+		# frame 视觉 94/CS × 95/CS = 73.37×74.17 = 槽 host 尺寸（.tscn 源直译），此处不再二次 ÷CS。
 		# 状态角标（源 createEquipTag：仅 ceid<=0 and eid>0 时画，isEquiped/ignore 不画）
 		if ceid <= 0 and eid > 0:
 			var state: Dictionary = EquipdetailQuery.get_hero_equip_state(hero, i, cm, pd)

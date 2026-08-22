@@ -1,5 +1,16 @@
 [gd_scene format=3 uid="uid://ca2d7tab8a01r" load_steps=3]
 
+; card 图鉴 tab（源 herodetail/card.lua 弹窗 + readhero.lua:1023 getHeroCard）。
+; 2026-08-22 内容全量回源：止态定位链 = card.lua:150 container(-200,0)（= window.lua:513 pop endPos）
+; + ui.container 中心 ccp(400,240)（card.lua:135）→ 卡片 container 中心全局 cocos (200,240)，
+; 左下角 (79,30)。子节点 = getHeroCard container 局部坐标直译（ccp 值即设计点，纹理显示 = px÷CS）：
+; frame 覆盖局部 (0,0)-(245.9,425.4)（card_bg 315×545px÷CS；readnode anchor(0,0)@(0,0) 后
+; setNodeAnchor(0.5,0.5) 视觉不变，resource_manager.lua:1371）；name(55,72) size24 / artname(55,53)
+; size14 anchor(0,0.5)（readhero.lua:1084-1117）；line anchor(1,0.5)@(242,60)（:1146-1147）；
+; close (520,430) 挂 card.container（card.lua:150-181，全局 (320,430)）。
+; tscn offset = Godot 全局 + (200,0)（TabCardView 实例 rect 左缘 -200）；y 翻转 480-y。
+; 源实机图 final_axmol_herodetail_800x480.png 实测卡框 (79,24.6)~(324.9,450) 逐边吻合。
+
 [ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
 [ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
 
@@ -11,30 +22,30 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+offset_left =  -200
+offset_right =  -200
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
 [node name="EditPlaceholder" type="ReferenceRect" parent="." unique_id=786915829]
 layout_mode = 0
-offset_left = 122.5
-offset_top = 47.5
-offset_right = 437.5
-offset_bottom = 592.5
+offset_left =   279.0
+offset_top =  24.63
+offset_right =   524.9
+offset_bottom =  450.0
 mouse_filter = 2
 border_color = Color(0, 1, 0.7, 1)
 border_width = 2.0
 
 [node name="CardFrame" type="TextureRect" parent="." unique_id=2119671309]
 unique_name_in_owner = true
-z_index = 1
+z_index = 2
 layout_mode = 0
-offset_left = 122.5
-offset_top = 47.5
-offset_right = 437.5
-offset_bottom = 592.5
+offset_left =   279.0
+offset_top =  24.63
+offset_right =   524.9
+offset_bottom =  450.0
 mouse_filter = 2
 expand_mode = 1
 
@@ -50,10 +61,12 @@ mouse_filter = 2
 
 [node name="PH_ArtPlaceholder" type="ColorRect" parent="CardArtHost" unique_id=1491769480]
 layout_mode = 0
-offset_left = 130.5
-offset_top = 56.5
-offset_right = 429.5
-offset_bottom = 583.5
+; 源 readhero.lua:1132-1134 art 中心局部 ccp(123,215) setScale(420/ArtH)：等比高 420。
+; 典型 card_bg_big_*.jpg 536×928px → 显示 242.6×420，中心 offset (402,235)（运行时 fill 删除本占位）。
+offset_left =   280.7
+offset_top =  25.0
+offset_right =   523.3
+offset_bottom =  445.0
 mouse_filter = 2
 color = Color(0.2, 0.2, 0.3, 0.6)
 
@@ -61,19 +74,25 @@ color = Color(0.2, 0.2, 0.3, 0.6)
 unique_name_in_owner = true
 z_index = 3
 layout_mode = 0
-offset_left = 177.5
-offset_top = 532.5
-offset_right = 357.5
-offset_bottom = 546.5
+; 源 readhero.lua:1102-1110 artname anchor(0,0.5)@ccp(55,53) 挂 frame（frame 局部=container 局部）
+; size14 max_width180 → 左缘 offset x=279+55=334，中心 y=450-53=397。
+offset_left =   334.0
+offset_top =  387.0
+offset_right =   514.0
+offset_bottom =  407.0
+theme_override_font_sizes/font_size = 14
 
 [node name="CardNameBgLine" type="TextureRect" parent="." unique_id=1828308982]
 unique_name_in_owner = true
-z_index = 2
+z_index = 1
 layout_mode = 0
-offset_left = 293.5
-offset_top = 527.0
-offset_right = 364.5
-offset_bottom = 538.0
+; 源 readhero.lua:1145-1147 line anchor(1,0.5)@ccp(242,60)：右缘 offset x=279+242=521，
+; 中心 y=450-60=390；z=0 < frame z=1（readnode 无 z → container:addChild 默认 0，卡框半透明
+; 底板从名字条上透出）。静态默认 long 版（151×11px÷CS=117.86×8.59），fill 按 name 宽换 short。
+offset_left =   403.14
+offset_top =  385.7
+offset_right =   521.0
+offset_bottom =  394.3
 mouse_filter = 2
 expand_mode = 1
 
@@ -81,20 +100,24 @@ expand_mode = 1
 unique_name_in_owner = true
 z_index = 3
 layout_mode = 0
-offset_left = 200.0
-offset_top = 458.0
-offset_right = 360.0
-offset_bottom = 482.0
-theme_override_font_sizes/font_size = 22
+; 源 readhero.lua:1084-1097 name anchor(0,0.5)@ccp(55,72) 挂 frame size24 max_width175
+; → 左缘 offset x=334，中心 y=450-72=378，右缘=334+175=509。
+offset_left =   334.0
+offset_top =  361.0
+offset_right =   509.0
+offset_bottom =  395.0
+theme_override_font_sizes/font_size = 24
 
 [node name="CardCloseBtn" type="TextureButton" parent="." unique_id=400100100]
 unique_name_in_owner = true
 z_index = 4
 layout_mode = 0
-offset_left = 380.0
-offset_top = 55.0
-offset_right = 431.0
-offset_bottom = 106.0
+; 源 card.lua:156-181 close sprite ccp(520,430) 挂 card.container（止态 (-200,0)）
+; → 全局 (320,430) → Godot 中心 (320,50)；65×66px÷CS=50.73×51.51 → offset (494.63,24.24)-(545.37,75.76)。
+offset_left =   494.63
+offset_top =  24.24
+offset_right =   545.37
+offset_bottom =  75.76
 mouse_filter = 0
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")

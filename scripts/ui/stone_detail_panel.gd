@@ -10,9 +10,9 @@ extends PopWindow
 ## connect、fill（零静态节点构造，工厂调用除外）。静态色/字号走 theme variation
 ## （StoneDetail* 系列），动态切换色（红/棕）用 font_color override（源 config.color
 ## 直设颜色语义，非乘法 modulate）。
-## 坐标：源 cocos(800x480 左下) → Godot(960x640 左上)；infoContainer 源 (400,242)
-## size(285,388) anchor(0.5,0.5) → 全屏原点 (337.5,512)，子节点 local(cx,cy) →
-## 全屏 (337.5+cx, 512-cy)。board 行内坐标（逻辑 311x67 y-up）在行模板内已翻转。
+## 坐标：源 cocos(800x480 左下) → Godot(800x480 左上)；infoContainer 源 (400,242)
+## size(285,388) anchor(0.5,0.5) → 容器左 257.5/底 432（480-48），子节点 local(cx,cy) →
+## 全屏 (257.5+cx, 432-cy)。board 行内坐标（逻辑 311x67 y-up）在行模板内已翻转。
 
 signal jump_to_stage(stage_id: int)
 
@@ -36,11 +36,12 @@ const LSTR_CHAPTER_D: String = "EQUIPCRAFT._CHAPTER__D"
 const LSTR_CHAPTER_YET: String = "EQUIPCRAFT.CHAPTER_YET_TO_OPEN"
 const LSTR_CHAPTER_YET_FALLBACK: String = "关卡尚未开启。"
 # ── infoContainer 全屏原点（源 :514-515 setPosition(400,242) + size(285,388)）──
-const ICO_OFFSET_X: float = 337.5
-const ICO_BASE_Y: float = 512.0
+const ICO_OFFSET_X: float = 257.5   # 容器左 x = 400-285/2（源直译，800 口径）
+const ICO_BASE_Y: float = 432.0     # 容器底 Godot y = 480-(242-388/2)
 # ── 获取途径行布局（源 :272 ox,oy=142,220 + :286 y-50*(i-1)；行挂 draglist listLayer，
 #    listLayer 无偏移 → 行中心即 infoContainer 局部 (142, 220-50i)；GetwayClip 原点
-#    = cliprect(0,85) 全屏映射 (337.5,262) → 行中心相对裁剪层 (142, 30+50i)）──
+#    = cliprect(0,85) 全屏映射 (257.5,182)【800 口径；tscn 现值 (337.5,262) 系 960 口径
+#    Task 4 迁后归位】→ 行中心相对裁剪层 (142, 30+50i) 局部差值不变）──
 const GETWAY_OX: float = 142.0
 const GETWAY_BASE_Y: float = 30.0
 const GETWAY_DY: float = 50.0
@@ -87,7 +88,7 @@ func _on_panel_enter() -> void:
 	_build_getway_list()
 
 
-# infoContainer 子节点 cocos local → Godot：cx+337.5, 512-cy（见类头注释推导）。
+# infoContainer 子节点 cocos local → Godot：cx+257.5, 432-cy（见类头注释推导；800 口径）。
 func _g(cx: float, cy: float) -> Vector2:
 	return Vector2(cx + ICO_OFFSET_X, ICO_BASE_Y - cy)
 

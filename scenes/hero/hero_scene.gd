@@ -18,7 +18,7 @@ func _ready() -> void:
 	HudOverlay.refresh()
 
 
-# 目标 960×640，bg.jpg(512×308) EXPAND_IGNORE_SIZE 拉伸铺满（同 loading 坑，size=get_viewport_rect）。
+# 目标 800×480，bg.jpg(512×308) EXPAND_IGNORE_SIZE 拉伸铺满（同 loading 坑，size=get_viewport_rect）。
 func _create_bg() -> void:
 	var bg := TextureRect.new()
 	bg.texture = load(BG_TEXTURE)

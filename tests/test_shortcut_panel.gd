@@ -20,7 +20,7 @@ func test_initial_closed() -> void:
 	assert_false(panel._shade.visible, "shade 隐藏")
 	assert_true(panel._toggle_down.visible, "down 切换钮可见")
 	assert_false(panel._toggle_up.visible, "up 切换钮隐藏")
-	assert_eq(panel._board.size.y, 65.0, "板高 min（收起；批 2 Task 8 受控偏离：NinePatch min=top40+bottom25=65>源 40）")
+	assert_eq(panel._board.size.y, 51.0, "板高 min（收起；引擎 NinePatch min=margin 和 31+20=51>源 40）")
 	assert_eq(panel._buttons.size(), 5, "5 按钮（heroPackage/package/fragment/task/todoList）")
 	for key in BUTTON_KEYS:
 		var btn: TextureButton = panel._buttons[key]
@@ -96,18 +96,20 @@ func test_toggle_down_button_triggers_open() -> void:
 
 
 # ── Board NinePatch 守卫（批 2 Task 8：源 shortcut.lua:273 Scale9Sprite capInsets CCRectMake(0,25,62,26)）──
-# 贴图 main_shortcut_board 106×91 → left=0/top=91-25-26=40/right=106-62=44/bottom=25（批 1 fde903b 公式）。
-# 双态（收起 82×40 / 展开 82×460）走 size 切换，NinePatchRect 与 TextureRect 同为 Control.size 不破坏。
+# 贴图 main_shortcut_board 106×91 → cap px left=0/top=40/right=44/bottom=25（批 1 fde903b 公式）。
+# Godot patch_margin=corner 直接绘制尺寸且为 int，源 cocos corner 显示=cap px÷CS(1.28125)
+# （hello.lua:311）→ margin 取 ÷CS 四舍五入 31/34/20（2026-08-22 观感根因二修正；直用 px 板边框大 1.28×）。
+# 双态（收起 82×51 / 展开 82×460）走 size 切换，NinePatchRect 与 TextureRect 同为 Control.size 不破坏。
 
 func test_board_is_ninepatch_with_source_margins() -> void:
 	var panel := _make_panel()
 	var board: NinePatchRect = panel._board as NinePatchRect
 	assert_not_null(board, "Board 节点为 NinePatchRect（源 Scale9Sprite 九宫格）")
 	assert_eq(board.patch_margin_left, 0, "patch_margin_left=0（源 cap x=0）")
-	assert_eq(board.patch_margin_top, 40, "patch_margin_top=40（H-y-h=91-25-26）")
-	assert_eq(board.patch_margin_right, 44, "patch_margin_right=44（W-x-w=106-0-62）")
-	assert_eq(board.patch_margin_bottom, 25, "patch_margin_bottom=25（源 cap y=25）")
-	assert_eq(board.size, Vector2(82.0, 65.0), "收起态 82×65（受控偏离：NinePatch min size=margin 和 65>源 40）")
+	assert_eq(board.patch_margin_top, 31, "patch_margin_top=round(40÷CS)（H-y-h=91-25-26）")
+	assert_eq(board.patch_margin_right, 34, "patch_margin_right=round(44÷CS)（W-x-w=106-0-62）")
+	assert_eq(board.patch_margin_bottom, 20, "patch_margin_bottom=round(25÷CS)（源 cap y=25）")
+	assert_eq(board.size, Vector2(82.0, 51.0), "收起态 82×51（引擎 min=margin 和 51>源 40）")
 	panel.queue_free()
 
 
@@ -217,4 +219,33 @@ func test_check_button_tag_all_keys_return_bool() -> void:
 	for key in BUTTON_KEYS:
 		var v: bool = panel._check_button_tag(key)
 		assert_true(v == true or v == false, "%s 分发返回 bool 不崩" % key)
+	panel.queue_free()
+
+
+# ── 按钮列 y 回源守卫（2026-08-22 溢出修复二轮：作废旧坐标时代等距 90 历史调整）──
+# 源 uires.lua:26-31 shortcutBoardButtonPosY={382,307,237,162,83} + :18 s_b_offset_y=-20 + :37-38
+# 运行时循环叠加 → {362,287,217,142,63}（framework.lua popBoardWithoutAnim:427 setPosition 直用）；
+# Godot y=480-PosY → {118,193,263,338,417}，间距不等距 75/70/75/79。首钮与 toggle（y=40）
+# 垂直间距 78（源同），旧等距值首钮 57 与 toggle 40 叠死。
+
+func test_button_center_y_source_direct() -> void:
+	var panel := _make_panel()
+	panel._apply_open_instant()
+	const EXPECTED_Y: Array[float] = [118.0, 193.0, 263.0, 338.0, 417.0]
+	for i in BUTTON_KEYS.size():
+		var btn: TextureButton = panel._buttons[BUTTON_KEYS[i]]
+		var center_y: float = btn.position.y + btn.size.y / 2.0
+		assert_almost_eq(center_y, EXPECTED_Y[i], 0.5, "%s 按钮中心 y=%d（源 PosY %d 直译 480-y）" % [BUTTON_KEYS[i], EXPECTED_Y[i], [362, 287, 217, 142, 63][i]])
+	panel.queue_free()
+
+
+# 首按钮与 toggle 不叠（源 toggle ccp(740,440)→y=40 恒定；首钮 118 与其相距 78）。
+func test_first_button_not_overlapping_toggle() -> void:
+	var panel := _make_panel()
+	panel._apply_open_instant()
+	var first: TextureButton = panel._buttons[BUTTON_KEYS[0]]
+	var first_center_y: float = first.position.y + first.size.y / 2.0
+	var toggle_center_y: float = panel._toggle_down.position.y + panel._toggle_down.size.y / 2.0
+	assert_almost_eq(toggle_center_y, 40.0, 0.5, "toggle 中心 y=40（源 shortcut_pos_y 440 直译）")
+	assert_gt(first_center_y - toggle_center_y, 60.0, "首钮(118)与 toggle(40) 垂直间距 ≥60（实际 78，源同；旧等距 90 时仅 17 叠死）")
 	panel.queue_free()

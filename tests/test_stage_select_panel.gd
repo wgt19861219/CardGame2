@@ -288,18 +288,18 @@ func test_stage_pointer_key_stage_offset() -> void:
 		pass_test("stagepointer.png 资源缺失，跳过")
 		return
 	var key_ptr: TextureRect = c.get_child(0) as TextureRect
-	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, 560.0 - 344.0, 1.5,
+	assert_almost_eq(key_ptr.position.y + key_ptr.size.y * 0.5, 480.0 - 344.0, 1.5,
 		"key 关指针中心 y = to_godot(·,284+60)（源 cy+60 直译，无放大）")
-	assert_almost_eq(key_ptr.position.x + key_ptr.size.x * 0.5, 252.0, 1.5, "key 关指针中心 x = 172+80")
+	assert_almost_eq(key_ptr.position.x + key_ptr.size.x * 0.5, 172.0, 1.5, "key 关指针中心 x = 172+80")
 	var c2 := Control.new()
 	add_child_autofree(c2)
 	var nonkey_info: Dictionary = {"id": 2, "pos": [217, 200]}
 	StageSelectFills._add_pointer(c2, nonkey_info)
 	if c2.get_child_count() > 0:
 		var nk_ptr: TextureRect = c2.get_child(0) as TextureRect
-		assert_almost_eq(nk_ptr.position.y + nk_ptr.size.y * 0.5, 560.0 - 230.0, 1.5,
+		assert_almost_eq(nk_ptr.position.y + nk_ptr.size.y * 0.5, 480.0 - 230.0, 1.5,
 			"非 key 关指针中心 y = to_godot(·,200+30)（源 cy+30 直译）")
-		assert_almost_eq(nk_ptr.position.x + nk_ptr.size.x * 0.5, 216.0 + 80.0, 1.5, "非 key 关指针中心 x = (217-1)+80")
+		assert_almost_eq(nk_ptr.position.x + nk_ptr.size.x * 0.5, 216.0, 1.5, "非 key 关指针中心 x = (217-1)+80")
 
 
 # ===== 两件套守卫（批3 Task 5 新增，2026-08-16）=====
@@ -317,15 +317,15 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(mode_layer.offset_top, 0.0, 0.1, "ModeLayer offset_top=0（偏好补丁撤销）")
 	# ModeBg（源 buttonBg crusade_Button_bg 874×74px÷CS 中心 ccp(400,355)→(480,205)）。
 	var mode_bg: TextureRect = inst.get_node("%ModeLayer/ModeBg") as TextureRect
-	assert_almost_eq(mode_bg.offset_left + (mode_bg.offset_right - mode_bg.offset_left) * 0.5, 480.0, 0.1, "ModeBg 中心 x=480")
-	assert_almost_eq(mode_bg.offset_top + (mode_bg.offset_bottom - mode_bg.offset_top) * 0.5, 205.0, 0.1, "ModeBg 中心 y=560-355")
+	assert_almost_eq(mode_bg.offset_left + (mode_bg.offset_right - mode_bg.offset_left) * 0.5, 400.0, 0.1, "ModeBg 中心 x=480")
+	assert_almost_eq(mode_bg.offset_top + (mode_bg.offset_bottom - mode_bg.offset_top) * 0.5, 125.0, 0.1, "ModeBg 中心 y=560-355")
 	assert_almost_eq(mode_bg.offset_right - mode_bg.offset_left, 874.0 / CS, 0.1, "ModeBg 宽 = 874px÷CS")
 	# mode toggle：129×67px÷CS×0.9（源 setScale(0.9)）；normal(345,350)→(425,210)、
 	# elite(455,350)→(535,210)、guild(489,350)→(569,210)（guild 不可见布局，源 :240-243）。
 	var btn_expect := {
-		"%ModeNormalBtn": Vector2(425.0, 210.0),
-		"%ModeEliteBtn": Vector2(535.0, 210.0),
-		"%ModeGuildBtn": Vector2(569.0, 210.0),
+		"%ModeNormalBtn": Vector2(345.0, 130.0),
+		"%ModeEliteBtn": Vector2(455.0, 130.0),
+		"%ModeGuildBtn": Vector2(489.0, 130.0),
 	}
 	for btn_name in btn_expect:
 		var btn: TextureButton = inst.get_node(btn_name) as TextureButton
@@ -340,10 +340,10 @@ func test_content_static_tree() -> void:
 	# 箭头（源 createChapterButton :706-709 prev(78,215)/next(720,215) → godot 中心 (158,345)/(800,345)；
 	# 55×75px÷CS = 42.93×58.54）。
 	var prev: TextureButton = inst.get_node("%PrevArrow") as TextureButton
-	assert_almost_eq(prev.offset_left, 158.0 - 55.0 / CS / 2.0, 0.1, "PrevArrow 中心 x = 78+80")
-	assert_almost_eq(prev.offset_top, 345.0 - 75.0 / CS / 2.0, 0.1, "PrevArrow 中心 y = 560-215")
+	assert_almost_eq(prev.offset_left, 78.0 - 55.0 / CS / 2.0, 0.1, "PrevArrow 中心 x = 78+80")
+	assert_almost_eq(prev.offset_top, 265.0 - 75.0 / CS / 2.0, 0.1, "PrevArrow 中心 y = 560-215")
 	var next: TextureButton = inst.get_node("%NextArrow") as TextureButton
-	assert_almost_eq(next.offset_left, 800.0 - 55.0 / CS / 2.0, 0.1, "NextArrow 中心 x = 720+80")
+	assert_almost_eq(next.offset_left, 720.0 - 55.0 / CS / 2.0, 0.1, "NextArrow 中心 x = 720+80")
 	for arrow in [prev, next]:
 		assert_eq(arrow.stretch_mode, TextureButton.STRETCH_SCALE, "箭头 stretch_mode=0 显式")
 	# CloseBtn stretch_mode=0 显式。
@@ -363,8 +363,8 @@ func test_content_static_tree() -> void:
 func test_map_clip_and_bg_size_source() -> void:
 	var panel := _make_panel()
 	var layer: Control = panel._map_host.get_child(0) as Control
-	assert_almost_eq(layer.position.x, 124.0, 0.1, "MapLayer x = to_godot(44,·).x（源 clipStencil 直译）")
-	assert_almost_eq(layer.position.y, 168.0, 0.1, "MapLayer y = 560-(20+372)（源 clipStencil 直译）")
+	assert_almost_eq(layer.position.x, 44.0, 0.1, "MapLayer x = to_godot(44,·).x（源 clipStencil 直译）")
+	assert_almost_eq(layer.position.y, 88.0, 0.1, "MapLayer y = 560-(20+372)（源 clipStencil 直译）")
 	assert_almost_eq(layer.size.x, 712.0, 0.1, "MapLayer 宽 = 源 712（clip 903×471 偏大补丁撤销）")
 	assert_almost_eq(layer.size.y, 372.0, 0.1, "MapLayer 高 = 源 372")
 	assert_true(layer.clip_contents, "MapLayer clip_contents（源 ClippingNode 等价）")
@@ -382,8 +382,8 @@ func test_map_clip_and_bg_size_source() -> void:
 	if bg != null:
 		assert_almost_eq(bg.size.x, 468.0 / CS * 2.0, 0.5, "bg 宽 = 468px÷CS×2（Prescaled=true CS=2 通用公式）")
 		assert_almost_eq(bg.size.y, 254.0 / CS * 2.0, 0.5, "bg 高 = 254px÷CS×2")
-		assert_almost_eq(bg.position.x + bg.size.x * 0.5 + layer.position.x, 480.0, 0.5, "bg 中心 x=480（源 pos(400,212)）")
-		assert_almost_eq(bg.position.y + bg.size.y * 0.5 + layer.position.y, 348.0, 0.5, "bg 中心 y=560-212")
+		assert_almost_eq(bg.position.x + bg.size.x * 0.5 + layer.position.x, 400.0, 0.5, "bg 中心 x=480（源 pos(400,212)）")
+		assert_almost_eq(bg.position.y + bg.size.y * 0.5 + layer.position.y, 268.0, 0.5, "bg 中心 y=560-212")
 	assert_not_null(route, "route 建出（map1.png）")
 	if route != null:
 		assert_almost_eq(route.size.x, 468.0 / CS * 2.0, 0.5, "route 宽 = 468px÷CS×2（map 系 route 同为 Prescaled=true CS=2 条目）")
@@ -399,9 +399,9 @@ func test_stage_button_position_no_stretch() -> void:
 	var panel := _make_panel()
 	var layer: Control = panel._map_host.get_child(0) as Control
 	var btn: TextureButton = panel._stage_buttons[1] as TextureButton
-	assert_almost_eq(btn.global_position.x + btn.size.x * 0.5, 252.0, 0.5,
+	assert_almost_eq(btn.global_position.x + btn.size.x * 0.5, 172.0, 0.5,
 		"stage1 btn 中心 x = to_godot(172,·)（STRETCH 放大撤销）")
-	assert_almost_eq(btn.global_position.y + btn.size.y * 0.5, 276.0, 0.5,
+	assert_almost_eq(btn.global_position.y + btn.size.y * 0.5, 196.0, 0.5,
 		"stage1 btn 中心 y = to_godot(·,284)（STRETCH 放大撤销）")
 	assert_almost_eq(btn.size.x, 209.0 / CS, 0.5, "stage1 icon 宽 = 209px÷CS（key stage 图）")
 	assert_almost_eq(btn.size.y, 189.0 / CS, 0.5, "stage1 icon 高 = 189px÷CS")
@@ -412,7 +412,7 @@ func test_stage_button_position_no_stretch() -> void:
 			break
 	assert_not_null(mask, "stage1 current key 关有闪烁 mask（源 :1229-1238）")
 	if mask != null:
-		assert_almost_eq(mask.global_position.x + mask.size.x * 0.5, 252.0, 0.5,
+		assert_almost_eq(mask.global_position.x + mask.size.x * 0.5, 172.0, 0.5,
 			"mask 中心与 icon 同位（源 mask:setPosition(t.pos) 平级直译）")
 		assert_almost_eq(mask.size.x, 209.0 / CS, 0.5, "mask 宽 = stage-current 209px÷CS")
 		assert_true(mask.get_index() < btn.get_index(), "mask 先声明（源 icon 后 add 盖 mask，闪烁光圈露边）")

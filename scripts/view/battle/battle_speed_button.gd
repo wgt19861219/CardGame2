@@ -12,7 +12,7 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_speed_button_content.tscn")
 const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/CombatAcceleration_"
-const GODOT_POS: Vector2 = Vector2(815.0, 440.0)  # 原 to_godot(735,120)=(735+80,560-120)，HUD 原生坐标
+const GODOT_POS: Vector2 = Vector2(735.0, 360.0)  # to_godot(735,120)=(735,480-120)，HUD 原生坐标（800×480 直译）
 const MAX_STATE: int = 4
 const SPEED_LABELS := ["1x", "2x", "3x", "4x"]
 

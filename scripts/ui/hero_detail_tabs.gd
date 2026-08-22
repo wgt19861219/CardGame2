@@ -7,28 +7,19 @@ extends RefCounted
 ## 不含 panel 状态，全 static + 参数化，panel 传 host + on_click Callable。
 ## 单向依赖：本类 → HeroDetailAttribs.get_lstr_fallback + HeroDetailFills.to_godot（避 class_name 循环）。
 
-# 世界 cocos = 400-200 = 200（已含 pop 偏移）。card_frame size .tscn 固化，fill 只设 texture。
-const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 190.0)   # Art center 世界 cocos（container center = frame center）
-# Art setScale(420/ArtH) 显示高=container 高 420（readhero.lua:1134）。frame 镂空区 PIL 实测 294×372 居中偏上 77px。
-# 项目 CardFrame .tscn offset (122.5,47.5)→(437.5,592.5) size 315×545 照源原尺寸（不放大，旧 369×570 偏大用户反馈）。
-const CONTAINER_ORIGIN: Vector2 = Vector2(138.5, 539.5)   # container 左下角 Godot（保留兼容旧调用，Art fill 不再用）
-const CONTAINER_SIZE: Vector2 = Vector2(335.0, 417.0)   # 旧镂空区估算（保留兼容，Art fill 不再用）
-const CONTAINER_LOGIC_HEIGHT: float = 282.0   # 保留兼容（旧 Art fill 用），新 Art 公式改用 CARD_HOLE_SIZE
-const CARD_FRAME_SIZE: Vector2 = Vector2(315.0, 545.0)   # CardFrame 阶级框 size 照源 PNG IHDR（offset 122.5,47.5→437.5,592.5）
-# Art 内缩量（像素）：Art size = CardFrame size - INSET*2，让 Art 4 角落在 frame 圆角装饰内圈不超出。
-# PIL 实测 CardFrame 4 角圆角半径约 8px，Art 之前 = frame size 时 4 角凸出 frame 圆角外 5px（38px² 面积），
-# 内缩 8px 后 Art 4 角在 frame 圆角装饰内圈，0 凸出（牺牲少量边缘 Art 内容换边角整齐）。
-const CARD_FRAME_INSET: float = 8.0
-# card_bg 镂空区 PIL alpha<128 flood fill 实测 bbox (10,10)~(303,476) center png (156.5, 243.0)。
-# Art 纹理实测 card_bg_big_*.jpg 536×928 ratio 0.5776，CardFrame 315×545 ratio 0.5780，**两者几乎同比例**。
-# 用户要"按比例铺满框"= Art 铺满整个 CardFrame 315×545（不是镂空 294×467），Art 315×545 完全覆盖 frame，
-# frame 边框装饰 + name 条从 Art 之上盖下来（源效果）。
-const CARD_HOLE_SIZE: Vector2 = Vector2(294.0, 467.0)   # 保留（PIL alpha<128 实测，作参考）
-const COORD_SX: float = 1.0
-const COORD_SY: float = 1.0
-# Art center 对齐 CardFrame center (280,320)，让 Art 相对 frame 上下对称铺满。
-# （先前对齐镂空 center (279, 290.5) 致 Art 偏上：顶超出 frame 11px + 底距 frame 47px，用户反馈"顶超出底留白"）
-const ART_CENTER: Vector2 = Vector2(280.0, 320.0)   # Art 显示中心 = CardFrame center
+const CONTENT_SCALE: float = 1.28125
+# 源止态定位链（2026-08-22 内容回源）：card.lua:150 card 弹层 container(-200,0)（= window.lua:513
+# pop endPos）→ ui.container 中心 ccp(400,240)（card.lua:135）→ 卡片 container 中心全局 cocos (200,240)。
+const CARD_CENTER_COCOS: Vector2 = Vector2(200.0, 240.0)   # container 中心（container 242×420 点，readhero.lua:1053）
+# container 局部 (0,0)（左下角）基准，TabCardView 局部口径：全局 (79,450) + view 左缘 -200 = (279,450)。
+# 动态子节点公式 = CONTAINER_ORIGIN + (局部x, -局部y)（cocos y 向上 → Godot 取负）。
+# 源实机图 final_axmol_herodetail_800x480.png 实测卡框 (79,24.6)~(324.9,450) 逐边吻合。
+const CONTAINER_ORIGIN: Vector2 = Vector2(279.0, 450.0)
+const CONTAINER_LOGIC_H: float = 420.0   # 源 container 高（readhero.lua:1053 CCSizeMake(242,420)），Art 等比目标高
+const CARD_FRAME_SIZE: Vector2 = Vector2(315.0 / CONTENT_SCALE, 545.0 / CONTENT_SCALE)   # CardFrame 显示尺寸（card_bg 纹理 ÷CS = 245.90×425.37）
+# Art 中心 = 源 readhero.lua:1132 card:setPosition(ccp(123,215))（container 局部，clipping node 中心锚）
+# → TabCardView 局部 (279+123, 450-215) = (402,235)。Art 显示 = 源 setScale(420/ArtH) 等比：高 420、宽随纹理比。
+const ART_CENTER: Vector2 = Vector2(402.0, 235.0)
 const ART_MODULATE: Color = Color(1.0, 1.0, 1.0)   # 原始不提亮（暗根因=层级：TabCardView z-1 被 BaseLayer Bg 盖，改 z 解决非提亮）
 const ART_MASK_RES: String = "res://assets/ui/alpha/HVGA/art_mask.png"
 # 源 readhero.lua:992 card_type_icon（big 版）：type → 类型图标资源。
@@ -38,18 +29,22 @@ const CARD_TYPE_ICON_RES: Dictionary = {
 	"INT": "res://assets/ui/alpha/HVGA/card/card_att_int_big.png",
 }
 const CARD_STAR_RES: String = "res://assets/ui/alpha/HVGA/card/card_star_big.png"
-const CARD_STAR_SIZE: Vector2 = Vector2(23.0, 24.0)
+# 源 readhero.lua:1152-1157 star setScale(0.5)：显示 = 纹理 46×48px ×0.5 ÷CS = 17.95×18.73 点
+# （旧值 23×24 为 tex_px×0.5 直用，px 坐标系下视觉正确，坐标系迁显示口径后同步 ÷CS）。
+const CARD_STAR_SIZE: Vector2 = Vector2(23.0 / CONTENT_SCALE, 24.0 / CONTENT_SCALE)
 const EQUIP_FRAME_WHITE_PATH: String = "res://assets/ui/alpha/HVGA/equip_frame_white.png"
 # 名字底纹条（源 readhero.lua:1141-1148）：name 像素宽 > NAME_BG_SHORT_THRESHOLD 用 short 版，否则 long 版。
 const CARD_NAME_BG_SHORT_RES: String = "res://assets/ui/alpha/HVGA/card/card_name_bg_short.png"
 const CARD_NAME_BG_LONG_RES: String = "res://assets/ui/alpha/HVGA/card/card_name_bg_long.png"
 const CARD_NAME_BG_SHORT_THRESHOLD: float = 120.0   # 源 readhero.lua:1143 阈值
-const CARD_NAME_BG_SHORT_W: float = 71.0   # PIL 实测 short.png IHDR 宽
-const CARD_NAME_BG_LONG_W: float = 151.0   # PIL 实测 long.png IHDR 宽
-const CARD_NAME_BG_H: float = 11.0   # PIL 实测 short/long.png IHDR 高
-# skill icon equip_frame_white 白边框相对 icon 偏移（源 readhero.lua:1016 pos ccp(30,29) 相对 icon 中心 60×60 区）。
-# PIL 实测 equip_frame_white.png 94×95，icon size 22×22。frame 居中盖 icon → frame pos = icon pos - (frame_size-icon_size)/2。
-const SKILL_ICON_FRAME_SIZE: Vector2 = Vector2(40.0, 40.0)   # frame 显示尺寸（略大于 icon 22，源 frame 60 区盖 32 icon 比例 1.875×）
+# short/long.png IHDR 71×151×11px，显示 = ÷CS（2026-08-22 溢出修复：旧值 IHDR px 直用）。
+const CARD_NAME_BG_SHORT_W: float = 71.0 / CONTENT_SCALE
+const CARD_NAME_BG_LONG_W: float = 151.0 / CONTENT_SCALE
+const CARD_NAME_BG_H: float = 11.0 / CONTENT_SCALE
+# skill icon equip_frame_white 白边框（源 readhero.lua:1011-1021 createSkillIcon：frame 挂 icon 内
+# ccp(30,29) 随 icon setScale(22/iconW) 缩放。icon 纹理 78×78px÷CS=60.88 → scale 0.3615；
+# frame 94×95px÷CS=73.4×74.2 ×0.3615 = 26.5×26.8，中心偏 icon 中心 (30-30.44,29-30.44)×0.3615≈居中）。
+const SKILL_ICON_FRAME_SIZE: Vector2 = Vector2(26.5, 26.8)   # 白框显示尺寸（源比例 1.2× 盖 icon 22）
 # CardArtName 称号 Label（源 readhero.lua:1102-1110）：max_width=180 size=14 暖白 ccc3(233,232,213)。
 const CARD_ART_NAME_MAX_WIDTH: float = 180.0
 const CARD_ART_NAME_COLOR: Color = Color(233.0 / 255.0, 232.0 / 255.0, 213.0 / 255.0, 1.0)
@@ -113,11 +108,12 @@ static func _fill_card_name(name_label: Label, art_label: Label, bg_line: Textur
 	var bg_res: String = CARD_NAME_BG_SHORT_RES if use_short else CARD_NAME_BG_LONG_RES
 	var bg_tex: Texture2D = _load_texture(bg_res)
 	bg_line.texture = bg_tex
-	# 重设 offset_left/right 让 bg 右对齐 anchor(1,0.5)（源 ccp(242,60) anchor(1,0.5) 右锚定）。
-	# frame 内右锚点 Godot x = 122.5 + 242 = 364.5；bg 宽按选贴图。
+	# 重设 offset_left/right 让 bg 右对齐 anchor(1,0.5)（源 readhero.lua:1146-1147 ccp(242,60) 右锚定）。
+	# container 右缘 = TabCardView 局部 x 279+242 = 521.0（2026-08-22 内容回源；旧值 399.05 系
+	# 1.28 时代 CardFrame left 157.05 + 242 口径）；bg 宽按选贴图。
 	var bg_w: float = CARD_NAME_BG_SHORT_W if use_short else CARD_NAME_BG_LONG_W
-	bg_line.offset_right = 364.5
-	bg_line.offset_left = 364.5 - bg_w
+	bg_line.offset_right = 521.0
+	bg_line.offset_left = 521.0 - bg_w
 
 
 # 用 Label 当前 font 量字符串像素宽（font 未就绪时回退 char 数 ×8 近似，保证有底纹）。
@@ -145,12 +141,11 @@ static func _card_frame_res(rank: int) -> String:
 	return "res://assets/ui/alpha/HVGA/card/card_bg_%s.png" % color
 
 
-# Art 立绘 TextureRect（源 readhero.lua:1131-1134 createClippingNode(cardres, art_mask) + setScale(420/ArtH)）。
-# 用户需求（2026-07-20）：立绘"按比例铺满框中"= cover CardFrame 315×545（Art ratio 0.5776 ≈ frame ratio 0.5780，
-# 显示 ≈315×545 完全覆盖 frame，frame 边框装饰 + name 条从 Art 之上盖下来）。
-# 用户反馈"Art 4 个边角凸出 frame 圆角外"，根因：源 art_mask.png 圆角半径 3px < CardFrame 圆角 8px，且 Art size = frame size
-# 致 Art 方角从 frame 圆角透明区露出。修法：Art size 内缩 CARD_FRAME_INSET（8px）让 Art 方角落在 frame 圆角装饰内圈，
-# 不超出 frame 边界（牺牲少量边缘 Art 内容换边角整齐）。
+# Art 立绘 TextureRect（源 readhero.lua:1131-1135 createClippingNode(cardres, art_mask, nil, (-20,-8))
+# + card:setPosition(ccp(123,215)) + setScale(420/ArtH)）。
+# 2026-08-22 内容回源：照源公式 = 等比缩放至高 420（container 高，readhero.lua:1053），中心局部 (123,215)
+# → ART_CENTER (402,235)。典型 card_bg_big_*.jpg 536×928px → 显示 242.6×420（≈container 242×420 铺满逻辑区，
+# frame 245.9×425.4 四周多出 ~1.7/2.7 的边框装饰）。圆角裁剪沿用 art_mask shader 近似源 ClippingNode。
 static func _make_card_art(art_res: String, rank: int) -> TextureRect:
 	if art_res.is_empty():
 		return null
@@ -163,24 +158,19 @@ static func _make_card_art(art_res: String, rank: int) -> TextureRect:
 	var sp := TextureRect.new()
 	sp.texture = tex
 	sp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# Art size = CardFrame size - 内缩 ×2（上下/左右各内缩 CARD_FRAME_INSET）。
-	# Art ratio ≈ frame ratio，内缩后仍铺满 frame 内圈（圆角装饰内），4 角不超出 frame 圆角。
-	# Art center 保持 = CardFrame center (280, 320)，Art 上下/左右对称内缩。
+	# 源 setScale(420/ArtH)：等比目标高 = container 高 420，宽随纹理比例。
 	var tex_w: float = float(tex.get_width())
 	var tex_h: float = float(tex.get_height())
-	var target_w: float = CARD_FRAME_SIZE.x - CARD_FRAME_INSET * 2.0
-	var target_h: float = CARD_FRAME_SIZE.y - CARD_FRAME_INSET * 2.0
-	var cover_scale: float = max(target_w / tex_w, target_h / tex_h)
-	var disp_w: float = tex_w * cover_scale
-	var disp_h: float = tex_h * cover_scale
-	sp.size = Vector2(disp_w, disp_h)
+	var scale: float = CONTAINER_LOGIC_H / tex_h
+	var disp_w: float = tex_w * scale
+	sp.size = Vector2(disp_w, CONTAINER_LOGIC_H)
 	sp.stretch_mode = TextureRect.STRETCH_SCALE
 	sp.modulate = ART_MODULATE
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://shaders/art_mask.gdshader")
 	mat.set_shader_parameter("mask_tex", load(ART_MASK_RES) as Texture2D)
 	sp.material = mat
-	sp.position = ART_CENTER - sp.size * 0.5   # Art center 居中到镂空 center
+	sp.position = ART_CENTER - sp.size * 0.5   # Art 中心 = 源 ccp(123,215)
 	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return sp
 
@@ -199,8 +189,9 @@ static func _fill_card_type_icon(view: Control, hero: HeroInstance, cm: Variant)
 	icon.texture = tex
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.size = Vector2(47.0, 42.0)
-	icon.position = CONTAINER_ORIGIN + Vector2(32.0 * COORD_SX, -67.0 * COORD_SY) - icon.size * 0.5
-	icon.z_index = 3   # 在 Art(z=2) 之上
+	# 源 readhero.lua:1074-1081 type icon fix_size(47,42) 中心锚 @ccp(32,67)（container 局部）。
+	icon.position = CONTAINER_ORIGIN + Vector2(32.0, -67.0) - icon.size * 0.5
+	icon.z_index = 3   # 源 z=1 同 frame 层后 add（在 frame 之上）
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	view.add_child(icon)
 	icon.set_meta(&"tab_content", true)
@@ -220,10 +211,10 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 		var tex: Texture2D = _load_ui_texture(icon_res)
 		if tex == null:
 			continue
-		# icon 中心（Godot）：CONTAINER_ORIGIN + cocos(130.5 + 27.2*i, -28) 偏移。
-		var icon_center: Vector2 = CONTAINER_ORIGIN + Vector2((130.5 + 27.2 * float(i)) * COORD_SX, -28.0 * COORD_SY)
-		# frame 白边框（先 add → 在 view 子序下层，icon 后 add 盖其上）。frame 居中盖 icon，size 略大于 icon。
-		# 源 frame 60 区盖 32 icon → 比例 ~1.875×；本项目 icon 22 → frame 40（比例 ~1.82×，视觉对齐源）。
+		# icon 中心（源 readhero.lua:1125 ccp(130.5+27.2*(i-1), 28) container 局部，i 从 1 → 此处 i 从 0）。
+		var icon_center: Vector2 = CONTAINER_ORIGIN + Vector2(130.5 + 27.2 * float(i), -28.0)
+		# frame 白边框（先 add → 在 view 子序下层，icon 后 add 盖其上）。源 frame 随 icon 缩放居中盖 icon
+		# （readhero.lua:1016-1017 bg @ccp(30,29) 挂 icon，icon 60.88 点方 → 中心偏 (-0.44,-1.44)×0.3615≈居中）。
 		if frame_tex != null:
 			var frame := TextureRect.new()
 			frame.texture = frame_tex
@@ -239,7 +230,7 @@ static func _fill_card_skill_icons(view: Control, hero: HeroInstance, cm: Varian
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.size = Vector2(22.0, 22.0)
 		icon.position = icon_center - icon.size * 0.5
-		icon.z_index = 3   # 在 Art(z=2) 之上
+		icon.z_index = 3   # 源 setScale(22/iconW)（readhero.lua:1127），z=1 同层后 add 在 frame 上
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		view.add_child(icon)
 		icon.set_meta(&"tab_content", true)
@@ -256,8 +247,9 @@ static func _fill_card_stars(view: Control, hero: HeroInstance) -> void:
 		star.texture = tex
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		star.size = CARD_STAR_SIZE
-		star.position = CONTAINER_ORIGIN + Vector2((25.0 + 14.0 * float(i)) * COORD_SX, -27.0 * COORD_SY) - star.size * 0.5
-		star.z_index = 3   # 在 CardFrame(z=1) / CardNameLabel(z=2) 上
+		# 源 readhero.lua:1150-1157 star 中心 ccp(25+14*(i-1), 27)（container 局部，i 从 1 → 此处从 0）。
+		star.position = CONTAINER_ORIGIN + Vector2(25.0 + 14.0 * float(i), -27.0) - star.size * 0.5
+		star.z_index = 5 - i   # 源 z=6-i（readhero.lua:1155）：左星压右星
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		view.add_child(star)
 		star.set_meta(&"tab_content", true)

@@ -58,23 +58,23 @@ const STAR_ICON_SIZE: Vector2 = Vector2(27.31, 27.71)
 # tab 布局（源 reCalculateRankBtnPos :1898-1925 精确直译：height=380 再 +5 起步、循环内先 -5
 # 再放组按钮 → 组1 pos=380；步进 47；展开组尾再 -5（+下组开头 -5 = 组间 gap 10）；折叠组子
 # 按钮只藏不占位；子按钮贴图=pc+(8,-5)（createRankBtn Ppoint :2050-2054）；
-# TabHost 局部 = 场景 - (130,154)）。
+# TabHost 局部 = 场景 - TAB_CLIP_POS（clip tscn offset 960 口径 130,154 迁 800 口径 50,74）。
 const TAB_X: float = 120.0
 const TAB_TOP_H: float = 385.0
 const TAB_STEP: float = 47.0
 const TAB_GROUP_GAP: float = 5.0
 const TAB_SUB_DX: float = 8.0
 const TAB_SUB_DY: float = 5.0
-const TAB_CLIP_POS: Vector2 = Vector2(130.0, 154.0)
+const TAB_CLIP_POS: Vector2 = Vector2(50.0, 74.0)   # 与 ranklist_content.tscn TabClip（Task 4 迁后）同步 -80/-80
 const TAB_W: float = 135.16
 const TAB_H: float = 58.59
 # P0 我的排名浮窗（源 ranklist.lua:1318-1571）→ RanklistMyselfOverlay 拆出。
 # pageContainer 源 ccp(245,400) 在 ranklistwindow 编辑器容器局部（cocos 800×481.25 y-up 世界
-# = 屏幕 to_godot(x,y)=(x+80,560-y)）→ 屏幕点 (325,160)。
-# 2026-08-18 用户实跑修复：旧值 (245,80) 双漏偏移（x 漏 +80 平移、y 漏 560-480 边距）
-# → 浮窗遮在 window 边框上，应在列表顶部区。
-const OVERLAY_PAGE_GODOT_X: float = 325.0
-const OVERLAY_PAGE_GODOT_Y: float = 160.0
+# = 屏幕 to_godot(x,y)=(x,480-y)）→ 屏幕点 (245,80)。
+# 2026-08-18 用户实跑修复：旧值 (245,80) 在 960×640 口径下双漏偏移（x 漏 +80、y 漏 560-480）；
+# viewport 800×480 后容器满屏无偏移，(245,80) 即源直译正确位（数值回到源直译非回退）。
+const OVERLAY_PAGE_GODOT_X: float = 245.0
+const OVERLAY_PAGE_GODOT_Y: float = 80.0
 # tab 树（%按钮名 ↔ 源 ranklisttree/ranklist_config；key 为 LSTR 键，fill 时 get_lstr）。
 # tips_key = 行内 record 文案（源 :839-861 config table；pvp 榜无 record 行）。
 const TAB_TREE: Array = [
@@ -147,7 +147,7 @@ func _bind_tabs() -> void:
 # 重排静态 tab 按钮（源 reCalculateRankBtnPos :1898-1925 精确直译）：
 # height 385(=380+5) 起步；每组先 -5 再放组按钮（组1 pos=380，非 385）；组后 -47；
 # 展开组逐子 -47 且尾再 -5（下组开头又 -5 → 展开后组间 gap=10）；折叠组子按钮只藏不占位。
-# 场景 y-up → Godot (x+80, 560-y) → TabHost 局部（TabClip 左上 (130,154)）再减半尺寸。
+# 场景 y-up → Godot (x, 480-y) → TabHost 局部（TabClip 左上 (50,74)）再减半尺寸。
 func _layout_tabs() -> void:
 	var height: float = TAB_TOP_H
 	for gi in TAB_TREE.size():
@@ -157,8 +157,8 @@ func _layout_tabs() -> void:
 		var gbtn := _tab("%%%s" % group["btn"]) as TextureButton
 		_set_tab_state(gbtn, true, not collapsed)
 		gbtn.position = Vector2(
-			TAB_X + 80.0 - TAB_CLIP_POS.x - TAB_W * 0.5,
-			(560.0 - height) - TAB_CLIP_POS.y - TAB_H * 0.5)
+			TAB_X - TAB_CLIP_POS.x - TAB_W * 0.5,
+			(480.0 - height) - TAB_CLIP_POS.y - TAB_H * 0.5)
 		height -= TAB_STEP
 		for child in group["children"]:
 			var sbtn := _tab("%%%s" % child["btn"]) as TextureButton
@@ -166,8 +166,8 @@ func _layout_tabs() -> void:
 			_set_tab_state(sbtn, false, child["mode"] == _rank_type)
 			if not collapsed:
 				sbtn.position = Vector2(
-					TAB_X + TAB_SUB_DX + 80.0 - TAB_CLIP_POS.x - TAB_W * 0.5,
-					(560.0 - (height - TAB_SUB_DY)) - TAB_CLIP_POS.y - TAB_H * 0.5)
+					TAB_X + TAB_SUB_DX - TAB_CLIP_POS.x - TAB_W * 0.5,
+					(480.0 - (height - TAB_SUB_DY)) - TAB_CLIP_POS.y - TAB_H * 0.5)
 				height -= TAB_STEP
 		if not collapsed:
 			height -= TAB_GROUP_GAP

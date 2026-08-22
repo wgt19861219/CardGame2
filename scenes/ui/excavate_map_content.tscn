@@ -72,26 +72,26 @@ mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_right = 960.0
-offset_bottom = 640.0
+offset_right = 800.0
+offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 0
 
 [node name="FrameContainer" type="Control" parent="."]
 layout_mode = 0
-offset_left = 76.875
-offset_top = 75.625
-offset_right = 876.875
-offset_bottom = 556.09375
+offset_left = -3.125
+offset_top = -4.375
+offset_right = 796.875
+offset_bottom = 476.094
 mouse_filter = 2
 
 [node name="FrameBg" type="TextureRect" parent="FrameContainer"]
 layout_mode = 0
-offset_left = 35.545
-offset_top = 17.965
-offset_right = 769.135
-offset_bottom = 472.655
+offset_left = 115.9
+offset_top = 67.75
+offset_right = 688.78
+offset_bottom = 422.87
 texture = ExtResource("2_framebg")
 expand_mode = 1
 mouse_filter = 2
@@ -193,10 +193,14 @@ mouse_filter = 0
 [node name="SearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 26.8086
-offset_top = 12.8906
-offset_right = 113.8086
-offset_bottom = 37.8906
+; 源 excavatemap.lua:854 fix_wh={w=140.8437778125, h=52.5536484375} 显式声明，显示=fix_wh 值=140.84×52.55
+; （91a46f3 与审查二轮均引用 :864 base 段断言"无 fix_wh"，漏看 config 段，三轮实测回源翻案）；
+; 中心保持按钮几何中心 (70.31,25.39)（父局部，源 position ccp(70.31,·) anchor 0.5）。
+; 受控偏离：源图 icon_search_1 色块换文字图 excavate_word_search（同 search 面板）。
+offset_left = -0.1133
+offset_top = -0.8862
+offset_right = 140.7305
+offset_bottom = 51.6674
 texture_normal = ExtResource("19_srch")
 texture_pressed = ExtResource("19_srch")
 ignore_texture_size = true
@@ -207,10 +211,13 @@ visible = false
 [node name="ResearchLabel" type="TextureButton" parent="FrameContainer/InfoLayer/ResearchFrame/ResearchContainer/ResearchButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = -0.345
-offset_top = -0.975
-offset_right = 140.985
-offset_bottom = 51.755
+; 源 excavatemap.lua:880 fix_wh={w=141.328125, h=52.734375} 显式声明，显示=fix_wh 值=141.33×52.73
+; （91a46f3 断言"无 fix_wh ÷CS=110×41"漏查 config 段，审查二轮翻案回源）；中心保持按钮几何中心
+; (70.32,25.39)（父局部，源 position ccp(70.31,·) anchor 0.5，0.01 为历史舍入）。
+offset_left = -0.3441
+offset_top = -0.9772
+offset_right = 140.9841
+offset_bottom = 51.7572
 texture_normal = ExtResource("21_ano")
 texture_pressed = ExtResource("22_anop")
 ignore_texture_size = true
@@ -420,10 +427,10 @@ visible = false
 [node name="Frame" type="TextureRect" parent="FrameContainer"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 35.545
-offset_top = 19.535
-offset_right = 769.135
-offset_bottom = 474.225
+offset_left = 115.9
+offset_top = 69.32
+offset_right = 688.78
+offset_bottom = 424.44
 texture = ExtResource("3_frame")
 expand_mode = 1
 mouse_filter = 2
@@ -496,10 +503,10 @@ visible = false
 [node name="SearchFog" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 125.71
-offset_top = 143.205
-offset_right = 828.05
-offset_bottom = 536.175
+offset_left = 122.93
+offset_top = 106.32
+offset_right = 670.83
+offset_bottom = 413.06
 modulate = Color(1, 1, 1, 0)
 texture = ExtResource("9_fog")
 expand_mode = 1
@@ -508,10 +515,10 @@ mouse_filter = 2
 [node name="LeftButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 121.795
-offset_top = 313.515
-offset_right = 164.765
-offset_bottom = 372.105
+offset_left = 41.795
+offset_top = 233.515
+offset_right = 84.765
+offset_bottom = 292.105
 texture_normal = ExtResource("7_prev")
 texture_pressed = ExtResource("8_prevp")
 ignore_texture_size = true
@@ -520,10 +527,10 @@ stretch_mode = 0
 [node name="RightButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 794.455
-offset_top = 312.735
-offset_right = 837.425
-offset_bottom = 371.325
+offset_left = 714.455
+offset_top = 232.735
+offset_right = 757.425
+offset_bottom = 291.325
 texture_normal = ExtResource("7_prev")
 texture_pressed = ExtResource("8_prevp")
 ignore_texture_size = true
@@ -533,10 +540,10 @@ flip_h = true
 [node name="SearchIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 429.609375
-offset_top = 254.140625
-offset_right = 530.390625
-offset_bottom = 356.484375
+offset_left = 360.59
+offset_top = 185.51
+offset_right = 439.41
+offset_bottom = 265.12
 texture = ExtResource("10_mag")
 expand_mode = 1
 mouse_filter = 2

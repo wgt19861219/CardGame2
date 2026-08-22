@@ -22,8 +22,9 @@ const VAR_HINT: String = "RanklistOverlayHintLabel"
 const VAR_DELTA: String = "RanklistOverlayDeltaLabel"
 # ── 2026-08-18 修复轮三 T1：浮窗尺寸/内部布局照源重算 ──
 # 源 board 无 fix → 显示 = 纹理 642×107px ÷CS = 501.07×83.51 点（旧实现误用
-# TexDisplaySize.display_size——其公式 base×cs 对无条目散图偏大 1.28×（全局已挂账债），
-# 致浮窗 642 宽超出 512 列表区，用户反馈"太大超出边框"）。内部坐标源系 ed.DGccp
+# TexDisplaySize.display_size——当时公式 base×cs 对无条目散图偏大 1.28×，
+# 致浮窗 642 宽超出 512 列表区，用户反馈"太大超出边框"；该公式 2026-08-21 Task5
+# 已修正 ÷CS，与本手算等价）。内部坐标源系 ed.DGccp
 # （×0.78125）+ cocos y-up → Godot y = BOARD_H - y_dg（旧常量源原文直用三重漏换算）。
 const CONTENT_SCALE: float = 1.28125
 const BOARD_SIZE: Vector2 = Vector2(642.0 / CONTENT_SCALE, 107.0 / CONTENT_SCALE)   # 501.07×83.51
@@ -69,7 +70,7 @@ static func _make_board(page: Control) -> TextureRect:
 	var board := TextureRect.new()
 	board.texture = load(ME_BG_RES) as Texture2D
 	board.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	board.size = BOARD_SIZE   # 修复轮三 T1：手算 ÷CS（TexDisplaySize 无条目散图偏大 1.28×，勿用）
+	board.size = BOARD_SIZE   # 修复轮三 T1：手算 ÷CS（2026-08-21 Task5 后 TexDisplaySize 等价，保留手算）
 	# 源 anchor(0,1) pos(8,7) y-up → Godot y-down：page 内 (8, pageH-7-boardH)；page 无 size，用 board 左上 (8,7) 近似。
 	board.position = BOARD_OFFSET
 	board.mouse_filter = Control.MOUSE_FILTER_IGNORE

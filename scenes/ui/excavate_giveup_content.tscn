@@ -29,10 +29,10 @@ mouse_filter = 2
 
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 3
-offset_left = 231.56
-offset_top = 185.62
-offset_right = 731.56
-offset_bottom = 465.62
+offset_left = 151.56
+offset_top = 105.62
+offset_right = 651.56
+offset_bottom = 385.62
 texture = ExtResource("1_frame")
 patch_margin_left = 20
 patch_margin_top = 30

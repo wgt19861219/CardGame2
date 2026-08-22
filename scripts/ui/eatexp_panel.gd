@@ -10,7 +10,7 @@ extends PopWindow
 ## 两件套范式（批 1 Task 3，2026-08-15）：框架静态树进 eatexp_content.tscn（frame/title/
 ## close/滚动层/顶部提示行），英雄行结构进 eatexp_item.tscn（行模板）；本文件只做业务、
 ## 信号 connect、fill（零静态节点构造，工厂调用除外）。静态色/字号走 Eatexp* variation。
-## 坐标：源 cocos(800x480 左下) → Godot(960x640 左上)；行内 bg 局部 y-up → 行局部
+## 坐标：源 cocos(800x480 左下) → Godot(800x480 左上)；行内 bg 局部 y-up → 行局部
 ## y-down（gy=96-y），换算细节见两 tscn 头注。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/eatexp_content.tscn")

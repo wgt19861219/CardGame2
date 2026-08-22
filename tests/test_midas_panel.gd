@@ -39,8 +39,8 @@ func test_content_static_rects() -> void:
 	var inst: Control = load("res://scenes/ui/midas_content.tscn").instantiate() as Control
 	add_child(inst)
 	var frame: NinePatchRect = inst.get_node("%Frame") as NinePatchRect
-	assert_almost_eq(frame.position.x, 267.5, 0.5, "Frame 左 = to_godot(400)-425/2")
-	assert_almost_eq(frame.position.y, 132.5, 0.5, "Frame 顶 = 560-305-245/2")
+	assert_almost_eq(frame.position.x, 187.5, 0.5, "Frame 左 = to_godot(400)-425/2")
+	assert_almost_eq(frame.position.y, 52.5, 0.5, "Frame 顶 = 560-305-245/2")
 	assert_almost_eq(frame.size.x, 425.0, 0.5, "Frame 宽 = 源 scaleSize 425")
 	assert_almost_eq(frame.size.y, 245.0, 0.5, "Frame 高 = 源 scaleSize 245")
 	# capInsets CCRectMake(10,10,58,26) 纹理 103x61 → left=10 right=103-10-58=35
@@ -50,27 +50,27 @@ func test_content_static_rects() -> void:
 	assert_almost_eq(float(frame.patch_margin_top), 25.0, 0.5, "Frame patch_top=25")
 	assert_almost_eq(float(frame.patch_margin_bottom), 10.0, 0.5, "Frame patch_bottom=10")
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 676.9, 0.5,
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 596.9, 0.5,
 		"CloseBtn 中心 x = 80+524*0.78125+187.5")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 149.2, 0.5,
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 69.2, 0.5,
 		"CloseBtn 中心 y = 560-(305*0.78125+172.5)（贴 frame 右上角）")
 	assert_almost_eq(close_btn.size.x, 50.73, 0.5, "CloseBtn 宽 = 65px/CS")
 	assert_almost_eq(close_btn.size.y, 51.51, 0.5, "CloseBtn 高 = 66px/CS")
 	assert_eq(close_btn.stretch_mode, TextureButton.STRETCH_SCALE, "CloseBtn stretch=SCALE（默认 KEEP 溢出）")
 	var icon_frame: TextureRect = inst.get_node("%IconFrame") as TextureRect
-	assert_almost_eq(icon_frame.position.x + icon_frame.size.x * 0.5, 367.5, 0.5,
+	assert_almost_eq(icon_frame.position.x + icon_frame.size.x * 0.5, 287.5, 0.5,
 		"IconFrame 中心 x = 80+100+187.5")
-	assert_almost_eq(icon_frame.position.y + icon_frame.size.y * 0.5, 182.5, 0.5,
+	assert_almost_eq(icon_frame.position.y + icon_frame.size.y * 0.5, 102.5, 0.5,
 		"IconFrame 中心 y = 560-(205+172.5)")
 	assert_almost_eq(icon_frame.size.x, 73.37, 0.5, "IconFrame 宽 = 94px/CS（等比不强拉）")
 	assert_almost_eq(icon_frame.size.y, 74.15, 0.5, "IconFrame 高 = 95px/CS")
 	var name_lbl: Label = inst.get_node("%NameLabel") as Label
-	assert_almost_eq(name_lbl.position.x, 422.5, 0.5, "NameLabel 左 = 80+155+187.5（源 anchor(0,0.5)）")
-	assert_almost_eq(name_lbl.position.y + name_lbl.size.y * 0.5, 162.5, 0.5,
+	assert_almost_eq(name_lbl.position.x, 342.5, 0.5, "NameLabel 左 = 80+155+187.5（源 anchor(0,0.5)）")
+	assert_almost_eq(name_lbl.position.y + name_lbl.size.y * 0.5, 82.5, 0.5,
 		"NameLabel 垂直中心 = 560-(225+172.5)")
 	var desc_lbl: Label = inst.get_node("%DescLabel") as Label
-	assert_almost_eq(desc_lbl.position.x + desc_lbl.size.x * 0.5, 530.0, 1.0, "DescLabel 水平居中区域")
-	assert_almost_eq(desc_lbl.position.y + desc_lbl.size.y * 0.5, 202.5, 0.5,
+	assert_almost_eq(desc_lbl.position.x + desc_lbl.size.x * 0.5, 450.0, 1.0, "DescLabel 水平居中区域")
+	assert_almost_eq(desc_lbl.position.y + desc_lbl.size.y * 0.5, 122.5, 0.5,
 		"DescLabel 垂直中心 = 560-(185+172.5)")
 	inst.free()
 
@@ -81,18 +81,18 @@ func test_buttons_and_history_rects() -> void:
 	var inst: Control = load("res://scenes/ui/midas_content.tscn").instantiate() as Control
 	add_child(inst)
 	var use_btn: Button = inst.get_node("%UseBtn") as Button
-	assert_almost_eq(use_btn.position.x + use_btn.size.x * 0.5, 397.5, 0.5,
+	assert_almost_eq(use_btn.position.x + use_btn.size.x * 0.5, 317.5, 0.5,
 		"UseBtn 中心 x = 80+130+187.5（源 refreshMultiUseButton 解锁位）")
-	assert_almost_eq(use_btn.position.y + use_btn.size.y * 0.5, 337.5, 0.5, "UseBtn 中心 y")
+	assert_almost_eq(use_btn.position.y + use_btn.size.y * 0.5, 257.5, 0.5, "UseBtn 中心 y")
 	assert_almost_eq(use_btn.size.x, 150.0, 0.5, "UseBtn 宽 = 源 scaleSize 150")
 	assert_almost_eq(use_btn.size.y, 45.0, 0.5, "UseBtn 高 = 源 scaleSize 45")
 	var multi_btn: Button = inst.get_node("%MultiBtn") as Button
-	assert_almost_eq(multi_btn.position.x + multi_btn.size.x * 0.5, 567.5, 0.5, "MultiBtn 中心 x = 80+300+187.5")
-	assert_almost_eq(multi_btn.position.y + multi_btn.size.y * 0.5, 337.5, 0.5, "MultiBtn 中心 y")
+	assert_almost_eq(multi_btn.position.x + multi_btn.size.x * 0.5, 487.5, 0.5, "MultiBtn 中心 x = 80+300+187.5")
+	assert_almost_eq(multi_btn.position.y + multi_btn.size.y * 0.5, 257.5, 0.5, "MultiBtn 中心 y")
 	var hist_frame: NinePatchRect = inst.get_node("%HistoryFrame") as NinePatchRect
-	assert_almost_eq(hist_frame.position.x + hist_frame.size.x * 0.5, 480.0, 0.5,
+	assert_almost_eq(hist_frame.position.x + hist_frame.size.x * 0.5, 400.0, 0.5,
 		"HistoryFrame 中心 x = 80+400（源场景空间）")
-	assert_almost_eq(hist_frame.position.y + hist_frame.size.y * 0.5, 445.0, 0.5,
+	assert_almost_eq(hist_frame.position.y + hist_frame.size.y * 0.5, 365.0, 0.5,
 		"HistoryFrame 中心 y = 560-115")
 	assert_almost_eq(hist_frame.size.x, 425.0, 0.5, "HistoryFrame 宽 = scaleSize 425")
 	assert_almost_eq(hist_frame.size.y, 125.0, 0.5, "HistoryFrame 高 = scaleSize 125")
@@ -236,8 +236,8 @@ func test_global_position_parenting_guard() -> void:
 	var panel := _make_panel()
 	await get_tree().process_frame
 	var icon_frame: TextureRect = panel._content.get_node("%IconFrame") as TextureRect
-	assert_almost_eq(icon_frame.global_position.x, 330.8, 1.0, "IconFrame global x ≈ 静态 offset（挂 content 直下）")
-	assert_almost_eq(icon_frame.global_position.y, 145.4, 1.0, "IconFrame global y ≈ 静态 offset")
+	assert_almost_eq(icon_frame.global_position.x, 250.8, 1.0, "IconFrame global x ≈ 静态 offset（挂 content 直下）")
+	assert_almost_eq(icon_frame.global_position.y, 65.4, 1.0, "IconFrame global y ≈ 静态 offset")
 	var use_btn: Button = panel._content.get_node("%UseBtn") as Button
 	assert_almost_eq(use_btn.global_position.y, 315.0, 1.0, "UseBtn global y ≈ 315（content 局部=场景坐标）")
 	panel.free()

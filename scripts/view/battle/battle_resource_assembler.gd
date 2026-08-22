@@ -9,10 +9,9 @@ extends RefCounted
 ## 坐标：原 to_godot(cx,cy)=(cx+80,560-cy) 已换算为 Godot 原生常量（HUD 顶部带 y≈120）。
 
 
-const WAVE_MARK_POS: Vector2 = Vector2(465.0, 20.0)   # 波次标记：y=20 与金/掉落同高，x 居中画面（用户布局）
+const WAVE_MARK_POS: Vector2 = Vector2(385.0, 20.0)   # 波次标记：y=20 与金/掉落同高，x 居中画面（用户布局）
 const GOLD_MARK_POS: Vector2 = Vector2(20.0, 20.0)   # 金标记贴左上角（用户布局需求）
 const LOOT_MARK_POS: Vector2 = Vector2(130.0, 20.0)  # 掉落标记贴左上角（金右侧，金宽100+间距10）
-const VIEW_SIZE: Vector2 = Vector2(960.0, 640.0)       # HVGA 屏幕尺寸
 const BG_LAYER_NAME: String = "BackgroundLayer"        # 背景独立 CanvasLayer 节点名
 const BG_LAYER_ORDER: int = -1                         # CanvasLayer layer 值：负值 → 渲染在 Node2D 世界画布（layer 0）之下
 
@@ -20,7 +19,7 @@ const BG_LAYER_ORDER: int = -1                         # CanvasLayer layer 值�
 # 背景图挂独立 CanvasLayer（layer=-1，TextureRect 全屏 cover），不受 Camera2D DRAG_CENTER 偏移影响，
 # 且渲染在 Node2D 世界画布（actor/特效）之下，不遮挡人物动画。
 # 源 Axmol：CCLayer background_layer + createSprite setAnchorPoint(ccpZero) 原尺寸不缩放，
-# 靠 1024×615 > 800×480 自然覆盖。Godot 960×640 屏更大（高 640>615），需 cover scale 铺满。
+# 靠 1024×615 > 800×480 自然覆盖。Godot 800×480 屏小于纹理，KEEP_ASPECT_COVERED cover 缩小铺满。
 static func create_background(scene) -> void:
 	# 清旧背景（兼容历史：先清 background_layer Node2D 残留，再清独立 CanvasLayer）
 	for child in scene.background_layer.get_children():
@@ -43,7 +42,7 @@ static func create_background(scene) -> void:
 	bg_canvas.layer = BG_LAYER_ORDER
 	scene.add_child(bg_canvas)
 	# TextureRect 全屏 cover：PRESET_FULL_RECT + EXPAND_IGNORE_SIZE + KEEP_ASPECT_COVERED
-	# → 自动按屏幕(960×640)与纹理(1024×615)比例 cover 缩放铺满。
+	# → 自动按屏幕(800×480)与纹理(1024×615)比例 cover 缩放铺满。
 	var bg_rect := TextureRect.new()
 	bg_rect.texture = bg_tex
 	bg_rect.flip_h = bool(scene.battle_info.get("H Flip", false))

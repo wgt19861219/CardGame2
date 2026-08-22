@@ -35,10 +35,10 @@ color = Color(0, 0, 0, 0.5)
 ; 框（源 frame Scale9 common_alert_bg 462.5x329.69 中心 (403.13,233.59)）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 251.88
-offset_top = 161.57
-offset_right = 714.38
-offset_bottom = 491.26
+offset_left = 171.88
+offset_top = 81.57
+offset_right = 634.38
+offset_bottom = 411.26
 texture = ExtResource("1_alert")
 patch_margin_left = 59
 patch_margin_top = 150

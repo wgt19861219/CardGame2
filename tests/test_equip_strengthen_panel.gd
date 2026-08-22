@@ -599,43 +599,43 @@ func _center_of(n: Control) -> Vector2:
 func test_content_frame_layout_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var frame: TextureRect = inst.get_node("Frame") as TextureRect
-	assert_almost_eq(_center_of(frame).x, 480.0, 0.5, "frame 中心 x=480")
-	assert_almost_eq(_center_of(frame).y, 330.0, 0.5, "frame 中心 y=330（源 230）")
+	assert_almost_eq(_center_of(frame).x, 400.0, 0.5, "frame 中心 x=480")
+	assert_almost_eq(_center_of(frame).y, 250.0, 0.5, "frame 中心 y=330（源 230）")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 916.0 / CS, 0.5, "frame 宽=916/CS")
 	assert_almost_eq(frame.offset_bottom - frame.offset_top, 580.0 / CS, 0.5, "frame 高=580/CS")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq(_center_of(close).x, 145.0, 0.5, "close 中心 x=145（源 65）")
-	assert_almost_eq(_center_of(close).y, 130.0, 0.5, "close 中心 y=130（源 430）")
+	assert_almost_eq(_center_of(close).x, 65.0, 0.5, "close 中心 x=145（源 65）")
+	assert_almost_eq(_center_of(close).y, 50.0, 0.5, "close 中心 y=130（源 430）")
 	assert_almost_eq(close.offset_right - close.offset_left, 74.0 / CS, 0.5, "close 宽=74/CS")
 	var hero_icon: TextureRect = inst.get_node("HeroIcon") as TextureRect
-	assert_almost_eq(_center_of(hero_icon).x, 215.0, 0.5, "heroIcon 中心 x=215（源 135）")
-	assert_almost_eq(_center_of(hero_icon).y, 220.0, 0.5, "heroIcon 中心 y=220（源 340）")
+	assert_almost_eq(_center_of(hero_icon).x, 135.0, 0.5, "heroIcon 中心 x=215（源 135）")
+	assert_almost_eq(_center_of(hero_icon).y, 140.0, 0.5, "heroIcon 中心 y=220（源 340）")
 	var head_host: Control = inst.get_node("%HeroHeadHost") as Control
-	assert_almost_eq(_center_of(head_host).x, 215.0, 0.5, "HeadHost 与 heroIcon 同心")
+	assert_almost_eq(_center_of(head_host).x, 135.0, 0.5, "HeadHost 与 heroIcon 同心")
 	assert_almost_eq(head_host.offset_right - head_host.offset_left, 104.0, 0.5, "HeadHost 104×104（ReadheroIcon 容器）")
 	var hero_name: Label = inst.get_node("%HeroName") as Label
-	assert_almost_eq(_center_of(hero_name).x, 210.0, 1.0, "heroName 中心 x=210（源 :1758 中心 130）")
-	assert_almost_eq(_center_of(hero_name).y, 165.0, 1.0, "heroName 中心 y=165（源 395）")
+	assert_almost_eq(_center_of(hero_name).x, 130.0, 1.0, "heroName 中心 x=210（源 :1758 中心 130）")
+	assert_almost_eq(_center_of(hero_name).y, 85.0, 1.0, "heroName 中心 y=165（源 395）")
 
 
 # 源 create npc(638,378) readnode 中心锚（三坑#2：中心锚勿当左下）+ createnpcTalk :11-42
 func test_npc_and_talk_layout_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var npc: TextureRect = inst.get_node("%NpcSprite") as TextureRect
-	assert_almost_eq(_center_of(npc).x, 718.0, 0.5, "NPC 中心 x=718（源 638 中心锚）")
-	assert_almost_eq(_center_of(npc).y, 182.0, 0.5, "NPC 中心 y=182（源 378）")
+	assert_almost_eq(_center_of(npc).x, 638.0, 0.5, "NPC 中心 x=718（源 638 中心锚）")
+	assert_almost_eq(_center_of(npc).y, 102.0, 0.5, "NPC 中心 y=182（源 378）")
 	assert_almost_eq(npc.offset_right - npc.offset_left, 267.0 / CS, 0.5, "NPC 宽=267/CS")
 	var frame: NinePatchRect = inst.get_node("%TalkFrame") as NinePatchRect
-	assert_almost_eq((frame.offset_left + frame.offset_right) / 2.0, 725.0, 0.5, "气泡中心 x=725（源 645）")
-	assert_almost_eq(frame.offset_top, 255.0, 0.5, "气泡顶 y=255（源 :23 anchor(0.5,1) 305）")
+	assert_almost_eq((frame.offset_left + frame.offset_right) / 2.0, 645.0, 0.5, "气泡中心 x=725（源 645）")
+	assert_almost_eq(frame.offset_top, 175.0, 0.5, "气泡顶 y=255（源 :23 anchor(0.5,1) 305）")
 	assert_almost_eq(frame.offset_right - frame.offset_left, 224.0, 0.5, "气泡宽 224（源 :21）")
 	assert_eq(frame.patch_margin_left, 30, "气泡 cap left=30（源 :20）")
 	assert_eq(frame.patch_margin_top, 48, "气泡 cap top=98-30-20（cap 左下原点，终审必修 1）")
 	assert_eq(frame.patch_margin_right, 91, "气泡 cap right=266-30-145")
 	assert_eq(frame.patch_margin_bottom, 30, "气泡 cap bottom=源 cap.y=30（终审必修 1）")
 	var talk_lbl: Label = inst.get_node("%TalkLabel") as Label
-	assert_almost_eq(talk_lbl.offset_left, 625.0, 0.5, "对话文字左 x=625（725-200/2）")
-	assert_almost_eq(talk_lbl.offset_top, 278.0, 0.5, "对话文字顶 y=278（源 :28 anchor(0.5,1) 282）")
+	assert_almost_eq(talk_lbl.offset_left, 545.0, 0.5, "对话文字左 x=625（725-200/2）")
+	assert_almost_eq(talk_lbl.offset_top, 198.0, 0.5, "对话文字顶 y=278（源 :28 anchor(0.5,1) 282）")
 	assert_almost_eq(talk_lbl.offset_right - talk_lbl.offset_left, 200.0, 0.5, "对话文字宽 200（源 :31）")
 	assert_eq(talk_lbl.autowrap_mode != TextServer.AUTOWRAP_OFF, true, "对话文字自动换行（源 setLabelDimensions）")
 
@@ -645,34 +645,34 @@ func test_npc_and_talk_layout_follows_source() -> void:
 func test_stren_buttons_layout_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var stren: Button = inst.get_node("%StrenBtn") as Button
-	assert_almost_eq(_center_of(stren).x, 746.0, 0.5, "stren 中心 x=746（源 666）")
-	assert_almost_eq(_center_of(stren).y, 415.0, 0.5, "stren 中心 y=415（源 145）")
+	assert_almost_eq(_center_of(stren).x, 666.0, 0.5, "stren 中心 x=746（源 666）")
+	assert_almost_eq(_center_of(stren).y, 335.0, 0.5, "stren 中心 y=415（源 145）")
 	assert_almost_eq(stren.offset_right - stren.offset_left, 125.0, 0.5, "stren 宽 125（源 scaleSize）")
 	assert_almost_eq(stren.offset_bottom - stren.offset_top, 45.0, 0.5, "stren 高 45")
 	var fast: Button = inst.get_node("%FastStrenBtn") as Button
-	assert_almost_eq(_center_of(fast).x, 746.0, 0.5, "faststren 中心 x=746（源 666）")
-	assert_almost_eq(_center_of(fast).y, 500.0, 0.5, "faststren 中心 y=500（源 60）")
+	assert_almost_eq(_center_of(fast).x, 666.0, 0.5, "faststren 中心 x=746（源 666）")
+	assert_almost_eq(_center_of(fast).y, 420.0, 0.5, "faststren 中心 y=500（源 60）")
 	var money_bg: TextureRect = inst.get_node("%MoneyBg") as TextureRect
-	assert_almost_eq(_center_of(money_bg).x, 745.0, 0.5, "money_bg 中心 x=745（源 665）")
-	assert_almost_eq(_center_of(money_bg).y, 375.0, 0.5, "money_bg 中心 y=375（源 185）")
+	assert_almost_eq(_center_of(money_bg).x, 665.0, 0.5, "money_bg 中心 x=745（源 665）")
+	assert_almost_eq(_center_of(money_bg).y, 295.0, 0.5, "money_bg 中心 y=375（源 185）")
 	assert_almost_eq(money_bg.offset_right - money_bg.offset_left, 158.0 / CS, 0.5, "money_bg 宽=158/CS")
 	var no_cost: Label = inst.get_node("%NoCostLabel") as Label
-	assert_almost_eq(_center_of(no_cost).y, 375.0, 0.5, "no_cost 中心 y=375（源 185）")
+	assert_almost_eq(_center_of(no_cost).y, 295.0, 0.5, "no_cost 中心 y=375（源 185）")
 	var money_icon: TextureRect = inst.get_node("%MoneyIcon") as TextureRect
-	assert_almost_eq(_center_of(money_icon).x, 695.0, 0.5, "money_icon 中心 x=695（源 615）")
-	assert_almost_eq(_center_of(money_icon).y, 377.0, 0.5, "money_icon 中心 y=377（源 183）")
+	assert_almost_eq(_center_of(money_icon).x, 615.0, 0.5, "money_icon 中心 x=695（源 615）")
+	assert_almost_eq(_center_of(money_icon).y, 297.0, 0.5, "money_icon 中心 y=377（源 183）")
 	# 审查修复 Minor 1：源 :844 fix_size=CCSizeMake(27,25) 显式显示尺寸（readnode:197-199 不÷CS 直译）
 	assert_almost_eq(money_icon.offset_right - money_icon.offset_left, 27.0, 0.5, "money_icon 宽=27（源 fix_size 直译）")
 	assert_almost_eq(money_icon.offset_bottom - money_icon.offset_top, 25.0, 0.5, "money_icon 高=25（源 fix_size 直译）")
 	var money_lbl: Label = inst.get_node("%MoneyLabel") as Label
-	assert_almost_eq(money_lbl.offset_right, 795.0, 0.5, "money 右端 x=795（源 715 右中锚）")
-	assert_almost_eq((money_lbl.offset_top + money_lbl.offset_bottom) / 2.0, 377.0, 0.5, "money 中心 y=377")
+	assert_almost_eq(money_lbl.offset_right, 715.0, 0.5, "money 右端 x=795（源 715 右中锚）")
+	assert_almost_eq((money_lbl.offset_top + money_lbl.offset_bottom) / 2.0, 297.0, 0.5, "money 中心 y=377")
 	var rmb_icon: TextureRect = inst.get_node("%RmbIcon") as TextureRect
-	assert_almost_eq(_center_of(rmb_icon).x, 700.0, 0.5, "rmb_icon 中心 x=700（源 620）")
-	assert_almost_eq(_center_of(rmb_icon).y, 460.0, 0.5, "rmb_icon 中心 y=460（源 100）")
+	assert_almost_eq(_center_of(rmb_icon).x, 620.0, 0.5, "rmb_icon 中心 x=700（源 620）")
+	assert_almost_eq(_center_of(rmb_icon).y, 380.0, 0.5, "rmb_icon 中心 y=460（源 100）")
 	var rmb_lbl: Label = inst.get_node("%RmbLabel") as Label
-	assert_almost_eq(rmb_lbl.offset_right, 795.0, 0.5, "rmb 右端 x=795（源 715 右中锚）")
-	assert_almost_eq((rmb_lbl.offset_top + rmb_lbl.offset_bottom) / 2.0, 460.0, 0.5, "rmb 中心 y=460")
+	assert_almost_eq(rmb_lbl.offset_right, 715.0, 0.5, "rmb 右端 x=795（源 715 右中锚）")
+	assert_almost_eq((rmb_lbl.offset_top + rmb_lbl.offset_bottom) / 2.0, 380.0, 0.5, "rmb 中心 y=460")
 
 
 # 源 createExpBar :1127-1218：bar_bg(400,212)/b_lv(75,235 左中)/n_lv(725,235 右中)/
@@ -680,40 +680,40 @@ func test_stren_buttons_layout_follows_source() -> void:
 func test_exp_bar_layout_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var bar_bg: TextureRect = inst.get_node("%BarBg") as TextureRect
-	assert_almost_eq(_center_of(bar_bg).x, 480.0, 0.5, "bar_bg 中心 x=480（源 400）")
-	assert_almost_eq(_center_of(bar_bg).y, 348.0, 0.5, "bar_bg 中心 y=348（源 212）")
+	assert_almost_eq(_center_of(bar_bg).x, 400.0, 0.5, "bar_bg 中心 x=480（源 400）")
+	assert_almost_eq(_center_of(bar_bg).y, 268.0, 0.5, "bar_bg 中心 y=348（源 212）")
 	assert_almost_eq(bar_bg.offset_right - bar_bg.offset_left, 842.0 / CS, 0.5, "bar_bg 宽=842/CS")
 	var bar: TextureRect = inst.get_node("%Bar") as TextureRect
-	assert_almost_eq(bar.offset_left, 152.0, 0.5, "bar 左端 x=152（源 72 左中锚）")
-	assert_almost_eq((bar.offset_top + bar.offset_bottom) / 2.0, 347.0, 0.5, "bar 中心 y=347（源 213）")
+	assert_almost_eq(bar.offset_left, 72.0, 0.5, "bar 左端 x=152（源 72 左中锚）")
+	assert_almost_eq((bar.offset_top + bar.offset_bottom) / 2.0, 267.0, 0.5, "bar 中心 y=347（源 213）")
 	assert_true(bar.texture is AtlasTexture, "bar 走 AtlasTexture 裁剪（源 setTextureRect 宽随值）")
 	var anim: TextureRect = inst.get_node("%AnimBar") as TextureRect
-	assert_almost_eq(anim.offset_left, 152.0, 0.5, "anim_bar 左端同 bar")
+	assert_almost_eq(anim.offset_left, 72.0, 0.5, "anim_bar 左端同 bar")
 	assert_false(anim.visible, "anim_bar 默认隐（源 :1199）")
 	var b_lv: Label = inst.get_node("%BarLevelLabel") as Label
-	assert_almost_eq(b_lv.offset_left, 155.0, 0.5, "b_lv 左端 x=155（源 75 左中锚）")
-	assert_almost_eq((b_lv.offset_top + b_lv.offset_bottom) / 2.0, 325.0, 0.5, "b_lv 中心 y=325（源 235）")
+	assert_almost_eq(b_lv.offset_left, 75.0, 0.5, "b_lv 左端 x=155（源 75 左中锚）")
+	assert_almost_eq((b_lv.offset_top + b_lv.offset_bottom) / 2.0, 245.0, 0.5, "b_lv 中心 y=325（源 235）")
 	var n_lv: Label = inst.get_node("%NextLevelLabel") as Label
-	assert_almost_eq(n_lv.offset_right, 805.0, 0.5, "n_lv 右端 x=805（源 725 右中锚）")
-	assert_almost_eq((n_lv.offset_top + n_lv.offset_bottom) / 2.0, 325.0, 0.5, "n_lv 中心 y=325")
+	assert_almost_eq(n_lv.offset_right, 725.0, 0.5, "n_lv 右端 x=805（源 725 右中锚）")
+	assert_almost_eq((n_lv.offset_top + n_lv.offset_bottom) / 2.0, 245.0, 0.5, "n_lv 中心 y=325")
 	var ehc: Label = inst.get_node("%EhcLabel") as Label
-	assert_almost_eq(_center_of(ehc).x, 480.0, 0.5, "ehc 中心 x=480（源 400）")
-	assert_almost_eq(_center_of(ehc).y, 348.0, 0.5, "ehc 中心 y=348（源 212）")
+	assert_almost_eq(_center_of(ehc).x, 400.0, 0.5, "ehc 中心 x=480（源 400）")
+	assert_almost_eq(_center_of(ehc).y, 268.0, 0.5, "ehc 中心 y=348（源 212）")
 
 
 # 源 createEquipAtt ui_info :1443-1492：name_bg(345,415 左中)/name(347,415)/level(347,385)
 func test_att_area_layout_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var name_bg: TextureRect = inst.get_node("AttHost/AttNameBg") as TextureRect
-	assert_almost_eq(name_bg.offset_left, 425.0, 0.5, "name_bg 左端 x=425（源 345 anchor(0,0.5)）")
-	assert_almost_eq((name_bg.offset_top + name_bg.offset_bottom) / 2.0, 145.0, 0.5, "name_bg 中心 y=145（源 415）")
+	assert_almost_eq(name_bg.offset_left, 345.0, 0.5, "name_bg 左端 x=425（源 345 anchor(0,0.5)）")
+	assert_almost_eq((name_bg.offset_top + name_bg.offset_bottom) / 2.0, 65.0, 0.5, "name_bg 中心 y=145（源 415）")
 	assert_almost_eq(name_bg.offset_right - name_bg.offset_left, 197.0 / CS, 0.5, "name_bg 宽=197/CS")
 	var name_lbl: Label = inst.get_node("%AttNameLabel") as Label
-	assert_almost_eq(name_lbl.offset_left, 427.0, 0.5, "name 左端 x=427（源 347）")
-	assert_almost_eq((name_lbl.offset_top + name_lbl.offset_bottom) / 2.0, 145.0, 0.5, "name 中心 y=145")
+	assert_almost_eq(name_lbl.offset_left, 347.0, 0.5, "name 左端 x=427（源 347）")
+	assert_almost_eq((name_lbl.offset_top + name_lbl.offset_bottom) / 2.0, 65.0, 0.5, "name 中心 y=145")
 	var level_lbl: Label = inst.get_node("%AttLevelLabel") as Label
-	assert_almost_eq(level_lbl.offset_left, 427.0, 0.5, "level 左端 x=427（源 347）")
-	assert_almost_eq((level_lbl.offset_top + level_lbl.offset_bottom) / 2.0, 175.0, 0.5, "level 中心 y=175（源 385）")
+	assert_almost_eq(level_lbl.offset_left, 347.0, 0.5, "level 左端 x=427（源 347）")
+	assert_almost_eq((level_lbl.offset_top + level_lbl.offset_bottom) / 2.0, 95.0, 0.5, "level 中心 y=175（源 385）")
 
 
 # 源 doShowmbPrompt :1959-1982 宽窄两态 + createmtListLayer :393-412 cliprect(98,42,500,155)
@@ -721,19 +721,19 @@ func test_att_area_layout_follows_source() -> void:
 func test_material_area_layout_follows_source() -> void:
 	var inst: Control = _instantiate_content()
 	var mbg: NinePatchRect = inst.get_node("%MaterialBg") as NinePatchRect
-	assert_almost_eq(_center_of(mbg).x, 480.0, 0.5, "材料 bg 宽态中心 x=480（源 400）")
-	assert_almost_eq(_center_of(mbg).y, 440.0, 0.5, "材料 bg 中心 y=440（源 120）")
+	assert_almost_eq(_center_of(mbg).x, 400.0, 0.5, "材料 bg 宽态中心 x=480（源 400）")
+	assert_almost_eq(_center_of(mbg).y, 360.0, 0.5, "材料 bg 中心 y=440（源 120）")
 	assert_almost_eq(mbg.offset_right - mbg.offset_left, 660.0, 0.5, "材料 bg 宽态 660（源 :1976）")
 	assert_almost_eq(mbg.offset_bottom - mbg.offset_top, 154.0, 0.5, "材料 bg 高 154")
 	var mlbl: Label = inst.get_node("%MaterialLabel") as Label
-	assert_almost_eq(_center_of(mlbl).x, 405.0, 0.5, "材料提示中心 x=405（源 325）")
-	assert_almost_eq(_center_of(mlbl).y, 440.0, 0.5, "材料提示中心 y=440（源 120）")
+	assert_almost_eq(_center_of(mlbl).x, 325.0, 0.5, "材料提示中心 x=405（源 325）")
+	assert_almost_eq(_center_of(mlbl).y, 360.0, 0.5, "材料提示中心 y=440（源 120）")
 	assert_false(mlbl.visible, "材料提示默认隐（源 :2144 visible=false）")
 	var clip: Control = inst.get_node("%MtClip") as Control
-	assert_almost_eq(clip.offset_left, 178.0, 0.5, "裁剪层左=源 cliprect 98+80")
-	assert_almost_eq(clip.offset_top, 363.0, 0.5, "裁剪层顶=560-(42+155)")
-	assert_almost_eq(clip.offset_right, 678.0, 0.5, "裁剪层右=178+500")
-	assert_almost_eq(clip.offset_bottom, 518.0, 0.5, "裁剪层底=560-42")
+	assert_almost_eq(clip.offset_left, 98.0, 0.5, "裁剪层左=源 cliprect 98+80")
+	assert_almost_eq(clip.offset_top, 283.0, 0.5, "裁剪层顶=560-(42+155)")
+	assert_almost_eq(clip.offset_right, 598.0, 0.5, "裁剪层右=178+500")
+	assert_almost_eq(clip.offset_bottom, 438.0, 0.5, "裁剪层底=560-42")
 	assert_true(clip.clip_contents, "裁剪层 clip_contents（源 ClippingNode）")
 	# 审查修复 Important 1：源 draglist canDragY 连续滚动 → ScrollContainer + 内容层
 	assert_true(clip is ScrollContainer, "MtClip 为 ScrollContainer（源 draglist canDragY 滚动）")
@@ -746,9 +746,9 @@ func test_material_area_layout_follows_source() -> void:
 func test_equip_slot_hosts_static() -> void:
 	var inst: Control = _instantiate_content()
 	var centers: Array[Vector2] = [
-		Vector2(315.0, 155.0), Vector2(387.0, 155.0),
-		Vector2(315.0, 227.0), Vector2(387.0, 227.0),
-		Vector2(315.0, 299.0), Vector2(387.0, 299.0),
+		Vector2(235.0, 75.0), Vector2(307.0, 75.0),
+		Vector2(235.0, 147.0), Vector2(307.0, 147.0),
+		Vector2(235.0, 219.0), Vector2(307.0, 219.0),
 	]
 	for i in 6:
 		var host: Control = inst.get_node("%EquipSlot" + str(i)) as Control
@@ -874,7 +874,7 @@ func test_fill_att_labels_and_list_row() -> void:
 				first_pre = lbl
 	assert_not_null(first_pre, "动态属性行已建（meta att）")
 	if first_pre != null:
-		assert_almost_eq(first_pre.position.x, 427.0, 2.0, "首列 pre 左端 x=427（源 347+80）")
+		assert_almost_eq(first_pre.position.x, 347.0, 2.0, "首列 pre 左端 x=427（源 347+80）")
 	panel.remove_window()
 	root.queue_free()
 

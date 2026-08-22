@@ -26,20 +26,20 @@ mouse_filter = 2
 
 [node name="Frame" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 281.75
-offset_top = 97.15
-offset_right = 678.25
-offset_bottom = 542.85
+offset_left = 201.75
+offset_top = 17.15
+offset_right = 598.25
+offset_bottom = 462.85
 texture = ExtResource("1_frame")
 expand_mode = 1
 mouse_filter = 2
 
 [node name="TitleBg" type="TextureRect" parent="."]
 layout_mode = 3
-offset_left = 317.48
-offset_top = 115.69
-offset_right = 646.02
-offset_bottom = 150.03
+offset_left = 237.48
+offset_top = 35.69
+offset_right = 566.02
+offset_bottom = 70.03
 texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
@@ -59,10 +59,10 @@ text = "信箱"
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 651.39
-offset_top = 97.1
-offset_right = 702.12
-offset_bottom = 148.61
+offset_left = 571.39
+offset_top = 17.1
+offset_right = 622.12
+offset_bottom = 68.61
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
@@ -71,10 +71,10 @@ stretch_mode = 0
 [node name="MailScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 301.75
-offset_top = 152.83
-offset_right = 661.75
-offset_bottom = 522.83
+offset_left = 221.75
+offset_top = 72.83
+offset_right = 581.75
+offset_bottom = 442.83
 horizontal_scroll_mode = 0
 
 [node name="MailList" type="VBoxContainer" parent="MailScroll"]
@@ -88,10 +88,10 @@ theme_override_constants/separation = 10
 [node name="TopMask" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 301.75
-offset_top = 152.83
-offset_right = 661.75
-offset_bottom = 173.12
+offset_left = 221.75
+offset_top = 72.83
+offset_right = 581.75
+offset_bottom = 93.12
 texture = ExtResource("5_maskup")
 expand_mode = 1
 mouse_filter = 2
@@ -100,10 +100,10 @@ mouse_filter = 2
 [node name="BottomMask" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 301.75
-offset_top = 502.54
-offset_right = 661.75
-offset_bottom = 522.83
+offset_left = 221.75
+offset_top = 422.54
+offset_right = 581.75
+offset_bottom = 442.83
 texture = ExtResource("6_maskdown")
 expand_mode = 1
 mouse_filter = 2

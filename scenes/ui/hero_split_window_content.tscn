@@ -39,10 +39,10 @@ mouse_filter = 2
 ; 框（源 frame fix_wh 702.34x447.66 中心 (402.34,240.63)，贴图缺失 StyleBox 降级）
 [node name="Frame" type="Panel" parent="."]
 layout_mode = 0
-offset_left = 131.17
-offset_top = 95.54
-offset_right = 833.51
-offset_bottom = 543.2
+offset_left = 51.17
+offset_top = 15.54
+offset_right = 753.51
+offset_bottom = 463.2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("sb_frame")
 

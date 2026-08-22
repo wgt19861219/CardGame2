@@ -28,8 +28,8 @@ func test_content_static_tree() -> void:
 	add_child_autofree(inst)
 	var layer: Control = inst.get_node("%PanelLayer") as Control
 	assert_not_null(layer, "PanelLayer（源 frame 等价）常驻 tscn")
-	assert_almost_eq(layer.offset_left, 127.5, 0.1, "frame 左 = to_godot(400,220).x - 705/2")
-	assert_almost_eq(layer.offset_top, 190.0, 0.1, "frame 顶 = 560 - (220 + 300/2)")
+	assert_almost_eq(layer.offset_left, 47.5, 0.1, "frame 左 = to_godot(400,220).x - 705/2")
+	assert_almost_eq(layer.offset_top, 110.0, 0.1, "frame 顶 = 560 - (220 + 300/2)")
 	assert_almost_eq(layer.size.x, 705.0, 0.1, "frame 宽照源 scaleSize 705")
 	assert_almost_eq(layer.size.y, 300.0, 0.1, "frame 高照源 scaleSize 300")
 	var frame: NinePatchRect = layer.get_node("Frame") as NinePatchRect
@@ -41,9 +41,9 @@ func test_content_static_tree() -> void:
 	assert_almost_eq(bg.color.a, 150.0 / 255.0, 0.01, "蒙层 alpha 照源 ccc4(0,0,0,150)")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
 	assert_not_null(close, "关闭按钮常驻 tscn")
-	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 830.0, 0.5,
+	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 750.0, 0.5,
 		"close 中心 x 照源 to_godot(750,350).x")
-	assert_almost_eq((close.offset_top + close.offset_bottom) / 2.0, 210.0, 0.5,
+	assert_almost_eq((close.offset_top + close.offset_bottom) / 2.0, 130.0, 0.5,
 		"close 中心 y 照源 to_godot(750,350).y")
 
 

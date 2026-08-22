@@ -24,16 +24,16 @@ const THEME_PATH: String = "res://resources/themes/default_theme.tres"
 # right=103-10-58=35 bottom=10（改造前 tscn top/bottom 写反，批内通病第三例）。
 const FRAME_CAP_TOP: int = 25
 const FRAME_CAP_BOTTOM: int = 10
-# 源 scaleSize(530,375) 中心(400,240) → Godot 中心(480,320)。
-const FRAME_L: float = 215.0
-const FRAME_T: float = 132.5
+# 源 scaleSize(530,375) 中心(400,240) → 800×480 直译中心(400,240)，L/T=(400−265, 240−187.5)。
+const FRAME_L: float = 135.0
+const FRAME_T: float = 52.5
 const FRAME_W: float = 530.0
 const FRAME_H: float = 375.0
 # 源 cliprect(154,60,492,365) to_godot 直译。
-const SCROLL_L: float = 234.0
-const SCROLL_T: float = 135.0
-const SCROLL_R: float = 726.0
-const SCROLL_B: float = 500.0
+const SCROLL_L: float = 154.0
+const SCROLL_T: float = 55.0
+const SCROLL_R: float = 646.0
+const SCROLL_B: float = 420.0
 # hero_icon_frame_1 106×106 / CS = 82.73（无 TextureConfig 条目，÷CS 轨道）。
 const ICON_DISPLAY: float = 82.73
 # 源 LSTR 键（ofavatar.lua:9-13 + :124）。
@@ -107,14 +107,14 @@ func test_avatar_content_frame_cap_fixed() -> void:
 		"NinePatch bottom = cap.y = 10（防反写回归）")
 
 func test_avatar_content_scroll_rect() -> void:
-	# 源 draglist cliprect(154,60,492,365) → to_godot 左上 (234,135) 右下 (726,500)。
+	# 源 draglist cliprect(154,60,492,365) → 800×480 直译 (154,55)~(646,420)。
 	var inst: Control = (load(CONTENT_PATH) as PackedScene).instantiate() as Control
 	add_child_autofree(inst)
 	var scroll: ScrollContainer = inst.get_node("%AvatarScroll") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, SCROLL_L, 0.1, "裁剪层左 = 154+80")
-	assert_almost_eq(scroll.offset_top, SCROLL_T, 0.1, "裁剪层顶 = 560-(60+365)")
-	assert_almost_eq(scroll.offset_right, SCROLL_R, 0.1, "裁剪层右 = 154+492+80")
-	assert_almost_eq(scroll.offset_bottom, SCROLL_B, 0.1, "裁剪层底 = 560-60")
+	assert_almost_eq(scroll.offset_left, SCROLL_L, 0.1, "裁剪层左 = 源 154 直译")
+	assert_almost_eq(scroll.offset_top, SCROLL_T, 0.1, "裁剪层顶 = 480-(60+365)")
+	assert_almost_eq(scroll.offset_right, SCROLL_R, 0.1, "裁剪层右 = 源 154+492 直译")
+	assert_almost_eq(scroll.offset_bottom, SCROLL_B, 0.1, "裁剪层底 = 480-60")
 	assert_true(scroll.clip_contents, "源 cliprect → clip_contents 裁剪（坑 #3）")
 	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED,
 		"源竖向 draglist，水平滚动禁用")

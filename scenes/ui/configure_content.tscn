@@ -49,10 +49,10 @@ mouse_filter = 2
 
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 164.0
-offset_top = 105.0
-offset_right = 784.0
-offset_bottom = 485.0
+offset_left = 84.0
+offset_top = 25.0
+offset_right = 704.0
+offset_bottom = 405.0
 texture = ExtResource("1_frame")
 patch_margin_left = 15
 patch_margin_top = 26
@@ -65,10 +65,10 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 744.64
-offset_top = 99.24
-offset_right = 795.37
-offset_bottom = 150.76
+offset_left = 664.64
+offset_top = 19.24
+offset_right = 715.37
+offset_bottom = 70.76
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
@@ -76,20 +76,20 @@ stretch_mode = 0
 
 [node name="HeadPattern" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 198.27
-offset_top = 133.27
-offset_right = 331.73
-offset_bottom = 266.73
+offset_left = 118.27
+offset_top = 53.27
+offset_right = 251.73
+offset_bottom = 186.73
 mouse_filter = 2
 texture = ExtResource("5b_headpat")
 expand_mode = 1
 
 [node name="HeadBg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 225.98
-offset_top = 159.02
-offset_right = 304.02
-offset_bottom = 240.98
+offset_left = 145.98
+offset_top = 79.02
+offset_right = 224.02
+offset_bottom = 160.98
 mouse_filter = 2
 texture = ExtResource("4_headbg")
 expand_mode = 1
@@ -97,19 +97,19 @@ expand_mode = 1
 [node name="HeadIconHost" type="Control" parent="."]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 230.0
-offset_top = 162.0
-offset_right = 300.0
-offset_bottom = 232.0
+offset_left = 150.0
+offset_top = 82.0
+offset_right = 220.0
+offset_bottom = 152.0
 mouse_filter = 2
 
 [node name="HeadFrame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 225.37
-offset_top = 159.41
-offset_right = 334.63
-offset_bottom = 240.59
+offset_left = 145.37
+offset_top = 79.41
+offset_right = 254.63
+offset_bottom = 160.59
 mouse_filter = 2
 texture = ExtResource("5_headframe")
 expand_mode = 1
@@ -118,10 +118,10 @@ expand_mode = 1
 unique_name_in_owner = true
 theme_type_variation = &"ConfigureActionBtn"
 layout_mode = 0
-offset_left = 630.0
-offset_top = 220.5
-offset_right = 760.0
-offset_bottom = 275.5
+offset_left = 550.0
+offset_top = 140.5
+offset_right = 680.0
+offset_bottom = 195.5
 
 [node name="ChangeHeadLabel" type="Label" parent="ChangeHeadBtn"]
 unique_name_in_owner = true
@@ -143,10 +143,10 @@ text = "更换头像"
 
 [node name="NameBg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 337.5
-offset_top = 135.0
-offset_right = 562.5
-offset_bottom = 165.0
+offset_left = 257.5
+offset_top = 55.0
+offset_right = 482.5
+offset_bottom = 85.0
 mouse_filter = 2
 texture = ExtResource("6_namebg")
 expand_mode = 1
@@ -155,10 +155,10 @@ expand_mode = 1
 unique_name_in_owner = true
 theme_type_variation = &"ConfigureNameLabel"
 layout_mode = 0
-offset_left = 360.0
-offset_top = 135.0
-offset_right = 540.0
-offset_bottom = 165.0
+offset_left = 280.0
+offset_top = 55.0
+offset_right = 460.0
+offset_bottom = 85.0
 horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
@@ -168,37 +168,37 @@ text = "玩家"
 unique_name_in_owner = true
 theme_type_variation = &"InfoLineLabel"
 layout_mode = 0
-offset_left = 385.0
-offset_top = 184.0
-offset_right = 562.0
-offset_bottom = 206.0
+offset_left = 305.0
+offset_top = 104.0
+offset_right = 482.0
+offset_bottom = 126.0
 
 [node name="InfoLine2" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"InfoLineLabel"
 layout_mode = 0
-offset_left = 385.0
-offset_top = 206.0
-offset_right = 562.0
-offset_bottom = 228.0
+offset_left = 305.0
+offset_top = 126.0
+offset_right = 482.0
+offset_bottom = 148.0
 
 [node name="InfoLine3" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"InfoLineLabel"
 layout_mode = 0
-offset_left = 385.0
-offset_top = 228.0
-offset_right = 562.0
-offset_bottom = 250.0
+offset_left = 305.0
+offset_top = 148.0
+offset_right = 482.0
+offset_bottom = 170.0
 
 [node name="ChangeNameBtn" type="Button" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"ConfigureActionBtn"
 layout_mode = 0
-offset_left = 630.0
-offset_top = 147.5
-offset_right = 760.0
-offset_bottom = 202.5
+offset_left = 550.0
+offset_top = 67.5
+offset_right = 680.0
+offset_bottom = 122.5
 
 [node name="ChangeNameLabel" type="Label" parent="ChangeNameBtn"]
 unique_name_in_owner = true
@@ -222,10 +222,10 @@ text = "修改名字"
 unique_name_in_owner = true
 theme_type_variation = &"ConfigureActionBtn"
 layout_mode = 0
-offset_left = 630.0
-offset_top = 310.5
-offset_right = 760.0
-offset_bottom = 365.5
+offset_left = 550.0
+offset_top = 230.5
+offset_right = 680.0
+offset_bottom = 285.5
 
 [node name="SaveManagerLabel" type="Label" parent="SaveManagerBtn"]
 unique_name_in_owner = true
@@ -247,10 +247,10 @@ text = "存档管理"
 
 [node name="SocietyLine" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 170.0
-offset_top = 279.0
-offset_right = 770.0
-offset_bottom = 281.0
+offset_left = 90.0
+offset_top = 199.0
+offset_right = 690.0
+offset_bottom = 201.0
 texture = ExtResource("7_line")
 patch_margin_left = 170
 patch_margin_top = 1
@@ -262,10 +262,10 @@ mouse_filter = 2
 unique_name_in_owner = true
 theme_type_variation = &"ConfigureActionBtn"
 layout_mode = 0
-offset_left = 190.0
-offset_top = 417.5
-offset_right = 370.0
-offset_bottom = 472.5
+offset_left = 110.0
+offset_top = 337.5
+offset_right = 290.0
+offset_bottom = 392.5
 
 [node name="SetupLabel" type="Label" parent="SetupBtn"]
 unique_name_in_owner = true
@@ -287,10 +287,10 @@ text = "系统设置"
 
 [node name="LanguageLine" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 170.0
-offset_top = 409.0
-offset_right = 770.0
-offset_bottom = 411.0
+offset_left = 90.0
+offset_top = 329.0
+offset_right = 690.0
+offset_bottom = 331.0
 texture = ExtResource("7_line")
 patch_margin_left = 170
 patch_margin_top = 1
@@ -301,10 +301,10 @@ mouse_filter = 2
 [node name="LangBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 423.0
-offset_top = 412.5
-offset_right = 523.0
-offset_bottom = 472.5
+offset_left = 343.0
+offset_top = 332.5
+offset_right = 443.0
+offset_bottom = 392.5
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -312,18 +312,18 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"ConfigureLangLabel"
 layout_mode = 0
-offset_left = 471.0
-offset_top = 430.0
-offset_right = 651.0
-offset_bottom = 455.0
+offset_left = 391.0
+offset_top = 350.0
+offset_right = 571.0
+offset_bottom = 375.0
 text = "语言"
 
 [node name="FacebookLine" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 170.0
-offset_top = 474.0
-offset_right = 770.0
-offset_bottom = 476.0
+offset_left = 90.0
+offset_top = 394.0
+offset_right = 690.0
+offset_bottom = 396.0
 texture = ExtResource("7_line")
 patch_margin_left = 170
 patch_margin_top = 1

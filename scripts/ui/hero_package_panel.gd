@@ -9,7 +9,7 @@ extends PopWindow
 ## 两件套范式（批 1 Task 9，2026-08-15）：静态结构全进 hero_package_content.tscn
 ## （base 层 + herosplit 按钮 + z 序）+ hero_package_list_line.tscn（分隔线行模板）；
 ## 本文件只做业务、信号 connect、fill（零静态节点构造，3 个弹窗工厂白名单）。
-## 坐标源 cocos(800×480 左下) → Godot(960×640 左上)：(x+80, 560-y)，offsetx=-20 只作用于
+## 坐标源 cocos(800×480 左下) → Godot(800×480 左上)：(x, 480-y)，offsetx=-20 只作用于
 ## 源 position 显式 +offsetx 的元素（list_bg/tab/label/draglist；herosplit 无）。
 ## 残留：close 按钮使用 framework statusbar backbtn（源 heroPackage 无 close，framework 注入返回）。
 

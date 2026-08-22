@@ -10,7 +10,7 @@ extends PopWindow
 ## ReadheroIcon.new() 是源 readhero.getIcon 的工厂构造，白名单唯一例外）。
 ## 静态色/字号走 theme variation（EquipDetail* 系列）；拥有数量绿/红是源
 ## 直设色语义 → fill font_color override（非乘法 modulate）。
-## 坐标：源 cocos 800x480 左下原点 → Godot 960x640 左上（静态部分已在 tscn
+## 坐标：源 cocos 800x480 左下原点 → Godot 800x480 左上（静态部分已在 tscn
 ## 换算）；3 段滚动照源垂直流式（gap=20 → VBox separation，行高 55 两列）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipdetail_content.tscn")

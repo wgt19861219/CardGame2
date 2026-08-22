@@ -81,8 +81,8 @@ func test_content_static_tree_source_rects() -> void:
 	var frame: Control = inst.get_node("%Frame") as Control
 	assert_almost_eq(frame.size.x, 466.41, 0.5, "Frame 宽 = fix_wh 466.41")
 	assert_almost_eq(frame.size.y, 289.84, 0.5, "Frame 高 = fix_wh 289.84")
-	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 489.38, 0.5, "Frame 中心 x = 409.38+80")
-	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 360.0, 0.5, "Frame 中心 y = 560-200")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, 409.38, 0.5, "Frame 中心 x = 409.38+80")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, 280.0, 0.5, "Frame 中心 y = 560-200")
 	var line: Control = frame.get_node("Line") as Control
 	assert_almost_eq(line.position.x + line.size.x * 0.5, 230.86, 0.5, "line 中心 x 照声明表")
 	assert_almost_eq(line.position.y + line.size.y * 0.5, 289.84 - 102.73, 0.5, "line 中心 y = H-102.73")
@@ -118,8 +118,8 @@ func test_content_static_tree_source_rects() -> void:
 func test_frame_global_position_guard() -> void:
 	var win: StarShopBuyWindow = _make_window()
 	var frame: Control = win._frame
-	assert_almost_eq(frame.global_position.x, 256.18, 0.5, "Frame 全局 x = 409.38-233.20+80")
-	assert_almost_eq(frame.global_position.y, 215.08, 0.5, "Frame 全局 y = 560-200-144.92")
+	assert_almost_eq(frame.global_position.x, 176.18, 0.5, "Frame 全局 x = 409.38-233.20+80")
+	assert_almost_eq(frame.global_position.y, 135.08, 0.5, "Frame 全局 y = 560-200-144.92")
 	_panel.free()
 	win.free()
 

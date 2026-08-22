@@ -137,11 +137,11 @@ func test_content_window_layout_from_uieditor() -> void:
 	var content := _instantiate_content()
 	var bg: TextureRect = content.get_node("FrameworkBg") as TextureRect
 	assert_not_null(bg, "FrameworkBg 全屏底（声明表 bg.jpg，铺满语义）")
-	assert_eq(bg.size, Vector2(960.0, 640.0), "bg 铺满全屏（crusade 先例口径）")
+	assert_eq(bg.size, Vector2(800.0, 480.0), "bg 铺满全屏（crusade 先例口径）")
 	var window: TextureRect = content.get_node("Window") as TextureRect
 	assert_not_null(window, "Window 节点（声明表 window 元素）")
 	assert_eq(window.size, Vector2(722.0, 400.0), "window 722×400（声明表 scaleSize 直译取整）")
-	assert_eq(window.position, Vector2(119.0, 144.0), "window 左上 (119,144)（中心 (480,344)）")
+	assert_eq(window.position, Vector2(39.0, 64.0), "window 左上 (119,144)（中心 (480,344)）")
 	content.queue_free()
 
 
@@ -167,11 +167,11 @@ func test_content_title_and_titlebg_layout() -> void:
 	var title_bg: TextureRect = content.get_node("TitleBg") as TextureRect
 	assert_not_null(title_bg, "TitleBg（create :1949 重建版；声明表 title_bg visible=false 弃用）")
 	assert_eq(title_bg.size, Vector2(426.0, 58.0), "title_bg 426×58（纹理 546×75 ÷CS）")
-	assert_eq(title_bg.position, Vector2(266.0, 91.0), "title_bg 左上 (266,91)（中心 (479.22,120.16)）")
+	assert_eq(title_bg.position, Vector2(186.0, 11.0), "title_bg 左上 (266,91)（中心 (479.22,120.16)）")
 	var title: Label = content.get_node("%Title") as Label
 	assert_not_null(title, "Title Label")
 	assert_eq(title.text, "排行榜", "标题文本（RANKLIST.RANKLISTTITLE）")
-	assert_almost_eq(title.position.y, 105.0, 0.5, "title 顶 ~105（中心 y=117.03）")
+	assert_almost_eq(title.position.y, 25.0, 0.5, "title 顶 ~105（中心 y=117.03）")
 	assert_eq(String(title.theme_type_variation), "RanklistTitleLabel", "title 走 RanklistTitleLabel variation")
 	content.queue_free()
 
@@ -184,11 +184,11 @@ func test_content_clip_layers_source_rects() -> void:
 	var tab_clip: Control = content.get_node("TabClip") as Control
 	assert_not_null(tab_clip, "TabClip 裁剪层（源 draglist cliprect）")
 	assert_true(tab_clip.clip_contents, "TabClip clip_contents=true（源 cliprect 裁剪）")
-	assert_eq(tab_clip.position, Vector2(130.0, 154.0), "TabClip 左上 (130,154)")
+	assert_eq(tab_clip.position, Vector2(50.0, 74.0), "TabClip 左上 (130,154)")
 	assert_eq(tab_clip.size, Vector2(210.0, 380.0), "TabClip 210×380（源 cliprect 尺寸直译）")
 	var scroll: ScrollContainer = content.get_node("%ScrollLayer") as ScrollContainer
 	assert_not_null(scroll, "ScrollLayer 存在")
-	assert_eq(scroll.position, Vector2(329.0, 154.0), "ScrollLayer 左上 (329,154)")
+	assert_eq(scroll.position, Vector2(249.0, 74.0), "ScrollLayer 左上 (329,154)")
 	assert_eq(scroll.size, Vector2(512.0, 380.0), "ScrollLayer 512×380（源 scrollview cliprect 直译）")
 	content.queue_free()
 

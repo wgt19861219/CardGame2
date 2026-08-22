@@ -45,7 +45,7 @@ theme_override_constants/separation = 2
 [node name="ExitBtn" type="TextureButton" parent="ButtonRow/ExitGroup"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(140, 123)
+custom_minimum_size = Vector2(109.27, 96.0)
 texture_normal = ExtResource("1_33wau")
 texture_pressed = ExtResource("2_6hll7")
 ignore_texture_size = true
@@ -67,7 +67,7 @@ theme_override_constants/separation = 2
 [node name="SoundBtn" type="TextureButton" parent="ButtonRow/SoundGroup"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(128, 123)
+custom_minimum_size = Vector2(99.9, 96.0)
 texture_normal = ExtResource("3_kcqwq")
 ignore_texture_size = true
 stretch_mode = 5
@@ -88,7 +88,7 @@ theme_override_constants/separation = 2
 [node name="ResumeBtn" type="TextureButton" parent="ButtonRow/ResumeGroup"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(128, 123)
+custom_minimum_size = Vector2(99.9, 96.0)
 texture_normal = ExtResource("4_xn3xu")
 texture_pressed = ExtResource("5_5v3ps")
 ignore_texture_size = true

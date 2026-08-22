@@ -41,8 +41,8 @@ func test_content_layout_follows_source() -> void:
 	# 显示 399.6x299.7 = 纹理÷CS，中心 _g(400,240)=(480,320)；modulate a=0 照源 config opacity=0
 	var inst: Control = _instantiate_content()
 	var bg: TextureRect = inst.get_node("%BgRect") as TextureRect
-	assert_almost_eq((bg.offset_left + bg.offset_right) / 2.0, 480.0, 0.5, "bg 中心 x=480")
-	assert_almost_eq((bg.offset_top + bg.offset_bottom) / 2.0, 320.0, 0.5, "bg 中心 y=320")
+	assert_almost_eq((bg.offset_left + bg.offset_right) / 2.0, 400.0, 0.5, "bg 中心 x=480")
+	assert_almost_eq((bg.offset_top + bg.offset_bottom) / 2.0, 240.0, 0.5, "bg 中心 y=320")
 	assert_almost_eq(bg.offset_right - bg.offset_left, 512.0 / CS, 0.5, "bg 宽=512/CS（照源纹理÷CS）")
 	assert_almost_eq(bg.offset_bottom - bg.offset_top, 384.0 / CS, 0.5, "bg 高=384/CS")
 	assert_almost_eq(bg.modulate.a, 0.0, 0.001, "bg 初始透明（源 config opacity=0）")

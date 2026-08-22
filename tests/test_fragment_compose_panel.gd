@@ -127,8 +127,8 @@ func test_setup_panel_fills_ok_button_text() -> void:
 func test_panel_layer_origin_and_size() -> void:
 	var inst: Control = _instantiate_content()
 	var pl: Control = inst.get_node("%PanelLayer") as Control
-	assert_almost_eq(pl.offset_left, 336.0, 0.5, "PanelLayer left=336（bg 左上 x，源 bg 中心 400-144）")
-	assert_almost_eq(pl.offset_top, 127.5, 0.5, "PanelLayer top=127.5（bg 左上 y，源 bg 中心 240 映射 320-192.5）")
+	assert_almost_eq(pl.offset_left, 256.0, 0.5, "PanelLayer left=336（bg 左上 x，源 bg 中心 400-144）")
+	assert_almost_eq(pl.offset_top, 47.5, 0.5, "PanelLayer top=127.5（bg 左上 y，源 bg 中心 240 映射 320-192.5）")
 	assert_almost_eq(pl.offset_right - pl.offset_left, 369.0 / CS, 0.5, "PanelLayer 宽 = 369/CS（bg 纹理显示宽）")
 	assert_almost_eq(pl.offset_bottom - pl.offset_top, BG_H, 0.5, "PanelLayer 高 = 385（493/CS=384.78 四舍五入）")
 

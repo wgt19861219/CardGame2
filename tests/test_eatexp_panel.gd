@@ -218,24 +218,24 @@ func test_content_frame_layout_follows_source() -> void:
 	# close 中心 (748,200)；列表区=源 draglist rect(120,55,570,320) 触摸区 + cliprect 垂直界。
 	var inst: Control = _instantiate_content()
 	var bg: TextureRect = inst.get_node("Bg") as TextureRect
-	assert_almost_eq((bg.offset_left + bg.offset_right) / 2.0, 480.0, 0.5, "frame 中心 x=480")
-	assert_almost_eq((bg.offset_top + bg.offset_bottom) / 2.0, 345.0, 0.5, "frame 中心 y=345")
+	assert_almost_eq((bg.offset_left + bg.offset_right) / 2.0, 400.0, 0.5, "frame 中心 x=480")
+	assert_almost_eq((bg.offset_top + bg.offset_bottom) / 2.0, 265.0, 0.5, "frame 中心 y=345")
 	assert_almost_eq(bg.offset_right - bg.offset_left, 700.0 / CS, 0.5, "frame 宽=纹理/CS（fix_wh 只缩 Y）")
 	assert_almost_eq(bg.offset_bottom - bg.offset_top, 345.0, 0.5, "frame 高=源 fix_wh h=345")
 	var tbg: TextureRect = inst.get_node("TitleBg") as TextureRect
-	assert_almost_eq((tbg.offset_left + tbg.offset_right) / 2.0, 480.0, 0.5, "title_bg 中心 x=480")
-	assert_almost_eq((tbg.offset_top + tbg.offset_bottom) / 2.0, 161.0, 0.5, "title_bg 中心 y=161")
+	assert_almost_eq((tbg.offset_left + tbg.offset_right) / 2.0, 400.0, 0.5, "title_bg 中心 x=480")
+	assert_almost_eq((tbg.offset_top + tbg.offset_bottom) / 2.0, 81.0, 0.5, "title_bg 中心 y=161")
 	var tbg1: TextureRect = inst.get_node("TitleBg1") as TextureRect
-	assert_almost_eq((tbg1.offset_left + tbg1.offset_right) / 2.0, 480.0, 0.5, "title_bg_1 中心 x=480")
-	assert_almost_eq((tbg1.offset_top + tbg1.offset_bottom) / 2.0, 181.0, 0.5, "title_bg_1 中心 y=181")
+	assert_almost_eq((tbg1.offset_left + tbg1.offset_right) / 2.0, 400.0, 0.5, "title_bg_1 中心 x=480")
+	assert_almost_eq((tbg1.offset_top + tbg1.offset_bottom) / 2.0, 101.0, 0.5, "title_bg_1 中心 y=181")
 	var close: TextureButton = inst.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 748.0, 0.5, "close 中心 x=748")
-	assert_almost_eq((close.offset_top + close.offset_bottom) / 2.0, 200.0, 0.5, "close 中心 y=200")
+	assert_almost_eq((close.offset_left + close.offset_right) / 2.0, 668.0, 0.5, "close 中心 x=748")
+	assert_almost_eq((close.offset_top + close.offset_bottom) / 2.0, 120.0, 0.5, "close 中心 y=200")
 	var scroll: ScrollContainer = inst.get_node("%ScrollHost") as ScrollContainer
-	assert_almost_eq(scroll.offset_left, 200.0, 0.5, "scroll 左=源触摸 rect x=120+80")
-	assert_almost_eq(scroll.offset_right, 770.0, 0.5, "scroll 右=源触摸 rect 右 690+80")
-	assert_almost_eq(scroll.offset_top, 185.0, 0.5, "scroll 顶=源 cliprect 上沿 y=375→185")
-	assert_almost_eq(scroll.offset_bottom, 505.0, 0.5, "scroll 底=源 cliprect 下沿 y=55→505")
+	assert_almost_eq(scroll.offset_left, 120.0, 0.5, "scroll 左=源触摸 rect x=120+80")
+	assert_almost_eq(scroll.offset_right, 690.0, 0.5, "scroll 右=源触摸 rect 右 690+80")
+	assert_almost_eq(scroll.offset_top, 105.0, 0.5, "scroll 顶=源 cliprect 上沿 y=375→185")
+	assert_almost_eq(scroll.offset_bottom, 425.0, 0.5, "scroll 底=源 cliprect 下沿 y=55→505")
 	assert_eq(scroll.horizontal_scroll_mode, 0, "水平不滚动（源列表仅纵向）")
 
 

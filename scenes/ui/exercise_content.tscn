@@ -31,10 +31,10 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 804.6
-offset_top = 184.2
-offset_right = 855.4
-offset_bottom = 235.8
+offset_left = 724.6
+offset_top = 104.2
+offset_right = 775.4
+offset_bottom = 155.8
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")
 ignore_texture_size = true
@@ -45,10 +45,10 @@ ignore_texture_size = true
 [node name="PanelLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 127.5
-offset_top = 190.0
-offset_right = 832.5
-offset_bottom = 490.0
+offset_left = 47.5
+offset_top = 110.0
+offset_right = 752.5
+offset_bottom = 410.0
 mouse_filter = 2
 
 [node name="Frame" type="NinePatchRect" parent="PanelLayer"]

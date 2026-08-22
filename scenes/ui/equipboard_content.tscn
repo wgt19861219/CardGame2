@@ -19,10 +19,10 @@ mouse_filter = 2
 [node name="Frame" type="Control" parent="." unique_id=1783983175]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 118.0
-offset_top = 154.5
-offset_right = 406.0
-offset_bottom = 539.5
+offset_left = 38.0
+offset_top = 74.5
+offset_right = 326.0
+offset_bottom = 459.5
 mouse_filter = 2
 
 [node name="Bg" type="TextureRect" parent="Frame" unique_id=1242572610]

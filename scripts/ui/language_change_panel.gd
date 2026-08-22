@@ -11,7 +11,7 @@ extends PopWindow
 ## （源 readnode root=frame :128，button+label 平级交替；brief 动态行保留 procedural）。
 ## 坐标照源点空间直译（批 3 口径）：frame 子树 = frame contentSize(630x440) 左下原点
 ## 点值直译（y' = 440-y）；贴图显示尺寸 = 像素/CS(1.28125)（lang 贴图无 TextureConfig
-## 条目，PIL 实测 96x62；勿调 tex_display_size）。
+## 条目，PIL 实测 96x62；2026-08-21 Task5 后 tex_display_size 公式已同口径，保留手算）。
 ## 受控裁剪：源 cancel_press 1.1x 放大（:157-162）由 TextureButton texture_pressed
 ## 换图等价；confirm 对话框/GetPlatformOS zh-CN 限制单机化直切（2026-07-18 既有决策）。
 

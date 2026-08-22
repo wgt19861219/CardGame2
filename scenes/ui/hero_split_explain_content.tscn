@@ -38,10 +38,10 @@ color = Color(0, 0, 0, 0.5)
 ; explainwindow.lua:35 cap(17.19,17.19,46.88,15.63)@103x61 → top=61-32.82=28.19→28 bottom=17）
 [node name="Frame" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 205.0
-offset_top = 130.31
-offset_right = 753.44
-offset_bottom = 509.22
+offset_left = 125.0
+offset_top = 50.31
+offset_right = 673.44
+offset_bottom = 429.22
 texture = ExtResource("1_vit")
 patch_margin_left = 17
 patch_margin_top = 28
@@ -53,10 +53,10 @@ mouse_filter = 2
 ; cap(109.38,0,156.25,34.38)@474x44 → top=44-34.38=9.62→10 bottom=y=0）
 [node name="TitleBg" type="NinePatchRect" parent="."]
 layout_mode = 0
-offset_left = 238.2
-offset_top = 150.63
-offset_right = 718.67
-offset_bottom = 189.69
+offset_left = 158.2
+offset_top = 70.63
+offset_right = 638.67
+offset_bottom = 109.69
 texture = ExtResource("2_pvptitle")
 patch_margin_left = 109
 patch_margin_top = 10
@@ -68,10 +68,10 @@ mouse_filter = 2
 [node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 326.09
-offset_top = 155.16
-offset_right = 626.09
-offset_bottom = 185.16
+offset_left = 246.09
+offset_top = 75.16
+offset_right = 546.09
+offset_bottom = 105.16
 theme_type_variation = &"HeroSplitExplainTitleLabel"
 mouse_filter = 2
 horizontal_alignment = 1
@@ -82,10 +82,10 @@ text = "规则说明"
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 714.77
-offset_top = 123.67
-offset_right = 763.99
-offset_bottom = 176.01
+offset_left = 634.77
+offset_top = 43.67
+offset_right = 683.99
+offset_bottom = 96.01
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
@@ -95,10 +95,10 @@ ignore_texture_size = true
 [node name="ScrollHost" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 236.25
-offset_top = 200.63
-offset_right = 722.19
-offset_bottom = 483.44
+offset_left = 156.25
+offset_top = 120.63
+offset_right = 642.19
+offset_bottom = 403.44
 mouse_filter = 1
 horizontal_scroll_mode = 0
 

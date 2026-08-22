@@ -91,12 +91,12 @@ func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData, p_mod
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
 	# 模态弹窗 frame 居中（package 非模态用 .tscn 固定 offset 118,154.5 在右侧，
-	# handbook 模态需居中屏幕：(960-frame_w)/2, (640-frame_h)/2）
+	# handbook 模态需居中屏幕：(800-frame_w)/2, (480-frame_h)/2）
 	if p_modal and _frame != null:
 		var fw: float = _frame.offset_right - _frame.offset_left
 		var fh: float = _frame.offset_bottom - _frame.offset_top
-		_frame.offset_left = (960.0 - fw) * 0.5
-		_frame.offset_top = (640.0 - fh) * 0.5
+		_frame.offset_left = (800.0 - fw) * 0.5
+		_frame.offset_top = (480.0 - fh) * 0.5
 		_frame.offset_right = _frame.offset_left + fw
 		_frame.offset_bottom = _frame.offset_top + fh
 	register_on_enter(_play_slide_in)

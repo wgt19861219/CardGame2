@@ -341,11 +341,11 @@ func test_board_static_layout() -> void:
 	var panel := _make_panel(root)
 	for board_key: String in ["Bronze", "Gold", "MagicSoul"]:
 		var board: Dictionary = panel._boards[board_key]
-		var expect_x: float = {"Bronze": 137.0, "Gold": 377.0, "MagicSoul": 617.0}[board_key]
+		var expect_x: float = {"Bronze": 57.0, "Gold": 297.0, "MagicSoul": 537.0}[board_key]
 		var container: Control = board["container"]
 		assert_almost_eq(container.position.x, expect_x, 0.5, "%s board 左上 x 照源孔位" % board_key)
-		assert_almost_eq(container.position.y, 195.0, 0.5, "%s board 左上 y 照源孔位" % board_key)
-		assert_almost_eq(container.global_position.y, 195.0, 0.5,
+		assert_almost_eq(container.position.y, 115.0, 0.5, "%s board 左上 y 照源孔位" % board_key)
+		assert_almost_eq(container.global_position.y, 115.0, 0.5,
 			"%s board global_position 防 parenting 回归" % board_key)
 		assert_almost_eq(container.size.x, 206.0, 0.5, "%s board 宽 206（源 clip stencil 宽）" % board_key)
 		assert_almost_eq(container.size.y, 320.0, 0.5, "%s board 高 320（源滑动行程）" % board_key)

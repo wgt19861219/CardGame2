@@ -93,9 +93,9 @@ func test_panel_shows_sweep_for_3_star_stage() -> void:
 
 func test_to_godot_conversion() -> void:
 	# cocos(400,205) → Godot(480,355)（offset 80 + y 翻转 560-cy）
-	assert_eq(StageDetailPanel.to_godot(400.0, 205.0), Vector2(480.0, 355.0))
-	assert_eq(StageDetailPanel.to_godot(0.0, 0.0), Vector2(80.0, 560.0))
-	assert_eq(StageDetailPanel.to_godot(800.0, 480.0), Vector2(880.0, 80.0))
+	assert_eq(StageDetailPanel.to_godot(400.0, 205.0), Vector2(400.0, 275.0))
+	assert_eq(StageDetailPanel.to_godot(0.0, 0.0), Vector2(0.0, 480.0))
+	assert_eq(StageDetailPanel.to_godot(800.0, 480.0), Vector2(800.0, 0.0))
 
 
 func test_get_res_info_normal() -> void:
@@ -263,27 +263,27 @@ func test_content_static_rects_source_aligned() -> void:
 	for fr in [frame2, frame3]:
 		assert_almost_eq(fr.size.x, 936.0 / CS, 0.6, "frame 宽 = 936px÷CS 源直译")
 		assert_almost_eq(fr.size.y, 507.0 / CS, 0.6, "frame 高 = 507px÷CS 源直译")
-		assert_almost_eq(fr.position.x + fr.size.x * 0.5, 480.0, 0.6, "frame 中心 x=480")
-		assert_almost_eq(fr.position.y + fr.size.y * 0.5, 355.0, 0.6, "frame 中心 y=355")
+		assert_almost_eq(fr.position.x + fr.size.x * 0.5, 400.0, 0.6, "frame 中心 x=480")
+		assert_almost_eq(fr.position.y + fr.size.y * 0.5, 275.0, 0.6, "frame 中心 y=355")
 	# TitleBg 细条：detail_title_bg Scale9，normal 504×12 中心 to_godot(400,355)=(480,205)。
 	var title_bg: TextureRect = content.get_node("%TitleBg") as TextureRect
 	assert_almost_eq(title_bg.size.x, 504.0, 0.6, "TitleBg normal 基线宽 504（elite fill 改 404）")
 	assert_almost_eq(title_bg.size.y, 12.0, 0.6, "TitleBg 高 12")
-	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 205.0, 0.6, "TitleBg 中心 y=205（源 titlepos 355）")
+	assert_almost_eq(title_bg.position.y + title_bg.size.y * 0.5, 125.0, 0.6, "TitleBg 中心 y=205（源 titlepos 355）")
 	# EnemyBg：detail_enemy_bg 877×103px ÷CS → 684.49×80.39，左下(90,130) anchor(0,0)
 	# → godot 左上 (170, 560-130-80.39=349.61)。
 	var enemy_bg: TextureRect = content.get_node("%EnemyBg") as TextureRect
-	assert_almost_eq(enemy_bg.position.x, 170.0, 0.6, "EnemyBg 左 x=170")
+	assert_almost_eq(enemy_bg.position.x, 90.0, 0.6, "EnemyBg 左 x=170")
 	assert_almost_eq(enemy_bg.size.x, 877.0 / CS, 0.6, "EnemyBg 宽 = 877px÷CS（修 540 无口径错值）")
 	assert_almost_eq(enemy_bg.size.y, 103.0 / CS, 0.6, "EnemyBg 高 = 103px÷CS（修 103 原始像素漏÷CS）")
-	assert_almost_eq(enemy_bg.position.y + enemy_bg.size.y, 430.0, 0.6, "EnemyBg 底边 y=430（源 y=130）")
+	assert_almost_eq(enemy_bg.position.y + enemy_bg.size.y, 350.0, 0.6, "EnemyBg 底边 y=430（源 y=130）")
 	# GoButton：startbtn 128×123px ÷CS → 99.9×96.0 等比（修 133×60 强拉变形），
 	# 中心 goButtonPosNormal ccp(698,80) → godot(778,480)。
 	var go_btn: TextureButton = content.get_node("%GoButton") as TextureButton
 	assert_almost_eq(go_btn.size.x, 128.0 / CS, 0.6, "GoButton 宽 = 128px÷CS 等比")
 	assert_almost_eq(go_btn.size.y, 123.0 / CS, 0.6, "GoButton 高 = 123px÷CS 等比")
-	assert_almost_eq(go_btn.position.x + go_btn.size.x * 0.5, 778.0, 0.6, "GoButton 中心 x=778")
-	assert_almost_eq(go_btn.position.y + go_btn.size.y * 0.5, 480.0, 0.6, "GoButton 中心 y=480")
+	assert_almost_eq(go_btn.position.x + go_btn.size.x * 0.5, 698.0, 0.6, "GoButton 中心 x=778")
+	assert_almost_eq(go_btn.position.y + go_btn.size.y * 0.5, 400.0, 0.6, "GoButton 中心 y=480")
 	assert_eq(go_btn.stretch_mode, TextureButton.STRETCH_SCALE, "GoButton stretch_mode=0 显式")
 	# CloseBtn：backbtn 74×75px ÷CS → 57.76×58.54 等比（修 50×30 强拉变形），框架位 (20,15)。
 	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
@@ -293,16 +293,16 @@ func test_content_static_rects_source_aligned() -> void:
 	# SweepCluster：main_vit_tips scaleSize 135×150 anchor(0.5,0) pos(662,131)
 	# → 底中心 godot(742,429) → rect 674.5..809.5/279..429（07-30 容器化固化）。
 	var cluster: Control = content.get_node("%SweepCluster") as Control
-	assert_almost_eq(cluster.position.x, 674.5, 0.6, "SweepCluster 左 x=674.5")
-	assert_almost_eq(cluster.position.y, 279.0, 0.6, "SweepCluster 顶 y=279")
+	assert_almost_eq(cluster.position.x, 594.5, 0.6, "SweepCluster 左 x=674.5")
+	assert_almost_eq(cluster.position.y, 199.0, 0.6, "SweepCluster 顶 y=279")
 	assert_almost_eq(cluster.size.x, 135.0, 0.6, "SweepCluster 宽 135")
 	assert_almost_eq(cluster.size.y, 150.0, 0.6, "SweepCluster 高 150")
 	# 星区归源（Task 9 修复）：源 createStars:1212-1261 star 左下 anchor(0,0)
 	# pos(320+55*(i-1),336) scale 0.8 → 70×71px÷CS×0.8=43.71×44.33，星底=560-336=224，
 	# 星1 左=400（旧 56 大星 + 顶 165 偏高 14px 致 TitleBg 细条 199..211 压星下缘）。
 	var star_box: Control = content.get_node("%StarHBox") as Control
-	assert_almost_eq(star_box.position.x, 400.0, 0.6, "星区左 x=400（源 star1 左 320+80）")
-	assert_almost_eq(star_box.position.y + star_box.size.y, 224.0, 0.7, "星底 y=224（源 pos y=336 直译）")
+	assert_almost_eq(star_box.position.x, 320.0, 0.6, "星区左 x=400（源 star1 左 320+80）")
+	assert_almost_eq(star_box.position.y + star_box.size.y, 144.0, 0.7, "星底 y=224（源 pos y=336 直译）")
 	var star1: TextureRect = star_box.get_child(0) as TextureRect
 	assert_almost_eq(star1.custom_minimum_size.x, 70.0 / CS * 0.8, 0.05, "星宽 =70px÷CS×0.8（源 scale 0.8）")
 	assert_almost_eq(star1.custom_minimum_size.y, 71.0 / CS * 0.8, 0.05, "星高 =71px÷CS×0.8")

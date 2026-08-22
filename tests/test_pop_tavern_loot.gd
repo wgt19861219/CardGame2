@@ -122,7 +122,7 @@ func test_button_position_to_godot() -> void:
 	assert_not_null(again_btn, "再抽按钮存在")
 	# center_x 390 → position.x = 390 - size.x/2
 	var again_center_x: float = again_btn.position.x + again_btn.size.x * 0.5
-	assert_almost_eq(again_center_x, 390.0, 1.0, "再抽按钮中心 x≈390（源 310+80 to_godot）")
+	assert_almost_eq(again_center_x, 310.0, 1.0, "再抽按钮中心 x≈390（源 310+80 to_godot）")
 	popup.remove_window()
 	root.queue_free()
 
@@ -325,8 +325,8 @@ func test_cost_row_fill_layout() -> void:
 	var icon: TextureRect = content.get_node("%CostIcon") as TextureRect
 	assert_true(String(icon.texture.resource_path).find("task_rmb_icon_2") >= 0, "Diamond → rmb 图标（源 :756）")
 	# label 右缘 = to_godot_x(240) = 320
-	assert_almost_eq(label.position.x + label.size.x, 320.0, 0.5, "cost label 右缘 = 320（源 240）")
-	assert_almost_eq(label.position.y + label.size.y * 0.5, 510.0, 0.5, "cost label 垂直中心 = 510（源 y50）")
+	assert_almost_eq(label.position.x + label.size.x, 240.0, 0.5, "cost label 右缘 = 320（源 240）")
+	assert_almost_eq(label.position.y + label.size.y * 0.5, 430.0, 0.5, "cost label 垂直中心 = 510（源 y50）")
 	# icon 右缘紧贴 label 左缘（源 ci anchor(1,0.5)@(240-w,48)）
 	assert_almost_eq(icon.position.x + icon.size.x, label.position.x, 0.5, "icon 右缘紧贴 label 左缘")
 	# icon 显示尺寸 = 纹理原始像素 ÷ CS（35×33 → 27.32×25.76；批5 口径手算，不用 TexDisplaySize）
@@ -334,9 +334,9 @@ func test_cost_row_fill_layout() -> void:
 	# bg 中心 = (320-(label_w+icon_w)/2, 510)（源 :1021-1022）
 	var cost_bg: TextureRect = content.get_node("%CostBg") as TextureRect
 	var total_w: float = label.size.x + icon.size.x
-	assert_almost_eq(cost_bg.position.x + cost_bg.size.x * 0.5, 320.0 - total_w * 0.5, 0.5,
+	assert_almost_eq(cost_bg.position.x + cost_bg.size.x * 0.5, 240.0 - total_w * 0.5, 0.5,
 		"CostBg 中心 x = 320-总宽/2（源 240-w/2）")
-	assert_almost_eq(cost_bg.position.y + cost_bg.size.y * 0.5, 510.0, 0.5, "CostBg 中心 y = 510（源 y50）")
+	assert_almost_eq(cost_bg.position.y + cost_bg.size.y * 0.5, 430.0, 0.5, "CostBg 中心 y = 510（源 y50）")
 	popup.remove_window()
 	root.queue_free()
 
@@ -366,8 +366,8 @@ func test_starshop_layout_branch() -> void:
 	var content: Control = popup._content
 	assert_false((content.get_node("%AgainBtn") as Control).visible, "starshop 无再抽按钮（源 starshop 分支不建 tavern）")
 	var close_btn: TextureButton = content.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 480.0, 0.5, "starshop ok 中心 x=480（源 400+80）")
-	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 510.0, 0.5, "starshop ok 中心 y=510（源 560-50）")
+	assert_almost_eq(close_btn.position.x + close_btn.size.x * 0.5, 400.0, 0.5, "starshop ok 中心 x=480（源 400+80）")
+	assert_almost_eq(close_btn.position.y + close_btn.size.y * 0.5, 430.0, 0.5, "starshop ok 中心 y=510（源 560-50）")
 	assert_false((content.get_node("%CostBg") as Control).visible, "starshop 无 cost 行")
 	popup.remove_window()
 	root.queue_free()
@@ -537,8 +537,8 @@ func test_show_pivot_center() -> void:
 	var popup := PopTavernLoot.new("poptavernloot", {})
 	popup.setup_loot([{"id": 101, "amount": 1}], cm, "bronze", "one", {})
 	popup.show_window(root)
-	assert_almost_eq(popup.container.pivot_offset.x, 480.0, 0.5, "pivot x=屏幕中心 480")
-	assert_almost_eq(popup.container.pivot_offset.y, 320.0, 0.5, "pivot y=屏幕中心 320")
+	assert_almost_eq(popup.container.pivot_offset.x, 400.0, 0.5, "pivot x=屏幕中心 480")
+	assert_almost_eq(popup.container.pivot_offset.y, 240.0, 0.5, "pivot y=屏幕中心 320")
 	popup.remove_window()
 	root.queue_free()
 

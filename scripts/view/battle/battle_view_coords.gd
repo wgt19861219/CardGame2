@@ -12,12 +12,12 @@ extends RefCounted
 
 const DEEP_PROJECTION_X: float = 0.0
 const DEEP_PROJECTION_Y: float = 1.0
-const GROUND_Y: float = 265.0
-const OFFSET_X: float = 80.0
-const BASE_Y: float = 560.0
+const GROUND_Y: float = 265.0   # 源世界地面逻辑高度（cocos 坐标），不随 viewport 迁移
+const OFFSET_X: float = 0.0
+const BASE_Y: float = 480.0
 
 
-# Cocos 800×480（左下原点）→ Godot 960×640（左上原点）转换。
+# Cocos 800×480（左下原点）→ Godot 800×480（左上原点）转换。
 # 战斗 HUD 层（A 类）已改 Godot 原生坐标不再调用本方法；仍被部分 UI 面板
 # （equip_craft/pop_tavern_loot/story_view）及 battle_loot_view 飞行动画使用。
 static func to_godot(cx: float, cy: float) -> Vector2:

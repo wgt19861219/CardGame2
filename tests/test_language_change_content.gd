@@ -24,8 +24,8 @@ const LANG_H: float = 48.39
 const CLOSE_W: float = 50.73
 const CLOSE_H: float = 51.51
 # main_vit_tips 103x61，源 scaleSize(630,440) 中心(400,232) → (165,108)-(795,548)
-const FRAME_L: float = 165.0
-const FRAME_T: float = 108.0
+const FRAME_L: float = 85.0
+const FRAME_T: float = 28.0
 const FRAME_W: float = 630.0
 const FRAME_H: float = 440.0
 
@@ -63,9 +63,9 @@ func test_content_static_tree() -> void:
 	# CloseBtn（源 cancel frame 局部(610,425) 中心锚 → 全屏中心
 	# (165+610, 108+(440-425)) = (775,123)，右上骑边；65x66/CS）
 	var close_btn: TextureButton = inst.get_node("%CloseBtn") as TextureButton
-	assert_almost_eq(close_btn.offset_left, 775.0 - CLOSE_W * 0.5, 0.1,
+	assert_almost_eq(close_btn.offset_left, 695.0 - CLOSE_W * 0.5, 0.1,
 		"CloseBtn 左 = 775-50.73/2（源 frame 局部 610,425 直译）")
-	assert_almost_eq(close_btn.offset_top, 123.0 - CLOSE_H * 0.5, 0.1, "CloseBtn 顶 = 123-51.51/2")
+	assert_almost_eq(close_btn.offset_top, 43.0 - CLOSE_H * 0.5, 0.1, "CloseBtn 顶 = 123-51.51/2")
 	assert_almost_eq(close_btn.offset_right - close_btn.offset_left, CLOSE_W, 0.1, "CloseBtn 宽 = 65/CS")
 	assert_almost_eq(close_btn.offset_bottom - close_btn.offset_top, CLOSE_H, 0.1, "CloseBtn 高 = 66/CS")
 	assert_eq(close_btn.texture_normal.resource_path,
@@ -134,9 +134,9 @@ func test_lang_buttons_layout() -> void:
 	assert_almost_eq(sixth.position.x + sixth.size.x * 0.5, 100.0, 0.1, "tr-TR 中心 x = 源二行 x=100")
 	assert_almost_eq(sixth.position.y + sixth.size.y * 0.5, 190.0, 0.1, "tr-TR 中心 y = 440-250（二行）")
 	# global 级防 parenting：frame 左上 (165,108) + 局部 → 全屏 (265,208)
-	assert_almost_eq(first.global_position.x + first.size.x * 0.5, 265.0, 0.5,
+	assert_almost_eq(first.global_position.x + first.size.x * 0.5, 185.0, 0.5,
 		"en-US 全屏中心 x = 165+100（frame 局部→全屏防 parenting 错位）")
-	assert_almost_eq(first.global_position.y + first.size.y * 0.5, 208.0, 0.5,
+	assert_almost_eq(first.global_position.y + first.size.y * 0.5, 128.0, 0.5,
 		"en-US 全屏中心 y = 108+100")
 
 

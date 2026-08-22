@@ -30,7 +30,7 @@ const TAB_DETAIL: String = "detail"
 const TAB_CARD: String = "card"
 const TAB_SKILL: String = "skill"
 const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 card 图鉴（setOpenMode(nil)=doMoveBack 无 tab，用户要进显图鉴）
-const BASE_SLIDE_OFFSET: float = 178.0   # doMove 140（window.lua:300 container 右移）。目标 1:1 框偏大（CS 遗漏）。CloseBtn 移出 base 固定屏幕右上（不随 base），base 自由：178 让 bg left=399.5，card/popup 框与 bg 留 gap 10
+const BASE_SLIDE_OFFSET: float = 140.0   # doMove 140（window.lua:300 container 右移）源值直译。旧 178 系 bg 纹理直用时代 140×1.28 的 CS 遗漏补偿——2026-08-22 Bg ÷CS 修正后回归；card 态 bg left=338.5 与 card 框右缘 324.9（2026-08-22 内容回源实测）留 gap 13.6（源同）。CloseBtn 移出 base 固定屏幕右上（不随 base）
 # doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
 const TAB_POP_OFFSET_X: float = -200.0
 # 进阶交互 LSTR（Toast 文案，常量在 HeroDetailUpgradeFx）
@@ -218,7 +218,8 @@ func _fill_card_view() -> void:
 	# 接 card_tab 内 %CardCloseBtn（card 平铺后便捷关闭入口，照源 card 弹窗独立 close；_bind_signals 阶段 _tab_views 未就绪故在此接）。
 	var close_btn: BaseButton = view.get_node_or_null("%CardCloseBtn") as BaseButton
 	if close_btn != null:
-		close_btn.pressed.connect(_close_panel)
+		# 用户 2026-08-22 指示去掉 card 层关闭钮（与主 %CloseBtn 重复，保留主钮）：隐藏不再接关闭。
+		close_btn.visible = false
 
 
 # skillstren.lua createSkill 等：每槽技能图标+边框+Display Name；rank 未达解锁 → 灰显 + "rank X 解锁"。
@@ -317,18 +318,20 @@ func _show_tab_content(key: String) -> void:
 	_current_tab = key
 	_set_tab_selected(key)
 	_slide_base_to(BASE_SLIDE_OFFSET)
-	# tab layer pop CCMoveTo(-200,0)：tab 内容从左滑入（止态 -75，在树时从 +400 屏幕外滑入）
+	# tab layer pop endPos=ccp(-200,0)（window.lua:386/430/513 三 tab 同值）：tab 内容从左滑入，
+	# 止态 -200（源 doOpenDetail/Skill/Card pop 终点）。旧 -75 系 960 口径迁移遗留（2026-08-22 回源；
+	# detail/skill 子节点已按源声明坐标直译，card 子节点 +125 平移保现状视觉）。
 	for k in _tab_views:
 		var v: Control = _tab_views[k] as Control
 		if k == key:
 			v.visible = true
-			var start_x: float = 400.0 if is_inside_tree() else -75.0
+			var start_x: float = 400.0 if is_inside_tree() else TAB_POP_OFFSET_X
 			v.offset_left = start_x
 			v.offset_right = start_x
 			if is_inside_tree():
 				var tw: Tween = create_tween()
-				tw.tween_property(v, "offset_left", -75.0, 0.2)
-				tw.parallel().tween_property(v, "offset_right", -75.0, 0.2)
+				tw.tween_property(v, "offset_left", TAB_POP_OFFSET_X, 0.2)
+				tw.parallel().tween_property(v, "offset_right", TAB_POP_OFFSET_X, 0.2)
 		else:
 			v.visible = false
 	# 进入 skill tab 时 fill 技能点信息栏（源 skillstren.lua createInformationBar:476-486）。

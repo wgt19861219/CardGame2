@@ -16,8 +16,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -75.0
-offset_right = -75.0
+offset_left = 0
+offset_right = 0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -25,20 +25,23 @@ mouse_filter = 2
 [node name="EditPlaceholder" type="ReferenceRect" parent="."]
 editor_only = true
 layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
+offset_left = 256
+offset_top = 17.5
+offset_right = 544
+offset_bottom = 462.5
 mouse_filter = 2
 border_color = Color(0, 1, 0.7, 1)
 border_width = 2.0
 
 [node name="PopupBg" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 95.5
-offset_top = 35.0
-offset_right = 464.5
-offset_bottom = 605.0
+; 源 skillstren.lua:806 bg herodetail-detail-popup ccp(400,240)（container 无偏移）→ 全局中心 (400,240)；
+; 显示=纹理 369×570÷CS=288×445（旧值 369×570 纹理直用，底缘 605 溢屏 125px）。
+; 子节点坐标=源全局直译（本地=全局；board_i 中心 (400,350-90(i-1)) 等 ori_height=350/bd_height=90）。
+offset_left = 256
+offset_top = 17.5
+offset_right = 544
+offset_bottom = 462.5
 mouse_filter = 2
 texture = ExtResource("1_popup")
 expand_mode = 1
@@ -66,10 +69,10 @@ mouse_filter = 2
 [node name="Skill1Board" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 153.0
-offset_top = 167.0
-offset_right = 407.0
-offset_bottom = 253.0
+offset_left = 273
+offset_top = 87
+offset_right = 527
+offset_bottom = 173
 mouse_filter = 2
 texture = ExtResource("2_bg1")
 axis_stretch_horizontal = 0
@@ -82,10 +85,10 @@ patch_margin_bottom = 30
 [node name="Skill1Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 176.0
-offset_top = 175.0
-offset_right = 224.0
-offset_bottom = 223.0
+offset_left = 296
+offset_top = 106
+offset_right = 344
+offset_bottom = 154
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -93,10 +96,10 @@ expand_mode = 1
 [node name="Skill1Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 180.0
-offset_top = 179.0
-offset_right = 220.0
-offset_bottom = 219.0
+offset_left = 300
+offset_top = 110
+offset_right = 340
+offset_bottom = 150
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -104,29 +107,29 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 175.0
-offset_right = 365.0
-offset_bottom = 195.0
+offset_left = 365
+offset_top = 100
+offset_right = 485
+offset_bottom = 120
 text = "技能名1"
 
 [node name="Skill1Lvl" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 197.0
-offset_right = 365.0
-offset_bottom = 217.0
+offset_left = 365
+offset_top = 125
+offset_right = 485
+offset_bottom = 145
 text = "lv.1"
 
 [node name="Skill1Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 355.0
-offset_top = 185.0
-offset_right = 395.0
-offset_bottom = 225.0
+offset_left = 470.5
+offset_top = 119
+offset_right = 519.5
+offset_bottom = 171
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -135,10 +138,10 @@ stretch_mode = 0
 [node name="Skill2Board" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 153.0
-offset_top = 257.0
-offset_right = 407.0
-offset_bottom = 343.0
+offset_left = 273
+offset_top = 177
+offset_right = 527
+offset_bottom = 263
 mouse_filter = 2
 texture = ExtResource("3_bg2")
 axis_stretch_horizontal = 0
@@ -151,10 +154,10 @@ patch_margin_bottom = 30
 [node name="Skill2Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 176.0
-offset_top = 265.0
-offset_right = 224.0
-offset_bottom = 313.0
+offset_left = 296
+offset_top = 196
+offset_right = 344
+offset_bottom = 244
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -162,10 +165,10 @@ expand_mode = 1
 [node name="Skill2Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 180.0
-offset_top = 269.0
-offset_right = 220.0
-offset_bottom = 309.0
+offset_left = 300
+offset_top = 200
+offset_right = 340
+offset_bottom = 240
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -173,29 +176,29 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 265.0
-offset_right = 365.0
-offset_bottom = 285.0
+offset_left = 365
+offset_top = 190
+offset_right = 485
+offset_bottom = 210
 text = "技能名2"
 
 [node name="Skill2Lvl" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 287.0
-offset_right = 365.0
-offset_bottom = 307.0
+offset_left = 365
+offset_top = 215
+offset_right = 485
+offset_bottom = 235
 text = "lv.1"
 
 [node name="Skill2Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 355.0
-offset_top = 275.0
-offset_right = 395.0
-offset_bottom = 315.0
+offset_left = 470.5
+offset_top = 209
+offset_right = 519.5
+offset_bottom = 261
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -204,10 +207,10 @@ stretch_mode = 0
 [node name="Skill3Board" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 153.0
-offset_top = 347.0
-offset_right = 407.0
-offset_bottom = 433.0
+offset_left = 273
+offset_top = 267
+offset_right = 527
+offset_bottom = 353
 mouse_filter = 2
 texture = ExtResource("2_bg1")
 axis_stretch_horizontal = 0
@@ -220,10 +223,10 @@ patch_margin_bottom = 30
 [node name="Skill3Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 176.0
-offset_top = 355.0
-offset_right = 224.0
-offset_bottom = 403.0
+offset_left = 296
+offset_top = 286
+offset_right = 344
+offset_bottom = 334
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -231,10 +234,10 @@ expand_mode = 1
 [node name="Skill3Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 180.0
-offset_top = 359.0
-offset_right = 220.0
-offset_bottom = 399.0
+offset_left = 300
+offset_top = 290
+offset_right = 340
+offset_bottom = 330
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -242,29 +245,29 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 355.0
-offset_right = 365.0
-offset_bottom = 375.0
+offset_left = 365
+offset_top = 280
+offset_right = 485
+offset_bottom = 300
 text = "技能名3"
 
 [node name="Skill3Lvl" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 377.0
-offset_right = 365.0
-offset_bottom = 397.0
+offset_left = 365
+offset_top = 305
+offset_right = 485
+offset_bottom = 325
 text = "lv.1"
 
 [node name="Skill3Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 355.0
-offset_top = 365.0
-offset_right = 395.0
-offset_bottom = 405.0
+offset_left = 470.5
+offset_top = 299
+offset_right = 519.5
+offset_bottom = 351
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -273,10 +276,10 @@ stretch_mode = 0
 [node name="Skill4Board" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 153.0
-offset_top = 437.0
-offset_right = 407.0
-offset_bottom = 523.0
+offset_left = 273
+offset_top = 357
+offset_right = 527
+offset_bottom = 443
 mouse_filter = 2
 texture = ExtResource("3_bg2")
 axis_stretch_horizontal = 0
@@ -289,10 +292,10 @@ patch_margin_bottom = 30
 [node name="Skill4Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 176.0
-offset_top = 445.0
-offset_right = 224.0
-offset_bottom = 493.0
+offset_left = 296
+offset_top = 376
+offset_right = 344
+offset_bottom = 424
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -300,10 +303,10 @@ expand_mode = 1
 [node name="Skill4Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 180.0
-offset_top = 449.0
-offset_right = 220.0
-offset_bottom = 489.0
+offset_left = 300
+offset_top = 380
+offset_right = 340
+offset_bottom = 420
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -311,29 +314,29 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 445.0
-offset_right = 365.0
-offset_bottom = 465.0
+offset_left = 365
+offset_top = 370
+offset_right = 485
+offset_bottom = 390
 text = "技能名4"
 
 [node name="Skill4Lvl" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 245.0
-offset_top = 467.0
-offset_right = 365.0
-offset_bottom = 487.0
+offset_left = 365
+offset_top = 395
+offset_right = 485
+offset_bottom = 415
 text = "lv.1"
 
 [node name="Skill4Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 355.0
-offset_top = 455.0
-offset_right = 395.0
-offset_bottom = 495.0
+offset_left = 470.5
+offset_top = 389
+offset_right = 519.5
+offset_bottom = 441
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -342,10 +345,10 @@ stretch_mode = 0
 [node name="Skill1MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 370.0
-offset_top = 219.0
-offset_right = 385.0
-offset_bottom = 234.0
+offset_left = 361.5
+offset_top = 149
+offset_right = 378.5
+offset_bottom = 165
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -353,29 +356,29 @@ texture = ExtResource("7_gold")
 [node name="Skill1Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 400.0
-offset_top = 219.0
-offset_right = 460.0
-offset_bottom = 235.0
+offset_left = 370
+offset_top = 149
+offset_right = 430
+offset_bottom = 165
 mouse_filter = 2
 
 [node name="Skill1LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 367.0
-offset_top = 197.0
-offset_right = 430.0
-offset_bottom = 217.0
+offset_left = 397
+offset_top = 125
+offset_right = 460
+offset_bottom = 145
 mouse_filter = 2
 
 [node name="Skill2MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 370.0
-offset_top = 309.0
-offset_right = 385.0
-offset_bottom = 324.0
+offset_left = 361.5
+offset_top = 239
+offset_right = 378.5
+offset_bottom = 255
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -383,29 +386,29 @@ texture = ExtResource("7_gold")
 [node name="Skill2Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 400.0
-offset_top = 309.0
-offset_right = 460.0
-offset_bottom = 325.0
+offset_left = 370
+offset_top = 239
+offset_right = 430
+offset_bottom = 255
 mouse_filter = 2
 
 [node name="Skill2LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 367.0
-offset_top = 287.0
-offset_right = 430.0
-offset_bottom = 307.0
+offset_left = 397
+offset_top = 215
+offset_right = 460
+offset_bottom = 235
 mouse_filter = 2
 
 [node name="Skill3MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 370.0
-offset_top = 399.0
-offset_right = 385.0
-offset_bottom = 414.0
+offset_left = 361.5
+offset_top = 329
+offset_right = 378.5
+offset_bottom = 345
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -413,29 +416,29 @@ texture = ExtResource("7_gold")
 [node name="Skill3Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 400.0
-offset_top = 399.0
-offset_right = 460.0
-offset_bottom = 415.0
+offset_left = 370
+offset_top = 329
+offset_right = 430
+offset_bottom = 345
 mouse_filter = 2
 
 [node name="Skill3LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 367.0
-offset_top = 377.0
-offset_right = 430.0
-offset_bottom = 397.0
+offset_left = 397
+offset_top = 305
+offset_right = 460
+offset_bottom = 325
 mouse_filter = 2
 
 [node name="Skill4MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 370.0
-offset_top = 489.0
-offset_right = 385.0
-offset_bottom = 504.0
+offset_left = 361.5
+offset_top = 419
+offset_right = 378.5
+offset_bottom = 435
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -443,39 +446,39 @@ texture = ExtResource("7_gold")
 [node name="Skill4Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 400.0
-offset_top = 489.0
-offset_right = 460.0
-offset_bottom = 505.0
+offset_left = 370
+offset_top = 419
+offset_right = 430
+offset_bottom = 435
 mouse_filter = 2
 
 [node name="Skill4LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
-offset_left = 367.0
-offset_top = 467.0
-offset_right = 430.0
-offset_bottom = 487.0
+offset_left = 397
+offset_top = 395
+offset_right = 460
+offset_bottom = 415
 mouse_filter = 2
 
 
 [node name="SkillPointLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 200
-offset_top = 545
-offset_right = 560
-offset_bottom = 575
+offset_left = 220
+offset_top = 45
+offset_right = 580
+offset_bottom = 75
 mouse_filter = 2
 
 [node name="BuySkillPointBtn" type="TextureButton" parent="."]
 layout_mode = 0
 mouse_filter = 2
-offset_bottom = 595
-offset_left = 580
-offset_right = 660
-offset_top = 540
+offset_bottom = 86
+offset_left = 287
+offset_right = 363
+offset_top = 34
 unique_name_in_owner = true
 texture_normal = ExtResource("8_buybtn")
 texture_pressed = ExtResource("8_buybtn")

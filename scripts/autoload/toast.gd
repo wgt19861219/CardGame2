@@ -4,10 +4,10 @@ extends CanvasLayer
 ## 2026-07-27 补 board 背景板（照源 toast.lua createToast：toast_bg.png Scale9 + 文字，半透明蒙层）。
 
 const TOAST_LAYER: int = 200
-const TOAST_Y: float = 320.0   # 屏幕垂直居中附近
+const TOAST_Y: float = 240.0   # 屏幕垂直居中（源 toast.lua:59 bg:setPosition(ccp(400,240)) 直译）
 const TOAST_DURATION: float = 2.0   # 显示时长（秒）
 const TOAST_FONT_SIZE: int = 22   # toast 字号
-const SCREEN_CENTER_X: float = 480.0   # 屏幕水平中心（960/2，position.x 居中基准）
+const SCREEN_CENTER_X: float = 400.0   # 屏幕水平中心（800/2，源 ccp(400,240)；position.x 居中基准）
 const TOAST_OUTLINE_SIZE: int = 3   # 文字描边粗细（add_theme_constant_override outline_size）
 const TOAST_CENTER_RATIO: float = 0.5   # 居中比例（label_w 乘以它算水平偏移）
 const TOAST_BG_RES: String = "res://assets/ui/alpha/HVGA/toast_bg.png"
