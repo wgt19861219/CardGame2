@@ -43,10 +43,14 @@ offset_bottom = 113.0
 mouse_filter = 0
 texture = ExtResource("1_board")
 ; 源 shortcut.lua:273 Scale9Sprite capInsets CCRectMake(0,25,62,26)，贴图 106x91 → top=91-25-26=40/bottom=25/right=106-62=44
+; Godot patch_margin 语义=corner 按该逻辑值直接绘制；源 cocos corner 显示=cap px÷CS(1.28125)（hello.lua:311）。
+; 故 margin 必须取 cap px÷CS（40→31.22 / 25→19.51 / 44→34.34），否则板边框显示大 1.28×（右边框 44 vs 源 34.3）。
+; ÷CS 后板横向逐段缩放系数统一 ≈0.7805，与源 Scale9Sprite 等效（2026-08-22 观感根因二，纹理px直用系统债家族）。
+; ÷CS 值 31.22/34.34/19.51 按 int 属性四舍五入 31/34/20（≤0.5 逻辑点误差，视觉无感）。
 patch_margin_left = 0
-patch_margin_top = 40
-patch_margin_right = 44
-patch_margin_bottom = 25
+patch_margin_top = 31
+patch_margin_right = 34
+patch_margin_bottom = 20
 
 [node name="ToggleDown" type="TextureButton" parent="."]
 unique_name_in_owner = true
@@ -56,6 +60,10 @@ offset_top = 35.22
 offset_right = 944.49
 offset_bottom = 100.78
 ignore_texture_size = true
+; stretch_mode=0（SCALE）显式——TextureButton 默认 2（KEEP）按纹理原像素直显（不缩放到 size），
+; ÷CS 显示尺寸必须显式 SCALE 拉伸，否则纹理大 1.28× 压出板宽（批 2 方法论，同 avatar_panel.gd:148）。
+; 全部 7 个 TextureButton 同修（toggle×2 + 快捷按钮×5），2026-08-22 快捷栏观感根因。
+stretch_mode = 0
 texture_normal = ExtResource("2_down")
 texture_pressed = ExtResource("2_down")
 mouse_filter = 0
@@ -69,6 +77,7 @@ offset_top = 35.22
 offset_right = 944.49
 offset_bottom = 100.78
 ignore_texture_size = true
+stretch_mode = 0
 texture_normal = ExtResource("3_up")
 texture_pressed = ExtResource("3_up")
 mouse_filter = 0
@@ -81,6 +90,7 @@ offset_top = 70.54
 offset_right = 965.5
 offset_bottom = 152.5
 ignore_texture_size = true
+stretch_mode = 0
 texture_normal = ExtResource("4_hero")
 texture_pressed = ExtResource("5_herop")
 modulate = Color(1, 1, 1, 0)
@@ -107,6 +117,7 @@ offset_top = 73.36
 offset_right = 965.5
 offset_bottom = 147.5
 ignore_texture_size = true
+stretch_mode = 0
 texture_normal = ExtResource("6_pkg")
 texture_pressed = ExtResource("7_pkgp")
 modulate = Color(1, 1, 1, 0)
@@ -132,6 +143,7 @@ offset_top = 74.48
 offset_right = 965.5
 offset_bottom = 145.5
 ignore_texture_size = true
+stretch_mode = 0
 texture_normal = ExtResource("8_frag")
 texture_pressed = ExtResource("9_fragp")
 modulate = Color(1, 1, 1, 0)
@@ -157,6 +169,7 @@ offset_top = 73.08
 offset_right = 965.5
 offset_bottom = 148.0
 ignore_texture_size = true
+stretch_mode = 0
 texture_normal = ExtResource("10_task")
 texture_pressed = ExtResource("11_taskp")
 modulate = Color(1, 1, 1, 0)
@@ -182,6 +195,7 @@ offset_top = 71.68
 offset_right = 965.5
 offset_bottom = 150.5
 ignore_texture_size = true
+stretch_mode = 0
 texture_normal = ExtResource("12_todo")
 texture_pressed = ExtResource("13_todop")
 modulate = Color(1, 1, 1, 0)

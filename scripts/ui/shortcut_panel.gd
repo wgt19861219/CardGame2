@@ -25,9 +25,10 @@ const BOARD_UP_OFFSET: float = 0.0
 const BOARD_TOP_Y: float = SCREEN_H - 460.0 + BOARD_UP_OFFSET   # 源板顶贴底（cocos 板底 y=0..460 → godot 20..480）
 const BOARD_WIDTH: float = 82.0
 # 收起态板高受控偏离（批 2 Task 8 NinePatch 化）：源 40（uires.lua height_min），但 Godot
-# NinePatchRect 最小尺寸=patch margin 和（top40+bottom25=65），40 会被引擎钳到 65；
-# 源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。收起态板被 toggle 钮覆盖视觉无感。
-const BOARD_H_MIN: float = 65.0
+# NinePatchRect 最小尺寸=patch margin 和——margin 已按源 cap px÷CS 取整（31+20=51），
+# 源 40 仍会被引擎钳到 51；源 Cocos Scale9Sprite 允许 margin 挤压渲染、Godot 不支持。
+# 收起态板被 toggle 钮覆盖视觉无感。
+const BOARD_H_MIN: float = 51.0
 const BOARD_H_MAX: float = 460.0
 const TOGGLE_CENTER: Vector2 = Vector2(740.0, SCREEN_H - 440.0 + BOARD_UP_OFFSET)   # y=40 = 源 shortcut_pos_y 440 直译（480-440）
 # 源运行时直译（uires.lua:26-31 静态表 PosY={382,307,237,162,83} + :18 s_b_offset_y=-20
