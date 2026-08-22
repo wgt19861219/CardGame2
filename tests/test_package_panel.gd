@@ -472,8 +472,9 @@ func test_grid_cell_display_alignment() -> void:
 		"frame 贴图按品质 equip_frame_<color>.png")
 	# 内容层：child(1) = ReadequipIcon 产物（frame Sprite2D 已剥、icon 归中、缩放落中区）
 	var cell0: Control = wrapper0.get_child(1) as Control
-	assert_almost_eq(cell0.scale.x, 55.0 / 78.0, 0.0001, "内容层 scale=55/78（icon 视觉嵌 NinePatch 中区）")
-	assert_almost_eq(cell0.position.x, 9.0 - 9.0 * 55.0 / 78.0, 0.01, "内容层 offset 使 icon 视觉起点=中区左上")
+	# 2026-08-22 双重÷CS修：create_icon 内部已统一 ÷CS（icon 显示 78/CS），分母改 78/CS
+	assert_almost_eq(cell0.scale.x, 55.0 / (78.0 / 1.28125), 0.0001, "内容层 scale=55/(78/CS)（icon 视觉 55 嵌 NinePatch 中区）")
+	assert_almost_eq(cell0.position.x, 9.0 - 9.0 * 55.0 / (78.0 / 1.28125), 0.01, "内容层 offset 使 icon 视觉起点=中区左上")
 	for c in cell0.get_children():
 		var spr := c as Sprite2D
 		if spr == null or spr.texture == null:
@@ -517,6 +518,43 @@ func test_fragment_cell_ninepatch_structure() -> void:
 			break
 	assert_not_null(icon, "内容层含 icon（含 gocha fallback：碎片 Icon 字段资源缺失回退）")
 	assert_eq(icon.position, Vector2(9.0, 9.0), "icon 归中 (9,9)（视觉嵌 NinePatch 中区，旧 (36,38) 溢出）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 装备格 gocha 抢位回归守卫（2026-08-22）：1fc781e 给 create_icon 装备分支补 gocha 衬底后，
+# ①cell 内 gocha（平级后 add）画在 NinePatch 边框层上；②_center_cell_icon"第一个非
+# tag/tick Sprite2D"被 gocha 抢位，真 icon 未归中致背包图标错位。修复=衬底 z=-2+underlay
+# meta，strip 按 meta 删。Equip 101 Icon 资源存在（UI/ITEM/101.jpg）→ 内容节点非 gocha。
+func test_make_cell_equip_icon_centered_not_gocha() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	var wrapper: Control = panel._make_cell({"id": 101, "amount": 2})
+	var cell: Control = null
+	for c in wrapper.get_children():
+		if c is Control and not (c is NinePatchRect):
+			cell = c
+			break
+	assert_not_null(cell, "cell 内容层存在（wrapper = 品质框 NinePatch + cell）")
+	for c in cell.get_children():
+		var spr := c as Sprite2D
+		if spr != null:
+			assert_false(spr.has_meta(&"underlay"), "strip 后无 underlay 衬底残留（gocha 盖框回归守卫）")
+	var first: Sprite2D = null
+	for c in cell.get_children():
+		var spr := c as Sprite2D
+		if spr != null and spr.texture != null \
+				and String(spr.texture.resource_path) != ReadequipIcon.SOULSTONE_TAG_PATH \
+				and String(spr.texture.resource_path) != ReadequipIcon.TICK_PATH:
+			first = spr
+			break
+	assert_not_null(first, "首个内容节点存在")
+	assert_ne(String(first.texture.resource_path), ReadequipIcon.GOCHA_BG_PATH,
+		"归中的是真 icon（101 → UI/ITEM/101.jpg）非 gocha 衬底")
+	assert_eq(first.position, Vector2(9.0, 9.0), "真 icon 归中 (9,9)（gocha 抢位回归守卫）")
 	panel.remove_window()
 	root.queue_free()
 

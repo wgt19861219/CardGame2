@@ -505,7 +505,7 @@ func test_icon_center_anchor_compensation() -> void:
 		"icon 起点 x = box 中心 - 渲染半宽（中心锚补偿）")
 	assert_almost_eq((popup._loot_icons[0] as Control).position.y, origin.y, 0.5,
 		"icon 起点 y = box 中心 - 渲染半高（中心锚补偿）")
-	# 补偿数学：94×95 纹理 × ÷CS scale = 73.4×74.2 ≈ 源 72×72 点框
+	# 补偿数学：产物显示 94×95÷CS = 73.4×74.2 ≈ 源点框（create_icon 内部已统一 ÷CS，终态 scale=1）
 	var half: Vector2 = Vector2(94.0, 95.0) * (1.0 / 1.28125) * 0.5
 	assert_almost_eq(origin.x, popup._g(PopTavernLoot.BOX_BPOS).x - half.x, 0.1,
 		"渲染半宽 = 94÷CS/2")
@@ -523,7 +523,7 @@ func test_hero_loot_direct_placement_no_fly() -> void:
 	popup._fly_loot(0)
 	var icon: Control = popup._loot_icons[0]
 	assert_almost_eq(icon.rotation, 0.0, 0.001, "hero loot 不旋转（直接落位）")
-	assert_almost_eq(icon.scale.x, 1.0 / 1.28125, 0.001, "hero loot 终态 scale=÷CS")
+	assert_almost_eq(icon.scale.x, 1.0, 0.001, "hero loot 终态 scale=1（产物内部已 ÷CS 显示 73.4；2026-08-22 双重÷CS修）")
 	assert_almost_eq(icon.position.x, popup._icon_origin(popup._loot_targets[0]).x, 0.5,
 		"hero loot 位置 = 中心锚补偿目标")
 	popup.remove_window()

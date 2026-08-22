@@ -238,8 +238,8 @@ func test_item_attach_icon_scale_position() -> void:
 	panel._add_item_attach(248.24, [{"id": 101, "amount": 2}, {"id": 101, "amount": 2}])
 	assert_eq(host.get_child_count(), 2, "2 个物品 icon")
 	var icon0: Control = host.get_child(0)
-	assert_almost_eq(icon0.scale.x, 60.0 / 94.0, 0.0001, "icon scale=60/94（视觉宽 60）")
-	var vis_h: float = 95.0 * 60.0 / 94.0
+	assert_almost_eq(icon0.scale.x, 60.0 / (94.0 / 1.28125), 0.0001, "icon scale=60/(94/CS)（视觉宽 60；2026-08-22 双重÷CS修）")
+	var vis_h: float = 95.0 / 1.28125 * (60.0 / (94.0 / 1.28125))   # 产物显示 95/CS × scale = 60.64
 	assert_almost_eq(icon0.position.x + 30.0, 66.5, 0.1, "首列视觉中心 x=66.5（源 ox+icon_len/2）")
 	assert_almost_eq(icon0.position.y + vis_h * 0.5, 280.74, 0.1, "首行视觉中心 y=248.24+32.5（源 getpos）")
 	var icon1: Control = host.get_child(1)

@@ -233,10 +233,10 @@ func _create_equip_cell(info: Dictionary, player_level: int) -> Control:
 	var is_open: bool = player_level >= lr
 	if is_open:
 		var icon: Control = ReadequipIcon.create_icon(int(info["id"]), 0, _cm)
-		# ReadequipIcon frame 按纹理原尺寸渲染（94×95px，批2 口径）——源显示尺寸 = ÷CS =
-		# 73.4×74.2 点，宿主须 scale 补偿（2026-08-18 修复轮二 R4：此前漏补偿致已解锁格比
-		# 锁定格[icon_bg 86÷CS=67.1 点]大 1.28×，用户反馈"第一格比较大"根因）。
-		icon.scale = Vector2.ONE / CONTENT_SCALE
+		# 9bc640e 起 create_icon 内部 _load_sprite 统一 ÷CS（frame 已显示 73.4×74.2 点），
+		# 不再宿主补偿（旧 1/CS 系批2 原像素口径——R4 修复时产物直显 94px，统一后叠加成
+		# 双重 ÷CS 实显 57.3 比锁定格[icon_bg 67.1]还小，2026-08-22 修）。
+		icon.scale = Vector2.ONE
 		# 源 :429 icon:setPosition(57,64) — cocos 默认锚点(0.5,0.5)即【中心】落在 (57,64)。
 		# Godot position 是左上角，减半尺寸换算（修复轮 C）；scale 围绕 pivot=size/2 缩放
 		# 不改 position 语义——position 减数维持 size*0.5（轮二 R4 教训：减缩放后尺寸会

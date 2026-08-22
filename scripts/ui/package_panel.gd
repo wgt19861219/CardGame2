@@ -43,10 +43,12 @@ const FRAME_PATCH_B: int = 11
 # fragment_bg 衬底渐变带（PIL 实测顶 y1-11/底 y82-89，含透明缘到 y94）。
 const FRAG_BG_PATCH_T: int = 12
 const FRAG_BG_PATCH_B: int = 13
-# 内容层缩放：icon 纹理（ITEM 系 78×78）→ NinePatch 中区（73.22-18 × 74-19 ≈ 55×55）。
-# icon 局部 (9,9)（ICON_OFFSET 口径）→ 视觉起点 = 中区左上 (9,8)：offset = (9,8)-(9,9)×s。
-const CELL_INNER_SCALE: float = 55.0 / 78.0
-const CELL_CONTENT_OFFSET: Vector2 = Vector2(9.0, 8.0) - Vector2(9.0, 9.0) * (55.0 / 78.0)
+# 内容层缩放：目标 icon 视觉 55 嵌 NinePatch 中区。9bc640e 起 create_icon 内部 _load_sprite
+# 统一 ÷CS（icon 节点已显示 78/CS），故分母 = 78/CS 而非旧口径纹理 px 78（旧 CELL_INNER_SCALE
+# =55/78 系原像素时代设计，统一后叠加成双重 ÷CS → icon 实显 42.9 填不满中区，2026-08-22 修）。
+const CELL_INNER_SCALE: float = 55.0 / (78.0 / ReadequipIcon.CONTENT_SCALE)
+# icon 归中局部 (9,9)（ICON_OFFSET 口径）→ 视觉起点 = 中区左上 (9,8)：offset = (9,8)-(9,9)×s。
+const CELL_CONTENT_OFFSET: Vector2 = Vector2(9.0, 8.0) - Vector2(9.0, 9.0) * CELL_INNER_SCALE
 const ICON_LOCAL_POS: Vector2 = Vector2(9.0, 9.0)
 
 # panel 层子场景（位置/size/贴图/字号全静态化进 .tscn + theme variation）。
@@ -256,9 +258,12 @@ func _make_cell_frame(p_texture: Texture2D, patch_t: int, patch_b: int) -> NineP
 	return frame
 
 
-# 去 ReadequipIcon 产物里的 94×95 底图层（equip_frame_*/fragment_frame_*/fragment_bg），
-# 由 NinePatchRect 边框层接管。gocha 不在名单：本项目仅在 icon 资源缺失时作 fallback
-# 出现（碎片 Icon 字段资源缺，探针实证），留作占位由 _center_cell_icon 归中。
+# 去 ReadequipIcon 产物里的底图层（equip_frame_*/fragment_frame_* + underlay 衬底
+# [gocha/fragment_bg，ReadequipIcon set_meta 标记]），由 NinePatchRect 边框层接管。
+# gocha 衬底 1fc781e 补画后必须一并 strip：否则①盖在 NinePatch 边框层上（cell 后 add
+# 画最上）；②抢 _center_cell_icon 的"第一个 Sprite2D"归中位致真 icon 错位
+# （2026-08-22 背包反馈回归）。按 meta 而非路径删：icon 资源缺失时内容节点 fallback
+# 同 gocha 纹理（碎片 Icon 字段资源缺，探针实证），按路径会误删占位。
 func _strip_frame_sprites(cell: Control) -> void:
 	for c in cell.get_children():
 		var spr := c as Sprite2D
@@ -266,13 +271,13 @@ func _strip_frame_sprites(cell: Control) -> void:
 			continue
 		var p: String = spr.texture.resource_path
 		if p.begins_with(ReadequipIcon.FRAME_DIR) or p.begins_with(ReadequipIcon.FRAGMENT_FRAME_DIR) \
-				or p == ReadequipIcon.FRAGMENT_BG_PATH:
+				or spr.has_meta(&"underlay"):
 			spr.free()
 
 
 # icon 归中：strip 后第一个非 tag/tick 的 Sprite2D 定位 (9,9)（container 72 基准左上口径），
-# 使内容层缩放后 icon 视觉恰嵌 NinePatch 中区。覆盖 gocha fallback 占位（碎片 Icon 字段
-# 资源缺失时 _load_sprite 回退 gocha，非 ITEM 前缀）；fragment 侧 STONE_ICON_POS (36,38)
+# 使内容层缩放后 icon 视觉恰嵌 NinePatch 中区。icon 资源缺失时内容节点 fallback gocha
+# 纹理（无 underlay meta 不被 strip）仍归中作占位；fragment 侧 STONE_ICON_POS (36,38)
 # 既有偏移溢出格子，此处归中——package 特有定位，不动 ReadequipIcon 通用件。
 func _center_cell_icon(cell: Control) -> void:
 	for c in cell.get_children():

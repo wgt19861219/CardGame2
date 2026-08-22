@@ -14,8 +14,10 @@ extends GutTest
 ##   （GUT headless InputEvent 限制），靠代码审查 + 运行时点击行为保证
 ##
 ## 2026-07-26 适配新签名 create_equip_slot_icon(slot, ceid, eid, hero, cm, pd)：
-## - 灰显行为变更：icon 整体 modulate 保持白，只灰子节点（源 setSpriteGray(icon) 语义）
 ## - eid==0 占位变更：画 lock 图标（_create_lock_icon），非空槽
+## 2026-08-22 灰显语义修正：源 setSpriteGray = setCascadeColor ccc3(100,100,100)+opacity(180)
+## 级联整树（含 frame，resource_manager.lua:871-876），旧"只灰子节点保彩框"系误读；
+## 同批配方分支强制白框（源 :1124 createIcon(eid,nil,1) quality 覆写表品质）
 
 var cm: ConfigManager
 
@@ -37,21 +39,24 @@ func test_create_equip_slot_icon_worn() -> void:
 	icon.free()
 
 
-# 三态2：未穿戴配方（ceid<=0 and eid>0）→ icon 整体白，子节点灰（源 setSpriteGray 只灰 icon 不灰 frame）
+# 三态2：未穿戴配方（ceid<=0 and eid>0）→ 强制白框 + 整树灰
+# （源 :1124 createIcon(eid,nil,1) 覆写表品质——201 表 Quality=2 绿框被压成白框；
+# :1125 setSpriteGray 级联 ccc3(100,100,100)+opacity(180) 含 frame，2026-08-22 修正旧误读）
 func test_create_equip_slot_icon_unworn_recipe() -> void:
 	var hero := HeroInstance.new(1)
 	var icon: Control = HeroDetailEquipSlots.create_equip_slot_icon(0, 0, 201, hero, cm, null)
 	assert_not_null(icon)
-	# 修正：源 setSpriteGray(icon) 只灰 icon 子节点，frame 保持彩色 → icon 整体 modulate 仍是白
-	assert_eq(icon.modulate, Color.WHITE, "未穿戴配方 icon 整体不灰（frame 保彩色），灰显下沉到子节点")
-	# 子节点（icon Sprite2D）应被灰化，frame（第 0 个子）不灰
-	assert_gt(icon.get_child_count(), 1, "有 frame + icon 子节点")
-	var frame := icon.get_child(0)
-	var icon_child := icon.get_child(1)
-	if frame is CanvasItem:
-		assert_eq((frame as CanvasItem).modulate, Color.WHITE, "frame 保持彩色不灰")
-	if icon_child is CanvasItem:
-		assert_eq((icon_child as CanvasItem).modulate, HeroDetailEquipSlots.EQUIP_GRAY_MODULATE, "icon 子节点灰显")
+	assert_eq(icon.modulate, HeroDetailEquipSlots.EQUIP_GRAY_MODULATE, "未穿戴配方整树灰（源 setSpriteGray 级联，含 frame）")
+	assert_eq(
+		HeroDetailEquipSlots.EQUIP_GRAY_MODULATE,
+		Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0),
+		"灰化色照源 ccc3(100,100,100)+opacity(180)"
+	)
+	# frame 强制白框：201 表品质 2（绿）被 quality=1 覆写
+	var frame := icon.get_child(0) as Sprite2D
+	assert_not_null(frame, "第 0 子是 frame Sprite2D")
+	var frame_path: String = String(frame.texture.resource_path)
+	assert_true(frame_path.ends_with("equip_frame_white.png"), "配方槽强制白框（源 :1124 quality=1），实际 %s" % frame_path)
 	icon.free()
 
 

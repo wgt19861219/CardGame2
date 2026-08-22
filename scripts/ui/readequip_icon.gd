@@ -83,32 +83,39 @@ static func _apply_stencil(s: Sprite2D, stencil_path: String, threshold: float) 
 
 
 # 创建图标节点（品质边框 + 内 Icon + 数量 Label + 可选星级）。id 为 equip id 或 hero tid。
-static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_gray: bool = false) -> Control:
+# quality>0 时覆写表品质（源 createIcon 第三参 quality or value(id,"Quality") :704，
+# stagedetail hero 奖励传 4 / herodetail 装备槽配方传 1 两处调用方依赖，2026-08-22 边框错档第二批）。
+static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_gray: bool = false, quality: int = 0) -> Control:
 	# 源 :705-712 按 Equip.Category 分流：碎片/魂石走专用图标（帧/衬底/tag/内缩各不同）。
 	# 2026-08-22 照源补分流——此前商店魂石/碎片商品误走装备分支致观感错。
 	# 源 createIconWithLevel:1206 星级在分流后统一加于 bg（魂石带星），两分支补 _add_stars。
-	if not _is_hero(id, cm):
+	var is_hero: bool = _is_hero(id, cm)
+	if quality <= 0:
+		quality = _get_quality(id, is_hero, cm)
+	if not is_hero:
 		var category: String = String(cm.get_raw_table("Equip").get(str(id), {}).get("Category", ""))
 		var diverted: Control = null
 		if category == "EQUIP.SOUL_STONE":
-			diverted = create_hero_stone_icon(id, amount, cm)
+			diverted = create_hero_stone_icon(id, amount, cm, quality)
 		elif category == "EQUIP.FRAGMENT":
-			diverted = create_fragment_icon(id, amount, cm)
+			diverted = create_fragment_icon(id, amount, cm, quality)
 		if diverted != null:
 			if level > 0 or show_gray:
 				_add_stars(diverted, id, level, show_gray, cm)
-				diverted.set_meta(&"quality", _get_quality(id, false, cm))
+				diverted.set_meta(&"quality", quality)
 				diverted.set_meta(&"is_hero", false)
 			return diverted
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	container.size = Vector2(ICON_SIZE, ICON_SIZE)
-	var is_hero: bool = _is_hero(id, cm)
-	var quality: int = _get_quality(id, is_hero, cm)
 	var frame := _load_sprite(FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
 	container.add_child(frame)
-	# 源 :719-722 equip 分支有 gocha 衬底 z=-2（frame 之下、内容之上）——此前漏画。
+	# 源 :719-722 equip 分支 gocha 衬底 bg:addChild(equipBg, -2)——frame 之下内容之上
+	# （1fc781e 补画时漏 z 序：平级后 add 会盖住 frame 边框，2026-08-22 背包反馈回归）。
+	# frame 纹理中空透明 78%（PIL 实测），源层序 gocha(-2)→内容(-1)→边框(0)。
 	var gocha := _load_sprite(GOCHA_BG_PATH, DEFAULT_ICON)
+	gocha.z_index = -2
+	gocha.set_meta(&"underlay", true)   # 衬底标记（package strip 区分：icon 缺资源时内容节点同用 gocha 纹理）
 	container.add_child(gocha)
 	var frame_h: float = _vis_size(frame).y
 	var frame_w: float = _vis_size(frame).x
@@ -121,6 +128,7 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 			_fit_inset(icon, frame_w)
 			_apply_stencil(icon, EQUIP_STENCIL_PATH, 0.02)
 		_place_center(icon, EQUIP_CENTER_UP, frame_h)
+		icon.z_index = -1   # 源 :741 bg:addChild(equip, -1)：内容在 frame 之下（中空区可见）
 		container.add_child(icon)
 	if amount > 1:
 		var lbl := Label.new()
@@ -208,19 +216,23 @@ static func refresh_stars(container: Control, new_level: int) -> void:
 
 
 # 创建魂石图标（照源 createHeroStone :571-602）：fragment_frame 边框 + fragment_bg + Icon + equip_soulstone_tag。
-# id = 碎片物品 id（Fragment 表的 Fragment ID）。源用 createClippingNode 圆形 mask（fragment_stencil），
-# 本项目简化直接 Sprite2D（headless 安全，与 create_icon 一致不 mask）。Phase 4 视觉校准补 mask。
-static func create_hero_stone_icon(id: int, amount: int, cm: Variant) -> Control:
+# id = 碎片物品 id（Fragment 表的 Fragment ID）。quality>0 覆写表品质（源 :574 quality or value(id,"Quality")）。
+# 源用 createClippingNode 圆形 mask（fragment_stencil）→ _apply_stencil shader 等效。
+static func create_hero_stone_icon(id: int, amount: int, cm: Variant, quality: int = 0) -> Control:
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	container.size = Vector2(ICON_SIZE, ICON_SIZE)
-	var quality: int = _get_quality(id, false, cm)
+	if quality <= 0:
+		quality = _get_quality(id, false, cm)
 	var frame := _load_sprite(FRAGMENT_FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
 	container.add_child(frame)
 	var frame_h: float = _vis_size(frame).y
 	var frame_w: float = _vis_size(frame).x
 	# 源 :578-581 equipBg=fragment_bg anchor(0,0)(0,0) frame 左下→Godot 左上（centered=false 默认）。
+	# 源 bg:addChild(equipBg, -2)：衬底在 frame 之下（1fc781e 补画漏 z 序，2026-08-22 修）。
 	var bg := _load_sprite(FRAGMENT_BG_PATH, DEFAULT_ICON)
+	bg.z_index = -2
+	bg.set_meta(&"underlay", true)   # 衬底标记（package strip 用）
 	container.add_child(bg)
 	var icon_path := _get_icon_path(id, false, cm)
 	if icon_path != "":
@@ -228,6 +240,7 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant) -> Control
 		_fit_inset(icon, frame_w)   # 源 :600 s2=(frame逻辑宽-9)/stone宽
 		_place_center(icon, STONE_CENTER_UP, frame_h)
 		_apply_stencil(icon, FRAGMENT_STENCIL_PATH, 0.5)   # 源 :592 createClippingNode(fragment_stencil) 默认 0.5
+		icon.z_index = -1   # 源 :598 bg:addChild(stone, -1)：内容在 frame 之下
 		container.add_child(icon)
 	var tag := _load_sprite(SOULSTONE_TAG_PATH, DEFAULT_ICON)
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
@@ -243,17 +256,20 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant) -> Control
 
 
 # 创建碎片图标（照源 createFragment :538-568）：与魂石同构但内缩 -12、tag 用 fragment_tag、
-# 内容中心 (36,38)。源用 fragment_stencil 圆形 clip，本项目同魂石简化不 mask（Phase 4 校准补）。
-static func create_fragment_icon(id: int, amount: int, cm: Variant) -> Control:
+# 内容中心 (36,38)。quality>0 覆写表品质（源 :541 quality or value(id,"Quality")）。
+static func create_fragment_icon(id: int, amount: int, cm: Variant, quality: int = 0) -> Control:
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	container.size = Vector2(ICON_SIZE, ICON_SIZE)
-	var quality: int = _get_quality(id, false, cm)
+	if quality <= 0:
+		quality = _get_quality(id, false, cm)
 	var frame := _load_sprite(FRAGMENT_FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
 	container.add_child(frame)
 	var frame_h: float = _vis_size(frame).y
 	var frame_w: float = _vis_size(frame).x
 	var bg := _load_sprite(FRAGMENT_BG_PATH, DEFAULT_ICON)
+	bg.z_index = -2   # 源 :546 bg:addChild(equipBg, -2)：衬底在 frame 之下
+	bg.set_meta(&"underlay", true)   # 衬底标记（package strip 用）
 	container.add_child(bg)
 	var icon_path := _get_icon_path(id, false, cm)
 	if icon_path != "":
@@ -264,6 +280,7 @@ static func create_fragment_icon(id: int, amount: int, cm: Variant) -> Control:
 			icon.scale = Vector2(target / icon.texture.get_size().x, target / icon.texture.get_size().x)
 		_place_center(icon, Vector2(36.0, 38.0), frame_h)
 		_apply_stencil(icon, FRAGMENT_STENCIL_PATH, 0.5)   # 源 :552 createClippingNode(fragment_stencil)
+		icon.z_index = -1   # 源 :558 bg:addChild(stone, -1)：内容在 frame 之下
 		container.add_child(icon)
 	var tag := _load_sprite(FRAGMENT_TAG_PATH, DEFAULT_ICON)
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
@@ -296,6 +313,11 @@ static func _add_tick_tag(container: Control) -> void:
 	var frame_h: float = 95.0 / CONTENT_SCALE   # tick 只挂在 create_hero_stone_icon 产物上（fragment_frame 95px）
 	tick.position = Vector2(TICK_POS_UP.x, frame_h - TICK_POS_UP.y - _vis_size(tick).y)
 	container.add_child(tick)
+
+
+## 源 ed.itemType(id)=="hero" 判定的公共包装（stage_detail 奖励行等调用方分流用）。
+static func is_hero_id(id: int, cm: Variant) -> bool:
+	return _is_hero(id, cm)
 
 
 static func _is_hero(id: int, cm: Variant) -> bool:
