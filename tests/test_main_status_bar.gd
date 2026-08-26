@@ -35,12 +35,12 @@ func test_vitality_plus_clickable_with_handler() -> void:
 
 
 func test_no_button_without_handler() -> void:
-	# 无 handler：gold/diamond/vitality 三条 plus 都 TextureRect IGNORE，0 Button（不吞点击）
+	# 无 handler：gold/diamond 左端不渲染加号（源 empty.png 占位，批 A G1a）、vit 无 Button，共 0 Button
 	var parent := Control.new()
 	add_child_autofree(parent)
 	MainStatusBar.build(parent)
 	_collect_buttons(parent)
-	assert_eq(_collected.size(), 0, "无 handler → 三条 plus 都 IGNORE，0 Button")
+	assert_eq(_collected.size(), 0, "无 handler → 全部条 0 Button")
 
 
 # B1 入口接线（第九轮 P1-B1）：gold bar 整条可点 → doClickMidas（照源 statusbar.lua:41-49 money_bg）。
@@ -51,10 +51,9 @@ func test_gold_bar_clickable_with_handler() -> void:
 	var parent := Control.new()
 	add_child_autofree(parent)
 	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), handler)
-	assert_true(refs.has("gold"), "gold label ref 存在")
-	var gold_lbl: Label = refs["gold"] as Label
-	assert_eq(gold_lbl.mouse_filter, Control.MOUSE_FILTER_IGNORE, "gold Label IGNORE 避吞点击")
-	var gold_bar: Control = gold_lbl.get_parent()
+	assert_true(refs.has("gold"), "gold bar ref 存在")
+	# 2026-08-27 批 A：_build_bar 返回 bar Control 本体（旧版返回 Label 再 get_parent）
+	var gold_bar: Control = refs["gold"]
 	# 模拟鼠标左键点击 bar（照引擎 gui 系统触发 gui_input 信号）
 	var ev := InputEventMouseButton.new()
 	ev.button_index = MOUSE_BUTTON_LEFT
@@ -92,13 +91,13 @@ func test_plus_button_visual_source_size_build() -> void:
 
 
 func test_plus_button_visual_source_size_bars_only() -> void:
-	# 子场景版（build_bars_only：gold + vitality plus 均为 Button，diamond 静态）
+	# 子场景版（build_bars_only）：批 A 后 gold 也走整条可点不再渲染加号钮，仅 vitality 1 个 Button
 	var parent := Control.new()
 	add_child_autofree(parent)
 	var handler: Callable = func() -> void: pass
 	MainStatusBar.build_bars_only(parent, [331.0, 514.0, 681.0], 50.0, handler, handler)
 	_collect_buttons(parent)
-	assert_eq(_collected.size(), 2, "gold+vitality plus 装配为 2 个 Button")
+	assert_eq(_collected.size(), 1, "仅 vitality plus 装配 Button（gold 走整条 gui_input）")
 	_assert_plus_button_visual_ok()
 
 
@@ -238,3 +237,91 @@ func test_head_bg_frame_not_stretched() -> void:
 	assert_almost_eq(bg.size.x, 109.3, 0.1, "框贴图宽 109.3（贴图÷CS 不拉伸）")
 	assert_almost_eq(bg.size.y, 81.2, 0.1, "框贴图高 81.2")
 	assert_almost_eq(bg.position.y, 13.8, 0.1, "框贴图顶 13.8（源 cocos y10 底部抬升）")
+
+
+# ── 批 A G1a/G1b 像素级对齐守卫（2026-08-27：源 statusbar.lua empty 占位 + getNumberNode 贴图数字）──
+
+func test_number_node_format_comma() -> void:
+	# 源 tools.lua formatNumWithComma：自右每三位插逗号
+	assert_eq(NumberNode.format_comma(0), "0")
+	assert_eq(NumberNode.format_comma(999), "999")
+	assert_eq(NumberNode.format_comma(1000), "1,000")
+	assert_eq(NumberNode.format_comma(9980159), "9,980,159")
+	assert_eq(NumberNode.format_comma(10000029), "10,000,029")
+
+
+func test_number_node_build_structure_and_place_right() -> void:
+	var host := NumberNode.build("123,456")
+	autofree(host)
+	# 6 数字 + 1 逗号 = 7 字符贴图子节点（缺资源跳过，white 目录全量在库）
+	var trs: Array = []
+	for c in host.get_children():
+		if c is TextureRect:
+			trs.append(c)
+	assert_eq(trs.size(), 7, "逐字符 TextureRect 数 = 7（含 comma）")
+	if trs.size() == 7:
+		var first: TextureRect = trs[0]
+		# 显示尺寸 = 字符像素 ÷ CS（19×25 white → ~14.8×19.5）
+		var expected: Vector2 = (first.texture as Texture2D).get_size() / NumberNode.CONTENT_SCALE
+		assert_almost_eq(first.size.y, expected.y, 0.01, "字符显示高=纹理÷CS")
+		# 右缘锚定：place_right 后 右缘 = right_x、垂直中心 = center_y
+		NumberNode.place_right(host, 135.0, 23.0)
+		assert_almost_eq(host.position.x + host.size.x, 135.0, 0.01, "右缘 x=right_x")
+		assert_almost_eq(host.position.y + host.size.y * 0.5, 23.0, 0.01, "垂直中心 y=center_y")
+		host.free()
+
+
+func test_gold_diamond_bars_have_no_left_plus() -> void:
+	# G1a 防回归：源 money/rmb 左端 res=empty.png 占位 → Godot 侧不建任何 plus 节点；
+	# 仅 vitality（有 handler）渲染加号 Button。
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable())
+	for key in ["gold", "diamond"]:
+		var bar: Control = refs[key]
+		for c in bar.get_children():
+			assert_false(String(c.name).begins_with("plus"), "%s 条左端无 plus 节点（源 empty.png）" % key)
+	var parent2 := Control.new()
+	add_child_autofree(parent2)
+	var refs2: Dictionary = MainStatusBar.build(parent2, func() -> void: pass)
+	var found_plus: bool = false
+	for c in (refs2["vitality"] as Control).get_children():
+		if c is Button:
+			found_plus = true
+	assert_true(found_plus, "vitality 加号为可点 Button（照源真贴图）")
+
+
+func test_refresh_builds_digit_sprites_right_aligned() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var refs: Dictionary = MainStatusBar.build(parent)
+	MainStatusBar.refresh(refs, 81, 9980159, 10000029, 100, 171, "Player", 0, 1)
+	# gold："9,980,159" = 7 数字 + 2 逗号 = 9 字符
+	var gold_bar: Control = refs["gold"]
+	var num: Control = gold_bar.get_node("num")
+	assert_eq(num.get_child_count(), 9, "gold 数字字符组 9 子节点")
+	assert_almost_eq(num.position.x + num.size.x, MainStatusBar.GOLD_NUM_RIGHT_X, 0.01, "gold 右缘对齐 rightPoint(135)")
+	assert_almost_eq(num.position.y + num.size.y * 0.5, MainStatusBar.NUM_CENTER_Y, 0.01, "数字中心 y=23（cocos y25 直译）")
+	# 数字观感 = digits/white 贴图（A/B 样张定案）
+	var first_tr: TextureRect = num.get_child(0) as TextureRect
+	assert_true((first_tr.texture as Texture2D).resource_path.contains("/digits/white/"), "白底黑描边数字贴图")
+
+
+func test_vitality_normal_and_over_max_folders() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var refs: Dictionary = MainStatusBar.build(parent)
+	MainStatusBar.refresh(refs, 81, 1000, 1000, 120, 171, "Player", 0, 1)
+	var vit_bar: Control = refs["vitality"]
+	var max_num: Control = vit_bar.get_node("max_num")
+	var vit_num: Control = vit_bar.get_node("num")
+	assert_eq(max_num.get_child_count(), 4, 'maxVit "/171" = slash + 3 数字')
+	assert_almost_eq(max_num.position.x + max_num.size.x, MainStatusBar.MAXVIT_NUM_RIGHT_X, 0.01, "/max 组右缘 107")
+	# vitability 右缘紧贴 maxVitText 左缘（源 left2(text, maxVitText)）
+	assert_almost_eq(vit_num.position.x + vit_num.size.x, max_num.position.x, 0.01, "vit 数字右缘接 /max 左缘")
+	# 未超上限 → white；超上限 → main_blue（statusbar.lua:1121 folder 条件）
+	var normal_tex: Texture2D = (vit_num.get_child(0) as TextureRect).texture
+	assert_true(normal_tex.resource_path.contains("/digits/white/"), "未超限 white 贴图")
+	MainStatusBar.refresh(refs, 81, 1000, 1000, 200, 171, "Player", 0, 1)
+	var over_tex: Texture2D = (vit_num.get_child(0) as TextureRect).texture
+	assert_true(over_tex.resource_path.contains("/digits/main_blue/"), "超上限 main_blue 贴图")

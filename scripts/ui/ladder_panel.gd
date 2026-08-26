@@ -106,6 +106,12 @@ func _build_content() -> void:
 	var content := CONTENT_SCENE.instantiate() as Control
 	container.add_child(content)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	# 返回钮贴图照源换 backbtn 系（源 statusbar.lua:152 createBack 对所有非 main 场景统一挂
+	# backbtn.png/backbtn-disabled.png；本 tscn 旧贴 X 样式系 2026-08-18 结构红线挂起项，
+	# 批 A G4 以运行时赋值补正，位置沿用全项目导航惯例 (20,15)、尺寸恰为 backbtn÷CS）。
+	var close_tb := content.get_node("%CloseBtn") as TextureButton
+	close_tb.texture_normal = load("res://assets/ui/alpha/HVGA/backbtn.png")
+	close_tb.texture_pressed = load("res://assets/ui/alpha/HVGA/backbtn-disabled.png")
 	for i in TAB_LSTR.size():
 		var tab_btn: Button = content.get_node("%TabBtn" + str(i)) as Button
 		(tab_btn.get_node("BtnLbl") as Label).text = _cm.get_lstr(TAB_LSTR[i])
