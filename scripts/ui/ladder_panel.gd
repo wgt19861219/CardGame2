@@ -1,91 +1,45 @@
 class_name LadderPanel
 extends PopWindow
 
-## 天梯/PVP 面板（View 层）— 源 ui/pvp.lua（3294 行）6 panelLayer 本项目消费 3 层：
-## mainPanelLayer(:1933-3050 → 挑战 tab + 防守阵容 tab) / rankPanelLayer(:1601 → 排行 tab)
-## / recordPanelLayer(:1702 → 记录 tab)；heroInfoLayer(:753)/rewardPanelLayer(:472)/
-## rewardInfoPanelLayer(:375) 未迁移（批5 长尾披露）。
-## 两件套（批4 Task 9，2026-08-18）：静态树全量进 ladder_content.tscn（3 对手卡/主框架/
-## 4 tab 行/两滚动层照源直译），本脚本只做业务 + 信号 connect + fill；按钮三态走 theme
-## variation（tab/挑战复用 SB_crusade_action，换一批/购买走 ladder 系新 SB）。
-## 后端 LadderManager 全命令就绪（_open_panel/_query_rankboard/_query_records/_set_lineup）。
+## 竞技场面板（View 层）— 源 ui/pvp.lua（3294 行）createMainLayer(:1933-3050) 单屏结构
+## + rank/record 覆盖层。走查批 D（2026-08-27）照源重构，撤销旧 4-tab 发明结构：
+## - 主屏常显：防守阵容区（标签/5 槽/调整钮/战斗力）+ 我的排名行 + 中排四钮
+##   （规则说明/排行榜/对战记录/兑换奖励 + 竞技点小图标，源 :2072-2179）+ 今日剩余次数
+##   + 3 对手卡 + 换一批；
+## - 排行榜/对战记录钮 → 覆盖层（TabRankboardView/TabRecordsView visible 切换，
+##   右上 close 源 :1671-1699 herodetail-detail-close @(650,420)）；
+## - 「英雄榜」系排行榜覆盖层标题（源 :1654 PVP.ARMORY），旧版误作 tab 名；
+## - 兑换奖励 → shop(5)（源 :1864-1866 pvpShop pushScene ed.ui.shop.create(5)，本项目
+##   ShopManager shop_id=5 arenapoint 支付已就绪）；
+## - 规则说明 → LadderRulesPopup（源 rewardInfoPanelLayer :375-461 本批迁移）；
+## - D4：旧独立「购买次数」钮删除——源 changeEnemy 三态中购买/CD 态不可达（pvpCD 恒 0
+##   :23 无赋值 + VIP 表 PVP Buy 全 0 → leftBuyTime=0），恒「换一批」态（:1911-1922）。
+## 行渲染下沉 LadderRows（排行/记录行，口径不变）。LineupTitleLbl 文案源 :2980-2994
+## 「防守阵容:」(100,344)。myRank 贴图数字照源 createNumbers big_pvp1 规则（tools.lua:358-365）：
+## <4 名裸版徽章图 / 4-10 big_pvp / >=11 small_pvp（:3148 padding=-2 anchor(0,0.5) @(150,277)）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ladder_content.tscn")
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
-# L1727 PVP.COMBAT_RECORD(战斗记录) / L2969 PVP.ADJUSTMENT(防守阵容调整)。
-const TAB_LSTR: Array[String] = ["PVP.ARMORY", "PVP.RANKING_", "PVP.COMBAT_RECORD", "PVP.ADJUSTMENT"]
-# 排行行（源 initRankListData :1843-1848）：行高 70（1-10 名）/50（11+ 名），步进 78/58 已含
-# +8 间距；底图分档 rankFrameRecource :33-67（1st/2nd/3rd/high/low，setContentSize(475,h)）。
-# FIRST_Y 是 host 局部空间首行中心基准 = 源 clip 顶 cocos 400（:1494 cliprect(165,40,470,360)，
-# Godot 场景 y=160 即 ScrollContainer 顶）− 首行底图中心 361（bg 290 + rankBg 局部 71）= 39
-# （2026-08-18 审查 Critical：旧值 199=560-361 是场景空间值，host y=0 对应场景 160 不可混用）。
-const RANK_ROW_W: float = 475.0
-const RANK_ROW_H_HIGH: float = 70.0
-const RANK_ROW_H_LOW: float = 50.0
-const RANK_ROW_GAP: float = 8.0
-const RANK_ROW_STEP_HIGH: float = 78.0
-const RANK_ROW_STEP_LOW: float = 58.0
-const RANK_ROW_FIRST_Y: float = 39.0
-const RANK_ROW_TEX_1ST: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_1st.png"
-const RANK_ROW_TEX_2ND: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_2nd.png"
-const RANK_ROW_TEX_3RD: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_3rd.png"
-const RANK_ROW_TEX_HIGH: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
-const RANK_ROW_TEX_LOW: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_low.png"
-# 排行行内（相对 475xh 底图中心，源 createRankInfo :1173-1207 相对 bg 点坐标减底图中心 (150,71)：
-# rank(-200,+11)/iconParent(-110,0)，cocos y 向上 → Godot y 取反）：名次/名字 Label 中心锚定照源
-# （源 rank Label anchor(0.5,0.5) 中心锚定）；头像组件 getWholeHeadIcon 缺 → "名字 LvN" Label
-# 居中占 iconParent 位（ranklist 先例降级披露）。
-const RANK_ROW_RANK_DX: float = -200.0
-const RANK_ROW_RANK_DY: float = -11.0
-const RANK_ROW_NAME_DX: float = -110.0
-const RANK_ROW_NAME_DY: float = 0.0
-const RANK_RANK_LBL_W: float = 60.0
-const RANK_NAME_LBL_W: float = 320.0
-const RANK_ROW_LBL_H: float = 24.0
-# 记录行（源 initRecordData :1801-1802）：行步进 78、内容高 78n+20；highlight 底图
-# scaleSize=CCSizeMake(485,70)（:1271-1280 点值直译，2026-08-18 审查 Important：旧值
-# 498.1x75.7 误按"无 scaleSize 原尺寸直译"算，与源矛盾）；FIRST_Y 基准 39 同 RANK 侧
-# （源首行底图中心同为 cocos 361）；行内子相对底图中心点值直译（源相对 bg 点坐标减底图中心
-# (150,71)：resultEffect(-220,+15)/name(-25,+11)/time(-60,-16)/record(-180,-16)，:1300-1360，
-# cocos y 向上 → Godot y 取反成 DY -15/-11/+16/+16）；源 name 宽>140 setScale 压缩未迁移（披露）。
-const REC_ROW_W: float = 485.0
-const REC_ROW_H: float = 70.0
-const REC_ROW_STEP: float = 78.0
-const REC_ROW_FIRST_Y: float = 39.0
-const REC_ROW_TAIL: float = 20.0
-const REC_ROW_TEX: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
-const REC_WIN_TEX: String = "res://assets/ui/alpha/HVGA/pvp/pvp_win.png"
-const REC_LOSE_TEX: String = "res://assets/ui/alpha/HVGA/pvp/pvp_lose.png"
-const REC_ICON_W: float = 29.7
-const REC_ICON_H: float = 49.2
-const REC_RESULT_DX: float = -220.0
-const REC_RESULT_DY: float = -15.0
-const REC_NAME_DX: float = -25.0
-const REC_NAME_DY: float = -11.0
-const REC_TIME_DX: float = -60.0
-const REC_TIME_DY: float = 16.0
-const REC_RANK_DX: float = -180.0
-const REC_LBL_H: float = 24.0
-# 榜单/记录 host 内容宽（ScrollContainer 裁剪语义，host 只需撑内容高）。
-const RANK_CLIP_W: float = 470.0
-const REC_CLIP_W: float = 490.0
-# 相对时间阈值（秒，源 :1445-1456 second2hms 分档）。
-const SEC_PER_MINUTE: int = 60
-const SEC_PER_HOUR: int = 3600
-const SEC_PER_DAY: int = 86400
+# myRank 数字分档（源 tools.lua createNumbers big_pvp1 :358-365）。
+const RANK_BADGE_RES_1ST: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_1st.png"
+const RANK_BADGE_RES_2ND: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_2nd.png"
+const RANK_BADGE_RES_3RD: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_3rd.png"
+const RANK_NUM_PADDING: float = -2.0
+# myRank host 左中锚（源 anchor(0,0.5) @(150,277)cocos → Godot (150,203)；host tscn (150,180)
+# 占位，fill 精排 y=203−h/2）。
+const MY_RANK_ANCHOR: Vector2 = Vector2(150.0, 203.0)
+const LEFT_COUNT_MAX: int = 5
 
 var _ladder: LadderManager
 var _player: PlayerData
 var _cm: ConfigManager
 var _rng: BattleRng
-var _current_tab: int = 0   # 0=挑战 1=排行 2=记录 3=阵容
-var _tab_views: Dictionary = {}    # int → Control（.tscn %TabXxxView，visible 切换）
-var _tab_buttons: Dictionary = {}  # int → Button（.tscn %TabBtnN，disabled 切换）
+var _overlay: int = 0   # 0=主屏 1=排行榜覆盖层 2=对战记录覆盖层
 var _opponent_cards: Array = []    # 3 卡 Control（fill name/level/rank/gs/头像）
 var _rankboard_host: Control = null  # .tscn %RankboardHost（榜单行 fill）
 var _records_host: Control = null    # .tscn %RecordsHost（记录行 fill）
 var _lineup_slots: Array = []      # 5 槽 Control（fill ReadheroIcon）
-var _lineup_title: Label = null    # .tscn %LineupTitleLbl
+var _rank_views: Dictionary = {}   # 0/1/2 → Control（主屏/两覆盖层 visible 切换）
 
 
 func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_rng: BattleRng) -> void:
@@ -98,7 +52,7 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_rng: BattleRng) ->
 	setup()
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补全屏 bg.jpg 还原源视觉。
 	_build_content()
-	_fill_tab(_current_tab)
+	_fill_challenge_tab()
 
 
 # 建 UI：静态树从 .tscn instantiate（位置/size 编辑器可视化），此处只取节点 + 绑信号 + fill LSTR。
@@ -107,35 +61,34 @@ func _build_content() -> void:
 	container.add_child(content)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
 	# 返回钮贴图照源换 backbtn 系（源 statusbar.lua:152 createBack 对所有非 main 场景统一挂
-	# backbtn.png/backbtn-disabled.png；本 tscn 旧贴 X 样式系 2026-08-18 结构红线挂起项，
-	# 批 A G4 以运行时赋值补正，位置沿用全项目导航惯例 (20,15)、尺寸恰为 backbtn÷CS）。
+	# backbtn.png/backbtn-disabled.png；批 A G4 运行时赋值补正，位置沿用全项目导航惯例）。
 	var close_tb := content.get_node("%CloseBtn") as TextureButton
 	close_tb.texture_normal = load("res://assets/ui/alpha/HVGA/backbtn.png")
 	close_tb.texture_pressed = load("res://assets/ui/alpha/HVGA/backbtn-disabled.png")
-	for i in TAB_LSTR.size():
-		var tab_btn: Button = content.get_node("%TabBtn" + str(i)) as Button
-		(tab_btn.get_node("BtnLbl") as Label).text = _cm.get_lstr(TAB_LSTR[i])
-		tab_btn.disabled = i == _current_tab
-		tab_btn.pressed.connect(_switch_tab.bind(i))
-		_tab_buttons[i] = tab_btn
-	_tab_views = {
+	_rank_views = {
 		0: content.get_node("%TabChallengeView") as Control,
 		1: content.get_node("%TabRankboardView") as Control,
 		2: content.get_node("%TabRecordsView") as Control,
-		3: content.get_node("%TabLineupView") as Control,
 	}
-	var challenge_view: Control = _tab_views[0] as Control
+	var view: Control = _rank_views[0] as Control
 	for i in 3:
-		_opponent_cards.append(challenge_view.get_node("%EnemyCard" + str(i + 1)) as Control)
-	_wire_btn(challenge_view.get_node("%RefreshBtn") as Button, "PVP.CHANGE_ANOTHER_LIST", _on_refresh)
-	_wire_btn(challenge_view.get_node("%BuyBtn") as Button, "PVP.THE_NUMBER_OF_PURCHASES", _on_buy)
-	_rankboard_host = (_tab_views[1] as Control).get_node("%RankboardHost") as Control
-	_records_host = (_tab_views[2] as Control).get_node("%RecordsHost") as Control
-	var lineup_view: Control = _tab_views[3] as Control
-	_lineup_title = lineup_view.get_node("%LineupTitleLbl") as Label
+		_opponent_cards.append(view.get_node("%EnemyCard" + str(i + 1)) as Control)
+	_wire_btn(view.get_node("%RefreshBtn") as Button, "PVP.CHANGE_ANOTHER_LIST", _on_refresh)
+	# 中排四钮（源 :1984-2179 规则说明/排行榜/对战记录/兑换奖励）。
+	_wire_btn(view.get_node("%RuleBtn") as Button, "PVP.RULE_DESCRIPTION", _on_show_rules)
+	_wire_btn(view.get_node("%RankboardBtn") as Button, "PVP.RANKING_", _show_overlay.bind(1))
+	_wire_btn(view.get_node("%RecordBtn") as Button, "PVP.COMBAT_RECORD", _show_overlay.bind(2))
+	_wire_btn(view.get_node("%ShopBtn") as Button, "CRUSADECONFIG.REDEEM", _on_open_shop)
+	# 覆盖层关闭（源 :1671-1699 closeRankInfo / 记录层同构）。
+	(content.get_node("%CloseRankBtn") as BaseButton).pressed.connect(_show_overlay.bind(0))
+	(content.get_node("%CloseRecBtn") as BaseButton).pressed.connect(_show_overlay.bind(0))
+	_rankboard_host = (_rank_views[1] as Control).get_node("%RankboardHost") as Control
+	_records_host = (_rank_views[2] as Control).get_node("%RecordsHost") as Control
+	# 防守阵容区（源主屏常驻 :2980-3034，批 D 自旧 TabLineupView 并入主屏）。
+	(view.get_node("%LineupTitleLbl") as Label).text = _cm.get_lstr("PVP.DEFENSIVE_TEAM_")
 	for i in 5:
-		_lineup_slots.append(lineup_view.get_node("%HeroSlot" + str(i + 1)) as Control)
-	_wire_btn(lineup_view.get_node("%SetLineupBtn") as Button, "PVP.ADJUSTMENT", _on_set_lineup)
+		_lineup_slots.append(view.get_node("%HeroSlot" + str(i + 1)) as Control)
+	_wire_btn(view.get_node("%SetLineupBtn") as Button, "PVP.ADJUSTMENT", _on_set_lineup)
 
 
 # 静态 Button 的子 Label fill LSTR + 绑信号（按钮三态样式已在 theme variation，无运行时 stylebox）。
@@ -144,49 +97,62 @@ func _wire_btn(btn: Button, lstr_key: String, callback: Callable) -> void:
 	btn.pressed.connect(callback)
 
 
-func _switch_tab(idx: int) -> void:
-	_current_tab = idx
-	_show_tab(idx)
-	_fill_tab(idx)
-
-
-func _show_tab(idx: int) -> void:
-	for k in _tab_views:
-		(_tab_views[k] as CanvasItem).visible = (k == idx)
-	for k in _tab_buttons:
-		(_tab_buttons[k] as Button).disabled = (k == idx)
-
-
-func _fill_tab(idx: int) -> void:
+# 覆盖层切换（源 rankPanelLayer/recordPanelLayer setVisible 语义；0=回主屏）。
+func _show_overlay(idx: int) -> void:
+	_overlay = idx
+	for k in _rank_views:
+		(_rank_views[k] as CanvasItem).visible = (k == idx)
 	match idx:
-		0: _fill_challenge_tab()
 		1: _fill_rankboard_tab()
 		2: _fill_records_tab()
-		3: _fill_lineup_tab()
 
 
-# 清空 host 老子节点（切 tab/刷新数据时；源 _refresh_view free 全部 container 子节点的等价子集）。
 func _clear_host(host: Control) -> void:
 	for c in host.get_children():
 		c.free()
 
 
-# ── tab 0：挑战（rank/gs/剩余次数/竞技场币 + 3 对手卡 fill）── 源 initPanel :3138-3160
+# ── 主屏：rank/gs/剩余次数/我的排名贴图数字 + 3 对手卡 + 防守阵容 ── 源 initPanel :3138-3160
 func _fill_challenge_tab() -> void:
 	var now: int = int(Time.get_unix_time_from_system())
 	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, now)
 	var info: Dictionary = reply["_open_panel"]
-	var view: Control = _tab_views[0] as Control
-	(view.get_node("%RankValue") as Label).text = str(int(info["rank"]))
+	var view: Control = _rank_views[0] as Control
 	(view.get_node("%GpsValue") as Label).text = str(int(info["gs"]))
-	(view.get_node("%ArenaValue") as Label).text = str(int(_player.arena_point))
-	(view.get_node("%LeftTimeNum") as Label).text = "%d/%d" % [int(info["left_count"]), 5]
+	(view.get_node("%LeftTimeNum") as Label).text = "%d/%d" % [int(info["left_count"]), LEFT_COUNT_MAX]
+	_fill_my_rank(int(info["rank"]))
 	var oppos: Array = info["oppos"] as Array
 	for i in mini(3, oppos.size()):
 		_fill_enemy_card(_opponent_cards[i] as Control, oppos[i] as Dictionary)
 	# 源 initEnemyList :3081：无对手的卡隐藏。
 	for i in range(oppos.size(), 3):
 		(_opponent_cards[i] as CanvasItem).visible = false
+	_fill_lineup(info["lineup"] as Array)
+
+
+# 我的排名贴图数字（源 :3148 createNumbers big_pvp1：<4 徽章图 / 4-10 big_pvp / >=11 small_pvp）。
+# host 左缘锚定 x=150、垂直中心 203（源 anchor(0,0.5) @(150,277)cocos）。
+func _fill_my_rank(rank: int) -> void:
+	var host: Control = (_rank_views[0] as Control).get_node("%RankValue") as Control
+	for c in host.get_children():
+		c.free()
+	var node: Control
+	if rank >= 1 and rank <= 3:
+		var res: String = RANK_BADGE_RES_1ST
+		if rank == 2:
+			res = RANK_BADGE_RES_2ND
+		elif rank == 3:
+			res = RANK_BADGE_RES_3RD
+		var icon := TextureRect.new()
+		icon.texture = load(res) as Texture2D
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.size = icon.texture.get_size() / NumberNode.CONTENT_SCALE
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		node = icon
+	else:
+		node = NumberNode.build(str(rank), "big_pvp" if rank < 11 else "small_pvp")
+	host.add_child(node)
+	host.position = Vector2(MY_RANK_ANCHOR.x, MY_RANK_ANCHOR.y - node.size.y * 0.5)
 
 
 # 对手卡 fill（源 initEnemyList :3086-3108：name/level/rank/gs + avatar 进 iconFrame）。
@@ -222,187 +188,10 @@ func _fill_head(host: Control, avatar: int) -> void:
 	host.add_child(head)
 
 
-# ── tab 1：排行榜（20 NPC 假榜 + self 行）── 源 initRankListData :1833-1850 + createRankInfo
-func _fill_rankboard_tab() -> void:
-	_clear_host(_rankboard_host)
-	var reply: Dictionary = _ladder.handle({"_query_rankboard": true}, _player, _cm, _rng, 0)
-	var data: Dictionary = reply["_query_rankboard"]
-	var rank_list: Array = data["rank_list"]
-	for i in rank_list.size():
-		var entry: Dictionary = rank_list[i]
-		var row := _make_rank_row(i + 1, "%s Lv%d" % [String(entry["name"]), int(entry["level"])])
-		row.position.y = _rank_row_y(i + 1)
-		_rankboard_host.add_child(row)
-	# 自己的排名（源 L1957 PVP.MY_RANK_(我的排名:)；20 假榜后附行，现状行为保留）。
-	var sr: Dictionary = data["self_rank"]
-	var self_row := _make_rank_row(rank_list.size() + 1, "★ %s%d %s Lv%d" % [_cm.get_lstr("PVP.MY_RANK_"), int(data["pos"]), String(sr["name"]), int(sr["level"])])
-	self_row.position.y = _rank_row_y(rank_list.size() + 1)
-	_rankboard_host.add_child(self_row)
-	var count: int = rank_list.size() + 1
-	# 源 totalHeight = 78*min(10,n) + 58*max(0,n-10)（:1848，无 adjust 项——adjust 只进各行 y
-	# 不进总高；2026-08-18 审查 Minor：旧实现多加一个 8）。
-	var total_h: float = RANK_ROW_STEP_HIGH * float(mini(10, count)) + RANK_ROW_STEP_LOW * float(maxi(0, count - 10))
-	_rankboard_host.custom_minimum_size = Vector2(RANK_CLIP_W, total_h)
-
-
-# 行 y（源 initRankListData :1843-1847 公式直译）：源 cocos y 向上
-# y = 290 - adjust - 78*(min(10,i)-1) - 58*max(0,i-10)（i 增 y 减 = 行向下，第 1 名最上；i>10 时
-# adjust=8），转 Godot y 向下 → 首行中心 39 + step 单调递增。基准 39 是 host（ScrollContainer
-# 内容）局部空间值 = 源 clip 顶 cocos 400 − 首行底图中心 361（2026-08-18 审查 Critical：旧实现
-# 199-step 方向反 + 199=560-(290+71) 是场景空间值误塞 host 局部，双重修正）。
-func _rank_row_y(i: int) -> float:
-	var step: float = RANK_ROW_STEP_HIGH * float(mini(10, i) - 1) + RANK_ROW_STEP_LOW * float(maxi(0, i - 10))
-	if i > 10:
-		step += RANK_ROW_GAP
-	return RANK_ROW_FIRST_Y + step - _rank_row_h(i) * 0.5
-
-
-func _rank_row_h(rank_num: int) -> float:
-	return RANK_ROW_H_HIGH if rank_num <= 10 else RANK_ROW_H_LOW
-
-
-# 排行行（源 createRankInfo :1165-1256）：rankBg 分档底图 475xh + 名次白 20 + 名字白 20
-# （源 getWholeHeadIcon 头像组件缺 → "名字 LvN" Label 降级，ranklist 先例披露；
-# 1st/2nd/3rd 名次图 HC 有存量但 ranklist 面板同降级，一致性不拷）。
-func _make_rank_row(rank_num: int, label_text: String) -> Control:
-	var h: float = _rank_row_h(rank_num)
-	var tex_path: String = RANK_ROW_TEX_HIGH
-	if rank_num == 1:
-		tex_path = RANK_ROW_TEX_1ST
-	elif rank_num == 2:
-		tex_path = RANK_ROW_TEX_2ND
-	elif rank_num == 3:
-		tex_path = RANK_ROW_TEX_3RD
-	elif rank_num > 10:
-		tex_path = RANK_ROW_TEX_LOW
-	var row := Control.new()
-	row.size = Vector2(RANK_ROW_W, h)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg := TextureRect.new()
-	bg.name = "RankBg"
-	bg.texture = load(tex_path) as Texture2D
-	bg.size = Vector2(RANK_ROW_W, h)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(bg)
-	var cx: float = RANK_ROW_W * 0.5
-	var cy: float = h * 0.5
-	var rank_lbl := Label.new()
-	rank_lbl.text = "#%d" % rank_num
-	rank_lbl.theme_type_variation = "LadderWhiteLabel20"
-	rank_lbl.position = Vector2(cx + RANK_ROW_RANK_DX - RANK_RANK_LBL_W * 0.5, cy + RANK_ROW_RANK_DY - RANK_ROW_LBL_H * 0.5)
-	rank_lbl.size = Vector2(RANK_RANK_LBL_W, RANK_ROW_LBL_H)
-	rank_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rank_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	rank_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(rank_lbl)
-	var name_lbl := Label.new()
-	name_lbl.text = label_text
-	name_lbl.theme_type_variation = "LadderWhiteLabel20"
-	name_lbl.position = Vector2(cx + RANK_ROW_NAME_DX - RANK_NAME_LBL_W * 0.5, cy + RANK_ROW_NAME_DY - RANK_ROW_LBL_H * 0.5)
-	name_lbl.size = Vector2(RANK_NAME_LBL_W, RANK_ROW_LBL_H)
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(name_lbl)
-	return row
-
-
-# ── tab 2：战斗记录 ── 源 initRecordData :1790-1803 + createRecordInfo :1257-1468
-func _fill_records_tab() -> void:
-	_clear_host(_records_host)
-	var reply: Dictionary = _ladder.handle({"_query_records": true}, _player, _cm, _rng, 0)
-	var records: Array = reply["_query_records"]["records"] as Array
-	if records.is_empty():
-		var empty := Label.new()
-		empty.text = "暂无战斗记录"
-		empty.theme_type_variation = "LadderDarkLabel20"
-		empty.position = Vector2(100.0, REC_ROW_FIRST_Y)
-		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_records_host.add_child(empty)
-		_records_host.custom_minimum_size = Vector2(REC_CLIP_W, 0.0)
-		return
-	for i in records.size():
-		_records_host.add_child(_make_record_row(records[i] as Dictionary, i))
-	# 源 initListHeight = 78n + 20（:1802，2026-08-18 审查 Important：旧 199+78n 混入场景空间基准）。
-	_records_host.custom_minimum_size = Vector2(REC_CLIP_W, REC_ROW_STEP * float(records.size()) + REC_ROW_TAIL)
-
-
-# 记录行：底图 highlight（源 :1271-1280）+ 胜负图（:1425-1432 pvp_win/lose）+ 名字/时间/
-# 排名（行内相对底图中心直译）。源 _deta_rank/review/share 依赖 _replay_id 与对手 summary
-# 数据（本项目 records 仅 {result,time,rank}）→ 显当前排名、胜负字降级、review/share 不建（披露）。
-func _make_record_row(rec: Dictionary, idx: int) -> Control:
-	var row := Control.new()
-	row.size = Vector2(REC_ROW_W, REC_ROW_H)
-	row.position.y = REC_ROW_FIRST_Y + REC_ROW_STEP * float(idx) - REC_ROW_H * 0.5
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg := TextureRect.new()
-	bg.name = "RecBg"
-	bg.texture = load(REC_ROW_TEX) as Texture2D
-	bg.size = row.size
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(bg)
-	var cx: float = REC_ROW_W * 0.5
-	var cy: float = REC_ROW_H * 0.5
-	var victory: bool = str(rec.get("result", "")) == "victory"
-	var result_icon := TextureRect.new()
-	result_icon.name = "ResultIcon"
-	result_icon.texture = load(REC_WIN_TEX if victory else REC_LOSE_TEX) as Texture2D
-	result_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	result_icon.size = Vector2(REC_ICON_W, REC_ICON_H)
-	result_icon.position = Vector2(cx + REC_RESULT_DX - REC_ICON_W * 0.5, cy + REC_RESULT_DY - REC_ICON_H * 0.5)
-	result_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(result_icon)
-	var name_lbl := Label.new()
-	name_lbl.name = "NameLbl"
-	name_lbl.text = "胜利" if victory else "失败"
-	name_lbl.theme_type_variation = "LadderWhiteShadowLabel20"
-	name_lbl.position = Vector2(cx + REC_NAME_DX, cy + REC_NAME_DY - REC_LBL_H * 0.5)
-	name_lbl.size = Vector2(140.0, REC_LBL_H)
-	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(name_lbl)
-	var time_lbl := Label.new()
-	time_lbl.name = "TimeLbl"
-	time_lbl.text = _relative_time(int(rec.get("time", 0)))
-	time_lbl.theme_type_variation = "LadderTimeLabel20"
-	time_lbl.position = Vector2(cx + REC_TIME_DX, cy + REC_TIME_DY - REC_LBL_H * 0.5)
-	time_lbl.size = Vector2(200.0, REC_LBL_H)
-	time_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	time_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(time_lbl)
-	var rank_lbl := Label.new()
-	rank_lbl.text = "%s%d" % [_cm.get_lstr("PVP.RANK_"), int(rec.get("rank", 0))]
-	rank_lbl.theme_type_variation = "LadderOrangeLabel20"
-	rank_lbl.position = Vector2(cx + REC_RANK_DX, cy + REC_TIME_DY - REC_LBL_H * 0.5)
-	rank_lbl.size = Vector2(120.0, REC_LBL_H)
-	rank_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	rank_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(rank_lbl)
-	return row
-
-
-# 相对时间（源 :1445-1456 second2hms：>=24h 1天前 / >=1h N小时前 / >=1m N分钟前 / N秒前）。
-func _relative_time(unix_time: int) -> String:
-	var elapsed: int = maxi(0, int(Time.get_unix_time_from_system()) - unix_time)
-	if elapsed >= SEC_PER_DAY:
-		return _cm.get_lstr("PVP.1_DAY_AGO")
-	if elapsed >= SEC_PER_HOUR:
-		return _cm.get_lstr("PVP._D_HOURS_AGO") % [elapsed / SEC_PER_HOUR]
-	if elapsed >= SEC_PER_MINUTE:
-		return _cm.get_lstr("PVP._D_MINUTES_AGO") % [elapsed / SEC_PER_MINUTE]
-	return _cm.get_lstr("PVP._D_SECONDS_AGO") % [elapsed]
-
-
-# ── tab 3：防守阵容 ── 源 initDefandHeroList :3051-3065 + _open_panel lineup
-func _fill_lineup_tab() -> void:
+# ── 防守阵容（源 initDefandHeroList :3051-3065 主屏常驻）──
+func _fill_lineup(lineup: Array) -> void:
 	for slot in _lineup_slots:
 		_clear_host(slot as Control)
-	var now: int = int(Time.get_unix_time_from_system())
-	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, now)
-	var lineup: Array = reply["_open_panel"]["lineup"] as Array
-	_lineup_title.text = "%s（%d 英雄）" % [_cm.get_lstr("PVP.DEFENSIVE_TEAM_"), lineup.size()]
 	for i in mini(5, lineup.size()):
 		# 源 pvp.lua initDefandHeroList readhero.createIconByID(id) 按玩家英雄实例取
 		# rank/stars → 框档随实际品质（2026-08-22 巡检订正：旧恒 rank=1/stars=0 档显错；
@@ -424,12 +213,52 @@ func _on_set_lineup() -> void:
 			team_tids.append(hero.tid)
 	_ladder.handle({"_set_lineup": {"lineup": team_tids}}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
 	Toast.show_message("防守阵容已更新")
-	_fill_tab(_current_tab)
+	_fill_challenge_tab()
+
+
+# ── 覆盖层 1：排行榜（20 NPC 假榜 + self 行）── 源 initRankListData :1833-1850 + createRankInfo
+func _fill_rankboard_tab() -> void:
+	_clear_host(_rankboard_host)
+	var reply: Dictionary = _ladder.handle({"_query_rankboard": true}, _player, _cm, _rng, 0)
+	var data: Dictionary = reply["_query_rankboard"]
+	var rank_list: Array = data["rank_list"]
+	for i in rank_list.size():
+		var entry: Dictionary = rank_list[i]
+		var row := LadderRows.make_rank_row(i + 1, "%s Lv%d" % [String(entry["name"]), int(entry["level"])])
+		row.position.y = LadderRows.rank_row_y(i + 1)
+		_rankboard_host.add_child(row)
+	# 自己的排名（源 L1957 PVP.MY_RANK_(我的排名:)；20 假榜后附行，现状行为保留）。
+	var sr: Dictionary = data["self_rank"]
+	var self_row := LadderRows.make_rank_row(rank_list.size() + 1, "★ %s%d %s Lv%d" % [_cm.get_lstr("PVP.MY_RANK_"), int(data["pos"]), String(sr["name"]), int(sr["level"])])
+	self_row.position.y = LadderRows.rank_row_y(rank_list.size() + 1)
+	_rankboard_host.add_child(self_row)
+	var count: int = rank_list.size() + 1
+	_rankboard_host.custom_minimum_size = Vector2(LadderRows.RANK_CLIP_W, LadderRows.rank_total_height(count))
+
+
+# ── 覆盖层 2：战斗记录 ── 源 initRecordData :1790-1803 + createRecordInfo :1257-1468
+func _fill_records_tab() -> void:
+	_clear_host(_records_host)
+	var reply: Dictionary = _ladder.handle({"_query_records": true}, _player, _cm, _rng, 0)
+	var records: Array = reply["_query_records"]["records"] as Array
+	if records.is_empty():
+		var empty := Label.new()
+		empty.text = "暂无战斗记录"
+		empty.theme_type_variation = "LadderDarkLabel20"
+		empty.position = Vector2(100.0, LadderRows.REC_ROW_FIRST_Y)
+		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_records_host.add_child(empty)
+		_records_host.custom_minimum_size = Vector2(LadderRows.REC_CLIP_W, 0.0)
+		return
+	for i in records.size():
+		_records_host.add_child(LadderRows.make_record_row(records[i] as Dictionary, i, _cm))
+	# 源 initListHeight = 78n + 20（:1802，2026-08-18 审查 Important：旧 199+78n 混入场景空间基准）。
+	_records_host.custom_minimum_size = Vector2(LadderRows.REC_CLIP_W, LadderRows.REC_ROW_STEP * float(records.size()) + LadderRows.REC_ROW_TAIL)
 
 
 func _on_challenge(oppo_user_id: int) -> void:
 	if int(_ladder.pvp["left_count"]) <= 0:
-		Toast.show_message("挑战次数不足，请购买")
+		Toast.show_message("挑战次数不足")
 		return
 	var now: int = int(Time.get_unix_time_from_system())
 	var asm: Dictionary = LadderBattle.assemble_pvp_battle(_ladder, oppo_user_id, _player, _cm, _rng, now)
@@ -441,15 +270,18 @@ func _on_challenge(oppo_user_id: int) -> void:
 	SceneManager.change_scene(BATTLE_SCENE_PATH)
 
 
-func _on_buy() -> void:
-	var reply: Dictionary = _ladder.handle({"_buy_battle_chance": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
-	if str(reply["_buy_battle_chance"]["result"]) == "success":
-		GameData.mark_save_dirty()
-		_fill_tab(_current_tab)
-	else:
-		Toast.show_message("钻石不足")
+# 兑换奖励（源 :1864-1866 pvpShop → ed.ui.shop.create(5)）。
+func _on_open_shop() -> void:
+	MainSceneEntryRouter.open_shop(get_parent(), 5)
+
+
+# 规则说明（源 :1826-1832 showRewardInfo → rewardInfoPanelLayer）。
+func _on_show_rules() -> void:
+	var popup := LadderRulesPopup.new()
+	popup.setup_panel(_cm, int(_ladder.pvp["rank"]))
+	popup.show_window(get_parent())
 
 
 func _on_refresh() -> void:
 	_ladder.handle({"_apply_opponent": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
-	_fill_tab(_current_tab)
+	_fill_challenge_tab()

@@ -151,6 +151,19 @@ func qa_start_stage(sid: int) -> String:
 	return "started sid=" + str(sid)
 
 
+## 驱动已开面板的内部方法（批 C/D 实机验证：pvp 覆盖层 _show_overlay / ranklist tab
+## _on_tab_pressed 等；bridge EXTRA_METHODS 白名单拦下划线方法 → 走本转发）。
+func qa_panel(method: String, args_json: String) -> String:
+	var scene: Node = get_tree().current_scene
+	var parsed: Variant = JSON.parse_string(args_json)
+	var args: Array = parsed if parsed is Array else []
+	for c in scene.get_children():
+		if c is PopWindow and is_instance_valid(c) and Callable(c, method).is_valid():
+			Callable(c, method).callv(args)
+			return "OK " + String(c.name)
+	return "ERR: no panel with " + method
+
+
 ## 关闭当前场景顶层全部 PopWindow（嵌套子面板随宿主一起释放）。
 func qa_close_all() -> String:
 	var n: int = _close_all()

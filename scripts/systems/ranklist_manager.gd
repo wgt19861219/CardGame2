@@ -39,7 +39,7 @@ func generate_ranklist(player: PlayerData, rank_type: String) -> Dictionary:
 		var ni: int = ((i - 1) % NPC_NAMES.size()) + 1
 		if rank_type == "guildliveness":
 			var guild_param: int = maxi(GUILD_LIVENESS_BASE - i * GUILD_LIVENESS_STEP, GUILD_LIVENESS_MIN)
-			items.append({"name": GUILD_NAMES[ni - 1], "level": 0, "param": guild_param})
+			items.append({"name": GUILD_NAMES[ni - 1], "level": 0, "param": guild_param, "avatar": ni})
 		else:
 			var lvl: int = maxi(player_level + NPC_LEVEL_DELTA - i, NPC_LEVEL_MIN)
 			var param: int = maxi(int(float(base_scale) * (PARAM_SCALE_BASE - float(i) * PARAM_SCALE_STEP)), PARAM_FLOOR)

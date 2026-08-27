@@ -1642,6 +1642,23 @@ RanklistOverlayHintLabel/font_sizes/font_size = 18
 RanklistOverlayDeltaLabel/base_type = &"Label"
 RanklistOverlayDeltaLabel/colors/font_color = Color(0.94902, 0.384314, 0.235294, 1)
 RanklistOverlayDeltaLabel/font_sizes/font_size = 18
+; ── 批 C/D（2026-08-27 走查）新增 ──
+; 等级牌字（源 getLevelIcon :1093 ccc3(255,255,228) 20 号）
+RanklistLevelLabel20/base_type = &"Label"
+RanklistLevelLabel20/colors/font_color = Color(1, 1, 0.894118, 1)
+RanklistLevelLabel20/font_sizes/font_size = 20
+; 浮窗 tips 值（源 :1561 ccc3(255,234,198) 18 号）
+RanklistOverlayValueLabel/base_type = &"Label"
+RanklistOverlayValueLabel/colors/font_color = Color(1, 0.917647, 0.776471, 1)
+RanklistOverlayValueLabel/font_sizes/font_size = 18
+; 规则弹窗段落标题/正文（源 fontconfigs dark_white ccc3(255,255,221) 17 号 /
+; normalButton ccc3(239,197,121) 17 号）
+LadderRulesSectionLabel/base_type = &"Label"
+LadderRulesSectionLabel/colors/font_color = Color(1, 1, 0.866667, 1)
+LadderRulesSectionLabel/font_sizes/font_size = 17
+LadderRulesBodyLabel/base_type = &"Label"
+LadderRulesBodyLabel/colors/font_color = Color(0.937255, 0.772549, 0.47451, 1)
+LadderRulesBodyLabel/font_sizes/font_size = 17
 ; ── ladder 天梯面板（批4 Task 9，2026-08-18）── 源 pvp.lua 6 panelLayer 本项目消费
 ; 3 层（main :1933-3050 / rank :1601 / record :1702）；heroInfo/reward/rewardInfo 未迁移。
 ; tab 行/挑战按钮（源 cap(14,20,60,23) 同 crusade 系）复用 SB_crusade_action，文字走

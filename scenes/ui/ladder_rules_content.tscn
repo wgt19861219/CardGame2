@@ -1,0 +1,67 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_26t4m"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_title_bg.png" id="2_v4qdw"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_5dn5q"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_loifh"]
+
+[node name="LadderRulesContent" type="Control" unique_id=353111950]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="RuleFrame" type="NinePatchRect" parent="." unique_id=63917807]
+layout_mode = 0
+offset_left = 125.0
+offset_top = 60.0
+offset_right = 675.0
+offset_bottom = 420.0
+texture = ExtResource("1_26t4m")
+patch_margin_left = 11
+patch_margin_top = 15
+patch_margin_right = 35
+patch_margin_bottom = 11
+
+[node name="TipTitleBg" type="TextureRect" parent="." unique_id=1591684008]
+layout_mode = 0
+offset_left = 154.6
+offset_top = 81.1
+offset_right = 635.4
+offset_bottom = 118.9
+texture = ExtResource("2_v4qdw")
+expand_mode = 1
+
+[node name="Title" type="Label" parent="." unique_id=1039044713]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 315.0
+offset_top = 88.0
+offset_right = 475.0
+offset_bottom = 112.0
+theme_type_variation = &"LadderTitleLabel24"
+text = "竞技场规则说明"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ListScroll" type="ScrollContainer" parent="." unique_id=1763097256]
+layout_mode = 0
+offset_left = 145.0
+offset_top = 130.0
+offset_right = 655.0
+offset_bottom = 410.0
+horizontal_scroll_mode = 0
+
+[node name="ListHost" type="VBoxContainer" parent="ListScroll" unique_id=855258613]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=1345040640]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 644.65
+offset_top = 64.25
+offset_right = 695.35
+offset_bottom = 115.75
+texture_normal = ExtResource("3_5dn5q")
+texture_pressed = ExtResource("4_loifh")
+ignore_texture_size = true
+stretch_mode = 0
