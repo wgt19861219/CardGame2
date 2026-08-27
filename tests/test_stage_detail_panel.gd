@@ -231,8 +231,12 @@ func test_create_reward_hero_purple_frame_rank_overlay() -> void:
 	var icon: Control = (hbox.get_child(0) as Control).get_child(0) as Control
 	assert_almost_eq(icon.scale.x, 0.9, 0.001, "hero 奖励整体 0.9（源 doWhenEnter setScale(0.9)）")
 	assert_almost_eq(icon.position.y, 72.0 - 95.0 / CS * 0.9, 0.01, "hero 0.9 后视觉底仍贴 wrapper 底（底锚收缩）")
-	var frame := icon.get_child(0) as Sprite2D
-	assert_not_null(frame, "第 0 子是 frame Sprite2D")
+	# frame 取画序末位 equip_frame* sprite（批 E E3 层序改 add 顺序后 child(0)=gocha 衬底）
+	var frame: Sprite2D = null
+	for c in icon.get_children():
+		if c is Sprite2D and String((c as Sprite2D).texture.resource_path).find("equip_frame_") >= 0:
+			frame = c as Sprite2D
+	assert_not_null(frame, "存在 equip_frame 边框 Sprite2D")
 	var frame_path: String = String(frame.texture.resource_path)
 	assert_true(frame_path.ends_with("equip_frame_purple.png"), "hero 奖励强制紫框（源 createIcon(id,nil,4) 覆写 hero 默认白），实际 %s" % frame_path)
 	var overlay := icon.get_child(icon.get_child_count() - 1) as Sprite2D

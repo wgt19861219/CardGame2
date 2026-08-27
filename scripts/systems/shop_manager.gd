@@ -261,8 +261,8 @@ static func _hms_str(secs: int) -> String:
 
 
 # ---- starshop（神秘星辰商店，照源 local_server:351 generateStarGoods + :1286 shop_star_consume）----
-# 灵魂石货币（equip id 8/9/10，源 equip_qunty 容器；本项目合并 items 通用背包）。
-# 注：本项目 Equip.json 缺 8/9/10 条目（数据债），灵魂石 icon 降级默认；商品 icon 用 box_1/2/3 照源。
+# 灵魂石货币（hero id 8/9/10，源 player.lua:1178 itemType id<100="hero" → createIcon 走
+# Unit.Portrait 英雄头像分支；本项目合并 items 通用背包）。商品 icon 用 box_1/2/3 照源。
 
 const STAR_STONE_IDS: Array[int] = [8, 9, 10]
 const STAR_TYPES: Array[int] = [0, 0, 1, 1, 2]
@@ -270,6 +270,17 @@ const STAR_PRICES: Array[int] = [50, 100, 200]
 const STAR_BOX_TYPES: Array[String] = ["stone_green", "stone_blue", "stone_purple"]
 const STARSHOP_KEY: String = "starshop"
 const STONE_DRAW_TYPE: String = "stone"
+# starshop 恒 30 天停留（源 local_server:331/2671/2689 _expire_time=now+30*86400 三处写死；
+# starshop need_open=false 不走 open_shop → 不用 Shop6.Expire Time 表值 3600，该表值系普通店口径）
+const STARSHOP_SHOP_ID: int = 6
+const STARSHOP_EXPIRE_SECS: int = 30 * 86400
+
+
+## starshop 停留到期初始化（照源初始档 _sshop._expire_time）：未记录则设 now+30 天。
+## 复用 pd.shop_expire_end[6] + get_expire_desc/check_expire/clear_expire 通用管道。
+func init_starshop_expire(pd: PlayerData, now_ts: int) -> void:
+	if not pd.shop_expire_end.has(STARSHOP_SHOP_ID):
+		pd.shop_expire_end[STARSHOP_SHOP_ID] = now_ts + STARSHOP_EXPIRE_SECS
 
 
 static func generate_star_goods() -> Array:
@@ -286,8 +297,9 @@ static func generate_star_goods() -> Array:
 	return goods
 
 
-# starshop 开店：生成 + 存 shop_data["starshop"]。
-func open_star_shop() -> Array:
+# starshop 开店：expire 初始化 + 生成 + 存 shop_data["starshop"]。
+func open_star_shop(pd: PlayerData) -> Array:
+	init_starshop_expire(pd, int(Time.get_unix_time_from_system()))
 	var goods: Array = generate_star_goods()
 	shop_data[STARSHOP_KEY] = goods
 	return goods

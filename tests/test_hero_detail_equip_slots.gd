@@ -53,8 +53,12 @@ func test_create_equip_slot_icon_unworn_recipe() -> void:
 		"灰化色照源 ccc3(100,100,100)+opacity(180)"
 	)
 	# frame 强制白框：201 表品质 2（绿）被 quality=1 覆写
-	var frame := icon.get_child(0) as Sprite2D
-	assert_not_null(frame, "第 0 子是 frame Sprite2D")
+	# frame 取画序末位 equip_frame* sprite（批 E E3 层序改 add 顺序后 child(0)=gocha 衬底）
+	var frame: Sprite2D = null
+	for c in icon.get_children():
+		if c is Sprite2D and String((c as Sprite2D).texture.resource_path).find("equip_frame_") >= 0:
+			frame = c as Sprite2D
+	assert_not_null(frame, "存在 equip_frame 边框 Sprite2D")
 	var frame_path: String = String(frame.texture.resource_path)
 	assert_true(frame_path.ends_with("equip_frame_white.png"), "配方槽强制白框（源 :1124 quality=1），实际 %s" % frame_path)
 	icon.free()

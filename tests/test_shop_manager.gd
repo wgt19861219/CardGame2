@@ -168,18 +168,34 @@ func test_generate_star_goods() -> void:
 	assert_eq(int(goods[4]["stone_amount"]), 200, "紫 200 灵魂石")
 
 
-# open_star_shop：生成 + 存 shop_data["starshop"]
+# open_star_shop：生成 + 存 shop_data["starshop"] + expire 初始化（批 E E4）
 func test_open_star_shop() -> void:
 	var sm := ShopManager.new(cm)
-	sm.open_star_shop()
+	var pd := PlayerData.new(cm)
+	sm.open_star_shop(pd)
 	assert_eq(sm.get_star_goods().size(), 5, "open_star_shop 存 5 件")
+	assert_true(pd.shop_expire_end.has(ShopManager.STARSHOP_SHOP_ID), "开店设 expire_end[6]")
+	var now := int(Time.get_unix_time_from_system())
+	var rema: int = sm.get_expire_remaining(ShopManager.STARSHOP_SHOP_ID, pd, now)
+	assert_between(rema, ShopManager.STARSHOP_EXPIRE_SECS - 5, ShopManager.STARSHOP_EXPIRE_SECS, "剩余≈30 天")
+
+
+# init_starshop_expire：未记录设 30 天；已记录不重置（源初始档 _sshop 只设一次）
+func test_init_starshop_expire_idempotent() -> void:
+	var sm := ShopManager.new(cm)
+	var pd := PlayerData.new(cm)
+	var now := 1780000000
+	sm.init_starshop_expire(pd, now)
+	assert_eq(int(pd.shop_expire_end[ShopManager.STARSHOP_SHOP_ID]), now + ShopManager.STARSHOP_EXPIRE_SECS, "now+30 天（源 local_server:331 写死 86400*30）")
+	sm.init_starshop_expire(pd, now + 100)
+	assert_eq(int(pd.shop_expire_end[ShopManager.STARSHOP_SHOP_ID]), now + ShopManager.STARSHOP_EXPIRE_SECS, "已记录不重置")
 
 
 # buy_star：扣灵魂石 + 产出 equip + 售罄（源 shop_star_consume + tavern_draw stone）
 func test_buy_star_success() -> void:
 	var sm := ShopManager.new(cm)
-	sm.open_star_shop()
 	var pd := PlayerData.new(cm)
+	sm.open_star_shop(pd)
 	pd.items[8] = 100   # 绿灵魂石 100（够 50）
 	var r: Dictionary = sm.buy_star(0, pd, BattleRng.new(12345), cm)   # slot 0 = 绿
 	assert_true(bool(r["ok"]), "兑换成功")
@@ -191,8 +207,8 @@ func test_buy_star_success() -> void:
 # buy_star 灵魂石不足
 func test_buy_star_no_resource() -> void:
 	var sm := ShopManager.new(cm)
-	sm.open_star_shop()
 	var pd := PlayerData.new(cm)
+	sm.open_star_shop(pd)
 	pd.items[8] = 10   # 绿灵魂石 10（不够 50）
 	var r: Dictionary = sm.buy_star(0, pd, BattleRng.new(1), cm)
 	assert_false(bool(r["ok"]), "灵魂石不足失败")
@@ -202,8 +218,8 @@ func test_buy_star_no_resource() -> void:
 # buy_star 售罄不可再兑
 func test_buy_star_soldout() -> void:
 	var sm := ShopManager.new(cm)
-	sm.open_star_shop()
 	var pd := PlayerData.new(cm)
+	sm.open_star_shop(pd)
 	pd.items[8] = 100
 	assert_true(bool(sm.buy_star(0, pd, BattleRng.new(1), cm)["ok"]), "首次成功")
 	var r: Dictionary = sm.buy_star(0, pd, BattleRng.new(1), cm)

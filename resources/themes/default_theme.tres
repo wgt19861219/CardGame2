@@ -1117,6 +1117,19 @@ StarShopBuyValueLabel/font_sizes/font_size = 20
 ; 购买窗 cancel/ok（源 DGButton fontinfo ui_normal_button 无 size 覆盖 → 默认 17 白 +
 ; shadow ccc3(63,5,0) offset(0,2)（package HandbookLabel 同款 fontinfo 先例）；贴图未含 →
 ; SB_ssbuy_n/p Flat 降级三态）
+; ── 倒计时行（批 E E4，2026-08-27；源 shop.lua:801-851 time_title_node HorizontalNode
+; 三 Label 横排 (400,350)，offset 间距 10）──
+; 标题「商人将于」/后缀「后离开」（源 size18 ccc3(241,193,113) 金）
+StarShopTimeTitleLabel/base_type = &"Label"
+StarShopTimeTitleLabel/colors/font_color = Color(0.945098, 0.756863, 0.443137, 1)
+StarShopTimeTitleLabel/font_sizes/font_size = 18
+StarShopTimeSuffixLabel/base_type = &"Label"
+StarShopTimeSuffixLabel/colors/font_color = Color(0.945098, 0.756863, 0.443137, 1)
+StarShopTimeSuffixLabel/font_sizes/font_size = 18
+; 倒计时值 gethmsNString（源 size16 ccc3(219,199,168)）
+StarShopTimeLabel/base_type = &"Label"
+StarShopTimeLabel/colors/font_color = Color(0.858824, 0.780392, 0.658824, 1)
+StarShopTimeLabel/font_sizes/font_size = 16
 StarShopBuyBtn/base_type = &"Button"
 StarShopBuyBtn/colors/font_color = Color(1, 1, 1, 1)
 StarShopBuyBtn/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)

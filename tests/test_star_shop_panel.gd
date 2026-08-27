@@ -50,7 +50,7 @@ func test_goods_list_in_scroll_container() -> void:
 	var panel: StarShopPanel = _make_panel()
 	var scroll: ScrollContainer = panel._item_layer.get_parent() as ScrollContainer
 	assert_not_null(scroll, "商品列表在 ScrollContainer 内（源 draglist 横滚）")
-	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_AUTO, "横向滚动启用")
+	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_SHOW_NEVER, "横向滚动启用但指示条不显示（E5：源 draglist 无横条）")
 	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "纵向禁滚（单行商品）")
 	assert_almost_eq(scroll.offset_left, 65.0, 0.5, "裁剪层左 = 65+80（cliprect 直译）")
 	assert_almost_eq(scroll.offset_top, 120.0, 0.5, "裁剪层顶 = 560-(35+325)")
@@ -107,6 +107,13 @@ func test_content_static_tree() -> void:
 	var scroll: ScrollContainer = inst.get_node("%GoodsScroll") as ScrollContainer
 	assert_almost_eq(scroll.offset_left, 65.0, 0.5, "GoodsScroll 左照源 cliprect")
 	assert_almost_eq(scroll.offset_top, 120.0, 0.5, "GoodsScroll 顶照源 cliprect")
+	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_SHOW_NEVER, "E5：横滚保留指示不显示（源 draglist 无横条）")
+	# E4 倒计时行（源 shop.lua:801-851 time_title_node 三 Label 横排中心 (400,350)→(400,130)）
+	var time_row: HBoxContainer = inst.get_node("%TimeRow") as HBoxContainer
+	assert_almost_eq(time_row.anchor_left, 0.5, 0.001, "TimeRow 水平中心锚（源 HorizontalNode 中心 x=400）")
+	assert_almost_eq(time_row.anchor_top, 130.0 / 480.0, 0.001, "TimeRow 垂直锚 y=130（to_godot(400,350)）")
+	assert_eq(time_row.get_child_count(), 3, "三 Label：title/值/suffix（源 :811-850）")
+	assert_eq(time_row.get_theme_constant(&"separation"), 10, "间距 10（源 HorizontalNode offset）")
 	# 迁移发明删除守卫：StoneLabel（源无）
 	assert_eq(inst.find_children("StoneLabel", "Control", true, false).size(), 0,
 		"StoneLabel 迁移发明已删（受控裁剪）")
@@ -213,4 +220,34 @@ func test_stone_icon_scale_and_bottom_align() -> void:
 	var vis_h: float = (95.0 / 1.28125) * 46.0 / base
 	assert_almost_eq(icon.position.x, 0.0, 0.01, "icon 左=0（源 anchor(0,0)）")
 	assert_almost_eq(icon.position.y, 45.31 - vis_h, 0.01, "icon 底=容器底（左下对齐 y=45.31-46.49）")
+	panel.free()
+
+
+# ── 批 E E3/E4（2026-08-27）──
+
+# E3：灵魂石 icon 走 hero 分支（源 player.lua:1178 itemType id<100="hero" → Unit.Portrait），
+# 产物含英雄头像 sprite（负 z 根修后画序=衬底/内容/边框）。
+func test_stone_icon_uses_hero_portrait() -> void:
+	var panel := _make_panel()
+	var row: TextureButton = panel._item_layer.get_child(0) as TextureButton
+	var host: Control = row.get_node("%StoneHost") as Control
+	var icon: Control = host.get_child(0) as Control
+	var found_portrait := false
+	for c in icon.get_children():
+		if c is Sprite2D and String((c as Sprite2D).texture.resource_path).find("/HERO/") >= 0:
+			found_portrait = true
+	assert_true(found_portrait, "stone_id 8 → Unit.Portrait 英雄头像 sprite（批 E E3）")
+	panel.free()
+
+
+# E4：倒计时行 fill（源 shop.lua:757-759 expire 态文案 + :662 gethmsNString 值）。
+func test_time_row_filled_expire_state() -> void:
+	var panel := _make_panel()
+	var title: Label = panel._time_label.get_parent().get_node("TimeTitle") as Label
+	assert_eq(title.text, "商人将于", "title LSTR SHOP.MERCHANT_LEAVES_AFTER")
+	var suffix: Label = panel._time_label.get_parent().get_node("TimeSuffix") as Label
+	assert_eq(suffix.text, "后离开", "suffix LSTR SHOP.TIMES")
+	var hms: PackedStringArray = panel._time_label.text.split(":")
+	assert_eq(hms.size(), 3, "值 gethmsNString HH:MM:SS 三段")
+	assert_gt(int(hms[0]), 700, "开店即≈720h（30 天 expire，参考图 719:34:34 同源）")
 	panel.free()

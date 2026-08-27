@@ -135,6 +135,32 @@ func _open_page(id: String) -> String:
 	return "OK"
 
 
+## dump 指定节点子树（批 E E3 诊断加；depth 限 3 层，Sprite2D 报纹理路径/scale/pos）。
+func qa_dump_tree(path: String) -> String:
+	var node: Node = get_node_or_null(path)
+	if node == null:
+		return "ERR: no node " + path
+	var lines: Array = []
+	_collect_tree(node, 0, 3, lines)
+	return "\n".join(lines)
+
+
+func _collect_tree(node: Node, depth: int, max_depth: int, lines: Array) -> void:
+	var line: String = String(node.name) + " (" + node.get_class() + ")"
+	if node is Sprite2D:
+		var s: Sprite2D = node as Sprite2D
+		var tpath: String = s.texture.resource_path if s.texture != null else "<null>"
+		line += " tex=" + tpath.get_file() + " scale=" + str(s.scale) + " pos=" + str(s.position) + " z=" + str(s.z_index) + " vis=" + str(s.is_visible_in_tree())
+	elif node is Control:
+		var c: Control = node as Control
+		line += " pos=" + str(c.position) + " size=" + str(c.size) + " scale=" + str(c.scale)
+	lines.append(String("  ".repeat(depth)) + line)
+	if depth >= max_depth:
+		return
+	for child in node.get_children():
+		_collect_tree(child, depth + 1, max_depth, lines)
+
+
 ## 直进指定关卡战斗（复现结算页问题用；走 BattlePreparePanel 真实开战链：
 ## setup → _ready 默认阵容 → _on_go_pressed assemble+change_scene）。
 ## call_method 不等协程：await 帧后 fire-and-forget 续跑，返回 "started"。

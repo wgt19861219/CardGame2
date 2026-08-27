@@ -81,8 +81,9 @@ texture = ExtResource("3_costbg")
 expand_mode = 1
 mouse_filter = 2
 
-; stone_container（源 Layer 45.31x45.31 anchor(0,0) at(26.17,26.95)；灵魂石 icon fill，
-; Equip 表缺 8/9/10 条目 → ReadequipIcon 默认降级框，数据补齐自动恢复）
+; stone_container（源 Layer 45.31x45.31 anchor(0,0) at(26.17,26.95)；灵魂石 icon fill：
+; stone_id 8/9/10 系 hero id → Unit.Portrait 英雄头像（批 E E3 订正，原「Equip 表缺条目
+; 降级框」系误判；空框根因 readequip_icon 负 z 被宿主 item_bg 盖，2026-08-27 已修））
 [node name="StoneHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
