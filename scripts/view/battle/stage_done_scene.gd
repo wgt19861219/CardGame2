@@ -54,7 +54,7 @@ var _content: Control = null       # 合并后指向 self（保留以兼容 anim
 
 # 装配节点（animator 操作，从 _content get_node as 取）
 var _light: Sprite2D = null
-var _info_bg: Sprite2D = null
+var _info_bg: TextureRect = null   # 2026-08-28 批 G：Sprite2D→TextureRect（显示尺寸=568×346.6 ÷CS，独立于子坐标系——源 Cocos 贴图 contentSize 缩放不传子节点变换）
 var _star_nodes: Array = []         # Sprite2D[]
 var _hero_icon_nodes: Array = []    # ReadheroIcon[]
 var _hero_bars: Array = []          # Sprite2D[]（经验条前景，bar scaleX 动画用）
@@ -74,6 +74,7 @@ var _loot_host: Control = null     # %LootHost：loot icon 数量动态，proced
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 接收 gui_input（点击空白跳过）
+	HudOverlay.apply_identity("battle")   # 批 G P2-2：显式声明（真实链路靠 battle_scene:226 残留 identity 恰好隐藏 HUD 属脆弱设计）
 	# 运行时（SceneManager.change_scene 加载后）：从 GameData.last_result 读 param 自动装配
 	if GameData.last_result.has("stage_id") and bool(GameData.last_result.get("victory", false)):
 		setup(GameData.last_result, GameData.config)
@@ -98,7 +99,7 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 func _build_content() -> void:
 	_content = self
 	_light = _content.get_node("%Light") as Sprite2D
-	_info_bg = _content.get_node("%InfoBg") as Sprite2D
+	_info_bg = _content.get_node("%InfoBg") as TextureRect
 	_star_nodes.clear()
 	for i in MAX_STARS:
 		_star_nodes.append((_content.get_node("%Star" + str(i + 1)) as Sprite2D))
@@ -236,7 +237,7 @@ func skip_anim() -> void:
 	var stars: int = int(_param.get("stars", 0))
 	for i in range(stars):
 		if i < _star_nodes.size():
-			(_star_nodes[i] as Sprite2D).scale = Vector2.ONE
+			(_star_nodes[i] as Sprite2D).scale = Vector2.ONE / CONTENT_SCALE   # 星贴图÷CS 终态（批 G：源显示 star_left 87×90）
 	var heroes: Array = _param.get("heroes", [])
 	for i in range(_hero_icon_nodes.size()):
 		var ri: ReadheroIcon = _hero_icon_nodes[i]

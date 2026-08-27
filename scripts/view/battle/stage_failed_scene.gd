@@ -11,17 +11,16 @@ extends Control
 ## 重构（2026-07-18，hero_detail 范式）：chrome（bg/shelter/light/title/back/menu/battleStatist）静态化进
 ## scenes/battle/stage_failed_content.tscn（instantiate + add_child + get_node + fill）。Control 场景根，content
 ## 挂 scene 自身（无 PopWindow container）。动态：bg texture fill / title text fill / back·menu·statist 信号
-## 接线 / battleStatist Scale9 StyleBox（apply_with_label）/ battleStatist count Label（procedural 挂 _content）/
+## 接线 / battleStatist Scale9 StyleBox + count 文案（apply_with_label 内建 Label 挂按钮内，批 G P0-1）/
 ## light 旋转 tween / prompt ≤2 Label 挂 %PromptHost。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_failed_content.tscn")
-# 坐标口径：旧 960×640 时代等比转换（x*1.2, (480-y)*1.333）已退役无调用方；viewport 800×480 后按源坐标直译（y 翻转：godot_y = 480 - cocos_y）。
-# P1-16 battleStatist 战斗统计按钮位置常量（贴图/CAP/路径走公共 helper；本场景独有的位置/偏移）。
-const BATTLE_STATIST_POS: Vector2 = Vector2(642.0, 160.0)
-const BATTLE_STATIST_LABEL_OFFSET: Vector2 = Vector2(35.0, 26.0)
-
-const PROMPT_Y: float = 420.0
-const PROMPT_POS: Array[Vector2] = [Vector2(246.0, PROMPT_Y), Vector2(534.0, PROMPT_Y)]
+# 坐标口径：viewport 800×480 后按源坐标直译（y 翻转：godot_y = 480 - cocos_y）。
+# 批 G（2026-08-28）：battleStatist 按钮坐标/尺寸已固化进 tscn（源 stagefailed.lua:345-392 左中锚
+# ccp(500,335) scaleSize 70×50 → offset (500,120)~(570,170)）；count 文案走 apply_with_label
+# 挂按钮内（源 :383-389 battleCount 挂按钮内 ccp(35,26)），旧双头常量已删。
+const PROMPT_Y: float = 315.0
+const PROMPT_POS: Array[Vector2] = [Vector2(205.0, PROMPT_Y), Vector2(445.0, PROMPT_Y)]
 const ROTATE_DURATION: float = 5.0
 const TITLE_FAIL_TEXT: String = "失败"
 const TITLE_TIMEOUT_TEXT: String = "超时"
@@ -37,6 +36,7 @@ var _content: Control = null   # .tscn instantiate（chrome 静态节点 + %Prom
 
 
 func _ready() -> void:
+	HudOverlay.apply_identity("battle")   # 批 G P2-2：显式声明（真实链路靠 battle_scene:226 残留 identity 恰好隐藏 HUD 属脆弱设计）
 	# 运行时（SceneManager.change_scene 加载后）：从 GameData.last_result 读 param 自动装配
 	# 等价源 stagefailed.create(param)（param 由 battle 衔接存入 GameData）
 	if GameData.last_result.has("stage_id") and not GameData.last_result.get("victory", true):
@@ -64,17 +64,17 @@ func _build_content() -> void:
 	# back/menu 按钮（源 :202-247 TextureButton + doClickBack/doClickMenu）。
 	(_content.get_node("Back") as BaseButton).pressed.connect(_on_back_pressed)
 	(_content.get_node("Menu") as BaseButton).pressed.connect(_on_menu_pressed)
-	# battleStatist 按钮（源 :345-392 Scale9 + count Label）：.tscn 普通 Button，运行时套 Scale9 StyleBox。
+	# battleStatist 按钮（源 :345-392 Scale9 + count Label）：.tscn 普通 Button（坐标已源直译），
+	# 运行时套 Scale9 StyleBox；count 文案由 apply_with_label 内建 Label 挂按钮内居中（源 :383-389 范式）。
 	var statist_btn: Button = _content.get_node("BattleStatist") as Button
 	var tex_dir: String = StageSettlementCommon.ALPHA_HVGA_DIR
-	UiScale9Button.apply_with_label(statist_btn, tex_dir + StageSettlementCommon.BATTLE_STATIST_TEX, tex_dir + StageSettlementCommon.BATTLE_STATIST_PRESS_TEX, StageSettlementCommon.BATTLE_STATIST_CAP)
+	UiScale9Button.apply_with_label(
+		statist_btn,
+		tex_dir + StageSettlementCommon.BATTLE_STATIST_TEX,
+		tex_dir + StageSettlementCommon.BATTLE_STATIST_PRESS_TEX,
+		StageSettlementCommon.BATTLE_STATIST_CAP,
+		StageSettlementCommon.statist_label_text(_cm))
 	statist_btn.pressed.connect(_on_battle_statist_pressed)
-	# battleStatist count Label（源 :388 battleCount "数据"）— procedural 挂 _content（位置=BATTLE_STATIST_POS + OFFSET）。
-	var count := Label.new()
-	count.text = StageSettlementCommon.statist_label_text(_cm)
-	count.position = BATTLE_STATIST_POS + BATTLE_STATIST_LABEL_OFFSET
-	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_content.add_child(count)
 
 
 # 旋转 tween procedural 挂 .tscn Light 节点（坑 4 装饰节点 mouse_filter=IGNORE 对 Sprite2D 不适用）。
