@@ -230,3 +230,30 @@ func _run_walk(pages: Array) -> void:
 		await get_tree().create_timer(COOLDOWN_SEC).timeout
 	_walk_report = JSON.stringify(out)
 	_walk_running = false
+
+
+## 诊断：全树枚举 SpineSkeleton（槽贴图路径+变换+全局坐标），定位错位/错绑渲染用。
+func qa_dump_spine() -> String:
+	var out: Array = []
+	var stack: Array = [get_tree().root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		for c in n.get_children():
+			stack.push_back(c)
+		if n is SpineSkeleton:
+			var sk := n as SpineSkeleton
+			var slots_info: Array = []
+			var stack2: Array = [sk]
+			while not stack2.is_empty():
+				var m: Node = stack2.pop_back()
+				for mc in m.get_children():
+					stack2.push_back(mc)
+					if mc is Sprite2D and (mc as Sprite2D).texture != null:
+						var sp := mc as Sprite2D
+						slots_info.append("%s@p%s r%s s%s" % [
+							String(sp.texture.resource_path).get_file(),
+							str(sp.position.round()), str(snappedf(sp.rotation_degrees, 0.1)), str(sp.scale)])
+			out.append("sk@%s parent=%s gpos=%s nscale=%s slots=[%s]" % [
+				sk.name, sk.get_parent().name if sk.get_parent() else "-",
+				str(sk.global_position.round()), str(sk.scale), "; ".join(slots_info)])
+	return "\n".join(out)

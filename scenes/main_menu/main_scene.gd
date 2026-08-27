@@ -37,6 +37,9 @@ const DAILY_BTN_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_1.png
 const DAILY_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/main_dailyreward_2.png"
 const DAILY_BTN_CENTER: Vector2 = Vector2(220.0, 88.0)
 const DAILY_BTN_CONTENT_SCALE: float = 1.28125   # 散图显示=纹理÷CS（main_dailyreward 无 TextureConfig 条目，同 main_status_bar 口径）
+const CHAT_BTN_RES: String = "res://assets/ui/alpha/HVGA/chat/chat_entrance_1.png"
+const CHAT_BTN_PRESS_RES: String = "res://assets/ui/alpha/HVGA/chat/chat_entrance_2.png"
+const CHAT_BTN_CENTER: Vector2 = Vector2(44.0, 334.0)   # 原版实机截图量取(105,681)@1600 反推逻辑系并经实机复测校正
 # 15 入口按钮数据外移 main_scene_entries.gd（控 LINT005 ≤400，第九轮 P1-B 入口接线）。
 const MainSceneEntries = preload("res://scripts/ui/main_scene_entries.gd")
 
@@ -245,6 +248,14 @@ func _build_hud() -> void:
 	dl_btn.position = DAILY_BTN_CENTER - dl_size / 2.0
 	dl_btn.pressed.connect(func() -> void: MainSceneEntryRouter.open_daily_login(self))
 	add_child(dl_btn)
+	# 聊天气泡入口（源 statusbar.lua:673-699 createHead chatTurnUp chat_entrance_1/2.png）。
+	# 中心照原版实机截图量取 @800 系 (52.5,340)（源 ccp(40,-327) 挂 head 容器的等价落点）；
+	# 单机化受控裁剪：源点击开联机聊天面板 getChatPanel，本项目仅保留入口视觉，不接 handler。
+	var chat_size: Vector2 = (load(CHAT_BTN_RES) as Texture2D).get_size() / DAILY_BTN_CONTENT_SCALE
+	var chat_btn := UiButton.make(CHAT_BTN_RES, CHAT_BTN_PRESS_RES, CHAT_BTN_CENTER)
+	chat_btn.size = chat_size
+	chat_btn.position = CHAT_BTN_CENTER - chat_size / 2.0
+	add_child(chat_btn)
 
 
 ## shortcut 按钮路由（getSCButtonTouchHandler）— HudOverlay 已托管，本方法保留兼容。
