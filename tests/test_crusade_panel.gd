@@ -422,7 +422,9 @@ func test_box_pressed_unpassed_locked_no_claim() -> void:
 	add_child(root)
 	var panel := _make_panel(root, 1)
 	panel._on_box_pressed(5)
-	assert_true(panel.result_label.text.contains("远征") or panel.result_label.text.contains("第 1 关"), "超进度 box 不可点领奖（源 :411-422）")
+	# 超视野 box 源无反馈（hintBox :411-422 仅视野内弹预览浮窗，不动文案通道）——
+	# F3 初始文案置空后 result_label 应保持空（未走领奖/预览任何路径）
+	assert_eq(panel.result_label.text, "", "超进度 box 不可点领奖（源 :411-422）")
 	panel.remove_window()
 	root.queue_free()
 

@@ -27,19 +27,20 @@ static func format_comma(value: int) -> String:
 	return s + tail
 
 
-## 构建字符组容器（右缘对齐配合 place_right 用）。
-static func build(text: String, folder: String = "white") -> Control:
-	return _rebuild(Control.new(), text, folder)
+## 构建字符组容器（右缘对齐配合 place_right 用）。padding 覆盖字符间负隙
+## （源各调用点异值：statusbar 默认 -3，prop_amount 走 -1）。
+static func build(text: String, folder: String = "white", padding: float = PADDING) -> Control:
+	return _rebuild(Control.new(), text, folder, padding)
 
 
 ## 数值变化重建子节点（源 refreshNumberNode 的 remove+rebuild 等价）。
-static func refresh(host: Control, text: String, folder: String = "white") -> void:
+static func refresh(host: Control, text: String, folder: String = "white", padding: float = PADDING) -> void:
 	if host == null:
 		return
 	for c in host.get_children():
 		host.remove_child(c)
 		c.free()
-	_rebuild(host, text, folder)
+	_rebuild(host, text, folder, padding)
 
 
 ## 把容器右缘钉在 right_x（调用方条局部系）、垂直中心 center_y。
@@ -47,7 +48,7 @@ static func place_right(host: Control, right_x: float, center_y: float) -> void:
 	host.position = Vector2(right_x - host.size.x, center_y - host.size.y * 0.5)
 
 
-static func _rebuild(host: Control, text: String, folder: String) -> Control:
+static func _rebuild(host: Control, text: String, folder: String, padding: float) -> Control:
 	var dir: String = DIGITS_DIR + folder + "/"
 	var cursor_x: float = 0.0
 	var max_h: float = 0.0
@@ -69,10 +70,10 @@ static func _rebuild(host: Control, text: String, folder: String) -> Control:
 		tr.position = Vector2(cursor_x, max_h * 0.5 - size.y * 0.5)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(tr)
-		cursor_x += size.x + PADDING
+		cursor_x += size.x + padding
 		max_h = maxf(max_h, size.y)
 	# 源 node contentSize = 累计 w-h；末字符 -padding 归零尾隙（全缺资源防负宽）。
-	var total_w: float = maxf(cursor_x - PADDING if text.length() > 0 else 0.0, 0.0)
+	var total_w: float = maxf(cursor_x - padding if text.length() > 0 else 0.0, 0.0)
 	host.size = Vector2(total_w, max_h)
 	host.custom_minimum_size = host.size
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE

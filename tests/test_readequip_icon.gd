@@ -15,10 +15,22 @@ func test_create_equip_icon() -> void:
 	assert_gt(icon.get_child_count(), 0, "equip 图标含边框 + icon")
 
 
-# amount > 1 多一个数量 Label。
+# amount > 1 多一个数量贴图数字（源 getNumberNode prop_amount，H1 走查 2026-08-27）。
 func test_create_icon_with_amount() -> void:
 	var icon: Control = ReadequipIcon.create_icon(101, 3, cm)
-	assert_gt(icon.get_child_count(), 2, "amount>1 含数量 Label（边框+icon+label）")
+	assert_gt(icon.get_child_count(), 2, "amount>1 含数量节点（边框+icon+数字）")
+	var num_host: Control = null
+	for c in icon.get_children():
+		if c is Control and c.has_node("ch0"):
+			num_host = c as Control
+			break
+	assert_not_null(num_host, "数量节点 = NumberNode 容器（含 ch* TextureRect）")
+	# 逐字符贴图（3 → 1 个字符节点），无 "x" 前缀（源 text=""..amount 纯数字）
+	var chars: int = 0
+	for c in num_host.get_children():
+		if (c as Node).name.begins_with("ch"):
+			chars += 1
+	assert_eq(chars, 1, "amount=3 → 单字符贴图（非 xN 文本）")
 
 
 # tid=1 Coco（Unit Portrait + Hero）→ hero 边框 + Portrait。

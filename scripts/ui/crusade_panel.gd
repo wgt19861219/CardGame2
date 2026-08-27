@@ -107,7 +107,9 @@ func _build_content() -> void:
 	enemy_preview_box = _content.get_node("%EnemyPreviewHost") as Control
 	start_btn = _content.get_node("%StartBtn") as TextureButton
 	start_btn.visible = false
-	result_label.text = "远征：第 " + str(player.crusade_manager.cur_stage) + " 关"
+	# F3（2026-08-27 走查）：源打开面板无常驻标题文字（当前关仅用箭头 StageHint 标记），
+	# 「远征：第 N 关」系发明；本 label 只作事件反馈通道（受控偏离见 tscn），初始置空。
+	result_label.text = ""
 	_hint_anchor = _content.get_node("%HintAnchor") as Control
 	stage_hint = _content.get_node("%StageHint") as CanvasItem
 	_start_hint_float()

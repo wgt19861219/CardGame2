@@ -134,13 +134,11 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 		container.add_child(icon)   # 源 :741 bg:addChild(equip, -1)：内容在 frame 之下（中空区可见）
 	container.add_child(frame)
 	if amount > 1:
-		var lbl := Label.new()
-		lbl.text = "x" + str(amount)
-		# 源 :803-807 anchor(1,0.5) (68,18)：右缘距左 68、中心距底 18（Label 数字图降级，口径对齐）。
-		lbl.size = Vector2(56.0, 16.0)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
-		container.add_child(lbl)
+		# 源 :797-805 getNumberNode(folder="prop_amount", padding=-1) 贴图数字（无 x 前缀），
+		# anchor(1,0.5)(68,18)——H1 走查（2026-08-27）：旧 Label "xN" 系降级发明，批 A NumberNode 组件复用。
+		var num := NumberNode.build(str(amount), "prop_amount", -1.0)
+		NumberNode.place_right(num, AMOUNT_RIGHT_X, frame_h - AMOUNT_CENTER_Y_UP)
+		container.add_child(num)
 	if level > 0 or show_gray:
 		_add_stars(container, id, level, show_gray, cm)
 	# 存 quality/is_hero 供 pop_tavern_loot playBurst 品质光效判断（源 createLootAnim :494/564-625）。
@@ -248,12 +246,10 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant, quality: i
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
 	container.add_child(tag)
 	if amount > 1:
-		var lbl := Label.new()
-		lbl.text = "x" + str(amount)
-		lbl.size = Vector2(56.0, 16.0)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
-		container.add_child(lbl)
+		# 源魂石/碎片数量同为 prop_amount 贴图数字（:806/:823 同一 getNumberNode）。
+		var num := NumberNode.build(str(amount), "prop_amount", -1.0)
+		NumberNode.place_right(num, AMOUNT_RIGHT_X, frame_h - AMOUNT_CENTER_Y_UP)
+		container.add_child(num)
 	return container
 
 
@@ -286,12 +282,10 @@ static func create_fragment_icon(id: int, amount: int, cm: Variant, quality: int
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
 	container.add_child(tag)
 	if amount > 1:
-		var lbl := Label.new()
-		lbl.text = "x" + str(amount)
-		lbl.size = Vector2(56.0, 16.0)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
-		container.add_child(lbl)
+		# 源魂石/碎片数量同为 prop_amount 贴图数字（:806/:823 同一 getNumberNode）。
+		var num := NumberNode.build(str(amount), "prop_amount", -1.0)
+		NumberNode.place_right(num, AMOUNT_RIGHT_X, frame_h - AMOUNT_CENTER_Y_UP)
+		container.add_child(num)
 	return container
 
 

@@ -229,9 +229,12 @@ expand_mode = 1
 mouse_filter = 2
 
 ; 源 crusade_title（crusadeconfig:936-945，515×103px/CS=401.95×80.39 中心 (402,390)→
-; (482,170)；原缺图 HC en-US 补，Task 7 归源新增）
+; (482,170)）。F1（2026-08-27 走查）：源 res 无 crusade/ 目录该图缺载，zh-CN 实机布条
+; 空白（screen_crusade.png 佐证）；本图系 en-US 渠道补图（红字 Crusade），与原版视觉
+; 不符故隐藏，资产保留待正版资源
 [node name="Title" type="TextureRect" parent="."]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
 offset_left = 201.03
 offset_top = 49.8
