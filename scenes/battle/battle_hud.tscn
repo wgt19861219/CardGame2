@@ -21,21 +21,22 @@ offset_bottom = 150.0
 grow_horizontal = 2
 mouse_filter = 2
 
+; 英雄卡行源直译（battle_scene.lua:526-528 排布公式：卡中心间距 120 点）：卡组件 120 宽
+; +separation 0 → 行 x 80-680（首卡中心 140/末卡 620，与原版视觉卡中心 140/258/378/497/617
+; 吻合）；行 y：卡区 334-460（heroes_panel(70,5)+卡 y15→卡原点 Godot y=460）。旧全宽居中
+; separation 10（中心距 130、行中心 400 偏右 20）2026-08-28 战斗域批次修。
 [node name="BottomLeft" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 2
-anchor_right = 1.0
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = -170.0
-offset_right = 0.0
-offset_bottom = -20.0
+anchors_preset = 0
+offset_left = 80.0
+offset_top = 334.0
+offset_right = 680.0
+offset_bottom = 460.0
 grow_vertical = 0
-alignment = 1
+alignment = 0
 mouse_filter = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 0
 
 [node name="BottomRight" type="Control" parent="."]
 unique_name_in_owner = true

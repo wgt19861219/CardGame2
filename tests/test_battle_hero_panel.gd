@@ -245,3 +245,21 @@ func test_cast_clears_ready_glow() -> void:
 	panel._play_skill_ready("")   # 显式 STATE_NONE 路径
 	assert_null(panel.get("_skill_ready_effect"), "state NONE 应清光圈")
 	panel.queue_free()
+
+
+# 2026-08-28 战斗域批次几何守卫：卡内布局源直译防回退（条叠卡内/桶÷CS）。
+# 源 hero_panel.lua:63-70 herobucket（createSprite÷CS 140×148px→109.3×115.5）+hp(0,21)/mp(0,8)。
+func test_panel_geometry_source_translated() -> void:
+	var u := MockUnit.new()
+	var panel := _make_panel(u)
+	var container: Sprite2D = panel.get_node("BattleHeroPanelContent/PortraitZone/PortraitHost/Container")
+	assert_almost_eq(container.scale.x, 1.0 / 1.28125, 0.001, "herobucket ÷CS（源 createSprite）")
+	var bucket_w: float = container.texture.get_width() * container.scale.x
+	assert_almost_eq(bucket_w, 109.3, 0.5, "herobucket 显示宽 109.3（140px÷CS）")
+	# 条叠卡内：Host 在 VBox 流 y=126（条 Zone 0 高），条 position (60,-21)/(60,-8)
+	assert_almost_eq(panel.hp_bar.position.x, 60.0, 0.5, "hp 条中心 x=60（卡水平中心）")
+	assert_almost_eq(panel.hp_bar.position.y, -21.0, 0.5, "hp 条回叠卡内（源卡内 y=21）")
+	assert_almost_eq(panel.mp_bar.position.x, 60.0, 0.5, "mp 条中心 x=60")
+	assert_almost_eq(panel.mp_bar.position.y, -8.0, 0.5, "mp 条回叠卡内（源卡内 y=8）")
+	assert_almost_eq(panel.hp_bar.scale.x, 1.0, 0.001, "hp 条无 ×0.92 补偿（÷CS 根修后残留已删）")
+	panel.queue_free()

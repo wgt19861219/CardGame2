@@ -38,7 +38,8 @@ const LadderBattle = preload("res://scripts/systems/ladder_battle.gd")
 const MAX_TICKS: int = 6000  # 防死循环（≥ time_limit 90s×fps 60=5400，覆盖 engine 自然 timeout）
 const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_length 常量内联）
 const BIG_HP_POS: Vector2 = Vector2(375.0, 40.0)  # to_godot(375,440)=(375,480-440)，Boss 血条 HUD 原生坐标（800×480 直译）
-const RETURN_BTN_POS: Vector2 = Vector2(710.0, 20.0)   # 暂停键贴右上角（用户布局，贴图70×69，右边距20）
+# 暂停键源直译：createButtonWithMask÷CS 显示 54.6×53.9，中心(757,440)→Godot 左上；旧(710,20)偏位+未÷CS（2026-08-28 战斗域批次修）。
+const RETURN_BTN_POS: Vector2 = Vector2(729.7, 13.1)
 
 signal next_wave_requested
 

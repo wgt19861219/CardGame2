@@ -77,15 +77,15 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	hp_bar = BattleHpBar.create(unit, "HP")
 	hp_bar.auto_hide = false
 	hp_bar_host.add_child(hp_bar)
-	# 受控偏离（用户观感验收 2026-08-19）：bg 119 比头像 110 宽出头 → 整条 ×0.92 缩至齐宽。
-	hp_bar.scale = Vector2(0.92, 0.92)
-	hp_bar.position = Vector2(59.5, 8.5)
+	# 条叠卡内（源 :67 hp(0,21)/:70 mp(0,8) 卡内偏移；组件原点=卡 Cocos 原点映射 (60,126)）：
+	# Host 在 VBox 流 y=126（条 Zone 0 高），条中心=Host+(60,-21)/(60,-8)。BattleHpBar 显示
+	# 已÷CS（92.9×13.3，组件内建）；旧 ×0.92 齐宽补偿系 ÷CS 根修前残留，2026-08-28 战斗域批次删。
+	hp_bar.position = Vector2(60.0, -21.0)
 	var mp_type: String = str(unit.info.get("MP Type", "Mana"))
 	mp_bar = BattleHpBar.create(unit, mp_type)
 	mp_bar.auto_hide = false
 	mp_bar_host.add_child(mp_bar)
-	mp_bar.scale = Vector2(0.92, 0.92)   # 同 HP 齐宽
-	mp_bar.position = Vector2(59.5, 8.5)
+	mp_bar.position = Vector2(60.0, -8.0)
 	_start_redmask_flicker()
 	frame_btn.disabled = true
 

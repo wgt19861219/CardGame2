@@ -3,25 +3,29 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herobucket.png" id="1_bucket"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/portraitredmask.png" id="2_redmask"]
 
-; VBoxContainer 根：头像/HP/MP 垂直自动排列，separation 控制间距。
-; 各 Zone 带 custom_minimum_size 让 VBox 算布局（替代散乱绝对 offset）。
+; 源直译（hero_panel.lua:8-78，2026-08-28 战斗域批次）：卡 node 原点=Cocos 卡内 (0,0)，
+; Godot 组件 120×126、卡原点映射 (60,126)。portrait 中心卡内 (0,70)→组件 (60,56)；
+; hp 条中心 (0,21)→(60,105)、mp 条中心 (0,8)→(60,118)——两条叠在卡内底部（VBox 仅
+; PortraitZone 占高，条 Zone 0 高+gd 负 position 回叠）；herobucket（ed.createSprite÷CS
+; 140×148px→109.3×115.5）中心 (-1,68)→组件 (59,72)，挂 Host 内 (51,54)+scale 0.7805。
+; 旧 VBox 纵排（头像区→条区→条区 separation 7）条在卡外+桶未÷CS 偏大 1.28× 本批根修。
 [node name="BattleHeroPanelContent" type="VBoxContainer"]
 layout_mode = 3
 mouse_filter = 2
-theme_override_constants/separation = 7
+theme_override_constants/separation = 0
 
-; 头像区：portrait 104×104 + frame 109×109，Zone 110×115 容纳。
+; 头像区：portrait 104×104 + frame 109×109，Zone 110×126 容纳（含桶下沿+条区）。
 [node name="PortraitZone" type="Control" parent="."]
-custom_minimum_size = Vector2(110, 115)
+custom_minimum_size = Vector2(110, 126)
 layout_mode = 2
 mouse_filter = 2
 
-; PortraitHost 在 Zone 内居中（offset 3,3 让 104 portrait 居中 110 宽）。
+; PortraitHost：portrait 中心对位组件 (60,56)（104 半宽 52 → offset (8,4)）。
 [node name="PortraitHost" type="Control" parent="PortraitZone"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 3.0
-offset_top = 3.0
+offset_left = 8.0
+offset_top = 4.0
 mouse_filter = 2
 
 [node name="FrameBtn" type="TextureButton" parent="PortraitZone/PortraitHost"]
@@ -39,14 +43,16 @@ visible = false
 position = Vector2(53, 53)
 texture = ExtResource("2_redmask")
 
+; Container herobucket ÷CS（140×148px→109.3×115.5），中心=portrait 中心+(-1,+2)（源 ccp(-1,-2) y 翻转）。
 [node name="Container" type="Sprite2D" parent="PortraitZone/PortraitHost"]
-position = Vector2(52, 52)
+position = Vector2(51, 54)
+scale = Vector2(0.7805, 0.7805)
 z_index = -2
 texture = ExtResource("1_bucket")
 
-; HP 条区：119×17 容纳 HpBar 大条 bg hp_gray（源 hero_panel.lua:15 两条均 HpBar，2026-08-18）。
+; HP 条区：0 高（VBox 占位不占高），条由 gd position 回叠卡内 (60,105)。
 [node name="HpBarZone" type="Control" parent="."]
-custom_minimum_size = Vector2(119, 17)
+custom_minimum_size = Vector2(119, 0)
 layout_mode = 2
 mouse_filter = 2
 
@@ -57,9 +63,9 @@ offset_left = 0.0
 offset_top = 0.0
 mouse_filter = 2
 
-; MP 条区：119×17。
+; MP 条区：0 高，条由 gd position 回叠卡内 (60,118)。
 [node name="MpBarZone" type="Control" parent="."]
-custom_minimum_size = Vector2(119, 17)
+custom_minimum_size = Vector2(119, 0)
 layout_mode = 2
 mouse_filter = 2
 

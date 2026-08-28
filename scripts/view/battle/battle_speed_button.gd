@@ -12,7 +12,9 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_speed_button_content.tscn")
 const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/CombatAcceleration_"
-const GODOT_POS: Vector2 = Vector2(735.0, 360.0)  # to_godot(735,120)=(735,480-120)，HUD 原生坐标（800×480 直译）
+# 源 :1241 speedBtn:setPosition(ccp(735,120)) 是 MenuItemImage 锚点中心；贴图 105×60 原尺寸显示
+# （MenuItemImage 不÷CS，源 battle_scene.lua:1236 直载）。Godot position=左上角 → 中心减半尺寸。
+const GODOT_POS: Vector2 = Vector2(682.5, 330.0)  # 中心 to_godot(735,120)=(735,360) −(105/2,60/2)
 const MAX_STATE: int = 4
 const SPEED_LABELS := ["1x", "2x", "3x", "4x"]
 

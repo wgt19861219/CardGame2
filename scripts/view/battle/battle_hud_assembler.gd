@@ -14,7 +14,7 @@ const BattleAutoButton = preload("res://scripts/view/battle/battle_auto_button.g
 const BattleBigHpBar = preload("res://scripts/view/battle/battle_big_hp_bar.gd")
 const BattleHeroPanel = preload("res://scripts/view/battle/battle_hero_panel.gd")
 const RETURN_BTN_TEX: String = "res://assets/ui/alpha/HVGA/pausebtn.png"
-const HERO_PANEL_MIN_SIZE: Vector2 = Vector2(100.0, 110.0)  # hero_panel custom_minimum_size（防全屏铺满撑爆 HBox）
+const HERO_PANEL_MIN_SIZE: Vector2 = Vector2(120.0, 126.0)  # 卡逻辑区（源 width=120/height≈144 取桶+条包络 126；HBox 中心距 120=源排布公式）
 
 
 # 倍速按钮装配（源 :1235-1250）。scene.speed_state 初值 fill，speed_changed 连 _on_speed_changed。
@@ -28,13 +28,16 @@ static func create_speed_button(scene) -> void:
 	scene.speed_btn = btn
 
 
-# 返回（暂停）按钮装配（源 pausebtn @757,440）。TextureButton 贴图 + RETURN_BTN_POS + pressed 连 _on_return_pressed。
+# 返回（暂停）按钮装配（源 pausebtn @757,440 中心，createButtonWithMask÷CS 显示 54.6×53.9）。
+# TextureButton 贴图 + RETURN_BTN_POS + ÷CS scale + pressed 连 _on_return_pressed。
+const RETURN_BTN_SCALE: Vector2 = Vector2(0.7805, 0.7805)   # 1/1.28125（源 createSprite÷CS）
 static func create_return_button(scene) -> void:
 	if scene.return_btn != null:
 		scene.return_btn.queue_free()
 	var btn := TextureButton.new()
 	btn.texture_normal = load(RETURN_BTN_TEX) as Texture2D
 	btn.position = scene.RETURN_BTN_POS
+	btn.scale = RETURN_BTN_SCALE
 	btn.pressed.connect(scene._on_return_pressed)
 	scene.hud.add_to_top_bar(btn)
 	scene.return_btn = btn
