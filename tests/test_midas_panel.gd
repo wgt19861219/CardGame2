@@ -147,8 +147,12 @@ func test_panel_new_whitelist() -> void:
 # 锁定 use (210,50) + multi_use 隐（真值判断照源 getAreaUnlockvip）。
 func test_use_button_position_fill() -> void:
 	var panel := _make_panel()
-	# 源 VIP0 不含 Multiple Midas（VIP.json false）→ 锁定位 (210,50)
-	assert_almost_eq(panel._use_btn.position.x, 402.5, 0.5, "锁定位 use pos.x = 477.5-150/2（源 :1031）")
+	# 单机化全放开（2026-08-29）：VIP 门禁不再锁 multi → 默认即解锁位 (130,50)
+	assert_almost_eq(panel._use_btn.position.x, 322.5, 0.5, "解锁位 use pos.x = 397.5-150/2（源 :1029）")
+	# 锁定分支逻辑保留（手动置 false 仍走 solo 位）——源 :1031 (210,50)
+	panel._multi_unlocked = false
+	panel._fill_buttons()
+	assert_almost_eq(panel._use_btn.position.x, 402.5, 0.5, "锁定分支保留 solo pos.x = 477.5-150/2")
 	assert_false(panel._multi_btn.visible, "锁定 multi_use 隐（源 :1032）")
 	panel._multi_unlocked = true
 	panel._fill_buttons()

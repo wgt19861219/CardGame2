@@ -41,8 +41,12 @@ func test_get_area_unlock_level_missing_returns_zero() -> void:
 
 # 源 checkAreaUnlock：limit <= current。Crusade 返 0 → 0<=任意 playerlevel → 永远 true（默认已解锁）。
 func test_check_area_unlock_threshold() -> void:
-	assert_true(fl.check_area_unlock(&"SkillUpgrade", 7), "7 级 = 阈值 → 已解锁")
-	assert_false(fl.check_area_unlock(&"SkillUpgrade", 6), "6 级 < 阈值 7 → 未解锁")
+	# 单机化全放开（2026-08-29）：任何等级均已解锁（源运营门槛不迁移）；
+	# 手动 close_module 的 notopen 语义保留。
+	assert_true(fl.check_area_unlock(&"SkillUpgrade", 6), "6 级也解锁（单机化全放开）")
+	assert_true(fl.check_area_unlock(&"PVP", 1), "1 级 PVP 可进")
+	fl.close_module(&"SkillUpgrade")
+	assert_false(fl.check_area_unlock(&"SkillUpgrade", 99), "close_module 手动关闭仍锁")
 	assert_true(fl.check_area_unlock(&"PVP", 10), "10 级 PVP 解锁")
 
 
@@ -74,10 +78,10 @@ func test_unlock_require_notopen() -> void:
 	assert_eq(req["type"], &"notopen", "close_module → type=notopen")
 
 
-# 源 getAreaUnlockPrompt：未解锁返文案，已解锁返空。
+# 源 getAreaUnlockPrompt：未解锁返文案，已解锁返空。单机化全放开后恒返空（无灰显提示）。
 func test_get_area_unlock_prompt_locked() -> void:
 	var prompt: String = fl.get_area_unlock_prompt(&"SkillUpgrade", 6)
-	assert_true(prompt.find("7") >= 0, "6 级未解锁 SkillUpgrade 提示含等级 7：'%s'" % prompt)
+	assert_eq(prompt, "", "单机化全放开 → 恒空文案")
 
 
 func test_get_area_unlock_prompt_unlocked_empty() -> void:
@@ -96,10 +100,11 @@ func test_get_area_unlock_vip_truthy() -> void:
 	assert_eq(fl.get_area_unlock_vip(&"Magic Soul Box"), 11, "Magic Soul Box → VIP11")
 
 
-# vip 门禁 check_area_unlock（源 checkAreaUnlock limit<=current）：VIP0 不解锁 Multiple Midas。
+# vip 门禁单机化同放开（check_area_unlock 恒 true）；查表口径由 unlock_require 保留。
 func test_check_area_unlock_vip_threshold() -> void:
-	assert_false(fl.check_area_unlock(&"Multiple Midas", 99, 0), "VIP0 < 阈值 2 → 未解锁")
-	assert_true(fl.check_area_unlock(&"Multiple Midas", 99, 2), "VIP2 = 阈值 → 已解锁")
+	assert_true(fl.check_area_unlock(&"Multiple Midas", 99, 0), "VIP0 也解锁（单机化全放开）")
+	var req: Dictionary = fl.unlock_require(&"Multiple Midas", 99, 0)
+	assert_eq(int(req["limit"]), 2, "查表口径保留：Multiple Midas 需 VIP2")
 
 
 # 源 baselsr.lua:33-45 playerLevelup 11 功能表映射（Step 3 升级钩子用）。
