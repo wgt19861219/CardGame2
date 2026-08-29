@@ -52,6 +52,7 @@ var _content: Control = null       # .tscn 根（fill 节点入口）
 
 
 func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -> void:
+	hud_identity = "equipstrengthen"   # 源 extends basescene pushScene 无 HUD（2026-08-29 用户反馈 HUD 透叠）
 	hero = p_hero
 	cm = p_cm
 	pd = p_pd

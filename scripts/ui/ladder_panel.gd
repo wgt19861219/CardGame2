@@ -197,12 +197,14 @@ func _fill_lineup(lineup: Array) -> void:
 		# rank/stars → 框档随实际品质（2026-08-22 巡检订正：旧恒 rank=1/stars=0 档显错；
 		# lineup 存 tid，反查实例，无实例（已分解等）降级默认）。
 		var hero: HeroInstance = _player.hero_manager.find_hero_by_tid(int(lineup[i]))
-		if hero != null:
-			(_lineup_slots[i] as Control).add_child(ReadheroIcon.create_icon_by_hero(hero, _cm))
-		else:
-			var fallback := ReadheroIcon.new()
-			fallback.setup({"id": int(lineup[i]), "rank": 1, "stars": 0}, _cm)
-			(_lineup_slots[i] as Control).add_child(fallback)
+		var icon: ReadheroIcon = ReadheroIcon.create_icon_by_hero(hero, _cm) if hero != null else null
+		if icon == null:
+			icon = ReadheroIcon.new()
+			icon.setup({"id": int(lineup[i]), "rank": 1, "stars": 0}, _cm)
+		# 框 83 贴 container 左下（readhero 源结构），底图凹槽按槽 104 居中印刷（109 时代摆位）：
+		# 平移 (13,-13) 令框中心对槽中心（2026-08-29 实测：修复前框沉槽左下、左缘溢凹槽 9 设计点）。
+		icon.position = Vector2(13.0, -13.0)
+		(_lineup_slots[i] as Control).add_child(icon)
 
 
 func _on_set_lineup() -> void:

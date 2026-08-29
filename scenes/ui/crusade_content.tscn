@@ -10,9 +10,13 @@
 ; 贴图口径（ crusade 系 TextureConfig 条目全 Prescaled=false → 条目 CS 不施加，
 ; 只算显式 scale 累乘，批 3 Task 4 五重证据定稿）：bg=px/CS×2.0、fog=px/CS×4.0、
 ;   其余 = px/CS。
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/toast_bg.png" id="TOASTBG"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="CLOSE1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/main_head_level_bg_silver.png" id="SILVER"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/startbtn.png" id="STARTBTN"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_detail_bg1.png" id="4_bg1"]
@@ -396,15 +400,163 @@ texture_pressed = ExtResource("3_backp")
 ignore_texture_size = true
 stretch_mode = 0
 
-; 项目适配（源 battleLayer 点击弹窗模型的常驻简化，位置自定——受控偏离记录）
-[node name="EnemyPreviewHost" type="Control" parent="."]
+; ── 源 battleLayer 敌方阵容弹窗（crusadeconfig :1312-1480 + crusade.lua showBattleInfo :177-235；
+; 2026-08-29 用户验收指示按源补全，撤 2026-08-17 常驻简化受控偏离）──
+; battleinfo=toast_bg Scale9(17,10,200,46) scaleSize 500×180 中心 (400,220)→Godot (400,260)。
+[node name="BattleLayer" type="Control" parent="."]
 unique_name_in_owner = true
+visible = false
 layout_mode = 3
-offset_left = 30.0
-offset_top = 245.0
-offset_right = 690.0
-offset_bottom = 330.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Shade" type="ColorRect" parent="BattleLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.35)
+mouse_filter = 0
+
+[node name="BattleInfo" type="NinePatchRect" parent="BattleLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 150.0
+offset_top = 170.0
+offset_right = 650.0
+offset_bottom = 350.0
 mouse_filter = 2
+texture = ExtResource("TOASTBG")
+patch_margin_left = 13
+patch_margin_top = 8
+patch_margin_right = 13
+patch_margin_bottom = 8
+
+[node name="BlCloseBtn" type="TextureButton" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 456.7
+offset_top = -6.7
+offset_right = 507.4
+offset_bottom = 44.7
+texture_normal = ExtResource("CLOSE1")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="EnemyIconHost" type="Control" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -4.0
+offset_top = 7.5
+offset_right = 104.0
+offset_bottom = 71.5
+mouse_filter = 2
+
+[node name="LevelBg" type="TextureRect" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 54.0
+offset_top = 24.7
+offset_right = 126.0
+offset_bottom = 55.2
+mouse_filter = 2
+texture = ExtResource("SILVER")
+expand_mode = 1
+
+[node name="HeroNameLbl" type="Label" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 110.0
+offset_top = 26.0
+offset_right = 250.0
+offset_bottom = 54.0
+theme_type_variation = &"CrusadeBattleLayerLabel"
+mouse_filter = 2
+
+[node name="LevelLbl" type="Label" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 62.0
+offset_top = 28.0
+offset_right = 118.0
+offset_bottom = 52.0
+theme_type_variation = &"CrusadeBattleLayerLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CurrentBattleLbl" type="Label" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 250.0
+offset_top = 26.0
+offset_right = 360.0
+offset_bottom = 54.0
+theme_type_variation = &"CrusadeBattleLayerLabel"
+mouse_filter = 2
+
+[node name="HeroHost1" type="Control" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 54.0
+offset_top = 53.0
+offset_right = 158.0
+offset_bottom = 157.0
+mouse_filter = 2
+
+[node name="HeroHost2" type="Control" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 129.0
+offset_top = 53.0
+offset_right = 233.0
+offset_bottom = 157.0
+mouse_filter = 2
+
+[node name="HeroHost3" type="Control" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 204.0
+offset_top = 53.0
+offset_right = 308.0
+offset_bottom = 157.0
+mouse_filter = 2
+
+[node name="HeroHost4" type="Control" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 279.0
+offset_top = 53.0
+offset_right = 383.0
+offset_bottom = 157.0
+mouse_filter = 2
+
+[node name="HeroHost5" type="Control" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 354.0
+offset_top = 53.0
+offset_right = 458.0
+offset_bottom = 157.0
+mouse_filter = 2
+
+; 源 start (442,75) 中心 → Godot (442,105)；startbtn 128×123px÷CS=99.9×96
+[node name="StartBtn2" type="TextureButton" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 392.1
+offset_top = 57.0
+offset_right = 491.9
+offset_bottom = 153.0
+texture_normal = ExtResource("STARTBTN")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="StartBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
