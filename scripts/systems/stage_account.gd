@@ -136,6 +136,7 @@ static func get_hero_info(tid: int, hero_exp: int, cm: ConfigManager, hero_manag
 		"t_level": level, "t_exp": exp, "t_max_exp": max_exp,
 		"add_exp": add_exp, "add_hero_exp": hero_exp,
 		"is_max_level": false,
+		"stars": int(hero.stars),   # 源 stagedone createIcon stars=hero._stars（结算头像显星，2026-08-28 头像专项补译）
 		"hp": int(hp_mp.get("hp", 0)), "mp": int(hp_mp.get("mp", 0)),
 	}
 

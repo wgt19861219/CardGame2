@@ -28,6 +28,9 @@ offset_left = 8.0
 offset_top = 4.0
 mouse_filter = 2
 
+; FrameBtn 实测 size=106×106 原尺寸（ignore_texture_size=false+stretch_mode=KEEP，贴图
+; hero_icon_frame 106×106 撑开 rect）= 源 CCMenuItemImage 106 原尺寸口径一致（2026-08-28
+; 头像÷CS 专项实锤：走查「100 vs 106」系照本 offset 数字 100 误读，运行时即 106，勿改）。
 [node name="FrameBtn" type="TextureButton" parent="PortraitZone/PortraitHost"]
 unique_name_in_owner = true
 layout_mode = 0

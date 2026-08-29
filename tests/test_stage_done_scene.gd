@@ -17,7 +17,7 @@ func _make_param(stars: int = 2) -> Dictionary:
 		"exp": 100, "gold": 500,
 		# pre（动画起点）+ t（终态）双态字段（源 hero_info：level/exp/max_exp 为 pre，t_* 为终态）
 		"heroes": [
-			{"id": 1, "rank": 1, "level": 3, "exp": 20, "max_exp": 80,
+			{"id": 1, "rank": 1, "level": 3, "exp": 20, "max_exp": 80, "stars": 3,
 			 "t_level": 5, "t_exp": 50, "t_max_exp": 100, "add_hero_exp": 30},
 			{"id": 2, "rank": 1, "level": 4, "exp": 10, "max_exp": 60,
 			 "t_level": 4, "t_exp": 10, "t_max_exp": 60, "add_hero_exp": 30},
@@ -292,4 +292,38 @@ func test_decor_sprites_divided_by_cs() -> void:
 	assert_almost_eq(gold.scale.x, inv, 0.001, "GoldIcon ÷CS")
 	var light: Sprite2D = scene._content.get_node("%Light")
 	assert_almost_eq(light.scale.x, inv, 0.001, "Light ÷CS（385 → 300）")
+	# TitleBg 双条 z=0 对齐源声明序（条垫文字下、卡行画条上；z=1 曾致 shadow_win_bg
+	# 压 EXP 文字成叠字，2026-08-28 头像÷CS 专项根修）
+	assert_eq((scene._info_bg.get_node("InfoTitleBg2") as Sprite2D).z_index, 0, "InfoTitleBg2 z=0")
+	assert_eq((scene._info_bg.get_node("InfoTitleBg1") as Sprite2D).z_index, 0, "InfoTitleBg1 z=0")
+	scene.queue_free()
+
+
+# 2026-08-28 头像÷CS 专项：hero/loot 行源直译几何守卫（stagedone.lua:16-23 gap 92/70 +
+# hero_ori=(195,243)/loot_ori=(200,100) CCSprite 中心锚点 → Host 左上=中心−半容器）。
+func test_hero_loot_row_source_geometry() -> void:
+	var scene := _make_scene()
+	var hero_host: Control = scene._content.get_node("%HeroHost")
+	var loot_host: Control = scene._content.get_node("%LootHost")
+	assert_almost_eq(hero_host.position.x, 143.0, 0.5, "HeroHost x=195-52（源中心锚点−半容器）")
+	assert_almost_eq(hero_host.position.y, 185.0, 0.5, "HeroHost y=480-243-52（y 翻转）")
+	assert_almost_eq(loot_host.position.x, 164.0, 0.5, "LootHost x=200-36（ReadequipIcon 72 半宽）")
+	assert_almost_eq(loot_host.position.y, 344.0, 0.5, "LootHost y=480-100-36")
+	assert_almost_eq(StageDoneScene.HERO_GAP_X, 92.0, 0.001, "hero gap 源直译 92（旧 110 补偿已回摆）")
+	assert_almost_eq(StageDoneScene.LOOT_GAP_X, 70.0, 0.001, "loot gap 源直译 70（旧 84）")
+	# 第 5 卡右缘 = 143 + 92*4 + 104 = 615 < InfoBg 右缘 664.2（旧 gap110 起点 195 溢 75 点根修）
+	var fifth_right: float = hero_host.position.x + StageDoneScene.HERO_GAP_X * 4.0 + 104.0
+	var info_bg: TextureRect = scene._content.get_node("%InfoBg")
+	assert_lt(fifth_right, info_bg.position.x + info_bg.size.x, "第 5 卡右缘入 InfoBg 面板")
+	scene.queue_free()
+
+
+# 源 createIcon stars=hero._stars（旧硬编码 0 系漏译，2026-08-28 补）：结算头像显示英雄星级。
+func test_hero_icon_shows_stars() -> void:
+	var scene := _make_scene()
+	var ri: ReadheroIcon = scene._hero_icon_nodes[0]
+	assert_eq(ri.stars.size(), 3, "heroes[0] stars=3 → 3 星 sprite")
+	assert_eq(scene._hero_icon_nodes[1].stars.size(), 0, "heroes[1] 无 stars 字段 → 0 星")
+	var star: Sprite2D = ri.stars[0] as Sprite2D
+	assert_almost_eq(star.scale.x, 1.0 / 1.28125, 0.001, "星 ÷CS（源 createSprite 21×23px→16.4×18 点）")
 	scene.queue_free()

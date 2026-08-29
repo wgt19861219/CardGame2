@@ -262,4 +262,12 @@ func test_panel_geometry_source_translated() -> void:
 	assert_almost_eq(panel.mp_bar.position.x, 60.0, 0.5, "mp 条中心 x=60")
 	assert_almost_eq(panel.mp_bar.position.y, -8.0, 0.5, "mp 条回叠卡内（源卡内 y=8）")
 	assert_almost_eq(panel.hp_bar.scale.x, 1.0, 0.001, "hp 条无 ×0.92 补偿（÷CS 根修后残留已删）")
+	# FrameBtn 贴图原尺寸撑开（源 CCMenuItemImage 106 原尺寸口径，2026-08-28 头像÷CS 专项
+	# 实锤；实机多帧后 size=106，单测同帧 size 尚未布局 → 断言同步的 min size）。
+	assert_almost_eq(panel.frame_btn.get_minimum_size().x, 106.0, 0.5, "FrameBtn min 宽=贴图原尺寸 106")
+	assert_almost_eq(panel.frame_btn.get_minimum_size().y, 106.0, 0.5, "FrameBtn min 高=贴图原尺寸 106")
+	# ReadheroIcon 星 ÷CS（源 createSprite 21×23px→16.4×18 点，走查「未÷CS」系误报甄别）
+	if panel.portrait != null and panel.portrait.stars.size() > 0:
+		var star: Sprite2D = panel.portrait.stars[0] as Sprite2D
+		assert_almost_eq(star.scale.x, 1.0 / 1.28125, 0.001, "HUD 星 ÷CS")
 	panel.queue_free()

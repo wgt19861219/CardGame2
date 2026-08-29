@@ -112,14 +112,15 @@ position = Vector2(285.2, -33.7)
 scale = Vector2(0.780488, 0.780488)
 texture = ExtResource("11_top2")
 
+; TitleBg 双条 z_index=0 对齐源表格声明序（条先文字后，条垫 lv/gold/exp 文字下；
+; 英雄卡行源 z=10 画 info_bg 全部之上——CG2 同 z 树序 HeroHost 在后等价。旧 z=1 曾把
+; 半透明 shadow_win_bg 抬到 EXP 文字/卡行上成叠字，2026-08-28 头像÷CS 专项根修）。
 [node name="InfoTitleBg2" type="Sprite2D" parent="InfoBg" unique_id=1332038426]
-z_index = 1
 position = Vector2(285.2, 148.3)
 scale = Vector2(0.780488, 0.780488)
 texture = ExtResource("13_title2")
 
 [node name="InfoTitleBg1" type="Sprite2D" parent="InfoBg" unique_id=1262789858]
-z_index = 1
 position = Vector2(285.2, 51.3)
 scale = Vector2(0.780488, 0.780488)
 texture = ExtResource("12_title1")
@@ -207,19 +208,24 @@ texture_pressed = ExtResource("8_nextp")
 ignore_texture_size = true
 
 [node name="HeroHost" type="Control" parent="." unique_id=1891025862]
+; 源 hero_ori=(195,243) CCSprite 中心锚点（container 104×104，Cocos 左下原点）→ Godot 左上
+; = (195-52, 480-243-52) = (143,185)（2026-08-28 头像÷CS 专项源直译；旧 (195,237) 系中心
+; 坐标当左上直抄，整行偏右下 52 点，第 5 卡 gap110 累计溢面板右缘 75 点）。
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 195.0
-offset_top = 237.0
-offset_right = 195.0
-offset_bottom = 237.0
+offset_left = 143.0
+offset_top = 185.0
+offset_right = 143.0
+offset_bottom = 185.0
 mouse_filter = 2
 
 [node name="LootHost" type="Control" parent="." unique_id=1814744843]
+; 源 loot_ori=(200,100) 中心锚点（ReadequipIcon container 72×72）→ Godot 左上 =
+; (200-36, 480-100-36) = (164,344)（同 HeroHost 中心当左上直译病，2026-08-28 一并根修）。
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 200.0
-offset_top = 380.25
-offset_right = 200.0
-offset_bottom = 380.25
+offset_left = 164.0
+offset_top = 344.0
+offset_right = 164.0
+offset_bottom = 344.0
 mouse_filter = 2
