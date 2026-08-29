@@ -16,6 +16,7 @@ const RanklistSummary = preload("res://scripts/ui/ranklist_summary.gd")
 const UnlockAnnounceView = preload("res://scripts/ui/unlock_announce_view.gd")
 const StoryView = preload("res://scripts/ui/story_view.gd")
 const BattlePreparePanel = preload("res://scripts/view/battle/battle_prepare_panel.gd")
+const GmManager = preload("res://scripts/systems/gm_manager.gd")
 
 const QA_LEVEL: int = 99
 const QA_DIAMOND: int = 1000000
@@ -215,6 +216,62 @@ func qa_grant() -> String:
 	pd.vitality = pd.vitality_max
 	HudOverlay.refresh()
 	return "granted"
+
+
+## 二轮走查（2026-08-27）：GM 注入全英雄（英雄列表滚动验证）+ 各品质装备
+## （背包品质框验证）+ 足量装备碎片（fragment tick 角标验证）。
+func qa_fill() -> String:
+	var pd: Variant = GameData.player
+	var cm: Variant = pd.cm
+	GmManager.execute(pd, cm, {"_get_all_heroes": 1})   # 返回 _reset 回执（照源协议）非错误，忽略
+	# 品质框/star/+N 验证：前 6 英雄注入不同 rank/level（_set_hero_info 照源 GM 语义）。
+	var hero_list: Array = []
+	var tids: Array = cm.get_raw_table("Unit").keys()
+	var given_rank: Array = [3, 4, 5, 3, 4, 5]
+	var n_set: int = 0
+	for tid_str in tids:
+		var row: Dictionary = cm.get_raw_table("Unit")[tid_str]
+		if String(row.get("Unit Type", "")) == "Hero" and row.has("Portrait"):
+			hero_list.append({
+				"_tid": int(tid_str),
+				"_rank": int(given_rank[n_set % given_rank.size()]),
+				"_level": 37,
+				"_stars": 3,
+			})
+			n_set += 1
+			if n_set >= 6:
+				break
+	if not hero_list.is_empty():
+		GmManager.execute(pd, cm, {"_set_hero_info": hero_list})
+	var given: int = 0
+	var by_q: Dictionary = {}
+	for id_str in cm.get_raw_table("Equip"):
+		var row: Dictionary = cm.get_raw_table("Equip")[id_str]
+		var q: int = int(row.get("Quality", 0))
+		if q > 0 and String(row.get("Category", "")) != "":
+			if not by_q.has(q):
+				by_q[q] = []
+			(by_q[q] as Array).append(int(id_str))
+	for q in by_q:
+		for id in (by_q[q] as Array).slice(0, 3):
+			pd.items[id] = 5
+			given += 1
+	var frag_given: int = 0
+	var unit: Dictionary = cm.get_raw_table("Unit")
+	for make_str in cm.get_raw_table(&"Fragment"):
+		var row: Dictionary = cm.get_raw_table(&"Fragment")[make_str]
+		var make_id: int = int(make_str)
+		# 英雄产物碎片：全英雄注入后 isOwnedHero 恒真 → tick 恒隐，跳过只给装备碎片
+		if unit.has(make_str) and String(unit[make_str].get("Unit Type", "")) == "Hero":
+			continue
+		var fid: int = int(row.get(&"Fragment ID", 0))
+		var need: int = int(row.get(&"Fragment Count", 0))
+		if fid > 0 and need > 0:
+			pd.hero_manager.add_fragment(fid, need)
+			frag_given += 1
+		if frag_given >= 6:
+			break
+	return "heroes=full items=%d frags=%d" % [given, frag_given]
 
 
 ## 手动截图（流程测试用）：存 user://qa_shots/<name>.png，返回相对路径。
