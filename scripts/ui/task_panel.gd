@@ -86,7 +86,7 @@ func _fill_main_list() -> void:
 			continue
 		var is_finished: bool = str(entry.get("status", "working")) == "finished"
 		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, is_finished, _cm, _player)
-		_main_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_main.bind(chain, tid), reward_title_text, fast_btn_text))
+		_main_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_main.bind(chain, tid), reward_title_text, fast_btn_text, Callable(), _cm))
 
 
 # ed.ui.dailyTask:initTaskList + task.lua:1489-1495：只显示当前时段的日常任务
@@ -117,7 +117,7 @@ func _fill_daily_list() -> void:
 			"icon": str(row.get("Icon", "")),
 			"reward": TaskQuery.parse_rewards(row, true),
 		}
-		_daily_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_daily.bind(job_id), reward_title_text, fast_btn_text, _on_fast.bind(task)))
+		_daily_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_daily.bind(job_id), reward_title_text, fast_btn_text, _on_fast.bind(task), _cm))
 
 
 # ---- 领奖 / 去往回调 ----

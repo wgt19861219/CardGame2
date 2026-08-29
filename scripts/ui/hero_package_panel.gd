@@ -25,10 +25,15 @@ const TAB_LABELS: Array[String] = ["全部", "前排", "中排", "后排"]   # c
 const TAB_BTN_NAMES: Array[String] = ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn"]
 const TAB_LBL_NAMES: Array[String] = ["TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
+# 源 getpos 坐标基准（全屏 cocos 直译）：首列中心 x=255+offsetx(−20)=235 → GridHost x=235−cell 半宽 130=105；
+# 首行 cell 中心 y=335 → 顶=480−335−50=95 → GridHost y=95−87（clip 顶）=8（2026-08-28 根修；
+# 旧实现漏此基准致整列左偏 15.6+整体高 8、bg 外缘被裁剪区吞）。
+const GRID_ORIGIN: Vector2 = Vector2(105.0, 8.0)
 const LIST_LINE_LSTR_KEY: String = "HEROPACKAGE.THE_FOLLOWING_HEROES_HAVE_NOT_BEEN_SUMMONED"
 const LIST_LINE_FALLBACK: String = "以下英雄尚未召唤"   # cm=null fallback（= 源 LSTR_zh-CN 值）
 # 源 refreshHeroList getLinepos(:306-313)：分隔线中心 x=365 全屏 → GridHost 局部 (365+80-185)=260（两列中缝）。
-const LIST_LINE_CENTER_X: float = 260.0
+# 2026-08-28 根修：HeroScroll 改源 cliprect 全宽（左缘 0）后 GridHost 局部=全屏，中心=GRID_ORIGIN_X+260=365。
+const LIST_LINE_CENTER_X: float = 365.0
 # 源 getpos(:318-319)：preLineAmount>0 时未拥有段 toy-30 整体下移 30；分隔线在 gap 中点（边界+15）。
 const MISS_GAP: float = 30.0
 # 源 createHeroList(:298)：initListHeight = 100*ceil(ta/2)+40（40 = gap 30 + 尾余量 10）。
@@ -102,12 +107,13 @@ func _on_herosplit_pressed() -> void:
 
 
 func _update_tab_visual() -> void:
-	# 未选中 setZOrder(1) 被背景框挡（重叠区左缘约 30px）；texture_normal 切 classbtn/selected。
+	# 未选中 z=11 被选中(13)与滚动内容盖（源 setZOrder(1/3) 相对关系 + 11 基准位：
+	# HeroScroll z10 全宽化后 tab 须恒在其上保点击，2026-08-28 根修）；texture_normal 切 classbtn/selected。
 	for key in _tabs:
 		var btn: TextureButton = _tabs[key]
 		var selected: bool = key == _clid
 		btn.texture_normal = load(CLASSBTN_SEL_RES if selected else CLASSBTN_RES)
-		btn.z_index = 3 if selected else 1
+		btn.z_index = 13 if selected else 11
 
 
 func _on_tab_pressed(key: String) -> void:
@@ -134,7 +140,7 @@ func _refresh_list() -> void:
 	for i in range(list.size()):
 		var entry: Variant = list[i]
 		var item := HeroPackageItem.create_from_entry(entry, cm, _hero_mgr, pd)
-		item.position = Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y + miss_gap)
+		item.position = GRID_ORIGIN + Vector2(col * CELL_SIZE.x, row * CELL_SIZE.y + miss_gap)
 		item.gui_input.connect(_on_item_gui_input.bind(entry))
 		_grid.add_child(item)
 		col += 1
@@ -152,7 +158,7 @@ func _refresh_list() -> void:
 	var total_rows := row + (1 if col > 0 else 0)
 	if total_rows < 1:
 		total_rows = 1
-	_grid.custom_minimum_size = Vector2(CELL_SIZE.x * 2.0, CELL_SIZE.y * float(total_rows) + LIST_TAIL_H)
+	_grid.custom_minimum_size = Vector2(GRID_ORIGIN.x + CELL_SIZE.x * 2.0, GRID_ORIGIN.y + CELL_SIZE.y * float(total_rows) + LIST_TAIL_H)
 
 
 # 分界：当前是最后一个 HeroInstance 且下一条是 miss dict（已拥有→未拥有过渡，源 refreshHeroList :344 preLineAmount）。

@@ -19,7 +19,8 @@ const CONTAINER_SIZE: Vector2 = Vector2(104.0, 104.0)
 const FRAME_SCALE_PAD: float = 5.0
 const ALPHA_THRESHOLD: float = 0.02
 const STAR_DX: float = 12.0
-const STAR_BASE_X: float = 47.0
+# 星 x 基准=portrait_w/2−5（源 getStarPos :386-393，锚 portrait 半宽非 container；旧固定 47=104/2−5 系 104 基准污染）
+const STAR_BASE_PAD: float = 5.0
 # ⚠️源 y=6 是 cocos 左下原点（star 中心距底 6）→ Godot 左上原点 y = CONTAINER_SIZE.y - 6 = 98（修 2026-07-18 y 翻转 bug，
 # 旧值 6=顶部，错；源本意 star 贴 container 底部）。
 const STAR_Y: float = 98.0
@@ -60,6 +61,10 @@ var icon: Node2D = null
 var ori_icon: Node2D = null
 var frame: Sprite2D = null
 var stars: Array = []
+# portrait 显示尺寸（点空间）：拥有英雄=贴图 px÷CS（全 Unit.Portrait 实测 100×100px→78×78，
+# 2026-08-28 实测订正——旧注释"133px÷CS≈103.8"系贴图尺寸笔误，104 基准由此污染全链）；
+# id=0 未知头像=container 104。源 frame=(portrait_w+5) 动态缩放、portrait/frame/星均锚 portrait 半宽。
+var _portrait_disp: Vector2 = CONTAINER_SIZE
 var level_label: Label = null
 
 
@@ -93,7 +98,7 @@ func setup(info: Dictionary, p_cm: Variant = null) -> void:
 	add_child(icon)
 	ori_icon = _create_portrait(id, p_cm)
 	icon.add_child(ori_icon)
-	frame = _create_frame(rank)
+	frame = _create_frame(rank, _portrait_disp)
 	if frame != null:
 		icon.add_child(frame)
 		frame.visible = not is_hide_frame
@@ -127,7 +132,7 @@ func _create_text_label(text: String, color: Variant) -> void:
 	tl.add_theme_color_override("font_color", color if color is Color else Color.WHITE)
 	tl.add_theme_color_override("font_outline_color", Color.BLACK)
 	tl.add_theme_constant_override("outline_size", 2)
-	tl.position = Vector2(CONTAINER_SIZE.x * 0.5, CONTAINER_SIZE.y * 0.12)
+	tl.position = Vector2(_portrait_disp.x * 0.5, CONTAINER_SIZE.y - _portrait_disp.y * 0.12 - 24.0)   # 源 anchor(0.5,0)@12% 高（cocos 距底）→ Godot 底=104−9.4，顶再减 24 号字高
 	tl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.add_child(tl)
 
@@ -173,10 +178,14 @@ func _create_portrait(id: int, cm: Variant) -> Node2D:
 	var path: String = (portrait_res as String).replace(CLIP_PATH_PREFIX, CLIP_PATH_REPLACE)
 	var sprite := Sprite2D.new()
 	sprite.texture = _load_tex(path)
-	# ÷CS：源 createClippingNode 将 stencil/portrait 缩放到点尺寸（px÷CS≈103.8 < frame
-	# 109 框包住头像）；原像素 133 直显会破框（2026-08-22 巡检根修）。
+	# ÷CS：源 createClippingNode stencil 缩到 portrait 点尺寸（px÷CS=78，全 Portrait 实测 100×100px）。
+	# 位置=源 :344-345 setPosition(size/2)（cocos 距 container 底）→ Godot y=104−半高：portrait 贴
+	# container 左下（区 [26,104]），非 104 中心。2026-08-29 补 y 翻转——漏翻致 portrait/frame 整套
+	# 高 26 点、框顶戳出卡顶与列表顶（用户实拍原版对照定谳：原版框顶在卡顶下 4、框在卡内上下各留 ~4）。
+	if sprite.texture != null:
+		_portrait_disp = sprite.texture.get_size() / CONTENT_SCALE
 	sprite.scale = Vector2.ONE / CONTENT_SCALE
-	sprite.position = CONTAINER_SIZE * 0.5
+	sprite.position = Vector2(_portrait_disp.x * 0.5, CONTAINER_SIZE.y - _portrait_disp.y * 0.5)
 	var mat := ShaderMaterial.new()
 	mat.shader = PortraitMaskShader
 	mat.set_shader_parameter("mask_tex", _load_tex(STENCIL_PATH))
@@ -200,14 +209,18 @@ func _create_unknow() -> Node2D:
 	return node
 
 
-func _create_frame(rank: int) -> Sprite2D:
+# frame 按 portrait 动态缩放（源 :366-368 setScale((size.w+5)/fw)、position=size/2）：
+# 拥有英雄框=78+5=83×83 贴照片外缘 2.5 点；未知头像=104+5=109。旧固定 (104+5)=109 致
+# 框内边缘离照片 15.5 点（"边框错位"主诉）+框右缘压 mark 区（"属性图标错位"同根因）。
+func _create_frame(rank: int, portrait_size: Vector2) -> Sprite2D:
 	var frame_id: int = _frame_id_by_rank(rank)
 	var frame := Sprite2D.new()
 	frame.texture = _load_tex(FRAME_PATH_FMT % frame_id)
 	if frame.texture != null:
 		var fw: float = float(frame.texture.get_width())
-		frame.scale = Vector2((CONTAINER_SIZE.x + FRAME_SCALE_PAD) / fw, (CONTAINER_SIZE.y + FRAME_SCALE_PAD) / fw)
-		frame.position = CONTAINER_SIZE * 0.5
+		var fs: float = (portrait_size.x + FRAME_SCALE_PAD) / fw
+		frame.scale = Vector2(fs, fs)
+		frame.position = Vector2(portrait_size.x * 0.5, CONTAINER_SIZE.y - portrait_size.y * 0.5)
 	return frame
 
 
@@ -222,11 +235,12 @@ func _create_stars(star_count: int) -> void:
 	if star_count <= 0:
 		return
 	var ci: float = float(star_count) / 2.0
+	var base_x: float = _portrait_disp.x * 0.5 - STAR_BASE_PAD
 	for i in range(star_count, 0, -1):
 		var s := Sprite2D.new()
 		s.texture = _load_tex(STAR_PATH)
 		s.scale = Vector2.ONE / CONTENT_SCALE   # 源 createSprite 显示=px÷CS（2026-08-22 巡检根修）
-		s.position = Vector2(STAR_BASE_X + STAR_DX * (float(i) - ci), STAR_Y)
+		s.position = Vector2(base_x + STAR_DX * (float(i) - ci), STAR_Y)
 		s.z_index = STAR_Z
 		icon.add_child(s)
 		stars.append(s)

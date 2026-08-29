@@ -22,6 +22,9 @@ func test_wave_reset_preserves_player_mp() -> void:
 		fail_test("无玩家单位")
 		return
 	var mp_max: int = int(hero.attribs.get("MP", 1))
+	# 真实链前置：开局 supply（battle_start 即跑、supplied=true）——否则 next_battle 首跑补 supply，
+	# MPS 回蓝（lvl≥成长阈值时 >0）混进 mp 断言（2026-08-29 存档态触发实证，+15=mps×1.0）。
+	eng.battle_supply()
 	hero.set_mp(int(mp_max * 0.6))
 	var before: int = int(hero.mp)
 	var hp_before: int = int(hero.hp)

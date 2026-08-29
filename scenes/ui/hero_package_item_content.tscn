@@ -7,8 +7,13 @@
 [ext_resource type="Texture2D" uid="uid://r62klw38nq0r" path="res://assets/ui/alpha/HVGA/heropackage_soulstone_progress.png" id="5_prog"]
 [ext_resource type="Texture2D" uid="uid://cmdjxge00hynk" path="res://assets/ui/alpha/HVGA/heropackage_available.png" id="6_avail"]
 
+; ── 点空间直译口径（2026-08-28 根修：废 root scale 1/CS + 元素×CS 烘焙双重变换链）──
+; 源 heroitem.lua bg=package_hero_bg 313×123px 无 TextureConfig 条目 → 显示=px÷CS=244.34×96.00，
+; 居中 cell 260×100 → bg_left=(260−244.34)/2=7.83, bg_top=(100−96)/2=2.00。
+; 源 bg 局部 (x,y) cocos 左下原点 → cell Godot = (7.83+x, 2+96−y)。本文件全部 offset 按此直译，
+; 编辑器所见即所得（旧架构编辑器 313 大卡/运行 244，且 ×CS 烘焙多处漏 y 翻转/漏 ÷CS）。
+
 [node name="HeroPackageItemContent" type="Control" unique_id=601363715]
-custom_minimum_size = Vector2(300, 0)
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -17,79 +22,82 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+; 源 heroitem.lua:11 bg 313×123px ÷CS = 244.34×96.00 显示，中心=cell 中心（源 getpos 列中心 235/495）
 [node name="Bg" type="TextureRect" parent="." unique_id=1222466941]
 layout_mode = 0
-offset_left = -26.5
-offset_top = -11.5
-offset_right = 286.5
-offset_bottom = 111.5
+offset_left = 7.83
+offset_top = 2.0
+offset_right = 252.17
+offset_bottom = 98.0
 mouse_filter = 2
 texture = ExtResource("1_bg")
 expand_mode = 1
 
+; 源 heroitem.lua:27-28 head.icon anchor(0,0)@(7,9) bg 局部 → cell (7.83+7, 2+96−9−104)=(14.83,−15)。
+; ReadheroIcon container 104×104 点空间；head 顶超 bg 顶 17 点=源真容（原版头像框上缘溢出卡背）。
+; ⚠️ 旧值 (−17.53,0.03) 是 ×CS 烘焙漏 y 翻转（head 下偏 26 点→星星压下一行卡顶，2026-08-28 实测定罪）。
 [node name="HeadHost" type="Control" parent="." unique_id=2113479301]
 unique_name_in_owner = true
 anchors_preset = 0
-; 源 heroitem.lua:27-28 head.icon anchor(0,0)@(7,9) 挂 bg 局部（bg 点空间）→ cell 纹理px 空间
-; = bg.offset(-26.5,-11.5) + (7,9)×1.28125 = (-17.53, 0.03)。2026-08-22 巡检订正（旧 -19.5/-1.5
-; 为源点直抄漏 ×CS）。
-offset_left = -17.53
-offset_top = 0.03
-offset_right = -17.53
-offset_bottom = 0.03
+offset_left = 14.83
+offset_top = -15.0
+offset_right = 118.83
+offset_bottom = 89.0
 mouse_filter = 2
 
-; mark 属性图标（源 heroitem.lua:38-42 icon_str/agi/int scale0.8 等比；位置为 d50674d 照源验收值，
-; 尺寸本批修等比 59/CS×0.8=36.8 方形，旧 37×32 拉伸变形）
+; 源 heroitem.lua:38-42 markIcon (110,72) 中心 scale0.8：59px÷CS×0.8=36.8 方 → cell 中心 (117.83,26)
 [node name="MarkRect" type="TextureRect" parent="." unique_id=1984512238]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 119.0
-offset_top = 2.0
-offset_right = 155.8
-offset_bottom = 38.8
+offset_left = 99.43
+offset_top = 7.6
+offset_right = 136.23
+offset_bottom = 44.4
 mouse_filter = 2
 expand_mode = 1
 
+; 源 heroitem.lua:30-36 名字中心恒 bg 局部 (177,72)（scale 压缩至 ow=100 宽内），字号 20。
+; NameHost 中心=(7.83+177, 2+96−72)=(184.83,26)，宽=ow=100（_relayout_name 在 host 内居中）。
 [node name="NameHost" type="Control" parent="." unique_id=1385220039]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 91.0
-offset_top = 7.0
-offset_right = 235.0
-offset_bottom = 35.0
+offset_left = 134.83
+offset_top = 12.0
+offset_right = 234.83
+offset_bottom = 40.0
 mouse_filter = 2
 
 [node name="NameLabel" type="Label" parent="NameHost" unique_id=1385220040]
 unique_name_in_owner = true
 layout_mode = 0
-offset_right = 118.0
+offset_right = 100.0
 offset_bottom = 28.0
 theme_type_variation = &"HeroPackageNameLabel"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="SuffixLabel" type="Label" parent="NameHost" unique_id=1441676602]
 unique_name_in_owner = true
 visible = false
 layout_mode = 0
 theme_type_variation = &"HeroPackageNameLabel"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
+; 源 heroitem.lua:222-228 equipBg (105+22*(i-1),18) 中心 setScale(22/w)=22×22 方 → 槽 i 中心
+; cell (112.83+22(i-1), 80)；6 槽横排 22 步进（equip 图标 16/plus 24 在 gd fill 动态）
 [node name="EquipGroup" type="Control" parent="." unique_id=1553999783]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 104.0
-offset_top = 10.0
-offset_right = 272.0
-offset_bottom = 99.0
+offset_left = 101.83
+offset_top = 69.0
+offset_right = 233.83
+offset_bottom = 91.0
 mouse_filter = 2
 
 [node name="EquipSlot1" type="TextureRect" parent="EquipGroup" unique_id=1124040423]
 unique_name_in_owner = true
 layout_mode = 0
-offset_top = 61.0
-offset_right = 28.0
-offset_bottom = 89.0
+offset_right = 22.0
+offset_bottom = 22.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -97,10 +105,10 @@ expand_mode = 1
 [node name="EquipSlot2" type="TextureRect" parent="EquipGroup" unique_id=1636581600]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 28.0
-offset_top = 61.0
-offset_right = 56.0
-offset_bottom = 89.0
+offset_left = 22.0
+offset_top = 0.0
+offset_right = 44.0
+offset_bottom = 22.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -108,10 +116,10 @@ expand_mode = 1
 [node name="EquipSlot3" type="TextureRect" parent="EquipGroup" unique_id=1846824292]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 56.0
-offset_top = 61.0
-offset_right = 84.0
-offset_bottom = 89.0
+offset_left = 44.0
+offset_top = 0.0
+offset_right = 66.0
+offset_bottom = 22.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -119,10 +127,10 @@ expand_mode = 1
 [node name="EquipSlot4" type="TextureRect" parent="EquipGroup" unique_id=1403129619]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 84.0
-offset_top = 61.0
-offset_right = 112.0
-offset_bottom = 89.0
+offset_left = 66.0
+offset_top = 0.0
+offset_right = 88.0
+offset_bottom = 22.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -130,10 +138,10 @@ expand_mode = 1
 [node name="EquipSlot5" type="TextureRect" parent="EquipGroup" unique_id=541677996]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 112.0
-offset_top = 61.0
-offset_right = 140.0
-offset_bottom = 89.0
+offset_left = 88.0
+offset_top = 0.0
+offset_right = 110.0
+offset_bottom = 22.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
@@ -141,30 +149,30 @@ expand_mode = 1
 [node name="EquipSlot6" type="TextureRect" parent="EquipGroup" unique_id=334713598]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 140.0
-offset_top = 61.0
-offset_right = 168.0
-offset_bottom = 89.0
+offset_left = 110.0
+offset_top = 0.0
+offset_right = 132.0
+offset_bottom = 22.0
 mouse_filter = 2
 texture = ExtResource("2_gocha")
 expand_mode = 1
 
+; 源 heroitem.lua:243-248 tag (240,90) 中心 → cell 中心 (247.83,8)；tag 21×22px÷CS=16.4×17.2，
+; 顶部半溢出 bg 顶缘=源真容（红点骑在卡背顶边上）
 [node name="TipHost" type="Control" parent="." unique_id=1585716563]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 201.5
-offset_top = 9.0
-offset_right = 222.5
-offset_bottom = 31.0
+offset_left = 239.63
+offset_top = -0.6
+offset_right = 256.03
+offset_bottom = 16.6
 mouse_filter = 2
 
 [node name="DealTag" type="TextureRect" parent="TipHost" unique_id=1585716564]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 67.5
-offset_top = -24.0
-offset_right = 88.5
-offset_bottom = -2.0
+offset_right = 16.4
+offset_bottom = 17.2
 mouse_filter = 2
 texture = ExtResource("3_dealtag")
 expand_mode = 1
@@ -175,41 +183,45 @@ visible = false
 anchors_preset = 0
 mouse_filter = 2
 
+; 源 heroitem.lua:141-145 barBg anchor(0,0.5)@(90,22) scaleX0.93：204px÷CS×0.93=147.9 宽×26.5 高
+; → cell rect (7.83+90, 2+96−22−13.25)~(+147.9, +26.5)（旧 189.7 宽=px×scale 漏 ÷CS）
 [node name="BarBg" type="TextureRect" parent="StoneGroup" unique_id=1612391235]
 layout_mode = 0
-offset_left = 63.5
-offset_top = 72.5
-offset_right = 253.22
-offset_bottom = 106.5
+offset_left = 97.83
+offset_top = 62.75
+offset_right = 245.73
+offset_bottom = 89.25
 mouse_filter = 2
 texture = ExtResource("4_progbg")
 expand_mode = 1
 
+; 源 bar anchor(0,0)@barBg(0,0) setTextureRect(150*ratio,26)：fill 26 高贴 barBg 底、满宽 150×0.93=139.5
 [node name="BarFill" type="TextureRect" parent="StoneGroup" unique_id=892270563]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 63.5
-offset_top = 80.5
-offset_right = 63.5
-offset_bottom = 106.5
+offset_left = 97.83
+offset_top = 63.25
+offset_right = 97.83
+offset_bottom = 89.25
 mouse_filter = 2
 texture = ExtResource("5_prog")
 expand_mode = 1
 
-; 石头进度文字（源 heroitem.lua:151 createttf(text,18) 无色配置→白；fill 按条宽动态居中定位）
+; 石头进度文字（源 heroitem.lua:151 createttf(text,18) 白；fill 按条宽动态居中定位）
 [node name="StoneLabel" type="Label" parent="StoneGroup" unique_id=377176750]
 unique_name_in_owner = true
 layout_mode = 0
 theme_type_variation = &"HeroPackageStoneLabel"
 
+; 源 heroitem.lua:152-160 summonLight bg 中心 (w/2,h/2+1)：323×133px÷CS=252.1×103.8 光效溢出 bg 四缘
 [node name="SummonLight" type="TextureRect" parent="StoneGroup" unique_id=1444349091]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0.588)
 layout_mode = 0
-offset_left = -26.5
-offset_top = -11.5
-offset_right = 286.5
-offset_bottom = 111.5
+offset_left = 3.95
+offset_top = -0.9
+offset_right = 256.05
+offset_bottom = 102.9
 mouse_filter = 2
 texture = ExtResource("6_avail")
 expand_mode = 1

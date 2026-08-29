@@ -30,6 +30,7 @@ expand_mode = 1
 [node name="TabAllBtn" type="TextureButton" parent="." unique_id=1567944507]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 11
 offset_left = 634.7
 offset_top = 85.75
 offset_right = 739.3
@@ -41,7 +42,7 @@ ignore_texture_size = true
 [node name="TabAllLabel" type="Label" parent="." unique_id=1458366738]
 unique_name_in_owner = true
 layout_mode = 0
-z_index = 4
+z_index = 15
 offset_left = 640.0
 offset_top = 100.0
 offset_right = 740.0
@@ -54,6 +55,7 @@ vertical_alignment = 1
 [node name="TabFrontBtn" type="TextureButton" parent="." unique_id=51934081]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 11
 offset_left = 634.7
 offset_top = 145.75
 offset_right = 739.3
@@ -65,7 +67,7 @@ ignore_texture_size = true
 [node name="TabFrontLabel" type="Label" parent="." unique_id=1383256592]
 unique_name_in_owner = true
 layout_mode = 0
-z_index = 4
+z_index = 15
 offset_left = 640.0
 offset_top = 161.0
 offset_right = 740.0
@@ -78,6 +80,7 @@ vertical_alignment = 1
 [node name="TabMiddleBtn" type="TextureButton" parent="." unique_id=2118412321]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 11
 offset_left = 634.7
 offset_top = 205.75
 offset_right = 739.3
@@ -89,7 +92,7 @@ ignore_texture_size = true
 [node name="TabMiddleLabel" type="Label" parent="." unique_id=1065126803]
 unique_name_in_owner = true
 layout_mode = 0
-z_index = 4
+z_index = 15
 offset_left = 640.0
 offset_top = 221.0
 offset_right = 740.0
@@ -102,6 +105,7 @@ vertical_alignment = 1
 [node name="TabBackBtn" type="TextureButton" parent="." unique_id=516611987]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 11
 offset_left = 634.7
 offset_top = 265.75
 offset_right = 739.3
@@ -113,7 +117,7 @@ ignore_texture_size = true
 [node name="TabBackLabel" type="Label" parent="." unique_id=2076180870]
 unique_name_in_owner = true
 layout_mode = 0
-z_index = 4
+z_index = 15
 offset_left = 640.0
 offset_top = 281.0
 offset_right = 740.0
@@ -134,14 +138,18 @@ texture_normal = ExtResource("4_backbtn")
 texture_pressed = ExtResource("5_backbtnp")
 ignore_texture_size = true
 
+; 源 heropackage.lua:761 draglist cliprect=CCRect(0,45,800,348) 全屏宽视觉裁剪区 → Godot
+; (0, 480−45−348=87, 800, 435)。旧 rect(105,95,625,443) 误用源 rect（触摸区）口径且窄 275：
+; 左右列卡 bg 外缘被裁 26.5（bg 左缘 112.84/右缘 617.16 在 105~625 外，2026-08-28 根修）。
+; tab/herosplit z 提至 11/12 保 scroll(z10) 全宽后的点击优先（源触摸按 rect 独立分发）。
 [node name="HeroScroll" type="ScrollContainer" parent="." unique_id=2030255719]
 unique_name_in_owner = true
 layout_mode = 0
 z_index = 10
-offset_left = 105.0
-offset_top = 95.0
-offset_right = 625.0
-offset_bottom = 443.0
+offset_left = 0.0
+offset_top = 87.0
+offset_right = 800.0
+offset_bottom = 435.0
 mouse_filter = 0
 
 [node name="GridHost" type="Control" parent="HeroScroll" unique_id=62283616]
@@ -158,6 +166,7 @@ mouse_filter = 1
 [node name="HerosplitBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+z_index = 11
 offset_left = 648.125
 offset_top = 390.703
 offset_right = 741.875
