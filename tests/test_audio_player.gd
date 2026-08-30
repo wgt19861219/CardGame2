@@ -42,6 +42,7 @@ func test_common_exp_up_registered() -> void:
 func test_audio_player_play_sfx_no_crash() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx("common_click_feedback")
 	assert_true(player.has_playing_sfx_stream("res://assets/sound_menu/common_click_feedback.mp3"),
 		"play_sfx 应在池中触发播放")
@@ -60,6 +61,7 @@ func test_audio_player_sound_switch_off() -> void:
 func test_audio_player_play_bgm_no_crash() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_bgm("chapter1")
 	assert_not_null(player.bgm_player.stream, "play_bgm 应设置 stream（chapter1 资源存在）")
 	player.queue_free()
@@ -68,6 +70,7 @@ func test_audio_player_play_bgm_no_crash() -> void:
 func test_play_sfx_by_path_real_resource() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	assert_true(player.has_playing_sfx_stream("res://assets/sound/AM_ULT.mp3"), "真实资源播")
 	assert_true(player._sfx_path_cache.has("sound/AM_ULT.mp3"), "缓存已记录")
@@ -77,6 +80,7 @@ func test_play_sfx_by_path_real_resource() -> void:
 func test_play_sfx_by_path_missing_resource() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("sound/NOTEXIST_ULT.mp3")
 	assert_eq(player.get_playing_sfx_count(), 0, "缺失资源不播")
 	assert_true(player._sfx_path_cache.has("sound/NOTEXIST_ULT.mp3"), "缺失资源也缓存 null（只查一次）")
@@ -97,6 +101,7 @@ func test_play_sfx_by_path_sound_off() -> void:
 func test_play_sfx_by_path_empty_path() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("")
 	assert_eq(player.get_playing_sfx_count(), 0, "空路径不播")
 	player.queue_free()
@@ -106,6 +111,7 @@ func test_play_sfx_by_path_empty_path() -> void:
 func test_sfx_pool_round_robin_no_truncate() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	player.play_sfx_by_path("sound/ZEUS_ULT.mp3")
 	assert_true(player.has_playing_sfx_stream("res://assets/sound/AM_ULT.mp3"), "第一个音效仍在播")
@@ -117,6 +123,7 @@ func test_sfx_pool_round_robin_no_truncate() -> void:
 func test_sfx_dedupe_same_frame_same_path() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	assert_eq(player.get_playing_sfx_count(), 1, "同帧同名去重为 1 次")
@@ -127,6 +134,7 @@ func test_sfx_dedupe_same_frame_same_path() -> void:
 func test_sfx_dedupe_same_frame_diff_path_all_play() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	player.play_sfx_by_path("sound/ZEUS_ULT.mp3")
 	assert_eq(player.get_playing_sfx_count(), 2, "同帧不同名都播")
@@ -138,6 +146,7 @@ func test_sfx_dedupe_same_frame_diff_path_all_play() -> void:
 func test_sfx_dedupe_cross_frame_replays() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_sfx_by_path("sound/AM_ULT.mp3")
 	assert_eq(player.get_playing_sfx_count(), 1, "第一次播（池[0]）")
 	await get_tree().process_frame
@@ -150,6 +159,7 @@ func test_sfx_dedupe_cross_frame_replays() -> void:
 func test_bgm_loop_enabled() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_bgm("chapter1")
 	var stream := player.bgm_player.stream as AudioStreamMP3
 	assert_not_null(stream, "chapter1 资源在")
@@ -161,6 +171,7 @@ func test_bgm_loop_enabled() -> void:
 func test_bgm_same_key_shortcircuit() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_bgm("chapter1")
 	var first: AudioStream = player.bgm_player.stream
 	player.play_bgm("chapter1")
@@ -183,6 +194,7 @@ func test_bgm_off_records_key_without_playing() -> void:
 func test_play_battle_bgm_missing_chapter_key_defaults_arena() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_battle_bgm({})
 	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm_arena.mp3"),
 		"空 stage_info 取默认 chapter-1（arena 曲）")
@@ -192,6 +204,7 @@ func test_play_battle_bgm_missing_chapter_key_defaults_arena() -> void:
 func test_play_battle_bgm_normal_chapter() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_battle_bgm({"Chapter ID": 5})
 	assert_true(player.has_bgm_stream_path("res://assets/sound_menu/battle_bgm.mp3"),
 		"chapter5 → battle_bgm.mp3")
@@ -204,6 +217,7 @@ func test_play_battle_bgm_normal_chapter() -> void:
 func test_toggle_off_pause_then_on_resume() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已改静音（2026-08-30），显式回开保 toggle 语义
 	player.play_bgm("chapter1")
 	player.toggle_sound()   # off：BGM paused
 	assert_true(player.bgm_player.stream_paused, "off 后 BGM paused")
@@ -221,6 +235,7 @@ func test_toggle_off_pause_then_on_resume() -> void:
 func test_toggle_on_replays_bgm_after_off_switch() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	player.play_bgm("chapter1")
 	player.toggle_sound()          # off（chapter1 被 pause）
 	player.play_bgm("chapter2")    # off 期间切歌：记账新曲+stop（清 paused）不出声
@@ -236,6 +251,7 @@ func test_sound_cfg_persist_and_load() -> void:
 	DirAccess.remove_absolute(cfg_path)   # 清环境
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	var initial: bool = player.sound_switch
 	player.toggle_sound()
 	var toggled: bool = player.sound_switch
@@ -258,6 +274,7 @@ func test_audio_buses_exist() -> void:
 func test_players_assigned_to_buses() -> void:
 	var player = AudioPlayerScript.new()
 	add_child(player)
+	player.sound_switch = true   # 默认已静音（2026-08-30）
 	assert_eq(player.bgm_player.bus, "Music", "bgm_player → Music 总线")
 	player.play_sfx("common_click_feedback")
 	var sfx_bus_ok: bool = false
