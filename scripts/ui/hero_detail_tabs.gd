@@ -51,7 +51,12 @@ const CARD_ART_NAME_COLOR: Color = Color(233.0 / 255.0, 232.0 / 255.0, 213.0 / 2
 # 源 setSpriteGray（resource_manager.lua:871-877）= ccc3(100,100,100)+opacity 180 级联
 # （skillstren.lua:434 locked 技能灰显；2026-08-22 巡检订正：旧 (0.4,0.4,0.4,1.0) 缺 alpha）。
 const SKILL_GRAY_MODULATE: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
-const SKILL_DESC_POS: Vector2 = Vector2(400.0, 100.0)      # 描述弹板位置
+# 描述弹板位置随槽下移（源 createDescBoard :23-25 anchor(0,1) @ccp(525, ori_height+37-bd_height*(i-1))，
+# ori_height=350/bd_height=90 → Godot 左上角 x=525，y=480-(387-90*slot)=93+90*slot；旧固定 (400,100)
+# 不随槽 = 点低槽浮层跑到首行（用户反馈"力量强化说明放到幽灵船上"，2026-08-30 修）。
+const SKILL_DESC_X: float = 525.0
+const SKILL_DESC_BASE_Y: float = 93.0
+const SKILL_DESC_ROW_STEP: float = 90.0
 const SKILL_GROWTH_COLOR: Color = Color(1.0, 0.81, 0.07)
 const SKILL_TIP_RES: String = "res://assets/ui/alpha/HVGA/herodetail-skill-tip.png"
 const UI_PATH_PREFIX: String = "UI/"
@@ -277,7 +282,7 @@ static func build_skill_desc(hero: HeroInstance, slot: int, cm: Variant) -> Cont
 	bg.patch_margin_top = 34
 	bg.patch_margin_right = 98
 	bg.patch_margin_bottom = 41
-	bg.position = SKILL_DESC_POS
+	bg.position = Vector2(SKILL_DESC_X, SKILL_DESC_BASE_Y + SKILL_DESC_ROW_STEP * slot)
 	bg.size = Vector2(280.0, 100.0)
 	var lbl := Label.new()
 	lbl.text = desc + ("\n" + growth if not growth.is_empty() else "")

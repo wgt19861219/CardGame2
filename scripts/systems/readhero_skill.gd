@@ -14,7 +14,8 @@ static func get_skill_description(hero: HeroInstance, slot: int, cm: ConfigManag
 		return ""
 	var gid: int = int(sg.get("Skill Group ID", 0))
 	var skill: Dictionary = cm.get_raw_table(&"Skill").get(str(gid), {}).get("0", {})
-	return String(skill.get("Description", ""))
+	# 表存 LSTR key（源中文渠道表直存中文，本项目表存 key 须查翻译；漏查=浮层显示英文 key，2026-08-30 修）
+	return cm.get_lstr(String(skill.get("Description", "")))
 
 
 # skill_add：升级预览加成（源 preSkillLevelAdd，默认 0）。level = 显示等级 + skill_add。
@@ -44,7 +45,8 @@ static func get_skill_desc(hero: HeroInstance, slot: int, cm: ConfigManager, ski
 		var value: float = float(skill.get(field, buff.get(field, 0)))
 		growth *= multiplier
 		value *= multiplier
-		var append: String = summary.replace("##", _num_str(value + growth * (level - 1))).replace("#", _num_str(growth * level))
+		# 先翻译（key 含 # 原样查表，译文含 # 占位）再数字替换——等价源中文渠道在中文文案上 gsub。
+		var append: String = cm.get_lstr(summary).replace("##", _num_str(value + growth * (level - 1))).replace("#", _num_str(growth * level))
 		text += append + "\n"
 		index += 1
 	return text

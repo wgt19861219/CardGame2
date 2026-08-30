@@ -77,26 +77,33 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 		vbox.add_child(row_box)
 
 
-# 项目用 VBox 默认左对齐，需给 title-mark + title label 设 size_flags_horizontal=SIZE_SHRINK_CENTER 居中。
+# 源 attributes.lua:29-44 addListNode：des_title_bg(mark) 无 addHeight 游标不推进，des_title
+# 与 bg 同 height 基准定位且同 list_center=142 水平中心 → mark 横条（两端装饰、中间约 65~153pt
+# 透明）叠在标题文字身后、两者同中心（label offsetY=6 后中线与 mark 中线重合），非上下两行。
+# mark 显示尺寸走 TexDisplaySize ÷CS（289×15px → 225.6×11.7pt，源 config 无 scale 直译）。
 static func _add_section_title(vbox: VBoxContainer, lstr_key: StringName, fallback: String, cm: Variant) -> void:
-	var tex: Texture2D = _load_texture(ATT_TITLE_MARK_RES)
-	if tex != null:
-		var mark := TextureRect.new()
-		mark.texture = tex
-		mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		mark.stretch_mode = TextureRect.STRETCH_SCALE
-		mark.custom_minimum_size = Vector2(80.0, 12.0)
-		mark.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		vbox.add_child(mark)
 	var lbl := Label.new()
 	lbl.text = String(cm.get_lstr(lstr_key)) if cm != null else fallback
 	lbl.modulate = ATT_TITLE_COLOR
 	lbl.add_theme_font_size_override("font_size", 20)
-	lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(lbl)
+	var tex: Texture2D = _load_texture(ATT_TITLE_MARK_RES)
+	if tex == null:
+		lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(lbl)
+		return
+	var mark := TextureRect.new()
+	mark.texture = tex
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_SCALE
+	mark.custom_minimum_size = TexDisplaySize.display_size(ATT_TITLE_MARK_RES)
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row := CenterContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# CenterContainer 将每个子节点各自排到自身中心 → mark（先加，居下层）与 lbl 同中心叠放。
+	row.add_child(mark)
+	row.add_child(lbl)
+	vbox.add_child(row)
 
 
 static func _add_text(vbox: VBoxContainer, text: String, size: int, color: Color) -> void:

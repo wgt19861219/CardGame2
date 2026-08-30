@@ -31,3 +31,60 @@ func test_toast_board_patch_margins() -> void:
 		Toast._current_label = null
 	while Toast.pending_count() > 0:
 		Toast.consume()
+
+
+# ── 时长+替换语义守卫（2026-08-30，用户反馈「达到上限 toast 持续太久」）──
+# 源 toast.lua:60-78：新 showToast removeFromParentAndCleanup 替换正在显示的（无队列串行）；
+# 时长 = CCDelayTime(1) 停留 + CCFadeOut(1) 淡出。旧实现 2s 硬停+连点 N 条排队 N×2s。
+func test_toast_replaces_instead_of_queueing() -> void:
+	Toast._queue.clear()
+	Toast._free_current()
+	Toast.show_message("第一条")
+	Toast.show_message("第二条")   # 替换语义：顶掉第一条（未显示）而非排队
+	assert_eq(Toast.pending_count(), 1, "连发两条只留最后一条（替换语义）")
+	assert_eq(Toast.consume(), "第二条", "留下的是最新消息")
+	Toast._queue.clear()
+
+func test_toast_replaces_showing_message() -> void:
+	Toast._queue.clear()
+	Toast._free_current()
+	Toast.show_message("旧消息")
+	for i in 10:
+		if Toast._current_board != null:
+			break
+		await get_tree().process_frame
+	assert_not_null(Toast._current_board, "旧消息已显示")
+	var old_board: NinePatchRect = Toast._current_board
+	Toast.show_message("新消息")   # 顶掉正在显示的（源 removeFromParentAndCleanup）
+	assert_ne(Toast._current_board, old_board, "显示中的 board 被替换")
+	assert_eq(Toast.pending_count(), 1, "新消息入队待显示")
+	# 清理
+	Toast._queue.clear()
+	if Toast._current_board != null:
+		Toast._current_board.queue_free()
+		Toast._current_board = null
+		Toast._current_label = null
+
+func test_toast_hold_then_fade_timing() -> void:
+	Toast._queue.clear()
+	Toast._free_current()
+	Toast.show_message("计时守卫")
+	for i in 10:
+		if Toast._current_board != null:
+			break
+		await get_tree().process_frame
+	var board: NinePatchRect = Toast._current_board
+	if board == null:
+		fail_test("board 未建")
+		return
+	assert_almost_eq(board.modulate.a, 1.0, 0.05, "显示初 alpha=1")
+	await get_tree().create_timer(1.2).timeout   # 过 HOLD(1.0) 进入淡出 0.2s
+	assert_lt(board.modulate.a, 0.9, "1.2s 时已开始淡出（HOLD=1s）")
+	assert_gt(board.modulate.a, 0.5, "淡出早期未过半（FADE=1s 渐变非硬切）")
+	await get_tree().create_timer(1.1).timeout   # 过 HOLD+FADE 全程
+	var alive: bool = is_instance_valid(board) and board.is_inside_tree()
+	assert_true((not alive) or board.modulate.a <= 0.05,
+		"2.1s 后已淡出完毕/回收（总时长 2s 含淡出）")
+	# 清理（防污染后续测试）
+	Toast._queue.clear()
+	Toast._free_current()

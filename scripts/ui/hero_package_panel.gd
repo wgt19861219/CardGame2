@@ -214,7 +214,7 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	detail.upgrade_skill_requested.connect(func(idx: int) -> void:
 		if detail.perform_upgrade_skill(idx):
 			Events.bus.emit_tutorial_step(&"SUcomplete")
-			detail.refresh_content())
+			detail.refresh_content(true))   # 升级反馈重播滑入（2026-08-30 七轮：仅此路径，装备等不滑）
 	# 觉醒信号（单机化新增）：成功 perform_awake 内部已弹展示面板并衔接触发 refresh_content，
 	# 这里仅挂占位保持信号注册对称（实际刷新由 awake panel.closed 触发，避免双刷新）。
 	detail.awake_requested.connect(func() -> void:

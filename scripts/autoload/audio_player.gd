@@ -20,7 +20,8 @@ var _sfx_pool: Array[AudioStreamPlayer] = []
 var _sfx_pool_cursor: int = 0
 var _last_sfx_frame: Dictionary = {}  # rel_path → Engine.get_process_frames()（同帧同名去重，源 sound.lua:30-42）
 var bgm_player: AudioStreamPlayer = null
-var sound_switch: bool = true
+# 默认静音（用户指示 2026-08-30；游戏内系统设置可开，持久化到 audio.cfg）。
+var sound_switch: bool = false
 var _sfx_path_cache: Dictionary = {}  # play_sfx_by_path 缓存（rel_path→AudioStream，避重复 load）
 var _bgm_key: String = ""  # 记忆曲 key（含 off 期间记账；源 sound.lua:79 按 audioParam.music 短路）
 
@@ -188,7 +189,7 @@ func _pause_all_audio() -> void:
 func _load_sound_cfg() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SOUND_CFG_PATH) == OK:
-		sound_switch = bool(cfg.get_value("audio", "sound_on", true))
+		sound_switch = bool(cfg.get_value("audio", "sound_on", false))
 
 
 func _save_sound_cfg() -> void:

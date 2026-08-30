@@ -825,3 +825,16 @@ func test_helper_is_equipped() -> void:
 	assert_true(EquipCraftInfoBtn._is_equipped(panel), "slot 已装目标 → helper _is_equipped=true")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 合成窗口直显无滑入动画（2026-08-30 九轮：源 :1256-1266 EaseBackOut 滑入用户不要，
+# 受控偏离；旧 tween 每次点装备物品从屏顶滑入=用户反馈「装备物品触发侧滑」真身）。
+func test_open_craft_panel_no_slide_animation() -> void:
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(102, cm, null, null, "heroDetail", 0)
+	add_child_autofree(panel)
+	panel._open_craft_panel()
+	# 打开即止态：窗口 y 恒定（无 from(-h) 起跳滑入）
+	var y_open: float = panel._craft_window.position.y
+	await get_tree().create_timer(0.1).timeout   # 若有滑入 tween，0.1s 处 y 会明显变化
+	assert_almost_eq(panel._craft_window.position.y, y_open, 1.0, "打开后 y 恒定（无滑入动画直显）")

@@ -74,8 +74,8 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	_build_content()
 
 
-# 建 UI 内容（base + tab view 从 .tscn instantiate + fill；createWindow window.lua:2384-2396）。
-func _build_content(tab: String = DEFAULT_TAB) -> void:
+# 建 UI 内容（base + tab view instantiate + fill；createWindow window.lua:2384-2396；animate_tab 仅升级反馈）。
+func _build_content(tab: String = DEFAULT_TAB, animate_tab: bool = false) -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
 	_base_layer = content.get_node("%BaseLayer") as Control
@@ -117,7 +117,7 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	# gold 不够 cost 变红（refreshCostColor），skl_add 显 levelAdd "+N"（refreshSkillAdd）。
 	var gold_for_skills: int = hero_manager.gold if hero_manager != null else -1
 	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked, gold_for_skills, HeroDetailUpgradeFx.calculate_skl_bonus(hero, cm))
-	_show_tab_content(tab)
+	_show_tab_content(tab, animate_tab)
 	_refresh_upgrade_light()   # 可进阶时按钮光效（源 createUpgradeButtonLight）
 	_setup_arrows()
 
@@ -163,17 +163,17 @@ func _advance(delta: int) -> void:
 	refresh_content()
 
 
-## 升星/技能升级/进阶后刷新（call_deferred 避信号处理中 free 按钮崩）。
-func refresh_content() -> void:
-	call_deferred("_rebuild_content")
+## 升星/技能升级/进阶/穿装后刷新（deferred 避信号中 free 崩）；animate_slide=true 仅升级反馈滑入（七轮定谳）。
+func refresh_content(animate_slide: bool = false) -> void:
+	call_deferred("_rebuild_content", animate_slide)
 
 
-func _rebuild_content() -> void:
+func _rebuild_content(animate_slide: bool = false) -> void:
 	var saved_tab: String = _current_tab if _current_tab != "" else DEFAULT_TAB
 	for c in container.get_children():
 		c.free()
 	_desc_label = null   # 旧 desc label 已 free，清引用
-	_build_content(saved_tab)
+	_build_content(saved_tab, animate_slide)
 
 
 # 绑定 .tscn 静态按钮信号：%CloseBtn + 升星/进阶/觉醒 + 3 tab。
@@ -322,10 +322,10 @@ func _on_tab_pressed(key: String) -> void:
 
 
 # setOpenMode：切 tab visible + base 右移让位 + 切选中态（Phase B visible 切换）。
-func _show_tab_content(key: String) -> void:
+func _show_tab_content(key: String, animate: bool = true) -> void:
 	_current_tab = key
 	_set_tab_selected(key)
-	_slide_base_to(BASE_SLIDE_OFFSET)
+	_slide_base_to(BASE_SLIDE_OFFSET, animate)
 	# tab layer pop endPos=ccp(-200,0)（window.lua:386/430/513 三 tab 同值）：tab 内容从左滑入，
 	# 止态 -200（源 doOpenDetail/Skill/Card pop 终点）。旧 -75 系 960 口径迁移遗留（2026-08-22 回源；
 	# detail/skill 子节点已按源声明坐标直译，card 子节点 +125 平移保现状视觉）。
@@ -333,10 +333,10 @@ func _show_tab_content(key: String) -> void:
 		var v: Control = _tab_views[k] as Control
 		if k == key:
 			v.visible = true
-			var start_x: float = 400.0 if is_inside_tree() else TAB_POP_OFFSET_X
+			var start_x: float = 400.0 if animate and is_inside_tree() else TAB_POP_OFFSET_X
 			v.offset_left = start_x
 			v.offset_right = start_x
-			if is_inside_tree():
+			if animate and is_inside_tree():
 				var tw: Tween = create_tween()
 				tw.tween_property(v, "offset_left", TAB_POP_OFFSET_X, 0.2)
 				tw.parallel().tween_property(v, "offset_right", TAB_POP_OFFSET_X, 0.2)
@@ -359,9 +359,9 @@ func _set_tab_selected(selected_key: String) -> void:
 		btn.theme_type_variation = TAB_VARIATION_ACTIVE if key == selected_key else TAB_VARIATION
 
 
-# doMove/doMoveBack container CCMoveTo 0.2s（在树+非止态才动画，首次 _build_content 不在树直接设止态）。
-func _slide_base_to(target_x: float) -> void:
-	if _base_layer != null and is_inside_tree() and not is_equal_approx(_base_layer.position.x, target_x):
+func _slide_base_to(target_x: float, animate: bool = true) -> void:
+	# animate=false 重建止态直设（新 base 从 0 起 tween=整界面右挫，十一轮视频实锤）
+	if _base_layer != null and animate and is_inside_tree() and not is_equal_approx(_base_layer.position.x, target_x):
 		create_tween().tween_property(_base_layer, "position:x", target_x, 0.2)
 	elif _base_layer != null:
 		_base_layer.position.x = target_x
@@ -435,13 +435,13 @@ func _refresh_upgrade_light() -> void:
 
 # 技能升级：SkillPointManager.upgrade_hero_skill（扣技能点 + hero_manager.upgrade_skill_level 扣金币+升技能）。
 func perform_upgrade_skill(idx: int) -> bool:
-	if pd == null or hero == null:
-		return false
+	if pd == null or hero == null: return false
 	var ok: bool = SkillPointManager.upgrade_hero_skill(pd, hero.inst_id, idx)
 	if ok:
 		GameData.mark_save_dirty()   # local_server:1480 技能升级脏标
 		HeroDetailUpgradeFx.play_skill_upgrade_fx(_tab_views.get("skill", null) as Control, idx, self)
 		_refresh_skill_point_bar()   # 点数扣了，刷新信息栏（点数=0 时切购买按钮）
+	else: HeroDetailUpgradeFx.show_upgrade_fail_reason(hero, idx, hero_manager, pd, cm)   # 照源 doClickLvupButton 失败 Toast
 	return ok
 
 

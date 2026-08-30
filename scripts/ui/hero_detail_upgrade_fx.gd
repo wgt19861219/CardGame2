@@ -23,6 +23,9 @@ const SKL_ADD_COLOR: Color = Color(17.0 / 255.0, 1.0, 23.0 / 255.0)   # 源 refr
 # 技能点信息栏（源 skillstren.lua createInformationBar:476-486）：源两套 UI 动态切换，本项目简化单套。
 # pre 标签色 ccc3(241,193,113) 金 + 数字色 ccc3(255,234,198) 米黄。本项目合并成单 Label 同金色。
 const SKILL_POINT_PRE_COLOR: Color = Color(241.0 / 255.0, 193.0 / 255.0, 113.0 / 255.0)
+# 技能升级失败反馈 LSTR（源 doClickLvupButton:144-179 失败分支 Toast，2026-08-30 补齐静默缺失）。
+const LSTR_SKILL_CAP: StringName = &"HERODETAILSKILL.YOU_HAVE_REACHED_CURRENT_LEVEL_CAP"
+const LSTR_SKILL_NO_POINT: StringName = &"herodetailskill.1.10.1.002"
 
 
 # 进阶 FCA 特效（源 upgradeReply :672-685 eff_UI_hero_upgrade_1/2）。抄 hero_awake_panel _add_fca。
@@ -193,12 +196,14 @@ static func fill_skills(skill_view: Control, hero: HeroInstance, cm: Variant, sk
 			var cur_level: int = int(hero.skill_levels[i]) if i < hero.skill_levels.size() else 1
 			lvl_lbl.text = "lv." + str(cur_level - init_level + 1)
 			btn.visible = true
+			# 源 refreshLevelBoard:256-263：cacheSkillLevel >= hero._level → setSpriteGray（升级按钮灰显达上限）。
+			btn.modulate = HeroDetailTabs.SKILL_GRAY_MODULATE if cur_level >= hero.level else Color.WHITE
 			for c in btn.pressed.get_connections():
 				btn.pressed.disconnect(c.callable)
 			btn.pressed.connect(on_upgrade.bind(i))
 			btn.set_meta(&"skill_upgrade", true)
 			_fill_skill_cost(money_icon, cost_lbl, cur_level, gold, cm)
-			_fill_skill_lvl_add(lvl_add_lbl, skl_add)
+			_fill_skill_lvl_add(lvl_add_lbl, skl_add, lvl_lbl)
 
 
 # 技能点信息栏 fill（源 skillstren.lua createInformationBar:476-486）。
@@ -236,6 +241,36 @@ static func fill_skill_point_bar(label: Label, buy_btn: TextureButton, pd: Playe
 	return recovered
 
 
+# 技能升级失败反馈（源 skillstren.lua:144-179 doClickLvupButton 失败分支，2026-08-30 补齐 port 静默缺失）。
+# 源三分支顺序：①skl >= hlv → Toast 已达当前等级上限（:155-156）；②cost > money → useMidas 充值弹窗
+# （:157-159，单机化降级 Toast，受控偏离）；③point < 1 → Toast 技能点已用完（:164-165）。
+# hero_mgr 供 gold 判定，null 时兜底 pd.hero_manager（SkillPointManager.upgrade_hero_skill 同源）。
+static func show_upgrade_fail_reason(hero: HeroInstance, skill_idx: int,
+		hero_mgr: HeroManager, pd: PlayerData, cm: Variant) -> void:
+	if hero == null or skill_idx < 0 or skill_idx >= hero.skill_levels.size():
+		return
+	var cur_level: int = int(hero.skill_levels[skill_idx])
+	if cur_level >= hero.level:
+		_toast_lstr(cm, LSTR_SKILL_CAP, "已达到当前等级上限")
+		return
+	var mgr: HeroManager = hero_mgr if hero_mgr != null else (pd.hero_manager if pd != null else null)
+	if mgr != null and mgr.gold < _get_skill_upgrade_cost(cur_level, cm):
+		Toast.show_message("金币不足")
+		return
+	if pd != null and pd.skill_points < 1:
+		_toast_lstr(cm, LSTR_SKILL_NO_POINT, "技能点已用完")
+
+
+# LSTR Toast（缺键/无 cm 时用中文 fallback；get_lstr 缺键返键名本身须判掉）。
+static func _toast_lstr(cm: Variant, key: StringName, fallback: String) -> void:
+	var text: String = fallback
+	if cm != null and cm.has_method(&"get_lstr"):
+		var s: String = String(cm.get_lstr(String(key)))
+		if not s.is_empty() and s != String(key):
+			text = s
+	Toast.show_message(text)
+
+
 # fill 单行金币图标 + cost Label（源 skillstren.lua getCost = SkillLevels[level].Price
 # + refreshCostColor:230-241 钱不够时 cost 变红）。gold=-1 表示不查金币（cost 永不变红）。
 static func _fill_skill_cost(money_icon: TextureRect, cost_lbl: Label, cur_level: int,
@@ -252,15 +287,19 @@ static func _fill_skill_cost(money_icon: TextureRect, cost_lbl: Label, cur_level
 		cost_lbl.modulate = Color.WHITE if affordable else COST_INSUFFICIENT_COLOR
 
 
-# fill 单行 levelAdd "+N"（源 skillstren.lua refreshSkillAdd:281-300：skl_add 变化时
+# fill 单行 levelAdd "+N"（源 skillstren.lua:327-340 refreshSkillAdd：skl_add 变化时
 # setVisible + setString "+N"，色 ccc3(17,255,23) 绿）。skl_add<=0 → 隐藏。
-static func _fill_skill_lvl_add(lvl_add_lbl: Label, skl_add: int) -> void:
+# lvl_lbl 非空时照源 :335 position = getRightSidePos(lui.level, 2) 动态贴 lv 文字右侧 +2pt
+# （旧静态 397 在 lv.10 时叠字，2026-08-30 改动态）。
+static func _fill_skill_lvl_add(lvl_add_lbl: Label, skl_add: int, lvl_lbl: Label = null) -> void:
 	if lvl_add_lbl == null:
 		return
 	if skl_add > 0:
 		lvl_add_lbl.visible = true
 		lvl_add_lbl.text = "+" + str(skl_add)
 		lvl_add_lbl.modulate = SKL_ADD_COLOR
+		if lvl_lbl != null:
+			lvl_add_lbl.position = lvl_lbl.position + Vector2(lvl_lbl.get_minimum_size().x + 2.0, 0.0)
 	else:
 		lvl_add_lbl.visible = false
 

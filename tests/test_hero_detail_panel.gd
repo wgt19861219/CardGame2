@@ -569,3 +569,275 @@ func test_detail_tab_popup_rect_source_direct() -> void:
 	assert_almost_eq(list_host.get_global_rect().position.x, 74.0, 0.5, "draglist 显示左缘 x=74（源 bg 左下角 56+18）")
 	panel.remove_window()
 	root.queue_free()
+
+
+func test_section_title_mark_centered_behind_label() -> void:
+	## 详细属性 tab 分节标题（英雄介绍/英雄属性）装饰条叠放守卫（2026-08-30 修复回归）。
+	## 源 attributes.lua:29-44 addListNode：des_title_bg 无 addHeight 游标不推进，与 des_title
+	## 同 height 基准 + 同 list_center → mark 横条叠标题身后同中心（旧实现 VBox 上下两行致
+	## 装饰物跑到标题顶上，且 mark 硬编码 80×12 远小于源显示 225.6×11.7）。
+	var vbox := VBoxContainer.new()
+	add_child_autofree(vbox)
+	HeroDetailAttribs._add_section_title(vbox, &"test.section_title", "标题占位", null)
+	await get_tree().process_frame
+	var rows: Array = vbox.get_children()
+	assert_eq(rows.size(), 1, "标题行单行（mark+label 叠放，非两行）")
+	var row := rows[0] as CenterContainer
+	assert_not_null(row, "标题行容器为 CenterContainer")
+	if row == null:
+		return
+	var mark: TextureRect = null
+	var lbl: Label = null
+	for c in row.get_children():
+		if c is TextureRect:
+			mark = c as TextureRect
+		elif c is Label:
+			lbl = c as Label
+	assert_not_null(mark, "行内含 title-mark 装饰条")
+	assert_not_null(lbl, "行内含标题 Label")
+	if mark == null or lbl == null:
+		return
+	assert_eq(lbl.text, "标题占位", "cm null 走 fallback 文本")
+	assert_almost_eq(mark.size.x, 289.0 / 1.28125, 0.5, "mark 显示宽 = 289px ÷CS = 225.6pt（源直译）")
+	assert_almost_eq(mark.size.y, 15.0 / 1.28125, 0.5, "mark 显示高 = 15px ÷CS = 11.7pt")
+	var mark_center: Vector2 = mark.position + mark.size / 2.0
+	var lbl_center: Vector2 = lbl.position + lbl.size / 2.0
+	assert_almost_eq(mark_center.x, lbl_center.x, 1.0, "装饰条与标题水平同中心")
+	assert_almost_eq(mark_center.y, lbl_center.y, 1.0, "装饰条与标题垂直同中心（非顶上）")
+
+
+# ── 技能升级面板四修守卫（2026-08-30）：底板 9 宫格 / 图标框尺寸 / 标签对齐 / 达上限灰显 ──
+
+# 源 skillstren.lua:814-868 board_i Scale9Sprite capInsets CCRectMake(15,15,15,15)（点单位）：
+# patch = 15pt×CS(1.28125)=19.2→19（L/B）；60px 纹理点尺寸 46.83，R/T=(46.83-30)pt×CS=21.6→21。
+# 旧值 12/23（÷CS 口径）把 ~20px 边框艺术切进拉伸区致变形（用户反馈"技能背景拉伸变形"）。
+func test_skill_board_patch_margins_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var skill_view: Node = panel._tab_views["skill"] as Node
+	for slot in range(1, 5):
+		var board: NinePatchRect = skill_view.get_node("%Skill" + str(slot) + "Board") as NinePatchRect
+		assert_not_null(board, "slot%d Board 存在" % slot)
+		if board == null:
+			continue
+		assert_eq(board.patch_margin_left, 19, "slot%d L=19（cap 15pt×CS=19.2）" % slot)
+		assert_eq(board.patch_margin_bottom, 19, "slot%d B=19（cap y=15pt）" % slot)
+		assert_eq(board.patch_margin_right, 21, "slot%d R=21（(46.83-30)pt×CS=21.6）" % slot)
+		assert_eq(board.patch_margin_top, 21, "slot%d T=21" % slot)
+		assert_almost_eq(board.size.x, 254.0, 0.5, "slot%d scaleSize 254 直译" % slot)
+		assert_almost_eq(board.size.y, 86.0, 0.5, "slot%d scaleSize 86 直译" % slot)
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 readhero.lua:1011-1022 createSkillIcon：icon=SkillGroup Icon 78×78px÷CS=60.9 中心
+# ccp(320,ori_height-90(i-1))；frame=equip_frame_white 94×95px÷CS=73.4×74.2 为 icon 子节点
+# @局部(30,29)（≈同中心，偏 (-0.44,+1.44)），后绘制盖 icon 上。旧 40/48 系 CS 换算遗漏（图标太小）。
+func test_skill_icon_frame_size_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var skill_view: Node = panel._tab_views["skill"] as Node
+	var icon: TextureButton = skill_view.get_node("%Skill1Icon") as TextureButton
+	var frame: TextureRect = skill_view.get_node("%Skill1Frame") as TextureRect
+	assert_not_null(icon, "Skill1Icon 存在")
+	assert_not_null(frame, "Skill1Frame 存在")
+	if icon == null or frame == null:
+		return
+	assert_almost_eq(icon.size.x, 78.0 / 1.28125, 0.5, "icon 显示宽=78px÷CS≈60.9（旧 40）")
+	assert_almost_eq(icon.size.y, 78.0 / 1.28125, 0.5, "icon 显示高=78px÷CS")
+	assert_almost_eq(frame.size.x, 94.0 / 1.28125, 0.5, "frame 显示宽=94px÷CS≈73.4（旧 48）")
+	assert_almost_eq(frame.size.y, 95.0 / 1.28125, 0.5, "frame 显示高=95px÷CS≈74.2")
+	assert_eq(frame.z_index, 1, "frame 盖 icon 上（源 bg 为 icon 子节点后绘制）")
+	var icon_center: Vector2 = icon.position + icon.size / 2.0
+	var frame_center: Vector2 = frame.position + frame.size / 2.0
+	assert_almost_eq(frame_center.x, icon_center.x - 0.44, 0.5, "frame 中心 x=icon 中心-0.44（源局部 30 vs 30.44）")
+	assert_almost_eq(frame_center.y, icon_center.y + 1.44, 0.5, "frame 中心 y=icon 中心+1.44（源局部 29 vs 30.44 翻转）")
+	# icon 中心照源 ccp(320,350) → Godot (320,130)
+	assert_almost_eq(icon_center.x, 320.0, 0.5, "icon 中心 x=320（源直译）")
+	assert_almost_eq(icon_center.y, 130.0, 0.5, "icon 中心 y=130（源 ccp(320,350)→480-350）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 标签对齐照源：cost 15pt 中心锚（skillstren.lua:384-393 anchor 默认 0.5）；
+# name 18pt（:422 createttf 18）；信息栏 18pt 三段组居中 @ccp(400,420)（:675-721）。
+# 旧实现 Cost/SkillPointLabel 默认左对齐偏左（用户反馈"标签字段对齐方式有问题"）。
+func test_skill_labels_alignment_source_direct() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var skill_view: Node = panel._tab_views["skill"] as Node
+	var cost: Label = skill_view.get_node("%Skill1Cost") as Label
+	assert_eq(cost.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "cost 水平居中（源中心锚）")
+	assert_eq(cost.get_theme_font_size(&"font_size"), 15, "cost 15pt（源 :388 size=15）")
+	var name_lbl: Label = skill_view.get_node("%Skill1Name") as Label
+	assert_eq(name_lbl.get_theme_font_size(&"font_size"), 18, "name 18pt（源 :422 createttf 18）")
+	assert_eq(name_lbl.horizontal_alignment, HORIZONTAL_ALIGNMENT_LEFT, "name 左对齐（源 anchor(0,0.5)）")
+	var sp: Label = skill_view.get_node("%SkillPointLabel") as Label
+	assert_eq(sp.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "技能点信息栏居中（源三段组居中 @400）")
+	assert_eq(sp.get_theme_font_size(&"font_size"), 18, "信息栏 18pt（源 :689/699/713 size=18）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 refreshLevelBoard:256-263：cacheSkillLevel >= hero._level → setSpriteGray（升级按钮灰显）。
+# 用户反馈"加点完全无法加"根因之一：1 级英雄技能达上限静默拒绝无任何视觉/提示（port 缺灰显+Toast）。
+func test_skill_btn_gray_at_level_cap() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	hero.level = 1   # skill_levels[0]=1 >= 1 → 达上限
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var btn: TextureButton = (panel._tab_views["skill"] as Node).get_node("%Skill1Btn") as TextureButton
+	assert_eq(btn.modulate, HeroDetailTabs.SKILL_GRAY_MODULATE, "1 级英雄 slot1 达上限 → 按钮灰显")
+	panel.remove_window()
+	root.queue_free()
+	# 反例：hero level 5 → 未达上限白显
+	var root2 := Node.new()
+	add_child(root2)
+	var hero2 := HeroInstance.new(1, 1, 1)
+	hero2.rank = 7
+	hero2.level = 5
+	var panel2 := HeroDetailPanel.new("herodetail", {})
+	panel2.setup_panel(hero2, cm)
+	panel2.show_window(root2)
+	var btn2: TextureButton = (panel2._tab_views["skill"] as Node).get_node("%Skill1Btn") as TextureButton
+	assert_eq(btn2.modulate, Color.WHITE, "5 级英雄 slot1（lv1<5）→ 按钮白显可点")
+	panel2.remove_window()
+	root2.queue_free()
+
+
+# 达上限 perform 失败 → Toast「已达到当前等级上限」（源 doClickLvupButton:155-156，2026-08-30 补静默缺失）。
+func test_perform_upgrade_skill_cap_fail_toast() -> void:
+	var pd := PlayerData.new(cm)
+	pd.skill_points = 5
+	pd.hero_manager.gold = 10000
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var hero := pd.hero_manager.get_hero(inst_id)
+	hero.level = 1   # InitLevel=1 >= 1 → 达上限
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, pd.hero_manager, pd)
+	Toast._queue.clear()
+	assert_false(panel.perform_upgrade_skill(0), "1 级达上限 → 升级失败")
+	assert_eq(hero.skill_levels[0], 1, "等级不变")
+	assert_eq(pd.skill_points, 5, "技能点未扣")
+	assert_eq(pd.hero_manager.gold, 10000, "金币未扣")
+	assert_gt(Toast.pending_count(), 0, "失败有 Toast 反馈（旧实现静默）")
+	Toast._queue.clear()
+
+
+# 技能点不足失败分支 Toast（源 :164-165 herodetailskill.1.10.1.002「技能点已用完」）。
+func test_perform_upgrade_skill_no_point_toast() -> void:
+	var pd := PlayerData.new(cm)
+	pd.skill_points = 0
+	pd.hero_manager.gold = 10000
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var hero := pd.hero_manager.get_hero(inst_id)
+	hero.level = 5   # 未达上限，有金币，仅缺技能点
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, pd.hero_manager, pd)
+	Toast._queue.clear()
+	assert_false(panel.perform_upgrade_skill(0), "技能点不足 → 升级失败")
+	assert_gt(Toast.pending_count(), 0, "技能点不足有 Toast 反馈")
+	Toast._queue.clear()
+
+
+# levelAdd "+N" 动态贴 lv 文字右侧 +2（源 skillstren.lua:335 getRightSidePos(lui.level, 2)；
+# 旧静态 397 在 lv.10 时与 lv 文字叠字）。纯单元：两 Label 直调 _fill_skill_lvl_add。
+func test_lvl_add_dynamic_position() -> void:
+	var lvl := Label.new()
+	lvl.text = "lv.10"
+	var add_lbl := Label.new()
+	add_lbl.position = Vector2(397.0, 125.0)   # 旧静态位
+	HeroDetailUpgradeFx._fill_skill_lvl_add(add_lbl, 5, lvl)
+	assert_eq(add_lbl.text, "+5", "levelAdd 文本 +N")
+	assert_true(add_lbl.visible, "skl_add>0 → 可见")
+	assert_almost_eq(add_lbl.position.x, lvl.position.x + lvl.get_minimum_size().x + 2.0, 0.1,
+		"levelAdd x = lv 文字右缘+2（源 getRightSidePos）")
+	assert_almost_eq(add_lbl.position.y, lvl.position.y, 0.1, "levelAdd y 与 lv 同行")
+	HeroDetailUpgradeFx._fill_skill_lvl_add(add_lbl, 0, lvl)
+	assert_false(add_lbl.visible, "skl_add=0 → 隐藏")
+
+
+# ── 购买技能点按钮可点击 + 重建不重播侧滑守卫（2026-08-30 二轮修复）──
+
+# 购买键曾 mouse_filter=2（IGNORE）+ 无 ignore_texture_size：真实点击穿透到面板 shade 吞掉
+# （购买从未执行），且按钮被 97×67 纹理原尺寸撑大压首行技能。源 createcdBar:592-620
+# herodetail-upgrade.png 97×67px÷CS=75.7×52.3 中心 ccp(325,420)。
+func test_buy_skill_point_btn_clickable_and_sized() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var btn: TextureButton = (panel._tab_views["skill"] as Node).get_node("%BuySkillPointBtn") as TextureButton
+	assert_ne(btn.mouse_filter, Control.MOUSE_FILTER_IGNORE, "购买键不可 IGNORE（真实点击须可达）")
+	assert_true(btn.ignore_texture_size, "ignore_texture_size（防纹理原尺寸撑大）")
+	assert_almost_eq(btn.size.x, 76.0, 0.5, "购买键宽=97px÷CS≈75.7（tscn offsets 直译 76）")
+	assert_almost_eq(btn.size.y, 52.0, 0.5, "购买键高=67px÷CS≈52.3（tscn offsets 直译 52）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 滑入反馈按来源区分（2026-08-30 七轮用户定谳：仅升级技能要滑动反馈，装备/进阶/翻页等
+# 其余 refresh_content 刷新不滑）。升级路径=hero_package 接线 refresh_content(true)。
+func test_rebuild_slide_only_on_upgrade_path() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	panel._show_tab_content("skill")
+	hero.level = 10
+	# ① 默认刷新（装备穿戴等）→ 不重播滑入
+	panel.refresh_content()
+	await get_tree().create_timer(0.1).timeout   # deferred 重建完成
+	var sv_a: Control = panel._tab_views["skill"] as Control
+	assert_almost_eq(sv_a.offset_left, -200.0, 0.5, "默认刷新止态直设（装备等不滑）")
+	assert_eq(panel._current_tab, "skill", "重建保持当前 tab")
+	# ①b 重建后 base 层止态直设（旧实现新 BaseLayer 从 0 起 tween→整界面右挫 ~140px，
+	# 用户录屏逐帧互相关实锤 -70~-95px→0 位移，2026-08-30 十一轮）
+	assert_almost_eq(panel._base_layer.position.x, 140.0, 0.5, "重建后 base 立即 140（无 0 起点滑动）")
+	# ② 升级路径 refresh_content(true) → 重播滑入（400 起跳→-200 止态）
+	panel.refresh_content(true)
+	await get_tree().create_timer(0.1).timeout   # deferred 重建+tween 已起步
+	var sv_b: Control = panel._tab_views["skill"] as Control
+	assert_gt(sv_b.offset_left, -150.0, "升级路径重建滑入中（0.1s 处未到止态 -200 即在滑）")
+	await get_tree().create_timer(0.3).timeout
+	assert_almost_eq((panel._tab_views["skill"] as Control).offset_left, -200.0, 0.5,
+		"0.4s 后滑入止态 -200")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 描述浮层位置随槽下移（源 createDescBoard :23-25 ccp(525, 387-90*(i-1))；旧固定 (400,100)
+# = 点低槽浮层跑到首行「力量强化说明放到幽灵船上」错位，2026-08-30 修）。
+func test_skill_desc_board_position_follows_slot() -> void:
+	var hero := HeroInstance.new(1, 1, 1)
+	hero.rank = 7
+	for slot in range(4):
+		var bg: Control = HeroDetailTabs.build_skill_desc(hero, slot, cm)
+		assert_almost_eq(bg.position.x, 525.0, 0.5, "slot%d x=525（源直译）" % slot)
+		assert_almost_eq(bg.position.y, 93.0 + 90.0 * slot, 0.5,
+			"slot%d y=93+90×slot 随槽下移（源 387-90×i 翻转）" % slot)
+		bg.free()

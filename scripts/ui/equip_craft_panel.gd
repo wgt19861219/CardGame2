@@ -24,8 +24,6 @@ const LSTR_NEED_CRAFT_FIRST: String = "EQUIPCRAFT.THIS_PIECE_OF_EQUIPMENT_NEED_T
 const LSTR_CHAPTER_YET_TO_OPEN: String = "EQUIPCRAFT.CHAPTER_YET_TO_OPEN"
 # 历史选中态高亮（源 equipcraft.lua:887-892）：当前 cursor 位置 icon 上叠 equip_craft_select 框。
 const HISTORY_CURSOR_RES: String = "res://assets/ui/alpha/HVGA/equip_craft_select.png"
-# craft panel 弹性滑入（源 equipcraft.lua:1256-1266 EaseBackOut position.y 从 -h 到 0）。
-const PANEL_SLIDE_DUR: float = 0.25
 
 
 var cm: Variant = null
@@ -263,10 +261,9 @@ func _make_get_way_handler(idx: int) -> Callable:
 func _open_craft_panel() -> void:
 	_is_open = true
 	# 源 openCraftPanel（equipcraft.lua:575-587 / :1256-1266）：点 infoButton 后才建合成窗口 + 合成树。
-	# :1256-1266 弹性滑入（EaseBackOut）：position.y 从 -size.h 滑到 0。
+	# :1256-1266 弹性滑入（EaseBackOut position.y -h→0）——用户 2026-08-30 不要此动画（七~九轮
+	# 反馈「装备物品触发侧滑」即此），受控偏离：直显不滑入。
 	_craft_window.visible = true
-	var tw: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tw.tween_property(_craft_window, "position:y", _craft_window.position.y, PANEL_SLIDE_DUR).from(_craft_window.position.y - _craft_window.size.y)
 	_create_craft_tree(_target_id, false)
 
 
