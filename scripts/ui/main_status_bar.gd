@@ -1,8 +1,6 @@
 class_name MainStatusBar
 extends RefCounted
 
-const UIConstants := preload("res://resources/constants/ui_constants.gd")
-
 ## 主菜单状态栏（View helper）— 照源 ui/statusbar.lua createHead:554 + createTitle:706。
 ## 从 main_scene 拆出重建：头像（银/金框切换 + 昵称 + VIP 角标）+ 3 货币条（图标 + 数字 + 加号按钮）。
 ## 替代旧裸文字 Label 占位。main_scene._build_status_bar 委托本类 + _refresh_status 更新 label。
@@ -86,6 +84,12 @@ const VIT_BAR_SIZE: Vector2 = Vector2(145.0, 48.0)
 const BAR_ICON_CENTER: Array = [Vector2(158.0, 23.0), Vector2(156.0, 23.0), Vector2(125.0, 23.0)]
 # 加号中心（源 vitality_add_icon ccp(20,23) money/rmb 为 empty.png 占位同位，bar 局部，锚点 0.5,0.5）。
 const PLUS_CENTER: Vector2 = Vector2(20.0, 23.0)
+# 数字贴图右缘锚（statusbar.lua getBarConfig rightPoint 直译；center_y=cocos y25 → Godot 48-25）。
+# money/rmb 数字 NumberNode 右对齐 (135/130)；maxVitText="/"组右缘 (107)，vitability 紧贴其左侧。
+const GOLD_NUM_RIGHT_X: float = 135.0
+const RMB_NUM_RIGHT_X: float = 130.0
+const MAXVIT_NUM_RIGHT_X: float = 107.0
+const NUM_CENTER_Y: float = 23.0
 
 
 # 装配完整状态栏（头像 + 货币条）。返回 refs dict 供 _refresh_status 更新 label。
@@ -167,19 +171,22 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 	# 货币条（源 createTitle gold/rmb/vitality）。vit_bg 用源 145×48（比 money/rmb 178×48 窄）
 	refs["gold"] = _build_bar(parent, BAR_POS_X[0], GOLD_ICON_RES, Callable(), BAR_Y, BAR_SIZE, BAR_ICON_CENTER[0])
 	refs["diamond"] = _build_bar(parent, BAR_POS_X[1], DIAMOND_ICON_RES, Callable(), BAR_Y, BAR_SIZE, BAR_ICON_CENTER[1])
-	refs["vitality"] = _build_bar(parent, BAR_POS_X[2], VITALITY_ICON_RES, vitality_plus_handler, BAR_Y, VIT_BAR_SIZE, BAR_ICON_CENTER[2])
-	# gold_plus_handler 非 empty → bar Control（gold Label 的 parent）gui_input 连接整条点击。
+	var vit_num: Control = _build_bar(parent, BAR_POS_X[2], VITALITY_ICON_RES, vitality_plus_handler, BAR_Y, VIT_BAR_SIZE, BAR_ICON_CENTER[2])
+	refs["vitality"] = vit_num
+	# maxVitText "/"组（statusbar.lua:1132-1144 getBarConfig maxVit：rightPoint (107,25)）。
+	var max_num := NumberNode.build("")
+	max_num.name = "max_num"
+	vit_num.add_child(max_num)
+	# gold_plus_handler 非 empty → bar Control gui_input 连接整条点击。
 	if gold_plus_handler.is_valid():
-		var gold_lbl: Label = refs["gold"] as Label
-		gold_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE   # 避 Label STOP 吞点击，让 bar 整条可点
-		var gold_bar: Control = gold_lbl.get_parent()
+		var gold_bar: Control = refs["gold"]
 		var g: Callable = gold_plus_handler
 		gold_bar.gui_input.connect(func(ev: InputEvent) -> void:
 			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 				g.call())
 	# 按住 vit_bg 显体力恢复进度提示卡（C12），松开销毁。vit 加号 Button STOP 独立命中不冲突。
 	if player != null and cm != null:
-		_attach_vit_prompt(refs["vitality"] as Label, parent, player, cm)
+		_attach_vit_prompt(vit_num, parent, player, cm)
 	refs["_player"] = player   # _refresh_head_icon 查 Avatar 表用（GameData.player 单例不悬空）
 	return refs
 
@@ -191,19 +198,27 @@ static func build(parent: Control, vitality_plus_handler: Callable = Callable(),
 # gold_plus_handler: 金币"+"回调（照源 statusbar.lua:42-49 registerTitleTouchHandler，子场景也开 midas）
 static func build_bars_only(parent: Control, bar_pos_x: Array, bar_y: float, vitality_plus_handler: Callable = Callable(), gold_plus_handler: Callable = Callable()) -> Dictionary:
 	var refs: Dictionary = {}
-	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, gold_plus_handler, bar_y, BAR_SIZE, BAR_ICON_CENTER[0])
+	refs["gold"] = _build_bar(parent, float(bar_pos_x[0]), GOLD_ICON_RES, Callable(), bar_y, BAR_SIZE, BAR_ICON_CENTER[0])
 	refs["diamond"] = _build_bar(parent, float(bar_pos_x[1]), DIAMOND_ICON_RES, Callable(), bar_y, BAR_SIZE, BAR_ICON_CENTER[1])
-	refs["vitality"] = _build_bar(parent, float(bar_pos_x[2]), VITALITY_ICON_RES, vitality_plus_handler, bar_y, VIT_BAR_SIZE, BAR_ICON_CENTER[2])
+	var vit_num: Control = _build_bar(parent, float(bar_pos_x[2]), VITALITY_ICON_RES, vitality_plus_handler, bar_y, VIT_BAR_SIZE, BAR_ICON_CENTER[2])
+	refs["vitality"] = vit_num
+	var max_num := NumberNode.build("")
+	max_num.name = "max_num"
+	vit_num.add_child(max_num)
+	# 子场景金币条整条可点开 midas（源 registerTitleTouchHandler 恒生效）；批 A 修正旧误传加号钮。
+	if gold_plus_handler.is_valid():
+		var gold_bar: Control = refs["gold"]
+		var g: Callable = gold_plus_handler
+		gold_bar.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+				g.call())
 	return refs
 
 
-# 装配单条货币条：背景条 + 图标 + 数字 label + 加号。返回 label ref。
-# plus_handler 非空（vitality）→ 加号是 Button 可点（照源 statusbar:59-68 radius=30 圆形点击 → buyVitality）；
-# plus_handler 空（gold/diamond）→ 加号 IGNORE（gold 走 midas_btn，diamond 充值单机化裁剪；避 STOP 吞点击）。
-# x/bar_y 为源 Scale9Sprite 中心点（anchor 0.5,0.5），内部转 Godot 左上角定位（减 size/2）。
-# icon_center 为源图标中心点（bar 局部）；图标显示尺寸=纹理原始/CONTENT_SCALE 等比（三图标均非正方形，
-# 勿统一 32×32 强拉——金币 43×39/钻石 50×38/体力 44×50 会变形，2026-08-15 用户实测反馈）。
-static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler: Callable = Callable(), bar_y: float = BAR_Y, bar_size: Vector2 = BAR_SIZE, icon_center: Vector2 = BAR_ICON_CENTER[0]) -> Label:
+# 装配单条货币条：背景条 + 图标 + 数字贴图组（子节点 "num"，vit 另有 "max_num"/组），返回 bar Control。
+# plus_handler 空(gold/diamond) **不渲染左端加号**——源该位 empty.png 占位(statusbar.lua:748/815，
+# 右侧图标自带角标；2026-08-27 批 A G1a 修正旧版错画致结构反转)；非空(vit) → Button 照源真加号。
+static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler: Callable = Callable(), bar_y: float = BAR_Y, bar_size: Vector2 = BAR_SIZE, icon_center: Vector2 = BAR_ICON_CENTER[0]) -> Control:
 	var bar := Control.new()
 	bar.position = Vector2(x - bar_size.x / 2.0, bar_y - bar_size.y / 2.0)
 	bar.size = bar_size
@@ -211,42 +226,37 @@ static func _build_bar(parent: Control, x: float, icon_res: String, plus_handler
 	_add_texture_rect(bar, BAR_BG_RES, Vector2.ZERO, bar_size, "bg")
 	var icon_size: Vector2 = (load(icon_res) as Texture2D).get_size() / CONTENT_SCALE
 	_add_texture_rect(bar, icon_res, icon_center - icon_size / 2.0, icon_size, "icon")
-	var lbl := Label.new()
-	lbl.position = Vector2(50.0, 16.0)
-	# 不引入 BodyLabel 变体（货币条数值可能有色，仅替换裸数字 14 为常量）
-	lbl.add_theme_font_size_override("font_size", UIConstants.FONT_SIZE_SMALL)
-	bar.add_child(lbl)
-	# 加号显示尺寸=纹理 47×47÷CS≈36.7（无 TextureConfig 条目散图，显示=点尺寸；
-	# 47×47 顶满 48 高条系上一版口径错误，源即 ÷CS 后约 76% 条高），中心照源 ccp(20,23)。
-	var plus_size: Vector2 = (load(PLUS_ICON_RES) as Texture2D).get_size() / CONTENT_SCALE
+	var num := NumberNode.build("")
+	num.name = "num"
+	bar.add_child(num)
 	if plus_handler.is_valid():
 		# 加号可点 Button（flat + StyleBoxEmpty 去默认样式；照源圆形点击区 radius=30 ≥ 视觉）。
 		# 视觉走子 TextureRect 而非 Button.icon（icon 会把按钮 min size 再撑大且不受控）。
+		var plus_size: Vector2 = (load(PLUS_ICON_RES) as Texture2D).get_size() / CONTENT_SCALE
 		var plus_btn := Button.new()
 		plus_btn.position = PLUS_CENTER - plus_size / 2.0
 		plus_btn.size = plus_size
 		plus_btn.flat = true
 		plus_btn.focus_mode = Control.FOCUS_NONE
-		# 走 GhostButton 变体（default_theme.tres：normal/hover/pressed/focus 全 StyleBoxEmpty）
 		plus_btn.theme_type_variation = &"GhostButton"
 		plus_btn.pressed.connect(plus_handler)
 		_add_texture_rect(plus_btn, PLUS_ICON_RES, Vector2.ZERO, plus_size, "plus_icon")
 		bar.add_child(plus_btn)
-	else:
-		# 无处理器（gold/diamond）：IGNORE 避 STOP 吞点击无响应（P1-复审2-3 核心危害）
-		var plus := _add_texture_rect(bar, PLUS_ICON_RES, PLUS_CENTER - plus_size / 2.0, plus_size, "plus")
-		plus.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return lbl
+	return bar
+
+
+# 单条数字组刷新+右缘重排（bar 的 "num" 子节点）。
+static func _refresh_num(bar: Control, text: String, right_x: float, folder: String) -> void:
+	var num: Control = bar.get_node("num")
+	NumberNode.refresh(num, text, folder)
+	NumberNode.place_right(num, right_x, NUM_CENTER_Y)
 
 
 # vit_bg 按住提示卡接线（源 statusbar.lua:69-79 pressHandler/liftHandler）。
-# vit_bg bar Control mouse_filter=PASS + gui_input 监听 mouse pressed/released（不影响 plus_btn STOP）。
-static func _attach_vit_prompt(vit_lbl: Label, parent: Control, player: PlayerData, cm: ConfigManager) -> void:
-	if vit_lbl == null:
+static func _attach_vit_prompt(vit_bar: Control, parent: Control, player: PlayerData, cm: ConfigManager) -> void:
+	if vit_bar == null:
 		return
-	vit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 避 Label STOP 吞事件
-	var vit_bar: Control = vit_lbl.get_parent()
-	vit_bar.mouse_filter = Control.MOUSE_FILTER_PASS   # 让事件冒泡到 bar（plus_btn 仍独立命中）
+	vit_bar.mouse_filter = Control.MOUSE_FILTER_PASS   # 事件冒泡到 bar（plus_btn 仍独立命中）
 	vit_bar.gui_input.connect(func(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 			if (ev as InputEventMouseButton).pressed:
@@ -255,14 +265,20 @@ static func _attach_vit_prompt(vit_lbl: Label, parent: Control, player: PlayerDa
 				VitPromptCard.destroy_prompt())
 
 
-# 刷新状态栏数值（main_scene._refresh_status 调）。
+# 刷新状态栏数值（main_scene._refresh_status 调）。数字走 NumberNode 贴图组（源 updateMRV 链）。
 static func refresh(refs: Dictionary, level: int, gold: int, diamond: int, vitality: int, vitality_max: int, name: String, vip: int, avatar: int) -> void:
 	if refs.has("gold"):
-		(refs["gold"] as Label).text = str(gold)
+		_refresh_num(refs["gold"] as Control, NumberNode.format_comma(gold), GOLD_NUM_RIGHT_X, "white")
 	if refs.has("diamond"):
-		(refs["diamond"] as Label).text = str(diamond)
+		_refresh_num(refs["diamond"] as Control, NumberNode.format_comma(diamond), RMB_NUM_RIGHT_X, "white")
 	if refs.has("vitality"):
-		(refs["vitality"] as Label).text = "%d/%d" % [vitality, vitality_max]
+		# maxVitText="/" 组右缘(107)、vit 数字紧贴其左、超上限蓝字(statusbar.lua:1121 folder 条件)。
+		var vit_bar: Control = refs["vitality"]
+		var max_num: Control = vit_bar.get_node("max_num")
+		NumberNode.refresh(max_num, "/" + NumberNode.format_comma(vitality_max), "white")
+		NumberNode.place_right(max_num, MAXVIT_NUM_RIGHT_X, NUM_CENTER_Y)
+		var folder: String = "main_blue" if vitality > vitality_max else "white"
+		_refresh_num(vit_bar, NumberNode.format_comma(vitality), max_num.position.x, folder)
 	if refs.has("name"):
 		(refs["name"] as Label).text = name
 	# P1-15：等级 Label 更新（源 self.playerLevel）

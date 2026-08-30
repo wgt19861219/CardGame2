@@ -120,10 +120,12 @@ func unlock_require(key: StringName, player_level: int, vip_level: int = 0, stag
 
 
 func check_area_unlock(key: StringName, player_level: int, vip_level: int = 0, stage_progress: int = 0) -> bool:
-	var req: Dictionary = unlock_require(key, player_level, vip_level, stage_progress)
-	if req["type"] == &"notopen":
+	# 单机化全放开（2026-08-29 用户指示）：源为联网手游运营门槛（等级拖节奏促付费），
+	# 单机无运营需求，1 级即可进全部界面。module_switch close（手动关模块）语义保留。
+	# get_area_unlock_level/unlock_require 查表逻辑保留（提示文案与源对照用）。
+	if _module_switch.get(key) == &"close":
 		return false
-	return int(req["limit"]) <= int(req["current"])
+	return true
 
 
 func get_area_unlock_prompt(key: StringName, player_level: int, vip_level: int = 0, stage_progress: int = 0) -> String:

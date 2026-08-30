@@ -23,6 +23,7 @@ const HINT_FLOAT_DELTA: float = 10.0
 const HINT_FLOAT_TIME: float = 0.5
 const ENEMY_ICON_SCALE: float = 0.8   # 源 crusade.lua:231 heroIcon.icon:setScale(0.8)（2026-08-22 巡检照源订正旧 0.65）
 const ENEMY_ICON_GAP: int = 5
+const BL_ENEMY_ICON_SCALE: float = 0.65   # 源 enemyIcon scale 0.65（crusadeconfig :1360）
 const ENEMY_HP_FULL: int = 10000
 const CRUSADE_HERO_MIN_LEVEL: int = 20
 # 源 initDragPos（crusade.lua:497-507）：分段偏移系数。
@@ -51,7 +52,13 @@ var box_rects: Array[TextureButton] = []
 var fog_rects: Array[TextureRect] = []
 var result_label: Label = null
 var current_select: int = 0
-var enemy_preview_box: Control = null
+var battle_layer: Control = null
+var _bl_name_lbl: Label = null
+var _bl_level_lbl: Label = null
+var _bl_cur_lbl: Label = null
+var _bl_enemy_host: Control = null
+var _bl_hero_hosts: Array = []
+var _bl_start: TextureButton = null
 var start_btn: TextureButton = null
 var _shake_timer: Timer = null
 var _hint_anchor: Control = null
@@ -104,10 +111,22 @@ func _build_content() -> void:
 	(_content.get_node("%RuleCloseBtn") as BaseButton).pressed.connect(_close_rule_info)
 	(_content.get_node("%RuleShade") as Control).gui_input.connect(_on_rule_shade_input)
 	result_label = _content.get_node("%ResultLabel") as Label
-	enemy_preview_box = _content.get_node("%EnemyPreviewHost") as Control
+	battle_layer = _content.get_node("%BattleLayer") as Control
+	_bl_name_lbl = _content.get_node("%BattleLayer/BattleInfo/HeroNameLbl") as Label
+	_bl_level_lbl = _content.get_node("%BattleLayer/BattleInfo/LevelLbl") as Label
+	_bl_cur_lbl = _content.get_node("%BattleLayer/BattleInfo/CurrentBattleLbl") as Label
+	_bl_enemy_host = _content.get_node("%BattleLayer/BattleInfo/EnemyIconHost") as Control
+	_bl_start = _content.get_node("%BattleLayer/BattleInfo/StartBtn2") as TextureButton
+	for i in range(5):
+		_bl_hero_hosts.append(_content.get_node("%BattleLayer/BattleInfo/HeroHost" + str(i + 1)) as Control)
+	(_content.get_node("%BattleLayer/BattleInfo/BlCloseBtn") as TextureButton).pressed.connect(_close_battle_info)
+	(_content.get_node("%BattleLayer/Shade") as ColorRect).gui_input.connect(_on_shade_clicked)
+	_bl_start.pressed.connect(_on_bl_start_pressed)
 	start_btn = _content.get_node("%StartBtn") as TextureButton
 	start_btn.visible = false
-	result_label.text = "远征：第 " + str(player.crusade_manager.cur_stage) + " 关"
+	# F3（2026-08-27 走查）：源打开面板无常驻标题文字（当前关仅用箭头 StageHint 标记），
+	# 「远征：第 N 关」系发明；本 label 只作事件反馈通道（受控偏离见 tscn），初始置空。
+	result_label.text = ""
 	_hint_anchor = _content.get_node("%HintAnchor") as Control
 	stage_hint = _content.get_node("%StageHint") as CanvasItem
 	_start_hint_float()
@@ -270,15 +289,33 @@ func _refresh_fog() -> void:
 			tw.tween_callback(func() -> void: fog.visible = false)
 
 
-func _refresh_enemy_preview(stage: int) -> void:
-	if enemy_preview_box == null or player == null or player.crusade_manager == null:
+# 源 showBattleInfo（crusade.lua :177-235）：battleLayer 弹窗 fill——敌方玩家名/等级/场次
+# (N/M)/头像（getHeroIconByID avatar）+ 5 英雄 ReadheroIcon（rank/level/stars/hp 满血）；
+# passed/rewarded 隐藏 start。单机敌方摘要 crusade_manager.enemies[s]（name/level/avatar）。
+func _show_battle_info(stage: int) -> void:
+	if battle_layer == null or player == null or player.crusade_manager == null:
 		return
-	for c in enemy_preview_box.get_children():
+	var cm_mgr = player.crusade_manager
+	var info: Dictionary = cm_mgr.enemies.get(stage, {})
+	_bl_name_lbl.text = str(info.get("name", "?"))
+	_bl_level_lbl.text = str(info.get("level", 1))
+	_bl_cur_lbl.text = "(%d/%d)" % [stage, CrusadeManager.MAX_STAGE]
+	for c in _bl_enemy_host.get_children():
 		c.queue_free()
-	var enemies_arr: Array = player.crusade_manager.get_stage_enemies(stage)
-	var slot_w: float = ReadheroIcon.CONTAINER_SIZE.x * ENEMY_ICON_SCALE + float(ENEMY_ICON_GAP)
+	var avatar_id: int = int(info.get("avatar", 0))
+	if avatar_id > 0:
+		var head := ReadheroIcon.new()
+		head.setup({"id": avatar_id, "rank": 1}, player.cm)
+		head.scale = Vector2(BL_ENEMY_ICON_SCALE, BL_ENEMY_ICON_SCALE)
+		_bl_enemy_host.add_child(head)
+	for host in _bl_hero_hosts:
+		for c in (host as Control).get_children():
+			c.queue_free()
+	var enemies_arr: Array = cm_mgr.get_stage_enemies(stage)
 	var idx: int = 0
 	for hero in enemies_arr:
+		if idx >= _bl_hero_hosts.size():
+			break
 		var icon := ReadheroIcon.new()
 		icon.setup({
 			"id": int(hero.get("_tid", 0)),
@@ -287,10 +324,27 @@ func _refresh_enemy_preview(stage: int) -> void:
 			"stars": int(hero.get("_stars", 0)),
 			"hp": ENEMY_HP_FULL,
 		}, player.cm)
-		icon.scale = Vector2(ENEMY_ICON_SCALE, ENEMY_ICON_SCALE)
-		icon.position = Vector2(float(idx) * slot_w, 0.0)
-		enemy_preview_box.add_child(icon)
+		(_bl_hero_hosts[idx] as Control).add_child(icon)
 		idx += 1
+	_bl_start.visible = not cm_mgr.is_stage_cleared(stage)
+	battle_layer.visible = true
+
+
+# 源 closeBattleInfo（:105-108）：battleLayer 隐藏。
+func _close_battle_info() -> void:
+	if battle_layer != null:
+		battle_layer.visible = false
+
+
+func _on_shade_clicked(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		_close_battle_info()
+
+
+# 弹窗内开战钮 → 复用面板开战链（源 handleName="start" 同一处理）。
+func _on_bl_start_pressed() -> void:
+	_close_battle_info()
+	_on_start_pressed()
 
 
 func _on_stage_n(i: int) -> void:
@@ -304,9 +358,7 @@ func _on_stage_n(i: int) -> void:
 		result_label.text = "第 " + str(i) + " 关 未解锁（需先通关前序/领上关奖）"
 		return
 	current_select = i
-	_refresh_enemy_preview(i)
-	if start_btn != null:
-		start_btn.visible = true
+	_show_battle_info(i)
 	var enemies_arr: Array = cm_mgr.get_stage_enemies(i)
 	var enemy_count: int = enemies_arr.size()
 	var max_stage: int = CrusadeManager.MAX_STAGE

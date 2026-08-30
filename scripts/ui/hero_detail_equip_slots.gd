@@ -172,6 +172,19 @@ static func open_equip_craft(slot: int, hero: HeroInstance, cm: Variant, pd: Pla
 	panel.z_index = 200
 
 
+# 装备进阶列表点图标（源 evolveequip.lua:81 equipcraft.create{context="handbook"}）：
+# hero 不传照源——handbook 上下文无穿戴入口；z=200 置顶同 open_equip_craft。
+static func open_equip_craft_by_id(eid: int, cm: Variant, pd: PlayerData, parent: Node, panel: Node) -> void:
+	if eid <= 0:
+		return
+	AudioPlayer.play_sfx("common_click_feedback")
+	var p := EquipCraftPanel.new("equipcraft", {})
+	p.setup_panel(eid, cm, pd, null, "handbook")
+	p.jump_to_stage.connect(func(stage_id: int) -> void: on_equip_craft_jump(stage_id, panel))
+	p.show_window(parent)
+	p.z_index = 200
+
+
 # P1-10 源 equipcraft doClickGetWay :83 pushScene(stageselect.createByStage(id))。
 # panel 用 Node 弱类型（非 HeroDetailPanel），调 remove_window + get_tree（Node 链路方法）。
 static func on_equip_craft_jump(stage_id: int, panel: Node) -> void:

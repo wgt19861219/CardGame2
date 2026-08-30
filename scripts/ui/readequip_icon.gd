@@ -4,6 +4,10 @@ extends RefCounted
 ## 装备/英雄图标 View 工具（照源 readequip.lua createIcon :671 + createIconWithAmount :792）。
 ## 品质边框（equip_frame_<quality>）+ Equip.Icon / Unit.Portrait + 数量 Label。
 ## poptavernloot / herodetail / 背包共用。headless 安全（ResourceLoader.exists 预检）。
+## 层序=画序（add_child 顺序：衬底→内容→边框→角标）。源 cocos addChild 第 2 参 localZOrder
+## 仅兄弟间排序，永不画到父内容之下；Godot 负 z_index 官方语义「画在 parent 之后」会钻到
+## 宿主自绘内容底下——star_shop item 宿主 TextureButton 自绘不透明 item_bg 把 z=-2/-1 全盖
+## （批 E E3 空框根因，2026-08-27 bridge 实测：节点 vis=true 纹理对但屏幕不可见）。
 
 const FRAME_DIR: String = "res://assets/ui/alpha/HVGA/equip_frame_"
 const FRAGMENT_FRAME_DIR: String = "res://assets/ui/alpha/HVGA/fragment_frame_"
@@ -109,12 +113,11 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 	container.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
 	container.size = Vector2(ICON_SIZE, ICON_SIZE)
 	var frame := _load_sprite(FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
-	container.add_child(frame)
-	# 源 :719-722 equip 分支 gocha 衬底 bg:addChild(equipBg, -2)——frame 之下内容之上
+	# 源 :719-722 equip 分支 gocha 衬底 bg:addChild(equipBg, -2)——层序衬底<内容<边框
 	# （1fc781e 补画时漏 z 序：平级后 add 会盖住 frame 边框，2026-08-22 背包反馈回归）。
-	# frame 纹理中空透明 78%（PIL 实测），源层序 gocha(-2)→内容(-1)→边框(0)。
+	# frame 纹理中空透明 78%（PIL 实测），源层序 gocha(-2)→内容(-1)→边框(0)；
+	# localZOrder 语义=Godot add 顺序（见头部判例注释），frame 延后 add。
 	var gocha := _load_sprite(GOCHA_BG_PATH, DEFAULT_ICON)
-	gocha.z_index = -2
 	gocha.set_meta(&"underlay", true)   # 衬底标记（package strip 区分：icon 缺资源时内容节点同用 gocha 纹理）
 	container.add_child(gocha)
 	var frame_h: float = _vis_size(frame).y
@@ -128,16 +131,14 @@ static func create_icon(id: int, amount: int, cm: Variant, level: int = 0, show_
 			_fit_inset(icon, frame_w)
 			_apply_stencil(icon, EQUIP_STENCIL_PATH, 0.02)
 		_place_center(icon, EQUIP_CENTER_UP, frame_h)
-		icon.z_index = -1   # 源 :741 bg:addChild(equip, -1)：内容在 frame 之下（中空区可见）
-		container.add_child(icon)
+		container.add_child(icon)   # 源 :741 bg:addChild(equip, -1)：内容在 frame 之下（中空区可见）
+	container.add_child(frame)
 	if amount > 1:
-		var lbl := Label.new()
-		lbl.text = "x" + str(amount)
-		# 源 :803-807 anchor(1,0.5) (68,18)：右缘距左 68、中心距底 18（Label 数字图降级，口径对齐）。
-		lbl.size = Vector2(56.0, 16.0)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
-		container.add_child(lbl)
+		# 源 :797-805 getNumberNode(folder="prop_amount", padding=-1) 贴图数字（无 x 前缀），
+		# anchor(1,0.5)(68,18)——H1 走查（2026-08-27）：旧 Label "xN" 系降级发明，批 A NumberNode 组件复用。
+		var num := NumberNode.build(str(amount), "prop_amount", -1.0)
+		NumberNode.place_right(num, AMOUNT_RIGHT_X, frame_h - AMOUNT_CENTER_Y_UP)
+		container.add_child(num)
 	if level > 0 or show_gray:
 		_add_stars(container, id, level, show_gray, cm)
 	# 存 quality/is_hero 供 pop_tavern_loot playBurst 品质光效判断（源 createLootAnim :494/564-625）。
@@ -225,13 +226,12 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant, quality: i
 	if quality <= 0:
 		quality = _get_quality(id, false, cm)
 	var frame := _load_sprite(FRAGMENT_FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
-	container.add_child(frame)
 	var frame_h: float = _vis_size(frame).y
 	var frame_w: float = _vis_size(frame).x
 	# 源 :578-581 equipBg=fragment_bg anchor(0,0)(0,0) frame 左下→Godot 左上（centered=false 默认）。
-	# 源 bg:addChild(equipBg, -2)：衬底在 frame 之下（1fc781e 补画漏 z 序，2026-08-22 修）。
+	# 源 bg:addChild(equipBg, -2)：衬底在 frame 之下（1fc781e 补画漏 z 序，2026-08-22 修）；
+	# localZOrder 语义=Godot add 顺序（头部判例注释），frame 延后 add。
 	var bg := _load_sprite(FRAGMENT_BG_PATH, DEFAULT_ICON)
-	bg.z_index = -2
 	bg.set_meta(&"underlay", true)   # 衬底标记（package strip 用）
 	container.add_child(bg)
 	var icon_path := _get_icon_path(id, false, cm)
@@ -240,18 +240,16 @@ static func create_hero_stone_icon(id: int, amount: int, cm: Variant, quality: i
 		_fit_inset(icon, frame_w)   # 源 :600 s2=(frame逻辑宽-9)/stone宽
 		_place_center(icon, STONE_CENTER_UP, frame_h)
 		_apply_stencil(icon, FRAGMENT_STENCIL_PATH, 0.5)   # 源 :592 createClippingNode(fragment_stencil) 默认 0.5
-		icon.z_index = -1   # 源 :598 bg:addChild(stone, -1)：内容在 frame 之下
-		container.add_child(icon)
+		container.add_child(icon)   # 源 :598 bg:addChild(stone, -1)：内容在 frame 之下
+	container.add_child(frame)
 	var tag := _load_sprite(SOULSTONE_TAG_PATH, DEFAULT_ICON)
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
 	container.add_child(tag)
 	if amount > 1:
-		var lbl := Label.new()
-		lbl.text = "x" + str(amount)
-		lbl.size = Vector2(56.0, 16.0)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
-		container.add_child(lbl)
+		# 源魂石/碎片数量同为 prop_amount 贴图数字（:806/:823 同一 getNumberNode）。
+		var num := NumberNode.build(str(amount), "prop_amount", -1.0)
+		NumberNode.place_right(num, AMOUNT_RIGHT_X, frame_h - AMOUNT_CENTER_Y_UP)
+		container.add_child(num)
 	return container
 
 
@@ -264,12 +262,10 @@ static func create_fragment_icon(id: int, amount: int, cm: Variant, quality: int
 	if quality <= 0:
 		quality = _get_quality(id, false, cm)
 	var frame := _load_sprite(FRAGMENT_FRAME_DIR + _frame_color(quality) + ".png", DEFAULT_ICON)
-	container.add_child(frame)
 	var frame_h: float = _vis_size(frame).y
 	var frame_w: float = _vis_size(frame).x
 	var bg := _load_sprite(FRAGMENT_BG_PATH, DEFAULT_ICON)
-	bg.z_index = -2   # 源 :546 bg:addChild(equipBg, -2)：衬底在 frame 之下
-	bg.set_meta(&"underlay", true)   # 衬底标记（package strip 用）
+	bg.set_meta(&"underlay", true)   # 源 :546 bg:addChild(equipBg, -2)：衬底在 frame 之下（层序=add 顺序）
 	container.add_child(bg)
 	var icon_path := _get_icon_path(id, false, cm)
 	if icon_path != "":
@@ -280,18 +276,16 @@ static func create_fragment_icon(id: int, amount: int, cm: Variant, quality: int
 			icon.scale = Vector2(target / icon.texture.get_size().x, target / icon.texture.get_size().x)
 		_place_center(icon, Vector2(36.0, 38.0), frame_h)
 		_apply_stencil(icon, FRAGMENT_STENCIL_PATH, 0.5)   # 源 :552 createClippingNode(fragment_stencil)
-		icon.z_index = -1   # 源 :558 bg:addChild(stone, -1)：内容在 frame 之下
-		container.add_child(icon)
+		container.add_child(icon)   # 源 :558 bg:addChild(stone, -1)：内容在 frame 之下
+	container.add_child(frame)
 	var tag := _load_sprite(FRAGMENT_TAG_PATH, DEFAULT_ICON)
 	_place_center(tag, STONE_TAG_CENTER_UP, frame_h)
 	container.add_child(tag)
 	if amount > 1:
-		var lbl := Label.new()
-		lbl.text = "x" + str(amount)
-		lbl.size = Vector2(56.0, 16.0)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.position = Vector2(AMOUNT_RIGHT_X - 56.0, frame_h - AMOUNT_CENTER_Y_UP - 8.0)
-		container.add_child(lbl)
+		# 源魂石/碎片数量同为 prop_amount 贴图数字（:806/:823 同一 getNumberNode）。
+		var num := NumberNode.build(str(amount), "prop_amount", -1.0)
+		NumberNode.place_right(num, AMOUNT_RIGHT_X, frame_h - AMOUNT_CENTER_Y_UP)
+		container.add_child(num)
 	return container
 
 

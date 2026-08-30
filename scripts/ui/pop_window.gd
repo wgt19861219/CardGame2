@@ -23,6 +23,10 @@ var _swallow: bool = true
 var play_open_sfx: bool = false
 # shade 全透明且不吞点击（原 10 文件静态 shade_layer.color.a=0 + IGNORE hack；pushScene 型面板 tscn 已带全屏 bg）。
 var transparent_shade: bool = false
+# 点击 shade 是否关闭弹窗（true=旧行为点外关闭；false=吞点击但不关，对齐源 popwindow.lua
+# 各面板 cfg 默认无点外关闭——herodetail {touch_priority=-130} 无 not_swallow/no_shade，
+# 源 CCLayerColor 黑半透只吞点击，关闭仅靠按钮。2026-08-29 用户反馈点详情页任意位置误返回）。
+var shade_close_on_click: bool = true
 # HudOverlay identity（非空时 show_window 切换 / remove_window 恢复打开前记录值；
 # 原 8 份 remove_window override 样板。嵌套弹窗（如 package→handbook）关内层恢复外层
 # identity 而非硬编码 main，否则 main 版含头像 HUD 透过外层弹窗显示（2026-08-20 用户反馈）。
@@ -56,11 +60,14 @@ func setup() -> void:
 	# 点外关闭，语义与原等价（container 全屏 IGNORE 不挡 shade 命中）。
 	add_child(container)
 	# 点击遮罩区域关闭弹窗（手游常见交互）。shade STOP 吞点击，gui_input 捕获后 remove_window。
+	# shade_close_on_click=false 时（对齐源 herodetail 等）仍吞点击但不触发关闭。
 	shade_layer.gui_input.connect(_on_shade_clicked)
 
 
-# 点击遮罩区域（弹窗外）→ 关闭弹窗
+# 点击遮罩区域（弹窗外）→ 关闭弹窗（shade_close_on_click=false 时仅吞点击不关，对齐源）。
 func _on_shade_clicked(event: InputEvent) -> void:
+	if not shade_close_on_click:
+		return
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		remove_window()
 
@@ -111,6 +118,11 @@ func set_swallow(swallow: bool) -> void:
 	_swallow = swallow
 	if shade_layer != null:
 		shade_layer.mouse_filter = Control.MOUSE_FILTER_STOP if _swallow else Control.MOUSE_FILTER_IGNORE
+
+
+## shade 点击关闭开关（false=吞点击不关，对齐源 herodetail 无点外关闭；默认 true 保持旧行为）。
+func set_shade_close_on_click(enabled: bool) -> void:
+	shade_close_on_click = enabled
 
 
 # 弹窗缩放入场（源 EaseBackOut 0.2s scale 0→1）。在 register_on_enter 回调里调用。

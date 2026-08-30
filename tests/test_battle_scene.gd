@@ -771,3 +771,38 @@ func test_speed_changed_with_projectile_actor_mixed() -> void:
 	scene._on_speed_changed(2)   # 修复前：对 Node2D 点 .puppet 即崩
 	assert_eq(scene.speed_state, 2, "速度档已切换")
 	fake_projectile.queue_free()
+
+
+# 2026-08-28 战斗域批次几何守卫：HUD 源直译坐标防回退（越屏/偏位根修）。
+# 计时器：源 battle_scene.lua:1341-1387 bg Scale9 106×44 anchor(0,0.5)@(610,440)→
+# Godot 显示区 (610,18)-(716,62)；hourglass MenuItemImage 原尺寸 40×80 中心 (677,437)→(697,43)。
+# 加速钮：源 :1236-1241 MenuItemImage 原尺寸 105×60 中心 (735,120)→Godot 左上 (682.5,330)。
+# 暂停钮：源 :1189-1191 createButtonWithMask（createSprite÷CS）中心 (757,440)→
+# 左上 (729.7,13.1)+scale 1/1.28125。
+func test_hud_geometry_source_translated() -> void:
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	var e := _make_unit(1, BattleEngine.CAMP_ENEMY, eng, Vector2(300, 0))
+	eng.add_unit(p)
+	eng.add_unit(e)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm)
+	scene.step(0.033)
+	# 计时器 bg：显示 106×44 at (610,18)（Sprite2D centered (663,40)+scale）
+	var t: BattleTimer = scene.timer
+	var bg := t.get_node("BattleTimerContent/Bg") as Sprite2D
+	assert_almost_eq(bg.position.x, 663.0, 0.5, "timer bg 中心 x=663（显示区 610-716 源直译）")
+	assert_almost_eq(bg.position.y, 40.0, 0.5, "timer bg 中心 y=40（显示区 18-62 源直译）")
+	var bg_w: float = bg.texture.get_width() * bg.scale.x
+	assert_almost_eq(bg_w, 106.0, 0.5, "timer bg 显示宽 106（源 Scale9 setContentSize）")
+	var hg := t.get_node("BattleTimerContent/Hourglass") as Sprite2D
+	assert_almost_eq(hg.position.x, 697.0, 0.5, "hourglass 中心 x=697（源 677+半宽 20）")
+	assert_almost_eq(hg.scale.x, 1.0, 0.01, "hourglass 原尺寸显示（MenuItemImage 不÷CS）")
+	# 加速钮：中心 (735,360) 原尺寸 105×60 → 左上 (682.5,330)
+	assert_almost_eq(scene.speed_btn.position.x, 682.5, 0.5, "speed btn 左上 x=682.5（中心 735−105/2）")
+	assert_almost_eq(scene.speed_btn.position.y, 330.0, 0.5, "speed btn 左上 y=330（中心 360−60/2）")
+	# 暂停钮：÷CS 54.6×53.9 中心 (757,40) → 左上 (729.7,13.1)
+	assert_almost_eq(scene.return_btn.position.x, 729.7, 0.1, "return btn 左上 x=729.7（÷CS 源直译）")
+	assert_almost_eq(scene.return_btn.position.y, 13.1, 0.1, "return btn 左上 y=13.1")
+	assert_almost_eq(scene.return_btn.scale.x, 1.0 / 1.28125, 0.001, "return btn scale=1/CS（createButtonWithMask÷CS）")
+	scene.queue_free()

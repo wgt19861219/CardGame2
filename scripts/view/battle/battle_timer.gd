@@ -9,9 +9,10 @@ extends Control
 ## scenes/battle/battle_timer_content.tscn（位置编辑器可视化调），
 ## Control 组件 content 挂 panel 自身（坑 7）。setup instantiate + get_node("%Xxx") as 取节点；
 ## 倒计时文本与 mask visible/<20s 红闪保留 fill 动态（update）。
-## 坐标现状：组件原点挂在 hud（hud 全屏 Control 原点=屏幕原点），内部子节点为 Godot 原生绝对坐标
-## （右上角布局：bg/mask (768,47)、hourglass (835,50)、text (780,69)，与暂停键(870,20)顶部对齐）。
-## 内部硬编码坐标的容器化留待后续阶段。
+## 坐标（2026-08-28 战斗域批次源直译，battle_scene.lua:1341-1387）：组件原点挂 hud（全屏
+## Control 原点=屏幕原点）。bg Scale9 106×44 at 左上 (610,18)（Sprite2D centered(663,40)+scale
+## 等价纯拉伸，金币标记同口径）；hourglass MenuItemImage 原尺寸 40×80 中心 (697,43)；
+## text 左缘 622/垂直中心 40（源 bg 内 (12,22)）。旧 (768,47) 圆盘系未拉伸+偏右越屏 22px 根修。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_timer_content.tscn")
 

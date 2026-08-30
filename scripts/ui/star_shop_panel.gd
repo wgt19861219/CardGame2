@@ -3,8 +3,11 @@ extends PopWindow
 
 ## 星辰商店面板（View 层）— 照源 ui/market/shop.lua create("starshop") + createStarList(:512)。
 ## 5 件灵魂石商品单行横滚布局 + box icon + 灵魂石消耗显示 + 点击弹 StarShopBuyWindow 确认。
-## 单机化：源 tavern_draw stone net → ShopManager.buy_star；源 time 行/showTalk 气泡/
+## 单机化：源 tavern_draw stone net → ShopManager.buy_star；源 showTalk 气泡/
 ## head_rect 点击区无对应系统裁剪（记录于批 2 Task 4 验收）。
+## 倒计时行（批 E E4 补，2026-08-27）：源 shop.lua:648-698 timeRefresh 每秒 +
+## :801-851 time_title_node——starshop 恒 expire 态（停留 30 天，源 local_server 写死），
+## 到期 Toast+关面板（照 shop_panel._on_expire 单机化范式）。
 ##
 ## 批 2 两件套改造（2026-08-16）：chrome 静态化进 scenes/ui/star_shop_content.tscn
 ## （frame/title 图÷CS 照源 rect + draglist cliprect 直译），商品格 8 节点模板化
@@ -35,6 +38,12 @@ const STAR_BOX_RES: Array[String] = ["shop_star_box_1.png", "shop_star_box_2.png
 const GOODS_NAME_LSTR: Array[String] = ["PARAMETER.SMALL_PLANET_DEBRIS_BOX", "PARAMETER.MEDIUM_STELLAR_SUITCASE", "PARAMETER.LARGE_INTERSTELLAR_GALLERY"]
 const COST_TITLE_LSTR: String = "ITEMSTARSHOP.NEED_TO_CONSUME_THE_SOUL_STONE"
 const STONE_SHORT_LSTR: String = "SHOP.SOUL_STONE_QUANTITY_IS_INSUFFICIENT_YOU_CANNOT_BUY_"
+# E4 倒计时行文案（源 shop.lua:757-759 expire 态：MERCHANT_LEAVES_AFTER + TIMES）
+const TIME_TITLE_LSTR: String = "SHOP.MERCHANT_LEAVES_AFTER"
+const TIME_SUFFIX_LSTR: String = "SHOP.TIMES"
+# 到期 Toast（源 shop.lua:691 alertDialog 文案，单机化 Toast 替代）
+const DRIFT_LSTR: String = "SHOP.THE_MYSTERIOUS_BUSINESSMAN_HAS_DRIFTED_AWAY_PLEASE_BE_QUICK_NEXT_TIME_"
+const TIME_CHECK_INTERVAL: float = 1.0   # _process 轮询间隔（源 timeRefresh 每秒）
 # 价格色（源 marketconfig costLabelColor + refreshCostLabel :75-86 不足红）
 const COST_COLOR_OK: Color = Color(150.0 / 255.0, 236.0 / 255.0, 255.0 / 255.0)
 const COST_COLOR_SHORT: Color = Color(1.0, 0.0, 0.0)
@@ -45,6 +54,8 @@ var pd: PlayerData = null
 var rng: BattleRng
 var _item_layer: Control
 var _rows: Array = []   # 行 fill 句柄 {root,stone_name,none_tag,stone_id,cost,amount}
+var _time_label: Label = null
+var _time_accum: float = 0.0   # _process 每秒轮询累加器（源 timeRefresh:648-698 每秒）
 
 
 func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void:
@@ -56,7 +67,7 @@ func setup_panel(p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void
 	cm = pd.cm
 	setup()
 	hud_identity = "starshop"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
-	shop_mgr.open_star_shop()
+	shop_mgr.open_star_shop(pd)   # E4：开店 expire 初始化（now+30 天）+ 生成商品
 	# 本项目单机化 pushScene→PopWindow，故 shade 透明 + .tscn %FrameworkBg 补 bg.jpg 还原源视觉（同 PackagePanel 范式）。
 	_build_content()
 
@@ -70,6 +81,11 @@ func _build_content() -> void:
 		remove_window())
 	_item_layer = content.get_node("%ItemLayer") as Control
 	_item_layer.custom_minimum_size = Vector2(LIST_MIN_W, LIST_MIN_H)
+	# E4 倒计时行 fill：标题/后缀 LSTR（源 shop.lua:757 expire 态文案），值每秒刷新
+	_time_label = content.get_node("%TimeLabel") as Label
+	(content.get_node("%TimeTitle") as Label).text = cm.get_lstr(TIME_TITLE_LSTR)
+	(content.get_node("%TimeSuffix") as Label).text = cm.get_lstr(TIME_SUFFIX_LSTR)
+	_update_time_label()
 	_build_goods()
 
 
@@ -113,8 +129,10 @@ func _fill_row(row: TextureButton, g: Dictionary) -> void:
 
 
 # 灵魂石消耗 icon（源 :568-576 createIcon(stone_id,46) anchor(0,0) at(0,0)）：
-# scale=46/94 → 视觉 46×46.49（源显示 74.13×46/73.37 同值）；左下对齐（Godot y=容器高-视觉高）；
-# Equip 表缺 8/9/10 条目 → 默认降级框，数据补齐自动恢复。
+# stone_id 8/9/10 系 hero id（源 player.lua:1178 itemType id<100="hero"）→ createIcon 走
+# Unit.Portrait 英雄头像分支（批 E E3 订正：非 Equip 表条目，链路本通；空框根因系
+# readequip_icon 旧负 z_index 钻宿主 item_bg 底下，2026-08-27 已修）。
+# scale=46/94 → 视觉 46×46.49（源显示 74.13×46/73.37 同值）；左下对齐（Godot y=容器高-视觉高）。
 func _fill_stone_icon(host: Control, stone_id: int) -> void:
 	var icon := ReadequipIcon.create_icon(stone_id, 0, cm)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -162,3 +180,32 @@ func _rebuild() -> void:
 	for c in _item_layer.get_children():
 		c.free()
 	_build_goods()
+
+
+# ---- E4 倒计时（源 shop.lua:648-698 timeRefresh 每秒 + :686-694 到期分支）----
+
+func _now() -> int:
+	return int(Time.get_unix_time_from_system())
+
+
+# 刷新倒计时值（源 :662 ed.gethmsNString(time)；到期清记录前最后显示 00:00:00）。
+func _update_time_label() -> void:
+	if _time_label == null:
+		return
+	var desc: String = shop_mgr.get_expire_desc(ShopManager.STARSHOP_SHOP_ID, pd, _now())
+	_time_label.text = desc if desc != "" else "00:00:00"
+
+
+# 每秒轮询：到期检查（Toast+清记录+关面板，源 alertDialog+popScene 单机化，照 shop_panel
+# _on_expire 范式）→ 未到期刷新倒计时值。starshop Refresh Times 空 → 无 auto refresh 分支。
+func _process(delta: float) -> void:
+	_time_accum += delta
+	if _time_accum < TIME_CHECK_INTERVAL:
+		return
+	_time_accum = 0.0
+	if shop_mgr.check_expire(ShopManager.STARSHOP_SHOP_ID, pd, _now()):
+		Toast.show_message(cm.get_lstr(DRIFT_LSTR))
+		shop_mgr.clear_expire(ShopManager.STARSHOP_SHOP_ID, pd)
+		call_deferred("remove_window")
+		return
+	_update_time_label()

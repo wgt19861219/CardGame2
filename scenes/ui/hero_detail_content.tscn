@@ -17,6 +17,9 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_card_tab.tscn" id="13_iaufn"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_detail_tab.tscn" id="14_1fkl1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hero_detail_skill_tab.tscn" id="15_o4jsg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_advance_bg.png" id="18_equipa"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_advance_bg2.png" id="19_equipb"]
+[ext_resource type="PackedScene" path="res://scenes/ui/evolve_equip_content.tscn" id="20_evleq"]
 
 [node name="HeroDetailContent" type="Control" unique_id=109460258]
 layout_mode = 3
@@ -75,11 +78,13 @@ expand_mode = 1
 [node name="TypeIcon" type="TextureRect" parent="BaseLayer" unique_id=1510124278]
 unique_name_in_owner = true
 layout_mode = 0
-; 源 window.lua:2013 type_icon ccp(122,204) 挂 ui.bg → 中心 (320.5,258.5)。
-offset_left = 300.5
-offset_top = 238.5
-offset_right = 340.5
-offset_bottom = 278.5
+; 源 window.lua:2013 type_icon ccp(122,204) 挂 ui.bg → 中心 (320.5,258.5)、右缘间隙 7.3。
+; 显示尺寸 2026-08-29 用户四轮定谳终态：39.8×39.8=与 NameBg 等高（59÷CS 再等比缩），垂直与框齐平
+; （top/bottom=框同值），右缘 343.5 保持源直译间隙 7.3；用户裁决链 46 框外→36.8 框内→46 框外→39.8 框外等高。
+offset_left = 303.7
+offset_top = 240.6
+offset_right = 343.5
+offset_bottom = 280.4
 mouse_filter = 2
 expand_mode = 1
 
@@ -87,10 +92,14 @@ expand_mode = 1
 unique_name_in_owner = true
 layout_mode = 0
 ; 源 createHeroName：name 居 name_bg 中心（nbx±65 钳宽）→ 随 NameBg 平移。
+; Godot Label 默认左上对齐，须显式水平/垂直居中，否则短名贴左缘（2026-08-29 实测"船长"偏左 50px）。
+; 垂直 2026-08-29 二修：rect 中心较框心低 2px+字形行盒偏下，实测留白上 13.5/下 7 → 上移 3.25 对齐框中心。
 offset_left = 355.0
-offset_top = 248.5
+offset_top = 245.25
 offset_right = 495.0
-offset_bottom = 276.5
+offset_bottom = 273.25
+horizontal_alignment = 1
+vertical_alignment = 1
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 
@@ -592,6 +601,20 @@ texture_normal = ExtResource("17_arrow_r")
 ignore_texture_size = true
 stretch_mode = 0
 
+[node name="EquipAdvanceBtn" type="TextureButton" parent="BaseLayer" unique_id=710100001]
+unique_name_in_owner = true
+layout_mode = 0
+; 源 window.lua:1632-1639 equip anchor(0,1)@ccp(100,410) 挂 bbContainer（原点=bg 左下 (198.5,462.5)）
+; → Godot 左上 (298.5,52.5)；显示=纹理 60×51÷CS=46.83×39.80。点击走 tab 互斥+侧滑（panel TAB_EQUIP）。
+offset_left = 298.5
+offset_top = 52.5
+offset_right = 345.33
+offset_bottom = 92.3
+texture_normal = ExtResource("18_equipa")
+texture_pressed = ExtResource("19_equipb")
+ignore_texture_size = true
+stretch_mode = 0
+
 [node name="TabCardView" type="Control" parent="." unique_id=1958418760 instance=ExtResource("13_iaufn")]
 unique_name_in_owner = true
 visible = false
@@ -629,6 +652,22 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 ; 止态 -200 = 源 pop endPos（window.lua:386）；子节点=源 skillstren.lua 声明坐标直译。
+offset_left = -200.0
+offset_right = -200.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TabEquipView" type="Control" parent="." unique_id=710100002 instance=ExtResource("20_evleq")]
+unique_name_in_owner = true
+visible = false
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+; 装备进阶列表（源 evolveequip.lua 独立弹窗 → 本项目并入 tab 侧滑系统，panel TAB_EQUIP）；
+; 止态 -200 同三 tab（源独立 pop 终点 (0,0)+bg@ccp(400,240) 已并入子场景全屏系直译）。
 offset_left = -200.0
 offset_right = -200.0
 grow_horizontal = 2

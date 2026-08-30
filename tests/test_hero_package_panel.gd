@@ -93,8 +93,13 @@ func test_grid_item_scaled_no_overlap() -> void:
 			items.append(c)
 	assert_gt(items.size(), 1, "≥2 item 验证同行重叠")
 	var first: HeroPackageItem = items[0]
-	assert_almost_eq(first.scale.x, 1.0 / HeroPackageItem.CONTENT_SCALE, 0.01, "item scale=1/CS（0.78）补偿 contentScaleFactor")
-	# 同行前两 item 的 bg 全局 rect 不重叠
+	assert_almost_eq(first.scale.x, 1.0, 0.01, "item 无整卡缩放（2026-08-28 根修拆 1/CS 链，点空间直译）")
+	# bg 显示尺寸 = 313×123px ÷CS = 244.34×96.00（源 createSprite 无条目 → 纹理/CS）
+	var bg0: TextureRect = _first_texture(first)
+	if bg0 != null:
+		assert_almost_eq(bg0.size.x, 313.0 / HeroPackageItem.CONTENT_SCALE, 0.5, "bg 显示宽=313/CS")
+		assert_almost_eq(bg0.size.y, 123.0 / HeroPackageItem.CONTENT_SCALE, 0.5, "bg 显示高=123/CS")
+	# 同行前两 item 的 bg 全局 rect 不重叠（源列距 260 > bg 244.34，间隙 15.66）
 	var bg1: TextureRect = _first_texture(items[0])
 	var bg2: TextureRect = _first_texture(items[1])
 	if bg1 != null and bg2 != null:
@@ -102,7 +107,7 @@ func test_grid_item_scaled_no_overlap() -> void:
 		var r2: Rect2 = bg2.get_global_rect()
 		var gap: float = r2.position.x - r1.end.x
 		print("bg1=" + str(r1) + " bg2=" + str(r2) + " gap=" + str(gap))
-		assert_true(gap > 0.0, "同行 bg 不重叠（gap=" + str(gap) + "）")
+		assert_almost_eq(gap, 260.0 - 313.0 / HeroPackageItem.CONTENT_SCALE, 1.0, "列间隙=260−bg宽≈15.7（源）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -117,18 +122,19 @@ func test_tab_zorder_matches_source() -> void:
 	var panel := HeroPackagePanel.new("heropackage", {})
 	panel.setup_panel(mgr, cm)
 	panel.show_window(root)
-	# 默认 clid="all"：选中 tab z=3（凸出），其余 z=1（被 list_bg z=2 挡）
-	assert_eq((panel._tabs["all"] as TextureButton).z_index, 3, "all 选中 z=3")
-	assert_eq((panel._tabs["front"] as TextureButton).z_index, 1, "front 未选中 z=1")
-	# 静态 z（照源 ui_info z 值）：ListBg=2 / label=4 / HeroScroll(draglist)=10
+	# 默认 clid="all"：选中 tab z=13（凸出），其余 z=11（2026-08-28 根修：源 3/1 相对关系 + 11 基准位，
+	# HeroScroll z10 全宽化后 tab 恒在其上保点击）
+	assert_eq((panel._tabs["all"] as TextureButton).z_index, 13, "all 选中 z=13")
+	assert_eq((panel._tabs["front"] as TextureButton).z_index, 11, "front 未选中 z=11")
+	# 静态 z（照源 ui_info z 值）：ListBg=2 / label=12 / HeroScroll(draglist)=10
 	var content: Control = panel._scroll.get_parent() as Control
 	assert_eq((content.get_node("ListBg") as TextureRect).z_index, 2, "ListBg z=2（源 list_bg）")
-	assert_eq((panel._tab_labels["all"] as Label).z_index, 4, "label z=4（源 buttonLabel）")
+	assert_eq((panel._tab_labels["all"] as Label).z_index, 15, "label z=15（恒在按钮 z11/13 上；旧 12 被选中按钮 13 盖文字回归）")
 	assert_eq(panel._scroll.z_index, 10, "HeroScroll z=10（源 draglist zorder）")
-	# 切到 front：front 升 z=3，all 回 z=1
+	# 切到 front：front 升 z=13，all 回 z=11
 	panel._on_tab_pressed("front")
-	assert_eq((panel._tabs["front"] as TextureButton).z_index, 3, "切 front 后 front z=3")
-	assert_eq((panel._tabs["all"] as TextureButton).z_index, 1, "切 front 后 all 回 z=1")
+	assert_eq((panel._tabs["front"] as TextureButton).z_index, 13, "切 front 后 front z=13")
+	assert_eq((panel._tabs["all"] as TextureButton).z_index, 11, "切 front 后 all 回 z=11")
 	panel.remove_window()
 	root.queue_free()
 
@@ -220,8 +226,12 @@ func test_content_static_zorder() -> void:
 	var inst: Control = _instantiate_content()
 	assert_eq((inst.get_node("ListBg") as CanvasItem).z_index, 2, "ListBg z=2（tscn 固化）")
 	assert_eq((inst.get_node("%HeroScroll") as CanvasItem).z_index, 10, "HeroScroll z=10（tscn 固化）")
+	# 2026-08-28 根修：HeroScroll 照源 cliprect 全宽化（z10）→ tab btn z=11/label z=15 恒在其上保点击；
+	# label 15 > 选中按钮 13（z12 时选中 tab 文字被按钮贴图盖住，PIL 白像素 11 vs 正常 1501 实证）
+	for name in ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn"]:
+		assert_eq((inst.get_node("%" + name) as CanvasItem).z_index, 11, name + " z=11（tscn 固化）")
 	for name in ["TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]:
-		assert_eq((inst.get_node("%" + name) as CanvasItem).z_index, 4, name + " z=4（tscn 固化）")
+		assert_eq((inst.get_node("%" + name) as CanvasItem).z_index, 15, name + " z=15（tscn 固化，恒在按钮上）")
 
 
 # listLine 行模板（源 prepareLoad:398-411：line 300×16 + equip_detail_title_bg 388×22 + size20 标题）。
@@ -258,7 +268,7 @@ func test_list_line_position_follows_source() -> void:
 			break
 	assert_not_null(line, "存在分隔线（1 拥有 + miss 分界）")
 	if line != null:
-		assert_almost_eq(line.position.x + line.size.x * 0.5, 260.0, 1.0, "line 中心 x=中缝 260（源 365）")
+		assert_almost_eq(line.position.x + line.size.x * 0.5, 365.0, 1.0, "line 中心 x=中缝 365 全屏（源 getLinepos；2026-08-28 根修 scroll 全宽后 GridHost 局部=全屏）")
 		assert_almost_eq(line.position.y + line.size.y * 0.5, 115.0, 1.0, "line 中心 y=边界 100+gap 半 15（源 gap 中点）")
 	panel.remove_window()
 	root.queue_free()

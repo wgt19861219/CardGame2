@@ -66,28 +66,29 @@ func test_guildliveness_branch() -> void:
 	assert_eq(int(items[0]["level"]), 0, "公会榜无 level（源 _guild_summary 结构）")
 
 
-# P0-7：源 ranklist.lua:1318-1571 createMyselfRankSummary。self_rank<=2 不建浮窗（前 2 已列表显）。
-func test_overlay_skipped_when_rank_le_2() -> void:
+# 批 C（2026-08-27）：浮窗显示条件照源 :1330 判 tab mode（pvp 不建；旧 RANK_TOP_VISIBLE_MAX
+# 「前 2 不叠」系误读撤销——源无排名数判断，rank<=3 浮窗内用徽章图）。
+func test_overlay_skipped_for_pvp_mode() -> void:
 	var parent := Control.new()
 	add_child(parent)
-	var page1: Control = RanklistMyselfOverlay.build(parent, 1, "P", 10, "")
-	var page2: Control = RanklistMyselfOverlay.build(parent, 2, "P", 10, "")
-	assert_null(page1, "self_rank=1 不建浮窗（前 2 已列表显）")
-	assert_null(page2, "self_rank=2 不建浮窗")
+	var page_pvp: Control = RanklistMyselfOverlay.build(parent, cm, "pvp", 5, 100, "P", 10, 1)
+	assert_null(page_pvp, "pvp mode 不建浮窗（源 :1330 index==1 排除）")
+	var page_r: Control = RanklistMyselfOverlay.build(parent, cm, "pvp_r", 5, 100, "P", 10, 1)
+	assert_not_null(page_r, "pvp_r mode 建浮窗（源 :1330 只排 1/2，12 不在排除列）")
 	parent.queue_free()
 
 
-# P0-7：self_rank>2 建浮窗（pageContainer > board ranklist_my_bg + 排名 + up 箭头 + delta + name）。
+# P0-7：非 pvp mode 建浮窗（pageContainer > board ranklist_my_bg + 排名 + up 箭头 + delta + name）。
 func test_overlay_built_when_rank_gt_2() -> void:
 	var parent := Control.new()
 	add_child(parent)
-	var page: Control = RanklistMyselfOverlay.build(parent, 5, "测试玩家", 30, "")
+	var page: Control = RanklistMyselfOverlay.build(parent, cm, "full_hero_gs", 5, 1234, "测试玩家", 30, 1)
 	assert_not_null(page, "self_rank=5 建浮窗 pageContainer")
 	assert_eq(page.name, "PageContainer", "pageContainer 节点名")
 	assert_eq(page.get_child_count(), 1, "page > board（ranklist_my_bg）")
 	var board: TextureRect = page.get_child(0) as TextureRect
 	assert_not_null(board, "board 是 ranklist_my_bg TextureRect")
-	# board 含 rank 数字 + arrow + hint + delta + name（5 个子）
+	# board 含 rank 数字 + arrow + hint + delta + nameBg/name + level + tips/value 多子
 	assert_gte(board.get_child_count(), 4, "board 含 rank/arrow/hint/delta/name 多子")
 	# delta>0（rank=5，prev=0 单机）→ 应有 pvp_up 箭头（资源存在）
 	var has_arrow: bool = false
@@ -99,20 +100,20 @@ func test_overlay_built_when_rank_gt_2() -> void:
 	parent.queue_free()
 
 
-# P0-7：>3 排名用数字 Label（#N），1/2/3 用徽章图（资源存在时）。
+# P0-7：>3 排名用 big_pvp 贴图数字，1/2/3 用裸版徽章图（批 C HC multilanguage 补源）。
 func test_overlay_rank_3_uses_badge_or_number() -> void:
 	var parent := Control.new()
 	add_child(parent)
-	var page: Control = RanklistMyselfOverlay.build(parent, 3, "P", 10, "")
+	var page: Control = RanklistMyselfOverlay.build(parent, cm, "full_hero_gs", 3, 10, "P", 10, 1)
 	assert_not_null(page, "self_rank=3 建浮窗")
 	var board: TextureRect = page.get_child(0) as TextureRect
-	# 3rd 徽章资源存在 → TextureRect（pvp_rank_3rd_star）；否则数字 Label
+	# 3rd 裸版徽章（批 C 补源 pvp_rank_3rd.png，非 _star 变体）
 	var has_badge: bool = false
 	for c in board.get_children():
 		if c is TextureRect and c.texture != null and String(c.texture.resource_path).find("pvp_rank_3rd") >= 0:
 			has_badge = true
 			break
-	assert_true(has_badge, "self_rank=3 → 3rd 徽章图（资源存在）")
+	assert_true(has_badge, "self_rank=3 → 3rd 裸版徽章图（批 C 补源）")
 	parent.queue_free()
 
 
@@ -205,8 +206,9 @@ func test_content_no_arrows_and_no_theme_override() -> void:
 	assert_eq(tscn_text.count("theme_override_font_sizes"), 0, "tscn 无 font_size override（走 variation）")
 
 
-# tab 树静态常驻（源 ranklisttree 2 组 4 子 + createRankBtn :2005-2175 按钮贴图/Label 18 号）。
-# 折叠 = 子按钮 visible 切换 + 重排（fill），不再 procedural 重建（SOP visible 切换条款）。
+# tab 树静态常驻（源 ranklisttree 3 组 5 子 + createRankBtn :2005-2175 按钮贴图/Label 18 号）。
+# 批 C 补全实时/公会两钮（旧 2 组 4 子受控裁剪撤销——guildliveness 假榜 manager 已就绪，
+# pvp_r 复用 pvp 假数据受控偏离）。折叠 = 子按钮 visible 切换 + 重排（fill）。
 func test_tab_buttons_static_six() -> void:
 	var content := _instantiate_content()
 	var host: Control = content.get_node("%TabHost") as Control
@@ -215,16 +217,23 @@ func test_tab_buttons_static_six() -> void:
 	for c in host.get_children():
 		if c is TextureButton:
 			btns.append(c)
-	assert_eq(btns.size(), 6, "6 静态 tab 按钮（2 组 + 4 子，单机化 2 分组 4 子项）")
+	assert_eq(btns.size(), 9, "9 静态 tab 按钮（3 组 + 6 子：竞技场 2/战力 3/公会 1，批 C 补实时/公会）")
 	var group_arena: TextureButton = content.get_node("%GroupArena") as TextureButton
 	assert_eq(group_arena.size, Vector2(135.0, 59.0), "组按钮 135×59（源 DGSizeMake(173,75)=(135.16,58.59)）")
 	var sub_pvp: TextureButton = content.get_node("%SubPvp") as TextureButton
 	var lbl: Label = sub_pvp.get_child(0) as Label
 	assert_eq(lbl.text, "竞技场每日排名", "子 tab 文本 LSTR ARENADAY（源 rankconfig[1]）")
 	assert_eq(String(lbl.theme_type_variation), "RanklistSubTabSelLabel", "选中子 tab 走 variation")
-	# 默认组 2 折叠：子 3 个 visible=false
+	var sub_rt: TextureButton = content.get_node("%SubArenaRealtime") as TextureButton
+	assert_eq((sub_rt.get_child(0) as Label).text, "竞技场(实时)", "实时子 tab 文本（源 rankconfig[12] ARENAREALTIME）")
+	var guild_btn: TextureButton = content.get_node("%GroupGuild") as TextureButton
+	assert_eq((guild_btn.get_child(0) as Label).text, "公会", "公会组文本（源 ranklisttree[3] RANKLIST.GUILD）")
+	var sub_ga: TextureButton = content.get_node("%SubGuildActive") as TextureButton
+	assert_eq((sub_ga.get_child(0) as Label).text, "公会活跃排名", "公会子 tab 文本（源 rankconfig[3] GUILDACTIVE）")
+	# 默认组 2/3 折叠：子按钮 visible=false
 	var sub_gs: TextureButton = content.get_node("%SubFullHeroGs") as TextureButton
 	assert_false(sub_gs.visible, "默认战力组折叠（源 ranklisttree[2].collapsed=true）")
+	assert_false(sub_ga.visible, "默认公会组折叠（源 ranklisttree[3].collapsed=true）")
 	content.queue_free()
 
 
@@ -236,12 +245,16 @@ func test_theme_registers_ranklist_variations() -> void:
 		"RanklistSubTabSelLabel", "RanklistSubTabLabel", "RanklistRowRecordLabel",
 		"RanklistSummaryTitleLabel", "RanklistSummaryValueLabel",
 		"RanklistOverlayHintLabel", "RanklistOverlayDeltaLabel", "RanklistWhiteLabel18",
+		"RanklistLevelLabel20", "RanklistOverlayValueLabel",
+		"LadderRulesSectionLabel", "LadderRulesBodyLabel",
 	]:
 		assert_true(theme_text.find("%s/base_type" % v) != -1, "theme 注册 %s" % v)
 
 
 # panel fill 化：行板 Scale9 化（源 initCommonItemHandler :780-793 board capInsets DG(65,25,545,25)
 # ×贴图 638×97px → patch L=65 T=97-25-25=47 R=638-65-545=28 B=25；scaleSize DG(650,95)=(507.81,74.22)）。
+# 批 C（2026-08-27）：pvp mode 不叠浮窗（源 :1330）→ 无 spacer；self_rank 榜内替换 NPC（me_bg
+# 高亮）→ 行数恒 20。
 func test_panel_rows_after_setup() -> void:
 	var rm := RanklistManager.new()
 	var pd := PlayerData.new(cm)
@@ -250,13 +263,8 @@ func test_panel_rows_after_setup() -> void:
 	add_child(panel)
 	var rows: VBoxContainer = panel.container.get_node("RanklistContent/%ScrollLayer/%Rows") as VBoxContainer
 	assert_not_null(rows, "Rows 行容器（%ScrollLayer/%Rows）")
-	# 2026-08-18 修复轮二 R1：self_rank>2 时浮窗显示 → Rows 头部垫 80 spacer（源
-	# rankListMyselfOffsetY），子节点 = 1 spacer + 1 self + 20 = 22。
-	var expect_n: int = 22 if int(rm.generate_ranklist(pd, "pvp")["self_rank"]) > RanklistMyselfOverlay.RANK_TOP_VISIBLE_MAX else 21
-	assert_eq(rows.get_child_count(), expect_n, "行数（浮窗让位 spacer + 1 self + 20 NPC 假榜）")
+	assert_eq(rows.get_child_count(), 20, "pvp mode 行数=20（self 榜内替换 NPC，无浮窗 spacer）")
 	var first_row: Control = rows.get_child(0) as Control
-	if expect_n == 22:
-		first_row = rows.get_child(1) as Control   # 跳过 MyselfSpacer 取首行
 	var board: NinePatchRect = first_row.get_child(0) as NinePatchRect
 	assert_not_null(board, "行板 NinePatchRect（源 Scale9Sprite board）")
 	assert_eq(board.patch_margin_left, 40, "patch left=40（DG 65 ×0.78125=50.78 纹理px ÷CS）")
@@ -323,8 +331,12 @@ func test_layout_tabs_group1_pos_from_source() -> void:
 	assert_almost_eq(group1.position.y, -3.295, 0.05, "组1 pos=源 380（:1903 循环内先 -5 再用，非 385）")
 	var sub_pvp: TextureButton = host.get_node("SubPvp") as TextureButton
 	assert_almost_eq(sub_pvp.position.y, 48.705, 0.05, "组1 子 pc=源 333（380-47）")
+	var sub_rt: TextureButton = host.get_node("SubArenaRealtime") as TextureButton
+	assert_almost_eq(sub_rt.position.y, 95.705, 0.05, "组1 子2 pc=源 286（批 C 组1 双子）")
 	var group2: TextureButton = host.get_node("GroupFightvalue") as TextureButton
-	assert_almost_eq(group2.position.y, 100.705, 0.05, "组2 pos=源 276（展开尾 5+下组开头 5，gap=10 非 5）")
+	assert_almost_eq(group2.position.y, 147.705, 0.05, "组2 pos=源 229（组1 双子展开尾 gap10，批 C 下移一档）")
+	var group3: TextureButton = host.get_node("GroupGuild") as TextureButton
+	assert_almost_eq(group3.position.y, 199.705, 0.05, "组3 pos=源 177（组2 折叠 47 档）")
 	panel.queue_free()
 
 
@@ -341,4 +353,47 @@ func test_layout_tabs_collapsed_group_takes_no_space() -> void:
 	var sub_gs: TextureButton = host.get_node("SubFullHeroGs") as TextureButton
 	assert_true(sub_gs.visible, "组2 展开 → 子按钮可见")
 	assert_almost_eq(sub_gs.position.y, 100.705, 0.05, "组2 展开子1 pc=源 281（328-47）")
+	var sub_gs2: TextureButton = host.get_node("SubHeroTeamGs") as TextureButton
+	assert_almost_eq(sub_gs2.position.y, 147.705, 0.05, "组2 子2 pc=源 234")
+	var sub_gs3: TextureButton = host.get_node("SubHeroEvoStar") as TextureButton
+	assert_almost_eq(sub_gs3.position.y, 194.705, 0.05, "组2 子3 pc=源 187")
+	var group3: TextureButton = host.get_node("GroupGuild") as TextureButton
+	assert_almost_eq(group3.position.y, 246.705, 0.05, "组3 pos=源 130（组2 三子展开尾 gap10）")
 	panel.queue_free()
+
+
+# ==================== 批 C 组件守卫（2026-08-27 走查）====================
+
+func test_level_icon_center_anchor() -> void:
+	# LevelIcon 组合以 host 原点为中心（frame/lbl 各带 -fsz/2；调用方 position=中心锚点）。
+	# 旧实现左上锚（frame pos 0,0）致牌整体右下偏半宽/半高压名字（实机抓出）。
+	var icon := LevelIcon.build(99)
+	add_child(icon)
+	var frame: TextureRect = icon.get_child(0) as TextureRect
+	assert_almost_eq(frame.position.x, -frame.size.x * 0.5, 0.01, "frame 以原点居中（中心锚）")
+	assert_almost_eq(frame.position.y, -frame.size.y * 0.5, 0.01, "frame y 居中")
+	assert_almost_eq(icon.get_child(1).position.y, -frame.size.y * 0.5 + LevelIcon.LABEL_DY, 0.01, "label 中心-1（源 y+1 cocos 翻转）")
+	icon.queue_free()
+
+
+func test_team_head_icon_frame_offset() -> void:
+	# TeamHeadIcon：恒金框（源 :1058），frame 中心偏 (+13,+1)（cocos(13,-1) y 翻转），
+	# 头像 70pt 宽（getHeadIcon length 默认）+ portrait_mask shader。
+	var icon := TeamHeadIcon.build(cm, 1)
+	add_child(icon)
+	assert_eq(icon.get_child_count(), 2, "头像+金框两子")
+	var head: TextureRect = icon.get_child(0) as TextureRect
+	var frame: TextureRect = icon.get_child(1) as TextureRect
+	assert_almost_eq(head.size.x, 70.0, 0.5, "头像显示宽 70（getHeadIcon length 默认）")
+	assert_not_null(head.material, "头像挂 portrait_mask shader（源 ClippingNode 圆裁）")
+	assert_almost_eq(frame.position.x + frame.size.x * 0.5, TeamHeadIcon.FRAME_CENTER_OFFSET.x, 0.01, "金框中心 x=+13")
+	assert_almost_eq(frame.position.y + frame.size.y * 0.5, TeamHeadIcon.FRAME_CENTER_OFFSET.y, 0.01, "金框中心 y=+1（cocos -1 翻转）")
+	icon.queue_free()
+
+
+func test_guild_rows_carry_avatar() -> void:
+	# 批 C 公会榜行头像（GuildAvatar.Picture 直显降级）需 items 带 avatar（实机抓出缺失）。
+	var rm := RanklistManager.new()
+	var pd := PlayerData.new(cm)
+	var items: Array = rm.generate_ranklist(pd, "guildliveness")["items"]
+	assert_gte(int(items[0].get("avatar", 0)), 1, "公会行 avatar>=1（GuildAvatar 键）")

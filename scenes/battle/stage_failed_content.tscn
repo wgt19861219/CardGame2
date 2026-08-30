@@ -31,6 +31,7 @@ mouse_filter = 0
 
 [node name="Light" type="Sprite2D" parent="."]
 position = Vector2(325.0, 0.0)
+scale = Vector2(0.780488, 0.780488)
 texture = ExtResource("1_light")
 
 [node name="Title" type="Label" parent="."]
@@ -65,10 +66,10 @@ texture_pressed = ExtResource("5_menu_p")
 
 [node name="BattleStatist" type="Button" parent="."]
 layout_mode = 3
-offset_left = 505.833
-offset_top = 101.25
-offset_right = 564.167
-offset_bottom = 138.75
+offset_left = 500.0
+offset_top = 120.0
+offset_right = 570.0
+offset_bottom = 170.0
 
 [node name="PromptHost" type="Control" parent="."]
 unique_name_in_owner = true

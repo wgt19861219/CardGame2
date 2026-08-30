@@ -12,8 +12,12 @@
 ; ccp(400,220)；title shop_star_title.png(257x46px) 中心 ccp(403,382) → 显示
 ; 200.49x35.90；back 走 package 惯例 74x75px/CS（framework CCB 物件无源坐标）。
 ; draglist cliprect CCRectMake(65,35,670,325)（shop.lua:738）→ (145,200)-(815,525)。
-; 单机化裁剪不入树：time 行（无商店时间系统）、showTalk 气泡、head_rect 点击区、
-; StoneLabel（迁移发明常驻余额标签，源无面板级余额显示，不足以价格红字提示）。
+; 倒计时行（批 E E4 补，2026-08-27）：源 shop.lua:801-851 time_title_node HorizontalNode
+; 三 Label 横排中心 (400,350) → to_godot=(400,130)；starshop 恒 expire 态（停留 30 天）。
+; 横条隐藏（批 E E5）：源 draglist 无横向滚动条（starshop noshade），右缘竖条系
+; frame 贴图自带 → horizontal_scroll_mode=3 滚动保留指示不显示。
+; 单机化裁剪不入树：showTalk 气泡、head_rect 点击区、StoneLabel（迁移发明常驻余额标签，
+; 源无面板级余额显示，不足以价格红字提示）。
 ; 商品格行模板 star_shop_item.tscn fill 挂 %ItemLayer。
 
 [node name="StarShopContent" type="Control"]
@@ -67,7 +71,7 @@ texture_pressed = ExtResource("5_backp")
 ignore_texture_size = true
 stretch_mode = 0
 
-; 商品横滚区（源 draglist cliprect 直译；starshop noshade=true 无滚动遮罩）
+; 商品横滚区（源 draglist cliprect 直译；starshop noshade=true 无滚动遮罩；E5 横条不显示=3）
 [node name="GoodsScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
@@ -75,8 +79,41 @@ offset_left = 65.0
 offset_top = 120.0
 offset_right = 735.0
 offset_bottom = 445.0
-horizontal_scroll_mode = 1
+horizontal_scroll_mode = 3
 vertical_scroll_mode = 0
+
+; 倒计时行（源 HorizontalNode offset 10 间距；starshop 恒 expire 态：title「商人将于」+
+; gethmsNString 值 + suffix「后离开」，fill 见 star_shop_panel.gd _update_time_label）
+[node name="TimeRow" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.270833
+anchor_right = 0.5
+anchor_bottom = 0.270833
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="TimeTitle" type="Label" parent="TimeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StarShopTimeTitleLabel"
+mouse_filter = 2
+
+[node name="TimeLabel" type="Label" parent="TimeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StarShopTimeLabel"
+mouse_filter = 2
+
+[node name="TimeSuffix" type="Label" parent="TimeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StarShopTimeSuffixLabel"
+mouse_filter = 2
 
 ; 行宿主（源 draglist listLayer；custom_minimum_size fill 设 1100x325 = 源 getListWidth dx*5+40）
 [node name="ItemLayer" type="Control" parent="GoodsScroll"]

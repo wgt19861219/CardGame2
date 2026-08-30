@@ -23,7 +23,8 @@ const WIN_SCALE_DUR: float = 0.2
 const HERO_LEVEL_DUR: float = 0.5
 const NUMBER_JUMP_DUR: float = 1.0
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
-const WIN_TAG_POS: Vector2 = Vector2(378.0, 410.0)
+const CONTENT_SCALE: float = 1.28125   # 贴图÷CS 显示口径（批 G：win tag/星终点缩放基准）
+const WIN_TAG_POS: Vector2 = Vector2(378.0, 70.0)   # 批 G：源 star_pos[2] Cocos (378,410) 翻转（旧值 410 系未翻 y 直抄）
 const WIN_TAG_TEX: String = "stagedone_win_tag.png"
 const WIN_TAG_LIGHT_TEX: String = "stagedone_win_tag_light.png"
 const STAR_SFX_KEYS: Array[String] = [
@@ -88,7 +89,7 @@ func _play_star() -> void:
 		star.scale = Vector2.ZERO
 		var tw: Tween = _new_tween()
 		tw.tween_interval(STAR_DELAY_BASE + STAR_DELAY_STEP * i)
-		tw.tween_property(star, "scale", Vector2.ONE, STAR_SCALE_DUR) \
+		tw.tween_property(star, "scale", Vector2.ONE / CONTENT_SCALE, STAR_SCALE_DUR) \
 			.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 		tw.tween_callback(_play_sfx_star.bind(i))
 
@@ -106,7 +107,7 @@ func _play_win() -> void:
 	win.scale = Vector2.ZERO
 	_s.add_child(win)
 	var tw: Tween = _new_tween()
-	tw.tween_property(win, "scale", Vector2.ONE, WIN_SCALE_DUR) \
+	tw.tween_property(win, "scale", Vector2.ONE / CONTENT_SCALE, WIN_SCALE_DUR) \
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(_spawn_win_light.bind(win))
 
@@ -118,7 +119,7 @@ func _spawn_win_light(_win: Sprite2D) -> void:
 	_s.add_child(wl)
 	var wl_tw: Tween = _new_tween()
 	wl_tw.parallel().tween_property(wl, "modulate:a", 0.0, WIN_SCALE_DUR)
-	wl_tw.parallel().tween_property(wl, "scale", Vector2.ONE * 2.0, WIN_SCALE_DUR)
+	wl_tw.parallel().tween_property(wl, "scale", Vector2.ONE / CONTENT_SCALE * 2.0, WIN_SCALE_DUR)
 	wl_tw.tween_callback(wl.queue_free)
 
 

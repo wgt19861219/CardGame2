@@ -1,0 +1,71 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="1_popup"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-title-mark.png" id="2_tmark"]
+
+[node name="EvolveEquipContent" type="Control" unique_id=710100101]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PanelBg" type="TextureRect" parent="." unique_id=710100102]
+layout_mode = 0
+; 源 evolveequip.lua:137-144 bg herodetail-detail-popup @ccp(400,240) 中心锚（全屏系）；
+; 显示=纹理 369×570÷CS=288.0×445.12 → Godot rect (256,17.44)-(544,462.56)。
+offset_left = 256.0
+offset_top = 17.44
+offset_right = 544.0
+offset_bottom = 462.56
+mouse_filter = 2
+texture = ExtResource("1_popup")
+expand_mode = 1
+
+[node name="TitleMark" type="TextureRect" parent="." unique_id=710100103]
+layout_mode = 0
+; 源 :146-154 des_title_bg herodetail-title-mark @ccp(400,440) → Godot 中心 (400,40)；
+; 显示=纹理 289×15÷CS=225.56×11.71。
+offset_left = 287.22
+offset_top = 34.15
+offset_right = 512.78
+offset_bottom = 45.86
+mouse_filter = 2
+texture = ExtResource("2_tmark")
+expand_mode = 1
+
+[node name="TitleLabel" type="Label" parent="." unique_id=710100104]
+layout_mode = 0
+; 源 :156-171 des_title T(LSTR EQUIP.EVOLUTION) size 20 金黄 ccc3(251,206,16) @ccp(400,440)。
+; LSTR.json/zh-CN 均缺该 key（源 zh-CN.lua 同缺）→ 静态中文（源英文 key 缺失时 T() 显示 key，本项目以中文兜底）。
+offset_left = 350.0
+offset_top = 25.0
+offset_right = 450.0
+offset_bottom = 55.0
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
+text = "装备进阶"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="EquipScroll" type="ScrollContainer" parent="." unique_id=710100105]
+unique_name_in_owner = true
+layout_mode = 0
+; 源 :175-180 draglist cliprect CCRectMake(17,15,255,395) 挂 bg（bg 显示系原点左下）：
+; left=256+17=273、bottom=462.56-15=447.56、top=447.56-395=52.56、right=273+255=528。
+; 垂直滚动条视觉由 EvolveEquipFills._hide_scroll_bar 覆盖（引擎缺口例外，同 detail tab）。
+offset_left = 273.0
+offset_top = 52.56
+offset_right = 528.0
+offset_bottom = 447.56
+horizontal_scroll_mode = 0
+
+[node name="RowContainer" type="VBoxContainer" parent="EquipScroll" unique_id=710100106]
+unique_name_in_owner = true
+layout_mode = 2
+; 源 createEquipList:116 行距 (itemHeight+8)：行高 200 由行节点 custom_minimum_size，间距 8=separation。
+separation = 8
+mouse_filter = 2

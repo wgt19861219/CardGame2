@@ -17,7 +17,7 @@ func _make_param(stars: int = 2) -> Dictionary:
 		"exp": 100, "gold": 500,
 		# pre（动画起点）+ t（终态）双态字段（源 hero_info：level/exp/max_exp 为 pre，t_* 为终态）
 		"heroes": [
-			{"id": 1, "rank": 1, "level": 3, "exp": 20, "max_exp": 80,
+			{"id": 1, "rank": 1, "level": 3, "exp": 20, "max_exp": 80, "stars": 3,
 			 "t_level": 5, "t_exp": 50, "t_max_exp": 100, "add_hero_exp": 30},
 			{"id": 2, "rank": 1, "level": 4, "exp": 10, "max_exp": 60,
 			 "t_level": 4, "t_exp": 10, "t_max_exp": 60, "add_hero_exp": 30},
@@ -99,11 +99,12 @@ func test_skip_sets_labels() -> void:
 
 
 func test_skip_stars_final() -> void:
-	# stars=2 → skip 后 Star1/Star2 scale=1，Star3 scale=0
+	# stars=2 → skip 后 Star1/Star2 scale=1/CS（÷CS 显示口径，批 G 2026-08-28），Star3 scale=0
 	var scene := _make_scene(2)
 	scene.skip_anim()
-	assert_eq((scene._content.get_node("%Star1") as Sprite2D).scale, Vector2.ONE, "Star1 scale=1（stars=2）")
-	assert_eq((scene._content.get_node("%Star2") as Sprite2D).scale, Vector2.ONE, "Star2 scale=1")
+	var star_final: Vector2 = Vector2.ONE / StageDoneScene.CONTENT_SCALE
+	assert_eq((scene._content.get_node("%Star1") as Sprite2D).scale, star_final, "Star1 scale=1/CS（stars=2）")
+	assert_eq((scene._content.get_node("%Star2") as Sprite2D).scale, star_final, "Star2 scale=1/CS")
 	# Star3（stars=2 时第3颗）未在 skip 终态设置，保留初始+tween 微小残留，用容差
 	assert_almost_eq((scene._content.get_node("%Star3") as Sprite2D).scale.x, 0.0, 0.01, "Star3 scale≈0")
 	scene.queue_free()
@@ -187,7 +188,7 @@ func test_battle_statist_node_created() -> void:
 # P1-16：InfoBg 子节点含 4 装饰背景 + gold_icon + exp_icon（照源 :1457-1618/1713-1738）。
 func test_info_bg_has_decor_and_icons() -> void:
 	var scene := _make_scene()
-	var info_bg: Sprite2D = scene._info_bg
+	var info_bg: TextureRect = scene._info_bg
 	# 4 装饰背景 + gold_icon/exp_icon + lv/gold/exp label + battleStatistBtn = 10 子节点
 	assert_gt(info_bg.get_child_count(), 5, "InfoBg 子节点 >5（装饰背景+图标+label+statist）")
 	scene.queue_free()
@@ -240,7 +241,7 @@ func test_skip_restores_fade_group() -> void:
 # InfoBg 文字样式断言（源 lv 18 号 / gold·exp 19 号 + ccc3(169,70,6) 棕红）。
 func test_info_bg_label_styles() -> void:
 	var scene := _make_scene()
-	var info_bg: Sprite2D = scene._info_bg
+	var info_bg: TextureRect = scene._info_bg
 	var lv: Label = info_bg.get_node("%Lv") as Label
 	var gold: Label = info_bg.get_node("%Gold") as Label
 	var exp_lbl: Label = info_bg.get_node("%Exp") as Label
@@ -253,4 +254,76 @@ func test_info_bg_label_styles() -> void:
 	assert_almost_eq(gold.label_settings.font_color.b8, 6, 1, "Gold 字色 B=6")
 	assert_almost_eq(exp_lbl.label_settings.font_color.r8, 169, 1, "Exp 字色 R=169")
 	assert_almost_eq(lv.label_settings.font_color.r8, 169, 1, "Lv 字色 R=169")
+	scene.queue_free()
+
+
+# 批 G（2026-08-28）P0-3 守卫：InfoBg 显示尺寸÷CS（728×444 → 568.4×346.6）+ 中心回归源直译 (380,282)。
+# 源 stagedone.lua:1447-1451 info_bg 中心 ccp(380,198) → Godot (380, 480-198=282)。
+func test_info_bg_source_rect() -> void:
+	var scene := _make_scene()
+	var info_bg: TextureRect = scene._info_bg
+	assert_almost_eq(info_bg.size.x, 728.0 / StageDoneScene.CONTENT_SCALE, 0.5, "InfoBg 宽 568.4（728÷CS）")
+	assert_almost_eq(info_bg.size.y, 444.0 / StageDoneScene.CONTENT_SCALE, 0.5, "InfoBg 高 346.6（444÷CS）")
+	var center: Vector2 = info_bg.position + info_bg.size * 0.5
+	assert_almost_eq(center.x, 380.0, 0.5, "InfoBg 中心 x=380（源直译）")
+	assert_almost_eq(center.y, 282.0, 0.5, "InfoBg 中心 y=282（源 198 翻转，旧值 315 下坠出屏）")
+	scene.queue_free()
+
+
+# 批 G P0-3 守卫：BattleStatistBtn 源直译全局 rect（源 battleStatistNode 本地 (530,320) 左中锚 +
+# info_bg 左下角原点 (96,25) → 场景 (626,345) → Godot rect x 626~696 / y 110~160）。
+func test_battle_statist_btn_source_rect() -> void:
+	var scene := _make_scene()
+	var btn: Button = scene._battle_statist_btn
+	assert_almost_eq(btn.global_position.x, 626.0, 0.5, "统计按钮左缘 x=626（源直译）")
+	assert_almost_eq(btn.global_position.y, 110.0, 0.5, "统计按钮上缘 y=110（源 345 翻转）")
+	assert_almost_eq(btn.size.x, 70.0, 0.1, "按钮宽 70（scaleSize 点数不÷CS）")
+	assert_almost_eq(btn.size.y, 50.0, 0.1, "按钮高 50")
+	scene.queue_free()
+
+
+# 批 G P0-3 守卫：装饰 Sprite2D 族 ÷CS（TopWinBg1/GoldIcon，无子节点直接 scale=1/CS）。
+func test_decor_sprites_divided_by_cs() -> void:
+	var scene := _make_scene()
+	var inv: float = 1.0 / StageDoneScene.CONTENT_SCALE
+	var top: Sprite2D = scene._info_bg.get_node("TopWinBg1")
+	assert_almost_eq(top.scale.x, inv, 0.001, "TopWinBg1 ÷CS（749×169 → 585×132）")
+	var gold: Sprite2D = scene._info_bg.get_node("GoldIcon")
+	assert_almost_eq(gold.scale.x, inv, 0.001, "GoldIcon ÷CS")
+	var light: Sprite2D = scene._content.get_node("%Light")
+	assert_almost_eq(light.scale.x, inv, 0.001, "Light ÷CS（385 → 300）")
+	# TitleBg 双条 z=0 对齐源声明序（条垫文字下、卡行画条上；z=1 曾致 shadow_win_bg
+	# 压 EXP 文字成叠字，2026-08-28 头像÷CS 专项根修）
+	assert_eq((scene._info_bg.get_node("InfoTitleBg2") as Sprite2D).z_index, 0, "InfoTitleBg2 z=0")
+	assert_eq((scene._info_bg.get_node("InfoTitleBg1") as Sprite2D).z_index, 0, "InfoTitleBg1 z=0")
+	scene.queue_free()
+
+
+# 2026-08-28 头像÷CS 专项：hero/loot 行源直译几何守卫（stagedone.lua:16-23 gap 92/70 +
+# hero_ori=(195,243)/loot_ori=(200,100) CCSprite 中心锚点 → Host 左上=中心−半容器）。
+func test_hero_loot_row_source_geometry() -> void:
+	var scene := _make_scene()
+	var hero_host: Control = scene._content.get_node("%HeroHost")
+	var loot_host: Control = scene._content.get_node("%LootHost")
+	assert_almost_eq(hero_host.position.x, 143.0, 0.5, "HeroHost x=195-52（源中心锚点−半容器）")
+	assert_almost_eq(hero_host.position.y, 185.0, 0.5, "HeroHost y=480-243-52（y 翻转）")
+	assert_almost_eq(loot_host.position.x, 164.0, 0.5, "LootHost x=200-36（ReadequipIcon 72 半宽）")
+	assert_almost_eq(loot_host.position.y, 344.0, 0.5, "LootHost y=480-100-36")
+	assert_almost_eq(StageDoneScene.HERO_GAP_X, 92.0, 0.001, "hero gap 源直译 92（旧 110 补偿已回摆）")
+	assert_almost_eq(StageDoneScene.LOOT_GAP_X, 70.0, 0.001, "loot gap 源直译 70（旧 84）")
+	# 第 5 卡右缘 = 143 + 92*4 + 104 = 615 < InfoBg 右缘 664.2（旧 gap110 起点 195 溢 75 点根修）
+	var fifth_right: float = hero_host.position.x + StageDoneScene.HERO_GAP_X * 4.0 + 104.0
+	var info_bg: TextureRect = scene._content.get_node("%InfoBg")
+	assert_lt(fifth_right, info_bg.position.x + info_bg.size.x, "第 5 卡右缘入 InfoBg 面板")
+	scene.queue_free()
+
+
+# 源 createIcon stars=hero._stars（旧硬编码 0 系漏译，2026-08-28 补）：结算头像显示英雄星级。
+func test_hero_icon_shows_stars() -> void:
+	var scene := _make_scene()
+	var ri: ReadheroIcon = scene._hero_icon_nodes[0]
+	assert_eq(ri.stars.size(), 3, "heroes[0] stars=3 → 3 星 sprite")
+	assert_eq(scene._hero_icon_nodes[1].stars.size(), 0, "heroes[1] 无 stars 字段 → 0 星")
+	var star: Sprite2D = ri.stars[0] as Sprite2D
+	assert_almost_eq(star.scale.x, 1.0 / 1.28125, 0.001, "星 ÷CS（源 createSprite 21×23px→16.4×18 点）")
 	scene.queue_free()

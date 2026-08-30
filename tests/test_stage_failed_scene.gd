@@ -99,3 +99,30 @@ func test_battle_statist_button() -> void:
 	var btn: Button = scene._content.get_node("BattleStatist")
 	assert_true(btn.pressed.is_connected(scene._on_battle_statist_pressed), "BattleStatist pressed 连接")
 	scene.queue_free()
+
+
+# 批 G（2026-08-28）P0-1/P0-2 守卫：battleStatist 按钮源直译 rect + count Label 挂按钮内。
+# 源 stagefailed.lua:345-392 左中锚 ccp(500,335) scaleSize 70×50 → Godot offset (500,120)~(570,170)；
+# battleCount 挂按钮内 ccp(35,26)（旧实现挂 _content 全局 (677,186) 飘位）。
+func test_battle_statist_rect_and_count_inside() -> void:
+	var scene := _make_scene({"stage_id": -27, "lose_type": "fail"})
+	var btn: Button = scene._content.get_node("BattleStatist")
+	assert_almost_eq(btn.offset_left, 500.0, 0.1, "按钮左缘 x=500（源直译，旧 505.83 系 960 系数残留）")
+	assert_almost_eq(btn.offset_top, 120.0, 0.1, "按钮上缘 y=120（源 335 翻转-25）")
+	assert_almost_eq(btn.size.x, 70.0, 0.1, "按钮宽 70（scaleSize 点数不÷CS，旧 58.33=70/1.2 实锤）")
+	assert_almost_eq(btn.size.y, 50.0, 0.1, "按钮高 50")
+	var count: Label = btn.get_child(0) as Label
+	assert_not_null(count, "count Label 挂按钮内（apply_with_label 内建）")
+	assert_eq(count.text, StageSettlementCommon.statist_label_text(cm), "count 文案=数据")
+	assert_eq(count.position, Vector2.ZERO, "count 铺满按钮（源 ccp(35,26) 中心≈按钮中心）")
+	scene.queue_free()
+
+
+# 批 G P0-2 守卫：Light ÷CS + prompt 源直译位（源 createPrompt ccp(205,165)/(445,165) → Godot y=315）。
+func test_light_scale_and_prompt_positions() -> void:
+	var scene := _make_scene({"stage_id": -27, "lose_type": "fail"})
+	var light: Sprite2D = scene._content.get_node("Light")
+	assert_almost_eq(light.scale.x, 1.0 / 1.28125, 0.001, "Light ÷CS")
+	assert_eq(scene.PROMPT_POS[0], Vector2(205.0, 315.0), "prompt1 源直译（旧 246,420 贴屏底）")
+	assert_eq(scene.PROMPT_POS[1], Vector2(445.0, 315.0), "prompt2 源直译（旧 534,420）")
+	scene.queue_free()

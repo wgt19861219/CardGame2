@@ -98,20 +98,21 @@ func get_region_texture(region_name: String) -> Texture2D:
 	var rotate: bool = r["rotate"]
 	if sz.x <= 0 or sz.y <= 0:
 		return null
-	# rotate region 在图集里按旋转后宽高存储（宽高 swap），取 region 用存储朝向，rotate_90 转回原朝向 sz
+	# 2026-08-27 批 B M2 根修：Spine/libgdx atlas 的 xy 本就是 page 左上原点，直取不做 y 翻转
+	# （旧实现误当左下原点做 sheet_h-y 换算：pvp 主贴图 xy(2,104) 被错提到 (2,2) 砸进光效
+	#  region 渲染成侧躺"水车"，其余建筑靠 flip_y 与错位的巧合组合维持正立观感）。
 	var stored_w: int = int(sz.y) if rotate else int(sz.x)
 	var stored_h: int = int(sz.x) if rotate else int(sz.y)
-	var godot_y: int = _sheet_size.y - xy.y - stored_h
-	var rect: Rect2i = Rect2i(xy.x, godot_y, stored_w, stored_h)
+	var rect: Rect2i = Rect2i(xy.x, xy.y, stored_w, stored_h)
 	var img: Image = _sheet_image.get_region(rect)
 	if rotate:
-		# rotate region 旧行为保持（rotate_90 转正，不 flip——修复前 Pve/Mailbox 主贴图
-		# 视觉正立，实测 orient_check 判定对横放贴图无效，保守不动）
-		img.rotate_90(1)
-	else:
-		# Spine y-up 纹理约定：SpineSkeleton 根部 scale.y=-1 镜像骨骼树时会把纹理上下翻，
-		# 提取时预翻一次补偿（曾致主城 13/14 建筑上下颠倒，2026-08-19 orient_check 实测）
-		img.flip_y()
+		# libgdx 规范：rotate=true = 附件逆时针转 90° 后存入 → 取出顺时针转回
+		# （ClockDirection 全局枚举 CLOCKWISE=0；旧值 rotate_90(1)=逆时针误作 180°）。
+		img.rotate_90(CLOCKWISE)
+	# flip_y 补偿针对骨架 scale.y=-1 镜像：extractor 输出须为目标正立像的垂直镜像，
+	# 故必须先 CW 转正再做 flip_y（flip_y∘CW ≠ CW∘flip_y，顺序颠倒即差 180°——
+	# 2026-08-27 实机两轮实证：漏配或序错分别对应 Pve"放倒"/"叠转 180°"两态）。
+	img.flip_y()
 	var tex: Texture2D = ImageTexture.create_from_image(img)
 	_region_cache[region_name] = tex
 	return tex

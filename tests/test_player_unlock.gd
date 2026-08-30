@@ -24,8 +24,8 @@ func test_check_unlocks_at_level_6_no_skill_upgrade() -> void:
 	var pd := PlayerData.new(cm)
 	pd.team_level = 6
 	var newly: Array[StringName] = pd.check_unlocks()
-	assert_false(newly.has(&"unlockSkillUpgrade"), "6 级 < 阈值 7 → 不解锁")
-	assert_eq(pd.get_tutorial_record(54), 0, "record 54 未设")
+	assert_true(newly.has(&"unlockSkillUpgrade"), "6 级也解锁（单机化全放开）")
+	assert_ne(pd.get_tutorial_record(54), 0, "解锁 teach record 已设")
 
 
 # Crusade/Excavate 不在 PlayerLevel.Unlock → get_area_unlock_level 返 0 → 默认解锁（源设计）。
@@ -35,8 +35,8 @@ func test_check_unlocks_default_unlocked_features() -> void:
 	var newly: Array[StringName] = pd.check_unlocks()
 	assert_true(newly.has(&"unlockCrusade"), "Crusade 不在 PlayerLevel.Unlock → 默认解锁")
 	assert_true(newly.has(&"unlockExcavate"), "Excavate 默认解锁")
-	# Guild 需 32 级、WorldChannel 需 24 级，1 级不该解锁
-	assert_false(newly.has(&"unlockGuild"), "Guild 需 32 级，1 级不解锁")
+	# 单机化全放开：1 级全部功能解锁
+	assert_true(newly.has(&"unlockGuild"), "Guild 1 级也解锁（单机化全放开）")
 
 
 # record 守卫：重复 check_unlocks 不再触发已解锁功能（源 ed.teach not checkDone 等价）。

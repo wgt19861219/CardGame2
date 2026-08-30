@@ -215,13 +215,17 @@ func test_status_bar_built_with_three_bars() -> void:
 	var panel := _make_panel("package", pd)
 	panel.show_window(root)
 	# 方案 B：HudOverlay autoload 接管 HUD。package 是子场景 → 用 _status_refs_sub（仅 3 货币条）。
-	# 注意：HudOverlay 数据源是全局 GameData.player（非测试 pd），gold label 显示全局玩家金币。
+	# 注意：HudOverlay 数据源是全局 GameData.player（非测试 pd）。
 	var status_refs: Dictionary = HudOverlay._status_refs_sub
-	assert_true(status_refs.has("gold"), "货币条 gold label 装好")
-	assert_true(status_refs.has("diamond"), "货币条 diamond label 装好")
-	assert_true(status_refs.has("vitality"), "货币条 vitality label 装好")
-	var gold_lbl: Label = status_refs["gold"]
-	assert_eq(gold_lbl.text, str(GameData.player.hero_manager.gold), "gold label 显示全局玩家金币")
+	assert_true(status_refs.has("gold"), "货币条 gold bar 装好")
+	assert_true(status_refs.has("diamond"), "货币条 diamond bar 装好")
+	assert_true(status_refs.has("vitality"), "货币条 vitality bar 装好")
+	# 2026-08-27 批 A：数字由 Label 改为 NumberNode 逐字符贴图组（bar 的 "num" 子节点），
+	# 断言字符数与全局玩家金币的千分位串一致（HudOverlay 打开面板时已 refresh）。
+	var gold_num: Control = (status_refs["gold"] as Control).get_node("num")
+	assert_eq(gold_num.get_child_count(),
+		NumberNode.format_comma(GameData.player.hero_manager.gold).length(),
+		"gold 数字贴图组字符数 = 全局玩家金币千分位串长")
 	panel.remove_window()
 	root.queue_free()
 

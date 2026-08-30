@@ -2,49 +2,55 @@ class_name HeroPackageItem
 extends Control
 
 ## 英雄整行卡片（View 层）— 照源 heroitem.lua baseheroitem + packageheroitem 翻译（P0-1）。
-## 结构：bg(package_hero_bg 313×123) + ReadheroIcon 头像(7,9) + 名字(177,72) + 力/敏/智 mark(110,72) +
-##   拥有：6 装备槽 gocha.png(105+22*i,18)；未拥有：灵魂石进度条 + 可召唤光效 + 头像灰化。
-## 坐标：源 cocos bg 空间（左下原点 y上）→ Godot Control（左上原点 y下），_place 翻转 BG_H-y。
-## mark 属性图标 icon_str/agi/int（2026-07-18 从 ECCHC 补齐，不再降级）；name rank 后缀简化省略（待精确）。
-## cell 260×100（源 refreshHeroList getpos 间距），bg 313×123 透明边缘溢出 cell（照源视觉重叠）。
+## 结构：bg(package_hero_bg 313×123px ÷CS=244.34×96.00 显示) + ReadheroIcon 头像 bg 局部(7,9) +
+##   名字中心(177,72) + 力/敏/智 mark(110,72) + 拥有：6 装备槽 gocha 22×22 (105+22*i,18)；
+##   未拥有：灵魂石进度条 + 可召唤光效 + 头像灰化。
+## 坐标口径（2026-08-28 根修）：点空间直译 — 全部 offset 已照源 bg 局部坐标直接烘焙进 .tscn
+## （源 bg 显示 244.34×96 居中 cell 260×100），废旧"root scale 1/CS + 元素×CS 烘焙"双重变换链
+## （旧链 tscn 编辑器所见≠运行所得，且 ×CS 烘焙多处漏 y 翻转/漏 ÷CS：HeadHost 漏翻转致星星压行、
+## NameHost 中心 163≠源 177、BAR_BG_W 漏 ÷CS 偏大 1.28×，详见审查报告 2026-08-28）。
+## mark 属性图标 icon_str/agi/int（2026-07-18 从 ECCHC 补齐）；name rank 后缀 "+N" 照源
+## createHeroNameByInfo（star>0 显示 + 品质色，2026-08-27 核验）。
+## cell 260×100（源 refreshHeroList getpos 间距），bg 244.34 宽 < 260 → 相邻列 bg 间隙 15.7 不重叠
+## （旧注释"313 溢出 cell 照源视觉重叠"系未÷CS 口径的误判）。head 顶溢出 cell 顶 15=源真容。
 ##
-## Phase A 重构（2026-07-18）：结构（bg + head host + name/suffix + mark + 6 equip slot + deal tag +
-## stone bar）静态化进 hero_package_item_content.tscn（instantiate + fill），位置/size 编辑器可视化调。
-## 两形态（拥有/未拥有）EquipGroup/StoneGroup visible 切换（坑 5）。fill 动态：head/名字/装备图标/plus sign/
-## 进度/光效/头像灰化。坐标照源 _place 烘焙进 .tscn（BG_OFFSET + cocos→godot 翻转）。
+## Phase A 重构（2026-07-18）：结构静态化进 hero_package_item_content.tscn（instantiate + fill）。
 ## 两件套接线收口（批 1 Task 9，2026-08-15）：name/suffix/stone 文字走 HeroPackage* variation
-## （theme 管，删运行时 override）；mark 尺寸修等比 36.8（源 scale0.8 等比，旧 37×32 变形）。
-## plusSign/equip 图标节点白名单（动态数据图标，源运行时按槽位状态创建）。
+## （theme 管）；plusSign/equip 图标节点白名单（动态数据图标，源运行时按槽位状态创建）。
+## 两形态（拥有/未拥有）EquipGroup/StoneGroup visible 切换（坑 5）。fill 动态：head/名字/装备图标/plus sign/
+## 进度/光效/头像灰化。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_package_item_content.tscn")
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 资源档）：cocos sprite contentSize=纹理/CS，position 不变。
-# → bg 313 纹理显示 313/CS≈244，getpos 列距 260/行距 100 不重叠（间隙 16/4）。Godot 在 _build 整体 scale=1/CS 等价。
+# 2026-08-28 根修后仅用于贴图显示尺寸换算（head 104 点直挂、bar 满宽 150×0.93），不再做 root 整卡缩放。
 const CONTENT_SCALE: float = 1.28125
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
-const BG_OFFSET: Vector2 = Vector2(-26.5, -11.5)   # bg 中心对齐 cell 中心；scale 1/CS 后 bg 244 居中 cell
-const BG_H: float = 123.0
 const EQUIP_SLOT_COUNT: int = 6
-const EQUIP_BG_SIZE: float = 28.0                       # ⚠️偏离源 22（源 scale 22/w gocha 94）→ 28 放大易辨识（用户决策 2026-07-18）
-const EQUIP_ICON_SIZE: float = 20.0                     # ⚠️偏离源 16，按源比例 16/22×28≈20 同步放大
+# 源 heroitem.lua:222-228 equipBg setScale(22/w)→22×22；equip setScale(16/w)→16（2026-08-28 根修
+# 回归源值；旧 28/20/30 系"root 0.78 缩放下放大补偿"，链拆后视觉回归源 22/16/24 不变）。
+const EQUIP_BG_SIZE: float = 22.0
+const EQUIP_ICON_SIZE: float = 16.0
 const EQUIP_EMPTY_ALPHA: float = 100.0 / 255.0
-const BAR_BG_W: float = 204.0 * 0.93                    # progress_bg 204×34 × scale 0.93（源 :143）
-const BAR_BG_H: float = 34.0                            # progress_bg 纹理高（源 :142 204×34）
+# 源 bar 满 progress 宽：setTextureRect(150*sa/sn,26) ×barBg scaleX0.93 = 139.5（2026-08-28 根修
+# 回归；旧 204×0.93=189.7 漏 ÷CS 偏大 1.28×）。barBg 显示 204px÷CS×0.93=147.9 宽 ×26.5 高。
+const BAR_BG_W: float = 150.0 * 0.93
+const BAR_BG_H: float = 26.5
 const BAR_FILL_H: float = 26.0
-const BAR_FILL_OFFSET: Vector2 = Vector2(63.5, 80.5)    # _place 烘焙（= bar_bg_pos + (0, BAR_BG_H-BAR_FILL_H)）
+const BAR_FILL_OFFSET: Vector2 = Vector2(97.83, 63.25)    # .tscn 烘焙（barBg 左 + (0, 0.5)）
 const BAR_LABEL_POS: Vector2 = Vector2(80.0, 13.0)
-const BAR_BG_POS: Vector2 = Vector2(63.5, 72.5)         # _place 烘焙（bar_bg_pos）
+const BAR_BG_POS: Vector2 = Vector2(97.83, 62.75)         # .tscn 烘焙（barBg 左上，bg 局部(90,22)直译）
 const AVAILABLE_ALPHA: float = 150.0 / 255.0
 # 源 heroitem.lua:225/227 plusSign sr + :244 canDealTag tag 资源。
 const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"
 const PLUS_CRAFT_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png"
 const DEAL_TAG_RES: String = "res://assets/ui/alpha/HVGA/main_deal_tag.png"
-const PLUS_SIGN_TARGET: float = 30.0   # ⚠️偏离源 24，按源比例 24/22×28≈30 同步放大（用户决策 2026-07-18）
+const PLUS_SIGN_TARGET: float = 24.0   # 源 setScale(24/w)（旧 30 系缩放链补偿值）
 # summonLight 呼吸动画（源 heroitem.lua:154-167 StoneGroup.SummonLight Tween FadeTo 循环）。
 const SUMMON_LIGHT_BREATH_DUR: float = 1.2   # 一次 fade in+out 总时长（秒）
-const DEAL_TAG_TARGET: float = 24.0
-const NAME_CENTER_X: float = 177.0
-const NAME_POS_Y: float = 72.0
+# 源 tag 无 setScale → 显示 21×22px÷CS 宽 16.4（旧 24 系缩放链补偿值）
+const DEAL_TAG_TARGET: float = 16.4
 const NAME_MAX_W: float = 100.0
+const SUFFIX_GAP: float = 2.0   # suffix 与名字末字右缘间距（防加号贴字，2026-08-28 实测加）
 const NAME_FALLBACK: String = "?"
 # 源 setSpriteGray（resource_manager.lua:871-877）= ccc3(100,100,100)+opacity 180 级联整树
 # （2026-08-22 巡检订正：旧 (0.5,0.5,0.5,1.0) 色值与 alpha 均不等价）。
@@ -97,9 +103,6 @@ func _build(entry: Variant, p_cm: Variant, p_hero_mgr: HeroManager, p_pd: Player
 	tid = ReadheroHandbook.entry_tid(entry)
 	custom_minimum_size = CELL_SIZE
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# pivot=cell 中心使缩放后内容（bg 244×96）居中 cell 260×100，与源 bg 显示尺寸一致、不重叠。
-	pivot_offset = CELL_SIZE * 0.5
-	scale = Vector2.ONE / CONTENT_SCALE
 	_content = CONTENT_SCENE.instantiate() as Control
 	add_child(_content)
 	_cache_nodes()
@@ -139,9 +142,8 @@ func _cache_nodes() -> void:
 		_equip_slots.append(_content.get_node("%EquipSlot" + str(i + 1)) as TextureRect)
 
 
-# HeadHost 已在 _place(HEAD_POS) 烘焙位置（cell 纹理 px 空间 = 源点 ×CS），head position=0 挂 host。
-# head ×CS 抵消 cell 整体 scale=1/CS（ReadheroIcon 按点空间设计；2026-08-22 巡检根修——
-# 不抵消则 frame 双重缩小 85 vs 源 109，框缩在头像中圈）。
+# HeadHost 位置 .tscn 固化（bg 局部(7,9) 点空间直译，head 底=cell y89、顶溢出 cell 顶 15=源真容）。
+# head 直接 scale 1 挂 host（ReadheroIcon 本按 104 点空间设计，2026-08-28 根修拆掉 ×CS/÷CS 抵消链）。
 func _fill_head() -> void:
 	if is_miss:
 		head = ReadheroIcon.new()
@@ -149,7 +151,6 @@ func _fill_head() -> void:
 	else:
 		head = ReadheroIcon.create_icon_by_hero(_entry as HeroInstance, cm)
 	head.position = Vector2.ZERO
-	head.scale = Vector2.ONE * CONTENT_SCALE
 	(_content.get_node("%HeadHost") as Control).add_child(head)
 
 
@@ -160,29 +161,38 @@ func _fill_name() -> void:
 	var rank: int = _rank()
 	var star: int = ReadheroHandbook.get_hero_star_by_rank(rank)
 	_name_lbl.text = disp_name
-	var name_size: Vector2 = _name_lbl.get_minimum_size()
-	var total_w: float = name_size.x
-	var suffix_w: float = 0.0
 	if star > 0:
 		_suffix_lbl.text = "+" + str(star)
 		_suffix_lbl.add_theme_color_override("font_color", ReadheroHandbook.get_hero_name_color_by_rank(rank))
 		_suffix_lbl.visible = true
-		suffix_w = _suffix_lbl.get_minimum_size().x
-		total_w += suffix_w
 	else:
 		_suffix_lbl.visible = false
-	# NameHost 位置/尺寸 .tscn 固化（用户决策，不按源动态算法）。name+suffix 拼接整体在 NameHost 内部居中：
-	# fill 算整体宽 total_w，左起点 = (NameHost 宽 - total_w×scale) / 2，suffix 紧贴 name 右侧。
-	# host_w 用 offset（.tscn 固化值），不读 size（_build 阶段未布局 size 可能为 0）。
-	var scale_val: float = min(1.0, NAME_MAX_W / total_w) if total_w > 0.0 else 1.0
+	_relayout_name()
+	# _build 阶段 item 未挂树（create_from_entry 先 fill 后 _grid.add_child），theme 链断致
+	# get_minimum_size 用默认字体测量 ≠ variation 渲染字体，4 字名 suffix 叠末字（2026-08-28 实测）。
+	# deferred 一帧后 item 已挂树、theme 可解析，重测修正。
+	call_deferred("_relayout_name")
+
+
+# NameHost 位置/尺寸 .tscn 固化（用户决策，不按源动态算法）。name+suffix 拼接整体在 NameHost 内部居中：
+# 算整体宽 total_w，左起点 = (NameHost 宽 - total_w×scale) / 2，suffix 紧贴 name 右侧。
+# host_w 用 offset（.tscn 固化值），不读 size（_build 阶段未布局 size 可能为 0）。
+func _relayout_name() -> void:
+	var name_size: Vector2 = _name_lbl.get_minimum_size()
+	var suffix_visible: bool = _suffix_lbl.visible
+	var suffix_w: float = _suffix_lbl.get_minimum_size().x if suffix_visible else 0.0
+	var total_w: float = name_size.x + suffix_w
+	if total_w <= 0.0:
+		return
+	var scale_val: float = min(1.0, NAME_MAX_W / total_w)
 	var host_w: float = _name_host.offset_right - _name_host.offset_left
 	var render_w: float = total_w * scale_val
 	var start_x: float = (host_w - render_w) * 0.5
 	_name_lbl.scale = Vector2(scale_val, scale_val)
 	_name_lbl.position = Vector2(start_x, 0.0)
-	if star > 0:
+	if suffix_visible:
 		_suffix_lbl.scale = Vector2(scale_val, scale_val)
-		_suffix_lbl.position = Vector2(start_x + name_size.x * scale_val, 0.0)
+		_suffix_lbl.position = Vector2(start_x + name_size.x * scale_val + SUFFIX_GAP, 0.0)
 
 
 # 2026-07-18 从 ECCHC 补齐资源（此前缺图降级 ColorRect 色块，现恢复 TextureRect 图标）。
@@ -322,14 +332,6 @@ func _rank() -> int:
 	if is_miss:
 		return 1
 	return (_entry as HeroInstance).rank
-
-
-# cocos(bg 空间,左下原点)→Godot(cell 空间,左上原点) 转换 + BG_OFFSET。
-# anchor 是 cocos 的 setAnchorPoint(ax,ay)；node_size 是节点尺寸。
-static func _place(cocos_pos: Vector2, anchor: Vector2, node_size: Vector2) -> Vector2:
-	var gx: float = cocos_pos.x - anchor.x * node_size.x
-	var gy: float = BG_H - cocos_pos.y - (1.0 - anchor.y) * node_size.y
-	return BG_OFFSET + Vector2(gx, gy)
 
 
 func _unit_str(field: StringName, fallback: String) -> String:

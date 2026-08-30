@@ -34,11 +34,16 @@ func _content() -> Control:
 
 func test_content_static_tree() -> void:
 	var c := _content()
-	for node_name in ["PvpFrame", "CloseBtn", "TabBtn0", "TabBtn1", "TabBtn2", "TabBtn3",
-			"TabChallengeView", "TabRankboardView", "TabRecordsView", "TabLineupView",
-			"EnemyCard1", "EnemyCard2", "EnemyCard3", "RefreshBtn", "BuyBtn",
-			"RankScroll", "RecScroll", "HeroSlot1", "HeroSlot5", "SetLineupBtn"]:
+	# 批 D（2026-08-27）：tab 结构撤销 → 主屏四钮（Rule/Rankboard/Record/Shop）+ 阵容区
+	# 并入主屏 + 两覆盖层关闭钮 + RankValue 贴图数字 host（Control）。
+	for node_name in ["PvpFrame", "CloseBtn", "RuleBtn", "RankboardBtn", "RecordBtn", "ShopBtn",
+			"TabChallengeView", "TabRankboardView", "TabRecordsView",
+			"EnemyCard1", "EnemyCard2", "EnemyCard3", "RefreshBtn",
+			"RankScroll", "RecScroll", "HeroSlot1", "HeroSlot5", "SetLineupBtn",
+			"LineupTitleLbl", "CloseRankBtn", "CloseRecBtn", "RankValue"]:
 		assert_not_null(c.get_node_or_null(NodePath("%" + node_name)), "%s 存在" % node_name)
+	for gone in ["TabBtn0", "TabBtn1", "TabBtn2", "TabBtn3", "TabLineupView", "BuyBtn", "ArenaValue"]:
+		assert_null(c.get_node_or_null(NodePath("%" + gone)), "%s 已删（批 D 撤销 tab 结构）" % gone)
 
 
 func test_pvp_frame_rect() -> void:
@@ -81,15 +86,22 @@ func test_enemy_card_children() -> void:
 
 
 func test_tab_bar_rect() -> void:
-	# 源顶部按钮行 y=267（reqRankData 461/showRewardInfo 361/reqRecordBoard 558/
-	# pvpShop 675）→ 4 tab 同行，96×48；直译 y=480−267=213。
+	# 批 D 主屏中排四钮照源（:2094-2131/2186-2179）：规则说明(361)/排行榜(461)/对战记录(558)
+	# 96×48（scaleSize）+ 兑换奖励(675) 129.5×49.2（tavern_button 原尺寸 ÷CS）；y=213。
 	var c := _content()
-	var xs: Array[float] = [361.0, 461.0, 558.0, 675.0]
-	for i in 4:
-		var btn: Control = c.get_node("%TabBtn" + str(i)) as Control
-		assert_almost_eq(btn.position.x + btn.size.x / 2.0, xs[i], 0.5, "TabBtn%d 中心 x" % i)
-		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "TabBtn%d 中心 y=213（源 267，480−267）" % i)
-		assert_almost_eq(btn.size.y, 48.0, 0.5, "TabBtn%d 高 48" % i)
+	var specs: Array = [
+		["%RuleBtn", 361.0, 96.0, 48.0], ["%RankboardBtn", 461.0, 90.0, 48.0],
+		["%RecordBtn", 558.0, 96.0, 48.0], ["%ShopBtn", 675.0, 129.5, 49.2],
+	]
+	for spec: Array in specs:
+		var btn: Control = c.get_node(String(spec[0])) as Control
+		assert_almost_eq(btn.position.x + btn.size.x / 2.0, float(spec[1]), 0.5, "%s 中心 x" % spec[0])
+		assert_almost_eq(btn.position.y + btn.size.y / 2.0, 213.0, 0.5, "%s 中心 y=213（源 267，480−267）" % spec[0])
+		assert_almost_eq(btn.size.x, float(spec[2]), 0.5, "%s 宽" % spec[0])
+	# 兑换奖励钮旁竞技点小图标（源 :2072-2083 ui @(636,266) → 中心 (636,214)）。
+	var arena_icon: Control = c.get_node("%ArenaIcon") as Control
+	assert_almost_eq(arena_icon.position.x + arena_icon.size.x / 2.0, 636.0, 0.5, "ArenaIcon 中心 x=636")
+	assert_almost_eq(arena_icon.position.y + arena_icon.size.y / 2.0, 214.0, 0.5, "ArenaIcon 中心 y=214（源 266）")
 
 
 func test_scroll_clip_rect() -> void:
@@ -155,15 +167,20 @@ func test_fill_challenge_tab_smoke() -> void:
 	var view: Control = _panel_content(panel).get_node("%TabChallengeView") as Control
 	var name_lbl: Label = (view.get_node("%EnemyCard1") as Control).get_node("NameLbl") as Label
 	assert_true(name_lbl.text.length() > 0, "对手 1 名字已 fill")
-	var rank_val: Label = view.get_node("%RankValue") as Label
-	assert_true(rank_val.text.is_valid_int(), "我的排名数字已 fill")
+	# 批 D：我的排名 = big_pvp1 贴图数字（<4 徽章图 / 4-10 big_pvp / >=11 small_pvp），
+	# RankValue 为 NumberNode host（Control），左中锚 (150,203)。
+	var rank_host: Control = view.get_node("%RankValue") as Control
+	assert_gt(rank_host.get_child_count(), 0, "我的排名贴图数字已 fill（NumberNode host 非空）")
+	assert_almost_eq(rank_host.position.x, 150.0, 0.5, "myRank 左缘 x=150（源 anchor(0,0.5) @(150,277)）")
 	var left_num: Label = view.get_node("%LeftTimeNum") as Label
 	assert_true(left_num.text.contains("/"), "剩余次数 x/5 已 fill（源 :3153 %d/%d 格式）")
+	var title_lbl: Label = view.get_node("%LineupTitleLbl") as Label
+	assert_true(title_lbl.text.length() > 0, "防守阵容标签已 fill（源 :2984 PVP.DEFENSIVE_TEAM_）")
 
 
 func test_fill_rankboard_rows() -> void:
 	var panel := _panel()
-	panel._fill_tab(1)
+	panel._show_overlay(1)
 	var host: Control = _panel_content(panel).get_node("%RankboardHost") as Control
 	# 20 NPC 行 + self 行（现状行为保留，用例数不缩水）
 	assert_eq(host.get_child_count(), 21, "20 榜行 + 1 self 行")
@@ -182,12 +199,12 @@ func test_rankboard_row_y_formula_and_total_height() -> void:
 	# 源 initRankListData :1843-1848 直译守卫：行中心 = 39 + 78*(min(10,i)-1) + 58*max(0,i-10)
 	# + (i>10 ? 8 : 0)（39 = clip 顶 cocos 400 − 首行底图中心 361，host 局部空间）。
 	var panel := _panel()
-	panel._fill_tab(1)
+	panel._show_overlay(1)
 	var host: Control = _panel_content(panel).get_node("%RankboardHost") as Control
 	var prev_y: float = -1.0
 	for i in host.get_child_count():
 		var row: Control = host.get_child(i) as Control
-		assert_almost_eq(row.position.y, panel._rank_row_y(i + 1), 0.01, "行 %d y 与源公式一致" % (i + 1))
+		assert_almost_eq(row.position.y, LadderRows.rank_row_y(i + 1), 0.01, "行 %d y 与源公式一致" % (i + 1))
 		if i > 0:
 			assert_gt(row.position.y, prev_y, "行 %d 在上一行下方（y 单调递增）" % (i + 1))
 		prev_y = row.position.y
@@ -204,7 +221,7 @@ func test_record_row_scale_size_and_content_height() -> void:
 	# initListHeight = 78n+20（:1802）。
 	var panel := _panel()
 	panel._ladder.pvp["records"] = [{"result": "victory", "time": 100, "rank": 50}]
-	panel._fill_tab(2)
+	panel._show_overlay(2)
 	var host: Control = _panel_content(panel).get_node("%RecordsHost") as Control
 	var row: Control = host.get_child(0) as Control
 	assert_almost_eq(row.size.x, 485.0, 0.5, "记录行宽 485（源 scaleSize）")
@@ -217,9 +234,42 @@ func test_fill_records_relative_time() -> void:
 	# 源 createRecordInfo :1445-1456 相对时间（N秒/分钟/小时前/1天前）。
 	var panel := _panel()
 	panel._ladder.pvp["records"] = [{"result": "victory", "time": 100, "rank": 50}]
-	panel._fill_tab(2)
+	panel._show_overlay(2)
 	var host: Control = _panel_content(panel).get_node("%RecordsHost") as Control
 	assert_eq(host.get_child_count(), 1, "1 记录行")
 	var row: Control = host.get_child(0) as Control
 	var time_lbl: Label = row.get_node(^"RecBg/TimeLbl") as Label
 	assert_true(time_lbl.text.ends_with("前"), "相对时间文案（源 second2hms 逻辑）")
+
+
+# ==================== 批 D 主屏重构守卫（2026-08-27 走查）====================
+
+func test_d4_no_buy_button_change_enemy_fixed() -> void:
+	# D4：源 changeEnemy 三态中购买/CD 态不可达（pvpCD 恒 0 :23 + VIP PVP Buy 全 0）→
+	# 恒「换一批」态；独立购买钮删除。
+	var c := _content()
+	assert_null(c.get_node_or_null("%BuyBtn"), "独立购买钮已删（D4）")
+	var script_text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_eq(script_text.count("_on_buy"), 0, "panel 无购买 handler（购买态源不可达）")
+	var panel := _panel()
+	var refresh: Button = _panel_content(panel).get_node("%RefreshBtn") as Button
+	assert_eq((refresh.get_node("BtnLbl") as Label).text, "换一批", "换一批恒态文案（源 :2242 LSTR fill）")
+
+
+func test_d3_overlay_switch_semantics() -> void:
+	# D3：排行榜/对战记录按钮 → 覆盖层 visible 切换（源 rankPanelLayer/recordPanelLayer
+	# setVisible 语义），主屏常显不再有 tab 禁用态。
+	var panel := _panel()
+	var content := _panel_content(panel)
+	var main_view: Control = content.get_node("%TabChallengeView") as Control
+	var rank_view: Control = content.get_node("%TabRankboardView") as Control
+	var rec_view: Control = content.get_node("%TabRecordsView") as Control
+	assert_true(main_view.visible, "主屏常显")
+	panel._show_overlay(1)
+	assert_false(main_view.visible, "排行榜覆盖层显示时主屏隐藏")
+	assert_true(rank_view.visible, "排行榜覆盖层可见")
+	panel._show_overlay(2)
+	assert_true(rec_view.visible, "对战记录覆盖层可见")
+	assert_false(rank_view.visible, "互斥切换")
+	panel._show_overlay(0)
+	assert_true(main_view.visible, "关闭钮回主屏")

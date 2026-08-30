@@ -3,15 +3,12 @@ extends PopWindow
 
 ## 排行榜面板（View 层）— 照源 ranklist.lua + uieditor/ranklistwindow.lua（批4 Task 8 两件套改造）。
 ## 窗口框架/tab 按钮/列表容器静态化进 ranklist_content.tscn（编辑器所见即所得）；
-## 本文件只做业务、信号 connect、fill（% 取节点填动态数据）+ 行渲染（动态行 procedural）。
-## 单机化裁剪：源 3 分组裁 pvp_r 实时联机 + guildliveness 公会 → 2 分组 4 子项（勿回加）。
-## 残留披露（维持不修，下轮补图）：1st/2nd/3rd 行内排名徽章缺图——本项目资产区无裸版
-## pvp_rank_1st/2nd/3rd.png（仅 _star/_light 变体；源 :596-800/:1350-1356 行内+overlay 均用裸版；
-## HC multilanguage 四语言区有裸版三图可补，2026-08-18 审查更正"HC 亦无"系查证错误）
-## → Label "#N" 降级；getTeamHead 头像组件（图+金框+mask）→ Avatar.Picture 直显 40x40；
-## getLevelIcon 等级徽章缺 → 名字合并 "LvN" 文本；self 行（rank0 "★" 顶部恒叠）与
-## overlay 仅 rank>2 叠为迁移期行为（源 :1330 判 tab index 非排名，pvp 榜不显自己），行为债滚清单。
-## 数据层 RanklistManager.generate_ranklist（4 档假榜已就绪）。
+## 本文件只做业务、信号 connect、fill（% 取节点填动态数据），行渲染下沉 RanklistRows
+## （走查批 C 2026-08-27：三分支布局 + 裸版徽章/贴图数字/TeamHeadIcon/LevelIcon 像素级补全）。
+## tab 树照源 ranklisttree（:386-495）3 组 5 子：竞技场{每日排名, 实时}、战力{8,9,10}、
+## 公会{活跃}。pvp_r 单机无实时数据 → 复用 pvp 榜假数据（manager default 参数公式同 pvp，
+## 受控偏离披露）；guildliveness 假榜 manager 已就绪。浮窗显示条件照源 :1330（pvp 不叠）。
+## self 行照源榜单语义：self_rank 榜内则替换该位 NPC（me_bg 高亮），榜外仅浮窗显示。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/ranklist_content.tscn")
 # tab 贴图（源 createRankBtn :2020-2041 resTbl；nromal 拼写照源资产名保留）。
@@ -23,39 +20,7 @@ const SUB_SEL_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_sub
 const SUB_SEL_PRESS: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_current_2.png"
 const SUB_UNSEL_NORMAL: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_normal_1.png"
 const SUB_UNSEL_PRESS: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_subbutton_normal_2.png"
-# 行板（源 initCommonItemHandler :780-793：自己 ranklist_me_bg / 他人 pvp_rank_bg_high）。
-const ROW_BOARD_SELF: String = "res://assets/ui/alpha/HVGA/ranklist/ranklist_me_bg.png"
-const ROW_BOARD_OTHER: String = "res://assets/ui/alpha/HVGA/pvp/pvp_rank_bg_high.png"
-# 行板九宫格（源 ranklist.lua:584 capInsets = ed.DGRectMake(65,25,545,25)——DG 单位 ×0.78125
-# = CC(50.78,19.53,425.78,19.53)，贴图 638x97px 纹理px 边界 L50.78/T57.94/R161.44/B19.53，
-# patch 须再 ÷CS 取整 → 40/45/126/15（右侧 1/4 为固定装饰段，与纹理占比 25.3% 一致）。
-const BOARD_PATCH_L: int = 40
-const BOARD_PATCH_T: int = 45
-const BOARD_PATCH_R: int = 126
-const BOARD_PATCH_B: int = 15
-# 源 scaleSize DGSizeMake(650,95) = (507.81,74.22) 点。
-const BOARD_SIZE: Vector2 = Vector2(507.81, 74.22)
-# 行内布局（源 board 局部 DGccp ×0.78125 + y-up→y-down 翻转，board 高 74.22）：
-# ranking 中心 DGccp(60,50)=(46.88,39.06) → Godot (46.88,35.16)；head DGccp(175,50) → (136.72,35.16)；
-# pvp 布局 nameBg/name DGccp(250/280,52)（initpvpItemHandler :612-638）；
-# common 布局 DGccp(250/280,67)（initCommonItemHandler :812-838）+ record DGccp(240,26)=(187.5,20.31)。
-# 2026-08-18 修复轮 B（受控偏离）：record 中心源值 53.91 → 50.9（上移 3 点）。Godot 18 号
-# 行高 20.1px ＞ cocos 18 号视觉 18px，中心照源时字形底实测(y183)压底边框过渡区起点(y182)；
-# 上移后字形底与源视觉底对齐（源字形底距过渡起点约 1.9 点）。star 基准同步 53.91→50.9。
-const RANKING_CENTER: Vector2 = Vector2(46.88, 35.16)
-const HEAD_CENTER: Vector2 = Vector2(136.72, 35.16)
-const HEAD_SIZE: Vector2 = Vector2(40.0, 40.0)
-const NAMEBG_PVP_Y: float = 33.59
-const NAMEBG_COMMON_Y: float = 21.88
-const NAME_BG_RES: String = "res://assets/ui/alpha/HVGA/task_name_bg.png"
-# nameBg 纹理 422x34px ÷CS = 329.37x26.54 点。
-const NAME_BG_SIZE: Vector2 = Vector2(329.37, 26.54)
-const NAME_X: float = 218.75
-const RECORD_POS: Vector2 = Vector2(187.5, 38.9)
-const RECORD_LINE_CENTER_Y: float = 50.9
-# hero_evo_star 的星图标（源 :879-891 detail_star scale 0.5：70x71px ÷CS×0.5 = 27.31x27.71）。
-const STAR_ICON_RES: String = "res://assets/ui/alpha/HVGA/detail_star.png"
-const STAR_ICON_SIZE: Vector2 = Vector2(27.31, 27.71)
+# 行板/行内布局/record 常量迁 RanklistRows（批 C 2026-08-27 行渲染下沉）。
 # tab 布局（源 reCalculateRankBtnPos :1898-1925 精确直译：height=380 再 +5 起步、循环内先 -5
 # 再放组按钮 → 组1 pos=380；步进 47；展开组尾再 -5（+下组开头 -5 = 组间 gap 10）；折叠组子
 # 按钮只藏不占位；子按钮贴图=pc+(8,-5)（createRankBtn Ppoint :2050-2054）；
@@ -82,6 +47,7 @@ const TAB_TREE: Array = [
 	{
 		"btn": "GroupArena", "title_key": "RANKLIST.ARENA", "children": [
 			{"btn": "SubPvp", "mode": "pvp", "key": "RANKLIST.ARENADAY"},
+			{"btn": "SubArenaRealtime", "mode": "pvp_r", "key": "RANKLIST.ARENAREALTIME"},
 		],
 	},
 	{
@@ -89,6 +55,11 @@ const TAB_TREE: Array = [
 			{"btn": "SubFullHeroGs", "mode": "full_hero_gs", "key": "RANKLIST.ALLMEMBERFIGHTVALUE", "tips_key": "RANKLIST.ALLHEROFIGHTVALUE"},
 			{"btn": "SubHeroTeamGs", "mode": "hero_team_gs", "key": "RANKLIST.LITTLETEAMFIGHTVALUE", "tips_key": "RANKLIST.TOPFIVEFIGHTVALUE"},
 			{"btn": "SubHeroEvoStar", "mode": "hero_evo_star", "key": "RANKLIST.HEROSTAR", "tips_key": "RANKLIST.HEROALLSTAR", "star_icon": true},
+		],
+	},
+	{
+		"btn": "GroupGuild", "title_key": "RANKLIST.GUILD", "children": [
+			{"btn": "SubGuildActive", "mode": "guildliveness", "key": "RANKLIST.GUILDACTIVE", "tips_key": "ranklist.1.10.1.003"},
 		],
 	},
 ]
@@ -231,108 +202,7 @@ func _refresh_list() -> void:
 		if c.name == "PageContainer":
 			c.queue_free()
 	var r: Dictionary = _rm.generate_ranklist(_player, _rank_type)
-	# 2026-08-18 修复轮二 R1：浮窗让位照源——源 rankListMyselfOffsetY=80（:1336），浮窗显示
-	# 时 draglist oriPosition y 下移 80 + heightOffset 同加（:1704/:1712），本项目等价 = Rows
-	# 顶部垫 80 spacer（用户反馈浮窗遮住下方排名行；漏译项）。
-	if int(r["self_rank"]) > RanklistMyselfOverlay.RANK_TOP_VISIBLE_MAX:
-		var spacer := Control.new()
-		spacer.name = "MyselfSpacer"
-		spacer.custom_minimum_size = Vector2(0.0, RanklistMyselfOverlay.SCROLL_OFFSET_Y)
-		spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_rows.add_child(spacer)
-	_rows.add_child(_make_row(0, _player.player_name, _player.team_level, int(r["self_param"]), int(r.get("self_avatar", 0)), true))
-	for i in r["items"].size():
-		var item: Dictionary = r["items"][i]
-		_rows.add_child(_make_row(i + 1, String(item["name"]), int(item["level"]), int(item["param"]), int(item.get("avatar", 0))))
-	# P0 我的排名浮窗：self_rank>2 时在 ScrollLayer 之上叠 pageContainer（前 2 已列表内显）。
-	_build_myself_overlay(int(r["self_rank"]), int(r.get("self_avatar", 0)))
-
-
-# 源 ranklist.lua:1318-1571 createMyselfRankSummary：self_rank<=2 不叠（前 2 已列表显）。
-# 单机化 prev_index=0 → delta=self_rank（源 :1364-1365）。挂 container（ScrollLayer 之上）。
-func _build_myself_overlay(self_rank: int, avatar: int) -> void:
-	if self_rank <= RanklistMyselfOverlay.RANK_TOP_VISIBLE_MAX:
-		return
-	var avatar_pic: String = ""
-	if _player != null and _player.cm != null:
-		avatar_pic = String(_player.cm.get_raw_table(&"Avatar").get(str(avatar), {}).get("Picture", ""))
-		if not avatar_pic.is_empty():
-			avatar_pic = "res://assets/ui/" + avatar_pic.substr(3)
-	# pageContainer 源 ccp(245,400) 在 ranklist window 容器坐标系（cocos y-up 480 → Godot y-down）。
-	var page: Control = RanklistMyselfOverlay.build(container, self_rank, _player.player_name, _player.team_level, avatar_pic)
-	if page != null:
-		page.position = Vector2(OVERLAY_PAGE_GODOT_X, OVERLAY_PAGE_GODOT_Y)
-
-
-# 行渲染（源 initpvpItemHandler :574-673 / initCommonItemHandler :775-928）：
-# board Scale9 + ranking + head + nameBg + name(+LvN) +（战力系）record tips + value。
-func _make_row(rank: int, row_name: String, level: int, param: int, avatar: int, is_self: bool = false) -> Control:
-	var is_pvp: bool = _rank_type == "pvp"
-	var row := Control.new()
-	row.custom_minimum_size = BOARD_SIZE
-	row.gui_input.connect(_on_row_input.bind(rank, row_name, level, param, avatar))
-	var board := NinePatchRect.new()
-	board.texture = load(ROW_BOARD_SELF if is_self else ROW_BOARD_OTHER) as Texture2D
-	board.patch_margin_left = BOARD_PATCH_L
-	board.patch_margin_top = BOARD_PATCH_T
-	board.patch_margin_right = BOARD_PATCH_R
-	board.patch_margin_bottom = BOARD_PATCH_B
-	board.size = BOARD_SIZE
-	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(board)
-	# ranking：1st/2nd/3rd 徽章缺图（披露）→ 全档 Label "#N" 降级；self 行 "★"（迁移期行为）。
-	# 2026-08-18 修复轮 B：Label 补 VERTICAL_ALIGNMENT_CENTER——源 anchor(0,0.5) 中心定位，
-	# 旧 TOP 对齐 + Godot 18 号行高(20.1)＞cocos 18 号，字形系统性下沉约 2 点压行底板边框
-	# （实测 record 字形底 y183 vs 底边框过渡区起点 y182，用户实跑"标签挡住下面边框"）。
-	var rank_lbl := Label.new()
-	rank_lbl.text = "★" if rank == 0 else "#%d" % rank
-	rank_lbl.theme_type_variation = "RanklistWhiteLabel18"
-	rank_lbl.position = RANKING_CENTER - Vector2(30.0, 12.0)
-	rank_lbl.size = Vector2(60.0, 24.0)
-	rank_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rank_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	rank_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(rank_lbl)
-	# head：源 getTeamHead 组件（图+金框+mask）缺 → Avatar.Picture 直显（披露）。
-	if _player != null and _player.cm != null:
-		var pic: String = String(_player.cm.get_raw_table(&"Avatar").get(str(avatar), {}).get("Picture", ""))
-		if not pic.is_empty():
-			var head_path: String = "res://assets/ui/" + pic.substr(3)
-			if ResourceLoader.exists(head_path):
-				var head := TextureRect.new()
-				head.texture = load(head_path)
-				head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				head.size = HEAD_SIZE
-				head.position = HEAD_CENTER - HEAD_SIZE * 0.5
-				head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				board.add_child(head)
-	# nameBg（源 task_name_bg.png 名字底板）+ name（源 18 号白；等级徽章缺 → 合并 "LvN"，披露）。
-	var name_bg_y: float = NAMEBG_PVP_Y if is_pvp else NAMEBG_COMMON_Y
-	var name_bg := TextureRect.new()
-	name_bg.texture = load(NAME_BG_RES) as Texture2D
-	name_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	name_bg.size = NAME_BG_SIZE
-	name_bg.position = Vector2(195.31, name_bg_y - NAME_BG_SIZE.y * 0.5)
-	name_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(name_bg)
-	var name_lbl := Label.new()
-	name_lbl.text = "%s Lv%d" % [row_name, level]
-	name_lbl.theme_type_variation = "RanklistWhiteLabel18"
-	name_lbl.position = Vector2(NAME_X, name_bg_y - 12.0)
-	name_lbl.size = Vector2(240.0, 24.0)
-	name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(name_lbl)
-	if not is_pvp:
-		_add_record_row(row, board, param)
-	return row
-
-
-# 战力系 record 行（源 :839-905）：tipsText 18 号 ccc3(128,54,23) + value（千分位，源
-# formatNumWithComma → 复用 BattleStatisticsCalc.format_comma）；hero_evo_star 加星图标。
-# value/star 在 record 右侧（源 getRightSidePos）：record 宽离树测不准（variation 18 号
-# 未挂树不解析）→ row.ready 后精排（_place_record_tail）。
-func _add_record_row(row: Control, board: Control, param: int) -> void:
+	var is_guild: bool = _rank_type == "guildliveness"
 	var tips_key: String = ""
 	var with_star: bool = false
 	for group in TAB_TREE:
@@ -340,41 +210,43 @@ func _add_record_row(row: Control, board: Control, param: int) -> void:
 			if child["mode"] == _rank_type:
 				tips_key = String(child.get("tips_key", ""))
 				with_star = bool(child.get("star_icon", false))
-	if tips_key.is_empty():
-		return
-	var record := Label.new()
-	record.text = _player.cm.get_lstr(tips_key)
-	record.theme_type_variation = "RanklistRowRecordLabel"
-	record.position = RECORD_POS
-	record.size = Vector2(240.0, 24.0)
-	record.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	record.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(record)
-	var value := Label.new()
-	value.text = BattleStatisticsCalc.format_comma(param)
-	value.theme_type_variation = "RanklistRowRecordLabel"
-	value.position = RECORD_POS
-	value.size = Vector2(240.0, 24.0)
-	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	value.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(value)
-	var star: TextureRect = null
-	if with_star:
-		star = TextureRect.new()
-		star.texture = load(STAR_ICON_RES) as Texture2D
-		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		star.size = STAR_ICON_SIZE
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		board.add_child(star)
-	row.ready.connect(_place_record_tail.bind(record, star, value))
+	# 照源榜单语义：self_rank 榜内则替换该位 NPC（me_bg 高亮行），榜外仅浮窗显示
+	# （旧版 rank0 "★" 顶部恒叠为迁移期行为，批 C 撤销）。
+	var items: Array = (r["items"] as Array).duplicate()
+	var self_rank: int = int(r["self_rank"])
+	if self_rank >= 1 and self_rank <= items.size():
+		items[self_rank - 1] = {
+			"name": _player.player_name, "level": _player.team_level,
+			"param": int(r["self_param"]), "avatar": int(r.get("self_avatar", 0)), "self": true,
+		}
+	# 2026-08-18 修复轮二 R1：浮窗让位照源——源 rankListMyselfOffsetY=80（:1336），浮窗显示
+	# 时 draglist 下移 80（:1704/:1712），本项目等价 = Rows 顶部垫 80 spacer。
+	# 浮窗显示条件照源 :1330（pvp 不叠），与 spacer 绑定。
+	var show_overlay: bool = _rank_type != "pvp" and self_rank >= 0
+	if show_overlay:
+		var spacer := Control.new()
+		spacer.name = "MyselfSpacer"
+		spacer.custom_minimum_size = Vector2(0.0, RanklistMyselfOverlay.SCROLL_OFFSET_Y)
+		spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_rows.add_child(spacer)
+	for i in items.size():
+		var item: Dictionary = items[i]
+		var row := RanklistRows.make_row(_player.cm, _rank_type, tips_key, with_star,
+			i + 1, String(item["name"]), int(item["level"]), int(item["param"]), int(item.get("avatar", 0)),
+			bool(item.get("self", false)))
+		if not is_guild:
+			row.gui_input.connect(_on_row_input.bind(i + 1, String(item["name"]), int(item["level"]), int(item["param"]), int(item.get("avatar", 0))))
+		_rows.add_child(row)
+	# P0 我的排名浮窗（源 :1318-1571 createMyselfRankSummary）。
+	if show_overlay:
+		_build_myself_overlay(self_rank, int(r["self_param"]))
 
 
-# record 右侧精排（源 getRightSidePos(record) + icon anchor(0,0.4)）：
-# record 已入树 → get_minimum_size() 解析 variation 18 号字体宽度。
-func _place_record_tail(record: Label, star: TextureRect, value: Label) -> void:
-	var value_x: float = RECORD_POS.x + record.get_minimum_size().x
-	if star != null:
-		# 源 anchor ccp(0,0.4)：顶=中心线 y(50.9，修复轮 B 同步上移) - 高x0.4。
-		star.position = Vector2(value_x, RECORD_LINE_CENTER_Y - STAR_ICON_SIZE.y * 0.4)
-		value_x += STAR_ICON_SIZE.x
-	value.position = Vector2(value_x, RECORD_POS.y)
+# 源 ranklist.lua:1318-1571 createMyselfRankSummary：mode==pvp 不叠（:1330 判 tab index）。
+# 单机化 prev_index=0 → delta=self_rank（源 :1364-1365）。挂 container（ScrollLayer 之上）。
+func _build_myself_overlay(self_rank: int, self_param: int) -> void:
+	# pageContainer 源 ccp(245,400) 在 ranklist window 容器坐标系（cocos y-up 480 → Godot y-down）。
+	var page: Control = RanklistMyselfOverlay.build(container, _player.cm, _rank_type,
+		self_rank, self_param, _player.player_name, _player.team_level, _player.avatar)
+	if page != null:
+		page.position = Vector2(OVERLAY_PAGE_GODOT_X, OVERLAY_PAGE_GODOT_Y)

@@ -236,8 +236,16 @@ func test_stage_n_selects_and_shows_preview() -> void:
 	assert_false(panel.start_btn.visible, "未选关 start_btn 隐藏（源 :204）")
 	panel._on_stage_n(1)
 	assert_eq(panel.current_select, 1, "_on_stage_n 选中第 1 关")
-	assert_true(panel.start_btn.visible, "选关后 start_btn 显示（源 :206）")
-	assert_gt(panel.enemy_preview_box.get_child_count(), 0, "选关后敌方预览渲染（源 :224）")
+	# 2026-08-29 按源升级弹窗后：开战钮在弹窗内（源 start @battleinfo），面板级 start_btn 不再因选关显示
+	assert_false(panel.start_btn.visible, "面板级 start_btn 不再显示（源开战钮在 battleLayer 内）")
+	# 2026-08-29 按源升级为 battleLayer 弹窗（撤常驻简化）：选关后弹窗可见且敌方头像已 fill
+	assert_true(panel.battle_layer.visible, "选关后敌方阵容弹窗显示（源 showBattleInfo）")
+	var hosts_n: int = 0
+	for host in panel._bl_hero_hosts:
+		hosts_n += (host as Control).get_child_count()
+	assert_gt(hosts_n, 0, "弹窗内敌方英雄头像渲染（源 :224-235）")
+	panel._close_battle_info()
+	assert_false(panel.battle_layer.visible, "关闭弹窗隐藏（源 closeBattleInfo）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -422,7 +430,9 @@ func test_box_pressed_unpassed_locked_no_claim() -> void:
 	add_child(root)
 	var panel := _make_panel(root, 1)
 	panel._on_box_pressed(5)
-	assert_true(panel.result_label.text.contains("远征") or panel.result_label.text.contains("第 1 关"), "超进度 box 不可点领奖（源 :411-422）")
+	# 超视野 box 源无反馈（hintBox :411-422 仅视野内弹预览浮窗，不动文案通道）——
+	# F3 初始文案置空后 result_label 应保持空（未走领奖/预览任何路径）
+	assert_eq(panel.result_label.text, "", "超进度 box 不可点领奖（源 :411-422）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -559,7 +569,7 @@ func test_panel_new_whitelist() -> void:
 		assert_true(ok, "非白名单 .new(：'%s'" % line)
 		count += 1
 		idx += 5
-	assert_eq(count, 11, "panel .new( 恰 11（icon+timer+3 弹窗+shop×2+滚动条例外×4）")
+	assert_eq(count, 12, "panel .new( 恰 12（icon+timer+3 弹窗+shop×2+滚动条例外×4+battleLayer 敌方头像）")
 	# fills 白名单：格子动态行 TextureButton 恰 2 处。
 	var fills_src: String = FileAccess.get_file_as_string("res://scripts/ui/crusade_fills.gd")
 	assert_eq(fills_src.count("TextureButton.new()"), 2, "fills 恰 2 处 TextureButton（box+battle 动态行）")

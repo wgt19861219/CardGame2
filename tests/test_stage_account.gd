@@ -139,6 +139,7 @@ func test_get_hero_info_with_cache() -> void:
 	assert_eq(int(r["t_level"]), hero.level, "t_level=当前级")
 	assert_eq(int(r["level"]), pre_level, "level=pre_level（快照）")
 	assert_eq(int(r["add_hero_exp"]), 25, "add_hero_exp=传入 hero_exp")
+	assert_eq(int(r["stars"]), int(hero.stars), "stars=英雄星级（源 stars=hero._stars，2026-08-28 补译）")
 	assert_true(r.has("is_max_level"), "is_max_level 字段（playerlimit 未接入默认 false）")
 
 
