@@ -62,6 +62,9 @@ size_flags_vertical = 3
 mouse_filter = 2
 theme_override_constants/separation = 4
 
+; 以下 PH_ 占位仅编辑器预览用，运行时 fill_attributes 全清重建。标题装饰真实结构（2026-08-30
+; 修）= CenterContainer 内 mark(225.6x11.7 ÷CS) 与 label 同中心叠放（源 attributes.lua:29-44
+; 同 height 基准），占位仍是旧两行结构，编辑器所见与运行时不一致，待编辑器会话重排。
 [node name="PH_TitleMark1" type="TextureRect" parent="AttribListHost/AttribVBox" unique_id=1499227484]
 custom_minimum_size = Vector2(80, 12)
 layout_mode = 2
