@@ -20,10 +20,11 @@ func test_scene_manager_pending_consumed_on_unlock() -> void:
 	assert_eq(sm.current_scene_path(), "res://b.tscn", "当前切到排队的 b")
 
 func test_toast_queue() -> void:
+	# 2026-08-30 照源 toast.lua:60-64 改替换语义：连发只留最新（旧队列串行是「上限 toast
+	# 持续太久」根因之一——连点 N 次播 N×2s）。consume 语义不变（FIFO 取出+空返 ""）。
 	var toast := ToastScript.new()
 	toast.show_message("hello")
 	toast.show_message("world")
-	assert_eq(toast.pending_count(), 2)
-	assert_eq(toast.consume(), "hello")
-	assert_eq(toast.consume(), "world")
+	assert_eq(toast.pending_count(), 1, "连发两条替换为 1 条（照源替换语义）")
+	assert_eq(toast.consume(), "world", "留下最新")
 	assert_eq(toast.consume(), "", "空队列返回空")
