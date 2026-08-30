@@ -66,6 +66,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+; 源 skillstren.lua:814-868 board_i Scale9Sprite capInsets CCRectMake(15,15,15,15)（点）→
+; 纹理px = 15×CS(1.28125)=19.2 取 19（L/B）；60px 纹理点尺寸 46.83，R/T=(46.83-30)×CS=21.6 取 21。
+; scaleSize 254×86 直译 rect；贴图边框艺术实测 ~20px 印证（旧值 12/23 切边框进拉伸区致变形，2026-08-30 修）。
 [node name="Skill1Board" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
@@ -77,18 +80,22 @@ mouse_filter = 2
 texture = ExtResource("2_bg1")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 12
-patch_margin_top = 23
-patch_margin_right = 23
-patch_margin_bottom = 12
+patch_margin_left = 19
+patch_margin_top = 21
+patch_margin_right = 21
+patch_margin_bottom = 19
 
+; 源 skillstren.lua:419-438 createSkillIcon：icon=SkillGroup Icon（78×78px÷CS=60.9）中心 ccp(320,ori_height-90(i-1))；
+; frame=equip_frame_white（94×95px÷CS=73.4×74.2）为 icon 子节点 @局部(30,29)≈同中心，盖 icon 上（z_index=1）。
+; 旧值 icon 40×40/frame 48×48 系 CS 换算遗漏（2026-08-30 修）。
 [node name="Skill1Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 296
-offset_top = 106
-offset_right = 344
-offset_bottom = 154
+z_index = 1
+offset_left = 282.9
+offset_top = 94.4
+offset_right = 356.2
+offset_bottom = 168.5
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -96,17 +103,19 @@ expand_mode = 1
 [node name="Skill1Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 300
-offset_top = 110
-offset_right = 340
-offset_bottom = 150
+offset_left = 289.5
+offset_top = 99.5
+offset_right = 350.5
+offset_bottom = 160.5
 ignore_texture_size = true
 stretch_mode = 0
 
+; 源 skillstren.lua:422 nameLabel 18pt 左锚 @ccp(365,ori_height+20-90(i-1))（AccentGoldRowLabel 基 16 → override 18）。
 [node name="Skill1Name" type="Label" parent="."]
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
+theme_override_font_sizes/font_size = 18
 offset_left = 365
 offset_top = 100
 offset_right = 485
@@ -146,18 +155,19 @@ mouse_filter = 2
 texture = ExtResource("3_bg2")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 12
-patch_margin_top = 23
-patch_margin_right = 23
-patch_margin_bottom = 12
+patch_margin_left = 19
+patch_margin_top = 21
+patch_margin_right = 21
+patch_margin_bottom = 19
 
 [node name="Skill2Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 296
-offset_top = 196
-offset_right = 344
-offset_bottom = 244
+z_index = 1
+offset_left = 282.9
+offset_top = 184.4
+offset_right = 356.2
+offset_bottom = 258.5
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -165,10 +175,10 @@ expand_mode = 1
 [node name="Skill2Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 300
-offset_top = 200
-offset_right = 340
-offset_bottom = 240
+offset_left = 289.5
+offset_top = 189.5
+offset_right = 350.5
+offset_bottom = 250.5
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -176,6 +186,7 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
+theme_override_font_sizes/font_size = 18
 offset_left = 365
 offset_top = 190
 offset_right = 485
@@ -215,18 +226,19 @@ mouse_filter = 2
 texture = ExtResource("2_bg1")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 12
-patch_margin_top = 23
-patch_margin_right = 23
-patch_margin_bottom = 12
+patch_margin_left = 19
+patch_margin_top = 21
+patch_margin_right = 21
+patch_margin_bottom = 19
 
 [node name="Skill3Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 296
-offset_top = 286
-offset_right = 344
-offset_bottom = 334
+z_index = 1
+offset_left = 282.9
+offset_top = 274.4
+offset_right = 356.2
+offset_bottom = 348.5
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -234,10 +246,10 @@ expand_mode = 1
 [node name="Skill3Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 300
-offset_top = 290
-offset_right = 340
-offset_bottom = 330
+offset_left = 289.5
+offset_top = 279.5
+offset_right = 350.5
+offset_bottom = 340.5
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -245,6 +257,7 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
+theme_override_font_sizes/font_size = 18
 offset_left = 365
 offset_top = 280
 offset_right = 485
@@ -284,18 +297,19 @@ mouse_filter = 2
 texture = ExtResource("3_bg2")
 axis_stretch_horizontal = 0
 axis_stretch_vertical = 0
-patch_margin_left = 12
-patch_margin_top = 23
-patch_margin_right = 23
-patch_margin_bottom = 12
+patch_margin_left = 19
+patch_margin_top = 21
+patch_margin_right = 21
+patch_margin_bottom = 19
 
 [node name="Skill4Frame" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 296
-offset_top = 376
-offset_right = 344
-offset_bottom = 424
+z_index = 1
+offset_left = 282.9
+offset_top = 364.4
+offset_right = 356.2
+offset_bottom = 438.5
 mouse_filter = 2
 texture = ExtResource("4_frame")
 expand_mode = 1
@@ -303,10 +317,10 @@ expand_mode = 1
 [node name="Skill4Icon" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 300
-offset_top = 380
-offset_right = 340
-offset_bottom = 420
+offset_left = 289.5
+offset_top = 369.5
+offset_right = 350.5
+offset_bottom = 430.5
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -314,6 +328,7 @@ stretch_mode = 0
 unique_name_in_owner = true
 theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
+theme_override_font_sizes/font_size = 18
 offset_left = 365
 offset_top = 370
 offset_right = 485
@@ -353,14 +368,18 @@ mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
 
+; 源 skillstren.lua:384-393 cost Label 15pt 中心锚 @ccp(400,ori_height-27-90(i-1)) → 水平居中对齐；
+; 金币图标 scale 0.5 @ccp(370,...) 位置照源已对（goldicon 43×40px÷CS×0.5≈17×16）。
 [node name="Skill1Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+horizontal_alignment = 1
 offset_left = 370
 offset_top = 149
 offset_right = 430
 offset_bottom = 165
 mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 
 [node name="Skill1LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
@@ -386,11 +405,13 @@ texture = ExtResource("7_gold")
 [node name="Skill2Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+horizontal_alignment = 1
 offset_left = 370
 offset_top = 239
 offset_right = 430
 offset_bottom = 255
 mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 
 [node name="Skill2LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
@@ -416,11 +437,13 @@ texture = ExtResource("7_gold")
 [node name="Skill3Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+horizontal_alignment = 1
 offset_left = 370
 offset_top = 329
 offset_right = 430
 offset_bottom = 345
 mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 
 [node name="Skill3LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
@@ -446,11 +469,13 @@ texture = ExtResource("7_gold")
 [node name="Skill4Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+horizontal_alignment = 1
 offset_left = 370
 offset_top = 419
 offset_right = 430
 offset_bottom = 435
 mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 
 [node name="Skill4LvlAdd" type="Label" parent="."]
 unique_name_in_owner = true
@@ -463,22 +488,30 @@ offset_bottom = 415
 mouse_filter = 2
 
 
+; 源 skillstren.lua:675-721 createTimesBar 三段 Label（pre 金/num 米黄/suffix）18pt 整组居中 @ccp(400,420)；
+; 本项目合并单 Label → 水平居中 + 18pt（旧左对齐 16pt 偏左，2026-08-30 修）。
 [node name="SkillPointLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
 offset_left = 220
 offset_top = 45
 offset_right = 580
 offset_bottom = 75
 mouse_filter = 2
 
+; 源 skillstren.lua:592-620 createcdBar cdButton herodetail-upgrade.png 97×67px÷CS=75.7×52.3 中心 ccp(325,420)；
+; 旧值无 ignore_texture_size 被纹理原尺寸撑 97×67 压首行技能，且 mouse_filter=2 致真实点击
+; 穿透到面板 shade 吞掉（购买从未执行，2026-08-30 修）。
 [node name="BuySkillPointBtn" type="TextureButton" parent="."]
 layout_mode = 0
-mouse_filter = 2
 offset_bottom = 86
 offset_left = 287
 offset_right = 363
 offset_top = 34
+ignore_texture_size = true
+stretch_mode = 0
 unique_name_in_owner = true
 texture_normal = ExtResource("8_buybtn")
 texture_pressed = ExtResource("8_buybtn")
