@@ -797,6 +797,33 @@ func test_buy_skill_point_btn_clickable_and_sized() -> void:
 	root.queue_free()
 
 
+# 购买键「购买」Label（源 skillstren.lua:611-620 cdButtonLabel：T(LSTR("EQUIPINFO.PURCHASE"))
+# 18pt @按钮局部中心 (42,25)（cocos 锚 0.5,0.5 → y 翻转 52-25=27）；结构性新增曾受红线约束
+# 遗留编辑器会话，2026-08-30 经 godot-mcp 补齐。
+func test_buy_skill_point_btn_label() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	var btn: TextureButton = (panel._tab_views["skill"] as Node).get_node("%BuySkillPointBtn") as TextureButton
+	var lbl: Label = btn.get_node_or_null("BuySkillPointLabel") as Label
+	assert_not_null(lbl, "购买键有「购买」Label 子节点（源 cdButtonLabel）")
+	if lbl != null:
+		assert_eq(lbl.text, "购买", "Label 文本=购买（EQUIPINFO.PURCHASE）")
+		assert_eq(lbl.get_theme_font_size("font_size"), 18, "18pt 照源")
+		assert_eq(lbl.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "水平居中")
+		assert_eq(lbl.vertical_alignment, VERTICAL_ALIGNMENT_CENTER, "垂直居中")
+		assert_almost_eq((lbl.offset_left + lbl.offset_right) / 2.0, 42.0, 0.5,
+			"Label 中心 x=42（源 ccp(42,·)）")
+		assert_almost_eq((lbl.offset_top + lbl.offset_bottom) / 2.0, 27.0, 0.5,
+			"Label 中心 y=27（源 25 → y 翻转 52-25）")
+		assert_eq(lbl.mouse_filter, Control.MOUSE_FILTER_IGNORE, "装饰 Label 不吞按钮点击")
+	panel.remove_window()
+	root.queue_free()
+
+
 # 滑入反馈按来源区分（2026-08-30 七轮用户定谳：仅升级技能要滑动反馈，装备/进阶/翻页等
 # 其余 refresh_content 刷新不滑）。升级路径=hero_package 接线 refresh_content(true)。
 func test_rebuild_slide_only_on_upgrade_path() -> void:

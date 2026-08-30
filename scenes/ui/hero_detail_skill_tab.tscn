@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://ce4d8vbdcc03t" load_steps=8]
+[gd_scene format=3 uid="uid://ce4d8vbdcc03t" load_steps=9]
 
 [ext_resource type="Texture2D" uid="uid://c6hc85fvmusfb" path="res://assets/ui/alpha/HVGA/herodetail-detail-popup.png" id="1_popup"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_skill_bg_1.png" id="2_bg1"]
@@ -516,3 +516,17 @@ unique_name_in_owner = true
 texture_normal = ExtResource("8_buybtn")
 texture_pressed = ExtResource("8_buybtn")
 texture_hover = ExtResource("8_buybtn")
+
+; 源 skillstren.lua:611-620 cdButtonLabel：「购买」(EQUIPINFO.PURCHASE) 18pt @按钮局部
+; 中心 (42,25)（cocos 锚 0.5,0.5 → y 翻转 52-25=27），默认白无描边照源；rect 60×24 中心 (42,27)。
+[node name="BuySkillPointLabel" type="Label" parent="BuySkillPointBtn"]
+horizontal_alignment = 1
+layout_mode = 0
+mouse_filter = 2
+offset_bottom = 39
+offset_left = 12
+offset_right = 72
+offset_top = 15
+text = "购买"
+theme_override_font_sizes/font_size = 18
+vertical_alignment = 1
