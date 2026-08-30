@@ -29,6 +29,7 @@ const GS_POP_DURATION: float = 0.2
 const TAB_DETAIL: String = "detail"
 const TAB_CARD: String = "card"
 const TAB_SKILL: String = "skill"
+const TAB_EQUIP: String = "equip"   # 装备进阶列表（源 window.lua:466-477 doClickEvolveEquip setOpenMode("equip")；evolveequip.lua 独立弹窗→本项目并入 tab 侧滑）
 const DEFAULT_TAB: String = TAB_CARD   # 用户指示（2026-07-17）：默认 card 图鉴（setOpenMode(nil)=doMoveBack 无 tab，用户要进显图鉴）
 const BASE_SLIDE_OFFSET: float = 140.0   # doMove 140（window.lua:300 container 右移）源值直译。旧 178 系 bg 纹理直用时代 140×1.28 的 CS 遗漏补偿——2026-08-22 Bg ÷CS 修正后回归；card 态 bg left=338.5 与 card 框右缘 324.9（2026-08-22 内容回源实测）留 gap 13.6（源同）。CloseBtn 移出 base 固定屏幕右上（不随 base）
 # doOpenDetail/Skill/Card pop endPos=ccp(-200,0)（window.lua:430/386/513）：tab 内容 container 显示态左移 200。
@@ -66,6 +67,9 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	pd = p_pd
 	_hero_ids = hero_manager.get_owned_hero_ids() if hero_manager != null and hero != null else []
 	_current_idx = _hero_ids.find(hero.inst_id) if hero != null else -1
+	# popwindow.lua:33（源）：herodetail {touch_priority=-130} 黑半透 shade 吞点击、无点外关闭（关闭仅 %CloseBtn）。
+	# 缺省时内容区（全 IGNORE）点击穿透 shade 触发点外关闭 → 点详情页任意位置误返回英雄包裹（2026-08-29 用户反馈）。
+	shade_close_on_click = false
 	setup()   # PopWindow.setup（shade + container）
 	_build_content()
 
@@ -93,6 +97,7 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 		"card": content.get_node("%TabCardView") as Control,
 		"detail": content.get_node("%TabDetailView") as Control,
 		"skill": content.get_node("%TabSkillView") as Control,
+		"equip": content.get_node("%TabEquipView") as Control,
 	}
 	# tab view z_index 由 .tscn 决定（CardView z=2 让 Art 显在 bg 上，其余 z=-1；先前循环强制 z=-1 是 bug）。
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
@@ -119,10 +124,7 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 
 # 翻页箭头（window.lua:1843-1936 createArrowButton）。多于 1 个英雄才显示；重建内容后需重连。
 func _setup_arrows() -> void:
-	if _base_layer == null:
-		return
 	var show: bool = _hero_ids.size() > 1
-	# turnPrePage/turnNextPage：环形索引切 hero（_advance ∓1），refresh 复用 _rebuild_content。
 	_wire_arrow("%LeftArrow", show, func() -> void: _advance(-1))
 	_wire_arrow("%RightArrow", show, func() -> void: _advance(1))
 
@@ -131,11 +133,20 @@ func _wire_arrow(node_path: String, show: bool, cb: Callable) -> void:
 	var btn: TextureButton = _base_layer.get_node_or_null(node_path) as TextureButton
 	if btn == null:
 		return
-	btn.visible = show
+	# visible 统一归 _set_arrows_visible（_show_tab_content/_close_tab 必经，含 equip 排除）。
 	for c in btn.pressed.get_connections():
 		btn.pressed.disconnect(c.callable)
 	if show:
 		btn.pressed.connect(cb)
+
+
+# 翻页箭头：显隐=多英雄；任一 tab 打开时左箭头平移列表左缘外（全局 12，各 tab 面板左缘 56 外；
+# 2026-08-30 用户两轮定谳：equip 平移合格后要求三 tab 同样处理）。局部 x：源位 38 / tab 态 -128。
+func _refresh_arrows(tab_open: bool) -> void:
+	var l: TextureButton = _base_layer.get_node("%LeftArrow") as TextureButton
+	l.position.x = -128.0 if tab_open else 38.0
+	l.visible = _hero_ids.size() > 1
+	(_base_layer.get_node("%RightArrow") as TextureButton).visible = _hero_ids.size() > 1
 
 
 # turnPrePage/turnNextPage：环形索引切 hero，refresh 复用 _rebuild_content。
@@ -173,6 +184,8 @@ func _bind_signals() -> void:
 	HeroDetailUpgradeFx.setup_awake_button(_base_layer, hero, cm, AWAKE_LSTR_KEY, AWAKE_FALLBACK_TEXT, func() -> void: awake_requested.emit())
 	for key in _tab_buttons:
 		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
+	# 装备进阶入口（左上浮动按钮，非底栏第 4 tab；源 window.lua:902-911 equip_button → doClickEvolveEquip）。
+	(_base_layer.get_node("%EquipAdvanceBtn") as BaseButton).pressed.connect(_on_tab_pressed.bind(TAB_EQUIP))
 
 
 # 关闭面板统一入口（外层 %CloseBtn + card_tab 内 %CardCloseBtn 共用，源 card.lua:158-180 close 按钮 → closeWindow）。
@@ -194,12 +207,6 @@ const AWAKE_FALLBACK_TEXT: String = "觉醒"
 
 
 # ---- Phase B：tab 内容 fill（挂各 host，visible 切换）----
-
-# 标记动态 tab 内容子节点（测试识别 "tab 内容已渲染"；Phase B 不用于 free）。
-func _add_tab_content(host: Control, node: Node) -> void:
-	node.set_meta(&"tab_content", true)
-	host.add_child(node)
-
 
 # fill card view：builder.setup_card_view 填 frame/art/name + tabs.fill_card_view 补图标/星数（源 card.lua:127-140）。
 func _fill_card_view() -> void:
@@ -292,7 +299,8 @@ func _toggle_skill_desc(slot: int) -> void:
 	if hero == null:
 		return
 	var bg: Control = HeroDetailTabs.build_skill_desc(hero, slot, cm)
-	_add_tab_content(_desc_host, bg)
+	bg.set_meta(&"tab_content", true)   # 标记动态 tab 内容（测试识别 "tab 内容已渲染"）
+	_desc_host.add_child(bg)
 	_desc_label = bg
 
 
@@ -337,6 +345,11 @@ func _show_tab_content(key: String) -> void:
 	# 进入 skill tab 时 fill 技能点信息栏（源 skillstren.lua createInformationBar:476-486）。
 	if key == TAB_SKILL:
 		_refresh_skill_point_bar()
+	# 进入 equip tab 时 fill 装备进阶列表（源 doClickEvolveEquip → evolveequip createEquipList）。
+	if key == TAB_EQUIP:
+		EvolveEquipFills.fill_equip_list(_tab_views[TAB_EQUIP] as Control, hero, cm,
+				func(eid: int) -> void: HeroDetailEquipSlots.open_equip_craft_by_id(eid, cm, pd, get_parent(), self))
+	_refresh_arrows(true)   # 任一 tab 打开：箭头平移面板左缘外（含 equip，2026-08-30 用户定谳）
 
 
 # 切 tab 选中态 variation：选中 → HeroDetailTabActive，未选 → HeroDetailTab。
@@ -361,6 +374,7 @@ func _close_tab() -> void:
 	_slide_base_to(0.0)
 	for k in _tab_views:
 		(_tab_views[k] as CanvasItem).visible = false
+	_refresh_arrows(false)
 	_hide_skill_desc()
 
 
