@@ -286,8 +286,11 @@ func test_actor_scale_action_grow() -> void:
 
 
 # 源 speedBtnHandler（:1047-1061）— 点击循环 1→2→3→4→1 + updateSpeedBtnLabel 切贴图/label。
+# 档位持久化（2026-08-31 四轮）后初始档来自 cfg：注入测试专用路径固定初始 1（隔离玩家真实档，
+# 多测试共享 user:// 互踩判例——曾致本测试读到取证残留 3/4 档断言错位）。
 func test_speed_button_cycles_states() -> void:
 	var btn := BattleSpeedButton.new()
+	btn.cfg_path = "user://battle_test_cycle.cfg"
 	btn.setup(1)
 	assert_eq(btn.get_state(), 1, "初始档 1")
 	btn._on_pressed()   # 模拟点击（源 speedBtnHandler）
@@ -302,7 +305,14 @@ func test_speed_button_cycles_states() -> void:
 
 
 # 源 resetUI（:1235-1250）+ speedBtnHandler（:1052-1053）— scene 装配 speedBtn + 点击接 set_speed_state。
+# scene 装配走 assembler 读真实 cfg（不可注入）：前置备份+写 1 固定初始档，后置恢复玩家原值。
 func test_scene_speed_button_sets_state() -> void:
+	var backup := ConfigFile.new()
+	var had: bool = backup.load("user://battle.cfg") == OK
+	var orig: int = int(backup.get_value("battle", "speed_state", 1)) if had else 1
+	var pre := ConfigFile.new()
+	pre.set_value("battle", "speed_state", 1)
+	pre.save("user://battle.cfg")
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -311,6 +321,9 @@ func test_scene_speed_button_sets_state() -> void:
 	assert_not_null(scene.speed_btn, "scene 装配 speed_btn（源 resetUI）")
 	scene.speed_btn._on_pressed()   # 1→2
 	assert_eq(scene.speed_state, 2, "speed_changed → set_speed_state(2)")
+	var rb := ConfigFile.new()
+	rb.set_value("battle", "speed_state", orig)
+	rb.save("user://battle.cfg")
 	scene.queue_free()
 
 

@@ -73,10 +73,11 @@ func _create_visuals() -> void:
 		holo.modulate.a = 96.0 / 255.0
 		add_child(holo)
 		_play_holo_anim(holo)
-	# chest（源 :14 btn CCMenuItemImage chest1）— 拾取触发由 on_tapped
+	# chest（源 :14 btn CCMenuItemImage chest1）— 点击拾取（Area2D，贴源按钮可点+吞事件）
 	_chest = _load_sprite(CHEST_PATH)
 	if _chest:
 		add_child(_chest)
+		_attach_tap_area(_chest)
 
 
 func _play_shine_anim(shine: Sprite2D) -> void:
@@ -172,3 +173,20 @@ func _load_sprite(path: String) -> Sprite2D:
 	s.texture = tex
 	# Sprite2D（CanvasItem）无 mouse_filter，默认不处理点击；拾取由 scene/逻辑触发 on_tapped
 	return s
+
+
+# 宝箱点击区（源 :17-24 CCMenuItemImage registerScriptTapHandler → onTapped）。
+func _attach_tap_area(chest: Sprite2D) -> void:
+	var area := Area2D.new()
+	area.input_pickable = true
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	if chest.texture != null:
+		rect.size = chest.texture.get_size()
+	shape.shape = rect
+	area.add_child(shape)
+	chest.add_child(area)
+	area.input_event.connect(func(viewport: Node, event: InputEvent, _idx: int, _pos: Vector2) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			viewport.accept_event()
+			on_tapped())

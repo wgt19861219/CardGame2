@@ -85,8 +85,9 @@ func _start_light_rotate() -> void:
 
 
 # 音效：源 stagefailedlsr clickBack 读 stageFailed.replay，soundres:180 定义 reply（拼写不一致→nil 不播）。
+# 行为：源 doClickBack → replaceScene(stagedetail)（回关卡详情可再开战）；本项目回主界面后重弹详情面板。
 func _on_back_pressed() -> void:
-	StageSettlementCommon.goto_main_scene("")
+	StageSettlementCommon.replay_stage(stage_id)
 
 
 # 音效：源 stagefailedlsr clickMenu → stageFailed.nextStage = common_click_feedback（soundres:181）。

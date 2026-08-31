@@ -42,6 +42,9 @@ func emit_shake(max_height: float, shake_time: float, shake_num: int) -> void:
 func emit_gold_drop() -> void:
 	emit_event(BattleEvent.gold_drop(self))
 
+func emit_loot_drop() -> void:
+	emit_event(BattleEvent.loot_drop(self))
+
 func emit_launch(time: float) -> void:
 	emit_event(BattleEvent.launch(self, time))
 

@@ -17,12 +17,14 @@ const RETURN_BTN_TEX: String = "res://assets/ui/alpha/HVGA/pausebtn.png"
 const HERO_PANEL_MIN_SIZE: Vector2 = Vector2(120.0, 126.0)  # 卡逻辑区（源 width=120/height≈144 取桶+条包络 126；HBox 中心距 120=源排布公式）
 
 
-# 倍速按钮装配（源 :1235-1250）。scene.speed_state 初值 fill，speed_changed 连 _on_speed_changed。
+# 倍速按钮装配（源 :1235-1250）。setup 内读持久化档（源 :14 CCUserDefault），读出回写
+# scene.speed_state（源是静态类变量天然共享，本项目 scene 实例变量须显式同步，engine 倍速才生效）。
 static func create_speed_button(scene) -> void:
 	if scene.speed_btn != null:
 		scene.speed_btn.queue_free()
 	var btn := BattleSpeedButton.new()
 	btn.setup(scene.speed_state)
+	scene.set_speed_state(btn.get_state())
 	btn.speed_changed.connect(scene._on_speed_changed)
 	scene.hud.add_to_bottom_right(btn)
 	scene.speed_btn = btn

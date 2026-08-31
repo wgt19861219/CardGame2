@@ -49,3 +49,30 @@ static func goto_main_scene(sfx_name: String = "common_click_feedback") -> void:
 	if sfx_name != "":
 		AudioPlayer.play_sfx(sfx_name)
 	SceneManager.change_scene(MAIN_SCENE_PATH)
+
+
+# 重试跳转目标（源 stagedone.lua:93 doClickReplay / stagefailed.lua:42 doClickBack →
+# replaceScene(stagedetail)：回关卡详情可再开战）。dungeon 关卡（mode 走 stage 结算）本项目无
+# 独立详情面板 → 空 target 保持回主界面（受控简化）；源 hasTriggerShop 弹商店分支无 trigger shop 系统不实现。
+static func replay_target(stage_id: int) -> Dictionary:
+	if StageAccount.is_dungeon_stage(stage_id):
+		return {}
+	return {"target": "stagedetail", "stage_id": stage_id}
+
+
+# 下一关跳转目标（源 stagedone.lua:111 doClickNext → popScene + WinBackToSelect → 选关）。
+static func next_target(stage_id: int) -> Dictionary:
+	if StageAccount.is_dungeon_stage(stage_id):
+		return {}
+	return {"target": "stageselect"}
+
+
+# 结算页按钮统一跳转：存 pending（main_scene._maybe_resume_stage_result 消费重弹面板）+ 回主界面。
+static func replay_stage(stage_id: int) -> void:
+	GameData.pending_stage_result = replay_target(stage_id)
+	goto_main_scene()
+
+
+static func next_stage(stage_id: int) -> void:
+	GameData.pending_stage_result = next_target(stage_id)
+	goto_main_scene()

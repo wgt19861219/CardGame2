@@ -18,6 +18,7 @@ enum Type {
 	SHADER_REMOVE,  # 弹 shader：value(token)
 	SHAKE,          # 镜头震动：value(max_h)/value2(time)/value3(num)
 	GOLD_DROP,      # 金币掉落演出
+	LOOT_DROP,      # 掉落宝箱演出（源 battle_engine.lua:1038 敌怪死亡 showMonsterLoots）
 	LAUNCH,         # 单位 launch 演出：value(time)
 	NEW_ACTION,     # 新动作开始：text(action)/flag(loop)（发射时快照，防 drain 时 model 已变）
 	PUPPET,         # 傀儡态切换：text(action)/flag(loop)（切换后恢复动作用发射时快照）
@@ -127,6 +128,13 @@ static func shake(unit: Variant, max_height: float, shake_time: float, shake_num
 static func gold_drop(unit: Variant) -> BattleEvent:
 	var e := BattleEvent.new()
 	e.type = Type.GOLD_DROP
+	e.unit = unit
+	return e
+
+
+static func loot_drop(unit: Variant) -> BattleEvent:
+	var e := BattleEvent.new()
+	e.type = Type.LOOT_DROP
 	e.unit = unit
 	return e
 

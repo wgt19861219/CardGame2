@@ -27,13 +27,18 @@ static func _play_effect_sound(effect_name: String) -> void:
 		AudioPlayer.play_sfx_by_path(rel)
 
 
-static func render(engine: BattleEngine, actors_by_unit: Dictionary) -> void:
+static func render(engine: BattleEngine, actors_by_unit: Dictionary, scene: Variant = null) -> void:
 	for e in engine.drain_events():
-		_dispatch(e, actors_by_unit)
+		_dispatch(e, actors_by_unit, scene)
 
 
-static func _dispatch(e: BattleEvent, actors_by_unit: Dictionary) -> void:
+static func _dispatch(e: BattleEvent, actors_by_unit: Dictionary, scene: Variant = null) -> void:
 	if e.unit == null:
+		return
+	if e.type == BattleEvent.Type.LOOT_DROP:
+		# 掉落宝箱（源 onUnitDie showMonsterLoots）不依赖死亡单位的 actor，转发 scene 编排
+		if scene != null:
+			BattleLootDirector.show_monster_loots(scene, e.unit)
 		return
 	var actor: Variant = actors_by_unit.get(e.unit)
 	if actor == null:

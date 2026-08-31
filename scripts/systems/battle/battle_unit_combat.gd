@@ -172,6 +172,7 @@ static func die(u: Variant, killer: Variant) -> void:
 		for unit in u.engine.foreach_alive_unit(foe_camp):
 			unit.rebuild()
 	u.emit_gold_drop()
+	u.emit_loot_drop()
 
 
 static func hurt(u: Variant) -> void:

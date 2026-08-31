@@ -65,6 +65,7 @@ func _ready() -> void:
 	# _maybe_start_tutorial()   # 2026-08-20 用户指示：一进游戏的新手引导暂不弹（与剧情/解锁公告一并禁用）；恢复取消本行注释即可
 	_maybe_resume_excavate()
 	_maybe_resume_pvp()
+	_maybe_resume_stage_result()
 
 
 func _maybe_start_tutorial() -> void:
@@ -89,7 +90,7 @@ func _maybe_start_tutorial() -> void:
 func _maybe_resume_excavate() -> void:
 	if GameData.pending_excavate.is_empty():
 		return
-	var pe: Dictionary = GameData.pending_excavate
+	var pe: Dictionary = GameData.pending_excavate.duplicate()   # Dictionary 引用型：先拷贝再清，否则读值恒默认
 	GameData.pending_excavate.clear()
 	var won: bool = bool(pe.get("won", false))
 	var excavate_id: int = int(pe.get("id", 0))
@@ -104,12 +105,27 @@ func _maybe_resume_excavate() -> void:
 func _maybe_resume_pvp() -> void:
 	if GameData.pending_pvp.is_empty():
 		return
-	var pp: Dictionary = GameData.pending_pvp
+	var pp: Dictionary = GameData.pending_pvp.duplicate()   # 同 excavate：先拷贝再清
 	GameData.pending_pvp.clear()
 	var reply: Dictionary = pp.get("reply", {})
 	var won: bool = bool(pp.get("won", false))
 	Toast.show_message(("PVP 胜利！排名 %d 奖励 %d" % [int(reply.get("rank", 0)), int(reply.get("reward", 0))]) if won else "PVP 失败")
 	_open_ladder()
+
+
+# stage 结算页重试/下一关按钮跨场景重弹（源 doClickReplay/doClickBack → stagedetail、doClickNext →
+# WinBackToSelect 选关；PopWindow 跨场景丢失，结算按钮经 settlement_common 存 pending_stage_result）。
+func _maybe_resume_stage_result() -> void:
+	if GameData.pending_stage_result.is_empty():
+		return
+	var pr: Dictionary = GameData.pending_stage_result.duplicate()   # 同 excavate/pvp：先拷贝再清
+	GameData.pending_stage_result.clear()
+	if String(pr.get("target", "")) == "stagedetail":
+		var detail := StageDetailPanel.new("stagedetail", {})
+		detail.setup_panel(int(pr.get("stage_id", 0)), GameData.player.stage_manager, GameData.player, BattleRng.new(randi()))
+		detail.show_window(self)
+	else:
+		MainSceneEntryRouter.open_stage_select(self)
 
 
 # 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
