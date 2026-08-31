@@ -70,7 +70,7 @@ var next_btn: Variant = null
 var battle_info: Dictionary = {}
 var wave_mark: Variant = null
 var gold_marker: Variant = null
-var loot_marker: Variant = null
+var loot_marker: Variant = null; var loot_slots: Variant = null   # 槽位（BattleLootDirector 懒建）
 var heroes_panel: Control = null
 var hud: BattleHud = null          # 战斗 HUD 容器（常驻，分区编排 HUD 元素）
 var _hero_panels: Dictionary = {} # unit→HeroPanel（源 unit.heroPanel 波次复用，scene dict 避改 BattleUnit）
@@ -149,8 +149,7 @@ func reset_state() -> void:
 		if u is Node:
 			u.queue_free()
 	ui_list.clear()
-	frames = 0
-	last_sync_tick = -1
+	frames = 0; last_sync_tick = -1
 	if engine != null:
 		_create_heroes_panel()
 		for unit in engine.unit_list:
@@ -204,7 +203,7 @@ func step(dt: float) -> void:
 	if is_paused or engine == null:
 		return
 	engine.update(dt)
-	BattleEventRenderer.render(engine, _actors_by_unit); frames += 1   # T4：同帧 drain 事件分发（近等价旧同步直调）
+	BattleEventRenderer.render(engine, _actors_by_unit, self); frames += 1   # T4：同帧 drain 事件分发（近等价旧同步直调）
 	_sync_actors()
 	ProjectileSync.sync(self)
 	_advance_actor_list(dt)
@@ -352,6 +351,8 @@ func _advance_ui_list(dt: float) -> void:
 	var n: int = 0
 	for i in range(ui_list.size()):
 		var ui: Variant = ui_list[i]
+		if not is_instance_valid(ui):
+			continue   # 已自 queue_free（宝箱飞抵 marker）→ 剔除；freed 实例上 is/has_method 均报错
 		if ui.has_method("update"):
 			ui.update(dt)
 		var _term: Variant = ui.get("terminated")
@@ -437,7 +438,6 @@ func _on_next_pressed() -> void:
 	if next_btn != null:
 		next_btn.hide_button()
 	var maxtime: float = _start_player_walk_to_next_battle()
-	_auto_collect_loots()
 	await get_tree().create_timer(maxtime).timeout
 	next_wave_requested.emit()
 
@@ -465,8 +465,7 @@ func _auto_collect_loots() -> void:
 	for ui in ui_list:
 		if ui.has_method("on_auto_collect"):
 			await get_tree().create_timer(delay).timeout
-			ui.on_auto_collect()
-			delay += 0.16666666666666666
+			ui.on_auto_collect(); delay += 0.16666666666666666
 
 
 func show_next_button() -> void:
@@ -484,6 +483,7 @@ func _on_wave_clear() -> void:
 	# 玩家向右走（gotoNextBattle），_walking_to_next 冻结 engine 驱动走路。
 	_walking_to_next = true
 	var maxtime: float = _start_player_walk_to_next_battle()
+	_auto_collect_loots()   # 波清即吸宝箱（源 :442 autoCollectLoots 随 nextwaveAction 并行）
 	await get_tree().create_timer(maxtime).timeout
 	_walking_to_next = false
 	if _finalized or engine == null:

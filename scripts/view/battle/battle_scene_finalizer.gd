@@ -63,7 +63,9 @@ static func finalize_pvp(scene) -> void:
 
 
 # stage 战斗结算：finalize_stage_battle 算胜负发奖 → 存 last_result → 切结算场景。
+# 宝箱自动收集先于结算（源 battle_engine.lua:1530 result==0 autoCollectLoots：逐个飞 marker 后才 exit）。
 static func finalize_stage(scene) -> void:
+	await BattleLootDirector.collect_before_finalize(scene)
 	var ctx: Dictionary = scene._battle_context
 	var sid: int = int(ctx["stage_id"])
 	var tids: Array[int] = []
