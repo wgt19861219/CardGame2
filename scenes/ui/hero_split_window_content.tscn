@@ -190,10 +190,11 @@ text = "详细规则"
 [node name="CloseBtn" type="TextureButton" parent="Frame"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 650.4
-offset_top = -1.56
-offset_right = 708.2
-offset_bottom = 57.03
+offset_left = 650.3937
+offset_top = -1.5619
+offset_right = 708.2062
+offset_bottom = 57.0319
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")
 ignore_texture_size = true
+stretch_mode = 0

@@ -171,6 +171,7 @@ offset_bottom = 35.75
 texture_normal = ExtResource("5_close")
 texture_pressed = ExtResource("6_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 合成按钮（源 :426-465 ok/ok_down Scale9 herodetail-upgrade cap(20,20,20,20)
 ; at (145,45) 中心锚 scaleSize 250x49 → 三态+字号走 FragmentComposeOkButton

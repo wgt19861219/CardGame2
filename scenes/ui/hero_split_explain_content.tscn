@@ -82,13 +82,14 @@ text = "规则说明"
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 634.77
-offset_top = 43.67
-offset_right = 683.99
-offset_bottom = 96.01
+offset_left = 634.7706
+offset_top = 43.6681
+offset_right = 683.9894
+offset_bottom = 96.0119
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 滚动区（源 draglist cliprect (156.25,76.56,485.94,282.81) 场景空间 → 全屏
 ; (236.25,200.63)-(722.19,483.44)，纵向滚动）

@@ -120,6 +120,13 @@ func _update_tab_visual() -> void:
 		var btn: TextureButton = _tabs[key]
 		var selected: bool = key == _clid
 		btn.texture_normal = load(CLASSBTN_SEL_RES if selected else CLASSBTN_RES)
+		# 两态贴图显示宽不同（classbtn 134px→104.58 / selected 145px→113.17，px÷CS），
+		# tscn 补 stretch_mode=0 后 rect 管渲染，须随贴图切换等比宽防选中态压扁 8%
+		# （2026-08-31 全库 stretch 清偿，同 battle_prepare 四轮判例，中心保持不动）。
+		var tab_w: float = 113.17 if selected else 104.58
+		var tab_cx: float = btn.position.x + btn.size.x * 0.5
+		btn.size.x = tab_w
+		btn.position.x = tab_cx - tab_w * 0.5
 		btn.z_index = 13 if selected else 11
 
 

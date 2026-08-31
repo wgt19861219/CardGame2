@@ -50,6 +50,7 @@ offset_bottom = 85.76
 texture_normal = ExtResource("2_close")
 texture_pressed = ExtResource("3_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 装备图标挂点（源 createIcon :298-305 readequip.createIcon(id) at (80,360)
 ; 中心锚）：中心 _g(80,360)=(160,200)，40x40 容器（工厂 icon fill 挂此）

@@ -38,6 +38,7 @@ offset_bottom = 144.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabAllLabel" type="Label" parent="." unique_id=1458366738]
 unique_name_in_owner = true
@@ -63,6 +64,7 @@ offset_bottom = 204.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabFrontLabel" type="Label" parent="." unique_id=1383256592]
 unique_name_in_owner = true
@@ -88,6 +90,7 @@ offset_bottom = 264.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabMiddleLabel" type="Label" parent="." unique_id=1065126803]
 unique_name_in_owner = true
@@ -113,6 +116,7 @@ offset_bottom = 324.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabBackLabel" type="Label" parent="." unique_id=2076180870]
 unique_name_in_owner = true
@@ -137,6 +141,7 @@ offset_bottom = 81.75
 texture_normal = ExtResource("4_backbtn")
 texture_pressed = ExtResource("5_backbtnp")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 源 heropackage.lua:761 draglist cliprect=CCRect(0,45,800,348) 全屏宽视觉裁剪区 → Godot
 ; (0, 480−45−348=87, 800, 435)。旧 rect(105,95,625,443) 误用源 rect（触摸区）口径且窄 275：

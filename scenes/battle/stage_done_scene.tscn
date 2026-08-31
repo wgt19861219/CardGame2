@@ -187,25 +187,27 @@ unique_name_in_owner = true
 visible = false
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
-offset_left = 656.667
-offset_top = 119.25
-offset_right = 763.333
-offset_bottom = 211.5
+offset_left = 660.05
+offset_top = 117.375
+offset_right = 759.95
+offset_bottom = 213.375
 texture_normal = ExtResource("5_replay")
 texture_pressed = ExtResource("6_replayp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Next" type="TextureButton" parent="." unique_id=1231073365]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
-offset_left = 656.667
-offset_top = 334.5
-offset_right = 763.333
-offset_bottom = 426.75
+offset_left = 660.05
+offset_top = 332.625
+offset_right = 759.95
+offset_bottom = 428.625
 texture_normal = ExtResource("7_next")
 texture_pressed = ExtResource("8_nextp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="HeroHost" type="Control" parent="." unique_id=1891025862]
 ; 源 hero_ori=(195,243) CCSprite 中心锚点（container 104×104，Cocos 左下原点）→ Godot 左上

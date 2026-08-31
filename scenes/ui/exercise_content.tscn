@@ -38,6 +38,7 @@ offset_bottom = 155.8
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 面板层照源 frame（exercise.lua:708-720 / cap 出处 :1045）Scale9 main_vit_tips
 ; capInsets(10,10,58,26)（贴图 103x61，cap 左下原点 → top=61-10-26=25 bottom=y=10）

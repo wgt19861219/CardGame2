@@ -25,3 +25,4 @@ offset_bottom = 391.51
 texture_normal = ExtResource("1_close")
 texture_pressed = ExtResource("2_closep")
 ignore_texture_size = true
+stretch_mode = 0
