@@ -71,6 +71,10 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	portrait = ReadheroIcon.new()
 	portrait.setup({"id": int(unit.tid), "stars": int(unit.stars), "isHideFrame": true}, cm)
 	portrait_host.add_child(portrait)
+	# 2026-08-28 readhero 83 根修后 portrait(78×78)贴容器左下，视觉中心=(39,65)≠容器中心
+	# (52,52)，偏左下 13px（宿主波及：头像左下坠+星埋进血条）。补偿令视觉中心回 Host (52,52)
+	# =组件 (60,56)=源卡内 (0,70)（battle_prepare/ladder「视觉中心对位」判例，框/桶不动）。
+	portrait.position = Vector2(13.0, -13.0)
 	portrait_host.move_child(portrait, 0)   # 让 portrait 在 FrameBtn 之下（视觉等价源 add 顺序）
 	# 源 hero_panel.lua:15-16 两条均 HpBar 大条（bg 119px）——旧版误用 FloatingBar 小条
 	# （bg 89px < mp_mana.png 104px 满格超框"变长"，2026-08-18 修）。
