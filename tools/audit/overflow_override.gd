@@ -24,7 +24,7 @@ func _scan() -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
-	var key := scene.name + "@" + str(Time.get_ticks_msec() // 60000)
+	var key := scene.name + "@" + str(Time.get_ticks_msec() / 60000)
 	var found: Array = []
 	for node in _iter(scene):
 		if node is Control and _border_like(node.name.to_lower()):
