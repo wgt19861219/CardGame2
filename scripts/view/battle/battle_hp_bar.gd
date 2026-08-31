@@ -45,6 +45,7 @@ func _setup(unit: Variant, bar_type: String, color: String) -> void:
 	_type = bar_type
 	_inc_speed = HP_INC_SPEED if bar_type == "HP" else MP_INC_SPEED
 	# background（灰底，源 :16）
+	var to_local: Vector2 = Vector2.ONE   # 显示→局部换算（bg 挂载后按 scale 赋值）
 	_background = _load_sprite("hp_gray.png")
 	if _background:
 		add_child(_background)
@@ -55,21 +56,25 @@ func _setup(unit: Variant, bar_type: String, color: String) -> void:
 		# 源 :61/68/71 fg/mid anchorPoint(0,0)+ccp(6,1)——ed.createSprite 默认锚点左下，
 		# 即从 bg 左下角内缩 (6,1)。Godot bg centered=true 原点=中心 → 左上对齐需 -bg_half
 		# 再加内缩（y-up/y-down 的 1px 差忽略；mask 源 pos(0,0) 仅 -bg_half）。
+		# ⚠️ position 是 bg 的局部（纹素）空间，会被 bg.scale(1/CS) 二次缩放——显示值须
+		# ÷scale 转局部，旧代码直填显示值致 fg/mid/mask 整体右移 ~7 逻辑px（fill 左空隙
+		# 假象主因，2026-08-31 战斗英雄卡二轮修；star 挂 bg 下同理）。
 		var bg_half: Vector2 = _background.texture.get_size() / CONTENT_SCALE * 0.5 if _background.texture != null else Vector2.ZERO
+		to_local = Vector2.ONE / _background.scale
 		_midlayer = _load_sprite("hp_yellow.png")
 		if _midlayer:
 			_midlayer.centered = false
-			_midlayer.position = -bg_half + OFFSET
+			_midlayer.position = (-bg_half + OFFSET) * to_local
 			_background.add_child(_midlayer)
 		_foreground = _load_sprite(_resolve_fg_res(bar_type, unit, color))
 		if _foreground:
 			_foreground.centered = false
-			_foreground.position = -bg_half + OFFSET
+			_foreground.position = (-bg_half + OFFSET) * to_local
 			_background.add_child(_foreground)
 		_mask = _load_sprite("hp_red_mask.png" if bar_type == "HP" else "mp_mana_mask.png")
 		if _mask:
 			_mask.centered = false
-			_mask.position = -bg_half
+			_mask.position = -bg_half * to_local
 			_mask.visible = false
 			_background.add_child(_mask)
 	# 初始 percent + scale（源 :51-58）
@@ -84,6 +89,7 @@ func _setup(unit: Variant, bar_type: String, color: String) -> void:
 		_star = _create_star()
 		if _star:
 			_background.add_child(_star)
+			_star.position *= to_local   # 显示→局部（同 fg/mid 空间修正）
 			_star.visible = false
 
 
@@ -158,7 +164,7 @@ func update(dt: float) -> void:
 	visible = not auto_hide or _hide_timer > 0.0
 	_hide_timer -= dt
 	if _star != null and _star.visible:
-		_star.position.x = STAR_OFFSET_X + STAR_RANGE * _fore_length
+		_star.position.x = (STAR_OFFSET_X + STAR_RANGE * _fore_length) / _background.scale.x
 
 
 func _load_sprite(res: String) -> Sprite2D:

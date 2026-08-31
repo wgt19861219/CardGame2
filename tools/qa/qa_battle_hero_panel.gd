@@ -97,7 +97,16 @@ func _dump(panel: Control) -> void:
 	for b in bars:
 		if b.get("_type") != null:
 			var hp: Node2D = b as Node2D
+			var bg: Sprite2D = hp.get_node_or_null("Sprite2D") as Sprite2D
+			var bg_txt: String = "no-bg"
+			if bg == null:
+				for c in hp.get_children():
+					if c is Sprite2D:
+						bg = c as Sprite2D
+						break
+			if bg != null:
+				bg_txt = "bg.scale=" + str(bg.scale) + " bg.global=" + str(bg.global_position) + " disp=" + str(bg.texture.get_size() * bg.scale.x)
 			print("QA_AUTO: Bar ", hp.get("_type"), " pos=", hp.position,
-				" center_global=", hp.global_position)
+				" center_global=", hp.global_position, " ", bg_txt)
 	var vc: int = int(Engine.get_process_frames())
 	print("QA_AUTO: frame=", vc)
