@@ -132,9 +132,12 @@ func test_hp_bar_foreground_aligned_to_bg_left() -> void:
 	if bg == null or fg == null or bg.texture == null or fg.texture == null:
 		fail_test("bar 节点/贴图缺失")
 		return
-	# ÷CS 显示口径（2026-08-22 巡检根修：bg.scale=1/CS + bg_half 用显示尺寸 px/CS）
+	# 显示口径（2026-08-22 巡检根修 + 2026-08-31 空间修正：fg.position 是 bg 局部纹素空间，
+	# ×bg.scale 转显示后才=源直译 左上=-half+OFFSET(6,1)；旧断言直比显示值系旧实现
+	# 将显示值误填局部空间、fill 被二次缩放实际右移 ~7 逻辑px——本守卫锚显示结果非实现细节）
 	var bg_size: Vector2 = bg.texture.get_size() / 1.28125
+	var disp: Vector2 = fg.position * bg.scale
 	var expect_left: float = -bg_size.x * 0.5 + 6.0   # bg centered=true 原点=中心 → 左上=-half+OFFSET
-	assert_almost_eq(fg.position.x, expect_left, 0.1, "fg 左上 x = bg 左缘+6（非中心起画）")
-	assert_almost_eq(fg.position.y, -bg_size.y * 0.5 + 1.0, 0.1, "fg 左上 y = bg 上缘+1")
-	assert_lte(fg.position.x + fg.texture.get_size().x / 1.28125, bg_size.x * 0.5, "fg 满格右缘 ≤ bg 右缘")
+	assert_almost_eq(disp.x, expect_left, 0.1, "fg 显示左上 x = bg 左缘+6（源直译）")
+	assert_almost_eq(disp.y, -bg_size.y * 0.5 + 1.0, 0.1, "fg 显示左上 y = bg 上缘+1")
+	assert_lte(disp.x + fg.texture.get_size().x / 1.28125, bg_size.x * 0.5, "fg 满格右缘 ≤ bg 右缘")
