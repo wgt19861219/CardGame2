@@ -270,8 +270,8 @@ func _gui_input(event: InputEvent) -> void:
 
 # 音效：stagedonelsr clickReply → stageDone.replay = common_click_feedback（soundres:168）。
 func _on_replay_pressed() -> void:
-	StageSettlementCommon.goto_main_scene()
+	StageSettlementCommon.replay_stage(int(_param.get("stage_id", 0)))
 
 
 func _on_next_pressed() -> void:
-	StageSettlementCommon.goto_main_scene()
+	StageSettlementCommon.next_stage(int(_param.get("stage_id", 0)))
