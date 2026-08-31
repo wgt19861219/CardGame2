@@ -17,6 +17,11 @@ const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/CombatAcceleration_"
 const GODOT_POS: Vector2 = Vector2(682.5, 330.0)  # 中心 to_godot(735,120)=(735,360) −(105/2,60/2)
 const MAX_STATE: int = 4
 const SPEED_LABELS := ["1x", "2x", "3x", "4x"]
+# 倍速档持久化（源 battle_scene.lua:14/1050 CCUserDefault "battle_speed_state" 等价，
+# 照 AudioPlayer sound_cfg 应用级 ConfigFile 范式，不入玩家存档）。
+# cfg_path 可注入：测试换 user://battle_test.cfg 隔离玩家真实档（多测试共享 user:// 会互踩）。
+const SPEED_CFG_PATH: String = "user://battle.cfg"
+var cfg_path: String = SPEED_CFG_PATH
 
 signal speed_changed(state: int)
 
@@ -27,7 +32,7 @@ var _label: Label = null
 
 func setup(initial_state: int = 1) -> void:
 	position = GODOT_POS
-	_state = clampi(initial_state, 1, MAX_STATE)
+	_state = _load_speed_state(initial_state)
 	var content := CONTENT_SCENE.instantiate()
 	add_child(content)   # Control 组件 content 挂 panel 自身（坑 7，原点 = panel 自身）
 	_btn = content.get_node("%Btn") as TextureButton
@@ -40,7 +45,26 @@ func setup(initial_state: int = 1) -> void:
 func _on_pressed() -> void:
 	_state = 1 if _state >= MAX_STATE else _state + 1
 	_apply_state()
+	_save_speed_state()
 	speed_changed.emit(_state)
+
+
+# 读持久化档（源 :14-15：UserDefault 读，<1 或 >4 越界回 1，非 clamp 边界）。
+func _load_speed_state(fallback: int) -> int:
+	var v: int = fallback
+	var cfg := ConfigFile.new()
+	if cfg.load(cfg_path) == OK:
+		v = int(cfg.get_value("battle", "speed_state", fallback))
+	if v < 1 or v > MAX_STATE:
+		v = 1
+	return v
+
+
+# 切档写回（源 :1050 setIntegerForKey 持久化，跨战斗/跨启动保留）。
+func _save_speed_state() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("battle", "speed_state", _state)
+	cfg.save(cfg_path)
 
 
 # 重构：texture_normal 切图 + label visible/text 切换（坑 5 常驻 .tscn，不再 free+重建）。
