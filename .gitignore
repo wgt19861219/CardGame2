@@ -33,5 +33,8 @@ NVIDIA Corporation/
 # 重构临时截图/工具产物（不入库）
 tools/refactor/
 
+# video-agent-kit 录屏取证临时产物（帧目录/对比图，仅本地排障用）
+.video_agent/
+
 # ZCode MCP 配置（含本机 node/项目绝对路径，环境专属不入库；从 .agents/mcp.json.example 复制后改）
 .agents/mcp.json

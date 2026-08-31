@@ -25,6 +25,7 @@ offset_bottom = 73.54
 texture_normal = ExtResource("1_back")
 texture_pressed = ExtResource("2_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 装备详情面板（照源 equipboard ofcraft：frame package_detail_bg.png 288×385 + 名称 + 数量 + 属性介绍）
 ; 位置：水平居中（game bridge 实测中心 480,320 调整）

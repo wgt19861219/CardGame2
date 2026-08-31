@@ -38,6 +38,7 @@ offset_bottom = 144.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabAllLabel" type="Label" parent="." unique_id=1458366738]
 unique_name_in_owner = true
@@ -63,6 +64,7 @@ offset_bottom = 204.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabFrontLabel" type="Label" parent="." unique_id=1383256592]
 unique_name_in_owner = true
@@ -88,6 +90,7 @@ offset_bottom = 264.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabMiddleLabel" type="Label" parent="." unique_id=1065126803]
 unique_name_in_owner = true
@@ -113,6 +116,7 @@ offset_bottom = 324.25
 texture_normal = ExtResource("2_classbtn")
 texture_pressed = ExtResource("3_classbtnsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabBackLabel" type="Label" parent="." unique_id=2076180870]
 unique_name_in_owner = true
@@ -137,11 +141,13 @@ offset_bottom = 81.75
 texture_normal = ExtResource("4_backbtn")
 texture_pressed = ExtResource("5_backbtnp")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 源 heropackage.lua:761 draglist cliprect=CCRect(0,45,800,348) 全屏宽视觉裁剪区 → Godot
 ; (0, 480−45−348=87, 800, 435)。旧 rect(105,95,625,443) 误用源 rect（触摸区）口径且窄 275：
 ; 左右列卡 bg 外缘被裁 26.5（bg 左缘 112.84/右缘 617.16 在 105~625 外，2026-08-28 根修）。
-; tab/herosplit z 提至 11/12 保 scroll(z10) 全宽后的点击优先（源触摸按 rect 独立分发）。
+; tab/herosplit z 提至 11/12 只保 scroll(z10) 全宽后的绘制在上；点击命中按树序不看 z——
+; tab 由 panel _build_content 运行时 move_child 到 scroll 后保点击（2026-08-30 回归修复）。
 [node name="HeroScroll" type="ScrollContainer" parent="." unique_id=2030255719]
 unique_name_in_owner = true
 layout_mode = 0

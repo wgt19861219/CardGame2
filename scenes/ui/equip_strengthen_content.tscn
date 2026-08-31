@@ -560,6 +560,7 @@ offset_bottom = 79.27
 texture_normal = ExtResource("4_back")
 texture_pressed = ExtResource("5_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; NPC 对话层（源 createnpcTalk:11-42 container z=50 cascade opacity → modulate 级联，
 ; 初始透明等 doTalk/doSpeak；NPC 头像 readnode 中心锚 (638,378) → 中心 (718,182)

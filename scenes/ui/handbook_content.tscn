@@ -61,24 +61,26 @@ mouse_filter = 2
 [node name="BackBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 42.25
-offset_top = 23.85
-offset_right = 97.75
-offset_bottom = 80.1
+offset_left = 41.12
+offset_top = 22.705
+offset_right = 98.88
+offset_bottom = 81.245
 texture_normal = ExtResource("5_back")
 texture_pressed = ExtResource("6_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag1Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 49.8775
-offset_top = 91.5
-offset_right = 136.127
-offset_bottom = 148.5
+offset_left = 48.122
+offset_top = 90.34
+offset_right = 137.882
+offset_bottom = 149.66
 texture_normal = ExtResource("7_l")
 texture_pressed = ExtResource("8_ls")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag1Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -95,13 +97,14 @@ vertical_alignment = 1
 [node name="Tag2Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 47.875
-offset_top = 151.5
-offset_right = 134.125
-offset_bottom = 208.5
+offset_left = 46.12
+offset_top = 150.34
+offset_right = 135.88
+offset_bottom = 209.66
 texture_normal = ExtResource("7_l")
 texture_pressed = ExtResource("8_ls")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag2Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -118,13 +121,14 @@ vertical_alignment = 1
 [node name="Tag3Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 45.8725
-offset_top = 211.5
-offset_right = 132.123
-offset_bottom = 268.5
+offset_left = 44.118
+offset_top = 210.34
+offset_right = 133.878
+offset_bottom = 269.66
 texture_normal = ExtResource("7_l")
 texture_pressed = ExtResource("8_ls")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag3Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -141,13 +145,14 @@ vertical_alignment = 1
 [node name="Tag4Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 43.8775
-offset_top = 271.5
-offset_right = 130.127
-offset_bottom = 328.5
+offset_left = 42.122
+offset_top = 270.34
+offset_right = 131.882
+offset_bottom = 329.66
 texture_normal = ExtResource("7_l")
 texture_pressed = ExtResource("8_ls")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag4Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -164,13 +169,14 @@ vertical_alignment = 1
 [node name="Tag5Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 41.875
-offset_top = 331.5
-offset_right = 128.125
-offset_bottom = 388.5
+offset_left = 40.12
+offset_top = 330.34
+offset_right = 129.88
+offset_bottom = 389.66
 texture_normal = ExtResource("7_l")
 texture_pressed = ExtResource("8_ls")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag5Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -187,13 +193,14 @@ vertical_alignment = 1
 [node name="Tag6Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 41.5
-offset_top = 391.5
-offset_right = 127.75
-offset_bottom = 448.5
+offset_left = 39.745
+offset_top = 390.34
+offset_right = 129.505
+offset_bottom = 449.66
 texture_normal = ExtResource("7_l")
 texture_pressed = ExtResource("8_ls")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag6Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -210,13 +217,14 @@ vertical_alignment = 1
 [node name="Tag7Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 666.872
-offset_top = 91.5
-offset_right = 753.122
-offset_bottom = 148.5
+offset_left = 665.117
+offset_top = 90.34
+offset_right = 754.877
+offset_bottom = 149.66
 texture_normal = ExtResource("9_r")
 texture_pressed = ExtResource("10_rs")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag7Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -233,13 +241,14 @@ vertical_alignment = 1
 [node name="Tag8Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 668.875
-offset_top = 151.5
-offset_right = 755.125
-offset_bottom = 208.5
+offset_left = 667.12
+offset_top = 150.34
+offset_right = 756.88
+offset_bottom = 209.66
 texture_normal = ExtResource("9_r")
 texture_pressed = ExtResource("10_rs")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag8Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -256,13 +265,14 @@ vertical_alignment = 1
 [node name="Tag9Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 670.878
-offset_top = 211.5
-offset_right = 757.128
-offset_bottom = 268.5
+offset_left = 669.123
+offset_top = 210.34
+offset_right = 758.883
+offset_bottom = 269.66
 texture_normal = ExtResource("9_r")
 texture_pressed = ExtResource("10_rs")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag9Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -279,13 +289,14 @@ vertical_alignment = 1
 [node name="Tag10Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 672.872
-offset_top = 271.5
-offset_right = 759.122
-offset_bottom = 328.5
+offset_left = 671.117
+offset_top = 270.34
+offset_right = 760.877
+offset_bottom = 329.66
 texture_normal = ExtResource("9_r")
 texture_pressed = ExtResource("10_rs")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag10Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -302,13 +313,14 @@ vertical_alignment = 1
 [node name="Tag11Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 674.875
-offset_top = 331.5
-offset_right = 761.125
-offset_bottom = 388.5
+offset_left = 673.12
+offset_top = 330.34
+offset_right = 762.88
+offset_bottom = 389.66
 texture_normal = ExtResource("9_r")
 texture_pressed = ExtResource("10_rs")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag11Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -325,13 +337,14 @@ vertical_alignment = 1
 [node name="Tag12Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 676.878
-offset_top = 391.5
-offset_right = 757.0
-offset_bottom = 448.5
+offset_left = 672.059
+offset_top = 390.34
+offset_right = 761.819
+offset_bottom = 449.66
 texture_normal = ExtResource("9_r")
 texture_pressed = ExtResource("10_rs")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="Tag12Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -354,6 +367,7 @@ offset_right = 314.913
 offset_bottom = 447.562
 texture_normal = ExtResource("11_al")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="ArrowRightBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
@@ -364,6 +378,7 @@ offset_right = 534.918
 offset_bottom = 447.562
 texture_normal = ExtResource("12_ar")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="PageLabel" type="Label" parent="."]
 unique_name_in_owner = true

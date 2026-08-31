@@ -57,6 +57,7 @@ offset_bottom = 145.76
 texture_normal = ExtResource("3_close")
 texture_pressed = ExtResource("4_closep")
 ignore_texture_size = true
+stretch_mode = 0
 
 ; 标题短底（源 :45-56 crusade_title_short_bg 445x79 at (400,379) 中心锚 z=10）：
 ; 显示 347.3x61.7，中心 _g(400,379)=(480,181)

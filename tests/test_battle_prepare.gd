@@ -166,3 +166,132 @@ func test_tab_label_uses_lstr() -> void:
 	# 本项目单机化已裁剪这两模式（grep 零匹配 isSpecialgb）→ text 始终空，由 prepare_go_battle 贴图表达语义。
 	assert_eq(panel._go_button.text, "", "GoBtn conform text 隐藏（源仅 isSpecialgb 显示，本项目已裁剪）")
 	panel.queue_free()
+
+
+# ── 布局守卫（2026-08-30 三修：列表竖滚 / tab 不被列表盖 / 头像进框）──
+
+# 源 draglist cliprect=(130,155,510,295)（battleprepare.lua:1682）仅纵向滚动；
+# icon 网格 gap 100 × 5 列（:1548-1560）→ btn 96×96 + sep 4 = 列距 100，网格宽
+# 5×96+4×4=496 < 视口 510 → 无水平溢出。修复前：btn 112 + h_sep 25 → 网格宽 660 > 视口 549 左右滚。
+func test_list_viewport_scrolls_vertically_only() -> void:
+	var panel := _make_panel()
+	var scroll: ScrollContainer = panel._list_grid.get_parent() as ScrollContainer
+	assert_eq(scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED,
+		"列表应禁用水平滚动（源 draglist 仅纵向）")
+	var grid_min_x: float = panel._list_grid.get_combined_minimum_size().x
+	assert_between(grid_min_x, 0.0, scroll.size.x + 0.5,
+		"网格最小宽 %.1f ≤ 视口宽 %.1f（不产生水平溢出）" % [grid_min_x, scroll.size.x])
+	assert_eq(panel._list_grid.columns, 5, "5 列照源 colNum=5（battleprepare.lua:1560）")
+	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_SHOW_NEVER,
+		"竖滚动条隐藏（2026-08-30 用户裁决：滚动仍可用但不显示滚动条）")
+	assert_eq(panel._list_grid.get_theme_constant("h_separation"), 16,
+		"列间距 16（GridContainer 默认；离树 min 计算不认 override，见 panel 注释）")
+	var live_child: Button = null
+	for k in panel._list_grid.get_children():
+		if not k.is_queued_for_deletion() and k is Button:
+			live_child = k
+			break
+	assert_ne(live_child, null, "列表应有活英雄格")
+	assert_eq(live_child.custom_minimum_size, Vector2(84, 84),
+		"btn 84×84 + sep 16 = icon 中心距 100（源 hero_icon_gap_x=100；84≈frame 83 令 hover 框贴图标）")
+	# 首列 portrait 视觉中心照源 (189,80)（hero_icon_ori 189/400，battleprepare.lua:1548-1549）：
+	# icon.position(3,-23)+portrait 中心(39,65) → 视口(147,38) 下首列 (189,80)，且与 btn 中心(42+视口)
+	# 重合=hover 高亮框与头像零错位（2026-08-30 四轮用户反馈修）。
+	var rh: ReadheroIcon = null
+	for c in live_child.get_children():
+		if c is ReadheroIcon:
+			rh = c
+			break
+	assert_ne(rh, null, "格内应有 ReadheroIcon")
+	assert_eq(rh.position, Vector2(3.0, -23.0),
+		"icon.position 令 portrait 视觉中心=btn 中心（hover 零错位）+首列 (189,80) 照源")
+	# 源 stage 模式无 listTitle（battleprepare.lua:1085-1119 条件创建）→ 静态标题隐藏。
+	var title: Label = panel.get_node_or_null("BattlePrepareContent/ListFrame/ListTitleLabel") as Label
+	if title != null:
+		assert_false(title.visible, "标题 Label 应隐藏（源普通关卡无标题，迁移发明元素）")
+	panel.queue_free()
+
+
+# 源视口右缘 x=640 与 tab 按钮左缘 ~655.7 空间分离（列表层 zorder=20 不与 tab 交叠）。
+# 修复前：视口右缘 658.3 侵入 tab 区且 ListScroll z=10 → 列表+右侧垂直滚动条盖住 tab 按钮。
+func test_list_viewport_does_not_overlap_tab_buttons() -> void:
+	var panel := _make_panel()
+	var scroll: ScrollContainer = panel._list_grid.get_parent() as ScrollContainer
+	for key in panel._tab_buttons:
+		var btn: TextureButton = panel._tab_buttons[key] as TextureButton
+		assert_true(scroll.position.x + scroll.size.x <= btn.position.x,
+			"列表视口右缘 %.1f 应不越过 tab(%s) 左缘 %.1f" % [scroll.position.x + scroll.size.x, key, btn.position.x])
+	panel.queue_free()
+
+
+# 头像在桶内视觉居中（2026-08-30 用户观感裁决：源 getTeamMemberPos 锚点偏左下 ~12px
+# 不采用，受控偏离——同 ladder 防守阵容「框中心对槽中心」判例）。portrait 显示 78×78，
+# 视觉中心 = container 左上 + (39,65)（贴左下布局），应与 slot 中心重合。
+func test_team_icon_positioned_in_bucket_slot() -> void:
+	var panel := _make_panel()
+	var checked: int = 0
+	for slot in panel._team_slots:
+		var icon_node: ReadheroIcon = null
+		for c in slot.get_children():
+			if c is ReadheroIcon:
+				icon_node = c
+				break
+		if icon_node == null:
+			continue   # 未上阵槽
+		checked += 1
+		var slot_center: Vector2 = slot.size * 0.5
+		assert_almost_eq(icon_node.position.x, slot_center.x - 39.0, 0.5,
+			"icon.x = slot 中心 x − 39（portrait 视觉中心水平居中）")
+		assert_almost_eq(icon_node.position.y, slot_center.y - 65.0, 0.5,
+			"icon.y = slot 中心 y − 65（portrait 视觉中心垂直居中，104−39）")
+		var visual_center: Vector2 = icon_node.position + Vector2(39.0, 65.0)
+		var d: Vector2 = visual_center - slot_center
+		assert_between(d.x, -0.5, 0.5, "视觉中心 x 与 slot 中心重合（用户裁决居中，弃源锚点偏移）")
+		assert_between(d.y, -0.5, 0.5, "视觉中心 y 与 slot 中心重合（用户裁决居中，弃源锚点偏移）")
+	assert_gt(checked, 0, "默认队伍应至少有 1 个槽被占（验证有样本）")
+	panel.queue_free()
+
+
+# 源 readhero.lua:538-556 showSelectTag：已选英雄 = 黑罩(150/255) 盖 portrait + tick.png 右下
+# z12。旧实现 btn.modulate 整格灰化无对勾系偏离（2026-08-30 三轮照源订正，双端截图对照）。
+func test_selected_hero_has_shade_and_tick() -> void:
+	var panel := _make_panel()
+	var selected_icons: Array[ReadheroIcon] = []
+	var plain_icons: Array[ReadheroIcon] = []
+	for k in panel._list_grid.get_children():
+		if k.is_queued_for_deletion() or not (k is Button):
+			continue
+		var rh: ReadheroIcon = null
+		for c in k.get_children():
+			if c is ReadheroIcon:
+				rh = c
+				break
+		if rh == null:
+			continue
+		var has_tick: bool = false
+		for c in rh.icon.get_children():
+			if c is Sprite2D and (c as Sprite2D).texture != null \
+					and String((c as Sprite2D).texture.resource_path).find("tick.png") >= 0:
+				has_tick = true
+		if has_tick:
+			selected_icons.append(rh)
+		else:
+			plain_icons.append(rh)
+	assert_eq(selected_icons.size(), panel._team.size(),
+		"已上阵 %d 英雄均应有 tick 对勾（源 showSelectTag）" % panel._team.size())
+	for rh in selected_icons:
+		var shade: ColorRect = null
+		for c in rh.icon.get_children():
+			if c is ColorRect:
+				shade = c
+				break
+		assert_ne(shade, null, "已选英雄应有黑罩盖 portrait（源 shade 150/255）")
+		if shade != null:
+			assert_almost_eq(shade.color.a, 150.0 / 255.0, 0.01, "罩透明度照源 150/255")
+			assert_eq(shade.size, Vector2(78, 78), "罩尺寸=portrait 78×78")
+			assert_eq(shade.position, Vector2(0, 26), "罩位置=portrait 贴 container 左下区")
+	for rh in plain_icons:
+		for c in rh.icon.get_children():
+			assert_false(c is ColorRect, "未选英雄不应有罩")
+	assert_eq(panel._team.size(), 5, "默认队伍 5 人（对勾样本前提）")
+	panel.queue_free()
