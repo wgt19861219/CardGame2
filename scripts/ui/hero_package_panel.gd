@@ -89,6 +89,13 @@ func _build_content() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	_scroll = content.get_node("%HeroScroll") as ScrollContainer
 	_grid = content.get_node("%GridHost") as Control
+	# 2026-08-30 点击回归修复：Godot 输入命中按树序逆序遍历（z_index 只影响绘制）——
+	# HeroScroll(mf=STOP) 照源 cliprect 全宽覆盖 tab 区域，tscn 树序 tab 在 scroll 前则
+	# 点击全被 scroll 吞（d62b856 全宽化回归，z=11 只保绘制不保命中）。tab 运行时移到
+	# scroll 后保命中（视觉不变：z 11/13>10 恒绘于其上；先例 battle_hero_panel move_child）。
+	for key in TAB_KEYS:
+		content.move_child(_tabs[key] as Node, -1)
+		content.move_child(_tab_labels[key] as Node, -1)
 	_update_tab_visual()
 	# herosplit 分解按钮（Task 9 静态化）：结构/9 宫格/坐标全在 .tscn，fill 只接信号 + LSTR 文本。
 	# ⚠️源 refreshSplitButton endPoint=0 永假默认隐藏；本项目作为 HeroSplitWindow 唯一入口常驻（受控偏离）。

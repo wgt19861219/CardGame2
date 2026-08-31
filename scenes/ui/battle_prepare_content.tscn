@@ -37,19 +37,21 @@ offset_bottom = 73.54
 texture_normal = ExtResource("2_back")
 texture_pressed = ExtResource("3_backp")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="ListFrame" type="TextureRect" parent="." unique_id=381973624]
 layout_mode = 0
-offset_left = 84.1667
-offset_top = 11.25
-offset_right = 691.667
-offset_bottom = 322.5
+offset_left = 100.51
+offset_top = 18.05
+offset_right = 669.49
+offset_bottom = 341.95
 mouse_filter = 2
 texture = ExtResource("4_list")
 expand_mode = 1
 
 [node name="ListTitleLabel" type="Label" parent="ListFrame" unique_id=492575934]
 unique_name_in_owner = true
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -65,18 +67,20 @@ horizontal_alignment = 1
 
 [node name="ListScroll" type="ScrollContainer" parent="." unique_id=2071296955]
 layout_mode = 0
-offset_left = 109.167
-offset_top = 33.75
-offset_right = 658.333
-offset_bottom = 300.0
+offset_left = 147.0
+offset_top = 38.0
+offset_right = 640.0
+offset_bottom = 325.0
 mouse_filter = 0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
 
 [node name="ListGrid" type="GridContainer" parent="ListScroll" unique_id=1418027486]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/h_separation = 25
-theme_override_constants/v_separation = 20
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
 columns = 5
 
 [node name="TabAllBtn" type="TextureButton" parent="." unique_id=1614992156]
@@ -89,6 +93,7 @@ offset_bottom = 94.27
 texture_normal = ExtResource("8_class")
 texture_pressed = ExtResource("9_classsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabAllLabel" type="Label" parent="." unique_id=1562017241]
 unique_name_in_owner = true
@@ -112,6 +117,7 @@ offset_bottom = 154.27
 texture_normal = ExtResource("8_class")
 texture_pressed = ExtResource("9_classsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabFrontLabel" type="Label" parent="." unique_id=1399222185]
 unique_name_in_owner = true
@@ -135,6 +141,7 @@ offset_bottom = 214.27
 texture_normal = ExtResource("8_class")
 texture_pressed = ExtResource("9_classsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabMiddleLabel" type="Label" parent="." unique_id=1384254076]
 unique_name_in_owner = true
@@ -158,6 +165,7 @@ offset_bottom = 274.27
 texture_normal = ExtResource("8_class")
 texture_pressed = ExtResource("9_classsel")
 ignore_texture_size = true
+stretch_mode = 0
 
 [node name="TabBackLabel" type="Label" parent="." unique_id=1361665494]
 unique_name_in_owner = true
@@ -173,10 +181,10 @@ vertical_alignment = 1
 
 [node name="TeamBg" type="TextureRect" parent="." unique_id=1105693565]
 layout_mode = 0
-offset_left = -1.6667
-offset_top = 377.25
-offset_right = 721.667
-offset_bottom = 465.0
+offset_left = 13.25
+offset_top = 374.35
+offset_right = 690.75
+offset_bottom = 465.65
 mouse_filter = 2
 texture = ExtResource("5_team")
 expand_mode = 1
@@ -184,10 +192,10 @@ expand_mode = 1
 [node name="MemberBg1" type="TextureRect" parent="." unique_id=863531949]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 130.0
-offset_top = 347.25
-offset_right = 246.667
-offset_bottom = 458.25
+offset_left = 137.37
+offset_top = 341.25
+offset_right = 246.63
+offset_bottom = 456.75
 mouse_filter = 2
 texture = ExtResource("6_bucket")
 expand_mode = 1
@@ -207,10 +215,10 @@ expand_mode = 1
 [node name="MemberBg2" type="TextureRect" parent="." unique_id=1377487478]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 235.833
-offset_top = 346.5
-offset_right = 352.5
-offset_bottom = 457.5
+offset_left = 237.37
+offset_top = 341.25
+offset_right = 346.63
+offset_bottom = 456.75
 mouse_filter = 2
 texture = ExtResource("6_bucket")
 expand_mode = 1
@@ -230,9 +238,9 @@ expand_mode = 1
 [node name="MemberBg3" type="TextureRect" parent="." unique_id=716092268]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 343.333
-offset_top = 345.75
-offset_right = 460.0
+offset_left = 337.37
+offset_top = 341.25
+offset_right = 446.63
 offset_bottom = 456.75
 mouse_filter = 2
 texture = ExtResource("6_bucket")
@@ -253,10 +261,10 @@ expand_mode = 1
 [node name="MemberBg4" type="TextureRect" parent="." unique_id=1020208174]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 451.667
-offset_top = 346.5
-offset_right = 568.333
-offset_bottom = 457.5
+offset_left = 437.37
+offset_top = 341.25
+offset_right = 546.63
+offset_bottom = 456.75
 mouse_filter = 2
 texture = ExtResource("6_bucket")
 expand_mode = 1
@@ -276,9 +284,9 @@ expand_mode = 1
 [node name="MemberBg5" type="TextureRect" parent="." unique_id=1093736056]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 560.0
-offset_top = 345.75
-offset_right = 676.667
+offset_left = 537.37
+offset_top = 341.25
+offset_right = 646.63
 offset_bottom = 456.75
 mouse_filter = 2
 texture = ExtResource("6_bucket")
@@ -299,30 +307,32 @@ expand_mode = 1
 [node name="GoBtn" type="Button" parent="." unique_id=1265539629]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 678.333
-offset_top = 375.75
-offset_right = 785.0
-offset_bottom = 468.0
+offset_left = 660.05
+offset_top = 370.0
+offset_right = 759.95
+offset_bottom = 466.0
 text = "确定"
 
 [node name="GsTitleLabel" type="Label" parent="." unique_id=1014509362]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 30.8333
-offset_top = 396.75
-offset_right = 197.5
-offset_bottom = 414.75
+offset_left = 30.0
+offset_top = 396.0
+offset_right = 160.0
+offset_bottom = 414.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "战斗力"
+horizontal_alignment = 1
 
 [node name="GsLabel" type="Label" parent="." unique_id=879334483]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 25.0
-offset_top = 424.5
-offset_right = 129.167
-offset_bottom = 446.25
+offset_left = 30.0
+offset_top = 424.0
+offset_right = 160.0
+offset_bottom = 442.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "0"
+horizontal_alignment = 1

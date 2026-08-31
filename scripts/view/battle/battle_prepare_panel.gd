@@ -29,6 +29,17 @@ const TAB_N_RES: String = "res://assets/ui/alpha/HVGA/classbtn.png"
 const TAB_A_RES: String = "res://assets/ui/alpha/HVGA/classbtnselected.png"
 const GO_N_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle.png"
 const GO_P_RES: String = "res://assets/ui/alpha/HVGA/prepare_go_battle_press.png"
+# 已选标记照源 readhero.lua:538-556 showSelectTag：黑罩 150/255 只盖 portrait 区（框/星不灰）
+# + tick.png 右下角 z12（64×61px÷CS=49.95×47.61）。portrait 显示 78×78 贴 container 左下（区 [26,104]）。
+# shade z=2：源罩挂 clippingNode 子树内而星挂 container z5 画在其上（星不被罩暗，双端截图对照），
+# Godot 无 clippingNode 层级，用 z 序等效（portrait/frame z0 < shade z2 < stars z5 < tick z12）。
+const TICK_RES: String = "res://assets/ui/alpha/HVGA/tick.png"
+const SELECT_SHADE_ALPHA: float = 150.0 / 255.0
+const PORTRAIT_RECT_POS: Vector2 = Vector2(0.0, 26.0)
+const PORTRAIT_RECT_SIZE: Vector2 = Vector2(78.0, 78.0)
+const TICK_DISPLAY_SIZE: Vector2 = Vector2(49.95, 47.61)
+const TICK_Z: int = 12
+const SHADE_Z: int = 2
 const TAB_FONT_COLOR_SELECTED: Color = Color(0.902, 0.745, 0.298)
 const TAB_FONT_COLOR_UNSELECTED: Color = Color(0.769, 0.733, 0.667)
 const TAB_SHADOW_COLOR: Color = Color(0.165, 0.122, 0.086)
@@ -153,6 +164,15 @@ func _update_tab_visual() -> void:
 		var btn: TextureButton = _tab_buttons[key] as TextureButton
 		var selected: bool = key == _current_tab
 		btn.texture_normal = load(TAB_A_RES if selected else TAB_N_RES)
+		# 照源：未选 classbtn(134px) 中心 x=708、选中 classbtnselected(145px) 中心 x=705（:1849/:1862）。
+		# 两贴图显示宽不同（104.58/113.2=px÷CS），STRETCH_SCALE 下 rect 须随贴图切换等比宽度
+		# （2026-08-30 四轮前选中被 104.58 rect 压扁 8%）。
+		if selected:
+			btn.size.x = 113.2
+			btn.position.x = 705.0 - 113.2 * 0.5
+		else:
+			btn.size.x = 104.58
+			btn.position.x = 708.0 - 104.58 * 0.5
 		# 照 hero_package：未选 z=1 被 ListFrame(z=2) 挡重叠区，选中 z=3 凸出。
 		btn.z_index = 3 if selected else 1
 		var lbl: Label = _tab_labels.get(key) as Label
@@ -212,15 +232,36 @@ func _refresh_list() -> void:
 	for h in _heroes_filtered:
 		var hero = player.hero_manager.heroes[h.inst_id]
 		var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
-		# 源 gap_x/gap_y=100（hero icon 100×100 排列，battleprepare.lua:1548-1551）。icon 容器 104，
-		# 按背景框内部可用区放大 icon 到 112（scale 1.08），填满 ListScroll 宽度。
-		icon.scale = Vector2(1.08, 1.08)
-		var btn := Button.new(); btn.add_child(icon); btn.custom_minimum_size = Vector2(112, 112)
+		# 源 gap_x/gap_y=100、5 列、行高 100（battleprepare.lua:1548-1560）→ btn 84×84 +
+		# GridContainer sep 16 = 中心距/行距恰 100，网格宽 5×84+4×16=484 ≤ 视口 495 无横滚。
+		# btn 84 ≈ frame 显示 83：icon.position 令 portrait 视觉中心 (39,65) 对 btn 中心 (42,42)
+		# → hover 高亮框与头像零错位（2026-08-30 四轮用户反馈修）；首列/首行 portrait 中心
+		# = (189,80) 照源（hero_icon_ori 189/400，battleprepare.lua:1548-1549）。
+		icon.position = Vector2(3.0, -23.0)
+		var btn := Button.new(); btn.add_child(icon); btn.custom_minimum_size = Vector2(84, 84)
 		btn.set_meta("inst_id", h.inst_id)
 		var selected: bool = _team.any(func(t): return t.inst_id == h.inst_id)
-		if selected: btn.modulate = Color(0.5, 0.5, 0.5)
+		if selected: _apply_select_state(icon)
 		btn.pressed.connect(_on_hero_clicked.bind(h.inst_id))
 		_list_grid.add_child(btn)
+
+
+# 已选状态照源 readhero showSelectTag（:538-556）：黑罩盖 portrait（框/星/对勾不受罩影响）
+# + tick.png 右下角。旧实现 btn.modulate 整格灰化系偏离（连框带星一起灰且无对勾），照源订正。
+func _apply_select_state(icon: ReadheroIcon) -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0.0, 0.0, 0.0, SELECT_SHADE_ALPHA)
+	shade.position = PORTRAIT_RECT_POS
+	shade.size = PORTRAIT_RECT_SIZE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.z_index = SHADE_Z
+	icon.icon.add_child(shade)
+	var tag := Sprite2D.new()
+	tag.texture = load(TICK_RES) as Texture2D
+	tag.scale = Vector2.ONE / ReadheroIcon.CONTENT_SCALE
+	tag.position = Vector2(ReadheroIcon.CONTAINER_SIZE.x, ReadheroIcon.CONTAINER_SIZE.y) - TICK_DISPLAY_SIZE * 0.5
+	tag.z_index = TICK_Z
+	icon.icon.add_child(tag)
 
 
 func _on_hero_clicked(inst_id: int) -> void:
@@ -272,10 +313,13 @@ func _refresh_team_display() -> void:
 		if occupied:
 			var hero = player.hero_manager.heroes[_team[i].inst_id]
 			var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
-			# ReadheroIcon 是 Node2D，内部子节点从中心 (52,52) 绘制（CONTAINER_SIZE=104）。
-			# 居中：icon.position = slot 中心 - icon 视觉中心偏移（52,52），按 slot 实际 size 动态算。
+			# ReadheroIcon 是 Node2D，position = container(104×104) 左上角。
+			# 头像在桶内视觉居中（2026-08-30 用户观感裁决：源 getTeamMemberPos 锚点偏左下
+			# ~12px 观感差，受控偏离不照源——同 2026-08-29 ladder 防守阵容「框中心对槽中心」
+			# 判例）。portrait 显示恒 78×78（全 Unit.Portrait 实测 100px÷CS），其视觉中心 =
+			# container 左上 + (39, 104−39)，对齐 slot 中心即可。
 			var slot_center: Vector2 = slot.size * 0.5
-			icon.position = slot_center - Vector2(ReadheroIcon.CONTAINER_SIZE.x, ReadheroIcon.CONTAINER_SIZE.y) * 0.5
+			icon.position = slot_center - Vector2(39.0, 65.0)
 			slot.add_child(icon)
 		if halo != null:
 			halo.visible = occupied

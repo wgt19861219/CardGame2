@@ -141,7 +141,8 @@ ignore_texture_size = true
 ; 源 heropackage.lua:761 draglist cliprect=CCRect(0,45,800,348) 全屏宽视觉裁剪区 → Godot
 ; (0, 480−45−348=87, 800, 435)。旧 rect(105,95,625,443) 误用源 rect（触摸区）口径且窄 275：
 ; 左右列卡 bg 外缘被裁 26.5（bg 左缘 112.84/右缘 617.16 在 105~625 外，2026-08-28 根修）。
-; tab/herosplit z 提至 11/12 保 scroll(z10) 全宽后的点击优先（源触摸按 rect 独立分发）。
+; tab/herosplit z 提至 11/12 只保 scroll(z10) 全宽后的绘制在上；点击命中按树序不看 z——
+; tab 由 panel _build_content 运行时 move_child 到 scroll 后保点击（2026-08-30 回归修复）。
 [node name="HeroScroll" type="ScrollContainer" parent="." unique_id=2030255719]
 unique_name_in_owner = true
 layout_mode = 0

@@ -226,8 +226,9 @@ func test_content_static_zorder() -> void:
 	var inst: Control = _instantiate_content()
 	assert_eq((inst.get_node("ListBg") as CanvasItem).z_index, 2, "ListBg z=2（tscn 固化）")
 	assert_eq((inst.get_node("%HeroScroll") as CanvasItem).z_index, 10, "HeroScroll z=10（tscn 固化）")
-	# 2026-08-28 根修：HeroScroll 照源 cliprect 全宽化（z10）→ tab btn z=11/label z=15 恒在其上保点击；
-	# label 15 > 选中按钮 13（z12 时选中 tab 文字被按钮贴图盖住，PIL 白像素 11 vs 正常 1501 实证）
+	# 2026-08-28 根修：HeroScroll 照源 cliprect 全宽化（z10）→ tab btn z=11/label z=15 恒在其上
+	# 绘制；label 15 > 选中按钮 13（z12 时选中 tab 文字被按钮贴图盖住，PIL 白像素 11 vs 正常 1501 实证）。
+	# 注意：z 只保绘制；点击命中靠 panel 运行时 move_child tab 到 scroll 后（见树序守卫测试）。
 	for name in ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn"]:
 		assert_eq((inst.get_node("%" + name) as CanvasItem).z_index, 11, name + " z=11（tscn 固化）")
 	for name in ["TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]:
@@ -300,6 +301,36 @@ func test_herosplit_pressed_opens_window() -> void:
 			c.queue_free()
 			break
 	assert_true(has_split, "herosplit 按钮 → HeroSplitWindow")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 2026-08-30 点击回归修复守卫：Godot 输入命中按树序逆序遍历，z_index 只影响绘制不参与
+# 命中——d62b856 把 HeroScroll 照源 cliprect 全宽化（rect 0~800 覆盖 tab x 634.7~739.3）
+# 且 mf=STOP，tscn 树序 tab 在 scroll 前时点击全被 scroll 吞（z=11 修绘制不修命中）。
+# panel 须运行时把 tab btn+label move_child 到 scroll 之后保命中（视觉不变：z 恒绘于其上）。
+func test_tab_input_priority_over_scroll_tree_order() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	await wait_physics_frames(3)
+	var content: Control = panel._scroll.get_parent() as Control
+	# 前提事实：scroll rect 确实覆盖 tab 区域（全宽化是视觉根修产物，不可缩回）
+	var scroll_rect: Rect2 = panel._scroll.get_rect()
+	var front_btn: Control = content.get_node("%TabFrontBtn") as Control
+	assert_true(scroll_rect.intersects(front_btn.get_rect()),
+		"HeroScroll rect 覆盖 tab（照源 cliprect 全宽既成事实）")
+	# 守卫：4 tab 按钮 + label 树序都必须在 HeroScroll 之后（点击命中优先）
+	var scroll_idx: int = panel._scroll.get_index()
+	for name in ["TabAllBtn", "TabFrontBtn", "TabMiddleBtn", "TabBackBtn",
+			"TabAllLabel", "TabFrontLabel", "TabMiddleLabel", "TabBackLabel"]:
+		var node: Control = content.get_node("%" + name) as Control
+		assert_gt(node.get_index(), scroll_idx,
+			name + " 树序在 HeroScroll 后（命中按树序，z_index 不参与）")
 	panel.remove_window()
 	root.queue_free()
 
