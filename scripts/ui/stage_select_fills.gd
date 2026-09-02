@@ -45,6 +45,12 @@ const STAR_POS_SN: Array = [
 	[Vector2(26.0, 18.0), Vector2(48.0, 18.0)],
 	[Vector2(17.0, 18.0), Vector2(37.0, 15.0), Vector2(57.0, 18.0)],
 ]
+# star_bg 位置（2026-09-01 三轮定谳）：源直译=icon 左下角 (82, 上38) 即叠底座下缘
+# （胶囊中心=圆窗中心正下方 ~36、水平居中）。三轮史：一轮底部口径（源直译）→二轮
+# 用户口误指认「顶部」改 STAR_BG_TOP_Y=30 →三轮用户出示原版 MuMu 真值截图澄清
+# 「应该在底部」+原版实测胶囊中心偏圆窗 (+0.8,+37.2) 与一轮版 (+0.4,+35.75) 吻合
+# →回滚一轮公式。原版星体 15.7 逻辑=贴图金核 ~20px÷CS（阈值量的是可见内容不含
+# 透明边），尺寸口径两边一致无真差异。
 # dots（源 stageselectres.lua:1493-1495 + getDotPos:76-86：中心 x=400 / gap_x 20 / normal y 40 / elite y 45 → godot 440/435）
 const DOT_CENTER_X: float = 400.0
 const DOT_GAP_X: float = 20.0
@@ -166,8 +172,11 @@ static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant) 
 	parent.add_child(node)
 
 
-## 星级（源 createStage :1256-1274）：star_bg 挂 icon 下 ccp(82,38)（cocos 子坐标相对
-## 父锚点中心、y 上正 → godot btn 局部 = btn.size/2 + (82,-38)）；star 相对 star_bg 同口径。
+## 星级（源 createStage :1256-1274）：star:setPosition(spos) 挂 starBg 下——cocos 子节点
+## position 原点=父 contentSize 左下角（与父锚点无关）→ godot star 中心=bg 左上角
+## +(spos.x, bg.h-spos.y)，星组弧形嵌满胶囊（±20.7 对称、中星正中）。starBg 挂 icon 的
+## 源位 (82,上38)=叠底座下缘（左下角口径），2026-08-31 二轮用户观感裁决「应该在顶部」
+## 受控偏离为顶部 30（见 STAR_BG_TOP_Y 注释；水平由源 82≈半宽改精确半宽居中）。
 static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_of: Callable) -> void:
 	if mode == "guild":
 		return
@@ -181,7 +190,8 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	bg.texture = load(STAR_BG) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.size = display_size(STAR_BG)
-	bg.position = btn.size * 0.5 + Vector2(82.0, -38.0) - bg.size * 0.5
+	# 三轮回滚一轮底部口径（原版真值证实，见 STAR_BG 定谳注释）
+	bg.position = Vector2(82.0, btn.size.y - 38.0) - bg.size * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(bg)
 	var spos: Array = STAR_POS_SN[sn - 1]
@@ -190,7 +200,7 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 		star.texture = load(STAR) as Texture2D
 		star.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		star.size = display_size(STAR)
-		star.position = bg.size * 0.5 + Vector2((spos[i] as Vector2).x, -(spos[i] as Vector2).y) - star.size * 0.5
+		star.position = Vector2((spos[i] as Vector2).x, bg.size.y - (spos[i] as Vector2).y) - star.size * 0.5
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.add_child(star)
 

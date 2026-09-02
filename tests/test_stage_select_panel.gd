@@ -419,6 +419,59 @@ func test_stage_button_position_no_stretch() -> void:
 	panel.remove_window()
 
 
+# 2026-09-01 三轮定谳版星级守卫：一轮底部口径（源直译）经原版 MuMu 真值截图证实
+# （原版胶囊中心偏圆窗 (+0.8,+37.2) vs 本实现 (+0.4,+35.75)）；二轮「顶部」系口误
+# 已回滚。star 相对 star_bg 左下角口径不变（弧形嵌满胶囊）。
+func test_star_layout_centered_under_stage_icon() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	var pd := PlayerData.new(cm)
+	mgr.progress = {1: 3}   # panel star_of 走传入的 mgr（QA 同链路），非 pd.stage_manager
+	var rng := BattleRng.new(5)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_panel(mgr, pd, rng)
+	panel.show_window(root)
+	var btn: TextureButton = panel._stage_buttons[1] as TextureButton
+	var star_bg: TextureRect = null
+	for c in btn.get_children():
+		if c is TextureRect and (c as TextureRect).texture != null \
+				and (c as TextureRect).texture.resource_path.ends_with("stageselect_star_bg.png"):
+			star_bg = c
+			break
+	assert_not_null(star_bg, "通关 3 星 → stage1 key 圆窗挂 star_bg")
+	if star_bg == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	var btn_c: Vector2 = btn.global_position + btn.size * 0.5
+	var bg_c: Vector2 = star_bg.global_position + star_bg.size * 0.5
+	assert_almost_eq(bg_c.x - btn_c.x, 82.0 - btn.size.x * 0.5, 0.5,
+		"star_bg 中心水平≈圆窗中心（cocos 左下角口径 82-w/2，原版实测 +0.8 吻合）")
+	assert_almost_eq(bg_c.y - btn_c.y, btn.size.y * 0.5 - 38.0, 0.5,
+		"star_bg 中心在圆窗下方 h/2-38（源直译，原版真值 +37.2 实证）")
+	var stars: Array = []
+	for c in star_bg.get_children():
+		if c is TextureRect:
+			stars.append(c)
+	assert_eq(stars.size(), 3, "3 颗星挂在 star_bg 下")
+	var xs: Array = []
+	for s in stars:
+		xs.append((s as TextureRect).global_position.x + (s as TextureRect).size.x * 0.5)
+	xs.sort()
+	assert_almost_eq(float(xs[0] + xs[2]) * 0.5 - bg_c.x, 37.0 - star_bg.size.x * 0.5, 0.5,
+		"左右星对称（spos 17/57 同轴距于中心）")
+	assert_almost_eq(float(xs[1]) - bg_c.x, 37.0 - star_bg.size.x * 0.5, 0.5,
+		"中星 x ≈ star_bg 中心（spos 37 ≈ 半宽 36.3）")
+	var bg_rect: Rect2 = Rect2(star_bg.global_position, star_bg.size).grow(0.5)
+	for s in stars:
+		var star: TextureRect = s as TextureRect
+		assert_true(bg_rect.encloses(Rect2(star.global_position, star.size)),
+			"星嵌在 star_bg 底板内（不溢出/不被 mode 按钮遮挡）")
+	panel.remove_window()
+	root.queue_free()
+
+
 # 源 createDot :698-702 — guild 模式 dotContainer:setVisible(false)。
 func test_dots_hidden_in_guild() -> void:
 	var panel := _make_panel()
