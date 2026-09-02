@@ -186,7 +186,8 @@ func _attach_tap_area(chest: Sprite2D) -> void:
 	shape.shape = rect
 	area.add_child(shape)
 	chest.add_child(area)
-	area.input_event.connect(func(viewport: Node, event: InputEvent, _idx: int, _pos: Vector2) -> void:
+	# Area2D.input_event 签名=3 参（viewport, event, shape_idx），勿多声明（Godot 4 运行时才炸）
+	area.input_event.connect(func(viewport: Node, event: InputEvent, _idx: int) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			viewport.accept_event()
 			on_tapped())
