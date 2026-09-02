@@ -405,6 +405,10 @@ func test_stage_button_position_no_stretch() -> void:
 		"stage1 btn 中心 y = to_godot(·,284)（STRETCH 放大撤销）")
 	assert_almost_eq(btn.size.x, 209.0 / CS, 0.5, "stage1 icon 宽 = 209px÷CS（key stage 图）")
 	assert_almost_eq(btn.size.y, 189.0 / CS, 0.5, "stage1 icon 高 = 189px÷CS")
+	# 2026-09-02 守卫：默认 KEEP 按纹理原像素从左上角画（ignore_texture_size 只管
+	# min_size 不管绘制），图标偏大 1.28×+右下错位（原版 MuMu 模板匹配定谳）。
+	assert_eq(btn.stretch_mode, TextureButton.STRETCH_SCALE,
+		"stage icon stretch_mode=SCALE 显式（批2方法论，KEEP 原像素直绘）")
 	var mask: TextureRect = null
 	for child in layer.get_children():
 		if child is TextureRect and child.has_meta(&"ss_mask"):

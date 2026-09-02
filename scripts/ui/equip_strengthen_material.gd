@@ -244,6 +244,7 @@ static func ensure_minus_icon(panel, idx: int) -> void:
 	minus.texture_normal = load(MINUS_NORMAL_RES) as Texture2D
 	minus.texture_pressed = load(MINUS_PRESS_RES) as Texture2D
 	minus.ignore_texture_size = true
+	minus.stretch_mode = TextureButton.STRETCH_SCALE   # 默认 KEEP 原像素不缩（2026-09-02 同坑扫修）
 	minus.size = MINUS_SIZE
 	minus.position = MINUS_CENTER - MINUS_SIZE * 0.5
 	minus.set_meta("mt", true)

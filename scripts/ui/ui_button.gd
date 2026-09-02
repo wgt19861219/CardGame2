@@ -17,6 +17,9 @@ static func make(res_normal: String, res_pressed: String, center_pos: Vector2, l
 	btn.texture_normal = normal_tex
 	btn.texture_pressed = _load(res_pressed) if ResourceLoader.exists(res_pressed) else normal_tex
 	btn.ignore_texture_size = true
+	# stretch_mode 显式 SCALE：默认 KEEP 按纹理原像素从左上角画，ignore_texture_size
+	# 只影响 min_size 不影响绘制（2026-09-02 选关图标定谳，同 hero_package 批 2 方法论）。
+	btn.stretch_mode = TextureButton.STRETCH_SCALE
 	var sz: Vector2 = TexDisplaySize.display_size(res_normal) if normal_tex != null else Vector2(100.0, 40.0)
 	btn.position = center_pos - sz * 0.5
 	btn.size = sz
@@ -41,6 +44,7 @@ static func make_at(res_normal: String, res_pressed: String, top_left: Vector2, 
 	btn.texture_normal = normal_tex
 	btn.texture_pressed = _load(res_pressed) if ResourceLoader.exists(res_pressed) else normal_tex
 	btn.ignore_texture_size = true
+	btn.stretch_mode = TextureButton.STRETCH_SCALE   # 同 make：默认 KEEP 原像素不缩
 	btn.position = top_left
 	if normal_tex != null:
 		btn.size = TexDisplaySize.display_size(res_normal)

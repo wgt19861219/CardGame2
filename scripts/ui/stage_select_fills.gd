@@ -138,6 +138,10 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		var btn := TextureButton.new()
 		btn.texture_normal = load(icon_res) as Texture2D
 		btn.ignore_texture_size = true
+		# stretch_mode 显式 SCALE：默认 KEEP 按纹理原像素从左上角画（ignore_texture_size
+		# 只影响 min_size 不影响绘制），城堡 209×189/圆盘 37×41 偏大 1.28×+右下错位
+		# （2026-09-02 模板匹配实测 vs 原版 MuMu 截图定谳，同 hero_package 批 2 方法论）。
+		btn.stretch_mode = TextureButton.STRETCH_SCALE
 		btn.size = display_size(icon_res)
 		btn.position = center - btn.size * 0.5
 		btn.set_meta(&"stage_info", info)
