@@ -11,6 +11,11 @@ var _host: Control
 
 
 func before_each() -> void:
+	# 静态栈是全局状态：清历史残留（前文件 queue_free 释放延迟到帧末，PREDELETE
+	# 出栈晚于下一测试开局，跨文件污染使首个弹窗 z 偏移，2026-09-03 全量门禁抓出）。
+	for p in PopWindow._open_stack.duplicate():
+		if is_instance_valid(p):
+			p.free()   # 同步 PREDELETE → 自动出栈
 	_host = Control.new()
 	add_child(_host)
 

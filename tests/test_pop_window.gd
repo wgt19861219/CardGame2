@@ -103,7 +103,9 @@ func test_play_open_sfx_default_off() -> void:
 	add_child(root)
 	var w := PopWindow.new("t4b", {})
 	w.show_window(root)   # play_open_sfx 缺省 false：AudioPlayer 无该资源也不报错（play_sfx 有守卫），主断言在 true 分支
-	w.queue_free()
+	# remove_window 同步出栈（queue_free 延迟到帧末才 PREDELETE 出栈，跨文件污染
+	# z 栈测试的基准 z，2026-09-03 全量门禁抓出）。
+	w.remove_window()
 	root.queue_free()
 
 
