@@ -11,6 +11,17 @@ const SCALE_IN_DUR: float = 0.2
 # 打开弹窗音效名（源 common_popup_window；play_open_sfx 开关控制）。
 const OPEN_SFX_NAME: String = "common_popup_window"
 
+# ── 动态 z 栈（2026-09-03 穿透根修方案 B，审查报告-界面布局差异排查-2026-09-03.md）──
+# 旧：所有弹窗根恒 z=100 → 子树内 relative z>0 节点（hero tab z=11/13 → effective 111/113，
+# Godot z 同 canvas 全局比较）穿透兄弟弹窗（fragment/package/task 右侧 tab 区两层叠压）。
+# 新：show_window 入栈，z = Z_BASE + 栈位×Z_STEP（100/200/300…），remove/free 出栈收缩重排——
+# 后开弹窗整棵子树（effective ≤ 基准 + 子树内最大 relative z ≈ 13）恒盖前开弹窗（基准差 100）。
+# 源 pushScene 栈语义的 z 等价物。Z_STEP=100 > 已知子树内最大 relative z（hero tab 13、
+# hero_detail BaseLayer 1、stage_select mode 20、标题 22）。
+const Z_BASE: int = 100
+const Z_STEP: int = 100
+static var _open_stack: Array[PopWindow] = []
+
 var identity: String = ""
 var param: Dictionary = {}
 var shade_layer: ColorRect = null
@@ -78,10 +89,9 @@ func show_window(parent: Node) -> void:
 	if shade_layer == null:
 		setup()
 	parent.add_child(self)
-	# 弹窗置顶（z_index=100 高于英雄详情 BaseLayer z=1/tab z=2，避免被挡）。
-	# 源靠 mainLayer z=120 + animLayer z=50；Godot 用 z_index 统一处理，100 兜底所有面板层级。
-	z_index = 100
-	z_as_relative = false
+	# 动态 z 栈置顶（见文件头「动态 z 栈」段）：栈位递增基准，后开整棵子树恒盖先开。
+	_open_stack.append(self)
+	_refresh_stack_z()
 	if play_open_sfx:
 		AudioPlayer.play_sfx(OPEN_SFX_NAME)
 	if hud_identity != "":
@@ -98,7 +108,31 @@ func remove_window() -> void:
 		HudOverlay.apply_identity(_hud_identity_prev)
 	for h in _on_exit_handlers:
 		h.call()
+	_unregister_from_stack()
 	queue_free()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		# 兜底出栈：不走 remove_window 的释放路径（测试 free、异常释放）也清理栈位。
+		_unregister_from_stack()
+
+
+## 全栈重排 z（栈位 → Z_BASE + i×Z_STEP）。收缩（乱序关闭）后剩余弹窗下移，
+## 其下已无更低弹窗，运行中变 z 无视觉跳变；新开弹窗拿当前最高位+1。
+static func _refresh_stack_z() -> void:
+	for i in _open_stack.size():
+		var p: PopWindow = _open_stack[i]
+		if is_instance_valid(p):
+			p.z_index = Z_BASE + i * Z_STEP
+			p.z_as_relative = false
+
+
+func _unregister_from_stack() -> void:
+	var idx := _open_stack.find(self)
+	if idx >= 0:
+		_open_stack.remove_at(idx)
+		_refresh_stack_z()
 
 
 ## Toast 提示（原 7 份逐字复制的反射版 _show_toast 收敛；GUT 环境 Toast autoload 常在，直调）。

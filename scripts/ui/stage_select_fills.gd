@@ -266,8 +266,12 @@ static func create_frame(container: Control, mode: String) -> void:
 	var title_bg: CanvasItem = _make_centered_at(container, _title_bg_res(mode), TITLE_CENTER)
 	if title_bg != null:
 		title_bg.set_meta(META_FRAME, true)
-		title_bg.z_index = 200
-		title_bg.z_as_relative = false
+		# relative z=21/22：面板内盖过 mode 层(z=20)（tscn 声明序 map1<frame5<mode20），
+		# effective=面板基准+21 恒低于上层弹窗（动态 z 栈基准差 100，2026-09-03 方案 B）。
+		# 原 z=200/201+relative=false 系绝对全局层，会穿透 stage_detail 等子弹窗
+		#（battle_prepare 曾以 z=210 压它，见 battle_prepare_panel.gd:97 注释）。
+		title_bg.z_index = 21
+		title_bg.z_as_relative = true
 
 
 ## 章节标题 Label（源 createTitleText:861：Pre Chapter Name + Chapter Name，色
@@ -286,8 +290,9 @@ static func create_title(container: Control, chapter: int, cm: Variant) -> void:
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.z_index = 201
-	lbl.z_as_relative = false
+	# relative z=22（title_bg 21 之上，mode 层 20 之下界），见 create_map_layer 标题注释（方案 B）。
+	lbl.z_index = 22
+	lbl.z_as_relative = true
 	lbl.set_meta(META_TITLE, true)
 	container.add_child(lbl)
 

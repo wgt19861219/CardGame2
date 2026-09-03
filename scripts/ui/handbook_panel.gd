@@ -445,8 +445,8 @@ func _open_equipcraft(eid: int) -> void:
 	var panel := EquipboardPanel.new("equipboard", {})
 	panel.setup_panel(cell_data, _cm, _player, true)   # modal=true（handbook 模态弹窗，居中 + 点外关闭）
 	panel.show_window(get_parent())
-	# handbook 自身 z_index=100，弹窗必须 z>100 才能浮在 handbook 上方
-	panel.z_index = 101
+	# 层级：动态 z 栈自动置顶（2026-09-03 方案 B）。原显式 z=101 已废弃——动态基准下它
+	# 反而低于 handbook 子树内 z=2/3 元素（effective 102/103）造成穿透。
 
 
 func _now() -> float:

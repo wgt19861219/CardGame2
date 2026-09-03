@@ -167,9 +167,8 @@ static func open_equip_craft(slot: int, hero: HeroInstance, cm: Variant, pd: Pla
 	panel.equipped_changed.connect(on_changed)
 	panel.jump_to_stage.connect(on_jump)
 	panel.show_window(parent)
-	# 弹窗层级高于英雄详情（PopWindow 默认 z=100，英雄详情 BaseLayer 相对叠加后实际 z≈101）。
-	# 同 z=100 时英雄详情内部 BaseLayer(z=1) 叠加后盖住弹窗，故弹窗额外抬高到 200 确保置顶。
-	panel.z_index = 200
+	# 层级：动态 z 栈自动置顶（2026-09-03 方案 B）——后开弹窗基准恒高于英雄详情整棵子树
+	#（原显式 z=200 抬升已废弃：动态基准下 hero_detail 子树 effective ≤ 基准+13 < 下层基准）。
 
 
 # 装备进阶列表点图标（源 evolveequip.lua:81 equipcraft.create{context="handbook"}）：
@@ -182,7 +181,7 @@ static func open_equip_craft_by_id(eid: int, cm: Variant, pd: PlayerData, parent
 	p.setup_panel(eid, cm, pd, null, "handbook")
 	p.jump_to_stage.connect(func(stage_id: int) -> void: on_equip_craft_jump(stage_id, panel))
 	p.show_window(parent)
-	p.z_index = 200
+	# 层级同 open_equip_craft：动态 z 栈自动置顶（原显式 z=200 已废弃）。
 
 
 # P1-10 源 equipcraft doClickGetWay :83 pushScene(stageselect.createByStage(id))。
