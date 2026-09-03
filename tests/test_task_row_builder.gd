@@ -240,3 +240,125 @@ func test_row_icon_cocos_path_converted() -> void:
 				and str(tr.texture.resource_path).contains("task_vit_icon"):
 			found = true
 	assert_true(found, "cocos 路径 Icon 经转换后成功加载渲染（图标不空缺）")
+
+
+# ── 2026-09-03 二轮：主线 Item 图标缺失 + 奖励数量缺失根修 ──
+
+# 源 task.lua:529-542 icon 回退分支：Icon 空 + reward[0].type=="Item" →
+# readequip.createIcon(id)（无 mh=72 点原尺寸）作行图标，Equip.Category 碎片/魂石
+# → task_fragment_icon_bg 专用底。Task 表 Icon 全空（实测 76 条）+ 主线奖励多为 Item
+# → 漏此分支 = 主线行图标全缺。
+func test_item_fallback_icon_uses_equip_factory_with_fragment_bg() -> void:
+	var cm := ConfigManager.new()
+	cm.load_all()
+	# Item 127 = Equip.Category EQUIP.SOUL_STONE（魂石，chain40 id1 奖励实测）
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "",
+		"reward": [{"type": "Item", "id": 127, "amount": 50}],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable(), "奖励:", "前往", Callable(), cm)
+	add_child_autofree(row)
+	var frag_bg: bool = false
+	for c in row.get_children():
+		var tr := c as TextureRect
+		if tr != null and tr.texture != null \
+				and str(tr.texture.resource_path).contains("task_fragment_icon_bg"):
+			frag_bg = true
+	assert_true(frag_bg, "魂石奖励回退图标用 task_fragment_icon_bg 专用底（源 :536-540）")
+	# 工厂产物：行内非 TextureRect/Button/Label 的 Control（ReadequipIcon 根）72 点原尺寸
+	var factory_icon: bool = false
+	for c in row.get_children():
+		if c is Control and not (c is TextureRect) and not (c is TextureButton) and not (c is Label):
+			if absf((c as Control).scale.x - 1.0) < 0.01:
+				factory_icon = true
+	assert_true(factory_icon, "Item 回退图标 = ReadequipIcon 工厂产物 72 点原尺寸（源 createIcon(id) 无 mh）")
+
+
+# 源 :573-577 奖励循环：每个奖励（含 Item）都跟 "x"..amount 数量文字。
+# 漏译症状：Item 奖励只显示图标无数量（用户反馈"奖励物品的数量不对"）。
+func test_item_reward_amount_label_rendered() -> void:
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "",
+		"reward": [{"type": "Item", "id": 127, "amount": 50}],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable(), "奖励:", "前往", Callable(), cm)
+	add_child_autofree(row)
+	var has_amt: bool = false
+	for c in row.get_children():
+		if c is Label and (c as Label).text == "x50":
+			has_amt = true
+	assert_true(has_amt, "Item 奖励带 x50 数量文字（源 :573-577 每奖励含 Item 都有）")
+
+
+# 源 :576 数量文字 al anchor(0,0.5) 中心锚与 icon 同中心线（getRightSidePos 返回
+# preNode 中心 y）→ xN 框中心 y 必须与奖励图标中心同线（y_base=76=BG_H96-cocos y20）。
+# 三轮根修回归（用户复验"字体跟图标底部不对齐"）：初摆 h=字号+4 估算行高 ≠ 实际
+# （18 号实测 26）→ 框中心恒偏 y_base 2 点（78 vs 76），relayout 用实测行高居中。
+func test_reward_amount_v_centered_with_icon() -> void:
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "",
+		"reward": [{"type": "Item", "id": 127, "amount": 50}, {"type": "Coin", "id": 0, "amount": 5000}],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable(), "奖励:", "前往", Callable(), cm)
+	get_tree().root.add_child(row)   # root Window 保 theme 链（test_variation_runtime_effect 判例）
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var icon_centers: Array[float] = []
+	var amt_centers: Array[float] = []
+	for c in row.get_children():
+		var ctrl := c as Control
+		if ctrl == null:
+			continue
+		var center_y: float = ctrl.position.y + ctrl.scale.y * ctrl.size.y * 0.5
+		if ctrl is Label and (ctrl as Label).text.begins_with("x"):
+			amt_centers.append(center_y)
+		elif not (ctrl is Label) and absf(center_y - 76.0) < 8.0:
+			icon_centers.append(center_y)
+	assert_gte(icon_centers.size(), 2, "Item+Coin 两奖励图标在基准线")
+	assert_eq(amt_centers.size(), 2, "Item+Coin 两 xN 数量文字")
+	for cy in amt_centers:
+		assert_almost_eq(cy, 76.0, 0.5, "xN 框中心 y=76（与图标同中心线，源 :576 中心锚）")
+	for cy in icon_centers:
+		assert_almost_eq(cy, 76.0, 0.5, "奖励图标中心 y=76")
+	row.queue_free()
+
+
+# 源 ui_info name/detail/reward_title 均 anchor(0,0.5) 左中锚 = 框中心落在 cocos y
+#（name/detail 71、title 20 → Godot y 25/50/76）。add_label 初摆 h=字号+4 估算行高
+# ≠ 实际（20 号实测 28）→ 中心恒偏低（"奖励:"实测 78 vs 76，四轮根修 relayout 实测居中）。
+func test_row_labels_v_centered_at_source_y() -> void:
+	var cm := ConfigManager.new()
+	cm.load_all()
+	var task: Dictionary = {
+		"kind": "task", "name": "任务名X", "detail": "详情Y", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "",
+		"reward": [{"type": "Item", "id": 127, "amount": 50}],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable(), "奖励:", "前往", Callable(), cm)
+	get_tree().root.add_child(row)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var name_c: float = -1.0
+	var detail_c: float = -1.0
+	var title_c: float = -1.0
+	for c in row.get_children():
+		if c is Label:
+			var lbl: Label = c as Label
+			var center: float = lbl.position.y + lbl.size.y * 0.5
+			if lbl.text == "任务名X":
+				name_c = center
+			elif lbl.text == "详情Y":
+				detail_c = center
+			elif lbl.text == "奖励:":
+				title_c = center
+	assert_almost_eq(name_c, 25.0, 0.5, "name 框中心 y=25（源 anchor(0,0.5) @ cocos y71）")
+	assert_almost_eq(detail_c, 50.0, 0.5, "detail 框中心 y=50（源 @ cocos y46）")
+	assert_almost_eq(title_c, 76.0, 0.5, "奖励: 框中心 y=76（源 @ cocos y20，与奖励图标同线）")
+	row.queue_free()

@@ -92,13 +92,18 @@ func _style_scrollbar(scroll: ScrollContainer) -> void:
 
 
 # ed.ui.task:initTaskList + basetask.createTask：遍历 tm.task → Task[chain][id] → 装行。
+# 打开/刷新即发现（源 :1343 behindShowHandler → getTaskList classifyTask 发现可接任务并
+# 服务器登记；单机合并为 TaskManager.sync_current_tasks 本地一步，2026-09-03 根修任务不显示）；
+# 显示序照源 orderList（:1315-1333 可领优先 + chain/id 升序）。
 func _fill_main_list() -> void:
+	_tm.sync_current_tasks(_player, _cm)
 	if _tm.task.is_empty():
 		_add_empty_prompt(_cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED"))
 		return
 	var task_table: Dictionary = _cm.get_raw_table("Task")
 	var reward_title_text: String = _cm.get_lstr("EXERCISE.AWARDS_")
 	var fast_btn_text: String = _cm.get_lstr("TASK.HEAD_TO")
+	var rows: Array = []
 	for entry in _tm.task:
 		var chain: int = int(entry.get("chain", 0))
 		var tid: int = int(entry.get("id", 0))
@@ -107,7 +112,17 @@ func _fill_main_list() -> void:
 			continue
 		var is_finished: bool = str(entry.get("status", "working")) == "finished"
 		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, is_finished, _cm, _player)
-		_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_main.bind(chain, tid), reward_title_text, fast_btn_text, Callable(), _cm))
+		rows.append({"chain": chain, "id": tid, "task": task})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var a_ready: bool = int(a["task"]["progress"]) >= int(a["task"]["target"])
+		var b_ready: bool = int(b["task"]["progress"]) >= int(b["task"]["target"])
+		if a_ready != b_ready:
+			return a_ready
+		if int(a["chain"]) != int(b["chain"]):
+			return int(a["chain"]) < int(b["chain"])
+		return int(a["id"]) < int(b["id"]))
+	for r in rows:
+		_list.add_child(TaskRowBuilder.make_task_row(r["task"], _on_claim_main.bind(r["chain"], r["id"]), reward_title_text, fast_btn_text, Callable(), _cm))
 
 
 # ed.ui.dailyTask:initTaskList + task.lua:1489-1495：只显示当前时段的日常任务

@@ -129,8 +129,17 @@ func test_sections_inside_panel_frame() -> void:
 
 # 空态提示挂 frame 正中（三轮拆分照源 :784 createEmptyPrompt 挂 ui.frame 中心
 # ccp(269,189)=frame 546×378 正中 → Godot (400,262) 锚点定位，不再进列表顶部）。
+# 空态构造：全链 task_finished（sync_current_tasks 后无任务可发现——2026-09-03
+# 根修后新玩家自动发现无门槛链 40，不再天然空态）。
 func test_empty_prompt_anchored_at_frame_center() -> void:
-	var panel := _make_panel()   # 新建 PlayerData 主线 task 空 → 走空态分支
+	var pd := PlayerData.new(cm)
+	var tm := TaskManager.new()
+	for chain_str in cm.get_raw_table("Task"):
+		if str(chain_str) != "name":
+			tm.task_finished.append(int(chain_str))
+	var panel := TaskPanel.new()
+	add_child(panel)
+	panel.setup_panel(pd, cm, tm)
 	var empty_text: String = cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED")
 	var prompt: Label = null
 	for lbl in panel._content.find_children("*", "Label", true, false):

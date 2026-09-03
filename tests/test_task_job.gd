@@ -201,6 +201,74 @@ func test_task_panel_shows_main_task_chain() -> void:
 	root.queue_free()
 
 
+# ── sync_current_tasks 任务发现（源 task.lua:1249 getTaskList → :1175 classifyTask
+#    → :1132 getCurrentTaskInChain → :1108 canTriggerTask；打开面板时发现可接任务并登记，
+#    单机化合并源"客户端发现 + 服务器 trigger_task 登记"两步）──
+
+# 新玩家（0 星级）：仅无门槛链 40 被发现（Trigger ID={"1":0} 全 0 跳过）；
+# 有门槛链（chain2 需 CompleteStage 4）未通关不登记（源 canTriggerTask :1115-1117）。
+func test_sync_new_player_discovers_unconditional_chain() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	tm.sync_current_tasks(pd, cm)
+	assert_eq(tm.task.size(), 1, "新玩家仅发现 1 条无门槛任务")
+	assert_eq(int(tm.task[0]["chain"]), 40, "chain=40")
+	assert_eq(int(tm.task[0]["id"]), 1, "id=1")
+	assert_eq(str(tm.task[0]["status"]), "working", "status=working")
+
+
+# 通关门槛关卡后对应链被发现（源 getCurrentTaskInChain 未初始化链分支 :1158-1163）。
+func test_sync_unlocks_chain_after_stage_cleared() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	pd.stage_manager.progress[4] = 3   # chain2 id1 门槛 CompleteStage 4
+	tm.sync_current_tasks(pd, cm)
+	var found: bool = false
+	for e in tm.task:
+		if int(e["chain"]) == 2:
+			found = true
+			assert_eq(int(e["id"]), 1, "chain2 从 id1 起")
+	assert_true(found, "通关 stage 4 后 chain2 被发现")
+
+
+# 领完链中任务自动推进下一任务（源 :1147-1155 elseif canTriggerTask(id+1) → noTrigger 登记）。
+func test_sync_advances_finished_task_in_chain() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	pd.stage_manager.progress[4] = 3
+	pd.stage_manager.progress[11] = 3   # chain2 id2 门槛 CompleteStage 11
+	tm.sync_current_tasks(pd, cm)
+	tm.claim_task_reward(pd, 2, 1, cm)   # 领 chain2 id1 → finished
+	tm.sync_current_tasks(pd, cm)
+	var c2_id: int = -1
+	for e in tm.task:
+		if int(e["chain"]) == 2:
+			c2_id = int(e["id"])
+	assert_eq(c2_id, 2, "finished 后 sync 推进到 id2（trigger_task 同链替换）")
+
+
+# 链尾领完 → chain 进 task_finished（claim_task_reward ④）→ sync 不再发现且清残留 entry
+# （源 classifyTask :1182 exception=finished chains 排除，链结束不显示）。
+func test_sync_skips_finished_chains_and_clears_entries() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	tm.task_finished.append(40)   # 模拟链 40 已领完
+	tm.task.append({"chain": 40, "id": 1, "status": "finished", "target": 0})
+	tm.sync_current_tasks(pd, cm)
+	assert_eq(tm.task.size(), 0, "task_finished 链残留 entry 被清 + 不再发现")
+
+
+# can_trigger_task 静态判定（源 canTriggerTask :1108-1130：row 不存在→nil；
+# CompleteStage 星级≤0 拦截；PlayerLevel 等级不足拦截；其余 type 不拦截）。
+func test_can_trigger_task_static_rules() -> void:
+	var pd := PlayerData.new(cm)
+	assert_false(TaskManager.can_trigger_task(999, 1, pd, cm), "Task row 不存在 → false")
+	assert_true(TaskManager.can_trigger_task(40, 1, pd, cm), "Trigger 全 0（无门槛）→ true")
+	assert_false(TaskManager.can_trigger_task(2, 1, pd, cm), "chain2 id1 需 stage4，未通关 → false")
+	pd.stage_manager.progress[4] = 3
+	assert_true(TaskManager.can_trigger_task(2, 1, pd, cm), "通关 stage4 → true")
+
+
 # 递归统计 panel.container 子树中 ScrollContainer 数（.tscn 重构后非直接子）。
 func _count_scroll_in(node: Node) -> int:
 	var n: int = 0

@@ -71,9 +71,10 @@ static func open_handbook(scene: Node) -> void:
 	panel.show_window(scene)
 
 
-# 日常任务入口。
+# 日常任务入口。用 player 持久化 task_manager（2026-09-03 根修任务不显示：临时
+# TaskManager.new() 恒空 + 领奖写临时实例不落存档；面板 fill 前 sync_current_tasks 发现任务）。
 static func open_task(scene: Node, p_kind: String = "task") -> void:
-	var tm := TaskManager.new()
+	var tm: TaskManager = GameData.player.task_manager
 	var panel := TaskPanel.new(p_kind, {})
 	panel.setup_panel(GameData.player, GameData.config, tm, p_kind)
 	panel.show_window(scene)

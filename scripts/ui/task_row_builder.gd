@@ -47,6 +47,10 @@ const BG_H: float = 123.0 / CONTENT_SCALE
 # 须转项目 res:// 前缀再 load（CLIP 转换，hero_package_item 判例）。
 const CLIP_PREFIX: String = "UI/"
 const CLIP_REPLACE: String = "res://assets/ui/"
+# icon 回退 Item 分支专用底（源 :536-540 Category 碎片/魂石 → task_fragment_icon_bg）。
+const FRAGMENT_ICON_BG_RES: String = "res://assets/ui/alpha/HVGA/task_fragment_icon_bg.png"
+const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"
+const CAT_SOUL_STONE: String = "EQUIP.SOUL_STONE"
 
 # ---- 行内坐标（cocos，bg 左下原点 y 向上）----
 const C_NAME: Vector2 = Vector2(95.0, 71.0)
@@ -127,7 +131,7 @@ static func make_task_row(task: Dictionary, on_claim: Callable,
 	bg.pivot_offset = Vector2(float(BG_W), float(BG_H)) * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.name = "TaskRow"
-	add_icon(bg, task)
+	add_icon(bg, task, p_cm)
 	var name_lbl: Label = add_label(bg, str(task.get("name", "")), C_NAME, &"TaskNameLabel")
 	var progress_text: String = "" if is_completed else "%d/%d" % [progress, target]
 	var progress_var: StringName = &"TaskProgressDoneLabel" if is_completed else &"TaskProgressTodoLabel"
@@ -146,25 +150,47 @@ static func make_task_row(task: Dictionary, on_claim: Callable,
 	return bg
 
 
-# icon:task→Task.Icon / dailyjob→Todolist.Icon / 无→reward[0] type 图;scale 75/max
-static func add_icon(bg: TextureRect, task: Dictionary) -> void:
-	var icon_bg := TextureRect.new()
-	icon_bg.texture = load_tex(ICON_BG_RES)
-	icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var ibg_size: Vector2 = TexDisplaySize.display_size(ICON_BG_RES) if icon_bg.texture else Vector2(94.0, 101.0) / CONTENT_SCALE
-	icon_bg.custom_minimum_size = ibg_size
-	icon_bg.position = bg_pos(C_ICON_BG) - ibg_size * 0.5
-	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg.add_child(icon_bg)
+# icon:task→Task.Icon / dailyjob→Todolist.Icon / 无→reward[0]（Item→readequip 工厂产物
+# 72 点原尺寸+碎片/魂石专用底，源 :529-542；其他→type 货币图标）;贴图路径分支 scale 75/max。
+# Task 表 Icon 全空（76 条实测）+ 主线奖励多为 Item → Item 回退是主线图标主路径
+#（漏译致主线行图标全缺，2026-09-03 二轮根修）。
+static func add_icon(bg: TextureRect, task: Dictionary, p_cm: Variant = null) -> void:
+	var icon_bg_res: String = ICON_BG_RES
 	var icon_res: String = str(task.get("icon", ""))
 	# 表内 cocos 路径 → res://（漏转换 load_tex 失败致图标空缺，2026-09-03 根修）。
 	if icon_res.begins_with(CLIP_PREFIX):
 		icon_res = CLIP_REPLACE + icon_res.substr(CLIP_PREFIX.length())
+	var item_icon: Control = null
 	if icon_res.is_empty():
 		var rewards_v: Variant = task.get("reward", [])
 		if rewards_v is Array and (rewards_v as Array).size() > 0:
 			var first: Dictionary = (rewards_v as Array)[0]
-			icon_res = TYPE_ICON_RES.get(str(first.get("type", "")), "")
+			var rtype: String = str(first.get("type", ""))
+			if rtype == "Item":
+				# 源码 :531-534：Item→readequip.createIcon(id)（无 mh）72 点原尺寸；
+				# :535-540 Category 碎片/魂石 → task_fragment_icon_bg 专用底。
+				var item_id: int = int(first.get("id", 0))
+				if p_cm != null and item_id > 0:
+					item_icon = ReadequipIcon.create_icon(item_id, 0, p_cm)
+					icon_bg_res = _item_icon_bg_res(item_id, p_cm)
+			else:
+				icon_res = TYPE_ICON_RES.get(rtype, "")
+	var icon_bg := TextureRect.new()
+	icon_bg.texture = load_tex(icon_bg_res)
+	icon_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	var ibg_size: Vector2 = TexDisplaySize.display_size(icon_bg_res) if icon_bg.texture else Vector2(94.0, 101.0) / CONTENT_SCALE
+	icon_bg.custom_minimum_size = ibg_size
+	icon_bg.position = bg_pos(C_ICON_BG) - ibg_size * 0.5
+	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.add_child(icon_bg)
+	if item_icon != null:
+		# 源码 :527 icon:setPosition(ccp(50,48)) anchor 默认中心、无 setScale（Task.Icon
+		# 路径才有 75/max）→ 工厂产物 72 点原尺寸中心锚定位。
+		var fs: float = ReadequipIcon.ICON_SIZE
+		item_icon.position = bg_pos(C_ICON) - Vector2(fs, fs) * 0.5
+		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.add_child(item_icon)
+		return
 	if icon_res.is_empty():
 		return
 	var icon := TextureRect.new()
@@ -176,6 +202,15 @@ static func add_icon(bg: TextureRect, task: Dictionary) -> void:
 		icon.position = bg_pos(C_ICON) - tex_size * s * 0.5
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(icon)
+
+
+# 源码 :536-540：Equip.Category∈{碎片,魂石} → task_fragment_icon_bg（LSTR key 比较，
+# equipboard_ofbuy_panel.gd:137 判例），其余 → task_icon_bg。
+static func _item_icon_bg_res(item_id: int, p_cm: Variant) -> String:
+	var category: String = String(p_cm.get_raw_table("Equip").get(str(item_id), {}).get("Category", ""))
+	if category == CAT_FRAGMENT or category == CAT_SOUL_STONE:
+		return FRAGMENT_ICON_BG_RES
+	return ICON_BG_RES
 
 
 # Label(anchor(0,0.5) 左中,垂直居中在 cocos_y)。variation_name 决定颜色/字号（Theme variation）。
@@ -218,6 +253,9 @@ static func add_reward_icons(bg: TextureRect, rewards: Array, p_cm: Variant = nu
 			continue
 		if rtype == "Item":
 			rx = _add_item_reward_icon(bg, int(r.get("id", 0)), rx, y_base, p_cm, chain)
+			# 源码 :573-577：每个奖励（含 Item）icon 后都跟 "x"..amount 数量文字
+			#（漏译致 Item 奖励无数量，2026-09-03 二轮根修）。
+			rx = add_reward_amt(bg, amount, rx, y_base, chain)
 			continue
 		var res: String = REWARD_ICON_RES.get(rtype, "")
 		if res.is_empty():
@@ -330,6 +368,13 @@ static func _add_fast_button(bg: TextureRect, label_text: String, on_fast: Calla
 # icon→amt gap 0、amt→icon gap 10，起步=title 实测右缘）。
 static func _deferred_relayout(name_lbl: Label, detail_lbl: Label, title_lbl: Label,
 		progress_lbl: Label, reward_chain: Array) -> void:
+	# name/detail/title 垂直实测居中（源 ui_info anchor(0,0.5) 左中锚=框中心落在 cocos y；
+	# add_label 初摆 h=字号+4 估算行高 ≠ 实际（20 号实测 28）→ 中心恒偏低 1.5~2 点，
+	# "奖励:"实测 78 vs 76，2026-09-03 四轮根修）。pivot 置左边中点=源 setScale 绕锚点
+	# 缩放语义（超宽压缩后视觉中心不漂移）。
+	_v_center_left_mid(name_lbl, C_NAME)
+	_v_center_left_mid(detail_lbl, C_DETAIL)
+	_v_center_left_mid(title_lbl, C_REWARD_TITLE)
 	var nw: float = name_lbl.get_minimum_size().x
 	if nw > NAME_MAX_W:
 		name_lbl.scale = Vector2(NAME_MAX_W / nw, NAME_MAX_W / nw)
@@ -339,18 +384,33 @@ static func _deferred_relayout(name_lbl: Label, detail_lbl: Label, title_lbl: La
 	var pw: Vector2 = progress_lbl.get_minimum_size()
 	progress_lbl.position = bg_pos(C_PROGRESS) - pw * 0.5
 	var rx: float = C_REWARD_TITLE.x + title_lbl.get_minimum_size().x
+	var y_base: float = bg_pos(C_REWARD_TITLE).y
 	for i in range(reward_chain.size()):
 		var entry: Dictionary = reward_chain[i]
 		var node: Control = entry["node"]
 		node.position.x = rx
 		var w: float = float(entry["w"])
 		if node is Label:
-			w = (node as Label).get_minimum_size().x
+			var amt_lbl: Label = node as Label
+			var min_size: Vector2 = amt_lbl.get_minimum_size()
+			w = min_size.x
 			entry["w"] = w
+			# 垂直居中重摆（源 :576 al anchor(0,0.5) 中心锚，与 icon 同中心线）：
+			# 初摆 h=字号+4 估算 ≠ 实际行高（18 号实测 26）→ 框中心偏 y_base 2 点，
+			# 2026-09-03 三轮根修（用户复验"字体跟图标底部不对齐"），实测行高居中。
+			amt_lbl.position.y = y_base - min_size.y * 0.5
 		rx += w
 		# amt 后 gap 10 给下一组 icon（源 :571 i==1 and 0 or 10；amt→icon 间隙，icon→amt 无）
 		if node is Label and i < reward_chain.size() - 1:
 			rx += 10.0
+
+
+# 左中锚 Label 垂直居中重摆：实测行高框中心 = bg_pos(cocos).y；pivot=左边中点
+#（源 anchor(0,0.5) setScale 绕锚点，Godot 等价 pivot 后视觉中心恒在锚位）。
+static func _v_center_left_mid(lbl: Label, cocos: Vector2) -> void:
+	var h: float = lbl.get_minimum_size().y
+	lbl.pivot_offset = Vector2(0.0, h * 0.5)
+	lbl.position.y = bg_pos(cocos).y - h * 0.5
 
 
 # 行 bg 按下/松开 scale Tween（源 task.lua:324 setScale 0.98 视觉反馈）。

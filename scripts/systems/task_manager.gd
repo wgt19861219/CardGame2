@@ -65,6 +65,72 @@ func trigger_task(packed_list: Array) -> void:
 		task.append({"chain": chain, "id": tid, "status": "working", "target": 0})
 
 
+## 任务触发条件判定（源 task.lua:1108-1130 canTriggerTask）：Task[chain][tid] 的
+## Trigger ID 列表逐条查 Triggers 表——CompleteStage 需玩家通关（星级>0）、
+## PlayerLevel 需等级达标，其余 type 不拦截；row 不存在 → false（源 not task → nil）。
+## 数据实测 Triggers 168 条全 CompleteStage（PlayerLevel 分支照源保留）。
+static func can_trigger_task(chain: int, tid: int, player: PlayerData, cm: ConfigManager) -> bool:
+	var row: Dictionary = cm.get_raw_table("Task").get(str(chain), {}).get(str(tid), {})
+	if row.is_empty():
+		return false
+	var triggers: Variant = row.get("Trigger ID", {})
+	if not triggers is Dictionary:
+		return true
+	var trigger_table: Dictionary = cm.get_raw_table("Triggers")
+	for v in (triggers as Dictionary).values():
+		if typeof(v) != TYPE_FLOAT and typeof(v) != TYPE_INT:
+			continue
+		if float(v) <= 0.0:
+			continue
+		var trow: Dictionary = trigger_table.get(str(int(v)), {})
+		var ttype: String = str(trow.get("Trigger Type", ""))
+		var cond: int = int(trow.get("Trigger Condition", 0))
+		if ttype == "CompleteStage":
+			if player.stage_manager.stage_stars(cond) <= 0:
+				return false
+		elif ttype == "PlayerLevel" and cond > player.team_level:
+			return false
+	return true
+
+
+## 任务发现 + 登记（源打开面板 task.lua:1249 getTaskList → :1175 classifyTask →
+## :1132 getCurrentTaskInChain：客户端发现可接任务 → 发服务器 trigger_task 登记 → 回复显示。
+## 单机化合并为本地一步，View 打开/刷新面板时调用）。幂等：
+## ① task_finished 链清除残留 entry（源 classifyTask :1182 exception=finished 链排除，链结束不显示）；
+## ② 进行中链保留（源 :1139-1145 返回当前任务）；
+## ③ 已领奖（finished）且下一任务条件满足 → 推进（源 :1147-1155 canTriggerTask(id+1) 登记）；
+## ④ 未初始化链首任务条件满足 → 登记（源 :1158-1163 canTriggerTask(chain,1)）。
+func sync_current_tasks(player: PlayerData, cm: ConfigManager) -> void:
+	# ① 清 task_finished 链残留
+	var i: int = task.size() - 1
+	while i >= 0:
+		if task_finished.has(int(task[i].get("chain", -1))):
+			task.pop_at(i)
+		i -= 1
+	var task_table: Dictionary = cm.get_raw_table("Task")
+	for chain_str in task_table:
+		if str(chain_str) == "name":
+			continue
+		var chain: int = int(chain_str)
+		if task_finished.has(chain):
+			continue
+		var cur: Dictionary = {}
+		for entry in task:
+			if int(entry.get("chain", -1)) == chain:
+				cur = entry
+				break
+		if not cur.is_empty():
+			# ②③ 已初始化链：working 保留；finished 推进下一任务
+			if str(cur.get("status", "working")) != "finished":
+				continue
+			var next_id: int = int(cur.get("id", 0)) + 1
+			if can_trigger_task(chain, next_id, player, cm):
+				trigger_task([chain | (next_id << SPLITBITS_SHIFT)])
+		elif can_trigger_task(chain, 1, player, cm):
+			# ④ 未初始化链：首任务条件满足即登记
+			trigger_task([chain | (1 << SPLITBITS_SHIFT)])
+
+
 ## 源 require_rewards :1508-1581：查 Task[chain][id] 单槽发奖 + Consume 扣资源 + status→finished + 链尾 task_finished。
 ## 返 {ok:bool}。
 func claim_task_reward(player: PlayerData, chain: int, id: int, cm: ConfigManager) -> Dictionary:
