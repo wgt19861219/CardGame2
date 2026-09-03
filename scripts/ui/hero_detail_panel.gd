@@ -173,6 +173,10 @@ func _rebuild_content(animate_slide: bool = false) -> void:
 	for c in container.get_children():
 		c.free()
 	_desc_label = null   # 旧 desc label 已 free，清引用
+	if _light_tween != null and _light_tween.is_valid():
+		_light_tween.kill()   # 旧 tween 循环 tween 旧光效，随重建一并终止
+	_upgrade_light = null   # 旧光效挂旧 %UpgradeRankBtn 子树内，已随 c.free() 释放；不清则 _refresh_upgrade_light 传 freed 对象报 Invalid type（2026-09-02）
+	_light_tween = null
 	_build_content(saved_tab, animate_slide)
 
 

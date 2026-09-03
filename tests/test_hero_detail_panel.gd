@@ -857,6 +857,35 @@ func test_rebuild_slide_only_on_upgrade_path() -> void:
 	root.queue_free()
 
 
+# 悬空引用回归（2026-09-02 实跑报错）：_rebuild_content 对旧 content 子树 c.free() 连带释放
+# 挂 %UpgradeRankBtn 下的进阶光效，但只清 _desc_label 漏清 _upgrade_light/_light_tween →
+# 重建内 _refresh_upgrade_light 把 freed Sprite2D 传参报 "argument 5 (previously freed)"，
+# 报错后返回链为 null → 可进阶态光效丢失（不再重建）。断言重建后光效恢复即抓住此病。
+func test_rebuild_clears_upgrade_light_ref() -> void:
+	var root := Node.new()
+	add_child(root)
+	# 穿齐 rank 配方 6 槽 → can_upgrade_rank=true（可进阶态光效存在的前提）
+	var mgr := HeroManager.new(cm)
+	var inst_id: int = mgr.add_hero(1)
+	var hero := mgr.get_hero(inst_id)
+	var rank_equip: Dictionary = cm.get_raw_table(&"Hero_equip").get(str(hero.tid), {}).get(str(hero.rank), {})
+	assert_false(rank_equip.is_empty(), "前置：Hero_equip[tid][rank] 配方存在")
+	for slot in range(6):
+		hero.equip_slots[slot] = int(rank_equip.get("Equip" + str(slot + 1) + " ID", 0))
+	assert_true(mgr.can_upgrade_rank(inst_id), "前置：穿齐后可进阶")
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, mgr)
+	panel.show_window(root)
+	assert_true(panel._upgrade_light != null and is_instance_valid(panel._upgrade_light),
+		"前置：可进阶态光效已创建")
+	panel.refresh_content()   # deferred _rebuild_content（free 旧子树连带释放光效）
+	await get_tree().create_timer(0.1).timeout
+	assert_true(panel._upgrade_light != null and is_instance_valid(panel._upgrade_light),
+		"重建后可进阶态光效恢复（旧引用清后重建，而非悬空传参报错丢光效）")
+	panel.remove_window()
+	root.queue_free()
+
+
 # 描述浮层位置随槽下移（源 createDescBoard :23-25 ccp(525, 387-90*(i-1))；旧固定 (400,100)
 # = 点低槽浮层跑到首行「力量强化说明放到幽灵船上」错位，2026-08-30 修）。
 func test_skill_desc_board_position_follows_slot() -> void:
