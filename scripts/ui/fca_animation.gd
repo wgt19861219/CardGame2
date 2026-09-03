@@ -11,6 +11,11 @@ signal action_finished(action_name: String)
 const BATTLE_SCALE: float = 0.09
 const UI_SCALE: float = 0.39
 const UI_RES_PREFIX: String = "eff_UI"
+# 散件内容缩放（ContentScaleFactor 1.28125）— FCA 散件纹理系 1.28× 高清资产，渲染须 ÷CS。
+# 2026-09-03 原版锚点标定定稿：详情立绘未÷CS 时横向系统性偏宽（帽宽/身高 1.00 vs 原版 0.72、
+# 高宽比 1.0 vs 1.38）；÷CS 后帽宽/身高 0.71/本体 1.39:1 精确命中原版（验收记录-船长详情动画比例调查）。
+# 源 Axmol 复刻 C++（LegendAnimationFileInfo）无此处理（其 UI 立绘未跑通），系原版真机引擎语义。
+const PART_CONTENT_SCALE: float = 1.28125
 var _coord_scale: float = BATTLE_SCALE
 
 # ── 静态缓存（resource_name -> {elements, actions, action_names}）──
@@ -395,7 +400,7 @@ func _apply_frame(frame: Dictionary) -> void:
 		# adjustment，系 Cocos anchor(0,0)/y-up 语境，直译进 Godot centered/y-down 会翻转
 		# 元素朝向——2026-08-19 实测人物元素散架已回退。小位移资源偏差无感；大位移资源
 		# （幽灵船投射物）的偏移由消费方按需补偿。
-		var factor: float = 1.0 / _coord_scale
+		var factor: float = 1.0 / _coord_scale / PART_CONTENT_SCALE
 		sprite.transform = Transform2D(
 			Vector2(a * factor, b * factor),
 			Vector2(c * factor, d * factor),
