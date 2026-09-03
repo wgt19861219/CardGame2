@@ -190,10 +190,13 @@ func test_task_panel_shows_main_task_chain() -> void:
 	var panel := TaskPanel.new("task", {})
 	panel.setup_panel(pd, cm, tm)
 	panel.show_window(root)
-	# .tscn 重构后 container 直接子是 TaskContent（1 个），ScrollContainer/MainList/DailyList 在其下。
-	# 语义不变：递归找 ScrollContainer >= 2（主线 + 日常两段）。
+	# 三轮拆分（2026-09-03）后单列表（%List 按模式 fill）；本测试验证主线行渲染进列表。
 	var scroll_count: int = _count_scroll_in(panel.container)
-	assert_gte(scroll_count, 2, "task_panel 含主线+日常分区（>=2 个 ScrollContainer）")
+	assert_eq(scroll_count, 1, "task 模式单滚动列表（2026-09-03 拆回源两独立弹窗）")
+	var row_count: int = 0
+	for scroll in panel.container.find_children("*", "ScrollContainer", true, false):
+		row_count += (scroll as ScrollContainer).find_children("TaskRow", "TextureRect", true, false).size()
+	assert_gte(row_count, 1, "触发的链任务行已渲染（TaskRow >=1）")
 	panel.remove_window()
 	root.queue_free()
 

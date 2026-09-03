@@ -72,10 +72,10 @@ static func open_handbook(scene: Node) -> void:
 
 
 # 日常任务入口。
-static func open_task(scene: Node) -> void:
+static func open_task(scene: Node, p_kind: String = "task") -> void:
 	var tm := TaskManager.new()
-	var panel := TaskPanel.new("task", {})
-	panel.setup_panel(GameData.player, GameData.config, tm)
+	var panel := TaskPanel.new(p_kind, {})
+	panel.setup_panel(GameData.player, GameData.config, tm, p_kind)
 	panel.show_window(scene)
 
 

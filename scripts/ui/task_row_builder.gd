@@ -43,6 +43,11 @@ const TYPE_ICON_RES := {
 const BG_W: float = 638.0 / CONTENT_SCALE
 const BG_H: float = 123.0 / CONTENT_SCALE
 
+# 数据表 Icon 字段是 cocos 路径（"UI/alpha/HVGA/x.png"，Todolist id=1 实测），
+# 须转项目 res:// 前缀再 load（CLIP 转换，hero_package_item 判例）。
+const CLIP_PREFIX: String = "UI/"
+const CLIP_REPLACE: String = "res://assets/ui/"
+
 # ---- 行内坐标（cocos，bg 左下原点 y 向上）----
 const C_NAME: Vector2 = Vector2(95.0, 71.0)
 const C_PROGRESS: Vector2 = Vector2(450.0, 71.0)   # readNode 无 anchor 声明=默认(0.5,0.5) 中心锚（task.lua ui_info）
@@ -114,6 +119,10 @@ static func make_task_row(task: Dictionary, on_claim: Callable,
 	bg.texture = load_tex(BOARD_FINISHED_RES if show_complete else BOARD_RES)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.custom_minimum_size = Vector2(float(BG_W), float(BG_H))
+	# 防容器拉伸（2026-09-03 实测）：VBox 子项默认 FILL 会把行横向拉到容器宽 531.7
+	#（÷CS 等比显示宽 498 → 贴图横拉 +6.7%）。源 createSprite 恒等比，SHRINK_CENTER
+	# 保 min size 居中（列表 531.7 宽内行居中，两侧各留 ~17）。
+	bg.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	# pivot 居中：源 bg anchor(0.5,0.5) 按中心 setScale → Godot Control scale 绕 pivot_offset。
 	bg.pivot_offset = Vector2(float(BG_W), float(BG_H)) * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -148,6 +157,9 @@ static func add_icon(bg: TextureRect, task: Dictionary) -> void:
 	icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(icon_bg)
 	var icon_res: String = str(task.get("icon", ""))
+	# 表内 cocos 路径 → res://（漏转换 load_tex 失败致图标空缺，2026-09-03 根修）。
+	if icon_res.begins_with(CLIP_PREFIX):
+		icon_res = CLIP_REPLACE + icon_res.substr(CLIP_PREFIX.length())
 	if icon_res.is_empty():
 		var rewards_v: Variant = task.get("reward", [])
 		if rewards_v is Array and (rewards_v as Array).size() > 0:
@@ -360,9 +372,12 @@ static func make_empty_prompt(kind: String = "task") -> Label:
 
 
 # 显式文字版：panel 层 get_lstr 后传入（保留 make_empty_prompt(kind) 兜底入口）。
+# SHRINK_CENTER 居中（源 createEmptyPrompt@784 提示挂 frame 中心 ccp(269,189)=面板正中
+# 水平居中；VBox 内左对齐会凸出分节标题左缘，2026-09-03 错位二轮）。
 static func make_empty_prompt_with_text(empty_text: String) -> Label:
 	var lbl := Label.new()
 	lbl.text = empty_text
 	lbl.theme_type_variation = &"TaskEmptyLabel"
+	lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return lbl

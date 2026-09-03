@@ -34,10 +34,11 @@ func test_task_panel_no_moved_functions() -> void:
 		assert_true(script_text.find("func %s" % fname) == -1, "%s 已搬出 task_panel" % fname)
 
 
-func test_task_panel_func_count_le_10() -> void:
+func test_task_panel_func_count_le_11() -> void:
 	var script_text: String = FileAccess.get_file_as_string("res://scripts/ui/task_panel.gd")
 	var func_count: int = script_text.count("\nfunc ") + script_text.count("\nstatic func ")
-	assert_lte(func_count, 10, "task_panel func 数 ≤10（当前 %d）" % func_count)
+	# 11 = 10 + _add_empty_prompt（2026-09-03 三轮拆分：空态提示挂 frame 中心照源 :784）
+	assert_lte(func_count, 11, "task_panel func 数 ≤11（当前 %d）" % func_count)
 
 
 # ==================== 批4 Task 7 两件套收尾守卫（2026-08-17）====================
@@ -66,23 +67,8 @@ func test_content_tscn_no_theme_style_override() -> void:
 		"tscn 无 separation override（全局 VBox separation 默认 8 冗余）")
 
 
-# 段标题（MainTitleLabel/DailyTitleLabel）为合并双列表的迁移发明补充 UI
-# （源为 task/dailyTask 两独立窗口各有 title），样式走 TaskSectionLabel variation。
-func test_content_section_titles_use_task_section_variation() -> void:
-	var content: Control = (load(CONTENT_SCENE_PATH) as PackedScene).instantiate() as Control
-	for node_name: String in ["%MainTitleLabel", "%DailyTitleLabel"]:
-		var lbl: Label = content.get_node(node_name) as Label
-		assert_eq(String(lbl.theme_type_variation), "TaskSectionLabel",
-			"%s 段标题走 TaskSectionLabel variation" % node_name)
-	content.free()
-
-
-# GUT 下 get_theme_font_size 不解析 variation → 数值断言读 tres 文本表项（批内惯例）。
-func test_theme_registers_task_section_label() -> void:
-	var theme_text: String = FileAccess.get_file_as_string(THEME_PATH)
-	assert_true(theme_text.find("TaskSectionLabel/base_type") != -1, "theme 注册 TaskSectionLabel")
-	assert_true(theme_text.find("TaskSectionLabel/font_sizes/font_size = 20") != -1,
-		"TaskSectionLabel 20 号（小于面板大标题 24，分区层级）")
+# 段标题（MainTitleLabel/DailyTitleLabel）随 2026-09-03 三轮拆分删除（源单弹窗无分节标题，
+# 标题按模式由 %Title 承担）；TaskSectionLabel variation 及其 theme 注册测试同步移除。
 
 
 # FAST_ROUTE 反射链守卫：task_panel._on_fast 经 TaskQuery.FAST_ROUTE（7 个去重方法名）
@@ -98,14 +84,6 @@ func test_fast_route_reflection_methods_exist_in_main_scene() -> void:
 	for m: String in methods:
 		assert_true(main_scene_text.find("func %s(" % m) != -1,
 			"main_scene 定义 %s（反射链防断）" % m)
-
-
-# variation 生效守卫已由 test_variation_runtime_effect 覆盖；
-# 此处补 tscn 段标题 variation 在 theme 有注册色（防删除断样式）。
-func test_theme_task_section_label_has_color() -> void:
-	var theme_text: String = FileAccess.get_file_as_string(THEME_PATH)
-	assert_true(theme_text.find("TaskSectionLabel/colors/font_color") != -1,
-		"TaskSectionLabel 有 font_color（与面板 title 同金色调）")
 
 
 # Task 2 留的缺口：验证 variation 运行时真生效（Label 用了 variation 的色，非默认白）。

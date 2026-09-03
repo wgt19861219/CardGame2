@@ -101,6 +101,31 @@ func test_row_bg_pivot_centered() -> void:
 	row.free()
 
 
+# 防拉伸守卫（2026-09-03 实测回归）：行在宽于 min size 的 VBox（tscn 列表 531.7 宽）内
+# 被 size_flags 默认 FILL 横向拉至 531.7（÷CS 显示宽 498 → 变形 +6.7%，贴图横拉）。
+# 源 createSprite 显示恒等比 498×96；修 = SHRINK_CENTER 保 min size 居中。
+func test_row_bg_not_stretched_by_container() -> void:
+	var task: Dictionary = {
+		"kind": "task", "name": "T", "detail": "", "target": 5,
+		"progress": 0, "isFinished": false, "icon": "", "reward": [],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable())
+	var bg: TextureRect = row as TextureRect
+	assert_eq(bg.size_flags_horizontal, Control.SIZE_SHRINK_CENTER,
+		"行 size_flags_horizontal=SHRINK_CENTER（VBox 内保等比宽，禁 FILL 拉伸）")
+	# 容器内实测：放入 531.7 宽的 VBox（模拟 tscn 列表），行宽应保持 498 不被拉。
+	var host := VBoxContainer.new()
+	host.custom_minimum_size = Vector2(531.7, 0)
+	host.add_child(bg)
+	var panel := PanelContainer.new()
+	panel.add_child(host)
+	add_child(panel)
+	await get_tree().process_frame
+	assert_almost_eq(bg.size.x, float(TaskRowBuilder.BG_W), 0.5,
+		"行在 531.7 宽容器内实际 size.x = 498（等比，未被 FILL 拉伸至 531.7）")
+	panel.free()
+
+
 # action button 连 button_down/up 信号驱动 bg scale（源 doPressInList 通过整 layer 拦截，
 # 项目 bg mouse_filter=IGNORE，借子按钮信号驱动等价视觉反馈）。
 func test_row_action_button_wires_press_signals() -> void:
@@ -195,3 +220,23 @@ func test_name_overwide_compressed() -> void:
 		if c is Label and (c as Label).text == long_name:
 			assert_lt((c as Label).scale.x, 1.0, "超宽 name 被压缩 scale<1（源 300 阈值）")
 			break
+
+
+# Todolist.Icon 是 cocos 路径（"UI/alpha/HVGA/task_vit_icon.png"，Todolist id=1 实测），
+# 须 CLIP 转换（"UI/"→"res://assets/ui/"，hero_package_item 判例）后 load——
+# 漏转换 load_tex 失败致行图标空缺（2026-09-03 根修）。
+func test_row_icon_cocos_path_converted() -> void:
+	var task: Dictionary = {
+		"kind": "dailyjob", "name": "T", "detail": "", "target": 1,
+		"progress": 0, "isFinished": false,
+		"icon": "UI/alpha/HVGA/task_vit_icon.png", "reward": [],
+	}
+	var row: Control = TaskRowBuilder.make_task_row(task, Callable())
+	add_child_autofree(row)
+	var found: bool = false
+	for c in row.get_children():
+		var tr := c as TextureRect
+		if tr != null and tr.texture != null \
+				and str(tr.texture.resource_path).contains("task_vit_icon"):
+			found = true
+	assert_true(found, "cocos 路径 Icon 经转换后成功加载渲染（图标不空缺）")

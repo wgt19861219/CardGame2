@@ -50,6 +50,19 @@ func test_parse_rewards_daily_double() -> void:
 	var rewards: Array = TaskQuery.parse_rewards(row, true)
 	assert_eq(rewards.size(), 2)
 
+
+# 源 local_server.lua:4068-4069：Todolist 表 1 号奖励无编号 amount 字段（id=1/2 实测，
+# amount 存于无编号 "Task Reward Amount"），发奖侧 fallback 到该字段；显示侧 parse_rewards
+# 须同款 fallback（2026-09-03 奖励行空根修——漏译致 amount=0 被过滤、奖励链全空）。
+func test_parse_rewards_daily_amount_fallback() -> void:
+	var row: Dictionary = {
+		"Task Reward 1 Type": "Vitality", "Task Reward 1 ID": 0,
+		"Task Reward Amount": 600,
+	}
+	var rewards: Array = TaskQuery.parse_rewards(row, true)
+	assert_eq(rewards.size(), 1, "1 号奖励不因无编号 amount 字段丢失")
+	assert_eq(int(rewards[0]["amount"]), 600, "amount fallback 到无编号 Task Reward Amount")
+
 # ==== get_count/get_main_progress：9 type 分支进度查询（task_panel 拆分时丢失，2026-07-24 补回）====
 
 # 未知 type → 0（fallback 分支）

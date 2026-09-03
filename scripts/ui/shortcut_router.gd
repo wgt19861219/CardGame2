@@ -24,11 +24,11 @@ static func route(parent: Node, key: String) -> void:
 		"heroPackage":
 			MainSceneEntryRouter.open_hero(parent)
 		"task":
-			MainSceneEntryRouter.open_task(parent)
+			MainSceneEntryRouter.open_task(parent, "task")
 		"todoList":
-			# 源 framework.lua:649-653 doClickDailyjob → dailyTask 面板；本项目 TaskPanel
-			# 的每日列表（_fill_daily_list 照源 dailyTask:initTaskList）即等价物
-			# （2026-08-22 巡检接线：旧 Toast 占位与 shortcut 红点判定自相矛盾）。
-			MainSceneEntryRouter.open_task(parent)
+			# 源 framework.lua:649-653 doClickDailyjob → dailyTask 独立弹窗（:34 addChild
+			# z=101）。2026-08-22 曾合并进 TaskPanel 双区（受控偏离），2026-09-03 三轮
+			# 用户指示拆回两独立弹窗：本按钮开 dailyTask 模式（标题"日常活动"+仅每日列表）。
+			MainSceneEntryRouter.open_task(parent, "dailyTask")
 		_:
 			pass

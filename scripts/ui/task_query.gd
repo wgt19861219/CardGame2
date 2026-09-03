@@ -140,6 +140,9 @@ static func pid_values(pid_raw: Variant) -> Array:
 
 
 # 奖励解析：主线单槽（Task Reward Type/ID/Amount）/ 日常双槽（Task Reward 1..2 Type/ID/Amount）。
+# 日常 1 号奖励无编号 amount 字段（Todolist 表实测，amount 存于无编号 "Task Reward Amount"），
+# fallback 照源 local_server.lua:4068-4069（发奖侧 task_manager.claim_job_reward 同款，
+# 2026-09-03 奖励行空根修——漏译致 amount=0 被过滤、奖励链全空）。
 static func parse_rewards(row: Dictionary, is_daily: bool) -> Array:
 	var rewards: Array = []
 	if is_daily:
@@ -147,10 +150,13 @@ static func parse_rewards(row: Dictionary, is_daily: bool) -> Array:
 			var rtype: String = str(row.get("Task Reward %d Type" % i, ""))
 			if rtype == "":
 				continue
+			var ramount: int = int(row.get("Task Reward %d Amount" % i, 0))
+			if ramount <= 0 and i == 1:
+				ramount = int(row.get("Task Reward Amount", 0))
 			rewards.append({
 				"type": rtype,
 				"id": int(row.get("Task Reward %d ID" % i, 0)),
-				"amount": int(row.get("Task Reward %d Amount" % i, 0)),
+				"amount": ramount,
 			})
 	else:
 		var rtype: String = str(row.get("Task Reward Type", ""))

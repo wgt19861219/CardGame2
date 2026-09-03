@@ -26,7 +26,7 @@ const ShortcutRouter = preload("res://scripts/ui/shortcut_router.gd")
 const HUD_LAYER: int = 150   # 高于 PopWindow z_index=100，低于 Toast layer=200
 const STATUS_BAR_H: float = 52.0   # StatusBar 容器高度（照 main_scene 原 BAR_H，货币条绝对坐标在其外）
 const MAIN_IDENTITY: String = "main"
-const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle", "battleprepare", "handbook", "ranklist", "equipstrengthen"]   # 整体隐藏 HUD（battle_scene/battle_prepare/handbook 源里无 HUD——handbook extends basescene 非 framework，2026-08-18 用户实跑反馈；ranklist 源 pushScene 全屏场景无 HUD，批 C C1 2026-08-27——旧版资源条压住标题缎带；equipstrengthen 源 extends basescene pushScene 无 HUD，2026-08-29 用户实跑反馈 HUD 透叠面板）
+const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle", "battleprepare", "handbook", "ranklist", "equipstrengthen", "task", "dailyTask"]   # 整体隐藏 HUD（battle_scene/battle_prepare/handbook 源里无 HUD——handbook extends basescene 非 framework，2026-08-18 用户实跑反馈；ranklist 源 pushScene 全屏场景无 HUD，批 C C1 2026-08-27——旧版资源条压住标题缎带；equipstrengthen 源 extends basescene pushScene 无 HUD，2026-08-29 用户实跑反馈 HUD 透叠面板；task/dailyTask 源 popup 挂 scene z=101 盖住 mainLayer(0) 内 statusbar——basescene.lua:133+framework.lua:644/:34，CanvasLayer(150) 无法被弹窗遮罩盖致货币栏穿透，2026-09-03 用户实跑反馈）
 # 通知轮询间隔（秒）：5 定时提醒到点检测（源 localnotify 手机推送 → 单机游戏内 Toast，
 # 30s 粒度足够——源时间点粒度为分钟；2026-08-21 SetupPanel 二轮）。
 const NOTIFY_TICK_SEC: float = 30.0

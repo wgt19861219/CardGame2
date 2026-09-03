@@ -13,13 +13,13 @@ func before_all() -> void:
 	cm.load_all()
 
 
-func _make_panel() -> TaskPanel:
+func _make_panel(p_kind: String = "task") -> TaskPanel:
 	var pd := PlayerData.new(cm)
 	pd.diamond = 100000
 	var tm := TaskManager.new()
 	var panel := TaskPanel.new()
 	add_child(panel)
-	panel.setup_panel(pd, cm, tm)
+	panel.setup_panel(pd, cm, tm, p_kind)
 	return panel
 
 
@@ -34,12 +34,15 @@ func _count_scroll_recursive(node: Node) -> int:
 	return count
 
 
-# setup 装配两段列表（源 ed.ui.task 主线 + ed.ui.dailyTask 日常，各一 ScrollContainer）
-func test_setup_assembles_two_sections() -> void:
+# 三轮拆分（2026-09-03）：源 task/dailyTask 两独立弹窗 → 双模式单列表，
+# 每模式各装配 1 个滚动列表（不再合并双区）。
+func test_setup_assembles_single_list_per_kind() -> void:
 	var panel := _make_panel()
-	var scroll_count: int = _count_scroll_recursive(panel.container)
-	assert_eq(scroll_count, 2, "主线+日常两段滚动列表")
+	assert_eq(_count_scroll_recursive(panel.container), 1, "task 模式单滚动列表")
 	panel.free()
+	var daily_panel := _make_panel("dailyTask")
+	assert_eq(_count_scroll_recursive(daily_panel.container), 1, "dailyTask 模式单滚动列表")
+	daily_panel.free()
 
 
 # basetask.create @826 mainLayer=CCLayerColor:create(ccc4(0,0,0,200)) 半透明黑遮罩（popup 非场景）。
@@ -50,13 +53,15 @@ func test_setup_uses_source_shade_alpha_200() -> void:
 	panel.free()
 
 
-# @832-835 段标题：task→TASK.TASK="任务"；dailyTask→TASK.DAILY_ACTIVITIES="每日活动"。
-func test_section_titles_use_source_lstr() -> void:
+# @832-835 标题按模式：task→TASK.TASK="任务"；dailyTask→TASK.DAILY_ACTIVITIES="每日活动"。
+func test_title_lstr_per_kind() -> void:
 	var panel := _make_panel()
-	var titles: Array = _collect_label_texts(panel.container)
-	assert_true(titles.has("任务"), "主线段标题 = TASK.TASK")
-	assert_true(titles.has("每日活动"), "日常段标题 = TASK.DAILY_ACTIVITIES")
+	assert_true(_collect_label_texts(panel.container).has("任务"), "task 模式标题 = TASK.TASK")
 	panel.free()
+	var daily_panel := _make_panel("dailyTask")
+	assert_true(_collect_label_texts(daily_panel.container).has("每日活动"),
+		"dailyTask 模式标题 = TASK.DAILY_ACTIVITIES")
+	daily_panel.free()
 
 
 # 递归收集 container 子树中所有 Label 的非空 text（.tscn 重构后段标题在 content 下需递归）。
@@ -97,6 +102,45 @@ func test_panel_styles_scrollbars_with_source_textures() -> void:
 			"%s 垂直滚动条轨道贴图化（源 scroll_bar_bg）" % (scroll as ScrollContainer).name)
 		assert_true(vs.has_theme_stylebox_override("grabber"),
 			"%s 垂直滚动条滑块贴图化（源 scroll_bar）" % (scroll as ScrollContainer).name)
+	panel.free()
+
+
+# 布局守卫（2026-09-03 一~三轮沉淀）：列表区收在面板框（Frame）内且不侵入顶部
+# 货币栏/缎带区。界尺：源 draglist cliprect CCRectMake(0,45,800,348) 顶 y=45（cocos）
+# → Godot y=87；三轮拆分后单列表 %ListScroll 顶 114（源 :407 首行紧贴缎带底 112）。
+const SOURCE_CLIP_TOP_Y: float = 87.0
+
+func test_sections_inside_panel_frame() -> void:
+	var content: Control = (preload("res://scenes/ui/task_content.tscn").instantiate()) as Control
+	add_child_autofree(content)
+	await get_tree().process_frame
+	var frame: Control = content.get_node("Frame") as Control
+	var frame_bottom: float = frame.position.y + frame.size.y
+	var scroll: Control = content.get_node("%ListScroll") as Control
+	assert_gte(scroll.position.y, SOURCE_CLIP_TOP_Y - 0.5,
+		"%ListScroll 顶 y≥源 clip 顶 87（不得侵入货币栏/缎带区）")
+	assert_lte(scroll.position.y + scroll.size.y, frame_bottom + 0.5,
+		"%ListScroll 底不得超出面板框下缘")
+	# 行水平基准（2026-09-03 二轮）：源 task.lua:407 行 bg 中心 x=400（anchor(0.5,0.5)）；
+	# 行 SHRINK_CENTER 于列表宽内居中 → 列表（Scroll）中心必须=400。
+	var center_x: float = scroll.position.x + scroll.size.x * 0.5
+	assert_almost_eq(center_x, 400.0, 0.5, "%ListScroll 中心 x=400（源行中心基准）")
+
+
+# 空态提示挂 frame 正中（三轮拆分照源 :784 createEmptyPrompt 挂 ui.frame 中心
+# ccp(269,189)=frame 546×378 正中 → Godot (400,262) 锚点定位，不再进列表顶部）。
+func test_empty_prompt_anchored_at_frame_center() -> void:
+	var panel := _make_panel()   # 新建 PlayerData 主线 task 空 → 走空态分支
+	var empty_text: String = cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED")
+	var prompt: Label = null
+	for lbl in panel._content.find_children("*", "Label", true, false):
+		if (lbl as Label).text == empty_text:
+			prompt = lbl as Label
+			break
+	assert_not_null(prompt, "主线空态提示存在")
+	if prompt != null:
+		assert_almost_eq(prompt.anchor_left, 0.5, 0.001, "提示锚点 x 居中（400）")
+		assert_almost_eq(prompt.anchor_top, 262.0 / 480.0, 0.001, "提示锚点 y=262（源 frame 正中）")
 	panel.free()
 
 

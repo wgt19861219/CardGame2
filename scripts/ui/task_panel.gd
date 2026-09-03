@@ -21,38 +21,59 @@ const SCROLL_GRABBER_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar.png"
 var _player: PlayerData
 var _cm: ConfigManager
 var _tm: TaskManager
-var _main_list: VBoxContainer = null   # .tscn %MainList（主线任务行容器）
-var _daily_list: VBoxContainer = null  # .tscn %DailyList（日常任务行容器）
+# 双模式（2026-09-03 三轮：拆回源两独立弹窗 framework.lua:644 task / :34 dailyTask，
+# 2026-08-22 合并双区系受控偏离，用户指示还原）。单列表 %List 按模式 fill。
+const KIND_TASK: String = "task"
+const KIND_DAILY: String = "dailyTask"
+var _kind: String = KIND_TASK
+var _list: VBoxContainer = null   # .tscn %List（任务行容器，双模式共用）
+var _content: Control = null      # content 引用（空态提示挂 frame 中心用）
 
 
-func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager) -> void:
+func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager,
+		p_kind: String = KIND_TASK) -> void:
 	_player = p_player
 	_cm = p_cm
 	_tm = p_tm
+	_kind = p_kind
 	setup()
-	hud_identity = "task"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
+	# HUD 隐藏：源 task/dailyTask 均 popup 挂 scene z=101 盖住 statusbar（framework.lua:644/:34，
+	# CanvasLayer(150) 恒浮弹窗上致货币栏穿透，2026-09-03 根修）；identity 即 kind。
+	hud_identity = p_kind
 	if shade_layer != null:
 		shade_layer.color.a = SHADE_ALPHA
 	_build_content()
 
 
-# 建 UI 内容：chrome + 段标题 + Scroll 静态节点从 .tscn instantiate（位置/size 可视化），
-# 任务行 procedural 挂 %MainList/%DailyList。
+# 建 UI 内容：chrome + 单列表 Scroll 静态节点从 .tscn instantiate（位置/size 可视化），
+# 任务行 procedural 挂 %List；标题按模式（源 task.lua:832-835 dailyTask→DAILY_ACTIVITIES）。
 func _build_content() -> void:
 	var content := CONTENT_SCENE.instantiate()
+	_content = content
 	container.add_child(content)
-	_main_list = content.get_node("%MainList") as VBoxContainer
-	_daily_list = content.get_node("%DailyList") as VBoxContainer
-	# fill 静态 Label LSTR（chrome title + 段标题）
-	(content.get_node("%Title") as Label).text = _cm.get_lstr("TASK.TASK")
-	(content.get_node("%MainTitleLabel") as Label).text = _cm.get_lstr("TASK.TASK")
-	(content.get_node("%DailyTitleLabel") as Label).text = _cm.get_lstr("TASK.DAILY_ACTIVITIES")
+	_list = content.get_node("%List") as VBoxContainer
+	var title_key: String = "TASK.DAILY_ACTIVITIES" if _kind == KIND_DAILY else "TASK.TASK"
+	(content.get_node("%Title") as Label).text = _cm.get_lstr(title_key)
 	# close 按钮
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	_style_scrollbar(content.get_node("%MainScroll") as ScrollContainer)
-	_style_scrollbar(content.get_node("%DailyScroll") as ScrollContainer)
-	_fill_main_list()
-	_fill_daily_list()
+	_style_scrollbar(content.get_node("%ListScroll") as ScrollContainer)
+	if _kind == KIND_DAILY:
+		_fill_daily_list()
+	else:
+		_fill_main_list()
+
+
+# 空态提示挂 frame 正中（源 createEmptyPrompt@784-810 readnode 挂 ui.frame，
+# ccp(269,189)=frame 显示 546×378 正中 → Godot 全屏 (400,262) 锚点居中，三轮照源）。
+func _add_empty_prompt(text: String) -> void:
+	var prompt := TaskRowBuilder.make_empty_prompt_with_text(text)
+	prompt.anchor_left = 0.5
+	prompt.anchor_right = 0.5
+	prompt.anchor_top = 262.0 / 480.0
+	prompt.anchor_bottom = 262.0 / 480.0
+	prompt.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	prompt.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_content.add_child(prompt)
 
 
 # 滚动条照源贴图（源 draglist bar 轨道 scroll_bar_bg + 滑块 scroll_bar）。
@@ -73,7 +94,7 @@ func _style_scrollbar(scroll: ScrollContainer) -> void:
 # ed.ui.task:initTaskList + basetask.createTask：遍历 tm.task → Task[chain][id] → 装行。
 func _fill_main_list() -> void:
 	if _tm.task.is_empty():
-		_main_list.add_child(TaskRowBuilder.make_empty_prompt_with_text(_cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED")))
+		_add_empty_prompt(_cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED"))
 		return
 	var task_table: Dictionary = _cm.get_raw_table("Task")
 	var reward_title_text: String = _cm.get_lstr("EXERCISE.AWARDS_")
@@ -86,7 +107,7 @@ func _fill_main_list() -> void:
 			continue
 		var is_finished: bool = str(entry.get("status", "working")) == "finished"
 		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, is_finished, _cm, _player)
-		_main_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_main.bind(chain, tid), reward_title_text, fast_btn_text, Callable(), _cm))
+		_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_main.bind(chain, tid), reward_title_text, fast_btn_text, Callable(), _cm))
 
 
 # ed.ui.dailyTask:initTaskList + task.lua:1489-1495：只显示当前时段的日常任务
@@ -94,7 +115,7 @@ func _fill_main_list() -> void:
 func _fill_daily_list() -> void:
 	var jobs: Array[int] = _tm.get_visible_daily_jobs(_cm, _tm.current_now_minutes())
 	if jobs.is_empty():
-		_daily_list.add_child(TaskRowBuilder.make_empty_prompt_with_text(_cm.get_lstr("TASK.YOU_HAVE_DONE_TODAYS_TASKS")))
+		_add_empty_prompt(_cm.get_lstr("TASK.YOU_HAVE_DONE_TODAYS_TASKS"))
 		return
 	var raw: Dictionary = _cm.get_raw_table("Todolist")
 	var reward_title_text: String = _cm.get_lstr("EXERCISE.AWARDS_")
@@ -117,7 +138,7 @@ func _fill_daily_list() -> void:
 			"icon": str(row.get("Icon", "")),
 			"reward": TaskQuery.parse_rewards(row, true),
 		}
-		_daily_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_daily.bind(job_id), reward_title_text, fast_btn_text, _on_fast.bind(task), _cm))
+		_list.add_child(TaskRowBuilder.make_task_row(task, _on_claim_daily.bind(job_id), reward_title_text, fast_btn_text, _on_fast.bind(task), _cm))
 
 
 # ---- 领奖 / 去往回调 ----
