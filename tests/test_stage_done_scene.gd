@@ -220,7 +220,7 @@ func test_hero_exp_bar_source_positions() -> void:
 	assert_almost_eq(bar.position.y, 112.0 - 17.0 / StageDoneScene.CONTENT_SCALE * 0.5, 0.01,
 		"bar 左端 x=0 中心线 y=112（左上角 = 112-显示高/2）")
 	var exp_lbl: Label = (scene._hero_icon_nodes[0].icon.get_child(-1) as Label)
-	assert_eq(exp_lbl.position, Vector2(-2.0, 125.0), "exp label 左上 (38,134)-size/2")
+	assert_eq(exp_lbl.position, Vector2(-2.0, 118.5), "exp label 左上 (38,127.5)-size/2（2026-09-04 设计调整 -6.5 居中灰带，源直译 134）")
 	assert_eq(exp_lbl.label_settings.font_size, 18, "exp label 字号 18（源 createttf 18）")
 	scene.queue_free()
 
@@ -270,13 +270,15 @@ func test_info_bg_source_rect() -> void:
 	scene.queue_free()
 
 
-# 批 G P0-3 守卫：BattleStatistBtn 源直译全局 rect（源 battleStatistNode 本地 (530,320) 左中锚 +
-# info_bg 左下角原点 (96,25) → 场景 (626,345) → Godot rect x 626~696 / y 110~160）。
+# 批 G P0-3 守卫：BattleStatistBtn 全局 rect。2026-09-04 根修坐标基准：源 battleStatistNode
+# 无 parent 字段（readnode.lua:277 无 parent → 挂 mainLayer），(530,320) 是全屏坐标 anchor(0,0.5)
+# → Godot 全局 (530,135)~(600,185)，中心线 y=160 与淡黄条/lv/gold 同线（源全屏 Cocos 320 ≈
+# lv label 319.7）。旧断言 (626,110) 系把全屏坐标误当 InfoBg 局部坐标直填（压面板右缘+偏上 25）。
 func test_battle_statist_btn_source_rect() -> void:
 	var scene := _make_scene()
 	var btn: Button = scene._battle_statist_btn
-	assert_almost_eq(btn.global_position.x, 626.0, 0.5, "统计按钮左缘 x=626（源直译）")
-	assert_almost_eq(btn.global_position.y, 110.0, 0.5, "统计按钮上缘 y=110（源 345 翻转）")
+	assert_almost_eq(btn.global_position.x, 530.0, 0.5, "统计按钮左缘 x=530（源 mainLayer 全屏直译）")
+	assert_almost_eq(btn.global_position.y, 135.0, 0.5, "统计按钮上缘 y=135（源 320 中心锚翻转，中心 160 对齐淡黄条）")
 	assert_almost_eq(btn.size.x, 70.0, 0.1, "按钮宽 70（scaleSize 点数不÷CS）")
 	assert_almost_eq(btn.size.y, 50.0, 0.1, "按钮高 50")
 	scene.queue_free()
@@ -306,7 +308,7 @@ func test_hero_loot_row_source_geometry() -> void:
 	var hero_host: Control = scene._content.get_node("%HeroHost")
 	var loot_host: Control = scene._content.get_node("%LootHost")
 	assert_almost_eq(hero_host.position.x, 143.0, 0.5, "HeroHost x=195-52（源中心锚点−半容器）")
-	assert_almost_eq(hero_host.position.y, 185.0, 0.5, "HeroHost y=480-243-52（y 翻转）")
+	assert_almost_eq(hero_host.position.y, 174.0, 0.5, "HeroHost y=174（源直译 185 上移 11：frame 居中于淡黄条底 187 与灰板带顶 291，2026-09-04 设计调整）")
 	assert_almost_eq(loot_host.position.x, 164.0, 0.5, "LootHost x=200-36（ReadequipIcon 72 半宽）")
 	assert_almost_eq(loot_host.position.y, 344.0, 0.5, "LootHost y=480-100-36")
 	assert_almost_eq(StageDoneScene.HERO_GAP_X, 92.0, 0.001, "hero gap 源直译 92（旧 110 补偿已回摆）")

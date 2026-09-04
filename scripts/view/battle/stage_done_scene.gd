@@ -37,7 +37,10 @@ const HERO_EXP_BAR_TEX_H: float = 17.0
 const HERO_EXP_BAR_CENTER_Y: float = HERO_CONTAINER_H + 8.0
 const HERO_EXP_BAR_POS: Vector2 = Vector2(0.0, HERO_EXP_BAR_CENTER_Y - HERO_EXP_BAR_TEX_H / CONTENT_SCALE * 0.5)
 const HERO_EXP_BAR_BG_POS: Vector2 = Vector2(40.0, HERO_EXP_BAR_CENTER_Y)
-const HERO_EXP_LABEL_CENTER: Vector2 = Vector2(38.0, HERO_CONTAINER_H + 30.0)
+# 源 -30（container 底下方 30）→ 直译 y=134（旧 host 185 → 全局 319 贴灰板可见带底溢出条外）。
+# 2026-09-04 设计调整 -6.5 → 127.5：垂直居中于灰板可见带（新 frame 底 280.5 ~ 板底 322.5，
+# 中心 301.5 = 174+127.5），随 HeroHost 上移 11 配套（见 tscn HeroHost 注释）。
+const HERO_EXP_LABEL_CENTER: Vector2 = Vector2(38.0, 127.5)
 const HERO_EXP_LABEL_SIZE: Vector2 = Vector2(80.0, 18.0)
 const HERO_EXP_FONT_SIZE: int = 18
 const MAX_STARS: int = 3
