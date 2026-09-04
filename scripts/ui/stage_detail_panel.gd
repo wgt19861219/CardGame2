@@ -6,8 +6,9 @@ extends PopWindow
 ## （编辑器所见即所得），本类只做业务 + 信号 connect + fill（% 取节点填动态数据）
 ## + 敌方阵容/奖励/星动态内容（数据驱动建节点）。原独立 builder 构造器文件已退役删除，
 ## 其 fill/动态逻辑并入本类。本项目单机化 pushScene→PopWindow，shade 透明 +
-## .tscn %FrameworkBg 补 bg.jpg 还原源视觉。关卡名标题复用父面板章节标题栏
-## （stage_select_panel._on_stage_clicked，2026-07-30 定案，本类不建 Title 节点）。
+## .tscn %FrameworkBg 补 bg.jpg 还原源视觉。关卡名标题 2026-09-03 改弹窗内自建
+## %MapTitleBg+%StageTitle（源 :1620-1646；旧"复用父面板章节标题栏"方案被全屏
+## FrameworkBg 盖住致实机标题不可见）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_detail_content.tscn")
 const TEAM_MAX: int = 5
@@ -26,17 +27,26 @@ const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const BOSS_TAG_RES: String = UI_DIR + "stagedetail_boss_tag.png"
 # boss 标签源点尺寸 77.27×42.93（99×55px÷CS）；Sprite2D 按纹理原像素渲染须 scale 补偿。
 const INV_CS: float = 1.0 / 1.28125
-# 敌方阵容（源 createEnemy:1142-1192）：boss 边长 80 / 普通 70（cocos 点），容器 104。
-const ENEMY_CONTAINER: float = 104.0  # ReadheroIcon.CONTAINER_SIZE.x
+# 敌方阵容（源 createEnemy:1142-1192）：boss 边长 80 / 普通 70（cocos 点）。
+# ⚠️缩放分母是源 container 实际点尺寸 81.25 = DGSizeMake(104,104)（readnode.lua:19-23
+# 104×0.78125），非 104——104 是设计空间名义值。旧分母 104 致头像整体偏小 1.28×
+# （2026-09-03 实机对照根修：源 setScale(70/bg:getContentSize().width)=70/81.25）。
+const ENEMY_CONTAINER: float = 81.25
+# 源 container 中心（距底 81.25/2=40.625）在 ReadheroIcon 104 设计空间的 y = 104-40.625，
+# 用于把 icon 的源 container 中心对准 wrapper 中心（两空间 portrait 底对底对齐）
+const ENEMY_SRC_CENTER_Y: float = 63.375
 const ENEMY_LEN_NORMAL: float = 70.0
 const ENEMY_LEN_BOSS: float = 80.0
 const ENEMY_BOSS_OX: float = 5.0  # 源 :1169 boss 额外偏移
-# boss 标签源 ccp(52,20)（icon 104×104 局部左下原点）→ Godot 左上 y = 104-20-42.93。
-const BOSS_TAG_POS: Vector2 = Vector2(52.0, 41.07)
+# boss 标签源 :1179-1181 createSprite 默认 anchor(0.5,0.5) 中心 ccp(52,20)（距 container 底 20）
+# → Godot centered + (52, 104-20)；显示 99×55px÷CS=77.27×42.93。
+const BOSS_TAG_POS: Vector2 = Vector2(52.0, 84.0)
 # TitleBg 细条 Scale9 中心直译（源 titlepos ccp(400,355) → godot(400,125)=480-355），size 随 stage_type。
 # 2026-08-22 巡检订正：旧 (480,205) 系 960×640 口径残留（viewport 迁移漏网），运行时 fill 覆盖
 # 了 tscn 本正确的 (148,119)-(652,131) 固化位，致细条横穿 Detail 文本区。
 const TITLE_BG_CENTER: Vector2 = Vector2(400.0, 125.0)
+# 关卡名超宽缩放阈值（源 :1886-1891 w>330 → setScale(330/w)）
+const TITLE_MAX_W: float = 330.0
 
 var stage_id: int = 0
 var mgr: StageManager = null
@@ -104,6 +114,15 @@ func _fill_content(content: Control, info: Dictionary) -> void:
 	title_bg.offset_right = TITLE_BG_CENTER.x + bg_size.x * 0.5
 	title_bg.offset_top = TITLE_BG_CENTER.y - bg_size.y * 0.5
 	title_bg.offset_bottom = TITLE_BG_CENTER.y + bg_size.y * 0.5
+	# 标题横幅（源 :1620-1646 map_title_bg 随 stage_type 换图 + title Label）。
+	# 2026-09-03 补建：旧方案"复用父面板章节标题栏"被本弹窗全屏 FrameworkBg 盖住，
+	# 标题实机不可见；照源在弹窗内自建横幅+文字（超 330 宽绕中心缩放，源 :1886-1891）。
+	_set_texture(content.get_node("%MapTitleBg") as TextureRect, String(_res_info.get("title_bg", "")))
+	var title_lbl: Label = content.get_node("%StageTitle") as Label
+	title_lbl.text = String(info.get("title", ""))
+	var title_w: float = title_lbl.get_minimum_size().x
+	if title_w > TITLE_MAX_W:
+		title_lbl.scale = Vector2(TITLE_MAX_W / title_w, 1.0)
 	# 文本 fill（LSTR 化硬编码中文，源 :1686/:1730/:1807/:1834/:1848）。
 	var detail_lbl: Label = content.get_node("%Detail") as Label
 	detail_lbl.text = String(info.get("detail", ""))
@@ -377,7 +396,11 @@ func create_enemy(parent: Node, enemies: Array, cm: Variant) -> void:
 		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		icon.scale = Vector2(s, s)
-		icon.position = Vector2(ENEMY_BOSS_OX if is_boss else 0.0, 0.0)
+		# x：普通分母巧合 s×40.625=槽半宽居中；boss 槽加宽 5 承载源 +5 偏移。
+		# y：源 container 中心（104 空间 y=63.375×s）对准 wrapper 半高（icon 视觉框底部
+		# 在 104 空间 y≈104，直接 (0,0) 挂原点会整体偏下 ~20px）
+		var wrap_h: float = ENEMY_CONTAINER * s
+		icon.position = Vector2(ENEMY_BOSS_OX if is_boss else 0.0, wrap_h * 0.5 - ENEMY_SRC_CENTER_Y * s)
 		wrapper.add_child(icon)
 		parent.add_child(wrapper)
 		if icon.ori_icon is Sprite2D:
@@ -394,7 +417,7 @@ func _add_boss_tag(icon: ReadheroIcon) -> void:
 	if ResourceLoader.exists(BOSS_TAG_RES):
 		var tag := Sprite2D.new()
 		tag.texture = load(BOSS_TAG_RES) as Texture2D
-		tag.centered = false
+		tag.centered = true
 		tag.scale = Vector2(INV_CS, INV_CS)
 		tag.position = BOSS_TAG_POS
 		tag.z_index = 10
