@@ -161,14 +161,19 @@ offset_bottom = 61.3
 text = "+0"
 label_settings = SubResource("LabelSettings_exp")
 
+; 2026-09-04 根修：源 battleStatistNode 无 parent 字段（readnode.lua:277 → 挂 mainLayer），
+; (530,320) 是全屏坐标 anchor(0,0.5) → Godot 全局 (530,135)~(600,185)，中心线 y=160 与
+; 淡黄条/lv/gold 同线（源全屏 Cocos 320 ≈ lv label 319.7）。旧值 530.2/1.3 系把全屏坐标误当
+; InfoBg 局部坐标直填 → 全局 (626,110) 偏右 95.8 压面板右缘、偏上 25。换算局部 = 全局 −
+; InfoBg 原点 (95.8,108.7)。
 [node name="BattleStatistBtn" type="Button" parent="InfoBg" unique_id=313899263]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 z_index = 2
-offset_left = 530.2
-offset_top = 1.3
-offset_right = 600.2
-offset_bottom = 51.3
+offset_left = 434.2
+offset_top = 26.3
+offset_right = 504.2
+offset_bottom = 76.3
 
 [node name="BattleCount" type="Label" parent="InfoBg/BattleStatistBtn" unique_id=2079246851]
 unique_name_in_owner = true
@@ -213,12 +218,15 @@ stretch_mode = 0
 ; 源 hero_ori=(195,243) CCSprite 中心锚点（container 104×104，Cocos 左下原点）→ Godot 左上
 ; = (195-52, 480-243-52) = (143,185)（2026-08-28 头像÷CS 专项源直译；旧 (195,237) 系中心
 ; 坐标当左上直抄，整行偏右下 52 点，第 5 卡 gap110 累计溢面板右缘 75 点）。
+; 2026-09-04 设计调整：源直译 185 时 frame(208.5~291.5) 贴死灰板可见带顶（下隙 0/上隙 21.5），
+; portrait 区贴 container 底致视觉沉底。上移 11 → frame 197.5~280.5 居中于淡黄条底(187)与
+; 灰板带顶(291)之间；EXP 文字配套常量见 stage_done_scene.gd HERO_EXP_LABEL_CENTER。
 unique_name_in_owner = true
 anchors_preset = 0
 offset_left = 143.0
-offset_top = 185.0
+offset_top = 174.0
 offset_right = 143.0
-offset_bottom = 185.0
+offset_bottom = 174.0
 mouse_filter = 2
 
 [node name="LootHost" type="Control" parent="." unique_id=1814744843]

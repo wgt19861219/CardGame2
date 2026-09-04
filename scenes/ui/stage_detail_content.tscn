@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://cc28pqos3tuu6"]
+[gd_scene load_steps=19 format=3 uid="uid://cc28pqos3tuu6"]
 
 [ext_resource type="Texture2D" uid="uid://iiqj0g6fyk20" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" uid="uid://cldnvxkdjtyev" path="res://assets/ui/alpha/HVGA/detail_bg_2.png" id="2_frame2"]
@@ -16,6 +16,8 @@
 [ext_resource type="Texture2D" uid="uid://bjsu6o7nw3t6g" path="res://assets/ui/alpha/HVGA/detail_star_grey.png" id="13_stargrey"]
 [ext_resource type="Texture2D" uid="uid://8hyx1ovdjrfh" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="14_sweepbg"]
 [ext_resource type="Texture2D" uid="uid://drjijfhinsoq7" path="res://assets/ui/alpha/HVGA/stagedetail_raidticket_icon.png" id="15_ticket"]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/Normal_title_bg.png" id="16_maptitle"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_empty"]
 
@@ -70,6 +72,38 @@ mouse_filter = 2
 texture = ExtResource("3_titlebg")
 expand_mode = 1
 
+; 源 stagedetail.lua:1620-1631 map_title_bg：随 stage_type 换图（fill _set_texture），
+; 586×79px÷CS=457.37×61.68 中心(397,480-393)；星（StarHBox 声明在后）叠其上=源 readNode 后加序
+[node name="MapTitleBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 168.31
+offset_top = 56.16
+offset_right = 625.68
+offset_bottom = 117.84
+mouse_filter = 2
+texture = ExtResource("16_maptitle")
+expand_mode = 1
+
+; 源 :1633-1646 title Label：fontinfo ui_normal_button(17 号白+暗红影(63,5,0)(0,2))
+; color toccc3(16436496)=(250,205,16)；中心(397,87)；超 330 宽 fill 时缩放
+[node name="StageTitle" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 167.0
+offset_top = 76.0
+offset_right = 627.0
+offset_bottom = 98.0
+theme_override_colors/font_color = Color(0.98, 0.804, 0.063, 1)
+theme_override_colors/font_shadow_color = Color(0.247, 0.02, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 17
+pivot_offset = Vector2(230, 11)
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Detail" type="Label" parent="." unique_id=611903851]
 unique_name_in_owner = true
 layout_mode = 0
@@ -79,6 +113,7 @@ offset_right = 730.0
 offset_bottom = 220.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
+autowrap_mode = 3
 vertical_alignment = 1
 
 [node name="PowerTitle" type="Label" parent="." unique_id=1755623783]
@@ -281,32 +316,41 @@ offset_right = 729.5
 offset_bottom = 349.0
 mouse_filter = 2
 
-[node name="SweepBg" type="TextureRect" parent="SweepCluster" unique_id=761668227]
+; 源 :300-314 bg Scale9(main_vit_tips, cap CCRectMake(15,20,45,15)) scaleSize 135×150 铺满
+; cluster；TextureRect 整图拉伸毁边框纹样（2026-09-03 巡检），改 NinePatch 纹理像素直译
+; （margin=源 cap：left 15 top 20 right 103-15-45=43 bottom 61-20-15=26，同 theme SB_sweep_n 口径）
+[node name="SweepBg" type="NinePatchRect" parent="SweepCluster" unique_id=761668227]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 texture = ExtResource("14_sweepbg")
-expand_mode = 1
+patch_margin_left = 15
+patch_margin_top = 20
+patch_margin_right = 43
+patch_margin_bottom = 26
 
+; 源 :331-342 sweep_icon：39×39px÷CS=30.47 点，anchor(0,0.5)@ccp(620,259)
+; → cluster 内左 25.5、垂直中心 22
 [node name="SweepTicketIcon" type="TextureRect" parent="SweepCluster" unique_id=1057652495]
 layout_mode = 0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 32.0
-offset_bottom = 32.0
+offset_left = 25.5
+offset_top = 6.76
+offset_right = 55.97
+offset_bottom = 37.24
 mouse_filter = 2
 texture = ExtResource("15_ticket")
 expand_mode = 1
 
+; 源 :359-373 count：18 号 ccc3(255,234,198)，anchor(0,0.5)@ccp(665,259) → 左 70.5 中心 22
 [node name="SweepTicketCount" type="Label" parent="SweepCluster" unique_id=1787257184]
 layout_mode = 0
-offset_left = 36.0
+offset_left = 70.5
 offset_top = 8.0
-offset_right = 127.0
-offset_bottom = 32.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
+offset_right = 131.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(1, 0.918, 0.776, 1)
+theme_override_font_sizes/font_size = 18
 vertical_alignment = 1
 
 [node name="SweepSomeBtn" type="Button" parent="SweepCluster" unique_id=29618594]
@@ -345,13 +389,15 @@ theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 vertical_alignment = 1
 
+; 源 createEnemy :1144 oy=168 直译中心 y=480-168=312；2026-09-04 用户观感裁决下移 23 点
+; 对齐 %EnemyTitle 标签中心线 y=335（受控偏离：观感优先于源直译，槽高 80 不变）
 [node name="EnemyBoxPos" type="Panel" parent="." unique_id=664232574]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 170.0
-offset_top = 298.0
+offset_top = 295.0
 offset_right = 570.0
-offset_bottom = 378.0
+offset_bottom = 375.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_empty")
 
