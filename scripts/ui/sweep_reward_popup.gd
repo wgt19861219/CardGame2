@@ -29,6 +29,7 @@ const LIST_X_CENTER: float = 400.0
 const LIST_W: float = 400.0
 const LH_TITLE: float = 35.0          # 组标题后（源 lh+35）
 const LH_EXP_ROW: float = 55.0        # EXP/金币行后（源 lh+55，非末组）
+const LH_LAST_GROUP_HEAD: float = 20.0  # 末组 subtitle 前（源 :2038-2040 lh+20，拉开与上一组间距）
 const LH_LAST_HEAD: float = 25.0      # 末组标题后（源 lh+25，无 EXP 行）
 const ROW_STEP: float = 90.0          # 物品行高
 const ICON_COL_X0: float = 250.0      # 源 250+75*((i-1)%5)
@@ -71,6 +72,7 @@ var _anim_done: bool = false
 var _content: Control = null
 var _close_btn: TextureButton = null
 var _title_label: Label = null
+var _scroll_wrap: Control = null
 var _list_layer: Control = null
 var _end_light: Sprite2D = null
 var _groups: Array[Dictionary] = []   # 每组 {header: Array（即时可见）, reveal: Array（交错动画）}
@@ -94,9 +96,19 @@ func _build_content() -> void:
 	_title_label = _content.get_node("%TitleLabel") as Label
 	_title_label.text = _lstr("PRIVILEGE.FARM", "扫荡")
 	_title_label.visible = false   # 弹入后 playTitleAnim 闪现（源 :2451-2466）
+	var host: ScrollContainer = _content.get_node("%ScrollHost") as ScrollContainer
+	# 双层：wrap 直挂 ScrollHost（minsize 驱动滚动范围；ScrollContainer 重排直接子层
+	# position，实测 minsize 变化即归零——单层平移不可行），_list_layer 挂 wrap 自由平移。
+	_scroll_wrap = Control.new()
+	_scroll_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(_scroll_wrap)
 	_list_layer = Control.new()
 	_list_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	(_content.get_node("%ScrollHost") as ScrollContainer).add_child(_list_layer)
+	# 坐标系换算（坐标系三坑①，2026-09-05 居中根修）：源 draglist listLayer 挂全屏原点，
+	# 内容 x 是全屏场景坐标（400=cliprect 中心）；ScrollHost 局部原点在 cliprect 左缘
+	# （全屏 x=200），列表层负向平移抵消原点，源坐标直接生效、以滚动区中心居中。
+	_list_layer.position = Vector2(-host.offset_left, 0.0)
+	_scroll_wrap.add_child(_list_layer)
 	_build_all_groups()
 
 
@@ -107,7 +119,7 @@ func _build_all_groups() -> void:
 	for k in range(1, total + 1):
 		lh = _create_group(k, total, lh)
 	var end_y: float = _create_end_tag(lh + END_TAG_PAD)
-	_list_layer.custom_minimum_size = Vector2(LIST_W, end_y + LIST_BOTTOM_PAD)
+	_scroll_wrap.custom_minimum_size = Vector2(LIST_W, end_y + LIST_BOTTOM_PAD)
 
 
 # 建第 k 组（源 createLoot:2042-2184），返组后 lh。
@@ -116,6 +128,8 @@ func _create_group(k: int, total: int, lh: float) -> float:
 	var is_last: bool = k == total
 	var header: Array = []
 	var reveal: Array = []
+	if is_last:
+		lh += LH_LAST_GROUP_HEAD
 	lh = _add_subtitle(k, is_last, lh, header)
 	if is_last:
 		lh += LH_LAST_HEAD
@@ -147,11 +161,8 @@ func _create_group(k: int, total: int, lh: float) -> float:
 
 
 func _add_subtitle(k: int, is_last: bool, y: float, header: Array) -> float:
-	var bg := TextureRect.new()
-	bg.texture = _load_tex(SUBTITLE_BG_RES)
-	bg.size = SUBTITLE_BG_SIZE
+	var bg := _tex_rect(SUBTITLE_BG_RES, SUBTITLE_BG_SIZE)
 	bg.position = Vector2(LIST_X_CENTER, y) - SUBTITLE_BG_SIZE * 0.5
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_list_layer.add_child(bg)
 	var lbl := Label.new()
 	if is_last:
@@ -177,11 +188,8 @@ func _add_exp_row(g: Dictionary, y: float, header: Array) -> void:
 	var exp_value := _row_label(str(int(g.get("exp", 0))), FONT_ROW, C_EXP_TEXT, true)
 	exp_value.position = Vector2(EXP_VALUE_X, y - LABEL_H_ROW * 0.5)
 	exp_value.size = Vector2(EXP_VALUE_W, LABEL_H_ROW)
-	var gold_icon := TextureRect.new()
-	gold_icon.texture = _load_tex(GOLD_ICON_RES)
-	gold_icon.size = GOLD_ICON_SIZE
+	var gold_icon := _tex_rect(GOLD_ICON_RES, GOLD_ICON_SIZE)
 	gold_icon.position = Vector2(GOLD_ICON_X, y) - GOLD_ICON_SIZE * 0.5
-	gold_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var money := _row_label(":    " + str(int(g.get("money", 0))), FONT_ROW, C_GOLD_TEXT, true)
 	money.position = Vector2(MONEY_TEXT_X, y - LABEL_H_ROW * 0.5)
 	money.size = Vector2(MONEY_TEXT_W, LABEL_H_ROW)
@@ -191,11 +199,8 @@ func _add_exp_row(g: Dictionary, y: float, header: Array) -> void:
 
 
 func _add_item_bg(y: float) -> TextureRect:
-	var bg := TextureRect.new()
-	bg.texture = _load_tex(ITEM_BG_RES)
-	bg.size = ITEM_BG_SIZE
+	var bg := _tex_rect(ITEM_BG_RES, ITEM_BG_SIZE)
 	bg.position = Vector2(LIST_X_CENTER, y) - ITEM_BG_SIZE * 0.5
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_list_layer.add_child(bg)
 	return bg
 
@@ -318,6 +323,19 @@ func _row_label(text: String, font_size: int, color: Color, left_align: bool) ->
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return lbl
+
+
+# 贴图节点工厂：TextureRect 默认 EXPAND_KEEP_SIZE 以纹理原始像素为最小尺寸，会把
+# size 顶回原像素、÷CS 缩小失效（2026-09-05 居中根修时一并发现，bg/图标偏大 1.28×）。
+# 先 IGNORE_SIZE+SCALE 再设 size（顺序反了 size 已被顶开不会回缩），贴图拉伸到设计尺寸。
+static func _tex_rect(res_path: String, sz: Vector2) -> TextureRect:
+	var tr := TextureRect.new()
+	tr.texture = _load_tex(res_path)
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.size = sz
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return tr
 
 
 func _lstr(key: String, fallback: String) -> String:

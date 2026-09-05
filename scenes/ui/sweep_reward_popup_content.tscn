@@ -41,6 +41,8 @@ offset_right = 564.69
 offset_bottom = 77.17
 mouse_filter = 2
 texture = ExtResource("1_titlebg")
+expand_mode = 1
+stretch_mode = 0
 
 [node name="TitleLabel" type="Label" parent="."]
 unique_name_in_owner = true

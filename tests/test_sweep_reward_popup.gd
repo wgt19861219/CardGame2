@@ -106,6 +106,56 @@ func test_popup_title_and_end_light() -> void:
 	popup.remove_window()
 
 
+# 列表内容以滚动区水平居中（坐标系三坑①回归守卫）：源 draglist listLayer 挂全屏原点，
+# 内容 x 是全屏场景坐标（400=cliprect 中心、图标列 250..550）；漏换算时内容以 ScrollHost
+# 局部坐标使用全屏值，整体右偏一个 host 原点 x=200（2026-09-05 用户反馈"内容没有居中"）。
+# 断言用局部坐标（GUT 视口非 800 宽，global 链有环境缩放差）。
+func test_list_content_centered_in_host() -> void:
+	var loots: Array = []
+	for i in range(6):   # 6 物品跨 2 行×5 列，覆盖第 1/5 列边界
+		loots.append({"id": 390, "amount": 1})
+	var popup := _make_popup([{"exp": 12, "money": 34, "loots": loots}, {"loots": []}])
+	var host: ScrollContainer = popup._content.get_node("%ScrollHost") as ScrollContainer
+	# 列表层负向平移抵消 host 原点（ScrollContainer 重排直接子层，故平移在内层，见实现注释）
+	assert_almost_eq(popup._list_layer.position.x, -host.offset_left, 0.01,
+		"列表层负向平移 = host 原点 x（源坐标换算）")
+	# 滚动区中心恰在源场景坐标 400（tscn offset 声明值守卫；GUT headless 视口会使
+	# 运行时 size 有环境膨胀，offset 恒定，真机 EXACT_FIT 下 rect 即 offset 值）
+	assert_almost_eq(host.offset_left + (host.offset_right - host.offset_left) * 0.5, 400.0, 0.01,
+		"滚动区中心=源场景 x400")
+	# 组标题条中心 = 源场景 400 = 滚动区中心（源 subtitle ccp(400)）
+	var sub: TextureRect = popup._groups[0]["header"][0] as TextureRect
+	assert_almost_eq(sub.position.x + sub.size.x * 0.5, 400.0, 0.5,
+		"组标题条中心=源场景 x400")
+	# 贴图显示尺寸 ÷CS 生效（TextureRect 默认 EXPAND_KEEP_SIZE 会以纹理原始像素顶开 Control）
+	assert_almost_eq(sub.size.y, 44.0 / 1.28125, 0.5, "subtitle bg 高=44px÷CS=34.34")
+	var item_bg: TextureRect = popup._groups[0]["reveal"][0] as TextureRect
+	assert_almost_eq(item_bg.size.y, 98.0 / 1.28125, 0.5, "物品行底板高=98px÷CS=76.49")
+	# 图标列照源：第 1 列 250、第 5 列 550，均落在滚动区显示范围 [offset_left, +width]
+	var reveal: Array = popup._groups[0]["reveal"]
+	var icon1: Control = reveal[2] as Control   # reveal = [bg×2, icon×6]
+	var icon5: Control = reveal[6] as Control
+	assert_almost_eq(icon1.position.x + icon1.size.x * 0.5, 250.0, 0.5,
+		"第 1 列图标中心=源 250+75*0")
+	assert_almost_eq(icon5.position.x + icon5.size.x * 0.5, 550.0, 0.5,
+		"第 5 列图标中心=源 250+75*4")
+	assert_true(popup._list_layer.position.x + 550.0 <= host.size.x,
+		"最右图标（局部 550−200=350）落在滚动区宽 400 内")
+
+
+# 末组（额外奖励）subtitle 前源有 lh+20（stagedetail.lua:2038-2040，拉开与上一组间距），
+# Godot 版曾漏译只译标题后 +25。组1（6 物品）源累计 lh：0→35→90→250（icon 段起点 90+
+# 90×1 行距+70 组尾）；末组中心 y=250+20=270（_list_layer 局部坐标，垂直不平移）。
+func test_last_group_head_gap() -> void:
+	var loots: Array = []
+	for i in range(6):
+		loots.append({"id": 390, "amount": 1})
+	var popup := _make_popup([{"exp": 12, "money": 34, "loots": loots}, {"loots": []}])
+	var last_sub: TextureRect = popup._groups[1]["header"][0] as TextureRect
+	assert_almost_eq(last_sub.position.y + last_sub.size.y * 0.5, 270.0, 0.5,
+		"末组 subtitle 中心 y=270（组1 lh=250 + 源末组前 20）")
+
+
 # 动画分支端到端（真跑 async 链 标题→组→尾标→末组→close，~1.6s）：
 # 源 createLootAnim 链时序常量直译，此处只验证链完整走通不卡死（时序观感留实机目验）。
 func test_popup_anim_branch_completes() -> void:
