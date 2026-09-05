@@ -109,6 +109,12 @@ func reset_stage() -> void:
 func reset_battle() -> void:
 	next_tick = 0.0
 	time_limit = TIME_LIMIT_DEFAULT
+	# 置空前终结飞行中投射物：脱离列表后不再 update，terminated 恒 false →
+	# View _advance_actor_list 永不销毁投射物 actor（玩家方投射物被切波按 camp==PLAYER
+	# 保留，冻结切波期间停在空中永久残留，2026-09-05 小黑大招箭雨根因）。
+	# 直接置位不走 terminate()：那是命中/跳跃语义，会触发 find_next_target 副作用。
+	for projectile in projectile_list:
+		projectile.terminated = true
 	projectile_list = []
 	npc_list = []
 	events = []

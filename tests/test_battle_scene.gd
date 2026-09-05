@@ -136,6 +136,43 @@ func test_terminated_unit_actor_removed() -> void:
 	scene.queue_free()
 
 
+# 切波投射物回收（2026-09-05 小黑大招箭雨残留）：玩家方投射物飞行中切波，
+# _remove_enemy_actors 按 camp==PLAYER 保留其 actor；reset_battle 终结投射物后，
+# 切波推进首帧 _advance_actor_list 应销毁投射物 actor（否则永久残留屏幕）。
+func test_next_wave_terminates_player_projectile_actors() -> void:
+	var eng := _make_engine()
+	eng.stage_info = cm.get_raw_table(&"Stage").get("1", {})
+	eng.battle_lookup_id = 1
+	var p := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, cm, eng, {}, lib)
+	eng.add_unit(p)
+	var w1: Dictionary = BattleData.from_config(cm, 1, 1).battle_info
+	BattleEngineWaves.setup_battle(eng, cm, w1)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm, w1)
+	scene._sync_actors()
+	# 构造玩家方飞行中投射物（远距离不命中）：DR 大招箭雨波清瞬间在途的等价物
+	var sk := BattleSkill.new({
+		"Tile XY Speed": 300.0, "Tile Z Speed": 0.0, "Tile Distance": 0.0, "Tile Gravity": 0.0,
+		"Tile OTT Height": 0.0, "Target Type": "target", "Target Camp": -1, "Affected Camp": -1,
+		"Max Range": 99999.0, "Min Range": 0.0, "Cost MP": 0.0, "CD": 0.0, "Global CD": 0.0,
+	}, p, 1)
+	var enemies: Array = eng.alive_units.get(BattleEngine.CAMP_ENEMY, [])
+	sk.target = enemies[0]
+	var proj := BattleProjectile.new(sk)
+	eng.add_projectile(proj)
+	ProjectileSync.sync(scene)   # 建投射物 View actor（挂 main_layer 进 actor_list）
+	assert_false(bool(proj.terminated), "切波前投射物存活")
+	scene._on_next_wave_requested()
+	assert_true(bool(proj.terminated), "切波（reset_battle）终结飞行中投射物")
+	scene._advance_actor_list(0.033)   # 切波后首帧推进
+	var proj_actors_left: int = 0
+	for a in scene.actor_list:
+		if not (a is BattleActor):
+			proj_actors_left += 1
+	assert_eq(proj_actors_left, 0, "切波后投射物 actor 全销毁（玩家方也不残留）")
+	scene.queue_free()
+
+
 # 源 actor update 双缓冲 interp（unit.lua:1736-1758）：tick 变化设 from=previous_position/to=position，
 # 帧间 lerp 平滑。验部分 alpha（0.5）→ 中点。
 func test_actor_interp_lerps_between_ticks() -> void:
