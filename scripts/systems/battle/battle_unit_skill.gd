@@ -27,6 +27,7 @@ static func init_skill(u: Variant, cm: ConfigManager, lib: Variant) -> void:
 	u.passive_skill_list = []
 	u.aura_skill_list = []
 	u.effect_enemy_aura_skill_list = []
+	u.skills = {}
 	u.attack_range = 0.0
 	if lib == null:
 		return  # 无 SkillLibrary（测试/未注入）→ 跳过装配
@@ -60,6 +61,8 @@ static func init_skill(u: Variant, cm: ConfigManager, lib: Variant) -> void:
 		if active_type == "active":
 			var skill: BattleSkill = BattleSkill.new(skill_info, u, skill_level)
 			u.skill_list.append(skill)
+			u.skills[int(skill_info.get("Skill Group ID", 0))] = skill
+			u.skills[String(skill_info.get("Skill Name", ""))] = skill
 			if bool(skill_info.get("Manual", false)):
 				u.manual_skill = skill
 		elif active_type == "passive":
