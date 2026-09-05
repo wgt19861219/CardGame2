@@ -18,7 +18,6 @@ const HERO_PERC_MAX: int = 10000  # hp/mp 万分比（0-10000，对齐源 _hp_pe
 const SWEEP_PROB_MAX: int = 100
 const SWEEP_PROB_DICE: int = 100
 const SWEEP_DIAMOND_PRICE: int = 1
-const RAID_BONUS_SLOTS: int = 4
 # 章节星数奖励 tier（源 player.lua:925-932 getChapterStarRewardTiers 硬编码 3 档：30/60/90 星）
 const CHAPTER_STAR_TIERS: Array = [
 	{"tier": 1, "stars": 30, "rewards": [{"type": "money", "amount": 30000}, {"type": "item", "id": 14001, "amount": 2}]},
@@ -169,9 +168,11 @@ func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int]
 
 
 ## 结算阶段（View 接入用）：从 engine 终态算胜负 + exit + 发奖。返 {ok, won, stars, exp, money, loots}。
+## 星级消费 engine.victory() 算好的 result_stars（源 battle_engine.lua:1636 max(1,3-deathcount)，
+## 我方每死 1 名英雄降 1 星、保底 1 星；超时/团灭路径 engine 已置 0）。
 func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, player_tids: Array[int], loots: Array[Dictionary]) -> Dictionary:
 	var won: bool = eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY).is_empty()
-	var stars: int = STARS_FULL if won else 0
+	var stars: int = int(eng.result_stars) if won else 0
 	var exit_r: Dictionary = exit_stage(sid, stars, won)
 	if won and player_tids.size() > 0:
 		player.take_stage_reward(sid, stars, player_tids, loots)
@@ -332,42 +333,45 @@ static func _item_type(item_id: int) -> String:
 ## 扫荡：奖励 × times + 掉落保底 × times + Raid Bonus（rng 可选）。
 ## player 传入时扣体力（power×times）+ sweep_type 分支消耗：free 扫荡券 / pay 钻石（照源回复处理 :4781-4790）。
 ## 门槛（stars/每日次数/体力）由 UI doClickSweep（stagedetail.lua:128-151）把关，Logic 不重复——照源分层。
-## 返回 {ok, exp, money, loots, raid_bonus}：loots 物品 id 列表，raid_bonus 额外奖励 [{id,amount}]。
+## 返回 {ok, exp, money, loots, raid_bonus, waves}：loots 物品 id 扁平列表；raid_bonus 额外奖励
+## [{id,amount}]；waves 按次分组（源 readSweepReply :10-41 每战一组 {exp,money,loots}，组内同 id
+## 合并 amount=源服务器 _items 打包语义），供扫荡弹窗逐战展示。
 func sweep(sid: int, times: int, rng: Variant = null, player: PlayerData = null, sweep_type: String = "free") -> Dictionary:
 	if times <= 0:
-		return {"ok": false, "exp": 0, "money": 0, "loots": [], "raid_bonus": []}
+		return {"ok": false, "exp": 0, "money": 0, "loots": [], "raid_bonus": [], "waves": []}
 	var data := StageData.from_config(config, sid)
 	# power = Stage "Vitality Cost"（battleprepare.lua:218）。先查后扣保原子。
 	if player != null:
 		var sweep_power: int = data.vitality_cost * times
 		if player.vitality < sweep_power:
-			return {"ok": false, "reason": "no_vitality", "exp": 0, "money": 0, "loots": [], "raid_bonus": []}
+			return {"ok": false, "reason": "no_vitality", "exp": 0, "money": 0, "loots": [], "raid_bonus": [], "waves": []}
 		if not (player.use_sweep_times(times) if sweep_type == "free" else player.spend_diamond(SWEEP_DIAMOND_PRICE * times)):
-			return {"ok": false, "reason": "no_sweep_coin" if sweep_type == "free" else "no_diamond", "exp": 0, "money": 0, "loots": [], "raid_bonus": []}
+			return {"ok": false, "reason": "no_sweep_coin" if sweep_type == "free" else "no_diamond", "exp": 0, "money": 0, "loots": [], "raid_bonus": [], "waves": []}
 		player.spend_vitality(sweep_power)
 	var stage_row: Dictionary = config.get_raw_table("Stage").get(str(sid), {})
+	var single_exp: int = data.exp_reward * EXP_MULTIPLIER
+	var single_money: int = data.money_reward * EXP_MULTIPLIER
 	var loots: Array[int] = []
+	var per_wave: Array[Array] = StageSweepLoot.init_wave_slots(times)
 	if rng != null and rng is BattleRng:
 		var stage_key: String = str(sid)
 		sweep_loot_record[stage_key] = sweep_loot_record.get(stage_key, {})
-		for _t in times:
+		for t in range(times):
 			for drop in data.sweep_drops:
 				var item_key: String = str(int(drop["item_id"]))
 				var base_pro: int = int(drop["probability"])
 				var miss_count: int = int(sweep_loot_record[stage_key].get(item_key, 0))
 				var loot_pro: int = mini(base_pro if miss_count == 0 else base_pro * miss_count, SWEEP_PROB_MAX)
 				if rng.randi_range(1, SWEEP_PROB_DICE) <= loot_pro:
-					loots.append(int(drop["item_id"]))
+					var hit_id: int = int(drop["item_id"])
+					loots.append(hit_id)
+					StageSweepLoot.merge(per_wave[t], hit_id)
 					sweep_loot_record[stage_key][item_key] = 0
 				else:
 					sweep_loot_record[stage_key][item_key] = miss_count + 1
-	var raid_bonus: Array[Dictionary] = []
-	for i in range(1, RAID_BONUS_SLOTS + 1):
-		var b_id: int = int(stage_row.get("Raid Bonus ID " + str(i), 0))
-		var b_amt: int = int(stage_row.get("Raid Bonus Amount " + str(i), 0))
-		if String(stage_row.get("Raid Bonus Type " + str(i), "")) == "Item" and b_id != 0 and b_amt > 0:
-			raid_bonus.append({"id": b_id, "amount": b_amt * times})
-	return {"ok": true, "exp": data.exp_reward * EXP_MULTIPLIER * times, "money": data.money_reward * EXP_MULTIPLIER * times, "loots": loots, "raid_bonus": raid_bonus}
+	var raid_bonus: Array[Dictionary] = StageSweepLoot.build_raid_bonus(stage_row, times)
+	var waves: Array[Dictionary] = StageSweepLoot.build_waves(times, single_exp, single_money, per_wave)
+	return {"ok": true, "exp": single_exp * times, "money": single_money * times, "loots": loots, "raid_bonus": raid_bonus, "waves": waves}
 
 
 func _record_stage_dailyjob(player: PlayerData, sid: int) -> void:

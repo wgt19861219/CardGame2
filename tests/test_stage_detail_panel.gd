@@ -255,15 +255,17 @@ func test_builder_retired_and_new_whitelist() -> void:
 	assert_false(FileAccess.file_exists(BUILDER_PATH), "builder 文件不存在")
 	var panel_src: String = FileAccess.get_file_as_string(PANEL_PATH)
 	assert_false(panel_src.contains("stage_detail_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
-	# .new( 白名单（宽口径含带参构造）：panel 并入 builder 后恰 8 处——
-	# BattlePreparePanel/StageResetConfirm 弹窗 2 + ReadheroIcon/Control wrapper×2
+	# .new( 白名单（宽口径含带参构造）：panel 并入 builder 后恰 9 处——
+	# BattlePreparePanel/StageResetConfirm/SweepRewardPopup 弹窗 3（扫荡战利品弹窗
+	# 2026-09-04 照源 repeatRewardWindow 补全）+ ReadheroIcon/Control wrapper×2
 	# （敌方头像 + Task 9 奖励 wrapper）/Sprite2D tag/Label fallback/
 	# Sprite2D rank 叠框（2026-08-22 hero 奖励照源 doWhenEnter 补）。
 	var panel_new: PackedStringArray = _collect_new_calls(panel_src)
-	assert_eq(panel_new.size(), 8, "panel .new( 恰 8 处（2 弹窗 + 6 动态图标件）")
+	assert_eq(panel_new.size(), 9, "panel .new( 恰 9 处（3 弹窗 + 6 动态图标件）")
 	var joined: String = "\n".join(panel_new)
 	assert_true(joined.contains("BattlePreparePanel.new("), "出战弹窗在白名单")
 	assert_true(joined.contains("StageResetConfirm.new("), "重置确认弹窗在白名单")
+	assert_true(joined.contains("SweepRewardPopup.new("), "扫荡战利品弹窗在白名单（源 repeatRewardWindow）")
 	assert_true(joined.contains("ReadheroIcon.new()"), "敌方头像图标在白名单")
 	assert_true(joined.count("Control.new()") >= 2, "敌方/奖励 HBox wrapper 在白名单")
 	assert_true(joined.contains("Sprite2D.new()"), "boss 标签贴图在白名单")
@@ -337,6 +339,58 @@ func test_content_static_rects_source_aligned() -> void:
 	assert_almost_eq(star1.custom_minimum_size.y, 71.0 / CS * 0.8, 0.05, "星高 =71px÷CS×0.8")
 	assert_eq(star_box.get_theme_constant("separation"), 11, "星间距 11（步进 54.71，源 gap 55 差 0.29）")
 	content.queue_free()
+
+
+# ── 扫荡次数上限语义（2026-09-04 修复回归守卫）──────────────────────
+# 源 getRepeatInformation:236-240：countLimit==0（Daily Limit=0 无限制）→ cLimit=999。
+# 漏译该分支曾致普通关（Stage 表 384 关 Daily Limit=0）：扫荡 1 次 times(1)>_left_times()(0)
+# 误报"该关卡进入次数已达本日上限" + 批量扫荡 N=maxi(0,mini(0,10))=0 按钮 disabled 无响应。
+
+func _make_3star_panel(sid: int = 1) -> StageDetailPanel:
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	mgr.progress[sid] = 3
+	var pd := PlayerData.new(cm)
+	var rng := BattleRng.new(5)
+	var panel := StageDetailPanel.new("stagedetail", {})
+	panel.setup_panel(sid, mgr, pd, rng)
+	panel.show_window(root)
+	return panel
+
+
+func test_sweep_some_times_normal_stage_unlimited() -> void:
+	# Stage 1 Daily Limit=0（无限制）→ N=min(999,10)=10（源 normal 分支 dt=10）
+	var panel := _make_3star_panel(1)
+	assert_eq(panel._sweep_some_times("normal"), 10, "无限制普通关批量扫荡 N=10（源 cLimit=999）")
+	panel.remove_window()
+
+
+func test_sweep_some_btn_enabled_on_unlimited_normal_stage() -> void:
+	var panel := _make_3star_panel(1)
+	var cluster: Control = _content_of(panel).get_node("%SweepCluster") as Control
+	var some_btn: Button = cluster.get_node("%SweepSomeBtn") as Button
+	assert_false(some_btn.disabled, "无限制普通关批量扫荡按钮可用（曾 N=0 被 disabled）")
+	assert_eq((some_btn.get_node("SweepSomeLabel") as Label).text, "扫荡10次", "N=10 文案（曾显示 RAID_FAILED）")
+	panel.remove_window()
+
+
+func test_sweep_count_limit_semantics() -> void:
+	# 函数级：源 cLimit 语义 = Daily Limit=0 → 999，否则剩余次数
+	var normal_panel := _make_3star_panel(1)
+	assert_eq(normal_panel._sweep_count_limit(), 999, "Daily Limit=0 → 999（源 countLimit==0 分支）")
+	normal_panel.remove_window()
+	var elite_panel := _make_3star_panel(10001)
+	assert_eq(elite_panel._sweep_count_limit(), 3, "Daily Limit=3 → 剩余次数 3-0=3")
+	elite_panel.remove_window()
+
+
+func test_sweep_some_times_elite_stage_not_regressed() -> void:
+	# 精英关 10001 Daily Limit=3：N=min(剩余 3,3)=3，修复不回归有上限关卡
+	var panel := _make_3star_panel(10001)
+	assert_eq(panel._daily_limit(), 3, "精英关 Daily Limit=3")
+	assert_eq(panel._sweep_some_times("elite"), 3, "精英关 N=min(3,3)=3")
+	panel.remove_window()
 
 
 # variation 撞名守卫：StageTitleLabel 曾在 theme 双定义（stage_select 新版被本面板老版覆盖），

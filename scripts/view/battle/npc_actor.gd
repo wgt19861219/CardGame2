@@ -62,6 +62,7 @@ static func sync_actors(scene: Node) -> void:
 			continue
 		var actor: NpcActor = NpcActor.new()
 		actor.setup(npc, cm)
+		BattleSpeedSync.apply_to_actor(scene, actor)   # 新 actor 带当前档倍率（同 _create_actor）
 		scene._actors_by_unit[npc] = actor
 		actor.in_scene = true
 		scene.actor_list.append(actor)

@@ -90,16 +90,16 @@ func update_view(dt: float) -> void:
 		_enter_arrive_dir = 0
 		scale = Vector2(dir_for_scale * rt_scale, rt_scale)
 		if puppet != null:
-			# 动画推进速率 = 2 × Logic 实际推进倍率（源 unit.lua:1768 puppet:update(dt*2) + C++
-			# elapsed += dt*speeder——源动画固有 2 倍速基数，Logic 层却按 1× duration 计时：
-			# 源里动作快速播完/Attack 事件帧时动作进度已是 2×。漏 2× 基数则动作慢于源一半，
-			# 投射物发射时人物还在动作前半程（"大招投射物播完了人还在放技能"根因，2026-08-19）。
-			# 攻速 speeder 与战斗加速均含于 dt_action（db6ca40 口径）。
+			# 动画基础速率 = speeder × 源固有 2 倍速基数（unit.lua:1768 puppet:update(dt*2)；
+			# engine 固定步长累加器下 dt_action/TICK ≡ speeder，不含战斗加速档）。战斗加速档
+			# 由 mult 承载（battle_speed_sync broadcast / scene 创建点 apply_speed_mult），
+			# 实际 FCA 速度 = base × mult（2026-09-05 口径订正：旧注释称"战斗加速均含于
+			# dt_action"与实现不符，切档 set_speed 全量覆盖与每 tick 重设互相打架是断层根因）。
 			# ⚠️ 不做每 tick set_action_elapsed 锚定：源 gotoEventIdx 仅 Attack 事件时刻偶发校正，
 			# 且"动作短于 phase"的大招锚定时动作早已 2× 播完（clamp 末帧无效果）——源有效行为
 			# =2× 自由播完+末帧定格（UnitSprite 施法守卫保末帧）。每 tick 锚定会把 elapsed 反复
 			# 拉回 1× phase_elapsed，2× 前进量被锚定吃掉=净速度钳回 1×（五轮实测无效的根因）。
-			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) 					else float(model.dt_action) / BattleEngine.TICK_INTERVAL * ANIM_RATE_2X
+			var spd: float = 0.0 if bool(model.buff_effects.get(BattleEffectKeys.FROZEN, false)) 				else float(model.dt_action) / BattleEngine.TICK_INTERVAL * ANIM_RATE_2X
 			puppet.set_speed(spd)
 	var logic_pos: Vector2
 	if _offline:

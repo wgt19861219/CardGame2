@@ -1,0 +1,85 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_title_bg.png" id="1_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="2_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+
+; 扫荡战利品弹窗底板（源 stagedetail.lua repeatRewardWindow create:2460-2521 直译，无脚本 A 轨）。
+; FrameBg：main_vit_tips Scale9 cap(15,20,45,15)→patch_margin 15/20/43/26，scaleSize 430×385 中心 (400,205)c→(400,275)。
+; TitleBg：task_title_bg 422×44px÷CS=329.37×34.34，中心 ccp(400,420)→(400,60)。
+; CloseBtn：herodetail-detail-close 65×66px÷CS=50.73×51.51，中心 ccp(610,380)→(610,100)；初始隐藏（源动画完成后显示）。
+; ScrollHost：源 cliprect CCRectMake(200,21,400,374) → godot (200,85) 400×374。
+
+[node name="SweepRewardContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="FrameBg" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 185.0
+offset_top = 82.5
+offset_right = 615.0
+offset_bottom = 467.5
+mouse_filter = 2
+texture = ExtResource("2_frame")
+patch_margin_left = 15
+patch_margin_top = 20
+patch_margin_right = 43
+patch_margin_bottom = 26
+
+[node name="TitleBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 235.31
+offset_top = 42.83
+offset_right = 564.69
+offset_bottom = 77.17
+mouse_filter = 2
+texture = ExtResource("1_titlebg")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 300.0
+offset_top = 47.0
+offset_right = 500.0
+offset_bottom = 73.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.906, 0.808, 0.075, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+text = "扫荡"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScrollHost" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 200.0
+offset_top = 85.0
+offset_right = 600.0
+offset_bottom = 459.0
+mouse_filter = 1
+horizontal_scroll_mode = 0
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 584.63
+offset_top = 74.24
+offset_right = 635.37
+offset_bottom = 125.76
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
+visible = false

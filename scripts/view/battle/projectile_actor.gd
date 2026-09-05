@@ -62,3 +62,13 @@ func update_view(_dt: float) -> void:
 		rotation = -atan2(zsp + vy, vx)
 	# 朝向：朝右不翻，朝左沿 Y 翻转（照源 :301 setScaleY）。
 	scale.y = 1.0 if vx >= 0.0 else -1.0
+
+
+# 源 projectile.lua:313-320 tint（puppet 有 tint 走 puppet，否则 tintSprite(node)）。
+# freeze/unfreeze（battle_entity.gd emit_tint）会波及飞行中投射物（engine.freeze 遍历
+# projectile_list）；曾漏译本方法致 TINT 事件分发炸 Nonexistent function 'tint' → step 从
+# render 行中断（ProjectileSync.sync/_advance_actor_list 当帧全跳）+ 编辑器 Debugger Break
+# 挂死游戏——2026-09-05 用户"投射物切波后还在"回归根因（probe 实锤）。统一 clamp 设
+# modulate（覆盖 .png sprite 与 FCA 两态；UNFREEZE_TINT=2.5 clamp 到 1.0=WHITE 复白）。
+func tint(r: float, g: float, b: float) -> void:
+	modulate = Color(clampf(r, 0.0, 1.0), clampf(g, 0.0, 1.0), clampf(b, 0.0, 1.0))

@@ -112,3 +112,50 @@ func test_collide_check_x_axis() -> void:
 	proj.position = Vector2(50, 0)  # 远离
 	proj.previous_position = Vector2(40, 0)
 	assert_eq(proj.collide_check(target), BattleProjectile.COLLIDE_NONE, "远离无碰撞 → -1")
+
+
+# 切波回收（2026-09-05 小黑大招箭雨残留根因）：reset_battle 置空 projectile_list 前必须终结投射物。
+# 投射物脱离列表后不再 update，terminated 恒 false → View _advance_actor_list 永不销毁 actor
+# （玩家方投射物被 _remove_enemy_actors 按 camp==PLAYER 保留，冻结切波期间箭停在空中永久残留）。
+func test_reset_battle_terminates_flying_projectiles() -> void:
+	var eng := _make_engine()
+	var attacker := _make_attacker(eng)
+	var target := _make_enemy(eng, Vector2(2000, 0), "far")   # 远目标：飞行中不命中
+	eng.add_unit(attacker)
+	eng.add_unit(target)
+	var sk := _make_proj_skill(attacker, false)
+	sk.target = target
+	var proj := BattleProjectile.new(sk)
+	eng.add_projectile(proj)
+	assert_false(bool(proj.terminated), "构造后投射物存活")
+	eng.reset_battle()
+	assert_true(bool(proj.terminated), "切波重置终结飞行中投射物（View actor 随之销毁）")
+	assert_eq(eng.projectile_list.size(), 0, "列表清空")
+
+
+# 冻结投射物变色（2026-09-05 投射物残留回归二轮）：engine.freeze() 遍历 projectile_list
+# 对飞行中投射物 emit_tint（battle_entity.gd freeze/unfreeze），事件经 _dispatch 调
+# ProjectileActor.tint——曾漏译炸 Nonexistent function 'tint' → step 从 render 行中断
+# （当帧 ProjectileSync.sync/_advance_actor_list 全跳）+ 编辑器 Debugger Break 挂死游戏，
+# 即用户"投射物切波后还在"复现根因（probe 实锤）。守卫：freeze→分发→变色/复白全链不炸。
+func test_freeze_projectile_tint_dispatch_no_crash() -> void:
+	var eng := _make_engine()
+	var attacker := _make_attacker(eng)
+	var target := _make_enemy(eng, Vector2(2000, 0), "far")
+	eng.add_unit(attacker)
+	eng.add_unit(target)
+	var sk := _make_proj_skill(attacker, false)
+	sk.target = target
+	var proj := BattleProjectile.new(sk)
+	eng.add_projectile(proj)
+	var actor := ProjectileActor.new()
+	actor.setup(proj)
+	# freeze → emit TINT → 手动模拟 _dispatch 分发（renderer 直调等价，炸点即 tint 缺方法）
+	eng.freeze()
+	BattleEventRenderer.render(eng, {proj: actor})
+	assert_eq(actor.modulate, Color(0.4, 0.4, 0.4), "冻结 tint=FREEZE_TINT(0.4) 变暗蓝灰")
+	# unfreeze → 复白（UNFREEZE_TINT=2.5 clamp 到 1.0=WHITE）
+	eng.unfreeze()
+	BattleEventRenderer.render(eng, {proj: actor})
+	assert_eq(actor.modulate, Color.WHITE, "解冻 tint=2.5 clamp 到 1.0 复白")
+	actor.queue_free()

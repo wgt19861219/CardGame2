@@ -203,8 +203,11 @@ func step(dt: float) -> void:
 	if is_paused or engine == null:
 		return
 	engine.update(dt)
-	BattleEventRenderer.render(engine, _actors_by_unit, self); frames += 1   # T4：同帧 drain 事件分发（近等价旧同步直调）
+	# 先建 actor 再分发事件：首 tick 新单位发出的 NEW_ACTION（开局走向对手的 Move）曾因
+	# render 时无 actor 被静默丢弃，Logic 侧 set_action 的 loop+同名守卫不重发 →
+	# 整段移动无动画滑行（2026-09-04，倍速下 tick 密集更易踩中）。
 	_sync_actors()
+	BattleEventRenderer.render(engine, _actors_by_unit, self); frames += 1   # T4：同帧 drain 事件分发（近等价旧同步直调）
 	ProjectileSync.sync(self)
 	_advance_actor_list(dt)
 	_advance_effect_list(dt)
@@ -234,7 +237,9 @@ func _process(delta: float) -> void:
 		return
 	if _entering or _walking_to_next:
 		# 入场/切波走路期间冻结 engine（不 step），仅驱动 actor 离线走路推进。
-		_advance_actor_list(delta)
+		# dt × 档位倍率：离线走路位置速度随战斗加速档（源 scene 加速 dt 集中推进整链），
+		# 不放大则 4x 下走路 1.45px/帧 vs 战斗 3.96px/帧 断层（2026-09-05 探针实证）。
+		_advance_actor_list(delta * current_speed())
 		return
 	step(delta)
 	_ticks_left -= 1
@@ -293,6 +298,7 @@ func _sync_actors() -> void:
 func _create_actor(unit: Variant) -> BattleActor:
 	var actor := BattleActor.new()
 	actor.setup(unit, cm, ui_layer)
+	BattleSpeedSync.apply_to_actor(self, actor)
 	return actor
 
 
@@ -437,27 +443,13 @@ func _on_next_pressed() -> void:
 		engine.battle_supply()
 	if next_btn != null:
 		next_btn.hide_button()
-	var maxtime: float = _start_player_walk_to_next_battle()
+	# 冻结 engine（与 _on_wave_clear 自动路径同款）：走路期间不 step，防止波清态 tick 空转
+	# + effect/timer 用放大 dt 乱推进（2026-09-05 补，此前手动路径漏置）。
+	_walking_to_next = true
+	var maxtime: float = BattleWaveAdvancer.start_player_walk(self) / current_speed()
 	await get_tree().create_timer(maxtime).timeout
+	_walking_to_next = false
 	next_wave_requested.emit()
-
-
-func _start_player_walk_to_next_battle() -> float:
-	var maxtime: float = 0.0
-	if engine == null:
-		return maxtime
-	# 出屏目标 x（>屏宽 800 对应 logic x>800，取 WAVE_WALK_OFFSCREEN_X=1050 确保出屏；
-	# 停在屏缘附近会半露右边缘，切波瞬移到站位时被看见）。
-	var target_x: float = BattleActor.WAVE_WALK_OFFSCREEN_X
-	for unit in engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
-		var wa: Variant = _actors_by_unit.get(unit)
-		if wa != null and wa.has_method("goto_next_battle"):
-			# 传 target_x 作停止点（双保险：到位回调 + await maxtime 任一先到都能停）。
-			wa.goto_next_battle(float(unit.info.get("Walk Speed", 0.0)), target_x)
-		var walk_speed: float = float(unit.info.get("Walk Speed", 0.0)) * BattleActor.NEXT_BATTLE_WALK_SPEEDER
-		if walk_speed > 0.0:
-			maxtime = maxf(maxtime, (target_x - float(unit.position.x)) / walk_speed)
-	return maxtime
 
 
 func _auto_collect_loots() -> void:
@@ -477,12 +469,13 @@ func show_next_button() -> void:
 func _on_wave_clear() -> void:
 	if next_btn != null:
 		next_btn.hide_button()
-	await get_tree().create_timer(0.5).timeout   # 让死亡动画播完
+	await get_tree().create_timer(0.5 / current_speed()).timeout   # 让死亡动画播完（倍速下死亡动画同步加速）
 	if _finalized or engine == null or engine.stage_ended:
 		return
 	# 玩家向右走（gotoNextBattle），_walking_to_next 冻结 engine 驱动走路。
 	_walking_to_next = true
-	var maxtime: float = _start_player_walk_to_next_battle()
+	# 编排 timer ÷ 档位倍率：走路 dt 已 ×N（_process freeze 分支），真实等待时长同缩
+	var maxtime: float = BattleWaveAdvancer.start_player_walk(self) / current_speed()
 	_auto_collect_loots()   # 波清即吸宝箱（源 :442 autoCollectLoots 随 nextwaveAction 并行）
 	await get_tree().create_timer(maxtime).timeout
 	_walking_to_next = false

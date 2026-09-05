@@ -39,6 +39,29 @@ func test_sweep_with_rng() -> void:
 	assert_not_null(r["loots"], "sweep rng → loots 数组生成")
 
 
+# waves 按战分组（源 readSweepReply :10-41 每战一组 {exp,money,loots}，组内同 id
+# 合并 amount=源服务器 _items 打包语义；2026-09-04 补全扫荡弹窗数据源）。
+func test_sweep_waves_per_battle_groups() -> void:
+	var mgr := StageManager.new(cm)
+	mgr.exit_stage(-27, 3, true)
+	var rng := BattleRng.new(999)
+	var r: Dictionary = mgr.sweep(-27, 3, rng)
+	var waves: Array = r["waves"]
+	assert_eq(waves.size(), 3, "times=3 → 3 个按战分组")
+	var flat: int = int((r["loots"] as Array).size())
+	var grouped: int = 0
+	for w in waves:
+		var g: Dictionary = w
+		assert_eq(int(g["exp"]) * 3, int(r["exp"]), "单战 exp×3 = 合计 exp")
+		assert_eq(int(g["money"]) * 3, int(r["money"]), "单战 money×3 = 合计 money")
+		var ids: Array = []
+		for l in g["loots"]:
+			assert_false(int(l["id"]) in ids, "组内无重复 id（同 id 已合并 amount）")
+			ids.append(int(l["id"]))
+			grouped += int(l["amount"])
+	assert_eq(grouped, flat, "分组合并 amount 总和 = 扁平 loots 掉落数（合并不丢件）")
+
+
 # P1-5：sweep 保底机制（连续未掉累积提升掉率，源 :1612-1623）。
 func test_sweep_pity_loot_rate() -> void:
 	var mgr := StageManager.new(cm)
@@ -373,3 +396,52 @@ func test_exit_dungeon_bosses_cleared() -> void:
 	mgr.exit_stage(50013, 3, true, pd)
 	# baseId = 50000 + 50013 % 1000 = 50000 + 13 = 50013
 	assert_true(mgr.dungeon_bosses_cleared.has(50013), "dungeon_bosses_cleared 记录 baseId")
+
+
+# 2026-09-05 回归：源 battle_engine.lua:1636 result_stars = max(1, 3 - deathcount)。
+# finalize_stage_battle 曾写死满星（我方减员也三星），应消费 engine.victory() 算好的 result_stars。
+func test_finalize_stage_battle_stars_by_death_count() -> void:
+	var player := PlayerData.new(cm)
+	player.vitality = 100
+	for tid: int in [1, 2, 3, 4, 5]:
+		player.hero_manager.add_hero(tid)
+	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
+	var tids: Array[int] = [1, 2, 3, 4, 5]
+	var asm := mgr.assemble_stage_battle(1, player, tids, BattleRng.new(7))
+	var eng: BattleEngine = asm["engine"]
+	# 敌方全灭（victory 由 tick 内 alive_enemy_count==0 触发，测试手动构造终态）
+	for enemy: BattleUnit in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
+		enemy.die(null)
+	# 我方 1 名英雄阵亡 → 源规则 2 星
+	var heroes: Array = eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
+	(heroes[0] as BattleUnit).die(null)
+	eng.victory(true)   # skip=true 强制走最后一波胜利结算（victory 内算 result_stars）
+	var loots: Array[Dictionary] = []
+	var r: Dictionary = mgr.finalize_stage_battle(eng, 1, player, tids, loots)
+	assert_true(bool(r["won"]), "敌方全灭 → won")
+	assert_eq(int(eng.result_stars), 2, "engine 侧 result_stars=2（死 1 人）")
+	assert_eq(int(r["stars"]), 2, "finalize stars=2（源 max(1,3-deathcount)，曾写死满星）")
+
+
+# 减员下限：死 3 人（>3 同理）保底 1 星。
+func test_finalize_stage_battle_stars_floor_one() -> void:
+	var player := PlayerData.new(cm)
+	player.vitality = 100
+	for tid: int in [1, 2, 3, 4, 5]:
+		player.hero_manager.add_hero(tid)
+	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills
+	var tids: Array[int] = [1, 2, 3, 4, 5]
+	var asm := mgr.assemble_stage_battle(1, player, tids, BattleRng.new(7))
+	var eng: BattleEngine = asm["engine"]
+	for enemy: BattleUnit in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
+		enemy.die(null)
+	var heroes: Array = eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
+	for i: int in range(3):
+		(heroes[i] as BattleUnit).die(null)
+	eng.victory(true)
+	var loots: Array[Dictionary] = []
+	var r: Dictionary = mgr.finalize_stage_battle(eng, 1, player, tids, loots)
+	assert_true(bool(r["won"]), "敌方全灭 → won")
+	assert_eq(int(r["stars"]), 1, "死 3 人 → 保底 1 星（源 math.max(1, ...)）")

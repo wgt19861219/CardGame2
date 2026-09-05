@@ -66,3 +66,11 @@ func update_view(_dt: float) -> void:
 	var content_node: Node2D = _content.get_node()
 	content_node.scale = Vector2(dist / CHAIN_CONTENT_BASE_W, 3.0)
 	z_index = -int(tgt.position.y)
+
+
+# freeze/unfreeze 变色（battle_entity.gd emit_tint 波及 projectile_list 内的 chain）。
+# 源 chain.lua 无 tint，但本项目 engine.freeze() 遍历链同样 emit TINT——_dispatch 无本方法
+# 会以 ProjectileActor 同款方式炸 Nonexistent function 'tint'（2026-09-05 投射物残留回归
+# 同根因）。受控补齐：clamp modulate（同 ProjectileActor.tint / UnitSprite.tint 口径）。
+func tint(r: float, g: float, b: float) -> void:
+	modulate = Color(clampf(r, 0.0, 1.0), clampf(g, 0.0, 1.0), clampf(b, 0.0, 1.0))

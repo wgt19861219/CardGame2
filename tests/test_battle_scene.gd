@@ -136,6 +136,43 @@ func test_terminated_unit_actor_removed() -> void:
 	scene.queue_free()
 
 
+# 切波投射物回收（2026-09-05 小黑大招箭雨残留）：玩家方投射物飞行中切波，
+# _remove_enemy_actors 按 camp==PLAYER 保留其 actor；reset_battle 终结投射物后，
+# 切波推进首帧 _advance_actor_list 应销毁投射物 actor（否则永久残留屏幕）。
+func test_next_wave_terminates_player_projectile_actors() -> void:
+	var eng := _make_engine()
+	eng.stage_info = cm.get_raw_table(&"Stage").get("1", {})
+	eng.battle_lookup_id = 1
+	var p := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, cm, eng, {}, lib)
+	eng.add_unit(p)
+	var w1: Dictionary = BattleData.from_config(cm, 1, 1).battle_info
+	BattleEngineWaves.setup_battle(eng, cm, w1)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm, w1)
+	scene._sync_actors()
+	# 构造玩家方飞行中投射物（远距离不命中）：DR 大招箭雨波清瞬间在途的等价物
+	var sk := BattleSkill.new({
+		"Tile XY Speed": 300.0, "Tile Z Speed": 0.0, "Tile Distance": 0.0, "Tile Gravity": 0.0,
+		"Tile OTT Height": 0.0, "Target Type": "target", "Target Camp": -1, "Affected Camp": -1,
+		"Max Range": 99999.0, "Min Range": 0.0, "Cost MP": 0.0, "CD": 0.0, "Global CD": 0.0,
+	}, p, 1)
+	var enemies: Array = eng.alive_units.get(BattleEngine.CAMP_ENEMY, [])
+	sk.target = enemies[0]
+	var proj := BattleProjectile.new(sk)
+	eng.add_projectile(proj)
+	ProjectileSync.sync(scene)   # 建投射物 View actor（挂 main_layer 进 actor_list）
+	assert_false(bool(proj.terminated), "切波前投射物存活")
+	scene._on_next_wave_requested()
+	assert_true(bool(proj.terminated), "切波（reset_battle）终结飞行中投射物")
+	scene._advance_actor_list(0.033)   # 切波后首帧推进
+	var proj_actors_left: int = 0
+	for a in scene.actor_list:
+		if not (a is BattleActor):
+			proj_actors_left += 1
+	assert_eq(proj_actors_left, 0, "切波后投射物 actor 全销毁（玩家方也不残留）")
+	scene.queue_free()
+
+
 # 源 actor update 双缓冲 interp（unit.lua:1736-1758）：tick 变化设 from=previous_position/to=position，
 # 帧间 lerp 平滑。验部分 alpha（0.5）→ 中点。
 func test_actor_interp_lerps_between_ticks() -> void:
@@ -220,8 +257,9 @@ func test_actor_runtime_scale_manually_casting() -> void:
 	scene.queue_free()
 
 
-# 源 setActionSpeeder（unit.lua:1746）— frozen → 动画速率 0。
+# 源 setActionSpeeder（unit.lua:1746）— frozen → 动画基础速率 0。
 # step 内 engine.update 会 rebuild buff_effects 擦手设 frozen，故 step 后重设 + 强制 tick 块触发验逻辑。
+# 2026-09-05 速度分离后：0 落在 _base_anim_speed（fca 实速 = base×mult，0×N=0 再 clamp 下限 0.1）。
 func test_actor_frozen_zero_action_speeder() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
@@ -233,7 +271,7 @@ func test_actor_frozen_zero_action_speeder() -> void:
 	p.buff_effects[BattleEffectKeys.FROZEN] = true   # step 后设（避 rebuild 擦）
 	actor._tick = -1   # 强制下个 update_view 触发 tick 块（源 :1746 在 tick 变化块内）
 	actor.update_view(0.0)
-	assert_eq(actor.puppet._current_speed, 0.0, "frozen → setActionSpeeder(0)（源 :1746）")
+	assert_eq(actor.puppet._base_anim_speed, 0.0, "frozen → setActionSpeeder(0)（源 :1746，基础速归零）")
 	scene.queue_free()
 
 
@@ -655,7 +693,8 @@ func test_actor_offline_velocity_moves_position() -> void:
 	scene.queue_free()
 
 
-# 源 nextBtnTapHandler :418-428：_start_player_walk_to_next_battle 算 maxtime（玩家 actor 走到出屏目标）。
+# 源 nextBtnTapHandler :418-428：start_player_walk 算 maxtime（玩家 actor 走到出屏目标）。
+# 2026-09-05 方法自 battle_scene 下沉至 BattleWaveAdvancer（LINT005 行数）。
 func test_start_player_walk_maxtime() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100.0, 0.0))
@@ -664,7 +703,7 @@ func test_start_player_walk_maxtime() -> void:
 	scene.setup(eng, cm)
 	scene.step(0.033)
 	p.info["Walk Speed"] = 200.0
-	var maxtime: float = scene._start_player_walk_to_next_battle()
+	var maxtime: float = BattleWaveAdvancer.start_player_walk(scene)
 	# 目标 = WAVE_WALK_OFFSCREEN_X(1050)，distance = 1050-100 = 950, walk_speed = 200*1.75 = 350
 	# maxtime = 950/350 ≈ 2.714（出屏目标，view 1130 出屏 170px 角色完全藏住）
 	assert_almost_eq(maxtime, 950.0 / 350.0, 0.01, "maxtime = distance/(WalkSpeed×1.75)（出屏目标 :424）")
@@ -818,4 +857,121 @@ func test_hud_geometry_source_translated() -> void:
 	assert_almost_eq(scene.return_btn.position.x, 729.7, 0.1, "return btn 左上 x=729.7（÷CS 源直译）")
 	assert_almost_eq(scene.return_btn.position.y, 13.1, 0.1, "return btn 左上 y=13.1")
 	assert_almost_eq(scene.return_btn.scale.x, 1.0 / 1.28125, 0.001, "return btn scale=1/CS（createButtonWithMask÷CS）")
+	scene.queue_free()
+
+
+# 回归（2026-09-04 倍速下移动动画不播）：首 tick 新单位的 NEW_ACTION 事件曾因
+# BattleEventRenderer.render 先于 _sync_actors 执行（单位尚无 actor）被静默丢弃，
+# Logic 侧 set_action 的 loop+同名守卫不重发 → 开局走向敌人全程滑行无 Move 动画
+# （1x/2x/4x 全丢，高速下观感更明显）。step 顺序改 sync 前置后修复。
+func test_first_tick_move_action_reaches_puppet() -> void:
+	var eng := _make_engine()
+	eng.stage_info = cm.get_raw_table(&"Stage").get("1", {})
+	eng.battle_lookup_id = 1
+	var p := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, cm, eng, {}, lib)
+	eng.add_unit(p)
+	var w1: Dictionary = BattleData.from_config(cm, 1, 1).battle_info
+	BattleEngineWaves.setup_battle(eng, cm, w1)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm, w1)
+	# engine.next_tick 初始 0：首帧 step 即首 tick——AI 决策走向对手 + NEW_ACTION 事件分发
+	# 与 actor 首次创建同帧竞争，事件先于 actor 创建即被丢。
+	scene.step(0.033)
+	var checked: int = 0
+	for a in scene.actor_list:
+		var u: Variant = a.model
+		if u == null or String(u.action_name) != "Move":
+			continue
+		var fca: Variant = a.puppet.get("_fca")
+		assert_not_null(fca, "Move 单位应有 FCA 傀儡（tid=1 资源正常加载）")
+		if fca == null:
+			continue
+		assert_eq(String(fca.get_current_action()), "Move",
+			"首 tick 的 Move 事件应送达 puppet（移动期间播移动动画，不滑行）")
+		checked += 1
+	assert_gt(checked, 0, "开局双方走向对手，应有 Move 状态单位被检查")
+	scene.queue_free()
+
+
+# 回归（2026-09-05 倍速下出屏走路速度断层 + 动画档位倍率缺失）：
+# 探针实证 4x 下战斗内移动 3.96px/帧 vs 离线走路（出屏/入场）1.45px/帧——离线走路的
+# 位置速度/动画速度/编排 timer 全部不随倍速档。修复口径：UnitSprite 速度分离
+# base（speeder×2 / 走路 √1.75）× mult（档位倍率），切档/创建点只动 mult。
+func test_offline_walk_speed_follows_speed_state() -> void:
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	eng.add_unit(p)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm)
+	scene.step(0.033)
+	var actor: Variant = scene.actor_list[0]
+	# 4x：freeze 分支（切波走路）位置速度应为 1x 的 4 倍
+	scene.set_speed_state(4)
+	scene._walking_to_next = true
+	actor.goto_next_battle(100.0, 1050.0)
+	actor.update_view(0.0)   # 同步 position 到重置后的 _walk_pos（goto 不立即定位）
+	var x0_4x: float = actor.position.x
+	scene._process(0.0167)
+	scene._process(0.0167)
+	var dx_4x: float = actor.position.x - x0_4x
+	# 1x 对照
+	scene.set_speed_state(1)
+	actor.goto_next_battle(100.0, 1050.0)
+	actor.update_view(0.0)
+	var x0_1x: float = actor.position.x
+	scene._process(0.0167)
+	scene._process(0.0167)
+	var dx_1x: float = actor.position.x - x0_1x
+	assert_almost_eq(dx_4x, dx_1x * 4.0, 0.5, "4x 离线走路位移应为 1x 的 4 倍（档位贯穿 freeze 分支）")
+	scene.queue_free()
+
+
+# 战斗内动画速度 = base(speeder×2) × 档位倍率：4x 下 spd=8（base 2 × mult 4），
+# 切档 broadcast 只改 mult（base 不被覆盖——此前 set_speed(N) 全量覆盖回 2 是断层根因）。
+func test_combat_anim_speed_is_base_times_state_mult() -> void:
+	var eng := _make_engine()
+	eng.stage_info = cm.get_raw_table(&"Stage").get("1", {})
+	eng.battle_lookup_id = 1
+	var p := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, cm, eng, {}, lib)
+	p.info["Walk Speed"] = 1000.0
+	eng.add_unit(p)
+	var w1: Dictionary = BattleData.from_config(cm, 1, 1).battle_info
+	BattleEngineWaves.setup_battle(eng, cm, w1)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm, w1)
+	scene.set_speed_state(4)
+	scene.step(0.033)
+	var fca: Variant = null
+	for a in scene.actor_list:
+		if a.model != null and String(a.model.action_name) == "Move":
+			fca = a.puppet.get("_fca")
+			break
+	assert_not_null(fca, "应有 Move 单位")
+	if fca != null:
+		assert_almost_eq(float(fca.get("_speed")), 8.0, 0.01, "4x 战斗内动画速度 = base 2×speeder × mult 4（speeder=1 时 8.0）")
+		scene._on_speed_changed(2)
+		assert_almost_eq(float(fca.get("_speed")), 4.0, 0.01, "切 2x 后 = base 2 × mult 2 = 4.0（mult 不覆盖 base）")
+	scene.queue_free()
+
+
+# 手动下一波按钮路径：走路期间必须置 _walking_to_next 冻结 engine
+# （否则 step 继续跑：波清状态 tick 空转 + effect/timer 用放大 dt 乱推进）。
+func test_next_pressed_freezes_engine_during_walk() -> void:
+	var eng := _make_engine()
+	eng.stage_info = cm.get_raw_table(&"Stage").get("1", {})
+	eng.battle_lookup_id = 1
+	var p := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, cm, eng, {}, lib)
+	p.info["Walk Speed"] = 1000.0
+	eng.add_unit(p)
+	var scene := BattleScene.new()
+	scene.setup(eng, cm, BattleData.from_config(cm, 1, 1).battle_info)
+	scene._sync_actors()
+	scene.set_speed_state(4)
+	add_child(scene)
+	scene._on_next_pressed()
+	# 同步段立即置位（协程 fire-and-forget，同步段在首个 await 前执行完毕；
+	# 不可等帧断言——headless 全速下 maxtime/N timer 可能早于帧回调到期）
+	assert_true(scene._walking_to_next, "手动下一波走路期间应置 _walking_to_next（冻结 engine）")
+	await scene.next_wave_requested
+	assert_false(scene._walking_to_next, "切波请求发出后应复位")
 	scene.queue_free()

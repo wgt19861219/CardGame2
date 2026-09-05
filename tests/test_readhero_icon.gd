@@ -167,12 +167,30 @@ func test_icon_mp_bar_drawn() -> void:
 func test_icon_hp_zero_dead_shade() -> void:
 	var icon := ReadheroIcon.new()
 	icon.setup({"id": 1, "hp": 0}, cm)   # hp=0 死亡
-	var has_shade: bool = false
+	var shade: ColorRect = null
 	for c in icon.icon.get_children():
 		if c is ColorRect and abs((c as ColorRect).color.a - 150.0 / 255.0) < 0.01:
-			has_shade = true
+			shade = c as ColorRect
 			break
-	assert_true(has_shade, "hp=0 → 死亡 shade（ColorRect alpha 150，源 :277）")
+	assert_not_null(shade, "hp=0 → 死亡 shade（ColorRect alpha 150，源 :277）")
+	if shade != null:
+		assert_eq(shade.size, ReadheroIcon.SHADE_SIZE,
+			"shade 尺寸=源 container(81.25=DGSizeMake(104,104) 非 104 直译)")
+		assert_eq(shade.position, Vector2(0.0, ReadheroIcon.CONTAINER_SIZE.y - ReadheroIcon.SHADE_SIZE.y),
+			"shade 贴 container 左下（y 翻转 104−81.25=22.75；2026-09-05 错位根修）")
+	icon.queue_free()
+
+
+# 源 :424-426 withShade 的 shade 尺寸取 ClippingNode contentSize（createClippingNode 未设置，恒 0×0
+# 不渲染）→ 照源不创建遮罩（旧 104×104 黑块系错译多画）。当前无调用方传 withShade，语义守卫。
+func test_icon_with_shade_not_drawn() -> void:
+	var icon := ReadheroIcon.new()
+	icon.setup({"id": 1, "withShade": true}, cm)
+	var shade_count: int = 0
+	for c in icon.icon.get_children():
+		if c is ColorRect:
+			shade_count += 1
+	assert_eq(shade_count, 0, "withShade → 照源不渲染遮罩（源 ClippingNode 0×0）")
 	icon.queue_free()
 
 

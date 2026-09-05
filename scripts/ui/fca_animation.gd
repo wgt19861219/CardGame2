@@ -228,7 +228,8 @@ func set_next_action(action: String) -> void:
 
 
 func set_speed(s: float) -> void:
-	_speed = clampf(s, 0.1, 10.0)
+	# 上限 16：战斗内动画速度 = speeder×2×档位（4x 档 MSPD 50% 时 = 12），旧上限 10 会截高档
+	_speed = clampf(s, 0.1, 16.0)
 
 
 # 照源 LegendAnimation::setActionElapsed（C++ :176-203）：动作时间锚定——帧索引
