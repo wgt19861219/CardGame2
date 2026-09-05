@@ -396,3 +396,52 @@ func test_exit_dungeon_bosses_cleared() -> void:
 	mgr.exit_stage(50013, 3, true, pd)
 	# baseId = 50000 + 50013 % 1000 = 50000 + 13 = 50013
 	assert_true(mgr.dungeon_bosses_cleared.has(50013), "dungeon_bosses_cleared 记录 baseId")
+
+
+# 2026-09-05 回归：源 battle_engine.lua:1636 result_stars = max(1, 3 - deathcount)。
+# finalize_stage_battle 曾写死满星（我方减员也三星），应消费 engine.victory() 算好的 result_stars。
+func test_finalize_stage_battle_stars_by_death_count() -> void:
+	var player := PlayerData.new(cm)
+	player.vitality = 100
+	for tid: int in [1, 2, 3, 4, 5]:
+		player.hero_manager.add_hero(tid)
+	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills   # T3 注入式技能库（生产由 GameData._ready 注入；测试补注入）
+	var tids: Array[int] = [1, 2, 3, 4, 5]
+	var asm := mgr.assemble_stage_battle(1, player, tids, BattleRng.new(7))
+	var eng: BattleEngine = asm["engine"]
+	# 敌方全灭（victory 由 tick 内 alive_enemy_count==0 触发，测试手动构造终态）
+	for enemy: BattleUnit in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
+		enemy.die(null)
+	# 我方 1 名英雄阵亡 → 源规则 2 星
+	var heroes: Array = eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
+	(heroes[0] as BattleUnit).die(null)
+	eng.victory(true)   # skip=true 强制走最后一波胜利结算（victory 内算 result_stars）
+	var loots: Array[Dictionary] = []
+	var r: Dictionary = mgr.finalize_stage_battle(eng, 1, player, tids, loots)
+	assert_true(bool(r["won"]), "敌方全灭 → won")
+	assert_eq(int(eng.result_stars), 2, "engine 侧 result_stars=2（死 1 人）")
+	assert_eq(int(r["stars"]), 2, "finalize stars=2（源 max(1,3-deathcount)，曾写死满星）")
+
+
+# 减员下限：死 3 人（>3 同理）保底 1 星。
+func test_finalize_stage_battle_stars_floor_one() -> void:
+	var player := PlayerData.new(cm)
+	player.vitality = 100
+	for tid: int in [1, 2, 3, 4, 5]:
+		player.hero_manager.add_hero(tid)
+	var mgr := StageManager.new(cm)
+	mgr.skill_lib = GameData.skills
+	var tids: Array[int] = [1, 2, 3, 4, 5]
+	var asm := mgr.assemble_stage_battle(1, player, tids, BattleRng.new(7))
+	var eng: BattleEngine = asm["engine"]
+	for enemy: BattleUnit in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
+		enemy.die(null)
+	var heroes: Array = eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
+	for i: int in range(3):
+		(heroes[i] as BattleUnit).die(null)
+	eng.victory(true)
+	var loots: Array[Dictionary] = []
+	var r: Dictionary = mgr.finalize_stage_battle(eng, 1, player, tids, loots)
+	assert_true(bool(r["won"]), "敌方全灭 → won")
+	assert_eq(int(r["stars"]), 1, "死 3 人 → 保底 1 星（源 math.max(1, ...)）")

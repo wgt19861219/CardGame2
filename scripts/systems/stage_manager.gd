@@ -168,9 +168,11 @@ func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int]
 
 
 ## 结算阶段（View 接入用）：从 engine 终态算胜负 + exit + 发奖。返 {ok, won, stars, exp, money, loots}。
+## 星级消费 engine.victory() 算好的 result_stars（源 battle_engine.lua:1636 max(1,3-deathcount)，
+## 我方每死 1 名英雄降 1 星、保底 1 星；超时/团灭路径 engine 已置 0）。
 func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, player_tids: Array[int], loots: Array[Dictionary]) -> Dictionary:
 	var won: bool = eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY).is_empty()
-	var stars: int = STARS_FULL if won else 0
+	var stars: int = int(eng.result_stars) if won else 0
 	var exit_r: Dictionary = exit_stage(sid, stars, won)
 	if won and player_tids.size() > 0:
 		player.take_stage_reward(sid, stars, player_tids, loots)
