@@ -47,6 +47,13 @@ const DEAD_POS: Vector2 = Vector2(44.0, 39.0)
 const HP_PERC_DENOM: float = 10000.0
 const SHADE_ALPHA: float = 150.0 / 255.0
 const DEAD_Z: int = 10
+# 源 container 真实 contentSize = DGSizeMake(104,104) = 104×0.78125 = 81.25 点（readnode.lua:19-23
+# DGSizeMake 内含设计分辨率 1024→800 缩放，直译 CONTAINER_SIZE=104 时丢失该缩放）。源里 portrait(78)
+# 贴 container 左下几乎填满（96%），dead shade=container 尺寸（readhero.lua:242/278）自然与头像重合；
+# 104 基准下 shade 比头像大一圈（右上各溢 26 点）= 战斗结算"死亡阴影框与图标错位"根因
+# （2026-09-05 game bridge 实测 portrait 区 [200,278]×[226,304] vs shade 区 [200,304]×[200,304]）。
+const DG_DESIGN_SCALE: float = 0.78125
+const SHADE_SIZE: Vector2 = CONTAINER_SIZE * DG_DESIGN_SCALE
 # 贴图显示尺寸 = 原始像素 ÷ CS（源 createSprite/createClippingNode 等价，TextureConfig 无
 # HERO 系条目亲证）。2026-08-19 修 bar；2026-08-22 巡检根修补齐其余三类（portrait/star/
 # levelBg 原像素直显偏大 1.28×，portrait 133px > frame 109 破框——与 readequip_icon
@@ -112,12 +119,9 @@ func setup(info: Dictionary, p_cm: Variant = null) -> void:
 		with_shade = true
 		_create_state_label(state, p_cm)
 	if with_shade:
-		var shade := ColorRect.new()
-		shade.color = Color(0.0, 0.0, 0.0, 150.0 / 255.0)
-		shade.size = CONTAINER_SIZE
-		shade.position = Vector2.ZERO
-		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.add_child(shade)
+		# 源 :424-426 shade 尺寸取 ClippingNode contentSize（createClippingNode 未设置，恒 0×0 不渲染）
+		# ——照源不创建遮罩，state 场景由 _create_state_label 字图表意。当前无调用方传 withShade。
+		pass
 	_add_hp_info(hp, mp)
 	if length_v != null:
 		var len_f: float = float(length_v)
@@ -301,8 +305,8 @@ func _create_dead_shade() -> void:
 		icon.add_child(dead)
 	var shade := ColorRect.new()
 	shade.color = Color(0.0, 0.0, 0.0, SHADE_ALPHA)
-	shade.size = CONTAINER_SIZE
-	shade.position = Vector2.ZERO
+	shade.size = SHADE_SIZE   # 源 :242/278 shade=container contentSize（81.25 非 104），仅比 portrait 大 3.2 点
+	shade.position = Vector2(0.0, CONTAINER_SIZE.y - SHADE_SIZE.y)   # 贴 container 左下（y 翻转：104−81.25=22.75）
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.add_child(shade)
 
