@@ -15,6 +15,8 @@ const TEAM_MAX: int = 5
 # 扫荡次数上限（源 parameter.lua:20-21 default_normal/elite_sweep_times）。
 const SWEEP_DEFAULT_NORMAL: int = 10
 const SWEEP_DEFAULT_ELITE: int = 3
+# 无限制扫荡上限（源 getRepeatInformation:237-238：countLimit==0 → cLimit=999）。
+const SWEEP_UNLIMITED: int = 999
 
 # 坐标换算（源 cocos 800×480 左下原点 → Godot 800×480 左上原点）。
 const OFFSET_X: float = 0.0
@@ -258,10 +260,20 @@ func _setup_sweep_cluster(content: Control, star: int, stage_type: String) -> vo
 	_sweep_ticket.text = str(player.get_sweep_times())
 
 
+# 扫荡次数上限语义（源 getRepeatInformation:236-240 repeatInfo.cLimit）：Daily Limit=0
+# （无限制，普通关皆此）→ 999；否则剩余次数。扫荡上限判断/N 计算用本语义；UI CountNumber
+# 显示仍用 _left_times()（normal 型隐藏三件，elite 有真实上限）。漏译本分支曾致普通关
+# 扫荡 1 次误报"次数已达上限" + 批量扫荡 N=0 按钮 disabled（2026-09-04 修复）。
+func _sweep_count_limit() -> int:
+	if _daily_limit() == 0:
+		return SWEEP_UNLIMITED
+	return _left_times()
+
+
 # 扫荡N次的 N（源 getRepeatInformation:231-265）：min(剩余进入次数, 普通关10/精英关3)。
 func _sweep_some_times(stage_type: String) -> int:
 	var cap: int = SWEEP_DEFAULT_ELITE if stage_type == "elite" else SWEEP_DEFAULT_NORMAL
-	return maxi(0, mini(_left_times(), cap))
+	return maxi(0, mini(_sweep_count_limit(), cap))
 
 
 func _on_go_pressed() -> void:
@@ -289,13 +301,14 @@ func _on_sweep_some_pressed(stage_type: String) -> void:
 
 
 # 扫荡统一执行 + 前置校验（对齐源 doClickSweep:128-151 分层拦截，单机化裁剪网络/钻石路径）。
-# 注：源用 repeatRewardWindow 显示战利品（stagedetail.lua:1946），项目单机化用 Toast 简化反馈。
+# 成功弹 SweepRewardPopup 战利品弹窗（源 repeatRewardWindow:1946，2026-09-04 补全，
+# 原单机化 Toast 简化被用户复验否定）。
 func _do_sweep(times: int) -> void:
 	if mgr == null or player == null or times <= 0:
 		return
 	AudioPlayer.play_sfx("common_click_feedback")
 	var cm: Variant = player.cm
-	if times > _left_times():
+	if times > _sweep_count_limit():
 		Toast.show_message(String(cm.get_lstr("STAGEDETAIL.ENTER_TO_THIS_GAME_POINTS_HAS_REACHED_THE_UPPER_LIMIT_TODAY")))
 		return
 	var power: int = (_stage_data.vitality_cost if _stage_data != null else 0) * times
@@ -307,10 +320,22 @@ func _do_sweep(times: int) -> void:
 		return
 	var r: Dictionary = mgr.sweep(stage_id, times, rng, player, "free")
 	if bool(r.get("ok", false)):
-		Toast.show_message("扫荡成功")  # 源无此 toast（用 repeatRewardWindow），项目单机化简化
 		_check_enabled()
+		_show_sweep_reward(r)
 	else:
 		Toast.show_message(String(r.get("msg", "扫荡失败")))  # 项目适配 toast
+
+
+# 扫荡结果弹窗（源 doSendSweepReply:42-67 repeatRewardWindow.create(lootList)，2026-09-04
+# 补全原单机化 Toast 简化）：waves 每战一组 + 末组额外奖励（源 readSweepReply el 无 exp/money）。
+func _show_sweep_reward(r: Dictionary) -> void:
+	var loot_list: Array = []
+	for w in (r.get("waves", []) as Array):
+		loot_list.append(w)
+	loot_list.append({"loots": r.get("raid_bonus", [])})
+	var popup := SweepRewardPopup.new("sweepReward", {})
+	popup.setup_popup(loot_list, player.cm)
+	popup.show_window(get_parent() if get_parent() != null else self)
 
 
 # 流程：getResetEliteCost 读 GradientPrice[times+1]["Elite Reset"]（梯度计费 20/50/.../1000）

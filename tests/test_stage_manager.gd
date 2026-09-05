@@ -39,6 +39,29 @@ func test_sweep_with_rng() -> void:
 	assert_not_null(r["loots"], "sweep rng → loots 数组生成")
 
 
+# waves 按战分组（源 readSweepReply :10-41 每战一组 {exp,money,loots}，组内同 id
+# 合并 amount=源服务器 _items 打包语义；2026-09-04 补全扫荡弹窗数据源）。
+func test_sweep_waves_per_battle_groups() -> void:
+	var mgr := StageManager.new(cm)
+	mgr.exit_stage(-27, 3, true)
+	var rng := BattleRng.new(999)
+	var r: Dictionary = mgr.sweep(-27, 3, rng)
+	var waves: Array = r["waves"]
+	assert_eq(waves.size(), 3, "times=3 → 3 个按战分组")
+	var flat: int = int((r["loots"] as Array).size())
+	var grouped: int = 0
+	for w in waves:
+		var g: Dictionary = w
+		assert_eq(int(g["exp"]) * 3, int(r["exp"]), "单战 exp×3 = 合计 exp")
+		assert_eq(int(g["money"]) * 3, int(r["money"]), "单战 money×3 = 合计 money")
+		var ids: Array = []
+		for l in g["loots"]:
+			assert_false(int(l["id"]) in ids, "组内无重复 id（同 id 已合并 amount）")
+			ids.append(int(l["id"]))
+			grouped += int(l["amount"])
+	assert_eq(grouped, flat, "分组合并 amount 总和 = 扁平 loots 掉落数（合并不丢件）")
+
+
 # P1-5：sweep 保底机制（连续未掉累积提升掉率，源 :1612-1623）。
 func test_sweep_pity_loot_rate() -> void:
 	var mgr := StageManager.new(cm)
