@@ -37,6 +37,26 @@ static func advance_wave(scene) -> void:
 	_enter_wave_units(scene, player_actors)
 
 
+# 玩家向右走向屏外（gotoNextBattle 起点）：从 battle_scene 下沉（2026-09-05，LINT005 行数），
+# 返回 maxtime（最远单位走到位时长，供编排 timer ÷ 档位倍率后等待）。
+static func start_player_walk(scene) -> float:
+	var maxtime: float = 0.0
+	if scene.engine == null:
+		return maxtime
+	# 出屏目标 x（>屏宽 800 对应 logic x>800，取 WAVE_WALK_OFFSCREEN_X=1050 确保出屏；
+	# 停在屏缘附近会半露右边缘，切波瞬移到站位时被看见）。
+	var target_x: float = BattleActor.WAVE_WALK_OFFSCREEN_X
+	for unit in scene.engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
+		var wa: Variant = scene._actors_by_unit.get(unit)
+		if wa != null and wa.has_method("goto_next_battle"):
+			# 传 target_x 作停止点（双保险：到位回调 + await maxtime 任一先到都能停）。
+			wa.goto_next_battle(float(unit.info.get("Walk Speed", 0.0)), target_x)
+		var walk_speed: float = float(unit.info.get("Walk Speed", 0.0)) * BattleActor.NEXT_BATTLE_WALK_SPEEDER
+		if walk_speed > 0.0:
+			maxtime = maxf(maxtime, (target_x - float(unit.position.x)) / walk_speed)
+	return maxtime
+
+
 # 切波入场：玩家 actor 从左屏外走回站位 + 新敌人 actor 从右屏外走到站位。
 # 复用 BattleEnterWalk 的入场机制（_entering 冻结 engine，全部就位 _on_actor_enter_done 解冻）。
 # 玩家 offset 用负（左屏外），敌人 offset 用正（右屏外），与 BattleEnterWalk.PLAYER/ENEMY_OFFSET 一致。

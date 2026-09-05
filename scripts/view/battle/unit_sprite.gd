@@ -25,7 +25,8 @@ var _parts_node: Node2D = null        # 散件根（应用 Scale + 朝向翻转�
 var _fallback_portrait: TextureRect = null
 var _fca: Node = null
 var _using_fca: bool = false
-var _current_speed: float = 1.0
+var _base_anim_speed: float = 1.0  # FCA 基础速度（战斗 speeder×2 / 走路 √1.75 / 死亡 1.0）
+var _current_speed: float = 1.0    # 档位倍率（broadcast/actor 创建点设，随战斗加速档）
 var _dead: bool = false
 var _walk_direction: int = 0
 var _walk_target_pos: Vector2 = Vector2.ZERO
@@ -157,10 +158,23 @@ func _on_fca_action_finished(action_name: String) -> void:
 		_fca.play("Idle")
 
 
+# 速度分离（2026-09-05）：set_speed 设基础速（动画固有速率），apply_speed_mult 设战斗
+# 加速档倍率——实际 FCA 速度 = base × mult。切档只动 mult，base 不被覆盖；base 由
+# battle_actor update_view 每 tick / 走路启动 / 死亡时刷新。旧口径 set_speed(全量)
+# 在切档 broadcast 与 update_view 每 tick 间互相覆盖，是倍速下动画速度断层的根因。
 func set_speed(s: float) -> void:
-	_current_speed = s
+	_base_anim_speed = s
+	_apply_anim_speed()
+
+
+func apply_speed_mult(m: float) -> void:
+	_current_speed = m
+	_apply_anim_speed()
+
+
+func _apply_anim_speed() -> void:
 	if _using_fca and _fca:
-		_fca.set_speed(s)
+		_fca.set_speed(_base_anim_speed * _current_speed)
 
 
 # 设 _fca.modulate（不设 self.modulate，避与 play_hit 闪红 Tween 冲突）。
@@ -199,6 +213,7 @@ func switch_puppet(resource: String, p_scale: float, flip_x: bool) -> void:
 	if _fca.load_from_ani(resource, atlas):
 		_parts_node.add_child(_fca); _using_fca = true
 		_fca.action_finished.connect(_on_fca_action_finished); _fca.play("Idle")
+		_apply_anim_speed()   # 新 FCA _speed 重置为 1，恢复 base×mult
 	else:
 		_fca.queue_free(); _fca = null; _fallback_to_portrait()
 
@@ -339,7 +354,7 @@ func play_death() -> void:
 	if not _using_fca:
 		_play_fall_down()
 		return
-	_fca.set_speed(1.0)
+	set_speed(1.0)   # 死亡动画基础速 1×（档位倍率仍生效，源死亡动画随 dt 加速）
 	if _fca.action_finished.is_connected(_on_fca_action_finished):
 		_fca.action_finished.disconnect(_on_fca_action_finished)
 	if _fca.has_action("Death"):
