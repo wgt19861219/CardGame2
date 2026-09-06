@@ -54,6 +54,12 @@ func set_speed(s: float) -> void:
 		_fca.set_speed(s)
 
 
+# 外部定位模式转发（照源 setExternalPositioning，chain 唯一消费方；语义见 FcaAnimation）。
+func set_external_positioning(enabled: bool = true) -> void:
+	if _fca != null:
+		_fca.set_external_positioning(enabled)
+
+
 func play(action: String = "Start", loop: bool = false) -> void:
 	_loop = loop
 	if _fca == null:
