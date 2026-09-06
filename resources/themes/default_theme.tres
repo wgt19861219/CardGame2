@@ -468,6 +468,21 @@ BtnLabel/colors/font_color = Color(0.918, 0.882, 0.804, 1)
 BtnLabel/colors/font_outline_color = Color(0, 0, 0, 1)
 BtnLabel/constants/outline_size = 2
 Button/styles/normal = SubResource("StyleBoxEmpty_0oxu6")
+; ── 滚动条全局隐藏（2026-09-06）── 源手游 draglist 触屏拖拽无可见滚动条；此前仅
+; avatar/task 贴图化 + hero_detail/crusade 局部隐藏，其余 20+ 列表露 Godot 默认灰条
+; 碍视觉。全类型（V/H）ScrollBar 全 stylebox 置空：StyleBoxEmpty 无 min size →
+; 厚度 0 不占视口空间，滚轮/拖拽滚动不受影响；节点级 override 优先于本 theme，
+; 需显示滚动条的面板可自行 add_theme_stylebox_override。
+HScrollBar/styles/scroll = SubResource("StyleBoxEmpty_0oxu6")
+HScrollBar/styles/scroll_focus = SubResource("StyleBoxEmpty_0oxu6")
+HScrollBar/styles/grabber = SubResource("StyleBoxEmpty_0oxu6")
+HScrollBar/styles/grabber_highlight = SubResource("StyleBoxEmpty_0oxu6")
+HScrollBar/styles/grabber_pressed = SubResource("StyleBoxEmpty_0oxu6")
+VScrollBar/styles/scroll = SubResource("StyleBoxEmpty_0oxu6")
+VScrollBar/styles/scroll_focus = SubResource("StyleBoxEmpty_0oxu6")
+VScrollBar/styles/grabber = SubResource("StyleBoxEmpty_0oxu6")
+VScrollBar/styles/grabber_highlight = SubResource("StyleBoxEmpty_0oxu6")
+VScrollBar/styles/grabber_pressed = SubResource("StyleBoxEmpty_0oxu6")
 ; ── stage_select 章节标题（批 3 Task 5，2026-08-16）── 源 stageselect.lua:861-883
 ; createTitleText：fontinfo ui_normal_button（fontconfigs.lua：size17 白 + shadow
 ; ccc3(63,5,0) offset(0,2)，stroke 源注释未启用）+ color ccc3(250,205,16)。size=17：源 stageselect.lua createTitleText 仅 fontinfo=ui_normal_button（layout 无 size 能力），fontconfigs.lua:24 size=17（批3 批末勘误，原 18 系错套 mode toggle 值）。

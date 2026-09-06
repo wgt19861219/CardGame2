@@ -6,8 +6,8 @@ extends PopWindow
 ## 点框外区域 destroy（无 close 按钮，PopWindow shade 点击关闭基类等价源 btRegisterOutClick）。
 ##
 ## 完整树化（批 4 Task 3，2026-08-17；2026-07-18 chrome 静态化 → 完整两件套）：
-## - chrome 静态：frame + 裁剪滚动层进 avatar_content.tscn；滚动条贴图 fill 期
-##   override（引擎缺口例外）
+## - chrome 静态：frame + 裁剪滚动层进 avatar_content.tscn；滚动条全局 theme 隐藏
+##   （default_theme VScrollBar/HScrollBar 空样式，2026-09-06 起弃源贴图化）
 ## - 分类标题行走行模板 avatar_title_item.tscn（数量随解锁变 1-3 个，fill 只填文案）
 ## - 头像网格 procedural 保留挂 %AvatarList，间距走 AvatarGrid variation（源步进换算）
 ## - 标题金/解锁提示同款 18 号色走 AvatarTitleLabel variation（受控 override 退役）
@@ -20,8 +20,6 @@ extends PopWindow
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/avatar_content.tscn")
 const TITLE_ITEM_SCENE: PackedScene = preload("res://scenes/ui/avatar_title_item.tscn")
 const ICON_FRAME_RES: String = "res://assets/ui/alpha/HVGA/hero_icon_frame_1.png"
-const SCROLL_TRACK_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar_bg.png"
-const SCROLL_GRABBER_RES: String = "res://assets/ui/alpha/HVGA/scroll_bar.png"
 const GRID_COLS: int = 5
 # icon 内边距：fixNodeSize 框-10（Picture 比 frame 内缩 5px 两侧）。
 const ICON_PAD: float = 10.0
@@ -57,7 +55,6 @@ func _build_ui() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
 	container.add_child(_content)
 	_list = _content.get_node("%AvatarList") as VBoxContainer
-	_style_scrollbar()
 	# 分类 free/hero/worldcup + 解锁过滤（源 type_priority 顺序）。
 	var groups: Dictionary = _build_groups()
 	for type_key: String in ["free", "hero", "worldcup"]:
@@ -159,24 +156,6 @@ func _make_cell(aid: int, picture_res: String) -> Control:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn.add_child(icon)
 	return btn
-
-
-# 滚动条照源贴图（源 draglist bar：base.lua createListLayer :11-14 + draglist.lua
-# :1116-1204，轨道 scroll_bar_bg + 滑块 scroll_bar.png 竖向、滚动时显）。
-# ScrollContainer 默认灰圆角条 → StyleBoxTexture 贴图化；add_theme_stylebox_override
-# 属滚动条引擎缺口例外（SOP 条款）。位置贴容器右缘（源在列表左侧 x=150，
-# internal child 不可移，受控偏差）。
-func _style_scrollbar() -> void:
-	var scroll: ScrollContainer = _content.get_node("%AvatarScroll") as ScrollContainer
-	var vs: VScrollBar = scroll.get_v_scroll_bar()
-	var track := StyleBoxTexture.new()
-	track.texture = load(SCROLL_TRACK_RES)
-	var grabber := StyleBoxTexture.new()
-	grabber.texture = load(SCROLL_GRABBER_RES)
-	for key: StringName in ["scroll", "scroll_focus"]:
-		vs.add_theme_stylebox_override(key, track)
-	for key: StringName in ["grabber", "grabber_highlight", "grabber_pressed"]:
-		vs.add_theme_stylebox_override(key, grabber)
 
 
 # 点选 set_avatar → destroy（源 doSendSet :258-265 单机化：直写 PlayerData + toast）。

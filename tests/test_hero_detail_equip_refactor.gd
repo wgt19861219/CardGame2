@@ -39,10 +39,11 @@ func test_no_translation_comments() -> void:
 	var script_text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_panel.gd")
 	assert_eq(script_text.count("# 源 "), 0, "无翻译注释")
 
-func test_add_theme_only_scrollbar() -> void:
-	# add_theme 仅剩 ScrollContainer 滚动条 stylebox 例外（4 处）
+func test_no_add_theme_override() -> void:
+	# 滚动条隐藏 2026-09-06 收敛到全局 theme（VScrollBar/HScrollBar 空样式），
+	# panel 层 add_theme_* 清零（原 4 处滚动条 stylebox 例外退役）。
 	var script_text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_detail_panel.gd")
-	assert_eq(script_text.count("add_theme_"), 4, "add_theme 仅滚动条 stylebox 例外")
+	assert_eq(script_text.count("add_theme_"), 0, "panel 零 add_theme 运行时套样式")
 
 func test_panel_line_count() -> void:
 	# 阈值 450→500（2026-07-28 用户确认）→510（2026-09-02 进阶光效悬空引用修复 +4 行）：

@@ -91,20 +91,6 @@ func test_complete_button_falls_back_when_asset_missing() -> void:
 	row.free()
 
 
-# 源 draglist bar（task.lua:387-390 bar={bglen=320,bgpos=ccp(145,218)}，draglist.lua:13-14
-# 贴图 scroll_bar_bg/scroll_bar）→ ScrollContainer 滚动条贴图化（avatar 批4 先例，
-# add_theme_stylebox_override 属滚动条引擎缺口例外）。
-func test_panel_styles_scrollbars_with_source_textures() -> void:
-	var panel := _make_panel()
-	for scroll in _collect_scrollcontainers(panel.container):
-		var vs: VScrollBar = (scroll as ScrollContainer).get_v_scroll_bar()
-		assert_true(vs.has_theme_stylebox_override("scroll"),
-			"%s 垂直滚动条轨道贴图化（源 scroll_bar_bg）" % (scroll as ScrollContainer).name)
-		assert_true(vs.has_theme_stylebox_override("grabber"),
-			"%s 垂直滚动条滑块贴图化（源 scroll_bar）" % (scroll as ScrollContainer).name)
-	panel.free()
-
-
 # 布局守卫（2026-09-03 一~三轮沉淀）：列表区收在面板框（Frame）内且不侵入顶部
 # 货币栏/缎带区。界尺：源 draglist cliprect CCRectMake(0,45,800,348) 顶 y=45（cocos）
 # → Godot y=87；三轮拆分后单列表 %ListScroll 顶 114（源 :407 首行紧贴缎带底 112）。
@@ -150,13 +136,5 @@ func test_empty_prompt_anchored_at_frame_center() -> void:
 	if prompt != null:
 		assert_almost_eq(prompt.anchor_left, 0.5, 0.001, "提示锚点 x 居中（400）")
 		assert_almost_eq(prompt.anchor_top, 262.0 / 480.0, 0.001, "提示锚点 y=262（源 frame 正中）")
-	panel.free()
+		panel.free()
 
-
-func _collect_scrollcontainers(node: Node) -> Array:
-	var result: Array = []
-	for c in node.get_children():
-		if c is ScrollContainer:
-			result.append(c)
-		result.append_array(_collect_scrollcontainers(c))
-	return result
