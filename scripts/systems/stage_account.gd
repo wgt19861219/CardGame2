@@ -223,11 +223,21 @@ const NORMAL_MAX_SID: int = 10000
 const ELITE_MIN_SID: int = 10001
 const ELITE_MAX_SID: int = 19999
 
-static func get_normal_progress(progress: Dictionary) -> int:
+## 最远通关关 → 进度关（源 player.lua:858/875 `stage_stars[progress+1] and progress+1
+## or progress`：下一关存在则 +1）。进度 = 最新解锁可挑战关：通关一章末关后进度落下一章
+## 首关，get_max_chapter 随之前移 → stageselect NextArrow 出现（2026-09-06 第一章通关
+## 无法切章根修；源 stage_stars 全量表 key 集 = Stage 表，本项目 progress 只存已通关，
+## 存在性改查 Stage 表）。
+static func _advance_progress(m: int, st: Dictionary) -> int:
+	if m > 0 and st.has(str(m + 1)):
+		return m + 1
+	return m
+
+static func get_normal_progress(progress: Dictionary, st: Dictionary) -> int:
 	var m: int = 0
 	for sid in progress:
 		if sid > 0 and sid < NORMAL_MAX_SID and int(progress[sid]) > 0: m = maxi(m, int(sid))
-	return m
+	return _advance_progress(m, st)
 
 static func get_elite_progress(progress: Dictionary, st: Dictionary) -> int:
 	var m: int = 0
@@ -235,10 +245,30 @@ static func get_elite_progress(progress: Dictionary, st: Dictionary) -> int:
 		if sid >= ELITE_MIN_SID and sid <= ELITE_MAX_SID and int(progress[sid]) > 0:
 			var g: int = int(st.get(str(sid), {}).get("Stage Group", 0))
 			if g > 0 and int(progress.get(g, 0)) > 0: m = maxi(m, int(sid))
-	return m
+	return _advance_progress(m, st)
+
+# ---- 章节等级门槛（照源 playerlimit.lua，切章/初始定位用）----
+
+## 玩家等级允许进入的最大章节（源 playerlimit.lua:33-41 maxChapter：PlayerLevel
+## 等级行 Chapter 字段，<1 时降级重查）。
+static func player_max_chapter(pt: Dictionary, level: int) -> int:
+	var lv: int = level
+	var c: int = int(pt.get(str(lv), {}).get("Chapter", 0))
+	while c < 1 and pt.has(str(lv - 1)) and lv > 1:
+		lv -= 1
+		c = int(pt.get(str(lv), {}).get("Chapter", 0))
+	return maxi(c, 1)
+
+## 解锁目标章节所需的战队等级（源 playerlimit.lua:47-54 chapterUnlockLevel：
+## 遍历 PlayerLevel 找首个 Chapter >= chapter 的等级，toast 文案参数）。
+static func chapter_unlock_level(pt: Dictionary, chapter: int) -> int:
+	var i: int = 1
+	while pt.has(str(i)) and chapter > int(pt[str(i)].get("Chapter", 0)):
+		i += 1
+	return i
 
 static func get_max_chapter(mode: String, progress: Dictionary, st: Dictionary) -> int:
-	var ps: int = get_elite_progress(progress, st) if mode == "elite" else get_normal_progress(progress)
+	var ps: int = get_elite_progress(progress, st) if mode == "elite" else get_normal_progress(progress, st)
 	if ps == 0: return 1
 	if mode == "elite": ps = int(st.get(str(ps), {}).get("Stage Group", ps))
 	return int(st.get(str(ps), {}).get("Chapter ID", 1))

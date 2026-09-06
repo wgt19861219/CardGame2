@@ -57,7 +57,9 @@ func setup_panel(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) ->
 	mgr = p_mgr
 	player = p_player
 	rng = p_rng
-	_current_chapter = mgr.get_max_chapter("normal") if mgr != null else 1
+	# 初始章节 = min(进度章, 等级章)（源 :1449 normalInfo.chapter = math.min(getMaxNormalChapter(),
+	# playerlimit.maxChapter())；进度含 +1 语义，通关一章后定位下一章，等级不足压回）
+	_current_chapter = mini(mgr.get_max_chapter("normal"), _player_max_chapter()) if mgr != null else 1
 	_pre_chapter = _current_chapter
 	setup()
 	_build_content()
@@ -276,8 +278,21 @@ func _get_stage_stars(sid: int) -> int:
 func _on_mode_pressed(mode: String) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	_mode = mode
-	_current_chapter = mgr.get_max_chapter(mode) if mgr != null else 1
+	# 切模式初始章节同 setup_panel 取 min（源 :1458 eliteInfo.chapter；guild 源 :1466 不走 playerlimit）
+	if mode == "guild" or mgr == null:
+		_current_chapter = mgr.get_max_chapter(mode) if mgr != null else 1
+	else:
+		_current_chapter = mini(mgr.get_max_chapter(mode), _player_max_chapter())
 	_refresh_view("mode")
+
+
+# 章节等级门槛（照源 playerlimit.lua:33-54；StageManager 行数顶格，静态查询经 panel 私有便捷）。
+func _player_max_chapter() -> int:
+	return StageAccount.player_max_chapter(player.cm.get_raw_table(&"PlayerLevel"), player.team_level)
+
+
+func _chapter_unlock_level(chapter: int) -> int:
+	return StageAccount.chapter_unlock_level(player.cm.get_raw_table(&"PlayerLevel"), chapter)
 
 
 func _on_prev_chapter() -> void:
@@ -293,6 +308,13 @@ func _change_chapter(delta: int) -> void:
 	var max_ch: int = mgr.get_max_chapter(_mode) if mgr != null else StageSelectMap.CHAPTER_MAX
 	_pre_chapter = _current_chapter
 	_current_chapter = clampi(_current_chapter + delta, 1, max_ch)
+	# 目标章超玩家等级上限 → toast 拦截不切换（源 doChangeChapter:434-437 只挡 "+" 方向；
+	# 文案源 zh-CN LSTR STAGESELECT.CLAN_LEVEL_TOLD_LEVEL_TO_UNLOCK_THE_NEXT_CHAPTER）
+	if delta > 0 and mgr != null and player != null \
+			and _current_chapter > _player_max_chapter():
+		Toast.show_message("战队等级达到%d级解锁下一章节" % _chapter_unlock_level(_current_chapter))
+		_current_chapter = _pre_chapter
+		return
 	if _current_chapter != _pre_chapter:
 		_refresh_view("chapter")
 
