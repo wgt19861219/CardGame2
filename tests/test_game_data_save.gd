@@ -6,6 +6,9 @@ extends GutTest
 
 const SaveManagerScript = preload("res://scripts/data/save_manager.gd")
 
+# 测试沙箱目录（与真实 user:// 存档隔离）。
+const SANDBOX_DIR: String = "user://gut_test_saves/"
+
 
 func test_mark_save_dirty_sets_flag() -> void:
 	GameData._dirty = false
@@ -38,16 +41,20 @@ func test_save_in_test_mode_is_noop() -> void:
 
 
 # 端到端：临时真实模式验证 GameData.save() 写 auto 槽 + load 往返保真（照源 ed.saveGame 持久化）。
-# 用完 delete 清理避免残留（门禁 test_mode 本不 load auto，此为双重保险）。
+# 2026-09-05 根修：改写沙箱目录——原版 _test_mode=false 后直接写/删真实 user://save_auto.json，
+# 每次跑门禁即删用户进度档（用户实测「每次提交后数据清空」根因）。
 func test_real_save_writes_and_loads_auto_slot() -> void:
 	var old_mode := GameData._test_mode
+	var old_dir := GameData.save_dir
 	var old_diamond := GameData.player.diamond
 	GameData._test_mode = false
+	GameData.save_dir = SANDBOX_DIR
 	GameData.player.diamond = 777
 	assert_eq(GameData.save(), OK, "真实模式 save() 返 OK")
-	var sm := SaveManagerScript.new()
+	var sm := SaveManagerScript.new(SANDBOX_DIR)
 	var loaded := sm.load_slot(GameData.AUTO_SLOT)
 	assert_eq(int(loaded.get("diamond", 0)), 777, "save_auto.json 持久化 diamond（往返保真）")
 	sm.delete_slot(GameData.AUTO_SLOT)
 	GameData.player.diamond = old_diamond
 	GameData._test_mode = old_mode
+	GameData.save_dir = old_dir

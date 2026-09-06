@@ -13,6 +13,9 @@ const SaveManagerScript = preload("res://scripts/data/save_manager.gd")
 const AUTO_SLOT: String = "auto"
 const AUTOSAVE_INTERVAL: float = 60.0
 
+# 存档目录（测试可注入沙箱隔离路径，勿真覆盖用户档——先例 SaveManagerPanel.save_file_path）。
+var save_dir: String = "user://"
+
 var config: ConfigManager
 var player: PlayerData
 var skills: SkillLibrary
@@ -79,7 +82,7 @@ func _load_or_new_player() -> PlayerData:
 		var def_pd := PlayerDataScript.new(config)
 		def_pd.apply_default_data()
 		return def_pd
-	var sm := SaveManagerScript.new()
+	var sm := SaveManagerScript.new(save_dir)
 	var data: Dictionary = sm.load_slot(AUTO_SLOT)
 	if data.is_empty():
 		var new_pd := PlayerDataScript.new(config)
@@ -91,7 +94,7 @@ func _load_or_new_player() -> PlayerData:
 func save() -> int:
 	if _test_mode:
 		return OK
-	var sm := SaveManagerScript.new()
+	var sm := SaveManagerScript.new(save_dir)
 	return sm.save_slot(AUTO_SLOT, player.to_dict())
 
 ## 标脏（照源 ed.saveDirty=true）：等 60s Timer 合并刷盘，避免高频操作每次写盘。

@@ -13,7 +13,9 @@ const RES_PREFIX: String = "res://assets/"
 const SFX_VOLUME: float = 1.0
 const BGM_VOLUME: float = 1.0
 const SFX_POOL_SIZE: int = 8   # 池大小（源 SimpleAudioEngine 多通道等价；const 免魔法数字）
-const SOUND_CFG_PATH: String = "user://audio.cfg"   # 应用级设置（源 CCUserDefault 等价）
+const SOUND_CFG_PATH: String = "user://audio.cfg"   # 默认路径（应用级设置，源 CCUserDefault 等价）
+# cfg 实际路径（测试可注入沙箱隔离路径，勿真覆盖用户音频设置——先例 SaveManagerPanel.save_file_path）。
+var sound_cfg_path: String = SOUND_CFG_PATH
 
 var am: AudioManager = null
 var _sfx_pool: Array[AudioStreamPlayer] = []
@@ -32,11 +34,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	# 测试隔离（2026-08-21，照 GameData._test_mode 同款）：check.sh GODOT_TEST_MODE=1
-	# 下不读用户 audio.cfg——用户实跑关音效（sound_on=false 持久化）曾致 9 个 SFX
-	# 用例短路全挂（测试自建实例 _ready 读到 false）。测试态保持默认开。
-	if OS.get_environment("GODOT_TEST_MODE") == "" and not Engine.is_editor_hint():
-		_load_sound_cfg()
+	_load_sound_cfg()   # 测试隔离守卫在方法内（默认路径 + 门禁/编辑器环境 no-op）
 	for i in range(SFX_POOL_SIZE):
 		var p := AudioStreamPlayer.new()
 		p.volume_db = linear_to_db(SFX_VOLUME)
@@ -186,13 +184,26 @@ func _pause_all_audio() -> void:
 		p.stop()
 
 
+# 测试环境守卫（2026-08-21 踩坑史：门禁 GODOT_TEST_MODE=1 下自建实例 _ready 曾读用户
+# audio.cfg 的 sound_on=false，毒化 9 个 SFX 用例短路全挂）：门禁/编辑器内默认路径
+# 不读不写真实用户 cfg，防测试 toggle 写脏用户设置；注入沙箱 sound_cfg_path 时放行，
+# 供持久化往返用例显式验证。
+func _is_test_env_with_default_cfg() -> bool:
+	return sound_cfg_path == SOUND_CFG_PATH \
+		and (OS.get_environment("GODOT_TEST_MODE") != "" or Engine.is_editor_hint())
+
+
 func _load_sound_cfg() -> void:
+	if _is_test_env_with_default_cfg():
+		return
 	var cfg := ConfigFile.new()
-	if cfg.load(SOUND_CFG_PATH) == OK:
+	if cfg.load(sound_cfg_path) == OK:
 		sound_switch = bool(cfg.get_value("audio", "sound_on", false))
 
 
 func _save_sound_cfg() -> void:
+	if _is_test_env_with_default_cfg():
+		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("audio", "sound_on", sound_switch)
-	cfg.save(SOUND_CFG_PATH)
+	cfg.save(sound_cfg_path)

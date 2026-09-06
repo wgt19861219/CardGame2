@@ -1,6 +1,10 @@
 extends GutTest
 # 修复轮 A（2026-08-18）：存档管理单机最小版测试（装配/载荷校验/文本往返）。
 # 导入不真覆盖用户档——apply_imported_save 走 GameData 留给手动验收。
+# 2026-09-05 根修：快照/文本用例全部走沙箱目录（SaveManagerSnapshots.base_dir 注入）——
+# 原版直接写/删真实 user://save_index.json，每次跑门禁即清空用户快照列表。
+
+const SANDBOX_DIR: String = "user://gut_test_saves/"
 
 var cm: ConfigManager
 
@@ -8,6 +12,22 @@ var cm: ConfigManager
 func before_all() -> void:
 	cm = ConfigManager.new()
 	cm.load_all()
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SANDBOX_DIR))
+	SaveManagerSnapshots.base_dir = SANDBOX_DIR
+
+
+func after_all() -> void:
+	# 清沙箱残留（用例中途 fail 遗漏自清理时兜底）+ 还原 base_dir。
+	var dir := DirAccess.open(SANDBOX_DIR)
+	if dir != null:
+		dir.list_dir_begin()
+		var fname := dir.get_next()
+		while fname != "":
+			if not dir.current_is_dir():
+				dir.remove(fname)
+			fname = dir.get_next()
+		dir.list_dir_end()
+	SaveManagerSnapshots.base_dir = "user://"
 
 
 func _make_panel() -> SaveManagerPanel:
@@ -39,10 +59,10 @@ func test_validate_import_text_accepts_save_shape() -> void:
 
 
 func test_text_roundtrip() -> void:
-	var err: int = SaveManagerPanel._write_text("user://sm_test_roundtrip.txt", "hello-sm")
+	var err: int = SaveManagerPanel._write_text(SANDBOX_DIR + "sm_test_roundtrip.txt", "hello-sm")
 	assert_eq(err, OK, "写文件 OK")
-	assert_eq(SaveManagerPanel._read_text("user://sm_test_roundtrip.txt"), "hello-sm", "读回一致")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://sm_test_roundtrip.txt"))
+	assert_eq(SaveManagerPanel._read_text(SANDBOX_DIR + "sm_test_roundtrip.txt"), "hello-sm", "读回一致")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SANDBOX_DIR + "sm_test_roundtrip.txt"))
 
 
 # ── 快照槽系统（2026-08-21 修复轮：源面板主体，此前裁剪致「没实现」体感）──
@@ -59,7 +79,7 @@ func test_snapshot_index_roundtrip_and_roll() -> void:
 	SaveManagerSnapshots.write_index(index)
 	var loaded: Array = SaveManagerSnapshots.read_index()
 	assert_eq(loaded.size(), SaveManagerSnapshots.MAX_KEEP + 2, "index 往返保数量")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots.INDEX_PATH))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots._index_path()))
 
 
 func test_snapshot_save_snapshot_inserts_and_trims() -> void:
@@ -77,11 +97,13 @@ func test_snapshot_save_snapshot_inserts_and_trims() -> void:
 	assert_false(payload.is_empty(), "快照文件载荷有效（含 hero_manager）")
 	# 清理快照文件。
 	for e in new_idx:
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots.SNAP_PATH_FMT % int(e["time"])))
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots.INDEX_PATH))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots._snap_path(int(e["time"]))))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots._index_path()))
 
 
 func test_snapshot_panel_assembles_list() -> void:
+	# 显式清沙箱 index（不依赖其他用例的清理顺序），保证空列表分支。
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManagerSnapshots._index_path()))
 	var panel := _make_panel()
 	# 无 index → 「暂无存档记录」占位（源 :581-586）。
 	assert_not_null(panel._snap_host, "快照列表宿主已建")

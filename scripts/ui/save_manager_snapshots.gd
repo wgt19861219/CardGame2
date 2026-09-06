@@ -12,8 +12,18 @@ extends RefCounted
 ## 受控偏离：源自动存档也写快照（type auto），本项目自动存档 60s 高频不接
 ## （index 爆炸），仅手动保存产快照；type 字段保留结构兼容未来扩展。
 
-const INDEX_PATH: String = "user://save_index.json"
-const SNAP_PATH_FMT: String = "user://save_snap_%d.json"
+const INDEX_NAME: String = "save_index.json"
+const SNAP_NAME_FMT: String = "save_snap_%d.json"
+# 快照目录（测试可注入沙箱隔离路径，勿真覆盖用户 index/快照——先例 SaveManagerPanel.save_file_path）。
+static var base_dir: String = "user://"
+
+static func _index_path() -> String:
+	return base_dir + INDEX_NAME
+
+
+static func _snap_path(time_unix: int) -> String:
+	return base_dir + SNAP_NAME_FMT % time_unix
+
 const MAX_SHOW: int = 3        # 源 maxShow
 const MAX_KEEP: int = 5        # index 滚动保留（源未明示，防无限增长）
 # 行布局（源 createSnapshotRow：430×72 行 / bg 430×68 cap 同主框 / 队伍 icon 0.33 倍）。
@@ -36,7 +46,7 @@ const CAP_B: int = 20
 
 ## index 读取（源 readSaveIndex：损坏/缺失返回 []）。
 static func read_index() -> Array:
-	var text: String = SaveManagerPanel._read_text(INDEX_PATH)
+	var text: String = SaveManagerPanel._read_text(_index_path())
 	if text.is_empty():
 		return []
 	var parsed: Variant = str_to_var(text)
@@ -47,14 +57,14 @@ static func read_index() -> Array:
 
 ## index 原子写（源 writeSaveIndex tmp+rename 模式）。
 static func write_index(index: Array) -> void:
-	SaveManagerPanel._write_text(INDEX_PATH, var_to_str(index))
+	SaveManagerPanel._write_text(_index_path(), var_to_str(index))
 
 
 ## 存快照：主档内容写副本 + index 前插 meta（level/team 从 pd 取）+ 滚动删旧。
 ## 返回新 index（调用方可直接刷新列表）。
 static func save_snapshot(pd: PlayerData, save_content: String) -> Array:
 	var time_now: int = int(Time.get_unix_time_from_system())
-	var snap_path: String = SNAP_PATH_FMT % time_now
+	var snap_path: String = _snap_path(time_now)
 	if SaveManagerPanel._write_text(snap_path, save_content) != OK:
 		return read_index()
 	var index: Array = read_index()
@@ -66,7 +76,7 @@ static func save_snapshot(pd: PlayerData, save_content: String) -> Array:
 	})
 	while index.size() > MAX_KEEP:
 		var dropped: Dictionary = index.pop_back()
-		var drop_path: String = SNAP_PATH_FMT % int(dropped.get("time", 0))
+		var drop_path: String = _snap_path(int(dropped.get("time", 0)))
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(drop_path))
 	write_index(index)
 	return index
@@ -163,7 +173,7 @@ static func build_row(snapshot: Dictionary, row_idx: int, frame_res_caps: Array,
 
 ## 快照恢复载荷（源 doRestoreSave 读快照文件；校验复用导入链）。
 static func snapshot_payload(snapshot: Dictionary) -> Dictionary:
-	var snap_path: String = SNAP_PATH_FMT % int(snapshot.get("time", 0))
+	var snap_path: String = _snap_path(int(snapshot.get("time", 0)))
 	if not FileAccess.file_exists(snap_path):
 		return {}
 	return SaveManagerPanel.validate_import_text(SaveManagerPanel._read_text(snap_path))
