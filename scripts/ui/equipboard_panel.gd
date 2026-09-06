@@ -260,8 +260,11 @@ func _sell_price() -> int:
 	return int(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Sell Price", 0))
 
 
+# 装备名（源 board.lua:322 readequip.value(id,"Name")——源 datatable.lua:110 数据表加载即
+# 翻译 → 本项目 Equip.json Name 存 LSTR key，须过 get_lstr；查无时 get_lstr 返回 key 本身兜底。
 func _equip_name() -> String:
-	return String(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Name", str(_item_id)))
+	var name_key: String = String(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Name", str(_item_id)))
+	return String(cm.get_lstr(name_key))
 
 
 # 卖出（源 param.doSell → package.getSellHandler :76-96 → equipboard ofsell）。
