@@ -91,6 +91,24 @@ func test_prop_type_fragment() -> void:
 # 注：本项目 fragments 容器只存魂石（都有 Fragment 表配方），无"无配方碎片"场景，此 case 跳过。
 
 
+# ── 装备名本地化（Equip.json Name 存 LSTR key，须过 get_lstr 翻译后显示）──
+
+func test_equip_name_translated_not_raw_key() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var cell: Dictionary = {"id": eid, "makeId": eid, "amount": 3, "category": "EQUIP.PARTS", "type": 1}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var name_key: String = String(cm.get_raw_table(&"Equip").get(str(eid), {}).get(&"Name", ""))
+	assert_eq(panel._equip_name(), String(cm.get_lstr(name_key)), "装备名 = get_lstr(Name key) 翻译结果")
+	assert_false(panel._equip_name().begins_with("EQUIP."), "装备名非 LSTR key 原文（漏翻译会显示英文 key 且超长）")
+	panel.remove_window()
+	root.queue_free()
+
+
 # ── 卖出流程（pd.sell_equip + sold 信号）──
 
 func test_sell_flow() -> void:
