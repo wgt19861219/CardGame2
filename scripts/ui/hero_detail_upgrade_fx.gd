@@ -9,7 +9,21 @@ extends RefCounted
 const UPGRADE_LIGHT_RES: String = "res://assets/ui/alpha/HVGA/hero_upgrade_button_light.png"
 const UPGRADE_FCA_1: String = "res://assets/anim_frames/effect/eff_UI_hero_upgrade_1.abc"
 const UPGRADE_FCA_2: String = "res://assets/anim_frames/effect/eff_UI_hero_upgrade_2.abc"
-const FCA_ROOT_POS: Vector2 = Vector2(480.0, 320.0)   # 源 ccp(460,220) → Godot 近中心
+# 特效锚点=源英雄立绘锚点（createHeroFca :14 ccp(400,265) → to_godot），仅作 fallback——
+# 运行时详情 tab 会把 BaseLayer 右移 BASE_SLIDE_OFFSET=140（照源 doMove window.lua:300），
+# 必须走 _hero_anchor_on 推导（2026-09-06 实测 PortraitHost global=(140,0)、parts=(540,215)）。
+const HERO_ANCHOR: Vector2 = Vector2(400.0, 215.0)
+# 特效节点相对英雄锚点的 delta（源 upgradeReply :671 rootPos(460,220) - createHeroFca(400,265)
+# = cocos(60,-45) → godot(60,45)）：源用该 delta 精确补偿特效内容的左偏（2026-09-06 实测特效
+# 合成可视中心偏节点 (-77,-110)，落 (600,260) 后视觉重心 (523,150)≈英雄可视中心 (534,157)）。
+const FCA_POS_DELTA: Vector2 = Vector2(60.0, 45.0)
+# 装备上交飞行（源 playEquipAnim）：交错 0.1s；飞行 0.5s；汇聚=源 epos(395,350)-heropos(400,265)
+# = cocos(-5,+85) → godot(-5,-85)，即英雄上身/头顶处。
+const FLY_TARGET_DELTA: Vector2 = Vector2(-5.0, -85.0)
+const FX_Z_INDEX: int = 100            # 盖过内容层 z=2~16（tscn）
+const FLY_STAGGER: float = 0.1
+const FLY_DURATION: float = 0.5
+const FLY_ICON_SIZE: Vector2 = Vector2(72.0, 72.0)   # ReadequipIcon 容器口径
 # 技能升级 FCA + 飘字（源 skillstren.lua:74-124 playAttAnim）。
 # FCA 在 icon ccp(32,30) 播 eff_UI_skill_level_up（:80-83）。
 # 飘字 ccc3(231,206,19) 黄 + 黑描边 size 2（:96-101），从 ccp(100,35) 上浮 ccp(100,70) 后 FadeOut（:105-122）。
@@ -28,7 +42,20 @@ const LSTR_SKILL_CAP: StringName = &"HERODETAILSKILL.YOU_HAVE_REACHED_CURRENT_LE
 const LSTR_SKILL_NO_POINT: StringName = &"herodetailskill.1.10.1.002"
 
 
+# 英雄实际锚点（运行时推导）：从 host 树内找 PortraitHost 下首个 Node2D（英雄 parts，FCA 宿主）
+# 取 global → host 局部；找不到（立绘缺失/测试桩）回落源锚点常量。auto 适应 BaseLayer 滑动偏移。
+static func _hero_anchor_on(host: Control) -> Vector2:
+	if host != null:
+		var ph := host.find_child("PortraitHost", true, false) as Control
+		if ph != null:
+			for c in ph.get_children():
+				if c is Node2D:
+					return host.get_global_transform().affine_inverse() * (c as Node2D).global_position
+	return HERO_ANCHOR
+
+
 # 进阶 FCA 特效（源 upgradeReply :672-685 eff_UI_hero_upgrade_1/2）。抄 hero_awake_panel _add_fca。
+# z_index=100：详情页内容节点 z=2~16（tscn），默认 z=0 会被盖住不可见（2026-09-05 用户实测"特效没有"根因）。
 static func play_upgrade_effect(base_layer: Control) -> void:
 	for fca_res in [UPGRADE_FCA_1, UPGRADE_FCA_2]:
 		if not FileAccess.file_exists(fca_res):
@@ -42,12 +69,85 @@ static func play_upgrade_effect(base_layer: Control) -> void:
 			fca.free()
 			atlas.free()
 			continue
-		fca.position = FCA_ROOT_POS
+		fca.position = _hero_anchor_on(base_layer) + FCA_POS_DELTA
+		fca.z_index = FX_Z_INDEX
+		fca.set_additive_blend()   # 源 C++ FCA 加色合成；普通 alpha 混合半透贴图成灰白色块（A/B 实机定谳）
 		base_layer.add_child(fca)
 		var actions: PackedStringArray = fca.get_action_names()
 		if actions.size() > 0:
 			fca.play(actions[0], false)
 		fca.action_finished.connect(fca.queue_free)
+
+
+# 装备上交动画（源 playEquipAnim upgradeReply :612-649，2026-09-05 补译）：
+# 进阶前 6 槽旧装备图标从槽位中心出发，交错 0.1s，0.5s 飞向中心（源 ccp(395,350)→Godot (395,130)）
+# 同时 fade 到 0.2 + 缩到 0.5，完成自毁。host 须为 refresh_content 重建外的存活节点（panel 根）。
+# 返实际飞行图标数（eid<=0 的槽跳过，对齐源 getHerocsvEquipid 空槽）。
+static func play_equip_fly_anim(host: Control, base_layer: Control, old_equip_ids: Array[int],
+		cm: Variant, scene_root: Node) -> int:
+	var flown: int = 0
+	var inv: Transform2D = host.get_global_transform().affine_inverse()
+	var target: Vector2 = _hero_anchor_on(host) + FLY_TARGET_DELTA   # 英雄实际站位（含滑动偏移）+ 源汇聚 delta
+	for i in range(6):
+		var eid: int = int(old_equip_ids[i]) if i < old_equip_ids.size() else 0
+		if eid <= 0:
+			continue
+		var slot_host: Control = base_layer.get_node_or_null("%EquipSlot" + str(i + 1)) as Control
+		if slot_host == null:
+			continue
+		var icon: Control = ReadequipIcon.create_icon(eid, 1, cm)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.z_index = FX_Z_INDEX
+		icon.modulate.a = 0.0   # 先隐再显，防首帧闪现在槽位
+		var start: Vector2 = inv * slot_host.get_global_rect().get_center()
+		host.add_child(icon)
+		icon.size = FLY_ICON_SIZE
+		icon.pivot_offset = FLY_ICON_SIZE * 0.5
+		icon.position = start - FLY_ICON_SIZE * 0.5
+		icon.scale = Vector2.ONE
+		icon.set_meta(&"equip_fly_icon", true)
+		var tw := scene_root.create_tween()
+		tw.tween_interval(FLY_STAGGER * flown)
+		tw.tween_property(icon, "modulate:a", 1.0, 0.05)
+		tw.tween_property(icon, "position", target - FLY_ICON_SIZE * 0.5, FLY_DURATION)\
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(icon, "modulate:a", 0.2, FLY_DURATION)
+		tw.parallel().tween_property(icon, "scale", Vector2(0.5, 0.5), FLY_DURATION)
+		tw.tween_callback(icon.queue_free)
+		flown += 1
+	return flown
+
+
+# 英雄欢呼（源 playHeroCheer :28-40 changeFca("Cheer")，时长后 playIdle 回环）。
+# portrait_host: %PortraitHost。播完靠 action_finished 回 Idle；无 Cheer 动作/无 FCA 静默返 false。
+static func play_hero_cheer(portrait_host: Control) -> bool:
+	if portrait_host == null:
+		return false
+	var nodes := portrait_host.find_children("*", "FcaAnimation", true, false)
+	if nodes.is_empty():
+		return false
+	var fca := nodes[0] as FcaAnimation
+	if fca == null or not fca.get_action_names().has("Cheer"):
+		return false
+	fca.play("Cheer", false)
+	fca.action_finished.connect(func(_action: String) -> void: fca.play("Idle"), CONNECT_ONE_SHOT)
+	return true
+
+
+# 进阶成功整条表现链（源 upgradeReply :652-685 收口）：FCA 光效 + 装备上交飞行 + GS 飘字
+# + 英雄欢呼（两次 process_frame 延迟，确保调用方 refresh_content 的 deferred 重建已跑完，
+# 欢呼落在重建后的立绘上）。fx_host 须为 refresh_content 重建外的存活节点（panel 根）。
+static func play_upgrade_success_sequence(fx_host: Control, base_layer: Control, gs_label: Label,
+		old_gs: int, new_gs: int, old_equip_ids: Array[int], cm: Variant) -> void:
+	play_upgrade_effect(fx_host)
+	play_equip_fly_anim(fx_host, base_layer, old_equip_ids, cm, fx_host)
+	play_att_addition_anim(base_layer, gs_label, old_gs, new_gs, fx_host)
+	var tree := fx_host.get_tree()
+	var cheer := func() -> void:
+		var portrait: Control = fx_host.find_child("PortraitHost", true, false)
+		play_hero_cheer(portrait)
+	tree.process_frame.connect(func() -> void:
+		tree.process_frame.connect(cheer, CONNECT_ONE_SHOT), CONNECT_ONE_SHOT)
 
 
 # 技能升级特效（源 skillstren.lua:74-124 playAttAnim）：FCA 光效 + 属性飘字。

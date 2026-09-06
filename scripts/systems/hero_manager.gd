@@ -323,6 +323,7 @@ func to_dict() -> Dictionary:
 			"inst_id": inst_id, "tid": h.tid, "rank": h.rank,
 			"level": h.level, "stars": h.stars, "exp": h.exp,
 			"skill_levels": h.skill_levels,
+			"equip_slots": h.equip_slots,
 			"equip_exp": h.equip_exp,
 			"gs": h.gs,
 			"awake": h.awake,
@@ -351,6 +352,10 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> HeroManager:
 		hero.level = int(hd.get("level", 1))
 		hero.exp = int(hd.get("exp", 0))
 		hero.skill_levels = hd.get("skill_levels", [1, 1, 1, 1])
+		var es: Array = hd.get("equip_slots", [0, 0, 0, 0, 0, 0])
+		for j in range(hero.equip_slots.size()):
+			if j < es.size():
+				hero.equip_slots[j] = int(es[j])
 		var ee: Array = hd.get("equip_exp", [])
 		for j in range(hero.equip_exp.size()):
 			if j < ee.size():
