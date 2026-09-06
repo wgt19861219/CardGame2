@@ -524,3 +524,79 @@ static func _collect_new_calls(src: String) -> PackedStringArray:
 		out.append(src.substr(ls, le - ls).strip_edges())
 		idx = src.find(".new(", idx + 1)
 	return out
+
+
+# ===== 切章箭头可见性 + 等级门槛（2026-09-06 第一章通关无法切章根修回归）=====
+# 源 setChapterButtonState:643-662：min<chapter<max 两箭头都显示；chapter==max 只显示
+# prev；chapter==min 只显示 next；min==max 都隐藏。max = 进度章（+1 语义：通关一章
+# 末关后进度落下一章首关）。等级门槛只在 doChangeChapter:434-437 切换时拦截（toast），
+# 不影响箭头显示。
+
+func _make_panel_with_progress(progress: Dictionary, team_level: int) -> StageSelectPanel:
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	mgr.progress = progress
+	var pd := PlayerData.new(cm)
+	pd.team_level = team_level
+	var rng := BattleRng.new(5)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_panel(mgr, pd, rng)
+	panel.show_window(root)
+	return panel
+
+
+func _chapter1_cleared_progress() -> Dictionary:
+	var progress: Dictionary = {}
+	for sid in range(1, 19):
+		progress[sid] = 3
+	return progress
+
+
+# 新档无进度：max_chapter=1 = min = max → 两箭头都隐藏。
+func test_arrows_hidden_on_fresh_save() -> void:
+	var panel := _make_panel_with_progress({}, 1)
+	assert_false((panel._content.get_node("%NextArrow") as CanvasItem).visible, "新档 max_chapter=1 → NextArrow 隐藏")
+	assert_false((panel._content.get_node("%PrevArrow") as CanvasItem).visible, "chapter1 = min = max → PrevArrow 隐藏")
+	panel.remove_window()
+
+
+# 用户报告场景：第一章全通关（sid 1-18）+ 等级 5（playerlimit 允许 chapter2）。
+# 打开面板定位 chapter2（= max）→ 只显示 PrevArrow；点 prev 切回 ch1 → NextArrow 出现
+# （max=2 > 1，正是本根修恢复的箭头）；再点 next 切回 ch2。左右移动闭环。
+func test_chapter_arrows_roundtrip_after_chapter1_clear() -> void:
+	var panel := _make_panel_with_progress(_chapter1_cleared_progress(), 5)
+	assert_eq(panel._current_chapter, 2, "初始章节 = min(进度章 2, 等级章 2) = 2（源 :1449）")
+	assert_true((panel._content.get_node("%PrevArrow") as CanvasItem).visible, "chapter2 = max → PrevArrow 显示（可回 ch1）")
+	assert_false((panel._content.get_node("%NextArrow") as CanvasItem).visible, "chapter2 = max（ch3 未解锁）→ NextArrow 隐藏")
+	panel._on_prev_chapter()
+	assert_eq(panel._current_chapter, 1, "prev → 切回 chapter1")
+	assert_true((panel._content.get_node("%NextArrow") as CanvasItem).visible, "ch1 < max2 → NextArrow 显示（根修：通关后可切下一章）")
+	# 源逻辑 ch==min 只显示 next（:648-651）；本项目直译 _current_chapter > 1 → ch1 时 Prev 隐藏
+	assert_false((panel._content.get_node("%PrevArrow") as CanvasItem).visible, "ch1 = min → PrevArrow 隐藏（源 :648 chapter==min 分支）")
+	panel._on_next_chapter()
+	assert_eq(panel._current_chapter, 2, "next → 切回 chapter2（左右移动闭环）")
+	panel.remove_window()
+
+
+# 第一章全通关但等级 1（playerlimit 只允许 chapter1）：
+# 初始章节压回 1；NextArrow 显示（箭头只看进度 max）；点 next 被 toast 拦截不切换。
+func test_next_chapter_blocked_by_level() -> void:
+	var panel := _make_panel_with_progress(_chapter1_cleared_progress(), 1)
+	assert_eq(panel._current_chapter, 1, "初始章节 = min(2, playerlimit=1) = 1（源 :1449）")
+	assert_true((panel._content.get_node("%NextArrow") as CanvasItem).visible, "NextArrow 显示（进度 max=2，箭头不看等级）")
+	panel._on_next_chapter()
+	assert_eq(panel._current_chapter, 1, "等级不足 → toast 拦截不切章（源 doChangeChapter:434-437）")
+	assert_eq(Toast.pending_count(), 1, "拦截时入队 1 条 toast")
+	assert_true(String(Toast.consume()).contains("解锁下一章节"), "toast 文案 = 源 zh-CN 直译")
+	panel.remove_window()
+
+
+# 等级足够时 prev/next 往返无 toast、章节正常切换（ch2 → ch1 → ch2）。
+func test_prev_next_no_toast_when_level_ok() -> void:
+	var panel := _make_panel_with_progress(_chapter1_cleared_progress(), 5)
+	panel._on_prev_chapter()
+	panel._on_next_chapter()
+	assert_eq(panel._current_chapter, 2, "往返切章正常")
+	assert_eq(Toast.pending_count(), 0, "等级足够无拦截 toast")
+	panel.remove_window()

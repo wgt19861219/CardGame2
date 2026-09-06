@@ -279,7 +279,7 @@ func is_unlocked(sid: int, player_level: int) -> bool:
 	return not (data.require_stage != 0 and stage_stars(data.require_stage) < data.require_stars)
 
 
-func get_normal_progress() -> int: return StageAccount.get_normal_progress(progress)
+func get_normal_progress() -> int: return StageAccount.get_normal_progress(progress, config.get_raw_table(&"Stage"))
 func get_elite_progress() -> int: return StageAccount.get_elite_progress(progress, config.get_raw_table(&"Stage"))
 func get_max_chapter(m: String) -> int: return StageAccount.get_max_chapter(m, progress, config.get_raw_table(&"Stage"))
 
