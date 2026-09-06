@@ -15,9 +15,9 @@ class QADetail extends HeroDetailPanel:
 	func _close_tab() -> void:
 		print("QAB >>> _close_tab（tab 关闭！base 回位）")
 		super()
-	func refresh_content(animate_slide: bool = false) -> void:
-		print("QAB >>> refresh_content(animate=", animate_slide, ")")
-		super(animate_slide)
+	func refresh_content() -> void:
+		print("QAB >>> refresh_content")
+		super()
 
 
 func _ready() -> void:

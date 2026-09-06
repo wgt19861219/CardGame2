@@ -21,7 +21,7 @@ func _ready() -> void:
 	dp.setup_panel(hero, pd.cm, pd.hero_manager, pd)
 	dp.upgrade_skill_requested.connect(func(idx: int) -> void:
 		if dp.perform_upgrade_skill(idx):
-			dp.refresh_content(true))
+			dp.refresh_content())
 	dp.show_window(get_tree().current_scene)
 	await get_tree().create_timer(0.4).timeout
 	dp._on_tab_pressed("card")   # 用户视频同款：图鉴 tab
@@ -54,7 +54,7 @@ func _ready() -> void:
 	# 对照：升级路径 base 也止态（新 base 重建直设）
 	(dp._tab_views["skill"] as CanvasItem)
 	dp._current_tab = "skill"
-	dp.refresh_content(true)
+	dp.refresh_content()
 	await get_tree().create_timer(0.3).timeout
 	print("QAV2 升级重建后 base_x=", dp._base_layer.position.x, "（期望 140）")
 	print("QAV2 DONE")

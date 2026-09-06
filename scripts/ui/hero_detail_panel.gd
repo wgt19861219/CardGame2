@@ -74,8 +74,8 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	_build_content()
 
 
-# 建 UI 内容（base + tab view instantiate + fill；createWindow window.lua:2384-2396；animate_tab 仅升级反馈）。
-func _build_content(tab: String = DEFAULT_TAB, animate_tab: bool = false) -> void:
+# 建 UI 内容（base + tab view instantiate + fill；createWindow window.lua:2384-2396）。
+func _build_content(tab: String = DEFAULT_TAB) -> void:
 	var content := CONTENT_SCENE.instantiate()
 	container.add_child(content)
 	_base_layer = content.get_node("%BaseLayer") as Control
@@ -110,7 +110,7 @@ func _build_content(tab: String = DEFAULT_TAB, animate_tab: bool = false) -> voi
 	# gold 不够 cost 变红（refreshCostColor），skl_add 显 levelAdd "+N"（refreshSkillAdd）。
 	var gold_for_skills: int = hero_manager.gold if hero_manager != null else -1
 	HeroDetailUpgradeFx.fill_skills(_tab_views["skill"] as Control, hero, cm, SKILL_COUNT, RANK_COLOR_LSTR, LSTR_SKILL_UNLOCK, _toggle_skill_desc, _on_skill_upgrade_clicked, gold_for_skills, HeroDetailUpgradeFx.calculate_skl_bonus(hero, cm))
-	_show_tab_content(tab, animate_tab)
+	_show_tab_content(tab, false)   # 重建路径恒直设止态（源刷新不重放任何入场动画）
 	_refresh_upgrade_light()   # 可进阶时按钮光效（源 createUpgradeButtonLight）
 	_setup_arrows()
 
@@ -156,12 +156,13 @@ func _advance(delta: int) -> void:
 	refresh_content()
 
 
-## 升星/技能升级/进阶/穿装后刷新（deferred 避信号中 free 崩）；animate_slide=true 仅升级反馈滑入（七轮定谳）。
-func refresh_content(animate_slide: bool = false) -> void:
-	call_deferred("_rebuild_content", animate_slide)
+## 升星/技能升级/进阶/穿装后刷新（deferred 避信号中 free 崩）；重建恒静默止态直设——
+## 2026-09-06 用户定谳升级反馈滑入也退役（源刷新 refreshLevelBoard 从不重弹），滑入只属点 tab。
+func refresh_content() -> void:
+	call_deferred("_rebuild_content")
 
 
-func _rebuild_content(animate_slide: bool = false) -> void:
+func _rebuild_content() -> void:
 	var saved_tab: String = _current_tab if _current_tab != "" else DEFAULT_TAB
 	for c in container.get_children():
 		c.free()
@@ -170,7 +171,7 @@ func _rebuild_content(animate_slide: bool = false) -> void:
 		_light_tween.kill()   # 旧 tween 循环 tween 旧光效，随重建一并终止
 	_upgrade_light = null   # 旧光效挂旧 %UpgradeRankBtn 子树内，已随 c.free() 释放；不清则 _refresh_upgrade_light 传 freed 对象报 Invalid type（2026-09-02）
 	_light_tween = null
-	_build_content(saved_tab, animate_slide)
+	_build_content(saved_tab)
 
 
 # 绑定 .tscn 静态按钮信号：%CloseBtn + 升星/进阶/觉醒 + 3 tab。
@@ -319,6 +320,9 @@ func _on_tab_pressed(key: String) -> void:
 
 
 # setOpenMode：切 tab visible + base 右移让位 + 切选中态（Phase B visible 切换）。
+# animate=true 仅限用户点 tab（源 pop/doMove tween 0.2s）；重建路径恒传 false 直设止态——
+# 重建新 BaseLayer 从 tscn 0 起 tween 140=整界面右挫（2026-08-30 十一轮录屏实锤）；升级反馈
+# 滑入 2026-09-06 用户定谳一并退役，animate 链收敛为「点 tab 滑 / 重建静止」两态。
 func _show_tab_content(key: String, animate: bool = true) -> void:
 	_current_tab = key
 	_set_tab_selected(key)

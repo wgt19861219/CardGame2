@@ -824,9 +824,10 @@ func test_buy_skill_point_btn_label() -> void:
 	root.queue_free()
 
 
-# 滑入反馈按来源区分（2026-08-30 七轮用户定谳：仅升级技能要滑动反馈，装备/进阶/翻页等
-# 其余 refresh_content 刷新不滑）。升级路径=hero_package 接线 refresh_content(true)。
-func test_rebuild_slide_only_on_upgrade_path() -> void:
+# 重建路径永不重播滑入（2026-08-30 七轮曾白名单仅升级滑入；2026-09-06 用户定谳「技能 table
+# 滑入反馈还在」不要了——升级反馈滑入退役，重建（穿戴/进阶/翻页/升级）全静止止态直设；
+# 滑入只属用户点 tab 的源行为 pop/doMove，③防误杀）。base 右挫=十一轮、升级右挫=同日上轮。
+func test_rebuild_never_replays_slide() -> void:
 	var root := Node.new()
 	add_child(root)
 	var hero := HeroInstance.new(1, 1, 1)
@@ -845,14 +846,23 @@ func test_rebuild_slide_only_on_upgrade_path() -> void:
 	# ①b 重建后 base 层止态直设（旧实现新 BaseLayer 从 0 起 tween→整界面右挫 ~140px，
 	# 用户录屏逐帧互相关实锤 -70~-95px→0 位移，2026-08-30 十一轮）
 	assert_almost_eq(panel._base_layer.position.x, 140.0, 0.5, "重建后 base 立即 140（无 0 起点滑动）")
-	# ② 升级路径 refresh_content(true) → 重播滑入（400 起跳→-200 止态）
-	panel.refresh_content(true)
-	await get_tree().create_timer(0.1).timeout   # deferred 重建+tween 已起步
+	# ② 升级链（hero_package 接线 refresh_content()）→ 同样全静止（2026-09-06 用户定谳滑入退役；
+	# 旧实现 refresh_content(true) 重播 400→-200 滑入 + 新 base 0→140 右挫 20 帧）
+	panel.refresh_content()
+	await get_tree().create_timer(0.1).timeout   # deferred 重建完成（旧实现此处在滑入中）
 	var sv_b: Control = panel._tab_views["skill"] as Control
-	assert_gt(sv_b.offset_left, -150.0, "升级路径重建滑入中（0.1s 处未到止态 -200 即在滑）")
+	assert_almost_eq(sv_b.offset_left, -200.0, 0.5, "升级路径重建同样止态直设（滑入已退役）")
+	assert_almost_eq(panel._base_layer.position.x, 140.0, 0.5,
+		"升级路径重建 base 立即 140（滑入反馈只在 tab view 且已退役，base 不右挫）")
+	# ③ 点 tab 滑入保留（源 pop 400→-200 / doMove 0→140 tween，防退役误杀源行为）
+	panel._close_tab()
+	await get_tree().create_timer(0.35).timeout   # 等 base 回位 tween 完成
+	panel._show_tab_content("skill")   # 点 tab 路径默认 animate=true
+	var sv_c: Control = panel._tab_views["skill"] as Control
+	assert_almost_eq(sv_c.offset_left, 400.0, 0.5, "点 tab 起跳 400（源 pop 滑入保留）")
 	await get_tree().create_timer(0.3).timeout
 	assert_almost_eq((panel._tab_views["skill"] as Control).offset_left, -200.0, 0.5,
-		"0.4s 后滑入止态 -200")
+		"点 tab 0.3s 后滑入止态 -200")
 	panel.remove_window()
 	root.queue_free()
 
