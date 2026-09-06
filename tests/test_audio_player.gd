@@ -4,6 +4,9 @@ extends GutTest
 
 const AudioPlayerScript = preload("res://scripts/autoload/audio_player.gd")
 
+# 测试沙箱目录（与真实 user://audio.cfg 隔离）。
+const SANDBOX_DIR: String = "user://gut_test_saves/"
+
 func test_sound_res_register_all() -> void:
 	var am := AudioManager.new()
 	SoundRes.register_all(am)
@@ -245,11 +248,15 @@ func test_toggle_on_replays_bgm_after_off_switch() -> void:
 	player.queue_free()
 
 
-# 持久化（user://audio.cfg，源 CCUserDefault 等价；先例 language_manager lang.cfg——二审 S-4）。
+# 持久化（源 CCUserDefault 等价；先例 language_manager lang.cfg——二审 S-4）。
+# 2026-09-05 根修：注入沙箱 cfg 路径——原版直接删/写真实 user://audio.cfg，
+# 每次跑门禁即清用户音频设置（与 save_auto 被删同根因）。
 func test_sound_cfg_persist_and_load() -> void:
-	var cfg_path := ProjectSettings.globalize_path("user://audio.cfg")
-	DirAccess.remove_absolute(cfg_path)   # 清环境
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SANDBOX_DIR))
+	var cfg_path := ProjectSettings.globalize_path(SANDBOX_DIR + "audio.cfg")
+	DirAccess.remove_absolute(cfg_path)   # 清沙箱环境
 	var player = AudioPlayerScript.new()
+	player.sound_cfg_path = SANDBOX_DIR + "audio.cfg"
 	add_child(player)
 	player.sound_switch = true   # 默认已静音（2026-08-30）
 	var initial: bool = player.sound_switch
@@ -258,11 +265,12 @@ func test_sound_cfg_persist_and_load() -> void:
 	assert_ne(toggled, initial, "开关已翻转")
 	player.queue_free()
 	var player2 = AudioPlayerScript.new()
+	player2.sound_cfg_path = SANDBOX_DIR + "audio.cfg"
 	add_child(player2)
 	player2._load_sound_cfg()
 	assert_eq(player2.sound_switch, toggled, "新实例读 cfg 继承开关状态")
 	player2.queue_free()
-	DirAccess.remove_absolute(cfg_path)   # 还原环境，不污染真实用户配置
+	DirAccess.remove_absolute(cfg_path)   # 清沙箱残留
 
 
 # 总线布局（二审 m-7）：default_bus_layout.tres 在 res:// 根，headless AudioServer 正常加载。
@@ -285,7 +293,7 @@ func test_players_assigned_to_buses() -> void:
 	player.queue_free()
 
 
-# 兜底清理：任何 toggle 类测试中途失败导致 cfg 残留（sound_on=false 会毒化后续
-# 新实例 _ready 的 _load_sound_cfg → play_sfx 全被跳过），after_all 统一清除。
+# 兜底清理：toggle 类用例中途失败导致沙箱 cfg 残留时统一清除（真实 user://audio.cfg
+# 由 _is_test_env_with_default_cfg 守卫保护，门禁/编辑器内永不被测试读写）。
 func after_all() -> void:
-	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://audio.cfg"))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SANDBOX_DIR + "audio.cfg"))
