@@ -605,6 +605,44 @@ func test_auto_button_toggle() -> void:
 	btn.queue_free()
 
 
+# 2026-09-06 贴图升级守卫 — autocombat_on/off.png 入库（源 Content/res 直录），撤文本降级。
+func test_auto_button_texture_states() -> void:
+	var btn := BattleAutoButton.new()
+	btn.setup(false, true)
+	assert_not_null(btn._button.texture_normal, "off 态贴图 autocombat_off.png 已加载（撤文本降级）")
+	var off_tex: Texture2D = btn._button.texture_normal
+	btn._on_pressed()
+	assert_not_null(btn._button.texture_normal, "on 态贴图 autocombat_on.png")
+	assert_ne(btn._button.texture_normal, off_tex, "on/off 两态贴图不同（源 CCMenuItemToggle setSelectedIndex）")
+	btn.queue_free()
+
+
+# 2026-09-06 位置守卫 — 源 ccp(734,60) MenuItem 中心锚 → Godot 左上角须减显示半尺寸
+# （三轮订正：显示=纹理像素÷CS=82.73×46.83，同倍速换算），与倍速按钮(735,120)同竖线
+# 左右对齐 + 垂直间距 60（上下紧邻）。挂树等一帧后 TextureButton size 适配纹理实测
+# （离树未布局恒 0×0），显示尺寸 = size × scale。
+func test_auto_button_position_aligns_speed_button() -> void:
+	var auto_btn := BattleAutoButton.new()
+	auto_btn.setup(false, true)
+	var speed_btn := BattleSpeedButton.new()
+	speed_btn.cfg_path = "user://battle_test_align.cfg"   # 隔离玩家真实档（只读也注入，防污染判例）
+	speed_btn.setup(1)
+	add_child_autofree(auto_btn)
+	add_child_autofree(speed_btn)
+	await get_tree().process_frame
+	assert_almost_eq(auto_btn._button.scale.x, 1.0 / 1.28125, 0.001, "auto ÷CS 缩放（Director 全局 CS 判例三轮订正）")
+	assert_almost_eq(speed_btn._btn.scale.x, 1.0 / 1.28125, 0.001, "speed ÷CS 缩放")
+	var auto_disp: Vector2 = auto_btn._button.size * auto_btn._button.scale
+	var speed_disp: Vector2 = speed_btn._btn.size * speed_btn._btn.scale
+	assert_almost_eq(auto_disp.x, 82.73, 0.5, "auto 显示宽 106px÷CS=82.73 点")
+	assert_almost_eq(auto_disp.y, 46.83, 0.5, "auto 显示高 60px÷CS=46.83 点")
+	assert_almost_eq(speed_disp.x, 81.95, 0.5, "speed 显示宽 105px÷CS=81.95 点")
+	var ac: Vector2 = auto_btn.position + auto_disp * 0.5
+	var sc: Vector2 = speed_btn.position + speed_disp * 0.5
+	assert_almost_eq(ac.x, sc.x - 1.0, 0.5, "中心 x 差 1 = 源 ccp 735/734 同竖线（左右对齐）")
+	assert_eq(ac.y - sc.y, 60.0, "垂直中心间距 60 = 源 120−60（上下紧邻一按钮高）")
+
+
 # 源 auto_btn pressed → scene.auto_combat。
 func test_scene_auto_button_toggles_combat() -> void:
 	var eng := _make_engine()
@@ -628,6 +666,54 @@ func test_scene_auto_button_default_hidden() -> void:
 	scene.setup(eng, cm)
 	assert_eq(scene.auto_btn.visible, false, "pve stars<3 → auto_btn 默认隐藏（源 :1225）")
 	scene.queue_free()
+
+
+# 星数门槛 stub mgr（源 ed.player:getStageStar → 本项目 stage_manager.stage_stars 鸭子类型）。
+class StarMgrStub extends RefCounted:
+	var stars := 0
+	func stage_stars(_sid: int) -> int:
+		return stars
+
+
+# 源 :1227-1229 pve stars>=3 → auto_btn 显示（3 星解锁自动战斗）。
+func test_scene_auto_button_visible_at_3_stars() -> void:
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	eng.add_unit(p)
+	var mgr := StarMgrStub.new()
+	mgr.stars = 3
+	var scene := BattleScene.new()
+	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
+	scene.setup(eng, cm)
+	assert_eq(scene.auto_btn.visible, true, "pve stars=3 → auto_btn 显示（源 :1224 stars>=3）")
+	scene.queue_free()
+
+
+# 源 :1224-1226 pve stars<3 → 隐藏（显式低星 mgr 用例，补空上下文版 default_hidden）。
+func test_scene_auto_button_hidden_below_3_stars() -> void:
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	eng.add_unit(p)
+	var mgr := StarMgrStub.new()
+	mgr.stars = 2
+	var scene := BattleScene.new()
+	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
+	scene.setup(eng, cm)
+	assert_eq(scene.auto_btn.visible, false, "pve stars=2 < 3 → auto_btn 隐藏（源 :1224）")
+	scene.queue_free()
+
+
+# 源 :1208-1231 非 pve 分支（pvp=离线天梯/excavate）照源无门槛显示（本项目无 replay/act/attack 入口）。
+func test_scene_auto_button_visible_in_non_stage_modes() -> void:
+	for m in ["pvp", "excavate"]:
+		var eng := _make_engine()
+		var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+		eng.add_unit(p)
+		var scene := BattleScene.new()
+		scene._battle_context = {"mode": m}
+		scene.setup(eng, cm)
+		assert_eq(scene.auto_btn.visible, true, "mode=%s 非 pve → auto_btn 显示（源非 pve 无门槛）" % m)
+		scene.queue_free()
 
 
 # 源 startCameraShakeAnimationY :1440 — scene 加 Camera2D + start 创建震动 tween。
@@ -826,9 +912,13 @@ func test_speed_changed_with_projectile_actor_mixed() -> void:
 
 
 # 2026-08-28 战斗域批次几何守卫：HUD 源直译坐标防回退（越屏/偏位根修）。
+# 2026-09-06 三轮订正：MenuItemImage 显示=纹理像素÷CS（源 hello.lua:311 Director 全局
+# setContentScaleFactor(615/480)=1.28125，引擎 Texture2D::getContentSize 返回点尺寸），
+# 08-28"MenuItemImage 不÷CS"判例推翻——hourglass/加速钮/auto 钮三处同步÷CS。
 # 计时器：源 battle_scene.lua:1341-1387 bg Scale9 106×44 anchor(0,0.5)@(610,440)→
-# Godot 显示区 (610,18)-(716,62)；hourglass MenuItemImage 原尺寸 40×80 中心 (677,437)→(697,43)。
-# 加速钮：源 :1236-1241 MenuItemImage 原尺寸 105×60 中心 (735,120)→Godot 左上 (682.5,330)。
+# Godot 显示区 (610,18)-(716,62)；hourglass 显示 40×80 像素÷CS=31.2×62.4 中心 (697,43)。
+# 加速钮：显示 105×60 像素÷CS=81.95×46.83 中心 (735,120)→Godot 左上 (694.02,336.59)。
+# auto 钮：显示 106×60÷CS=82.73×46.83 中心 (734,60)→左上 (692.63,396.59)。
 # 暂停钮：源 :1189-1191 createButtonWithMask（createSprite÷CS）中心 (757,440)→
 # 左上 (729.7,13.1)+scale 1/1.28125。
 func test_hud_geometry_source_translated() -> void:
@@ -849,10 +939,15 @@ func test_hud_geometry_source_translated() -> void:
 	assert_almost_eq(bg_w, 106.0, 0.5, "timer bg 显示宽 106（源 Scale9 setContentSize）")
 	var hg := t.get_node("BattleTimerContent/Hourglass") as Sprite2D
 	assert_almost_eq(hg.position.x, 697.0, 0.5, "hourglass 中心 x=697（源 677+半宽 20）")
-	assert_almost_eq(hg.scale.x, 1.0, 0.01, "hourglass 原尺寸显示（MenuItemImage 不÷CS）")
-	# 加速钮：中心 (735,360) 原尺寸 105×60 → 左上 (682.5,330)
-	assert_almost_eq(scene.speed_btn.position.x, 682.5, 0.5, "speed btn 左上 x=682.5（中心 735−105/2）")
-	assert_almost_eq(scene.speed_btn.position.y, 330.0, 0.5, "speed btn 左上 y=330（中心 360−60/2）")
+	assert_almost_eq(hg.scale.x, 0.7805, 0.001, "hourglass ÷CS 显示 31.2×62.4（MenuItemImage 一样÷CS，三轮订正）")
+	# 加速钮：中心 (735,360) 显示 81.95×46.83 → 左上 (694.02,336.59)
+	assert_almost_eq(scene.speed_btn.position.x, 694.02, 0.5, "speed btn 左上 x=694.02（中心 735−105/CS/2）")
+	assert_almost_eq(scene.speed_btn.position.y, 336.59, 0.5, "speed btn 左上 y=336.59（中心 360−60/CS/2）")
+	assert_almost_eq(scene.speed_btn._btn.scale.x, 1.0 / 1.28125, 0.001, "speed btn scale=1/CS（三轮订正）")
+	# auto 钮：中心 (734,420) 显示 82.73×46.83 → 左上 (692.63,396.59)（默认隐藏，几何不受 visible 影响）
+	assert_almost_eq(scene.auto_btn.position.x, 692.63, 0.5, "auto btn 左上 x=692.63（中心 734−106/CS/2）")
+	assert_almost_eq(scene.auto_btn.position.y, 396.59, 0.5, "auto btn 左上 y=396.59（中心 420−60/CS/2）")
+	assert_almost_eq(scene.auto_btn._button.scale.x, 1.0 / 1.28125, 0.001, "auto btn scale=1/CS（三轮订正）")
 	# 暂停钮：÷CS 54.6×53.9 中心 (757,40) → 左上 (729.7,13.1)
 	assert_almost_eq(scene.return_btn.position.x, 729.7, 0.1, "return btn 左上 x=729.7（÷CS 源直译）")
 	assert_almost_eq(scene.return_btn.position.y, 13.1, 0.1, "return btn 左上 y=13.1")

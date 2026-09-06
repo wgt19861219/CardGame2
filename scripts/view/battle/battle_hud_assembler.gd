@@ -66,15 +66,30 @@ static func create_next_button(scene) -> void:
 	scene.next_btn = btn
 
 
-# 自动战斗按钮装配（源 :1207-1257）。默认 off + 隐藏，toggled 连 _on_auto_toggled。
+# 自动战斗按钮装配（源 :1207-1257）。默认 off，可见性照源 :1208-1231 分模式判定，toggled 连 _on_auto_toggled。
+# 源 replay 隐藏/attack 真人锁/teach(autoBattle) 教学无本项目对应入口（单机化裁剪，见验收记录）。
+const AUTO_UNLOCK_STARS: int = 3   # 源 :1224 pve stars < 3 隐藏
 static func create_auto_button(scene) -> void:
 	if scene.auto_btn != null:
 		scene.auto_btn.queue_free()
 	var btn := BattleAutoButton.new()
-	btn.setup(false, false)   # 默认 off + 隐藏（pve stars<3，源 :1224-1226）
+	btn.setup(false, _auto_button_visible(scene))
 	btn.toggled.connect(scene._on_auto_toggled)
 	scene.hud.add_to_bottom_right(btn)
 	scene.auto_btn = btn
+
+
+# auto 按钮可见性（源 :1208-1231）：pve(stage) 按通关星数门槛（getStageStar 对应 mgr.stage_stars），
+# 非 pve 分支（pvp 离线天梯/excavate）照源无门槛显示；无 mgr/stage_id 上下文按未解锁保底隐藏。
+static func _auto_button_visible(scene) -> bool:
+	var ctx: Dictionary = scene._battle_context
+	if String(ctx.get("mode", "stage")) != "stage":
+		return true
+	var mgr: Variant = ctx.get("mgr")
+	if mgr == null or not mgr.has_method("stage_stars"):
+		return false
+	var stars: int = int(mgr.stage_stars(int(ctx.get("stage_id", 0))))
+	return stars >= AUTO_UNLOCK_STARS
 
 
 # Boss 多血段大血条装配（源 addBigBloodPanel :541-546）。挂 hud 固定 BIG_HP_POS，入 ui_list。

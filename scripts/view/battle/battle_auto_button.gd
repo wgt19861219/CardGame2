@@ -1,52 +1,61 @@
 class_name BattleAutoButton
 extends Control
 
-## 自动战斗按钮 — 照源 battle_scene.lua resetUI :1207-1257（auto_btn @734,60 CCMenuItemToggle
-## autocombat_on/off）+ autoCombatHandler :1016-1029 翻译（Phase 4）。
-## ⚠️ 资源 autocombat_on/off.png 硬缺（源项目 + HC/Client 均未导出，同 .abc 阻塞）→ 降级 Button
-## text toggle（"自动战斗 开/关"，复刻铁律允许资源缺降级，同 popup/timer Label）。
-##
-## 重构（2026-07-18，hero_detail 范式）：Button 静态节点搬进
-## scenes/battle/battle_auto_button_content.tscn（位置/size 编辑器可视化调），
-## Control 组件 content 挂 panel 自身（坑 7，坐标原点 = button 原点）。
-## setup instantiate + get_node("%AutoButton") as Button 取节点 + _apply_label fill on/off 文案。
+## 自动战斗按钮 — 照源 battle_scene.lua:1207-1257（auto_btn @734,60 CCMenuItemToggle
+## autocombat_on/off 两态）+ autoCombatHandler :1016-1029 翻译（Phase 4）。
+## TextureButton 贴图两态切换（代码直建，照 create_return_button 先例）。
+## 2026-09-06 升级：源图 Content/res/UI/alpha/HVGA/autocombat_on/off.png 补齐入库，
+## 撤 2026-07-21 文本降级（当时误判资源硬缺）；位置修正中心→左上角换算（对齐倍速按钮）。
 
-const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_auto_button_content.tscn")
-const GODOT_POS: Vector2 = Vector2(734.0, 420.0)  # to_godot(734,60)=(734,480-60)，HUD 原生坐标（800×480 直译）
-const LABEL_ON: String = "自动战斗 开"
-const LABEL_OFF: String = "自动战斗 关"
+const TEXTURE_ON: String = "res://assets/ui/alpha/HVGA/autocombat_on.png"
+const TEXTURE_OFF: String = "res://assets/ui/alpha/HVGA/autocombat_off.png"
+# 显示尺寸 = 纹理像素 ÷ CS（2026-09-06 三轮订正：源 hello.lua:311 Director 全局
+# setContentScaleFactor(615/480)=1.28125，引擎 Texture2D::getContentSize 返回点尺寸，
+# CCMenuItemImage 内部 Sprite 一样÷CS——08-28"MenuItemImage 不÷CS"判例据此推翻）。
+const CONTENT_SCALE: float = 1.28125
+# 源 :1254 auto_btn:setPosition(ccp(734,60)) 是 MenuItem 锚点中心；显示 82.73×46.83 点。
+# Godot position=左上角 → 中心 to_godot(734,60)=(734,420) − 显示半尺寸。
+const GODOT_POS: Vector2 = Vector2(692.63, 396.59)  # (734,420) − (106/CS/2, 60/CS/2)
 
 signal toggled(on: bool)
 
 var _on: bool = false
-var _button: Button = null
+var _button: TextureButton = null
 
 
 func setup(initial_on: bool = false, visible_default: bool = true) -> void:
 	_on = initial_on
 	position = GODOT_POS
-	var content := CONTENT_SCENE.instantiate()
-	add_child(content)   # Control 组件 content 挂 panel 自身（坑 7）
-	_button = content.get_node("%AutoButton") as Button
-	_apply_label()
+	_button = TextureButton.new()
+	_button.scale = Vector2.ONE / CONTENT_SCALE   # 显示=纹理像素÷CS（照 battle 域 hp_bar 等同款范式）
+	add_child(_button)
+	_apply_texture()
 	_button.pressed.connect(_on_pressed)
 	visible = visible_default
 
 
-func _apply_label() -> void:
+func _apply_texture() -> void:
 	if _button != null:
-		_button.text = LABEL_ON if _on else LABEL_OFF
+		_button.texture_normal = _load_texture(_on)
+
+
+# 源 CCMenuItemToggle 两态：setSelectedIndex(auto and 1 or 0) — on 态显 autocombat_on，off 显 off。
+func _load_texture(on: bool) -> Texture2D:
+	var path: String = TEXTURE_ON if on else TEXTURE_OFF
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
 
 
 func _on_pressed() -> void:
 	_on = not _on
-	_apply_label()
+	_apply_texture()
 	toggled.emit(_on)
 
 
 func set_on(on: bool) -> void:
 	_on = on
-	_apply_label()
+	_apply_texture()
 
 
 func is_on() -> bool:

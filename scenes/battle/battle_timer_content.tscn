@@ -4,10 +4,11 @@
 [ext_resource type="Texture2D" uid="uid://cthx6d2aqs5p5" path="res://assets/ui/alpha/HVGA/timermask.png" id="2_mask"]
 [ext_resource type="Texture2D" uid="uid://djf0qw2pl3cxh" path="res://assets/ui/alpha/HVGA/hourglass.png" id="3_hg"]
 
-; 源直译（battle_scene.lua:1341-1387，2026-08-28 战斗域批次）：timer.bg createScale9Sprite
+; 源直译（battle_scene.lua:1341-1387）：timer.bg createScale9Sprite
 ; 106×44 点 anchor(0,0.5)@(610,440) → 左上 (610,18)，Sprite2D centered+scale 等价纯拉伸
 ; （同 battle_number_bg 族金币标记 NinePatch 无 patch_margin 口径）；mask 106×44 覆盖 bg；
-; hourglass MenuItemImage 原尺寸 40×80 anchor(0,0.5)@(677,437) → 中心 (697,43)；
+; hourglass MenuItemImage 显示=40×80 像素÷CS=31.2×62.4 点 中心 (697,43)（2026-09-06 三轮
+; 订正：hello.lua:311 Director 全局 CS=1.28125，MenuItemImage 一样÷CS）；
 ; text 源 bg 内 (12,22) 中心（同 goldmarker TEXT_POS 口径）→ 左缘 622/垂直中心 40。
 [node name="BattleTimerContent" type="Control" unique_id=675098989]
 layout_mode = 3
@@ -30,6 +31,7 @@ texture = ExtResource("2_mask")
 [node name="Hourglass" type="Sprite2D" parent="." unique_id=431525221]
 unique_name_in_owner = true
 position = Vector2(697, 43)
+scale = Vector2(0.7805, 0.7805)
 texture = ExtResource("3_hg")
 
 [node name="TimeText" type="Label" parent="." unique_id=2083824182]

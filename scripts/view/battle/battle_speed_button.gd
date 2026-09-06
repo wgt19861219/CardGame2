@@ -12,9 +12,14 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_speed_button_content.tscn")
 const TEXTURE_DIR: String = "res://assets/ui/alpha/HVGA/CombatAcceleration_"
-# 源 :1241 speedBtn:setPosition(ccp(735,120)) 是 MenuItemImage 锚点中心；贴图 105×60 原尺寸显示
-# （MenuItemImage 不÷CS，源 battle_scene.lua:1236 直载）。Godot position=左上角 → 中心减半尺寸。
-const GODOT_POS: Vector2 = Vector2(682.5, 330.0)  # 中心 to_godot(735,120)=(735,360) −(105/2,60/2)
+# 显示尺寸 = 纹理像素 ÷ CS（2026-09-06 三轮订正：源 hello.lua:311 Director 全局
+# setContentScaleFactor(615/480)=1.28125，引擎 Texture2D::getContentSize 返回点尺寸，
+# CCMenuItemImage 内部 Sprite 一样÷CS——08-28"MenuItemImage 不÷CS"判例据此推翻）。
+# scale 加在 _btn（Label 是其子节点）→ 整树等比缩，复刻源 MenuItem 点空间相对布局。
+const CONTENT_SCALE: float = 1.28125
+# 源 :1241 speedBtn:setPosition(ccp(735,120)) 是 MenuItemImage 锚点中心；显示 81.95×46.83 点。
+# Godot position=左上角 → 中心 to_godot(735,120)=(735,360) − 显示半尺寸。
+const GODOT_POS: Vector2 = Vector2(694.02, 336.59)  # (735,360) − (105/CS/2, 60/CS/2)
 const MAX_STATE: int = 4
 const SPEED_LABELS := ["1x", "2x", "3x", "4x"]
 # 倍速档持久化（源 battle_scene.lua:14/1050 CCUserDefault "battle_speed_state" 等价，
@@ -38,6 +43,7 @@ func setup(initial_state: int = 1) -> void:
 	_btn = content.get_node("%Btn") as TextureButton
 	_label = content.get_node("%Label") as Label
 	if _btn != null:
+		_btn.scale = Vector2.ONE / CONTENT_SCALE   # 显示=纹理像素÷CS（Label 子节点联动缩放）
 		_btn.pressed.connect(_on_pressed)
 	_apply_state()
 

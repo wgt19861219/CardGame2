@@ -11,7 +11,8 @@ extends Control
 ## 倒计时文本与 mask visible/<20s 红闪保留 fill 动态（update）。
 ## 坐标（2026-08-28 战斗域批次源直译，battle_scene.lua:1341-1387）：组件原点挂 hud（全屏
 ## Control 原点=屏幕原点）。bg Scale9 106×44 at 左上 (610,18)（Sprite2D centered(663,40)+scale
-## 等价纯拉伸，金币标记同口径）；hourglass MenuItemImage 原尺寸 40×80 中心 (697,43)；
+## 等价纯拉伸，金币标记同口径）；hourglass MenuItemImage 显示=40×80 像素÷CS=31.2×62.4 点
+## 中心 (697,43)（2026-09-06 三轮订正：Director 全局 CS=1.28125 使 MenuItemImage 一样÷CS）；
 ## text 左缘 622/垂直中心 40（源 bg 内 (12,22)）。旧 (768,47) 圆盘系未拉伸+偏右越屏 22px 根修。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/battle_timer_content.tscn")
