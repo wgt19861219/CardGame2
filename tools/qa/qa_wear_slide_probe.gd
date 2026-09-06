@@ -21,7 +21,7 @@ func _ready() -> void:
 	dp.setup_panel(hero, pd.cm, pd.hero_manager, pd)
 	dp.upgrade_skill_requested.connect(func(idx: int) -> void:
 		if dp.perform_upgrade_skill(idx):
-			dp.refresh_content(true))
+			dp.refresh_content())
 	dp.show_window(get_tree().current_scene)
 	await get_tree().create_timer(0.4).timeout
 

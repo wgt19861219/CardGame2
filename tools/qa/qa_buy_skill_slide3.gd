@@ -16,10 +16,10 @@ class QADetail extends HeroDetailPanel:
 	func _close_tab() -> void:
 		print("QAT >>> _close_tab current=", _current_tab)
 		super()
-	func refresh_content(animate_slide: bool = false) -> void:
+	func refresh_content() -> void:
 		print("QAT >>> refresh_content")
 		super()
-	func _rebuild_content(animate_slide: bool = false) -> void:
+	func _rebuild_content() -> void:
 		print("QAT >>> _rebuild_content")
 		super()
 	func _on_buy_skill_point() -> void:
