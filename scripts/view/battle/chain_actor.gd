@@ -19,6 +19,7 @@ const CHAIN_SOURCE_HEIGHT: float = 12.0    # 源 :112 后续跳 source height=12
 var model: Variant = null  # BattleChain（Logic 层）
 var _content: Variant = null  # BattleEffect（持 FCA 连线动画节点）
 var _start_pos: Vector2 = Vector2.ZERO  # 视图坐标起点（首跳 launchPoint，后续旧 target 位）
+var _base_scale: Vector2 = Vector2.ONE  # FCA root 基准缩放（_create_sprites 设 0.09），拉伸乘法保留
 
 
 func setup(chain: Variant) -> void:
@@ -28,8 +29,13 @@ func setup(chain: Variant) -> void:
 	if eff_name != "":
 		_content = BattleEffect.create(eff_name)
 	if _content != null:
+		# 照源 ChainEffectCreate（chain.lua:104 setExternalPositioning(true)）：丢弃 cha 仿射，
+		# 散件纹理原尺寸居中，节点位置/旋转/拉伸由本 actor 控制（唯一该模式的消费方）。
+		_content.set_external_positioning()
 		_content.play("Loop", true)
-		add_child(_content.get_node())
+		var content_node: Node2D = _content.get_node()
+		add_child(content_node)
+		_base_scale = content_node.scale   # 记录 (0.09,0.09) 基准——拉伸须乘法保留
 	# startPos 照源 :108-112：首跳用 launchPoint，后续跳用 source.position（height=12）。
 	# 这里取当前 source（首跳 source=caster，后续 source=上一 target）。
 	_init_start_pos()
@@ -63,8 +69,14 @@ func update_view(_dt: float) -> void:
 	# 旋转（照源 :139，弧度版；源 -deg(atan2) = 弧度 -atan2）。
 	rotation = -atan2(dy, dx)
 	# X 拉伸覆盖全程（照源 :141 setScaleX(dist/100)）；Y 固定 3（照源 :142 setScaleY(3)）。
+	# ⚠️ 乘法保留 _base_scale（FCA root 的 0.09，与散件 transform 的 1/0.09 因子配对抵消）——
+	# 覆盖式赋值会冲掉基准致净放大 1/0.09≈11×（宙斯连锁闪电横铺全屏"技能动画错乱"根因，
+	# 2026-09-06；同款 bug 2026-08-01 dbdd6ee 在 play_effect_on_scene 已修乘法，此处漏改）。
 	var content_node: Node2D = _content.get_node()
-	content_node.scale = Vector2(dist / CHAIN_CONTENT_BASE_W, 3.0)
+	content_node.scale = Vector2(
+		_base_scale.x * dist / CHAIN_CONTENT_BASE_W,
+		_base_scale.y * 3.0
+	)
 	z_index = -int(tgt.position.y)
 
 

@@ -11,12 +11,18 @@ signal action_finished(action_name: String)
 const BATTLE_SCALE: float = 0.09
 const UI_SCALE: float = 0.39
 const UI_RES_PREFIX: String = "eff_UI"
-# 散件内容缩放（ContentScaleFactor 1.28125）— FCA 散件纹理系 1.28× 高清资产，渲染须 ÷CS。
-# 2026-09-03 原版锚点标定定稿：详情立绘未÷CS 时横向系统性偏宽（帽宽/身高 1.00 vs 原版 0.72、
-# 高宽比 1.0 vs 1.38）；÷CS 后帽宽/身高 0.71/本体 1.39:1 精确命中原版（验收记录-船长详情动画比例调查）。
-# 源 Axmol 复刻 C++（LegendAnimationFileInfo）无此处理（其 UI 立绘未跑通），系原版真机引擎语义。
+# 散件内容缩放（ContentScaleFactor 1.28125）— 仅 unit 傀儡/立绘族散件渲染 ÷CS。
+# 2026-09-03 原版锚点标定：船长详情立绘（unit 族）未÷CS 时横向系统性偏宽（帽宽/身高 1.00 vs
+# 原版 0.72）；÷CS 后 0.71 精确命中（验收记录-船长详情动画比例调查）。
+# ⚠️ 特效族（eff_ 前缀，effect/ 目录 .abc）不 ÷CS：源/本项目 plist sourceSize 逐项相同
+# （资产同源仅 pvr→png 转码，非 1.28× 高清重制），÷CS 使特效整体缩小 22%、多散件错位
+# ——2026-09-06 宙斯大招回归（game bridge A/B 定格实测：÷CS 细线 35502 高亮像素 vs
+# 不÷CS 粗壮闪电 57523；"技能动画错乱"用户主诉），仅 unit 族有 MuMu 标定实证。
 const PART_CONTENT_SCALE: float = 1.28125
+const EFFECT_RES_PREFIX: String = "eff_"
 var _coord_scale: float = BATTLE_SCALE
+var _effect_res: bool = false
+var _external_positioning: bool = false
 
 # ── 静态缓存（resource_name -> {elements, actions, action_names}）──
 static var _cache: Dictionary = {}
@@ -42,6 +48,7 @@ var _applied_frame: int = -1   # 已应用帧索引（set_action_elapsed 防重�
 
 func load_from_ani(resource: String, atlas: AtlasSprite) -> bool:
 	_coord_scale = UI_SCALE if resource.contains(UI_RES_PREFIX) else BATTLE_SCALE
+	_effect_res = resource.begins_with(EFFECT_RES_PREFIX)
 	var cached: Dictionary = _cache.get(resource, {})
 	if not cached.is_empty():
 		_elements = cached["elements"]
@@ -203,6 +210,21 @@ func _create_sprites(atlas: AtlasSprite) -> void:
 		_sprites.append(s)
 	# Node2D 整体 scale（等价源 batchNode setScale，缩 sprite 渲染 + 子坐标 + a/b/c/d 反向后净效果）。
 	scale = Vector2(_coord_scale, _coord_scale)
+
+
+# 加法混合（源 C++ FCA 特效渲染默认加色合成；Godot Sprite2D 默认普通 alpha 混合，
+# 半透明光效贴图会渲染成灰白半透色块而非发光——eff_UI 光效族必须 ADD，2026-09-05 实机 A/B 定谳）。
+func set_additive_blend() -> void:
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	for s in _sprites:
+		(s as Sprite2D).material = mat
+
+
+# 外部定位模式（照源 setExternalPositioning，chain.lua:104 唯一消费方）：丢弃 cha 仿射，
+# 散件以纹理原尺寸居中，节点变换完全由消费方控制（C++ applyFrame external 分支等价）。
+func set_external_positioning(enabled: bool = true) -> void:
+	_external_positioning = enabled
 
 
 # ── 播放控制 ──
@@ -397,11 +419,26 @@ func _apply_frame(frame: Dictionary) -> void:
 		var tx: float = fe.get("tx", 0.0)
 		var ty: float = fe.get("ty", 0.0)
 
+		# external positioning 模式（照源 setExternalPositioning，C++ applyFrame external 分支）：
+		# 丢弃 cha 仿射与骨架 tx/ty，散件以纹理原尺寸居中（centered=true 即中心锚）——
+		# 消费方在节点上直接 setPosition/setRotation/setScale 控制。链条（chain.lua:104
+		# setExternalPositioning(true)）唯一消费方：贴图 985×55 原尺寸 × 节点 scale 即细闪电带；
+		# 若应用仿射则 a×1/0.09 失控放大（33000px 全屏巨闪，2026-09-06 宙斯连锁闪电回归）。
+		if _external_positioning:
+			sprite.transform = Transform2D.IDENTITY
+			var alpha_e: int = fe.get("alpha", 255)
+			sprite.modulate.a = float(alpha_e) / 255.0
+			continue
+
 		# ⚠️ tx/ty 原样用于 y-down（源 C++ readFrames 另有 b/c 取反+锚点补偿+ty 取反的
 		# adjustment，系 Cocos anchor(0,0)/y-up 语境，直译进 Godot centered/y-down 会翻转
 		# 元素朝向——2026-08-19 实测人物元素散架已回退。小位移资源偏差无感；大位移资源
 		# （幽灵船投射物）的偏移由消费方按需补偿。
-		var factor: float = 1.0 / _coord_scale / PART_CONTENT_SCALE
+		# ÷CS 仅 unit 傀儡/立绘族（MuMu 标定）；特效族（eff_ 前缀）不÷CS（同上常量注释，
+		# 2026-09-06 宙斯大招回归根修）。
+		var factor: float = 1.0 / _coord_scale
+		if not _effect_res:
+			factor /= PART_CONTENT_SCALE
 		sprite.transform = Transform2D(
 			Vector2(a * factor, b * factor),
 			Vector2(c * factor, d * factor),
