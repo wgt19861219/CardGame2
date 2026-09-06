@@ -82,6 +82,32 @@ static func enhance_equip_to_max(pd: PlayerData, inst_id: int, slot: int) -> boo
 	return true
 
 
+# 进阶前自动穿戴（照源 herodetail/window.lua:706-747 doClickUpgrade needWear 分支补译，
+# 2026-09-05 漏译根修：用户报"装备齐全点进阶仍提示穿齐装备"）。
+# 源语义：逐槽 getHeroEquipState——isEquiped 跳过；canWear（背包持有 + Equip Level Requirement 达标）
+# 收集进 needWear；其余任一（canCraft/notHave/cannotwear）→ toast"穿齐装备"+return（整体拒绝，零消耗）。
+# 全就绪 → 逐槽 consumeEquip(eid,1)（纯扣背包）+ hero:equip(slot)，再继续发进阶。
+# 返值：>=0 = 实穿槽数（可继续进阶）；-1 = 存在无法就绪的槽（调用方弹"穿齐装备"）。
+static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
+	var hm: HeroManager = pd.hero_manager
+	var hero: HeroInstance = hm.get_hero(inst_id)
+	if hero == null:
+		return -1
+	var need_slots: Array[int] = []
+	for slot in range(HeroManager.EQUIP_SLOT_COUNT):
+		var ett: String = String(EquipdetailQuery.get_hero_equip_state(hero, slot, pd.cm, pd)["ett"])
+		if ett == "isEquiped":
+			continue
+		if ett != "canWear":
+			return -1
+		need_slots.append(slot)
+	for slot in need_slots:
+		var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot + 1, pd.cm)
+		pd.items[eid] = int(pd.items.get(eid, 0)) - 1
+		hm.wear_equip(inst_id, slot)
+	return need_slots.size()
+
+
 # 装备合成（照源 local_server:1059-1115 equip_synthesis + collectCraftChain:1026-1057）。
 # 递归收集合成链（自动合成可合成前置材料）+ 扣金币+基础材料 + 产出进 items 背包（不绑英雄槽）。
 # 单机化：源 net 信任 UI computeCanCraft 预检，本项目 Logic 是唯一入口，craft_recurse 返 ok 对齐预检。

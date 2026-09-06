@@ -397,7 +397,6 @@ func perform_evolve() -> bool:
 	return ok
 
 
-# 进阶：upgrade_rank + 照源补失败 Toast + 成功特效/飘字（doClickUpgrade/upgradeReply）。
 func perform_upgrade_rank() -> bool:
 	if hero_manager == null or hero == null:
 		return false
@@ -406,18 +405,25 @@ func perform_upgrade_rank() -> bool:
 		Toast.show_message(String(cm.get_lstr(LSTR_MAX_RANK)) if cm != null else "已进阶到顶级")
 		AudioPlayer.play_sfx("common_alert")
 		return false
+	# 自动穿戴（源 doClickUpgrade :706-747 needWear 补译）：已持有槽一键全穿；无法就绪→下方 toast
+	if pd != null and hero_manager != null:
+		var worn: int = EquipCraftManager.autowear_for_upgrade(pd, hero.inst_id)
+		if worn > 0:
+			GameData.save()   # 照源 :744 pcall(ed.saveGame)
 	# 未穿齐判定（源 doClickUpgrade :707-716，can_upgrade_rank 已含此判）
 	if not hero_manager.can_upgrade_rank(hero.inst_id):
 		Toast.show_message(String(cm.get_lstr(LSTR_NEED_EQUIP)) if cm != null else "英雄穿齐装备才能进阶")
 		AudioPlayer.play_sfx("common_alert")
 		return false
-	var old_gs: int = hero.gs   # 飘字 snapshot 进阶前 gs
+	var old_gs: int = hero.gs   # 飘字 snapshot 进阶前 gs；旧槽 snapshot 供装备上交动画（进阶会重置槽）
+	var old_equip_ids: Array[int] = hero.equip_slots.duplicate()
 	var ok: bool = hero_manager.upgrade_rank(hero.inst_id)
 	if ok:
 		AudioPlayer.play_sfx("common_hero_upgrade")
 		GameData.save()
-		HeroDetailUpgradeFx.play_upgrade_effect(_base_layer)
-		HeroDetailUpgradeFx.play_att_addition_anim(_base_layer, _gs_label, old_gs, hero.gs, self)
+		# 表现链（源 upgradeReply :652-685）：光效/装备上交/飘字/欢呼。fx 挂 panel 根免被重建 free。
+		HeroDetailUpgradeFx.play_upgrade_success_sequence(self, _base_layer, _gs_label, old_gs, hero.gs, old_equip_ids, cm)
+		refresh_content()   # 照源 createInfoBoard/createEquipIcons/createHeroStars/refreshUpgradeButton
 	else:
 		Toast.show_message(String(cm.get_lstr(LSTR_ADVANCE_FAIL)) if cm != null else "进阶失败")
 		AudioPlayer.play_sfx("common_alert")
