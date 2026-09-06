@@ -103,15 +103,8 @@ func _build_content(tab: String = DEFAULT_TAB, animate_tab: bool = false) -> voi
 	_skill_host = (_tab_views["skill"] as Control).get_node("%SkillListHost") as Control
 	_desc_host = (_tab_views["skill"] as Control).get_node("%DescHost") as Control
 	_fill_card_view()
-	# 隐藏 AttribListHost 垂直滚动条视觉（StyleBoxEmpty 覆盖；visible=false 禁用滚动）。滚轮改由 _input 接管。
+	# AttribListHost 垂直滚动条视觉隐藏走全局 theme（VScrollBar 空样式）；滚轮改由 _input 接管。
 	var detail_host := (_tab_views["detail"] as Control).get_node("AttribListHost") as ScrollContainer
-	var detail_v_scroll := detail_host.get_node_or_null("_v_scroll") as Control
-	if detail_v_scroll != null:
-		var empty := StyleBoxEmpty.new()
-		detail_v_scroll.add_theme_stylebox_override("scroll", empty)
-		detail_v_scroll.add_theme_stylebox_override("grabber", empty)
-		detail_v_scroll.add_theme_stylebox_override("grabber_highlight", empty)
-		detail_v_scroll.add_theme_stylebox_override("grabber_pressed", empty)
 	var detail_vbox: VBoxContainer = detail_host.get_node("AttribVBox") as VBoxContainer
 	HeroDetailAttribs.fill_attributes(detail_vbox, hero, cm)
 	# gold 不够 cost 变红（refreshCostColor），skl_add 显 levelAdd "+N"（refreshSkillAdd）。

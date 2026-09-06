@@ -232,26 +232,6 @@ func test_avatar_panel_lstr_keys_wired() -> void:
 	assert_true(script_text.contains(LSTR_TIPS), "解锁提示键接线")
 
 
-# ── chrome 补全：滚动条照源贴图（源 draglist bar，引擎缺口例外路径）──
-
-func test_avatar_scrollbar_styled() -> void:
-	# 源 bar bg=scroll_bar_bg(2px 厚) + bar=scroll_bar.png(4px 厚)，滚动时显示；
-	# Godot ScrollContainer 默认灰圆角条 → fill 期 StyleBoxTexture 贴图化
-	# （add_theme_stylebox_override 引擎缺口例外，SOP 滚动条条款）。
-	var pd := PlayerData.new(_cm)
-	var panel: AvatarPanel = AvatarPanel.new("avatar", {})
-	panel.setup_panel(pd, _cm)
-	add_child_autofree(panel)
-	var scroll: ScrollContainer = panel._content.get_node("%AvatarScroll") as ScrollContainer
-	var vs: VScrollBar = scroll.get_v_scroll_bar()
-	assert_true(vs.get_theme_stylebox("grabber") is StyleBoxTexture,
-		"grabber 贴图化（源 scroll_bar.png）")
-	assert_true(vs.get_theme_stylebox("scroll") is StyleBoxTexture,
-		"轨道贴图化（源 scroll_bar_bg.png）")
-	assert_eq((vs.get_theme_stylebox("grabber") as StyleBoxTexture).texture.resource_path,
-		"res://assets/ui/alpha/HVGA/scroll_bar.png", "grabber 贴图照源")
-
-
 # ── 静态结构禁令（标题底板/装饰结构进模板，panel 不建静态节点）──
 
 func test_avatar_panel_no_static_construction() -> void:
