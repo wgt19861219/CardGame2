@@ -71,3 +71,25 @@ func test_is_vip_unlocked() -> void:
 	var pd := PlayerData.new(cm)
 	pd.vip_level = 0
 	assert_eq(pd.is_vip_unlocked("Multiple Midas"), false, "VIP 0 Multiple Midas=false")
+
+
+# ---- 新英雄/重复碎魂/魔晶计数(原版 _new_heroes/_smash_idx/DrawTimes26 单机化,2026-09-07)----
+
+# 未拥有英雄 → add_hero 入库;重复英雄 → 转魂石(源 _smash_idx 语义)。
+func test_new_hero_and_duplicate_fragment() -> void:
+	var pd := PlayerData.new(cm)
+	pd._settle_tavern_loot([{"id": 1, "amount": 2}])
+	assert_eq(pd.hero_manager.heroes.size(), 1, "未拥有英雄 tid=1 → add_hero")
+	pd._settle_tavern_loot([{"id": 1, "amount": 2}])
+	assert_eq(pd.hero_manager.heroes.size(), 1, "重复英雄不再入库")
+	var frag_id: int = pd._fragment_id_for_hero(1)
+	assert_eq(int(pd.hero_manager.fragments.get(frag_id, 0)), 2, "重复英雄转魂石 ×2")
+
+
+# MagicSoul 十连计数递增(26 次切池依据)。
+func test_magic_combo_count_increments() -> void:
+	var pd := PlayerData.new(cm)
+	pd.diamond = 100000
+	var rng := BattleRng.new(7)
+	pd.draw_tavern_full("MagicSoul", true, false, 0, rng)
+	assert_eq(int(pd.tavern_record.get("MagicSoul", {}).get("combo_count", 0)), 1, "magic 十连后 combo_count=1")

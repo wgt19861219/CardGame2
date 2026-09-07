@@ -486,3 +486,63 @@ func test_ten_buy_ad_discount() -> void:
 	assert_null(magic_btn.get_node_or_null("AdDiscount"),
 		"magic TenBuyBtn 无 AdDiscount（源 createMagicLayer 无该节点）")
 	content.queue_free()
+
+
+# 源 tavern.lua:204 + poptavernloot.lua destroy :274：弹窗"再抽"退场后重走完整抽卡。
+# 2026-09-07 再抽无反应根修守卫：此前 tavern_panel 从未 connect draw_again，信号发了
+# 没人听 = 只关窗不再抽。端到端断言：再抽 → drawn 二次发射 + 钻石二次扣费 + 新弹窗弹出。
+func test_draw_again_redraws() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.diamond = 1000
+	var rng := BattleRng.new(7)
+	var panel := TavernPanel.new("tavern", {})
+	panel.setup_panel(pd, rng)
+	panel.show_window(root)
+	var draw_count: Array[int] = [0]
+	panel.drawn.connect(func() -> void: draw_count[0] += 1)
+	panel._on_draw(pd, rng, "Gold", false)
+	assert_eq(draw_count[0], 1, "首抽一次（免费额度）")
+	assert_eq(pd.diamond, 1000, "首抽免费不扣钻")
+	var popup: PopTavernLoot = _find_loot_popup(root)
+	assert_not_null(popup, "首抽弹出结果窗")
+	popup._on_again()   # 模拟点"再抽一次"
+	await get_tree().create_timer(0.35).timeout   # 退场 0.2s + 余量
+	assert_eq(draw_count[0], 2, "退场完成后重走一次完整抽卡（源 tavernHandler 语义）")
+	assert_eq(pd.diamond, 712, "再抽时额度已用完 → 扣 288 钻")
+	assert_not_null(_find_loot_popup(root), "再抽弹出新结果窗")
+	panel.remove_window()
+	root.queue_free()
+
+
+func _find_loot_popup(node: Node) -> PopTavernLoot:
+	if node is PopTavernLoot and is_instance_valid(node):
+		return node
+	for c in node.get_children():
+		var found: PopTavernLoot = _find_loot_popup(c)
+		if found != null:
+			return found
+	return null
+
+
+# 源 tavern.lua:83-92 资源不足 → showHandyDialog(useMidas/toRecharge) 弹窗级反馈；
+# 单机化惯例=Toast（项目注释自述却写成角落静态 Label，用户报"购买资源不足没有提示"，
+# 2026-09-07 根修）。
+func test_insufficient_funds_shows_toast() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.gold = 100   # < Bronze 付费单抽 10000
+	TavernData.use_free_tavern(pd, "Bronze", int(Time.get_unix_time_from_system()))   # 用掉免费额度进 CD → 强制付费路径
+	var rng := BattleRng.new(7)
+	var panel := TavernPanel.new("tavern", {})
+	panel.setup_panel(pd, rng)
+	panel.show_window(root)
+	Toast._queue.clear()
+	panel._on_draw(pd, rng, "Bronze", false)
+	assert_false(Toast._queue.is_empty(), "金币不足 → Toast 有消息")
+	assert_true(String(Toast._queue[0]).contains("不足"), "Toast 文案含\"不足\"")
+	Toast._queue.clear()
+	panel.remove_window()
+	root.queue_free()

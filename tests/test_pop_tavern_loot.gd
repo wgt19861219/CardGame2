@@ -127,6 +127,10 @@ func test_button_position_to_godot() -> void:
 	root.queue_free()
 
 
+# 源 doClickTavern :160-165 + destroy :258-283：点再抽置 isDoTavern 标记 + destroy，
+# 退场动画（0.2s）结束回调里才调 tavernHandler 重抽——非点击瞬间发信号。
+# 2026-09-07 再抽无反应根修：旧实现 _on_again 里同步 emit，但 tavern_panel 从未 connect，
+# 信号发了没人听 = 只关窗不再抽；同时对齐源时序（退场完再抽，避免新旧两窗重叠）。
 func test_draw_again_signal() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -136,7 +140,24 @@ func test_draw_again_signal() -> void:
 	var emitted: Array[bool] = [false]
 	popup.draw_again.connect(func() -> void: emitted[0] = true)
 	popup._on_again()
-	assert_eq(emitted[0], true, "再抽按钮 emit draw_again")
+	assert_false(emitted[0], "点击瞬间不 emit（源 destroy 动画完才调 handler）")
+	await get_tree().create_timer(0.35).timeout   # DESTROY_SEC=0.2 退场 tween + 余量
+	assert_true(emitted[0], "退场完成后 emit draw_again（源 isDoTavern 语义）")
+	root.queue_free()
+
+
+# 确定按钮（doClickClose）不触发再抽（源 doClickClose 不置 isDoTavern）。
+func test_close_does_not_emit_draw_again() -> void:
+	var root := Node.new()
+	add_child(root)
+	var popup := PopTavernLoot.new("poptavernloot", {})
+	popup.setup_loot([{"id": 101, "amount": 1}], cm)
+	popup.show_window(root)
+	var emitted: Array[bool] = [false]
+	popup.draw_again.connect(func() -> void: emitted[0] = true)
+	(popup._content.get_node("%CloseBtn") as TextureButton).pressed.emit()
+	await get_tree().create_timer(0.35).timeout
+	assert_false(emitted[0], "确定关闭不 emit draw_again")
 	root.queue_free()
 
 

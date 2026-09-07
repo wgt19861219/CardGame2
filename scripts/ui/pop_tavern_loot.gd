@@ -107,6 +107,9 @@ var _cost_label: Label = null      # %CostLabel：费用数字（fill 文本+定
 var _loot_icons: Array[Control] = []
 var _loot_targets: Array[Vector2] = []
 var _loot_data: Array = []          # 原 loots 数组（id/amount），供 _add_loot_name_label 查名
+# 源 doClickTavern :163 isDoTavern 标记：点再抽只置位+destroy，退场动画完才调
+# tavernHandler 重抽（destroy :274）——非点击瞬间发信号，避免新旧两窗重叠。
+var _again_pending: bool = false
 
 
 func _g(pos: Vector2) -> Vector2:
@@ -289,7 +292,9 @@ func _lstr_or(key: StringName, fallback: String) -> String:
 
 func _on_again() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
-	draw_again.emit()
+	# 照源 doClickTavern :160-165：置标记 + destroy，退场完成后经 draw_again 通知宿主重抽
+	# （destroy :274 动画回调里 if isDoTavern then tavernHandler()）。
+	_again_pending = true
 	remove_window()
 
 
@@ -363,6 +368,11 @@ func remove_window() -> void:
 
 
 func _do_remove() -> void:
+	# 照源 destroy :274-275：退场动画完成后、真正移除前触发再抽 handler
+	# （先 emit 再 super.remove_window——节点仍存活，宿主同步开新窗无冲突）。
+	if _again_pending:
+		_again_pending = false
+		draw_again.emit()
 	super.remove_window()
 
 
