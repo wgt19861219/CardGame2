@@ -90,17 +90,19 @@ func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
 	mode = p_mode; min_level = p_min_level
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	# BattlePreparePanel 是 Control 非 PopWindow，无 PopWindow 的 z_index=100 置顶。
-	# 详情面板 _on_go_pressed 在 add_child 后 remove_window 关详情，若不置顶，BattlePreparePanel
-	# 会被 z=100 的关卡选择面板盖住（详情是关卡选择的子弹窗），表现为"点 GoButton 回到关卡选择"。
-	# z=210 进一步盖住关卡选择章节标题（FrameLayer procedural Label z=201 全局），战前界面应全屏遮底。
-	z_index = 210
-	z_as_relative = false
+	# BattlePreparePanel 是 Control 非 PopWindow，经 PopWindow.push_external 入动态 z 栈
+	# 拿最高位+1，恒压栈内全部弹窗（详情 _on_go_pressed 在 add_child 后 remove_window 关详情，
+	# 若不入栈会被关卡选择面板盖住，表现为"点 GoButton 回到关卡选择"）。
+	# 旧实现写死 z=210：HeroScene 链（hero_package 占栈位使选关面板 z=200）下选关章节标题
+	# effective 200+22=222 穿透布阵页（用户 2026-09-07 报「底下关卡的标题透过来了」）。
+	PopWindow.push_external(self)
 	# 战前编队界面源里无 HUD（货币栏/标题），切 battleprepare identity 整体隐藏 HUD；
-	# tree_exited（queue_free）时恢复进入前 identity（stageselect/crusade 等）。
+	# tree_exited（queue_free）时恢复进入前 identity（stageselect/crusade 等）+ 出 z 栈
+	#（非本类无 PREDELETE 兜底，退出出栈在此配对）。
 	_prev_identity = HudOverlay.get_identity()
 	HudOverlay.apply_identity("battleprepare")
 	tree_exited.connect(_restore_identity)
+	tree_exited.connect(func() -> void: PopWindow.pop_external(self))
 	_load_hero_list()
 	_build_content()
 	_load_default_team()

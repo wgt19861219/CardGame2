@@ -82,3 +82,45 @@ func test_reopen_after_full_close_starts_at_base() -> void:
 	b.remove_window()
 	var c := _show_popup()
 	assert_eq(c.z_index, 100, "全关后重开回到基准 100（栈不残留）")
+
+
+# ===== push_external：非 PopWindow 全屏节点入栈（2026-09-07 布阵页章节标题穿透根修）=====
+# 背景：BattlePreparePanel（Control 非 PopWindow）旧实现写死 z=210。HeroScene 链
+# hero_package 占栈位使选关面板 z=200，其章节标题 relative z=22 → effective 222 > 210
+# 穿透布阵页（用户报「战斗准备页面底下关卡的标题透过来了」）。push_external 拿栈最高位+1 恒压。
+
+func _push_external_ctrl() -> CanvasItem:
+	var c := Control.new()
+	_host.add_child(c)
+	PopWindow.push_external(c)
+	return c
+
+
+func test_push_external_tops_stack() -> void:
+	var a := _show_popup()
+	var b := _show_popup()
+	var ext := _push_external_ctrl()
+	assert_gt(ext.z_index, b.z_index, "external 拿栈最高位+1（> 栈顶弹窗根 z）")
+	# 深栈穿透场景：栈顶弹窗子树内 relative z=22 节点（选关章节标题同款）恒低于 external
+	var deep: CanvasItem = _show_popup()
+	deep.z_index = 22
+	deep.z_as_relative = true
+	assert_lt(b.z_index + 22, ext.z_index,
+		"栈顶弹窗子树 effective 上界（%d+22）< external z（%d），章节标题穿透不可能" % [b.z_index, ext.z_index])
+
+
+func test_pop_external_shrinks_and_no_leak() -> void:
+	var a := _show_popup()
+	var ext := _push_external_ctrl()
+	PopWindow.pop_external(ext)
+	var c := _show_popup()
+	assert_eq(a.z_index, 100, "A 基准不变")
+	assert_eq(c.z_index, 200, "external 出栈后 C 接管 200（栈位不泄漏）")
+
+
+func test_battle_prepare_uses_stack_not_hardcoded_z() -> void:
+	# 源码守卫：布阵页入动态 z 栈，写死 z=210 根除（HeroScene 深栈 210 < 222 穿透根因）
+	var src: String = FileAccess.get_file_as_string("res://scripts/view/battle/battle_prepare_panel.gd")
+	assert_false(src.contains("z_index = 210"), "布阵页无写死 z=210（HeroScene 链穿透根因）")
+	assert_true(src.contains("PopWindow.push_external"), "布阵页经 push_external 入动态 z 栈")
+	assert_true(src.contains("PopWindow.pop_external"), "布阵页 tree_exited 配对出栈")

@@ -87,7 +87,8 @@ func test_recipe_branch_built() -> void:
 	panel.remove_window()
 
 
-# 源 :1214-1228 材料不足且不可合成 → lackOfComponent=true
+# 源 :1218-1228 缺不可合成材料 → lackOfComponent=true，但 :1223 forbidCraftButton(false) 按钮仍可点
+# （点击后 craftEquip 拦截弹 createNeedCraftPrompt 提示框，非禁用按钮）
 func test_lack_of_component_when_short_and_uncraftable() -> void:
 	var rec: Dictionary = _find_recipe_equip()
 	if rec.is_empty():
@@ -104,7 +105,7 @@ func test_lack_of_component_when_short_and_uncraftable() -> void:
 			break
 	if any_lack:
 		assert_true(panel._lack_of_component, "材料不足且不可合成 → lackOfComponent")
-		assert_true(panel._craft_btn.disabled, "lack → 合成按钮禁用")
+		assert_false(panel._craft_btn.disabled, "lack → 按钮仍可点（源 :1223 forbidCraftButton(false)，点击后弹提示）")
 	panel.remove_window()
 
 
@@ -171,8 +172,9 @@ func test_craft_consumes_and_produces() -> void:
 	panel.remove_window()
 
 
-# 源 checkMoneyEnough :4 金币不足 → 按钮 disabled
-func test_no_money_disables_button() -> void:
+# 源 checkMoneyEnough :4 + createCraftTree :1215-1216 金币不足 → forbidCraftButton(false) 按钮仍可点
+# （点击后 craftEquip 拦截；单机化 useMidas 充值框已裁剪为 toast）
+func test_no_money_keeps_button_clickable() -> void:
 	var rec: Dictionary = _find_recipe_equip()
 	if rec.is_empty():
 		pass_test("数据表无合成配方，跳过")
@@ -186,13 +188,18 @@ func test_no_money_disables_button() -> void:
 		var need: int = max(int(row.get("Component" + str(i + 1) + " Count", 1)), 1)
 		if cid > 0:
 			pd.add_item(cid, need)
-	var panel := _make_panel(int(rec["id"]), pd)
+	var target_id: int = int(rec["id"])
+	var panel := _make_panel(target_id, pd)
 	if panel._lack_of_component:
 		pass_test("该配方含不可递归合成的叶子材料，lack 优先于金币判定")
 		panel.remove_window()
 		return
 	assert_false(panel._check_money_enough(), "金币不足 checkMoneyEnough=false")
-	assert_true(panel._craft_btn.disabled, "金币不足 → 按钮禁用")
+	assert_false(panel._craft_btn.disabled, "金币不足 → 按钮仍可点（源 :1216 forbidCraftButton(false)）")
+	# 点击走钱不够分支：toast 反馈 + 不合成（items 不变）
+	var before: int = int(pd.items.get(target_id, 0))
+	panel._on_craft_pressed()
+	assert_eq(int(pd.items.get(target_id, 0)), before, "钱不够点击 → 不执行合成")
 	panel.remove_window()
 
 
@@ -276,17 +283,23 @@ func test_tree_node_click_appends_history() -> void:
 	panel.remove_window()
 
 
-# 源 createInfoButton :610 heroDetail 建信息按钮 + remark
+# 源 createInfoButton :610 heroDetail 建信息按钮 + remark（初始态，未开合成窗）
 func test_info_button_created() -> void:
 	var rec: Dictionary = _find_recipe_equip()
 	if rec.is_empty():
 		pass_test("数据表无合成配方，跳过")
 		return
-	var panel := _make_panel(int(rec["id"]))
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(int(rec["id"]), cm, PlayerData.new(cm))
+	var root := Node.new()
+	add_child(root)
+	panel.show_window(root)
 	assert_not_null(panel._info_button, "infoButton 已建")
 	assert_not_null(panel._info_remark, "infoButtonRemark 已建")
+	# 初始态断言不 _open_craft_panel（open 后 heroDetail 文字按源 :579 刷成「装备」）
 	assert_eq(panel._info_button_label.text, "合成公式", "heroDetail amount==0 且有配方 → 合成公式")
 	panel.remove_window()
+	root.queue_free()
 
 
 # 源 getJudgeLevel :519 hero.level + Equip.Level Requirement
@@ -509,6 +522,32 @@ func test_on_get_way_clicked_no_emit_when_locked() -> void:
 	panel._on_get_way_clicked(int(ids[0]))
 	assert_eq(emitted.size(), 0, "未通关（star=0）→ 不 emit jump_to_stage")
 	panel.remove_window()
+
+
+# 源 doClickGetWay :80-86 star+preStar>0（已通关）→ pushScene(stageselect.createByStage(id))。
+# 本项目 emit raw id（elite 的 Stage Group 转换在 StageSelectPanel.setup_by_stage 内做，
+# 等价源 createByStage :1655 内转换）。
+func test_on_get_way_clicked_emits_when_unlocked() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel(eid, pd)
+	var emitted: Array = []
+	panel.jump_to_stage.connect(func(sid: int) -> void: emitted.append(sid))
+	var ids: Array = panel._get_way_ids
+	if ids.is_empty():
+		pass_test("该装备无获取途径，跳过")
+		panel.remove_window()
+		return
+	var target: int = int(ids[0])
+	pd.stage_manager.progress = {target: 3}   # 已通关 → star>0 过解锁判定
+	panel._on_get_way_clicked(target)
+	assert_eq(emitted.size(), 1, "已通关 → emit jump_to_stage（跳选关）")
+	assert_eq(int(emitted[0]), target, "emit raw id（源传 raw，转换在选关面板侧）")
+	if panel.get_parent() != null:   # 成功分支内已 remove_window
+		panel.remove_window()
 
 
 # 源 doGetWayTouch :91-123 board gui_input 连点击处理
@@ -838,3 +877,293 @@ func test_open_craft_panel_no_slide_animation() -> void:
 	var y_open: float = panel._craft_window.position.y
 	await get_tree().create_timer(0.1).timeout   # 若有滑入 tween，0.1s 处 y 会明显变化
 	assert_almost_eq(panel._craft_window.position.y, y_open, 1.0, "打开后 y 恒定（无滑入动画直显）")
+
+
+# ===== 按钮态机关闭方向补全（2026-09-07：源 closeCraftPanel/forbidInfoButton 漏译根修）=====
+
+# 源 doClickCraftButton :211-218：返回按钮关合成窗回详情态（非关整弹窗）+ 刷新 infoButton 文字。
+func test_return_button_closes_craft_window_not_panel() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel(eid, pd)   # _open_craft_panel 已记历史首项 → history_id=1
+	panel._on_craft_pressed()   # components==0 + history_id==1 → 走 closeCraftPanel 分支
+	assert_true(is_instance_valid(panel) and panel.get_parent() != null, "弹窗本体不关（返回只关合成窗）")
+	assert_false(panel._is_open, "isOpen=false（源 :591）")
+	assert_false(panel._craft_window.visible, "合成窗隐藏")
+	assert_true(panel._history.is_empty(), "initHistory 清历史（源 :589）")
+	assert_false(panel._is_forbid_info_button, "解禁 infoButton（源 :592-594）")
+	# amount==0 → 文字「获取途径」（源 :216-217 else 分支）
+	assert_eq(panel._info_button_label.text, cm.get_lstr("EQUIPCRAFT.WAY_TO_GET"),
+		"heroDetail amount==0 → 获取途径")
+	panel.remove_window()
+
+
+# 源 :212-214：关合成窗时 heroDetail 且拥有>0 → 文字「装备」
+func test_return_button_text_equipment_when_owned() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var pd := PlayerData.new(cm)
+	pd.add_item(target_id, 1)   # 拥有>0
+	var panel := _make_panel(target_id, pd)
+	panel._components = 0   # 模拟切到无配方层（getway/叶子）触发返回分支
+	panel._on_craft_pressed()
+	assert_eq(panel._info_button_label.text, cm.get_lstr("EQUIPCRAFT.EQUIPMENT"),
+		"heroDetail 拥有>0 → 装备")
+	panel.remove_window()
+
+
+# 源 openCraftPanel :577-584：heroDetail → 文字「装备」+ forbidInfoButton(true) 灰字禁点
+func test_open_craft_panel_forbids_info_button() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	assert_true(panel._is_forbid_info_button, "heroDetail 打开合成窗 → infoButton 禁点")
+	assert_eq(panel._info_button_label.text, cm.get_lstr("EQUIPCRAFT.EQUIPMENT"),
+		"打开后文字 = 装备（源 :579）")
+	assert_eq(panel._info_button_label.modulate, EquipCraftInfoBtn.COLOR_FORBID, "灰字 pressColor（源 :580）")
+	panel.remove_window()
+
+
+# 源 openCraftPanel :582-583 + forbidInfoButton :1344-1346：handbook → 文字「确定」且恒不禁用
+func test_open_craft_panel_handbook_confirm_not_forbid() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(eid, cm, PlayerData.new(cm), null, "handbook")
+	var root := Node.new()
+	add_child(root)
+	panel.show_window(root)
+	panel._open_craft_panel()
+	assert_false(panel._is_forbid_info_button, "handbook 恒不禁用（源 :1344-1346）")
+	assert_eq(panel._info_button_label.text, cm.get_lstr("CHATCONFIG.CONFIRM"), "handbook 打开后文字 = 确定")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 doInfoButtonTouch :178-180：isForbidInfoButton 时 infoButton 点击不响应
+func test_forbidden_info_button_ignores_press() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))   # amount==0 未穿 → 正常点击会 _open_craft_panel
+	panel._close_craft_panel()   # 解禁 + is_open=false（回到详情态）
+	assert_false(panel._is_open)
+	EquipCraftInfoBtn.set_forbid_info_button(panel, true)   # 手动禁点
+	panel._on_info_pressed()
+	assert_false(panel._is_open, "禁点时点击 infoButton 不打开合成窗")
+	panel.remove_window()
+
+
+# 源 refreshReplyData :505-511：合成出目标装备（up.id==id）且等级够 → 解禁 infoButton
+func test_craft_target_success_unforbids_info_button() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(target_id, cm, pd, hero, "heroDetail", 0)
+	var root := Node.new()
+	add_child(root)
+	panel.show_window(root)
+	panel._open_craft_panel()
+	assert_true(panel._is_forbid_info_button, "打开期间禁点")
+	var judge: Array = panel._get_judge_level()
+	if int(judge[0]) < int(judge[1]):
+		pass_test("hero 等级不足（源 :509 elv<=hlv 才解禁），跳过")
+		panel.remove_window()
+		root.queue_free()
+		return
+	# 模拟合成成功回调链：craft_id==target_id + 等级够 → _refresh_reply_data 解禁
+	panel._craft_id = target_id
+	panel._refresh_reply_data()
+	assert_false(panel._is_forbid_info_button, "合成目标+等级够 → 解禁（灰字变白可点）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 playCraftEffect 回调 :456-458：heroDetail 且 historyid>1 → 回退一层（子材料合成完回父配方）
+func test_play_craft_effect_steps_back_history() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var panel := _make_panel(target_id)
+	var nodeid: Array = panel._craft_window_data.get("nodeid", [])
+	if nodeid.is_empty() or int(nodeid[0]) <= 0:
+		pass_test("配方无 Component1，跳过")
+		panel.remove_window()
+		return
+	panel._set_history(0, int(nodeid[0]))   # 进子材料层 → history_id=2
+	assert_eq(panel._history_id, 2)
+	# 源 :412 tree.children==nil 直接 return（叶子材料无合成动画与回退），须子层有配方才断言
+	if (panel._tree_data.get("children", []) as Array).is_empty():
+		pass_test("Component1 无配方（getway 叶子层），跳过")
+		panel.remove_window()
+		return
+	panel._play_craft_effect()   # 子层合成成功回调
+	assert_eq(panel._history_id, 1, "heroDetail historyid>1 → 回退一层（源 :456-458）")
+	assert_eq(panel._craft_id, target_id, "回退后树回到父配方（craft_id=target）")
+	panel.remove_window()
+
+
+# 源 initHistory :726-729 + closeCraftPanel :589：关闭再打开历史不重复叠加
+func test_close_then_reopen_no_history_duplication() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var panel := _make_panel(int(rec["id"]))
+	assert_eq(panel._history.size(), 1, "打开记历史首项")
+	panel._close_craft_panel()
+	panel._open_craft_panel()
+	assert_eq(panel._history.size(), 1, "重开不叠加（initHistory 已清，源 :589）")
+	assert_eq(panel._history_layer.get_child_count(), 1, "历史栏仅 1 个 wrapper（无残留旧图标）")
+	panel.remove_window()
+
+
+# 源 createInfoButton :633-643：handbook 初始文字按有无配方（合成公式/获取途径），打开后才变「确定」
+func test_handbook_info_button_initial_text() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(eid, cm, PlayerData.new(cm), null, "handbook")
+	var root := Node.new()
+	add_child(root)
+	panel.show_window(root)
+	assert_eq(panel._info_button_label.text, cm.get_lstr("EQUIPCRAFT.WAY_TO_GET"),
+		"handbook 无配方初始 = 获取途径（源 :639）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ===== 材料不足点击反馈（2026-09-07 二轮：btn.disabled 发明挡死反馈链路根修）=====
+
+# 源 craftEquip :371-375 + createNeedCraftPrompt :321-366：材料不足点击合成 → 拦截给反馈
+# （缺可合成材料 → 图标上方「需先合成」提示框；缺不可合成 → toast 无材料），非静默无反应。
+func test_lack_click_gives_feedback_not_silent() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var pd := PlayerData.new(cm)   # 无材料 → lack
+	var panel := _make_panel(target_id, pd)
+	if not panel._lack_of_component:
+		pass_test("该配方材料全部可递归合成（无叶子缺料），跳过 lack 断言")
+		panel.remove_window()
+		return
+	assert_false(panel._craft_btn.disabled, "材料不足按钮仍可点（源 :1223，disabled 系无源发明已删）")
+	# 点击 → lack 分支拦截：不合成（items 不变），反馈链路（prompt/toast）不崩
+	var before: int = int(pd.items.get(target_id, 0))
+	panel._on_craft_pressed()
+	assert_eq(int(pd.items.get(target_id, 0)), before, "材料不足点击 → 不执行合成（craftEquip :371 拦截）")
+	panel.remove_window()
+
+
+# ===== 三轮：历史栏回退箭头残留根修（2026-09-07，源 setHistory :875-880 漏译）=====
+
+# 源 setHistory 截断分支 iconBg 与 arrow 一并删：点树节点进子层（arrow 加入）→ 点返回回退，
+# arrow 须随 iconBg 删除——旧实现漏删致 view_history_arrow 残留 HBox 反复进出无限叠加。
+func test_history_back_removes_arrow_no_residue() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var panel := _make_panel(target_id)
+	var nodeid: Array = panel._craft_window_data.get("nodeid", [])
+	if nodeid.is_empty() or int(nodeid[0]) <= 0:
+		pass_test("配方无 Component1，跳过")
+		panel.remove_window()
+		return
+	# 进子层：HBox = [w1, arrow, w2] 共 3 子节点
+	panel._set_history(0, int(nodeid[0]))
+	assert_eq(panel._history_id, 2)
+	assert_eq(panel._history_layer.get_child_count(), 3, "两层历史 = w1+arrow+w2")
+	# 回退：queue_free 帧末生效后 HBox 只剩 w1（arrow 随 w2 删除，无残留）
+	panel._set_history(1, 0)
+	await get_tree().process_frame
+	assert_eq(panel._history_layer.get_child_count(), 1, "回退后仅剩 w1（arrow 一并删，源 :877-879）")
+	# 再进另一层：仍 3 子节点（残留 arrow 会变 4）
+	panel._set_history(0, int(nodeid[0]))
+	assert_eq(panel._history_layer.get_child_count(), 3, "反复进出不叠加（修复前会 4+）")
+	panel.remove_window()
+
+
+# ===== 七轮终局：HeroScene 获取途径跳转断链根修（2026-09-07，[GJ] 日志实锤）=====
+
+# 用户从英雄按钮进独立 HeroScene（SceneManager.change_scene）→ 英雄详情获取途径跳转断链：
+# on_equip_craft_jump 经 current_scene 反射调 open_stage_select_by_stage，HeroScene 缺此方法
+# → 静默 return → 弹窗关了选关不开。守卫：两个入口场景（main/hero）都声明该反射方法
+#（源码文本断言，同 way_title/panel_zero_news 守卫方法学——GDScript.has_method 查不到声明）。
+func test_get_way_jump_entry_on_both_scenes() -> void:
+	var main_src: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
+	assert_true(main_src.contains("func open_stage_select_by_stage"),
+		"MainScene 声明 open_stage_select_by_stage（反射入口）")
+	var hero_src: String = FileAccess.get_file_as_string("res://scenes/hero/hero_scene.gd")
+	assert_true(hero_src.contains("func open_stage_select_by_stage"),
+		"HeroScene 声明 open_stage_select_by_stage（断链根因修复，[GJ] 实锤 current_scene=HeroScene）")
+
+
+# 端到端：hero_detail + equipcraft 挂 HeroScene 场景实例上（用户真实环境），emit 跳转后
+# 选关面板出现在 HeroScene 下。GUT 环境 current_scene 是 runner 场景，须临时指向 hs
+# 还原反射链（on_equip_craft_jump 经 current_scene 反射调场景入口）。
+func test_get_way_jump_from_hero_scene_end_to_end() -> void:
+	var rec: Dictionary = _find_recipe_equip()
+	if rec.is_empty():
+		pass_test("数据表无合成配方，跳过")
+		return
+	var target_id: int = int(rec["id"])
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	var hs: Control = (load("res://scenes/hero/hero_scene.tscn") as PackedScene).instantiate() as Control
+	var root := Node.new()
+	add_child(root)
+	root.add_child(hs)   # 触发 _ready（依赖 GameData.player；沙箱无则跳过）
+	await get_tree().process_frame
+	if GameData.player == null:
+		pass_test("GUT 环境 GameData.player 不可用，HeroScene 链路跳过（脚本级守卫已覆盖）")
+		root.queue_free()
+		return
+	# hero_detail 挂 HeroScene（用户真实层级），equipcraft 挂其上，跳转闭包传 hero_detail
+	var dp := HeroDetailPanel.new("herodetail", {})
+	dp.setup_panel(hero, cm, pd.hero_manager, pd)
+	dp.show_window(hs)
+	await get_tree().process_frame
+	var panel := EquipCraftPanel.new("equipcraft", {})
+	panel.setup_panel(target_id, cm, pd, hero, "heroDetail", 0)
+	panel.jump_to_stage.connect(func(sid: int) -> void:
+		HeroDetailEquipSlots.on_equip_craft_jump(sid, dp))
+	panel.show_window(hs)
+	await get_tree().process_frame
+	# GUT 无法伪造 current_scene（引擎要求节点直挂树根），反射分发链已由 bridge QA 实测；
+	# 此处直调场景侧入口，覆盖 GameData.player→BattleRng→StageSelectPanel 构造+挂载链。
+	hs.open_stage_select_by_stage(target_id)
+	await get_tree().create_timer(0.3).timeout
+	var found: Array = []
+	for c in hs.get_children():
+		if c is StageSelectPanel:
+			found.append(c)
+	assert_eq(found.size(), 1, "HeroScene 跳转入口 → 选关面板挂 HeroScene 下（断链修复）")
+	for p in found:
+		(p as StageSelectPanel).remove_window()
+	root.queue_free()

@@ -186,6 +186,8 @@ static func open_equip_craft_by_id(eid: int, cm: Variant, pd: PlayerData, parent
 
 # P1-10 源 equipcraft doClickGetWay :83 pushScene(stageselect.createByStage(id))。
 # panel 用 Node 弱类型（非 HeroDetailPanel），调 remove_window + get_tree（Node 链路方法）。
+# current_scene 反射入口须场景侧提供 open_stage_select_by_stage（main_scene/hero_scene 均有，
+# 2026-09-07 HeroScene 缺此方法曾致获取途径跳转断链——[GJ] 日志实锤后补齐）。
 static func on_equip_craft_jump(stage_id: int, panel: Node) -> void:
 	if panel == null or not panel.has_method(&"remove_window"):
 		return

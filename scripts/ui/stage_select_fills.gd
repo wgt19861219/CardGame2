@@ -62,6 +62,11 @@ const META_FRAME: StringName = &"ss_frame"
 const META_TITLE: StringName = &"ss_title"
 const META_POINTER: StringName = &"ss_pointer"
 const META_MASK: StringName = &"ss_mask"   # 钥匙关 current/passed 闪烁遮罩（源 :1229-1238 FadeTo 循环）
+# 源 createStage :1331-1351 forGetWay 引导素材（呼吸圈+手指；动画归 panel _guide_*）。
+const GUIDE_CIRCLE_RES: String = "res://assets/ui/alpha/HVGA/tutorial_circle.png"
+const GUIDE_FINGER_RES: String = "res://assets/ui/alpha/HVGA/tutorial_finger.png"
+const META_GUIDE_CIRCLE: StringName = &"ss_guide_circle"
+const META_GUIDE_FINGER: StringName = &"ss_guide_finger"
 
 
 static func to_godot(cx: float, cy: float) -> Vector2:
@@ -344,3 +349,29 @@ static func create_chapter_dots(container: Control, max_chapter: int, current: i
 		dot.position = Vector2(DOT_CENTER_X + DOT_GAP_X * (float(i) - center), y) - dot.size * 0.5
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(dot)
+
+
+## 获取途径引导节点（源 createStage :1331-1351 forGetWay）：目标关按钮层叠 tutorial_circle
+## （中心锚呼吸圈，pivot 居中供 panel 缩放动画）+ tutorial_finger（源 anchor(0,1)=左上角
+## @ccp(x-4,y+4) 中心上方 4 → Godot 左上锚 (x-4,y-4)）。动画归 panel（_guide_circle_breath/
+## _guide_finger_slide）。mouse_filter=IGNORE（装饰节点红线）。
+static func attach_get_way_guide(layer: Control, btn: TextureButton) -> void:
+	var center: Vector2 = btn.position + btn.size * 0.5
+	var circle := TextureRect.new()
+	circle.texture = load(GUIDE_CIRCLE_RES) as Texture2D
+	circle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	var csize: Vector2 = display_size(GUIDE_CIRCLE_RES)
+	circle.size = csize
+	circle.position = center - csize * 0.5
+	circle.pivot_offset = csize * 0.5
+	circle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	circle.set_meta(META_GUIDE_CIRCLE, true)
+	layer.add_child(circle)
+	var finger := TextureRect.new()
+	finger.texture = load(GUIDE_FINGER_RES) as Texture2D
+	finger.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	finger.size = display_size(GUIDE_FINGER_RES)
+	finger.position = Vector2(center.x - 4.0, center.y - 4.0)
+	finger.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	finger.set_meta(META_GUIDE_FINGER, true)
+	layer.add_child(finger)
