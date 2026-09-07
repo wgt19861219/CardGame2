@@ -38,6 +38,12 @@ var _status_refs_sub: Dictionary = {}   # 子场景版 label/bar 引用
 var _shortcut: ShortcutPanel = null
 var _current_identity: String = MAIN_IDENTITY
 var _built: bool = false
+# 货币自动同步缓存（2026-09-07 抽卡扣费货币栏不刷根修）：扣费/入账点分散在
+# Data 层多处（抽卡 consume_tavern_cost/商店 buy·refresh/升星·技能·进阶/技能点
+# 购买/卖出/发奖），无全局货币变化信号——_process 每帧对比两个 int（开销可忽略），
+# 变化即 _refresh_status，一处覆盖全部现在与未来的货币变化场景。
+var _last_gold: int = -1
+var _last_diamond: int = -1
 
 
 func _ready() -> void:
@@ -47,6 +53,18 @@ func _ready() -> void:
 	timer.autostart = true
 	timer.timeout.connect(_on_notify_tick)
 	add_child(timer)
+
+
+func _process(_delta: float) -> void:
+	if not _built:
+		return
+	var p: PlayerData = GameData.player
+	if p == null:
+		return
+	if p.hero_manager.gold != _last_gold or p.diamond != _last_diamond:
+		_last_gold = p.hero_manager.gold
+		_last_diamond = p.diamond
+		_refresh_status()
 
 
 # 定时提醒轮询（源 localnotify data 1/2/4/5/7 定时项）：到点 + 开启 + 当天未推 → Toast。

@@ -370,12 +370,19 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 			if tpl == "TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE":
 				tpl = "VIP等级达到%d级解锁该功能，是否充值？"
 			_result_label.text = tpl % ulv
+			Toast.show_message(tpl % ulv)
 			return
 	var now: int = int(Time.get_unix_time_from_system())
 	var is_free: bool = TavernData.is_show_free(p_player, tavern_type, now) and (tavern_type == "MagicSoul" or not is_ten)
 	var r: Dictionary = p_player.draw_tavern_full(tavern_type, is_ten, is_free, 0, rng)
 	if not bool(r["ok"]):
+		# 源 tavern.lua:83-92 资源不足 showHandyDialog(useMidas/toRecharge) 弹窗级反馈；
+		# 单机化 Toast 带货币与需求量（照 shop_panel「钻石不足（需 %d）」文案惯例，2026-09-07）。
+		var need_row: Dictionary = TavernData.get_tavern_info(tavern_type, is_ten, false, 0, _cm)
+		var pay_name: String = "金币" if String(need_row.get("Cost Type", "Diamond")) == "Gold" else "钻石"
+		var need: int = int(need_row.get("Cost", 0))
 		_result_label.text = "资源不足"
+		Toast.show_message("%s不足（需 %d）" % [pay_name, need])
 		return
 	if is_free:
 		TavernData.use_free_tavern(p_player, tavern_type, now)
@@ -388,6 +395,10 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 		var row: Dictionary = TavernData.get_tavern_info(tavern_type, is_ten, false, 0, _cm)
 		popup_cost = {"pay": String(row.get("Cost Type", "Diamond")), "number": int(row.get("Cost", 0))}
 	loot_popup.setup_loot(r["loots"], p_player.cm, tavern_type.to_lower(), "ten" if is_ten else "one", popup_cost)
+	# 源 tavern.lua:204 popWindow.tavernHandler = doTavernHandler(box, times)：弹窗"再抽"退场后
+	# 重走一次完整抽卡（闭包捕获四参等价源闭包捕获 box/times）。2026-09-07 再抽无反应根修：
+	# 此前从未 connect，draw_again 发了没人听 = 只关窗不再抽。
+	loot_popup.draw_again.connect(func() -> void: _on_draw(p_player, rng, tavern_type, is_ten))
 	loot_popup.show_window(get_parent())
 	drawn.emit()
 	_refresh_countdown_label()

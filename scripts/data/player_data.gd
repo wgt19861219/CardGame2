@@ -224,24 +224,51 @@ func draw_tavern(tavern_type: String, is_ten: bool, is_free: bool, count: int, c
 	return {"ok": true, "chest_group": int(row.get("Chest Group ID", 0))}
 
 
-## 完整抽卡：消耗钻石 + 产出物品/碎片进背包（照源 local_server.lua:1673 tavern_draw handler）。
-## equip（id>=100）→ items；英雄碎片（id<100，源 :1761 产 heroId）反查 Fragment 表转 Fragment ID → fragments。
+## 完整抽卡：消耗钻石 + 产出物品/碎片进背包（照源 local_server.lua:1673 tavern_draw handler
+## + 品质分池/首抽高档/gold 保底/magic 计数/新英雄碎魂重建 2026-09-07）。
+## equip（id>=100）→ items；英雄（id<100）→ 未拥有 add_hero / 已拥有转魂石（源 _smash_idx）。
 func draw_tavern_full(tavern_type: String, is_ten: bool, is_free: bool, count: int, rng: Variant) -> Dictionary:
 	var r: Dictionary = draw_tavern(tavern_type, is_ten, is_free, count, cm)
 	if not bool(r["ok"]):
 		return {"ok": false}
 	var draw_type: int = 1 if is_ten else 0
-	var loots: Array = TavernData.roll_tavern_loot(draw_type, 0, rng, cm)
+	# 首抽高一档（refresh_first_tavern 置位前读取；源首抽独立 Chest Group 重建）
+	var is_first: bool = TavernData.is_first_ten_draw(self, tavern_type) if is_ten \
+			else TavernData.is_first_one_draw(self, tavern_type)
+	# magic 十连计数（源 DrawTimes 26 切组依据；读旧值 roll，成功后 +1）
+	var magic_combo: int = int(tavern_record.get("MagicSoul", {}).get("combo_count", 0))
+	var loots: Array = TavernData.roll_tavern_loot(draw_type, 0, rng, cm, tavern_type, is_first, magic_combo)
+	_settle_tavern_loot(loots)
+	if tavern_type == "MagicSoul" and is_ten:
+		if not tavern_record.has("MagicSoul"):
+			tavern_record["MagicSoul"] = {}
+		tavern_record["MagicSoul"]["combo_count"] = magic_combo + 1
+	return {"ok": true, "loots": loots}
+
+
+## 抽卡产出结算：英雄分流——未拥有 add_hero（源 _new_heroes 新英雄全量下发的单机化等价，
+## 星级取 Unit.Initial Stars）、已拥有转魂石 ×amount（源 _smash_idx 重复英雄碎魂）。
+func _settle_tavern_loot(loots: Array) -> void:
 	for loot in loots:
 		var item_id: int = int(loot["id"])
 		var amount: int = int(loot["amount"])
 		if item_id < HERO_ID_MAX:
-			var frag_id: int = _fragment_id_for_hero(item_id)
-			if frag_id > 0:
-				hero_manager.add_fragment(frag_id, amount)
+			if _owns_hero(item_id):
+				var frag_id: int = _fragment_id_for_hero(item_id)
+				if frag_id > 0:
+					hero_manager.add_fragment(frag_id, amount)
+			else:
+				hero_manager.add_hero(item_id)
 		else:
 			add_item(item_id, amount)
-	return {"ok": true, "loots": loots}
+
+
+func _owns_hero(tid: int) -> bool:
+	for inst_id in hero_manager.heroes:
+		var h: Variant = hero_manager.heroes[inst_id]
+		if h != null and int(h.tid) == tid:
+			return true
+	return false
 
 
 ## 反查 Fragment 表得英雄碎片物品 id（源 Fragment[tid]["Fragment ID"]）。

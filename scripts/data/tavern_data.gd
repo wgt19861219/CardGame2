@@ -37,6 +37,22 @@ const STONE_QUALITY_MAP: Dictionary = {
 	"stone_purple": [4, 5, 6],
 }
 const EX_RANK_KEY_MAP: Dictionary = {"bronze": "Bronze", "silver": "Silver", "gold": "Gold", "magic": "MagicSoul"}
+# ---- 品质分池(原版服务器掉落组的单机化重建,2026-09-07)----
+# 原版客户端证据:TavernType 每行带 Chest Group ID 且首抽/累计抽数换组(掉落组全在服务器
+# 私有表,客户端零残留);MagicSoul DrawTimes 26 切组 24;gold 十连文案 TAVERNRES.HERO_IS
+# "十连抽必得英雄";协议 _new_heroes(新英雄全量下发)/_smash_idx(重复英雄碎魂)。
+# 具体数值不可考,按 Equip.Quality 重建;实测各档池非空(76/190/152,首抽 186/105/97)。
+const POOL_QUALITY_RANGES: Dictionary = {
+	"Bronze": [1, 2],
+	"Gold": [3, 4],
+	"MagicSoul": [4, 6],
+}
+const FALLBACK_POOL_QUALITY: Array = [1, 6]        # 未知类型兜底全量(兼容旧调用)
+const FIRST_DRAW_QUALITY_BOOST: int = 1            # 首抽池高一档(源首抽独立 Chest Group)
+const MAGIC_COMBO_GUARANTEE_COUNT: int = 26        # magic 第 26 次十连起切池(源 DrawTimes 26)
+const MAGIC_GUARANTEE_QUALITY: Array = [5, 6]      # 26 次后品质池(源组 24 等价)
+const QUALITY_MIN: int = 1
+const QUALITY_MAX: int = 6
 
 
 # ---- 查表（照源 TavernType/TavernBoxType）----
@@ -88,44 +104,70 @@ static func get_ex_rank(box: String, cm: Variant) -> int:
 	return int(row.get("Exhibition Rank", 0))
 
 
-# ---- 产出 Logic（照源 local_server.lua:1673 tavern_draw handler）----
+# ---- 产出 Logic（照源 local_server.lua:1673 tavern_draw handler + 品质分池重建 2026-09-07）----
 
 # 抽卡产出：draw_type 0=单抽/1=十连/"stone"=灵魂石。返 Array[{id,amount}]。
-static func roll_tavern_loot(draw_type: Variant, box_type: Variant, rng: Variant, cm: Variant) -> Array:
+# tavern_type 驱动品质分池；is_first 首抽高一档；magic_combo_count>=26 切保底池。
+static func roll_tavern_loot(draw_type: Variant, box_type: Variant, rng: Variant, cm: Variant,
+		tavern_type: String = "", is_first: bool = false, magic_combo_count: int = 0) -> Array:
 	var loots: Array = []
 	if str(draw_type) == "stone":
 		_roll_stone(loots, str(box_type), rng, cm)
 		return loots
 	var draw_count: int = COMBO_DRAW_COUNT if draw_type == 1 else 1
-	_roll_normal(loots, draw_count, rng, cm)
+	_roll_normal(loots, draw_count, rng, cm, tavern_type, is_first, magic_combo_count)
 	return loots
 
 
-# 收集 equip 表有 Icon 的 id（源 :1729-1737）。
-static func _collect_valid_equip_ids(cm: Variant) -> Array[int]:
+# 箱子品质池范围：常规池 → 首抽 +1 档 → magic 26 次保底池覆盖，clamp 到 [1,6]。
+static func _quality_range(tavern_type: String, is_first: bool, magic_combo_count: int) -> Array:
+	var q_range: Array = POOL_QUALITY_RANGES.get(tavern_type, FALLBACK_POOL_QUALITY).duplicate()
+	if is_first:
+		q_range = [int(q_range[0]) + FIRST_DRAW_QUALITY_BOOST, int(q_range[1]) + FIRST_DRAW_QUALITY_BOOST]
+	if tavern_type == "MagicSoul" and magic_combo_count >= MAGIC_COMBO_GUARANTEE_COUNT:
+		q_range = MAGIC_GUARANTEE_QUALITY.duplicate()
+	return [clampi(int(q_range[0]), QUALITY_MIN, QUALITY_MAX), clampi(int(q_range[1]), QUALITY_MIN, QUALITY_MAX)]
+
+
+# 收集 equip 表有 Icon 的 id（源 :1729-1737）+ 品质范围过滤（分池重建 2026-09-07）。
+# 源 :1731 type(k)=="number" 滤除非数字 key——Equip 表混有 "equip.2.0.0.xxx" 策划模板行
+# （359/722），int() 截断成 0 进池会以 49.7% 概率产出查表无行的 id=0 → 图标空白
+# （2026-09-07 抽卡空白图标根修）。JSON key 恒 String，is_valid_int 等价源的 number 判定。
+static func _collect_valid_equip_ids(cm: Variant, min_q: int = QUALITY_MIN, max_q: int = QUALITY_MAX) -> Array[int]:
 	var raw: Dictionary = cm.get_raw_table("Equip")
 	var ids: Array[int] = []
 	for tid_str in raw:
+		if not String(tid_str).is_valid_int():
+			continue
 		var row: Dictionary = raw[tid_str]
-		if String(row.get("Icon", "")) != "":
-			ids.append(int(tid_str))
+		if String(row.get("Icon", "")) == "":
+			continue
+		var q: int = int(row.get("Quality", 1))
+		if q < min_q or q > max_q:
+			continue
+		ids.append(int(tid_str))
 	return ids
 
 
-# 收集 Unit 表 Portrait+Hero 的 tid（源 :1738-1745）。
+# 收集 Unit 表 Portrait+Hero 的 tid（源 :1738-1745）。非数字 key 过滤同上（防御性对齐源）。
 static func _collect_valid_hero_ids(cm: Variant) -> Array[int]:
 	var raw: Dictionary = cm.get_raw_table("Unit")
 	var ids: Array[int] = []
 	for tid_str in raw:
+		if not String(tid_str).is_valid_int():
+			continue
 		var row: Dictionary = raw[tid_str]
 		if String(row.get("Portrait", "")) != "" and String(row.get("Unit Type", "")) == "Hero":
 			ids.append(int(tid_str))
 	return ids
 
 
-# 普通抽卡产出（源 :1721-1764）：drawCount 次 equip（数量 1）+ 30% 英雄碎片（数量 1-3）。
-static func _roll_normal(loots: Array, draw_count: int, rng: Variant, cm: Variant) -> void:
-	var equip_ids: Array[int] = _collect_valid_equip_ids(cm)
+# 普通抽卡产出（源 :1721-1764）：drawCount 次 equip（数量 1）+ 英雄位（gold 十连必得，
+# 其余 30% 概率；数量 1-3）。品质池按箱子/首抽/magic 计数（见 _quality_range）。
+static func _roll_normal(loots: Array, draw_count: int, rng: Variant, cm: Variant,
+		tavern_type: String, is_first: bool, magic_combo_count: int) -> void:
+	var q_range: Array = _quality_range(tavern_type, is_first, magic_combo_count)
+	var equip_ids: Array[int] = _collect_valid_equip_ids(cm, int(q_range[0]), int(q_range[1]))
 	if equip_ids.is_empty():
 		equip_ids = FALLBACK_EQUIP_IDS
 	var hero_ids: Array[int] = _collect_valid_hero_ids(cm)
@@ -136,19 +178,23 @@ static func _roll_normal(loots: Array, draw_count: int, rng: Variant, cm: Varian
 		var eid: int = equip_ids[int(rng.randi_range(0, equip_ids.size() - 1))]
 		loots.append({"id": eid, "amount": EQUIP_AMOUNT})
 		i += 1
-	# 30% 概率额外给英雄碎片（源 :1761）
-	if int(rng.randi_range(1, SHARD_ROLL_MAX)) <= SHARD_ROLL_THRESHOLD:
+	# 英雄位：gold 十连必得（源 TAVERNRES.HERO_IS "十连抽必得英雄"），其余 30%（源 :1761）。
+	var hero_guaranteed: bool = draw_count == COMBO_DRAW_COUNT and tavern_type == "Gold"
+	if hero_guaranteed or int(rng.randi_range(1, SHARD_ROLL_MAX)) <= SHARD_ROLL_THRESHOLD:
 		var hid: int = hero_ids[int(rng.randi_range(0, hero_ids.size() - 1))]
 		var amount: int = int(rng.randi_range(1, SHARD_AMOUNT_MAX))
 		loots.append({"id": hid, "amount": amount})
 
 
 # 灵魂石分支产出（源 :1681-1715）：按 box_type 品质范围筛 equip，随机 3 个，数量 1-3。
+# 源 :1677 type(k)=="number" 滤除非数字 key（同 _collect_valid_equip_ids 根修，2026-09-07）。
 static func _roll_stone(loots: Array, box_type: String, rng: Variant, cm: Variant) -> void:
 	var qualities: Array = STONE_QUALITY_MAP.get(box_type, FALLBACK_STONE_QUALITY)
 	var raw: Dictionary = cm.get_raw_table("Equip")
 	var valid: Array[int] = []
 	for tid_str in raw:
+		if not String(tid_str).is_valid_int():
+			continue
 		var row: Dictionary = raw[tid_str]
 		if String(row.get("Icon", "")) == "":
 			continue
