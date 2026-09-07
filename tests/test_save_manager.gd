@@ -12,6 +12,10 @@ func after_each() -> void:
 	DirAccess.remove_absolute(TEST_DIR + "save_slot1.json")
 	DirAccess.remove_absolute(TEST_DIR + "save_slot2.json")
 	DirAccess.remove_absolute(TEST_DIR + "save_int.json")
+	DirAccess.remove_absolute(TEST_DIR + "save_corrupt.json")
+	for f in DirAccess.get_files_at(TEST_DIR):
+		if f.begins_with("save_corrupt.json.corrupt_"):
+			DirAccess.remove_absolute(TEST_DIR + f)
 
 func test_roundtrip_preserves_int() -> void:
 	var data := {"hp": 100, "name": "Hero", "items": [1, 2, 3]}
@@ -40,3 +44,26 @@ func test_no_temp_residue() -> void:
 		FileAccess.file_exists(TEST_DIR + "save_slot1.json.tmp"),
 		"成功保存后不应残留临时文件"
 	)
+
+
+# 2026-09-07 用户档毁灭事故根修守卫：解析失败（str_to_var 非 Dictionary）必须先把原档
+# 备份成 .corrupt_<epoch> 再返回空——原版静默返空 → GameData 新号 → 登录首存原地覆盖，
+# 坏档零残留不可抢救（读侧兜底与写侧原子写不对称）。
+func test_corrupt_parse_backs_up_then_returns_empty() -> void:
+	var path := TEST_DIR + "save_corrupt.json"
+	var tf := FileAccess.open(path, FileAccess.WRITE)
+	tf.store_string("this is { not a valid variant dict |||")
+	tf.close()
+	var loaded := _sm.load_slot("corrupt")
+	assert_push_error("解析失败", "坏档解析失败应 push_error 显式告警（治静默覆盖）")
+	assert_eq(loaded, {}, "坏档解析失败返回空字典（走新号）")
+	var backups: Array = []
+	for f in DirAccess.get_files_at(TEST_DIR):
+		if String(f).begins_with("save_corrupt.json.corrupt_"):
+			backups.append(String(f))
+	assert_eq(backups.size(), 1, "原坏档应被改名备份为 .corrupt_<epoch>（不原地消灭）")
+	if backups.size() == 1:
+		var bf := FileAccess.open(TEST_DIR + String(backups[0]), FileAccess.READ)
+		assert_eq(bf.get_as_text(), "this is { not a valid variant dict |||", "备份内容与原坏档一致")
+		bf.close()
+	assert_false(FileAccess.file_exists(path), "原路径坏档应已改名让位（新号首存不覆盖坏档内容）")

@@ -14,7 +14,10 @@ echo "=== 1/3 分层 + Lint 门禁（Python）==="
 "$PYTHON" "$ROOT/tools/ci/check_all.py" "$ROOT"
 
 echo "=== 2/3 Headless 导入（class_name 注册前提，首次/资源变动后必需）==="
-"$GODOT" --headless --import --path "$ROOT"
+# GODOT_TEST_MODE=1 防御纵深（2026-09-07 用户档毁灭事故）：实测 4.7 --import 不跑 autoload
+# _ready（档 mtime 不动），但若未来版本行为变化触发 GameData 登录首存，无 env 会直接写
+# 真实存档——CI 全链路一律带测试模式。
+GODOT_TEST_MODE=1 "$GODOT" --headless --import --path "$ROOT"
 
 echo "=== 3/3 GUT 单测（headless）==="
 # GODOT_TEST_MODE=1：让 GameData autoload 走测试隔离分支（不 load 不写真实存档），
