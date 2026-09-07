@@ -330,8 +330,22 @@ func pve_mode() -> bool:
 	return not arena_mode and not crusade_mode and not guild_instance_mode and not excavate_mode
 
 
+## 战斗终态停摆（victory 波清/终局、exit_stage 超时/失败）时终止飞行中投射物/链：
+## engine.running=false 后 update 短路，projectile_list 内实体永不再 update → 永不
+## terminated → View _advance_actor_list 永不销毁 actor——链式闪电（ChainActor 挂 FCA
+## Loop 无限循环）在波清等待/走路与终局拾取结算窗口持续闪烁（宙斯链 Gap=0.4s，最后一跳
+## 电死波尾/关尾敌人时停摆必然落在跳跃中途，2026-09-07 实测波清 3.5s+、终局 5s+ 残留；
+## 源 ChainEffect 生死由 content:isTerminated 自灭驱动、不依赖 Logic 停摆，故无此症）。
+## 直接置位不走 terminate()：那是命中/跳跃语义（BattleProjectile 有穿透重定向副作用），
+## 照 reset_battle 同款判例。
+func _terminate_airborne_projectiles() -> void:
+	for projectile in projectile_list:
+		projectile.terminated = true
+
+
 func victory(_skip: bool = false) -> void:
 	running = false
+	_terminate_airborne_projectiles()
 	# 源 :1579 还有下一波时（wave_id < Waves）不结束关卡：View 层自动切波。
 	# 仅最后一波或 skip 才真正 exit_stage（算星级、stage_ended + 胜利音效）。
 	var total_waves: int = int(stage_info.get("Waves", 1))
@@ -352,6 +366,7 @@ func victory(_skip: bool = false) -> void:
 
 func exit_stage(result: int, _exit_flag: bool = false) -> void:
 	running = false
+	_terminate_airborne_projectiles()
 	enabled = false
 	stage_ended = true
 	last_result = result
