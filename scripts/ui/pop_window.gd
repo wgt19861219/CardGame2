@@ -20,7 +20,7 @@ const OPEN_SFX_NAME: String = "common_popup_window"
 # hero_detail BaseLayer 1、stage_select mode 20、标题 22）。
 const Z_BASE: int = 100
 const Z_STEP: int = 100
-static var _open_stack: Array[PopWindow] = []
+static var _open_stack: Array[CanvasItem] = []
 
 var identity: String = ""
 var param: Dictionary = {}
@@ -120,16 +120,40 @@ func _notification(what: int) -> void:
 
 ## 全栈重排 z（栈位 → Z_BASE + i×Z_STEP）。收缩（乱序关闭）后剩余弹窗下移，
 ## 其下已无更低弹窗，运行中变 z 无视觉跳变；新开弹窗拿当前最高位+1。
+## 元素类型 CanvasItem：兼容 push_external 入栈的非 PopWindow 全屏节点（BattlePreparePanel）。
+## 先清 Freed Object 死引用：external 节点靠 tree_exited 出栈，宿主树级联销毁时该信号
+## 不派发（GUT 实证 Freed Object 滞留），所有栈操作经本函数兜底清理。
 static func _refresh_stack_z() -> void:
-	for i in _open_stack.size():
-		var p: PopWindow = _open_stack[i]
+	var alive: Array[CanvasItem] = []
+	for p in _open_stack:
 		if is_instance_valid(p):
-			p.z_index = Z_BASE + i * Z_STEP
-			p.z_as_relative = false
+			alive.append(p)
+	_open_stack = alive
+	for i in _open_stack.size():
+		var p: CanvasItem = _open_stack[i]
+		p.z_index = Z_BASE + i * Z_STEP
+		p.z_as_relative = false
 
 
 func _unregister_from_stack() -> void:
 	var idx := _open_stack.find(self)
+	if idx >= 0:
+		_open_stack.remove_at(idx)
+		_refresh_stack_z()
+
+
+## 非 PopWindow 全屏节点入栈共享动态 z（拿当前最高位+1，恒压栈内全部弹窗及其 relative
+## 子树——Z_STEP=100 > 已知最大 relative z 22）。适用 BattlePreparePanel 这类 Control
+## 全屏页：旧实现写死 z=210，HeroScene 链（hero_package 占栈位使选关面板 z=200）下
+## 选关章节标题 effective 200+22=222 穿透布阵页（用户 2026-09-07 报「底下关卡的标题
+## 透过来了」）。退出须配对 pop_external（PREDELETE 兜底只对本类生效）。
+static func push_external(node: CanvasItem) -> void:
+	_open_stack.append(node)
+	_refresh_stack_z()
+
+
+static func pop_external(node: CanvasItem) -> void:
+	var idx := _open_stack.find(node)
 	if idx >= 0:
 		_open_stack.remove_at(idx)
 		_refresh_stack_z()

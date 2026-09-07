@@ -35,6 +35,14 @@ const META_POINTER: StringName = StageSelectFills.META_POINTER
 const META_BOBBED: StringName = &"ss_bobbed"
 const META_MASK: StringName = StageSelectFills.META_MASK
 const META_MASK_BLINKED: StringName = &"ss_mask_blinked"
+# 源 createStage :1331-1351 forGetWay 引导：tutorial_circle 呼吸圈（ScaleTo 0.65s 1↔1.35 循环，
+# sprite 中心锚）+ tutorial_finger 手指（anchor(0,1) 左上锚 @ccp(x-4,y+4) ↔ MoveTo (x+13.5,y-13.5)
+# 往返 0.65s；cocos y 翻转后=Godot 右下方向位移 (17.5,17.5)）。节点构建归 fills（两件套范式）。
+const META_GUIDE_CIRCLE: StringName = StageSelectFills.META_GUIDE_CIRCLE
+const META_GUIDE_FINGER: StringName = StageSelectFills.META_GUIDE_FINGER
+const GUIDE_SCALE_TIME: float = 0.65
+const GUIDE_SCALE_MAX: float = 1.35
+const GUIDE_FINGER_SHIFT: Vector2 = Vector2(17.5, 17.5)   # 源起终点位移 (x+13.5,y-13.5)-(x-4,y+4) 的 Godot 换算
 
 var mgr: StageManager = null
 var player: PlayerData = null
@@ -43,6 +51,9 @@ var _current_chapter: int = 1
 var _pre_chapter: int = 1   # 切换前章节，算 map slide 方向（源 self.preChapter）
 var _mode: String = "normal"
 var _stage_buttons: Dictionary = {}   # sid -> TextureButton（_refresh_view 重建）
+# 源 create :1585-1592 带 stage 参（createByStage 经装备获取途径跳入）：getWayStage 定位
+# 目标关 + forGetWay 引导态（目标关上呼吸圈+手指，:1331-1351）；0 = 非 GetWay。
+var _get_way_stage: int = 0
 var _content: Control = null
 var _map_host: Control = null
 var _frame_layer: Control = null
@@ -65,10 +76,18 @@ func setup_panel(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) ->
 	_build_content()
 
 
+# 获取途径跳转入口（main_scene.open_stage_select_by_stage 反射链终点）。源 createByStage
+# :1642-1664：按关卡类型设 mode（elite 掉落 → 精英地图）+ Stage Group 转 真 sid +
+# create(chapter, mode, stage) 带 stage 参 → getWayStage 关卡级定位 + forGetWay 引导态。
+# 旧实现只定位章节：精英关跳普通地图看不到目标关 + 落章后无任何目标指示（用户 2026-09-07
+# 报「去往正确的关卡没有实现」）。
 func setup_by_stage(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng, stage_id: int) -> void:
 	mgr = p_mgr
 	player = p_player
 	rng = p_rng
+	var stype: String = StageAccount.stage_type(stage_id)
+	_mode = "elite" if stype == "elite" else "normal"
+	_get_way_stage = _real_stage_id(stage_id)
 	_current_chapter = _chapter_of_stage(stage_id)
 	_pre_chapter = _current_chapter
 	setup()
@@ -77,10 +96,15 @@ func setup_by_stage(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng,
 
 func _chapter_of_stage(stage_id: int) -> int:
 	var st: Dictionary = player.cm.get_raw_table(&"Stage")
-	var sid: int = stage_id
+	return int(st.get(str(_real_stage_id(stage_id)), {}).get("Chapter ID", 1))
+
+
+# 源 createByStage :1655/:1658：elite raw id（>=10000）转 Stage Group 真 sid（普通关直返）。
+func _real_stage_id(stage_id: int) -> int:
 	if stage_id >= 10000:
-		sid = int(st.get(str(stage_id), {}).get("Stage Group", stage_id))
-	return int(st.get(str(sid), {}).get("Chapter ID", 1))
+		var st: Dictionary = player.cm.get_raw_table(&"Stage")
+		return int(st.get(str(stage_id), {}).get("Stage Group", stage_id))
+	return stage_id
 
 
 # 建 UI 内容：base 从 .tscn instantiate（位置/size 固化）+ bind signals + fill mode toggle 文本。
@@ -111,6 +135,7 @@ func _enter_tree() -> void:
 	_start_arrow_bob()
 	_bob_all_pointers()
 	_blink_all_masks()
+	_animate_get_way_guide()
 
 
 # op="init"（首次，无动画）/ "chapter"（map slide + title fade；frame 章节不重建，照源 createFrame 不随章节）/ "mode"（map fadeOut + frame/title/dots fade）。
@@ -157,6 +182,7 @@ func _refresh_view(op: String = "init") -> void:
 	# 启动新 pointer 浮动（未入树时 _bob_pointer 守卫跳过，_enter_tree 兜底；切换后新 pointer 在此启动）
 	_bob_all_pointers()
 	_blink_all_masks()
+	_update_get_way_guide()
 
 
 static func _clear_children(host: Control) -> void:
@@ -269,6 +295,82 @@ func _blink_mask(m: CanvasItem) -> void:
 	m.set_meta(META_MASK_BLINKED, true)
 
 
+# ===== 获取途径跳转引导（源 createStage :1331-1351 forGetWay / gotoDetailScene :218-228）=====
+
+# GetWay 引导：目标关按钮上叠呼吸圈+手指；同层当前关 pointer 隐藏（源 :1313-1315 currentTag
+# 隐藏突出引导）。目标匹配走 stage_info meta 的 info.id（真 sid，普通/精英模式同口径）——
+# elite 模式 _stage_buttons 字典 key 是组 id（fills._current_sid），直查字典对不上真 sid。
+func _update_get_way_guide() -> void:
+	_clear_get_way_guide()
+	if _get_way_stage <= 0 or _map_host == null:
+		return
+	for layer in _map_host.get_children():
+		if not (layer is Control):
+			continue
+		for c in (layer as Control).get_children():
+			if c is TextureButton and (c as TextureButton).has_meta(&"stage_info"):
+				var info: Dictionary = (c as TextureButton).get_meta(&"stage_info")
+				if int(info.get("id", 0)) == _get_way_stage:
+					_attach_get_way_guide(layer as Control, c as TextureButton)
+					return
+
+
+func _attach_get_way_guide(layer: Control, btn: TextureButton) -> void:
+	# forGetWay 隐藏当前关 pointer（源 :1313-1315 currentTag:setVisible(false)，突出引导）
+	for c in layer.get_children():
+		if c.has_meta(META_POINTER):
+			(c as CanvasItem).visible = false
+	StageSelectFills.attach_get_way_guide(layer, btn)
+	_animate_get_way_guide()
+
+
+# 引导动画启动（未入树守卫 + meta 防重；_enter_tree/_attach 双触发同 pointer/mask 范式）。
+func _animate_get_way_guide() -> void:
+	if _map_host == null:
+		return
+	for layer in _map_host.get_children():
+		if not (layer is Control):
+			continue
+		for c in (layer as Control).get_children():
+			if not (c is CanvasItem):
+				continue
+			var guide: CanvasItem = c as CanvasItem
+			if guide.has_meta(META_GUIDE_CIRCLE) and not guide.get_meta(META_BOBBED, false):
+				_guide_circle_breath(guide)
+			elif guide.has_meta(META_GUIDE_FINGER) and not guide.get_meta(META_BOBBED, false):
+				_guide_finger_slide(guide)
+
+
+func _guide_circle_breath(circle: CanvasItem) -> void:
+	if not circle.is_inside_tree():
+		return
+	var tw := circle.create_tween().set_loops()
+	tw.tween_property(circle, "scale", Vector2(GUIDE_SCALE_MAX, GUIDE_SCALE_MAX), GUIDE_SCALE_TIME)
+	tw.tween_property(circle, "scale", Vector2.ONE, GUIDE_SCALE_TIME)
+	circle.set_meta(META_BOBBED, true)
+
+
+func _guide_finger_slide(finger: CanvasItem) -> void:
+	if not finger.is_inside_tree():
+		return
+	var base_pos: Vector2 = finger.position
+	var tw := finger.create_tween().set_loops()
+	tw.tween_property(finger, "position", base_pos + GUIDE_FINGER_SHIFT, GUIDE_SCALE_TIME)
+	tw.tween_property(finger, "position", base_pos, GUIDE_SCALE_TIME)
+	finger.set_meta(META_BOBBED, true)
+
+
+func _clear_get_way_guide() -> void:
+	if _map_host == null:
+		return
+	for layer in _map_host.get_children():
+		if not (layer is Control):
+			continue
+		for c in (layer as Control).get_children():
+			if c.has_meta(META_GUIDE_CIRCLE) or c.has_meta(META_GUIDE_FINGER):
+				c.free()
+
+
 func _get_stage_stars(sid: int) -> int:
 	if mgr == null:
 		return 0
@@ -323,6 +425,11 @@ func _on_stage_clicked(sid: int) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if mgr == null or player == null or rng == null:
 		return
+	# 源 gotoDetailScene :218-228：GetWay 引导下点进目标关详情 → 清 circle/finger + getWayMode。
+	# 精英模式按钮 key 是组 id（fills._current_sid），比较前经 _real_stage_id 归一到真 sid。
+	if _get_way_stage > 0 and _real_stage_id(sid) == _get_way_stage:
+		_get_way_stage = 0
+		_clear_get_way_guide()
 	# 详情标题由弹窗内 %MapTitleBg+%StageTitle 自绘（源 stagedetail.lua:1620-1646，2026-09-03 改）。
 	# 旧"打开期间改父面板章节标题+关闭恢复"联动已删：父标题（z=201）被弹窗全屏
 	# FrameworkBg 盖住实机不可见，联动是死代码（即标题缺失 bug 根因）。

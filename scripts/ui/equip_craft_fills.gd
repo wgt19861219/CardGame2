@@ -91,11 +91,12 @@ static func create_history_layer(panel) -> Control:
 
 
 # 追加一个历史节点（源 setHistory :848-872：len>0 时先加 view_history_arrow，再加 icon）。
-# 返 iconBg wrapper（panel 连 gui_input handler 并存 _history）。
+# 返 {"iconBg": wrapper, "arrow": arrow}（首项无 arrow 为 null；panel 连 gui_input handler 并
+# 存 _history——arrow 引用必须随条目存，回退截断时随 iconBg 一并删，源 element 结构 :858-863）。
 # ⚠️ HBoxContainer 布局会重置直接子节点的 scale（headless 实验实锤：add 后 0.518→1.0，
 # 2026-09-07 顶部历史图标偏大 1.9 倍根因）——38 点缩放须经 wrapper 隔离：HBox 子=wrapper
 #（min=frame 显示 38×38.4），icon_bg 挂 wrapper 内施 scale。
-static func append_history_node(panel, layer: Control, id: int) -> Control:
+static func append_history_node(panel, layer: Control, id: int) -> Dictionary:
 	var len_: int = panel._history.size()
 	var icon_bg: Control = ReadequipIcon.create_icon(id, 0, panel.cm)
 	icon_bg.scale = Vector2(HISTORY_ICON_SCALE, HISTORY_ICON_SCALE)
@@ -103,13 +104,14 @@ static func append_history_node(panel, layer: Control, id: int) -> Control:
 	wrapper.custom_minimum_size = HISTORY_ICON_DISP
 	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
 	wrapper.add_child(icon_bg)
+	var arrow: TextureRect = null
 	if len_ > 0:
 		# HBoxContainer 管子节点 layout，须用 custom_minimum_size（非 size）分配空间 + EXPAND_IGNORE_SIZE 让纹理 stretch 入框。
-		var arrow := TextureRect.new()
+		arrow = TextureRect.new()
 		arrow.texture = load(HISTORY_ARROW_PATH)
 		arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		arrow.custom_minimum_size = TexDisplaySize.display_size(HISTORY_ARROW_PATH)
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		layer.add_child(arrow)
 	layer.add_child(wrapper)
-	return wrapper
+	return {"iconBg": wrapper, "arrow": arrow}

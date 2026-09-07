@@ -8,6 +8,7 @@ extends Control
 const BG_TEXTURE: String = "res://assets/ui/alpha/HVGA/bg.jpg"
 # P1-2026-07-10：补全未 preload 的 class_name 类（消除跨脚本强引用）
 const HeroPackagePanel = preload("res://scripts/ui/hero_package_panel.gd")
+const StageSelectPanel = preload("res://scripts/ui/stage_select_panel.gd")
 
 
 func _ready() -> void:
@@ -43,3 +44,14 @@ func _open_hero_package() -> void:
 ## HudOverlay 模式下直接切其 StatusBar visible。
 func set_bars_visible(v: bool) -> void:
 	HudOverlay.set_status_visible(v)
+
+
+## 装备合成获取途径跳转：由 HeroDetailEquipSlots.on_equip_craft_jump 经 get_tree().current_scene
+## 反射调（名字不可改，与 main_scene.gd 同款）。英雄按钮经 SceneManager 切到本独立场景，
+## 英雄详情的获取途径跳转曾断链——current_scene=HeroScene 无此方法 → on_equip_craft_jump
+## 静默 return → 弹窗关了选关不开（用户 2026-09-07 报「弹窗消失就没了」，[GJ] 日志实锤
+## current_scene=HeroScene）。源 doClickGetWay :83 pushScene 与当前场景无关，本入口补齐等价链。
+func open_stage_select_by_stage(stage_id: int) -> void:
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_by_stage(GameData.player.stage_manager, GameData.player, BattleRng.new(randi()), stage_id)
+	panel.show_window(self)

@@ -23,6 +23,8 @@ const COLOR_BROWN: Color = Color(50.0 / 255.0, 41.0 / 255.0, 31.0 / 255.0)
 const COLOR_RED: Color = Color(1.0, 0.0, 0.0)
 const COLOR_GREEN: Color = Color(24.0 / 255.0, 102.0 / 255.0, 0.0)
 const COLOR_WHITE: Color = Color(1.0, 1.0, 1.0)
+# 源 pressColor（ui/equipcraft.lua:11 ccc3(150,150,150)）：forbidInfoButton 灰字色。
+const COLOR_FORBID: Color = Color(150.0 / 255.0, 150.0 / 255.0, 150.0 / 255.0)
 # ── LSTR key（源 LSTR 宏，cm.get_lstr 取实际值）──
 const LSTR_EQUIPMENT: String = "EQUIPCRAFT.EQUIPMENT"
 const LSTR_CONFIRM: String = "CHATCONFIG.CONFIRM"
@@ -68,7 +70,15 @@ static func create_info_button(panel) -> void:
 			remark_text = panel.cm.get_lstr(LSTR_REQUIRED_HERO_LEVEL) % int(judge[1])
 			remark_color = COLOR_RED
 	else:
-		text = panel.cm.get_lstr(LSTR_CONFIRM)
+		# 源 createInfoButton handbook 分支（equipcraft.lua:633-643）：未开合成窗时按有无配方
+		# 显示「合成公式/获取途径」，打开后由 _open_craft_panel 刷成「确定」。
+		if not panel._is_open:
+			if panel._get_components(panel._target_id) > 0:
+				text = panel.cm.get_lstr(LSTR_SYNTHESIS_FORMULA)
+			else:
+				text = panel.cm.get_lstr(LSTR_WAY_TO_GET)
+		else:
+			text = panel.cm.get_lstr(LSTR_CONFIRM)
 		var elv: int = int(panel.cm.get_raw_table("Equip").get(str(panel._target_id), {}).get("Level Requirement", 0))
 		remark_text = panel.cm.get_lstr(LSTR_REQUIRED_HERO_LEVEL) % elv
 	# fill .tscn 已建节点（源 :669-714 ui_info 等价）
@@ -83,7 +93,20 @@ static func callable_for_panel(fn: Callable, panel) -> Callable:
 	return fn.bind(panel)
 
 
+# 源 forbidInfoButton（equipcraft.lua:1343-1356）：handbook 恒不禁用（直接 return 不改 flag）；
+# heroDetail 下 forbid=true 时 infoButtonLabel 灰字 + isForbidInfoButton=true（_on_info_pressed 拦截）。
+# 解禁恢复白字。合成窗打开期间（heroDetail）禁点，合成出目标/关闭合成窗时解禁。
+static func set_forbid_info_button(panel, forbid: bool) -> void:
+	if panel._context == "handbook":
+		return
+	panel._is_forbid_info_button = forbid
+	panel._info_button_label.modulate = COLOR_FORBID if forbid else COLOR_WHITE
+
+
 static func _on_info_pressed(panel) -> void:
+	# 源 doInfoButtonTouch（equipcraft.lua:178-180）：isForbidInfoButton 时按钮不响应点击。
+	if panel._is_forbid_info_button:
+		return
 	if panel._context == "handbook":
 		if not panel._is_open:
 			panel._open_craft_panel()
@@ -156,6 +179,10 @@ static func play_craft_effect(panel) -> void:
 	panel._create_craft_tree(panel._craft_id, true)
 	if panel._context == "heroDetail":
 		play_puton_effect(panel)
+		# 源 playCraftEffect 回调（equipcraft.lua:456-458）：heroDetail 且 historyid>1 → 回退一层
+		# 历史（在子材料层合成完成后自动回父配方视图，父层材料数量已刷新，可继续点合成）。
+		if panel._history_id > 1:
+			panel._set_history(panel._history_id - 1, 0)
 
 
 # 遍历 nodeAmount<nodeNeed 且 isCraftable 的材料 → 显示"需先合成"提示框；否则 showToast NO_MATERIAL。

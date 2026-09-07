@@ -382,7 +382,10 @@ static func _build_one_getway(panel, tree: Control, stage_table: Dictionary, raw
 static func _build_craft_button(panel, tree: Control, components: int) -> void:
 	var text: String = panel.cm.get_lstr(LSTR_SYNTHESIS) if components >= 1 else panel.cm.get_lstr(LSTR_RETURN)
 	var btn: TextureButton = UiButton.make(CRAFT_BTN_RES, CRAFT_BTN_PRESS_RES, _gl(CRAFT_BTN_POS), text, COLOR_WHITE)
-	btn.disabled = panel._lack_of_component or not panel._check_money_enough()
+	# 源按钮永可点（:1216/:1223 钱不够/缺材料时 forbidCraftButton(false) 确保正常白字可点，
+	# 全源无 forbid(true) 调用；doClickCraftButton → craftEquip 点击后才拦截给反馈：
+	# 缺不可合成材料 → createNeedCraftPrompt 提示框 / toast 无材料，钱不够 → toast）。
+	# 旧实现 btn.disabled 发明把反馈链路挡死 → 物品不足点击无任何反应（用户 2026-09-07 报）。
 	btn.pressed.connect(panel._on_craft_pressed)
 	tree.add_child(btn)
 	panel._craft_btn = btn

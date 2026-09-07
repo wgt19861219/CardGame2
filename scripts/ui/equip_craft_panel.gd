@@ -60,6 +60,9 @@ var _info_button: BaseButton = null
 var _info_button_label: Label = null
 var _info_remark: Label = null
 var _is_open: bool = false
+# 源 isForbidInfoButton（equipcraft.lua:1354）：heroDetail 下合成窗打开期间 infoButton 禁点
+# （灰字），合成出目标装备且等级够/关闭合成窗时解禁；handbook 恒 false（:1344-1346）。
+var _is_forbid_info_button: bool = false
 var _has_play_puton_effect: bool = false
 
 
@@ -129,7 +132,15 @@ func _on_craft_pressed() -> void:
 		if _history_id > 1:
 			_set_history(_history_id - 1, 0)
 		else:
-			remove_window()
+			# 源 doClickCraftButton（equipcraft.lua:211-218）：返回关合成窗回详情态（非关整弹窗），
+			# 并刷新 infoButton 文字（heroDetail 且拥有>0 → 装备；否则 → 获取途径）。
+			# 旧实现误用 remove_window() → 点返回直接关掉整个弹窗（用户 2026-09-07 报按钮逻辑缺失）。
+			AudioPlayer.play_sfx("common_click_feedback")
+			_close_craft_panel()
+			var close_text: String = EquipCraftInfoBtn.LSTR_EQUIPMENT \
+					if _get_amount(_target_id) > 0 and _context == "heroDetail" \
+					else EquipCraftInfoBtn.LSTR_WAY_TO_GET
+			_info_button_label.text = cm.get_lstr(close_text)
 		return
 	if _lack_of_component:
 		AudioPlayer.play_sfx("common_alert")
@@ -157,6 +168,12 @@ func _perform_craft() -> void:
 
 func _refresh_reply_data() -> void:
 	_refresh_amount()
+	# 源 refreshReplyData（equipcraft.lua:505-511）：合成出的就是弹窗目标装备（up.id==id）且
+	# 英雄等级够 → 解禁 infoButton（灰字变白可点，玩家点它穿上刚合成的装备）。
+	if _craft_id == _target_id and _context == "heroDetail":
+		var judge: Array = _get_judge_level()
+		if int(judge[1]) <= int(judge[0]):
+			EquipCraftInfoBtn.set_forbid_info_button(self, false)
 
 
 func _check_money_enough() -> bool:
@@ -260,6 +277,14 @@ func _make_get_way_handler(idx: int) -> Callable:
 
 func _open_craft_panel() -> void:
 	_is_open = true
+	# 源 openCraftPanel（equipcraft.lua:577-584）：heroDetail → infoButton 文字设「装备」+ 灰字禁点
+	# （合成窗开着时 infoButton 不可再点，防误触穿/关）；handbook → 文字设「确定」（正常可点，
+	# 再点关整个弹窗，forbidInfoButton 内 handbook 恒不禁用 :1344-1346）。
+	if _context == "heroDetail":
+		_info_button_label.text = cm.get_lstr(EquipCraftInfoBtn.LSTR_EQUIPMENT)
+		EquipCraftInfoBtn.set_forbid_info_button(self, true)
+	else:
+		_info_button_label.text = cm.get_lstr(EquipCraftInfoBtn.LSTR_CONFIRM)
 	# 源 openCraftPanel（equipcraft.lua:575-587 / :1246-1268）：点 infoButton 后才建合成窗口 + 合成树。
 	# :1259-1266 equipLayer frame 弹性滑 (400,240)→(252,240) 左移让位 + craftWindow 滑 (548,240)
 	# + 动画后 setZOrder(2)。滑入动画按用户 2026-08-30 指示退役（受控偏离：直显终点），让位同口径
@@ -275,9 +300,13 @@ func _open_craft_panel() -> void:
 
 
 func _close_craft_panel() -> void:
+	# 源 closeCraftPanel（equipcraft.lua:588-608）：initHistory 清历史 + isOpen=false +
+	# heroDetail 解禁 infoButton + 详情 frame 弹回中心（让位复位，直设同 open 口径）。
 	_is_open = false
 	_craft_window.visible = false
 	_set_equip_layer_side(false)
+	_init_history()
+	EquipCraftInfoBtn.set_forbid_info_button(self, false)
 
 
 # 详情面板让位两态（源 :1259-1261 frame (400,240)↔(252,240)；InfoButton/InfoRemark 源挂
@@ -300,6 +329,12 @@ func _set_equip_layer_side(side: bool) -> void:
 # ===== Step 4：history 历史记录栏 =====
 
 func _init_history() -> void:
+	# 源 initHistory（equipcraft.lua:726-729）置 nil；本项目历史图标挂 %HistoryClip 下 HBox
+	# （随 craft_window 隐藏但仍占位）→ 须同步清子节点，否则关闭再打开时 setHistory(0,id)
+	# 在旧图标后重复 append（历史栏叠加）。
+	if _history_layer != null and is_instance_valid(_history_layer):
+		for c in _history_layer.get_children():
+			c.free()
 	_history = []
 	_history_id = 0
 
@@ -314,14 +349,23 @@ func _set_history(index: int, id: int) -> void:
 	var len_: int = _history.size()
 	if index == 0 or index > len_:
 		_history_id = len_ + 1
-		var icon_bg: Control = EquipCraftFills.append_history_node(self, container_layer, id)
+		var node: Dictionary = EquipCraftFills.append_history_node(self, container_layer, id)
+		var icon_bg: Control = node["iconBg"]
 		icon_bg.gui_input.connect(_make_history_handler(len_ + 1))
-		_history.append({"id": id, "iconBg": icon_bg})
+		_history.append({"id": id, "iconBg": icon_bg, "arrow": node["arrow"]})
 	elif index <= len_:
 		_history_id = index
+		# 源 setHistory :875-880 截断时 iconBg 与 arrow 一并删（arrow 随所属条目存引用 :858-863）。
+		# 旧实现漏删 arrow → 点返回回退后 view_history_arrow 残留 HBox，反复进出无限叠加
+		#（用户 2026-09-07 报「箭头不会消失，会一直叠加」）。
 		for i in range(index, len_):
-			if i < _history.size() and is_instance_valid(_history[i]["iconBg"]):
-				(_history[i]["iconBg"] as Control).queue_free()
+			if i < _history.size():
+				var entry: Dictionary = _history[i]
+				if is_instance_valid(entry.get("iconBg", null)):
+					(entry["iconBg"] as Control).queue_free()
+				var arrow: TextureRect = entry.get("arrow", null)
+				if arrow != null and is_instance_valid(arrow):
+					arrow.queue_free()
 		_history.resize(index)
 		if index - 1 < _history.size():
 			_create_craft_tree(int(_history[index - 1]["id"]), false)

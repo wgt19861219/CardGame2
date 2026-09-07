@@ -204,6 +204,110 @@ func test_setup_by_stage_sets_chapter() -> void:
 	root.queue_free()
 
 
+# ===== 四轮：获取途径跳转 mode + 关卡级引导（2026-09-07，源 createByStage :1642-1664 + createStage :1331-1351）=====
+
+# 源 createByStage :1646-1659：按关卡类型设 mode（elite 掉落 → 精英地图）+ getWayStage=Stage Group
+# 真 sid（:1655）。旧实现缺 mode → 精英关跳普通地图看不到目标关。
+func test_setup_by_stage_sets_mode_and_target() -> void:
+	var st: Dictionary = cm.get_raw_table("Stage")
+	var normal_sid: int = 0
+	var elite_sid: int = 0
+	for sid_str in st:
+		var sid: int = int(sid_str)
+		if normal_sid == 0 and sid > 0 and sid < 10000 and StageAccount.stage_type(sid) == "normal":
+			normal_sid = sid
+		if elite_sid == 0 and sid >= 10000:
+			elite_sid = sid
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	var pd := PlayerData.new(cm)
+	var rng := BattleRng.new(1)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_by_stage(mgr, pd, rng, normal_sid)
+	panel.show_window(root)
+	assert_eq(panel._mode, "normal", "普通关 → normal 地图（源 :1647-1650）")
+	assert_eq(panel._get_way_stage, normal_sid, "getWayStage = 真 sid 直返")
+	panel.remove_window()
+	if elite_sid > 0:
+		var expect_gid: int = int(st.get(str(elite_sid), {}).get("Stage Group", elite_sid))
+		var panel2 := StageSelectPanel.new("stageselect", {})
+		panel2.setup_by_stage(mgr, pd, rng, elite_sid)
+		panel2.show_window(root)
+		assert_eq(panel2._mode, "elite", "精英关 → elite 地图（源 :1656-1658 else 分支）")
+		assert_eq(panel2._get_way_stage, expect_gid, "getWayStage = Stage Group 真 sid（源 :1655）")
+		panel2.remove_window()
+	root.queue_free()
+
+
+# 源 createStage :1331-1351 forGetWay：目标关上叠 tutorial_circle 呼吸圈 + tutorial_finger 手指引导
+func test_setup_by_stage_attaches_guide() -> void:
+	var st: Dictionary = cm.get_raw_table("Stage")
+	var normal_sid: int = 0
+	for sid_str in st:
+		var sid: int = int(sid_str)
+		if sid > 0 and sid < 10000 and StageAccount.stage_type(sid) == "normal":
+			normal_sid = sid
+			break
+	if normal_sid == 0:
+		pass_test("无普通关，跳过")
+		return
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	mgr.progress = {normal_sid: 3}
+	var pd := PlayerData.new(cm)
+	var rng := BattleRng.new(1)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_by_stage(mgr, pd, rng, normal_sid)
+	panel.show_window(root)
+	var has_circle: bool = false
+	var has_finger: bool = false
+	for layer in panel._map_host.get_children():
+		for c in (layer as Control).get_children():
+			if c.has_meta(StageSelectPanel.META_GUIDE_CIRCLE):
+				has_circle = true
+			if c.has_meta(StageSelectPanel.META_GUIDE_FINGER):
+				has_finger = true
+	assert_true(has_circle, "目标关上呼吸圈引导（源 :1336-1343）")
+	assert_true(has_finger, "目标关上手指引导（源 :1344-1351）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 gotoDetailScene :218-228：GetWay 下点进目标关详情 → 清 circle/finger + getWayMode=nil
+func test_get_way_guide_clears_on_target_click() -> void:
+	var st: Dictionary = cm.get_raw_table("Stage")
+	var normal_sid: int = 0
+	for sid_str in st:
+		var sid: int = int(sid_str)
+		if sid > 0 and sid < 10000 and StageAccount.stage_type(sid) == "normal":
+			normal_sid = sid
+			break
+	if normal_sid == 0:
+		pass_test("无普通关，跳过")
+		return
+	var root := Node.new()
+	add_child(root)
+	var mgr := StageManager.new(cm)
+	mgr.progress = {normal_sid: 3}
+	var pd := PlayerData.new(cm)
+	var rng := BattleRng.new(1)
+	var panel := StageSelectPanel.new("stageselect", {})
+	panel.setup_by_stage(mgr, pd, rng, normal_sid)
+	panel.show_window(root)
+	panel._on_stage_clicked(normal_sid)   # 点目标关（普通模式按钮 key=info.id）→ 开详情 + 清引导
+	assert_eq(panel._get_way_stage, 0, "点目标关 → getWayStage 清零（源 :226 getWayMode=nil）")
+	var has_guide: bool = false
+	for layer in panel._map_host.get_children():
+		for c in (layer as Control).get_children():
+			if c.has_meta(StageSelectPanel.META_GUIDE_CIRCLE) or c.has_meta(StageSelectPanel.META_GUIDE_FINGER):
+				has_guide = true
+	assert_false(has_guide, "引导节点清除（源 :219-225 circle/finger 清理）")
+	panel.remove_window()
+	root.queue_free()
+
+
 # ===== 照源精修验收（2026-07-16，Task 5 改 fills 引用）=====
 
 # 源 createModeButton label：normal=LSTR("STAGESELECT.NORMAL")、elite=LSTR("EQUIPCRAFT.ELITE")、
@@ -494,11 +598,12 @@ func test_builder_retired_and_new_whitelist() -> void:
 	assert_false(panel_src.contains("stage_select_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
 	var fills_src: String = FileAccess.get_file_as_string(FILLS_PATH)
 	var fills_new: PackedStringArray = _collect_new_calls(fills_src)
-	assert_eq(fills_new.size(), 10, "fills .new( 恰 10 处（动态行+动画节点白名单）")
+	# 12 = 10 + 获取途径引导 2（tutorial_circle/finger，源 createStage :1331-1351 forGetWay，2026-09-07 四轮）
+	assert_eq(fills_new.size(), 12, "fills .new( 恰 12 处（动态行+动画节点+GetWay 引导白名单）")
 	var joined: String = "\n".join(fills_new)
 	assert_true(joined.contains("Control.new()"), "MapLayer 裁剪层（章节 slide 动画需新旧并存）在白名单")
 	assert_true(joined.contains("TextureButton.new()"), "stage 圆点按钮（数量/位置随章节数据）在白名单")
-	# TextureRect 共 7 处（bg/route 中心子、star_bg、star、pointer、key mask、frame/title_bg 中心件、dot）
+	# TextureRect 共 9 处（bg/route 中心子、star_bg、star、pointer、key mask、frame/title_bg 中心件、dot、GetWay 引导 circle/finger）
 	var tr_count: int = 0
 	var idx: int = fills_src.find(".new(")
 	while idx != -1:
@@ -508,7 +613,7 @@ func test_builder_retired_and_new_whitelist() -> void:
 		if line.contains("TextureRect.new()"):
 			tr_count += 1
 		idx = fills_src.find(".new(", idx + 1)
-	assert_eq(tr_count, 7, "TextureRect.new() 恰 7 处（bg/route、star_bg、star、pointer、mask、frame/title_bg、dot）")
+	assert_eq(tr_count, 9, "TextureRect.new() 恰 9 处（bg/route、star_bg、star、pointer、mask、frame/title_bg、dot、GetWay circle/finger）")
 	assert_true(joined.contains("Label.new()"), "章节 title Label（章节 crossfade 动画节点）在白名单")
 	var panel_new: PackedStringArray = _collect_new_calls(panel_src)
 	assert_eq(panel_new.size(), 1, "panel .new( 恰 1 处（StageDetailPanel 弹窗构造）")
