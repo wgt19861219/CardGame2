@@ -56,43 +56,48 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+; 装备名（源 board.lua:332-341 name anchor(0,0.5)@ccp(92,345) size24 → 左缘 92、中心线 y=385-345=40）
 [node name="NameLabel" type="Label" parent="EquipLayer"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 92.0
-offset_top = 30.0
+offset_top = 25.0
 offset_right = 280.0
-offset_bottom = 60.0
+offset_bottom = 55.0
 theme_type_variation = &"EquipCraftNameLabel"
 vertical_alignment = 1
 
+; 拥有量（源 board.lua:55-70 amount_title anchor(0,0.5)@ccp(90,310) size20 → 左缘 90、中心线 y=385-310=75）
 [node name="AmountLabel" type="Label" parent="EquipLayer"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 92.0
-offset_top = 68.0
+offset_left = 90.0
+offset_top = 63.0
 offset_right = 280.0
-offset_bottom = 92.0
+offset_bottom = 87.0
 theme_type_variation = &"EquipCraftHaveLabel"
 vertical_alignment = 1
 
+; 属性背景框（源 board.lua:116-124 att_bg Scale9 package_detail_bg_2 326×192px÷CS=254.4×149.8，
+; anchor(0.5,1)@ccp(143,287) → left=143-127.2=15.8、top=385-287=98；高度 fill 按行数动态 =行高+12）
 [node name="AttBg" type="TextureRect" parent="EquipLayer"]
 layout_mode = 0
-offset_left = 15.0
-offset_top = 105.0
-offset_right = 275.0
-offset_bottom = 265.0
+offset_left = 15.8
+offset_top = 98.0
+offset_right = 270.2
+offset_bottom = 247.8
 mouse_filter = 2
 texture = ExtResource("7_attbg")
 expand_mode = 1
 
+; 属性行容器（源 board.lua:225-231 att_list ChaosNode anchor(0,1)@ccp(22,282) → top=385-282=103，行距 offset=2）
 [node name="AttHost" type="VBoxContainer" parent="EquipLayer"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 22.0
-offset_top = 110.0
+offset_top = 103.0
 offset_right = 265.0
-offset_bottom = 260.0
+offset_bottom = 253.0
 mouse_filter = 2
 theme_override_constants/separation = 2
 
@@ -134,13 +139,16 @@ offset_bottom = -107.61
 clip_contents = true
 mouse_filter = 2
 
+; infoButton（源 equipcraft.lua:695-701 infoButton @frame 局部 ccp(147,40) anchor 0.5 → 中心
+; (147,345)，package_button 335×67px÷CS=261.46×52.29 → 局部 (16.27,318.85)-(277.73,371.15)
+; → 全局 +EquipLayer(256,48)。旧值 244×50 偏窄 17.5）
 [node name="InfoButton" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 278.0
-offset_top = 368.0
-offset_right = 522.0
-offset_bottom = 418.0
+offset_left = 272.27
+offset_top = 366.85
+offset_right = 533.73
+offset_bottom = 419.15
 texture_normal = ExtResource("4_pkgbtn")
 texture_pressed = ExtResource("5_pkgbtnp")
 ignore_texture_size = true
@@ -157,12 +165,14 @@ mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
+; infoButton 上方 remark（源 equipcraft.lua:675-682 infoButtonRemark @frame 局部 ccp(147,80) size18
+; anchor 0.5 → 中心线 (147,305) → 全局中心 (403,353)，水平区间 403±122 与按钮同轴）
 [node name="InfoRemark" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-offset_left = 278.0
+offset_left = 281.0
 offset_top = 343.0
-offset_right = 522.0
+offset_right = 525.0
 offset_bottom = 363.0
 horizontal_alignment = 1
 vertical_alignment = 1

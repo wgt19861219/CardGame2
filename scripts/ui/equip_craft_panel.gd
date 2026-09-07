@@ -260,16 +260,41 @@ func _make_get_way_handler(idx: int) -> Callable:
 
 func _open_craft_panel() -> void:
 	_is_open = true
-	# 源 openCraftPanel（equipcraft.lua:575-587 / :1256-1266）：点 infoButton 后才建合成窗口 + 合成树。
-	# :1256-1266 弹性滑入（EaseBackOut position.y -h→0）——用户 2026-08-30 不要此动画（七~九轮
-	# 反馈「装备物品触发侧滑」即此），受控偏离：直显不滑入。
+	# 源 openCraftPanel（equipcraft.lua:575-587 / :1246-1268）：点 infoButton 后才建合成窗口 + 合成树。
+	# :1259-1266 equipLayer frame 弹性滑 (400,240)→(252,240) 左移让位 + craftWindow 滑 (548,240)
+	# + 动画后 setZOrder(2)。滑入动画按用户 2026-08-30 指示退役（受控偏离：直显终点），让位同口径
+	# 直设；z 序由 tscn 树序保证（CraftWindow 在 EquipLayer 后）。旧实现漏译让位 → 详情面板原地
+	# 压合成窗（用户 2026-09-07 报「原弹窗没消失」）。
 	_craft_window.visible = true
+	_set_equip_layer_side(true)
 	_create_craft_tree(_target_id, false)
+	# 源 createCraftWindow 末尾（equipcraft.lua:1253）setHistory(0, id)：打开即记录历史首项
+	# → 历史栏顶部显示当前装备小图标 + equip_craft_select 选中框（含下指 V 尖）。
+	# 旧实现漏调 → 顶部历史栏区恒空（用户 2026-09-07 报「顶部空白，原版其实有装备图标」）。
+	_set_history(0, _target_id)
 
 
 func _close_craft_panel() -> void:
 	_is_open = false
 	_craft_window.visible = false
+	_set_equip_layer_side(false)
+
+
+# 详情面板让位两态（源 :1259-1261 frame (400,240)↔(252,240)；InfoButton/InfoRemark 源挂
+# frame 上随面板走，本项目为 content 独立节点 → 同步平移，位移量 = 252-400 = -148）。
+# EquipLayer/InfoButton/InfoRemark 基准值与 equip_craft_content.tscn 静态 offset 一致。
+const EQUIP_LAYER_CENTER_POS: Vector2 = Vector2(256.0, 48.0)
+const EQUIP_LAYER_SIDE_POS: Vector2 = Vector2(108.0, 48.0)
+const INFO_BUTTON_CENTER_POS: Vector2 = Vector2(272.27, 366.85)
+const INFO_BUTTON_SIDE_POS: Vector2 = Vector2(124.27, 366.85)
+const INFO_REMARK_CENTER_POS: Vector2 = Vector2(281.0, 343.0)
+const INFO_REMARK_SIDE_POS: Vector2 = Vector2(133.0, 343.0)
+
+
+func _set_equip_layer_side(side: bool) -> void:
+	_equip_layer.position = EQUIP_LAYER_SIDE_POS if side else EQUIP_LAYER_CENTER_POS
+	_info_button.position = INFO_BUTTON_SIDE_POS if side else INFO_BUTTON_CENTER_POS
+	_info_remark.position = INFO_REMARK_SIDE_POS if side else INFO_REMARK_CENTER_POS
 
 
 # ===== Step 4：history 历史记录栏 =====

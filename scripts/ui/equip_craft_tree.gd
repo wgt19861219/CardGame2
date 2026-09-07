@@ -73,18 +73,24 @@ const LSTR_CHAPTER_D: String = "EQUIPCRAFT._CHAPTER__D"
 # 树内容整体偏移 (+40.5, 54.1) 出 bg 框（2026-08-22 溢出修复清查修正）。
 const BG_HALF_W: float = 369.0 / 2.0 / CONTENT_SCALE
 const BG_HALF_H: float = 493.0 / 2.0 / CONTENT_SCALE
-# 金币 cost 区装饰（源 equipcraft.lua:1110-1114）：equip_craft_money_bg 框 + goldicon。
+# 金币 cost 区装饰（源 equipcraft.lua:1110-1123）：equip_craft_money_bg 框 + 标题 + 数额
+# （三元素均中心锚，源无金币 icon）。COST_BG_POS 源 (142,86)。
 const COST_BG_RES: String = "res://assets/ui/alpha/HVGA/equip_craft_money_bg.png"
-const COST_GOLDICON_RES: String = "res://assets/ui/alpha/HVGA/goldicon.png"
-const COST_BG_POS: Vector2 = Vector2(140.0, 75.0)   # bg 框左上（包标题+icon+数额）
-const COST_BG_SIZE: Vector2 = Vector2(170.0, 30.0)
-const COST_GOLDICON_SIZE: Vector2 = Vector2(22.0, 22.0)
-const COST_GOLDICON_POS: Vector2 = Vector2(148.0, 79.0)   # icon 在 bg 内左侧
-const COST_AMOUNT_POS: Vector2 = Vector2(178.0, 85.0)   # 数额 label 位置（覆盖原 COST_POS）
+const COST_BG_POS: Vector2 = Vector2(142.0, 86.0)
 
 
 static func _gl(pos: Vector2) -> Vector2:
 	return Vector2(pos.x - BG_HALF_W, BG_HALF_H - pos.y)
+
+
+# 源 tree 内 createIcon 产物系 bg sprite（anchor 0.5,0.5，position=中心）；本项目 ReadequipIcon
+# 容器从左上渲染 frame → 挂点须补偿半显示尺寸才与源中心语义对齐（2026-09-07 修：旧实现左上
+# 直挂致 getway 小图标偏 (22,22)、合成树 root/child 同病）。frame 显示 = 94/CS × 95/CS。
+const FRAME_DISP: Vector2 = Vector2(94.0 / CONTENT_SCALE, 95.0 / CONTENT_SCALE)
+
+
+static func _icon_pos(pos: Vector2, icon_scale: float) -> Vector2:
+	return _gl(pos) - FRAME_DISP * icon_scale * 0.5
 
 
 static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
@@ -105,8 +111,10 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 	var name_lbl := Label.new()
 	name_lbl.text = panel._equip_name(id)
 	name_lbl.theme_type_variation = &"EquipCraftRedLabel18"
-	name_lbl.position = _gl(NAME_LABEL_POS)
 	tree.add_child(name_lbl)
+	# 源 name 系 readnode Label（anchor 0.5,0.5 中心锚）@ccp(142,292) → 居中补偿（2026-09-07
+	# 修：旧左上直挂致标题右偏 33px）；挂树后测量（content 已随 show_window 在树上，theme 可解析）。
+	name_lbl.position = _gl(NAME_LABEL_POS) - name_lbl.get_combined_minimum_size() * 0.5
 	panel._tree_data["name"] = name_lbl
 	var root_icon: Control = ReadequipIcon.create_icon(id, 0, panel.cm)
 	root_icon.scale = Vector2(ROOT_ICON_SCALE, ROOT_ICON_SCALE)
@@ -114,7 +122,7 @@ static func create_craft_tree(panel, id: int, skip_anim: bool) -> void:
 	panel._tree_data["rootBg"] = root_icon
 	var expense: int = 99999999
 	if components > 0:
-		root_icon.position = _gl(ROOT_ICON_POS)
+		root_icon.position = _icon_pos(ROOT_ICON_POS, ROOT_ICON_SCALE)
 		_build_recipe_branch(panel, tree, row, components)
 		expense = int(row.get("Expense", 99999999))
 		panel._craft_window_data["expense"] = expense
@@ -166,7 +174,7 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 		node_amount.append(raw_amount if raw_amount > 0 else 0)
 		var child_icon: Control = ReadequipIcon.create_icon(cid, 0, panel.cm)
 		child_icon.scale = Vector2(CHILD_ICON_SCALE, CHILD_ICON_SCALE)
-		child_icon.position = _gl(children_pos[i])
+		child_icon.position = _icon_pos(children_pos[i], CHILD_ICON_SCALE)
 		child_icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		child_icon.gui_input.connect(panel._make_tree_node_handler(i))
 		tree.add_child(child_icon)
@@ -176,63 +184,69 @@ static func _build_recipe_branch(panel, tree: Control, row: Dictionary, componen
 			var lbl := Label.new()
 			lbl.text = str(amount)
 			lbl.theme_type_variation = &"EquipCraftDynLabel18"
-			lbl.position = _gl(Vector2(children_pos[i].x - 20.0, AMOUNT_LABEL_Y))
-			lbl.modulate = COLOR_RED if amount < int(node_need[i]) else COLOR_BROWN
 			tree.add_child(lbl)
+			# 源 :1086-1088 createttf（CCLabelTTF 中心锚）amount 中心 = (childX - w/2, 115)
+			# → 视觉"amount 右缘接 need 左缘"连排（2026-09-07 修：旧左上直挂 -20 hack 致
+			# 数字行下移 18 且 amount/need 各向两边散开 15px）。
+			var amt_center_x: float = children_pos[i].x - lbl.get_combined_minimum_size().x * 0.5
+			lbl.position = _gl(Vector2(amt_center_x, AMOUNT_LABEL_Y)) - lbl.get_combined_minimum_size() * 0.5
+			lbl.modulate = COLOR_RED if amount < int(node_need[i]) else COLOR_BROWN
 			amount_labels.append(lbl)
 			var need_lbl := Label.new()
 			need_lbl.text = "/" + str(int(node_need[i]))
 			need_lbl.theme_type_variation = &"EquipCraftBrownLabel18"
-			need_lbl.position = _gl(Vector2(children_pos[i].x + AMOUNT_NEED_OFFSET, AMOUNT_LABEL_Y))
 			tree.add_child(need_lbl)
+			# 源 :1099-1101 need @ (childX+9) 直译给 9px 间隙，但 MuMu 实机为连排（0.4px）且
+			# 用户 2026-09-07 裁决「间距太大」→ 收紧为 amount 右缘（=childX，源中心锚公式所致）
+			# +1px（受控偏离源数值）。
+			var need_center_x: float = children_pos[i].x + 1.0 + need_lbl.get_combined_minimum_size().x * 0.5
+			need_lbl.position = _gl(Vector2(need_center_x, AMOUNT_LABEL_Y)) - need_lbl.get_combined_minimum_size() * 0.5
 		else:
 			var eq_lbl := Label.new()
 			eq_lbl.text = panel.cm.get_lstr(LSTR_EQUIPPED)
 			eq_lbl.theme_type_variation = &"EquipCraftBrownLabel18"
-			eq_lbl.position = _gl(Vector2(children_pos[i].x, AMOUNT_LABEL_Y))
 			tree.add_child(eq_lbl)
+			eq_lbl.position = _gl(children_pos[i]) - eq_lbl.get_combined_minimum_size() * 0.5
 	panel._tree_data["children"] = children_icons
 	panel._tree_data["amountLabel"] = amount_labels
 
 
 static func _build_cost(panel, tree: Control, expense: int) -> void:
-	# 源 equipcraft.lua:1110-1114：cost 区背景 equip_craft_money_bg + goldicon + 数额。
+	# 源 equipcraft.lua:1110-1123 花费区三元素（createttf 系 CCLabelTTF 中心锚；无金币 icon——
+	# 旧实现自建 goldicon + 左上直挂三连错：标题右移 46/下移 14.5、金额被按钮切、icon 夹缝不可见，
+	# 2026-09-07 照源重排）：
+	#   costBg（equip_craft_money_bg sprite 中心锚）@(142,86)
+	#   costTitle "合成花费："（createttf 中心锚）@(100,85)
+	#   cost 金额（createttf 中心锚）@(200,85)
 	# 装饰节点 mouse_filter=IGNORE 避免拦截合成树点击（红线：装饰节点必须 IGNORE）。
 	var bg := TextureRect.new()
 	bg.texture = load(COST_BG_RES) as Texture2D
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.size = COST_BG_SIZE
-	bg.position = _gl(COST_BG_POS)
+	var cost_bg_size: Vector2 = TexDisplaySize.display_size(COST_BG_RES)
+	bg.size = cost_bg_size
+	bg.position = _gl(COST_BG_POS) - cost_bg_size * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tree.add_child(bg)
-	var gold_icon := TextureRect.new()
-	gold_icon.texture = load(COST_GOLDICON_RES) as Texture2D
-	gold_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	gold_icon.size = COST_GOLDICON_SIZE
-	gold_icon.position = _gl(COST_GOLDICON_POS)
-	gold_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tree.add_child(gold_icon)
 	var cost_title := Label.new()
 	cost_title.text = panel.cm.get_lstr(LSTR_SYNTHESIS_COST)
 	cost_title.theme_type_variation = &"EquipCraftBrownLabel18"
-	cost_title.position = _gl(COST_TITLE_POS)
 	tree.add_child(cost_title)
+	cost_title.position = _gl(COST_TITLE_POS) - cost_title.get_combined_minimum_size() * 0.5
 	panel._tree_data["costTitle"] = cost_title
 	var cost_lbl := Label.new()
 	cost_lbl.text = str(expense)
 	cost_lbl.theme_type_variation = &"EquipCraftDynLabel18"
-	cost_lbl.position = _gl(COST_POS)
+	tree.add_child(cost_lbl)
+	cost_lbl.position = _gl(COST_POS) - cost_lbl.get_combined_minimum_size() * 0.5
 	var money: int = panel._player_money()
 	cost_lbl.modulate = COLOR_DARK_RED if expense <= money else COLOR_RED
-	tree.add_child(cost_lbl)
 	panel._tree_data["cost"] = cost_lbl
 
 
 # 历史选中态高亮（源 equipcraft.lua:887-892）：当前 cursor 位置（panel._history_id-1 索引）icon
-# 上叠 equip_craft_select 框。每次 _set_history 末尾调用，刷新前先移除旧 cursor。
+# 上叠 equip_craft_select 框（上框下 V 尖连体，即 MuMu 实机顶部"图标+下指箭头"观感的箭头部分）。
 # 装饰节点 mouse_filter=IGNORE 避免拦截 history icon gui_input（红线：装饰节点必须 IGNORE）。
 const CURSOR_META: String = "history_cursor"
-const HISTORY_CURSOR_TARGET_W: float = 50.0   # select 框缩放后宽（icon scale 40px → 框 50 略溢出包住）
 
 static func update_history_cursor(panel) -> void:
 	if panel._history_layer == null or not is_instance_valid(panel._history_layer):
@@ -254,14 +268,16 @@ static func update_history_cursor(panel) -> void:
 	var cursor := TextureRect.new()
 	cursor.texture = tex
 	cursor.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# select 框包住 icon（icon scale=HISTORY_ICON_SCALE=40/72 → 实际 40×40，框 50×50 居中包住）。
-	var orig_w: float = float(tex.get_width())
-	var scale_val: float = HISTORY_CURSOR_TARGET_W / orig_w if orig_w > 0.0 else 1.0
-	var cursor_w: float = float(tex.get_width()) * scale_val
-	var cursor_h: float = float(tex.get_height()) * scale_val
-	cursor.size = Vector2(cursor_w, cursor_h)
-	# 框居中叠在 icon 上（icon 中心相对 icon_bg 0,0 = icon 实际尺寸/2）。
-	cursor.position = Vector2(20.0 - cursor_w * 0.5, 20.0 - cursor_h * 0.5)
+	# 源 setHistory :884-892：select 框原尺寸显示（57×70px ÷CS = 44.5×54.6 点）中心锚 @历史项
+	# 中心。entry["iconBg"] 是 wrapper（无 scale，HBox 重置问题已隔离），icon 视觉 = 从 wrapper
+	# 原点渲染 38×38.4（icon_bg 在 wrapper 内 scale 0.518），中心 (19,19.2)。
+	var global_w: float = float(tex.get_width()) / CONTENT_SCALE
+	var global_h: float = float(tex.get_height()) / CONTENT_SCALE
+	cursor.size = Vector2(global_w, global_h)
+	# 源 setHistory :892 historyCursor @ (ori.x+…, ori.y-5)：select 框中心比 icon 中心低 5px
+	#（cocos y 向上 345<350）→ 顶缘距 bg 顶线恢复源 8px（旧实现同中心致 select 顶贴 bg 边框线
+	# 被用户视为「图标超出背景框」，2026-09-07 补译）。
+	cursor.position = Vector2(19.0, 19.25 + 5.0) - cursor.size * 0.5
 	cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cursor.set_meta(CURSOR_META, true)
 	icon_bg.add_child(cursor)
@@ -281,7 +297,7 @@ static func _judge_lack_of_component(panel) -> void:
 
 
 static func _build_getway_branch(panel, tree: Control, id: int) -> void:
-	(panel._tree_data["rootBg"] as Control).position = _gl(ROOT_ICON_NO_RECIPE_POS)
+	(panel._tree_data["rootBg"] as Control).position = _icon_pos(ROOT_ICON_NO_RECIPE_POS, ROOT_ICON_NO_RECIPE_SCALE)
 	(panel._tree_data["rootBg"] as Control).scale = Vector2(ROOT_ICON_NO_RECIPE_SCALE, ROOT_ICON_NO_RECIPE_SCALE)
 	var bg := TextureRect.new()
 	bg.texture = load(GETWAY_BG_PATH)
@@ -295,8 +311,9 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 	var label := Label.new()
 	label.text = panel.cm.get_lstr(LSTR_WAY_TO_GET)
 	label.theme_type_variation = &"EquipCraftWayTitleLabel"
-	label.position = _gl(GETWAY_LABEL_POS)
 	tree.add_child(label)
+	# 源 :1141-1145 setAnchorPoint(0,0.5) 左中锚 → x 取左缘、y 居中补偿（2026-09-07 修）
+	label.position = _gl(GETWAY_LABEL_POS) - Vector2(0.0, label.get_combined_minimum_size().y * 0.5)
 	var equip_info: Dictionary = panel.cm.get_raw_table("Equip").get(str(id), {})
 	var stage_table: Dictionary = panel.cm.get_raw_table("Stage")
 	var max_chapter: int = int(panel.cm.get_raw_table("GameConfig").get("MaxChapter", 13))
