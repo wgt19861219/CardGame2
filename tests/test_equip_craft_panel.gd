@@ -271,7 +271,7 @@ func test_tree_node_click_appends_history() -> void:
 	var ev := InputEventMouseButton.new()
 	ev.pressed = true
 	handler.call(ev)
-	assert_eq(panel._history.size(), 1, "点子材料 → history 追加 1 条")
+	assert_eq(panel._history.size(), 2, "点子材料 → history 追加 1 条（含 _open_craft_panel 首项共 2，源 setHistory(0,id) 打开即记）")
 	assert_eq(panel._craft_id, first_cid, "craftTree 切到 Component1")
 	panel.remove_window()
 
@@ -683,8 +683,8 @@ func test_history_layer_inside_clip() -> void:
 	assert_not_null(panel._history_layer, "history layer 已建")
 	var clip: Control = panel._content.get_node("%HistoryClip") as Control
 	assert_eq(panel._history_layer.get_parent(), clip, "history layer 挂 %HistoryClip（源 draglist 裁剪域）")
-	assert_almost_eq(panel._history_layer.position.x, 43.0, 0.5, "origin x=55-12（源 listLayer 局部 43）")
-	assert_almost_eq(panel._history_layer.position.y, 30.0, 0.5, "origin y=80-50（源 listLayer 局部 50，顶起）")
+	assert_almost_eq(panel._history_layer.position.x, 24.0, 0.5, "origin x=43-19（源 icon 中心相对 clip 43，HBox 摆 wrapper 左上须减 icon 半宽 19）")
+	assert_almost_eq(panel._history_layer.position.y, 10.8, 0.5, "origin y=30-19.2（源 icon 中心相对 clip 顶 30，减 icon 半高 19.2）")
 	panel.remove_window()
 
 

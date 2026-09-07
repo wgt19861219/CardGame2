@@ -26,6 +26,9 @@ func save_slot(slot: String, data: Dictionary) -> int:
 	return DirAccess.rename_absolute(temp, target)
 
 ## 读取槽位数据，失败/不存在返回空字典。
+## 解析失败（str_to_var 非 Dictionary）时先把原档备份为 .corrupt_<epoch> 再返回空——
+## 2026-09-07 用户档毁灭事故根修：原版静默返空 → GameData 走新号 → 登录首存立即覆盖，
+## 坏档被原地消灭零残留（读侧兜底与写侧原子写不对称）。备份保后续手工抢救可能。
 func load_slot(slot: String) -> Dictionary:
 	var target := _path(slot)
 	if not FileAccess.file_exists(target):
@@ -39,6 +42,9 @@ func load_slot(slot: String) -> Dictionary:
 		return {}
 	var parsed: Variant = str_to_var(text)
 	if typeof(parsed) != TYPE_DICTIONARY:
+		var corrupt_backup: String = target + ".corrupt_" + str(int(Time.get_unix_time_from_system()))
+		DirAccess.rename_absolute(target, corrupt_backup)
+		push_error("SaveManager: 槽 %s 解析失败，原档已备份至 %s（返回空走新号）" % [slot, corrupt_backup])
 		return {}
 	return parsed
 
