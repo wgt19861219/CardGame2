@@ -56,6 +56,14 @@ const DOT_CENTER_X: float = 400.0
 const DOT_GAP_X: float = 20.0
 const DOT_NORMAL_Y: float = 440.0
 const DOT_ELITE_Y: float = 435.0
+# stage 按钮命中层边长 = 源 KEY/NOT_KEY_STAGE_RADIUS=45（stageselect.lua:15-16）×2。
+# 源 doStageTouch :126-131 isPointInCircle(t.pos, 45, x,y) 圆形命中与贴图大小无关；
+# 方形近似圆（四角偏差 45×(√2-1)≈18.6px，轴向等价）。Godot 直译 TextureButton
+# rect=贴图显示尺寸后小圆盘（passed 态 37×41px→显示 ~29×32）命中区过小 + 城堡
+# （209×189px→显示 163×148）rect 含透明边吞相邻据点点击（用户 2026-09-07 报
+# 「两个城堡之间的小据点非常难点击选中」），故命中层（本按钮）与贴图显示层
+# （子 TextureRect 照旧尺寸居中，不裁剪不吞点击）分离（2026-09-07 根修）。
+const STAGE_HIT_SIZE: float = 90.0
 
 # panel/builder 共享 meta key（panel 切换动画识别 frame/title/pointer/mask 节点用）。
 const META_FRAME: StringName = &"ss_frame"
@@ -141,19 +149,23 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		if dec_type != "locked":
 			_add_key_mask(layer, String(dec.get("mask", "")), center)
 		var btn := TextureButton.new()
-		btn.texture_normal = load(icon_res) as Texture2D
-		btn.ignore_texture_size = true
-		# stretch_mode 显式 SCALE：默认 KEEP 按纹理原像素从左上角画（ignore_texture_size
-		# 只影响 min_size 不影响绘制），城堡 209×189/圆盘 37×41 偏大 1.28×+右下错位
-		# （2026-09-02 模板匹配实测 vs 原版 MuMu 截图定谳，同 hero_package 批 2 方法论）。
-		btn.stretch_mode = TextureButton.STRETCH_SCALE
-		btn.size = display_size(icon_res)
+		# 命中层（无纹理的 TextureButton 仍是有效 BaseButton，rect 即命中区）；
+		# 贴图改子 TextureRect 绘制——视觉尺寸/位置照旧，不随命中层缩放（见
+		# STAGE_HIT_SIZE 注释，源圆形命中 r45 直译）。
+		btn.size = Vector2(STAGE_HIT_SIZE, STAGE_HIT_SIZE)
 		btn.position = center - btn.size * 0.5
+		var icon := TextureRect.new()
+		icon.texture = load(icon_res) as Texture2D
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.size = display_size(icon_res)
+		icon.position = (btn.size - icon.size) * 0.5
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(icon)
 		btn.set_meta(&"stage_info", info)
 		if dec_type == "locked":
 			btn.disabled = true
 		else:
-			_add_stars(btn, info, mode, star_of)
+			_add_stars(icon, info, mode, star_of)
 		layer.add_child(btn)
 		if dec_type == "current":
 			_add_pointer(layer, info, CLIP_OFFSET)
@@ -186,7 +198,9 @@ static func _make_centered_child(parent: Node, res: String, cocos_pos: Variant) 
 ## +(spos.x, bg.h-spos.y)，星组弧形嵌满胶囊（±20.7 对称、中星正中）。starBg 挂 icon 的
 ## 源位 (82,上38)=叠底座下缘（左下角口径），2026-08-31 二轮用户观感裁决「应该在顶部」
 ## 受控偏离为顶部 30（见 STAR_BG_TOP_Y 注释；水平由源 82≈半宽改精确半宽居中）。
-static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_of: Callable) -> void:
+## host = 贴图显示层（TextureRect，size=贴图显示尺寸；2026-09-07 命中根修后星级挂
+## 贴图层下而非命中按钮，父 contentSize 口径与源 icon 一致）。
+static func _add_stars(host: Control, info: Dictionary, mode: String, star_of: Callable) -> void:
 	if mode == "guild":
 		return
 	var id: int = int(info.get("eid", 0)) if mode == "elite" else int(info.get("id", 0))
@@ -200,9 +214,9 @@ static func _add_stars(btn: TextureButton, info: Dictionary, mode: String, star_
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.size = display_size(STAR_BG)
 	# 三轮回滚一轮底部口径（原版真值证实，见 STAR_BG 定谳注释）
-	bg.position = Vector2(82.0, btn.size.y - 38.0) - bg.size * 0.5
+	bg.position = Vector2(82.0, host.size.y - 38.0) - bg.size * 0.5
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(bg)
+	host.add_child(bg)
 	var spos: Array = STAR_POS_SN[sn - 1]
 	for i in range(sn):
 		var star := TextureRect.new()

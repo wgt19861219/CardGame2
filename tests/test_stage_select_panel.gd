@@ -499,6 +499,9 @@ func test_map_clip_and_bg_size_source() -> void:
 # icon key_stages/stage-1.png 209×189px÷CS；btn 中心 = to_godot(172,284)=(252,276) 直译
 # （global 级防 parenting）；key mask 照源 :1229-1238 与 icon 平级挂 stageContainer
 # （先 mask 后 icon，icon 盖 mask），中心同 btn。
+# 2026-09-07 命中根修后：btn=命中层 90×90（源 r45），贴图移子 TextureRect（尺寸/中心
+# 断言改走子节点，视觉口径不变）；stretch_mode 随纹理移出按钮而删（贴图子节点
+# EXPAND_IGNORE_SIZE+显式 size 即原 SCALE 语义）。
 func test_stage_button_position_no_stretch() -> void:
 	var panel := _make_panel()
 	var layer: Control = panel._map_host.get_child(0) as Control
@@ -507,12 +510,21 @@ func test_stage_button_position_no_stretch() -> void:
 		"stage1 btn 中心 x = to_godot(172,·)（STRETCH 放大撤销）")
 	assert_almost_eq(btn.global_position.y + btn.size.y * 0.5, 196.0, 0.5,
 		"stage1 btn 中心 y = to_godot(·,284)（STRETCH 放大撤销）")
-	assert_almost_eq(btn.size.x, 209.0 / CS, 0.5, "stage1 icon 宽 = 209px÷CS（key stage 图）")
-	assert_almost_eq(btn.size.y, 189.0 / CS, 0.5, "stage1 icon 高 = 189px÷CS")
-	# 2026-09-02 守卫：默认 KEEP 按纹理原像素从左上角画（ignore_texture_size 只管
-	# min_size 不管绘制），图标偏大 1.28×+右下错位（原版 MuMu 模板匹配定谳）。
-	assert_eq(btn.stretch_mode, TextureButton.STRETCH_SCALE,
-		"stage icon stretch_mode=SCALE 显式（批2方法论，KEEP 原像素直绘）")
+	assert_almost_eq(btn.size.x, 90.0, 0.5, "stage1 命中层宽 = 源半径45×2（2026-09-07 命中根修）")
+	assert_almost_eq(btn.size.y, 90.0, 0.5, "stage1 命中层高 = 源半径45×2")
+	var icon: TextureRect = null
+	for c in btn.get_children():
+		if c is TextureRect:
+			icon = c
+			break
+	assert_not_null(icon, "stage1 贴图显示层 = 命中层子 TextureRect")
+	if icon != null:
+		assert_almost_eq(icon.size.x, 209.0 / CS, 0.5, "stage1 icon 宽 = 209px÷CS（key stage 图，视觉口径不变）")
+		assert_almost_eq(icon.size.y, 189.0 / CS, 0.5, "stage1 icon 高 = 189px÷CS")
+		assert_almost_eq(icon.global_position.x + icon.size.x * 0.5, 172.0, 0.5,
+			"icon 中心 x 与 btn 同心（贴图不随命中层缩放）")
+		assert_almost_eq(icon.global_position.y + icon.size.y * 0.5, 196.0, 0.5,
+			"icon 中心 y 与 btn 同心")
 	var mask: TextureRect = null
 	for child in layer.get_children():
 		if child is TextureRect and child.has_meta(&"ss_mask"):
@@ -530,6 +542,8 @@ func test_stage_button_position_no_stretch() -> void:
 # 2026-09-01 三轮定谳版星级守卫：一轮底部口径（源直译）经原版 MuMu 真值截图证实
 # （原版胶囊中心偏圆窗 (+0.8,+37.2) vs 本实现 (+0.4,+35.75)）；二轮「顶部」系口误
 # 已回滚。star 相对 star_bg 左下角口径不变（弧形嵌满胶囊）。
+# 2026-09-07 命中根修：星级挂贴图显示层（icon TextureRect）下（原 btn 直挂），
+# 层级 btn > icon > star_bg > stars；btn.size=90 命中层不再参与公式，口径改 icon.size。
 func test_star_layout_centered_under_stage_icon() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -541,8 +555,18 @@ func test_star_layout_centered_under_stage_icon() -> void:
 	panel.setup_panel(mgr, pd, rng)
 	panel.show_window(root)
 	var btn: TextureButton = panel._stage_buttons[1] as TextureButton
-	var star_bg: TextureRect = null
+	var icon: TextureRect = null
 	for c in btn.get_children():
+		if c is TextureRect:
+			icon = c
+			break
+	assert_not_null(icon, "贴图显示层存在（星级挂其下）")
+	if icon == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	var star_bg: TextureRect = null
+	for c in icon.get_children():
 		if c is TextureRect and (c as TextureRect).texture != null \
 				and (c as TextureRect).texture.resource_path.ends_with("stageselect_star_bg.png"):
 			star_bg = c
@@ -554,10 +578,10 @@ func test_star_layout_centered_under_stage_icon() -> void:
 		return
 	var btn_c: Vector2 = btn.global_position + btn.size * 0.5
 	var bg_c: Vector2 = star_bg.global_position + star_bg.size * 0.5
-	assert_almost_eq(bg_c.x - btn_c.x, 82.0 - btn.size.x * 0.5, 0.5,
+	assert_almost_eq(bg_c.x - btn_c.x, 82.0 - icon.size.x * 0.5, 0.5,
 		"star_bg 中心水平≈圆窗中心（cocos 左下角口径 82-w/2，原版实测 +0.8 吻合）")
-	assert_almost_eq(bg_c.y - btn_c.y, btn.size.y * 0.5 - 38.0, 0.5,
-		"star_bg 中心在圆窗下方 h/2-38（源直译，原版真值 +37.2 实证）")
+	assert_almost_eq(bg_c.y - btn_c.y, icon.size.y * 0.5 - 38.0, 0.5,
+		"star_bg 中心在圆窗下方 h/2-38（源直译，原版真值 +37.2 实证；h=贴图显示高）")
 	var stars: Array = []
 	for c in star_bg.get_children():
 		if c is TextureRect:
@@ -598,12 +622,13 @@ func test_builder_retired_and_new_whitelist() -> void:
 	assert_false(panel_src.contains("stage_select_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
 	var fills_src: String = FileAccess.get_file_as_string(FILLS_PATH)
 	var fills_new: PackedStringArray = _collect_new_calls(fills_src)
-	# 12 = 10 + 获取途径引导 2（tutorial_circle/finger，源 createStage :1331-1351 forGetWay，2026-09-07 四轮）
-	assert_eq(fills_new.size(), 12, "fills .new( 恰 12 处（动态行+动画节点+GetWay 引导白名单）")
+	# 13 = 12 + 命中根修贴图显示层 1（2026-09-07 stage icon 子 TextureRect，源 r45 圆形命中直译）
+	assert_eq(fills_new.size(), 13, "fills .new( 恰 13 处（动态行+动画节点+GetWay 引导+贴图显示层白名单）")
 	var joined: String = "\n".join(fills_new)
 	assert_true(joined.contains("Control.new()"), "MapLayer 裁剪层（章节 slide 动画需新旧并存）在白名单")
 	assert_true(joined.contains("TextureButton.new()"), "stage 圆点按钮（数量/位置随章节数据）在白名单")
-	# TextureRect 共 9 处（bg/route 中心子、star_bg、star、pointer、key mask、frame/title_bg 中心件、dot、GetWay 引导 circle/finger）
+	# TextureRect 共 10 处（bg/route 中心子、stage icon 贴图显示层、star_bg、star、pointer、
+	# key mask、frame/title_bg 中心件、dot、GetWay 引导 circle/finger）
 	var tr_count: int = 0
 	var idx: int = fills_src.find(".new(")
 	while idx != -1:
@@ -613,7 +638,7 @@ func test_builder_retired_and_new_whitelist() -> void:
 		if line.contains("TextureRect.new()"):
 			tr_count += 1
 		idx = fills_src.find(".new(", idx + 1)
-	assert_eq(tr_count, 9, "TextureRect.new() 恰 9 处（bg/route、star_bg、star、pointer、mask、frame/title_bg、dot、GetWay circle/finger）")
+	assert_eq(tr_count, 10, "TextureRect.new() 恰 10 处（bg/route、stage icon、star_bg、star、pointer、mask、frame/title_bg、dot、GetWay circle/finger）")
 	assert_true(joined.contains("Label.new()"), "章节 title Label（章节 crossfade 动画节点）在白名单")
 	var panel_new: PackedStringArray = _collect_new_calls(panel_src)
 	assert_eq(panel_new.size(), 1, "panel .new( 恰 1 处（StageDetailPanel 弹窗构造）")
@@ -704,4 +729,78 @@ func test_prev_next_no_toast_when_level_ok() -> void:
 	panel._on_next_chapter()
 	assert_eq(panel._current_chapter, 2, "往返切章正常")
 	assert_eq(Toast.pending_count(), 0, "等级足够无拦截 toast")
+	panel.remove_window()
+
+
+# ===== 命中区根修守卫（2026-09-07，源 doStageTouch 圆形命中直译）=====
+# 源 stageselect.lua:15-16 KEY_STAGE_RADIUS/NOT_KEY_STAGE_RADIUS 均 45，doStageTouch
+# :126-131 isPointInCircle(t.pos, 45, x,y)——以关卡中心为圆心、直径 90 的圆形命中区，
+# 与贴图大小无关。Godot 直译成 TextureButton rect=贴图显示尺寸后两处走样（用户 2026-09-07
+# 报「两个城堡之间的小据点非常难点击选中」）：
+#   1) passed 小圆盘（stagecircle_elite 37×41px → 显示 ~29×32）命中区远小于源直径 90；
+#   2) 城堡（209×189px → 显示 163×148）rect 含透明边，盖住相邻据点点击（章1 据点10
+#      (425,270) 距城堡11 (510,270) 仅 85px，城堡 rect 左缘 428.5 盖据点右半）。
+# 根修：命中层（TextureButton 90×90，源半径 45×2 方形近似，四角偏差 45×(√2-1)≈18.6px
+# 可接受）与贴图显示层（子 TextureRect 照旧尺寸居中、IGNORE）分离。
+
+# key 城堡（章1 stage1，209×189px 大贴图）：命中层 90×90 + 贴图视觉/位置照旧。
+func test_key_stage_hit_layer_separated_from_icon() -> void:
+	var panel := _make_panel()
+	var btn: TextureButton = panel._stage_buttons[1] as TextureButton
+	assert_almost_eq(btn.size.x, 90.0, 0.1, "key 城堡命中层宽 = 源半径45×2（贴图 163×148 缩到 90，透明区不再吞邻居点击）")
+	assert_almost_eq(btn.size.y, 90.0, 0.1, "key 城堡命中层高 = 源半径45×2")
+	assert_almost_eq(btn.global_position.x + btn.size.x * 0.5, 172.0, 0.5,
+		"命中层中心 = 关卡中心 x = to_godot(172,·)")
+	assert_almost_eq(btn.global_position.y + btn.size.y * 0.5, 196.0, 0.5,
+		"命中层中心 = 关卡中心 y = to_godot(·,284)")
+	var icon: TextureRect = null
+	for c in btn.get_children():
+		if c is TextureRect:
+			icon = c
+			break
+	assert_not_null(icon, "贴图显示层 = 命中层子 TextureRect（不随命中层缩放）")
+	if icon != null:
+		assert_almost_eq(icon.size.x, 209.0 / CS, 0.5, "城堡贴图宽照旧 209px÷CS（视觉不变）")
+		assert_almost_eq(icon.size.y, 189.0 / CS, 0.5, "城堡贴图高照旧 189px÷CS")
+		assert_almost_eq(icon.global_position.x + icon.size.x * 0.5, 172.0, 0.5,
+			"贴图中心 = 关卡中心 x（视觉不变）")
+		assert_almost_eq(icon.global_position.y + icon.size.y * 0.5, 196.0, 0.5,
+			"贴图中心 = 关卡中心 y（视觉不变）")
+		assert_eq(icon.mouse_filter, Control.MOUSE_FILTER_IGNORE, "贴图层不吞点击（装饰节点红线）")
+	panel.remove_window()
+
+
+# 非 key 小圆盘（章1 stage2 passed → stagecircle_elite 37×41px 最小贴图）：
+# 命中区扩到 90×90（用户主诉场景），贴图外命中区内点击可触发 pressed。
+func test_small_stage_click_hits_enlarged_area() -> void:
+	var panel := _make_panel_with_progress({1: 3, 2: 3}, 1)
+	var btn: TextureButton = panel._stage_buttons[2] as TextureButton
+	assert_true(is_instance_valid(btn), "stage2 passed 进可点 buttons")
+	if btn == null:
+		panel.remove_window()
+		return
+	var icon: TextureRect = null
+	for c in btn.get_children():
+		if c is TextureRect:
+			icon = c
+			break
+	assert_not_null(icon, "小圆盘贴图显示层存在")
+	if icon != null:
+		assert_almost_eq(icon.size.x, 37.0 / CS, 0.5, "小圆盘贴图宽 = 37px÷CS（视觉不变，最小态）")
+		assert_almost_eq(icon.size.y, 41.0 / CS, 0.5, "小圆盘贴图高 = 41px÷CS")
+	assert_almost_eq(btn.size.x, 90.0, 0.1, "小圆盘命中层宽 = 源半径45×2（贴图 29×32 → 90，主诉根修）")
+	assert_almost_eq(btn.size.y, 90.0, 0.1, "小圆盘命中层高 = 源半径45×2")
+	# 贴图显示区右缘 + 20px（贴图外、命中区内）→ 仍在按钮 rect 内可点。
+	# 点击链路说明：headless GUT 下 root Window 物理 64×64，push_input 分发坐标与
+	# 设计空间不一致，端到端鼠标模拟依赖环境细节（实测 push_input 两口径均不分发），
+	# 故此处断言引擎命中契约的前提组合（rect 命中 + mouse_filter + 可用态），真实鼠标
+	# 链路由用户实机验收兜底（项目惯例）。TextureButton 空纹理不影响 BaseButton 的
+	# rect 命中与 pressed 信号（引擎基类契约，皮肤与命中解耦）。
+	var click_local: Vector2 = (btn.size * 0.5) + Vector2(20.0, 0.0)
+	if icon != null:
+		assert_true(click_local.x > icon.size.x * 0.5 + 5.0, "点击点确在贴图显示区外")
+	assert_true(Rect2(Vector2.ZERO, btn.size).has_point(click_local), "点击点在命中层 rect 内")
+	assert_eq(btn.mouse_filter, Control.MOUSE_FILTER_STOP, "命中层接收输入（非 IGNORE）")
+	assert_false(btn.disabled, "passed 据点可点（disabled 仅 locked）")
+	assert_null(btn.texture_normal, "命中层无纹理（贴图在显示子层，命中不依赖纹理）")
 	panel.remove_window()
