@@ -269,3 +269,70 @@ func test_fragment_row_uses_lstr_and_variation() -> void:
 		assert_eq(frag_lbl.theme_type_variation, &"EquipboardFragmentLabel", "碎片行 variation（源 ccc3(66,45,28) size18+影）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── icon 挂点坐标（源 board.lua:320 ccp(50,328) 中心锚 → 左上 = 中心(50,57)-半显示尺寸(36.7,37.1)）──
+# 守卫 2026-09-08 坐标债清偿：旧 (14,21) 误用容器 72 半尺寸 36（equipcraft 2026-09-06 同源误算先修）。
+
+func test_icon_pos_source_semantics() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var cell: Dictionary = {"id": eid, "makeId": eid, "amount": 3, "category": "EQUIP.PARTS", "type": 1}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var host: Control = panel._frame.get_node("%IconHost") as Control
+	assert_gt(host.get_child_count(), 0, "IconHost 有 icon")
+	var icon: Control = host.get_child(0) as Control
+	assert_almost_eq(icon.position.x, 13.3, 0.05, "icon 左上 x=13.3（半显示尺寸 36.7 非容器 36）")
+	assert_almost_eq(icon.position.y, 19.9, 0.05, "icon 左上 y=19.9（半显示尺寸 37.1 非容器 36）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ── att 面板 Description 分支（源 board.lua:127-135：Equip.Description → 单行描述 wrap 252）──
+# 魂石属性全 0（get_description 返空），源走描述行；2026-09-08 前误走空属性行。
+
+func test_fill_att_description_branch() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var sid: int = _find_equip_id_by_category("EQUIP.SOUL_STONE")
+	assert_gt(sid, 0, "魂石 id 存在")
+	var cell: Dictionary = {"id": sid, "makeId": sid, "amount": 3, "category": "EQUIP.SOUL_STONE", "type": 1}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var host: VBoxContainer = panel._frame.get_node("%AttHost") as VBoxContainer
+	var desc_key: String = String(cm.get_raw_table(&"Equip").get(str(sid), {}).get(&"Description", ""))
+	var first: Label = host.get_child(0) as Label
+	assert_eq(first.text, String(cm.get_lstr(desc_key)), "首行 = Description 翻译（魂石属性全 0 不走属性行）")
+	assert_eq(first.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "desc 行 wrap（源 dimensions CCSizeMake(252,0)）")
+	assert_almost_eq(first.custom_minimum_size.x, 252.0, 0.1, "desc 行 wrap 宽 252")
+	assert_eq(host.get_child_count(), 2, "desc 1 行 + <5 补 1 空行（源 board.lua:231-237）")
+	assert_eq((host.get_child(1) as Label).text, " ", "补行是空行占位")
+	panel.remove_window()
+	root.queue_free()
+
+
+# fragment 分支行结构（源 board.lua:193-240：desc 行 + 合成前空行 + 合成行）
+func test_fill_att_fragment_branch_blank_row() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var recipe: Dictionary = _find_hero_fragment_recipe()
+	var frag_id: int = int(recipe["frag_id"])
+	var hero_tid: int = int(recipe["tid"])
+	var cell: Dictionary = {"id": frag_id, "makeId": hero_tid, "amount": 5, "category": "BATTLE.HERO", "type": 2, "needAmount": 10}
+	var panel := EquipboardPanel.new("equipboard", {})
+	panel.setup_panel(cell, cm, pd)
+	panel.show_window(root)
+	var host: VBoxContainer = panel._frame.get_node("%AttHost") as VBoxContainer
+	assert_eq(host.get_child_count(), 3, "魂石 desc 行 + 合成前空行 + 合成行（源 :193-240）")
+	assert_eq((host.get_child(1) as Label).text, " ", "合成行前空行（源 board.lua:193-198）")
+	var last: Label = host.get_child(2) as Label
+	assert_string_contains(last.text, "5/10", "合成行 X/Y 挂末位")
+	panel.remove_window()
+	root.queue_free()

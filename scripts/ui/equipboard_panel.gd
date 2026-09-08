@@ -24,9 +24,10 @@ const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
 
 # ── frame 内子节点坐标（源 cocos 值经 _gl 转 Frame Control 内左上 y-down）──
 # ICON_POS = 源 board.lua:320 ccp(50,328)。icon 未显式 setAnchorPoint → Cocos 默认 anchor(0.5,0.5)
-# = 中心；icon 右边 50+36=86 正好接 name x=92（佐证中心语义）。源中心(50,328) → Godot 中心(50,57)
-# → Control 左上 = 中心 - size/2 = (50-36, 57-36) = (14,21)（ICON_SIZE=72，readequip_icon.gd:19）。
-const ICON_POS: Vector2 = Vector2(14.0, 21.0)
+# = 中心；源中心(50,328) → Godot 中心(50,57) → Control 左上 = 中心 - 半显示尺寸 (36.7,37.1)
+# （frame 纹理 94/CS×95/CS 的一半；旧值 (14,21) 误用容器 72 的半尺寸 36，2026-09-08 巡检清偿，
+# 同源误算 equipcraft 已于 2026-09-06 先修定口径。ICON_SCALE 1.025 下 frame 中心偏 <1px 忽略）。
+const ICON_POS: Vector2 = Vector2(13.3, 19.9)
 # 用户视觉偏好：定稿时产物 frame 原像素 94 直显 ×0.8=75.2（用户验收观感）；9bc640e 统一
 # ÷CS 后产物显示 94/CS=73.37，×0.8 会缩到 58.7——乘回 CS 恢复 75.2 基数（2026-08-22 修）。
 const ICON_SCALE: float = 0.8 * 1.28125
@@ -34,6 +35,10 @@ const ICON_SCALE: float = 0.8 * 1.28125
 const ATT_TOP: float = 98.0
 # name 框宽上限（源 board.lua:338 长名溢出 scale 缩小）：NameLabel offset 92→300 = 208px。
 const NAME_MAX_W: float = 208.0
+# desc 行 wrap 宽（源 board.lua:135 dimensions CCSizeMake(252,0)，Description 分支专用）
+const ATT_WRAP_W: float = 252.0
+# att 行最少行数（源 board.lua:231-237 lineCount<5 补 1 空行）
+const ATT_MIN_LINES: int = 5
 # frame 切换 fadeIn（源 board.lua:406-413 refresh 时 frame modulate.a 0→1）。
 const FRAME_FADE_DUR: float = 0.15
 
@@ -188,22 +193,54 @@ func _fill_att() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	for c in host.get_children():
 		c.free()
-	var rows: Array = ReadequipData.get_description(_item_id, 0, cm)   # level 0（package 物品未装备无强化等级）
-	for row in rows:
-		var r: Dictionary = row as Dictionary
+	var line_count: int = 0
+	var is_frag_branch: bool = false
+	# 源 board.lua:127-135：Equip.Description 存在 → 单行描述覆盖属性行（wrap 252）。
+	# 魂石/碎片/卷轴/消耗品全走此分支（属性全 0，get_description 返空）；装备类无 Description 走属性行。
+	var desc_key: String = String(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Description", ""))
+	if desc_key != "":
 		var lbl := Label.new()
-		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
+		lbl.text = String(cm.get_lstr(desc_key))
 		lbl.theme_type_variation = &"EquipboardAttLabel"
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(lbl)
-	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title LSTR + fragment_amount "X/Y"）
+		line_count = 1
+	else:
+		var rows: Array = ReadequipData.get_description(_item_id, 0, cm)   # level 0（package 物品未装备无强化等级）
+		for row in rows:
+			var r: Dictionary = row as Dictionary
+			var lbl := Label.new()
+			lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
+			lbl.theme_type_variation = &"EquipboardAttLabel"
+			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			host.add_child(lbl)
+		line_count = rows.size()
+	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title LSTR + fragment_amount "X/Y"；
+	# 源判定 uinfo.isFragment = Category==FRAGMENT，本项目 fragments 容器=魂石模型以 prop_type
+	# 判定（2026-07-19 定稿适配保留）。合成行前补源空行（源 :193-198）。
 	if _prop_type == PROPTYPE_FRAGMENT:
+		is_frag_branch = true
+		_add_blank_row(host)
 		var frag_lbl := Label.new()
 		frag_lbl.text = "%s %d/%d" % [cm.get_lstr(LSTR_SYNTHESIS_REQ), int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
 		frag_lbl.theme_type_variation = &"EquipboardFragmentLabel"
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
+	# 行数不足 5 补 1 空行（源 board.lua:231-237 elseif lineCount<5，与 fragment 分支互斥）。
+	if not is_frag_branch and line_count < ATT_MIN_LINES:
+		_add_blank_row(host)
 	_relayout_att_bg()
+
+
+# att 空行占位（源 board.lua:195-201/:231-237 text=" " 撑行数，同属性行样式）。
+func _add_blank_row(host: VBoxContainer) -> void:
+	var lbl := Label.new()
+	lbl.text = " "
+	lbl.theme_type_variation = &"EquipboardAttLabel"
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_child(lbl)
 
 
 # att_bg + host 自适应属性内容高度（源 board.lua:263 att_bg setContentSize(bw, attListHeight+12)）。
