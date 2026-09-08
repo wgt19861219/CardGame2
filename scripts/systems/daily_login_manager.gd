@@ -53,7 +53,8 @@ func claim_reward(player: PlayerData, cm: ConfigManager, now: int, status: int =
 	var rid: int = int(row.get("Reward ID", 0))
 	var ramount: int = int(row.get("Reward Amount", 0))
 	var vip_req: int = int(row.get("Double Reward VIP Level", 0))
-	var multiplier: int = VIP_DOUBLE_MULTIPLIER if (status == STATUS_ALL and vip_req > 0 and player.vip_level >= vip_req) else 1
+	# 单机去 VIP 限制：双倍门槛按特权档（满级）判 → 有 vip_req 的签到日恒双倍。
+	var multiplier: int = VIP_DOUBLE_MULTIPLIER if (status == STATUS_ALL and vip_req > 0 and player.privilege_vip_level() >= vip_req) else 1
 	var items: Array = []
 	var diamond: int = 0
 	match rtype:

@@ -17,8 +17,8 @@ func test_setup_and_refresh() -> void:
 	pd.vitality = 50
 	pd.team_level = 5
 	bar.setup(pd)
-	# 5 labels（diamond/vitality/team_level/vip + 远征进度）
-	assert_eq(bar.get_child_count(), 5, "4 状态 Label + 远征进度")
+	# 4 labels（diamond/vitality/team_level + 远征进度；单机去 VIP 限制 2026-09-08 vip_level 行退役）
+	assert_eq(bar.get_child_count(), 4, "3 状态 Label + 远征进度")
 	var lbl: Label = bar.get_child(0)
 	assert_eq(lbl.text, "diamond: 999", "refresh 显 diamond")
 	bar.queue_free()

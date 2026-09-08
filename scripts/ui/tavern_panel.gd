@@ -153,6 +153,7 @@ func _bind_board(key: String, cost_info: Dictionary, texts: Dictionary) -> Dicti
 
 # showvip > vip → magicLayer.setVisible(false)（源同时重排 bronze/gold 居中；本项目简化保 3 board 横排孔位）。
 # showvip <= vip → magicLayer.setVisible(true)（达 unlock-2 起显示；达 unlock 可抽，_on_draw 内门控）。
+# 单机去 VIP 限制：显隐按特权档（满级）判 → 恒显示。
 func _refresh_magic_board_visibility() -> void:
 	if _player == null or _cm == null:
 		return
@@ -162,7 +163,7 @@ func _refresh_magic_board_visibility() -> void:
 		return
 	var container: Control = magic_board.get("container", null)
 	if container != null:
-		container.visible = showvip <= _player.vip_level
+		container.visible = showvip <= _player.privilege_vip_level()
 
 
 func _build_board_texts(src_key: String) -> Dictionary:
@@ -363,9 +364,10 @@ func _make_hero_preview_icon(tid: int) -> Control:
 
 func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten: bool) -> void:
 	# 项目单机化用 Toast（源 toRecharge dialog 的 explaination 文案）。
+	# 单机去 VIP 限制：门禁按特权档（满级）判 → 恒通过，保留结构备 module_switch 类手动关。
 	if tavern_type == "MagicSoul":
 		var ulv: int = VipData.get_area_unlock_vip(MAGIC_VIP_KEY, _cm)
-		if ulv > p_player.vip_level:
+		if ulv > p_player.privilege_vip_level():
 			var tpl: String = String(_cm.get_lstr("TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE"))
 			if tpl == "TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE":
 				tpl = "VIP等级达到%d级解锁该功能，是否充值？"

@@ -148,6 +148,23 @@ func before_all() -> void:
 	_cm.load_all()
 
 
+# 单机去 VIP 限制（2026-09-08）：VIP 角标/金框显示层退役守卫——
+# 即使存档 vip_level>0（如注入档），refresh 后角标三件套恒隐藏、头像框恒银框。
+func test_vip_badge_hidden_even_with_vip_level() -> void:
+	var parent := Control.new()
+	add_child_autofree(parent)
+	var pd := _make_pd()
+	pd.avatar = 1
+	pd.vip_level = 11
+	var refs: Dictionary = MainStatusBar.build(parent, Callable(), Callable(), Callable(), pd, _cm)
+	MainStatusBar.refresh(refs, pd.team_level, 0, 0, pd.vitality, pd.vitality_max, pd.player_name, pd.vip_level, pd.avatar)
+	assert_false((refs["vip"] as Label).visible, "vip 数字角标恒隐藏（vip_level=11）")
+	assert_false((refs["vip_bg"] as TextureRect).visible, "vip 底图恒隐藏")
+	assert_false((refs["vip_icon"] as TextureRect).visible, "vip 图标恒隐藏")
+	var frame: TextureRect = parent.find_children("head_frame", "TextureRect", true, false)[0] as TextureRect
+	assert_eq(frame.texture.resource_path, MainStatusBar.HEAD_FRAME_BORDER_RES[0], "头像框恒银框（金框退役）")
+
+
 func _make_pd() -> PlayerData:
 	var pd := PlayerData.new(_cm)
 	return pd

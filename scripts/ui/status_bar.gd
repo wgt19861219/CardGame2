@@ -4,7 +4,7 @@ extends Control
 ## 顶部状态栏（View 层）— 照源 ui/statusbar.lua 简化（Phase 7，2026-07-02）。
 ## 显示 diamond/vitality/team_level。源复杂（货币/体力/等级/VIP 多元素）。
 
-const DISPLAY_KEYS: Array[String] = ["diamond", "vitality", "team_level", "vip_level"]
+const DISPLAY_KEYS: Array[String] = ["diamond", "vitality", "team_level"]  # 单机去 VIP 限制（2026-09-08）：vip_level 行退役
 const LABEL_X_START: float = 50.0
 const LABEL_X_STEP: float = 150.0
 const LABEL_Y: float = 10.0

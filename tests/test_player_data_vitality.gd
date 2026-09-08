@@ -47,15 +47,16 @@ func test_buy_vitality_stockpile() -> void:
 
 func test_can_buy_vitality_within_limit() -> void:
 	var pd := PlayerData.new(cm)
-	pd.vitality_today_buy = 0   # VIP[0]["Buy Vit Max"]=1，未达上限
+	pd.vitality_today_buy = 0   # 特权档（满级）Buy Vit Max=16，未达上限
 	assert_true(VitalityManager.can_buy(pd), "today_buy=0 < VIP 上限 → 可买")
 
 
 func test_can_buy_vitality_at_vip_limit() -> void:
 	# 照源 player.lua:603 canBuyVitality：today_buy >= VIP["Buy Vit Max"] → 不可买
+	# 单机去 VIP 限制：上限按特权档（满级）取值
 	var pd := PlayerData.new(cm)
-	var limit: int = int(VipData.get_vip_field(pd.vip_level, "Buy Vit Max", cm))
-	assert_eq(limit, 1, "VIP[0] 当日买体力上限=1")
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Buy Vit Max", cm))
+	assert_eq(limit, int(VipData.get_vip_field(VipData.get_max_level(cm), "Buy Vit Max", cm)), "特权档当日买体力上限（满级）")
 	pd.vitality_today_buy = limit
 	assert_false(VitalityManager.can_buy(pd), "today_buy=limit 达 VIP 上限 → 不可买")
 	pd.vitality_today_buy = limit - 1

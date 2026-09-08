@@ -81,7 +81,7 @@ static func _build_text(player: PlayerData, cm: ConfigManager) -> String:
 	var vnu: int = _seconds_to_next_update(player)
 	var total_secs: int = gap * lt + vnu
 	var gap_min: int = int(gap / 60)
-	var buy_max: int = int(VipData.get_vip_field(player.vip_level, "Buy Vit Max", cm))
+	var buy_max: int = int(VipData.get_vip_field(player.privilege_vip_level(), "Buy Vit Max", cm))
 	var prompt: String = cm.get_lstr("FRAMEWORK.CURRENT_TIME") + _hms_now() + "\n"
 	var buy_fmt: String = cm.get_lstr("FRAMEWORK.BOUGHT_ENERGY_TIMES___D_D")
 	prompt += buy_fmt % [player.vitality_today_buy, buy_max] + "\n"

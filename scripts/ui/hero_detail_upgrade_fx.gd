@@ -324,7 +324,7 @@ static func fill_skill_point_bar(label: Label, buy_btn: TextureButton, pd: Playe
 	var recovered: int = SkillPointManager.recover(pd, Time.get_unix_time_from_system())
 	# 技能点回满提醒（源 localnotify id6 skill_full → 单机游戏内 Toast，2026-08-21 SetupPanel 二轮）。
 	if recovered > 0 and NotifySettings.get_switch(6):
-		var limit: int = int(VipData.get_vip_field(pd.vip_level, "Max Skill Points", pd.cm))
+		var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", pd.cm))
 		if NotifySettings.crossed_full(old_points, pd.skill_points, limit):
 			Toast.show_message(pd.cm.get_lstr(NotifySettings.entry_fire_lstr(6)))
 	label.visible = true

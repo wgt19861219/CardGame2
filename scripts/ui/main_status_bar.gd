@@ -291,17 +291,15 @@ static func refresh(refs: Dictionary, level: int, gold: int, diamond: int, vital
 		var nw: float = nl.get_minimum_size().x
 		if nw > NAME_MAX_WIDTH:
 			nl.scale.x = NAME_MAX_WIDTH / nw
-	# VIP 角标显示切换（源 visible = self.vip > 0）
-	var vip_idx: int = 1 if vip > 0 else 0
+	# 单机去 VIP 限制（2026-09-08）：VIP 角标/金框显示层退役——无论存档 vip_level 多少
+	# 恒隐藏恒银框（节点构建保留源对照结构；特权数值走 PlayerData.privilege_vip_level）。
 	if refs.has("vip"):
-		(refs["vip"] as Label).text = str(vip)
-		(refs["vip"] as Label).visible = vip > 0
+		(refs["vip"] as Label).visible = false
 	if refs.has("vip_bg"):
-		(refs["vip_bg"] as TextureRect).visible = vip > 0
+		(refs["vip_bg"] as TextureRect).visible = false
 	if refs.has("vip_icon"):
-		(refs["vip_icon"] as TextureRect).visible = vip > 0
-	# 头像框银/金切换（源 vip>0 用 gold 资源）
-	_refresh_head_frame(refs, vip_idx)
+		(refs["vip_icon"] as TextureRect).visible = false
+	_refresh_head_frame(refs, 0)
 	# 头像图随 avatar 参数换图（2026-08-21：换头像后 HudOverlay.refresh 回传主界面）。
 	_refresh_head_icon(refs, avatar)
 

@@ -20,8 +20,9 @@ const BUY_AMOUNT: int = 10    # 每次购买获得技能点
 
 ## 增加技能点（受 VIP["Max Skill Points"] 上限，源 player.lua:648 addSkillPoint + :704 getMaxSkillChance）。
 ## amount 负=扣减；limit<=0（VIP 表缺字段）时无上限直加。
+## 单机去 VIP 限制：上限按特权档（满级）取值。
 static func add(pd: PlayerData, amount: int) -> void:
-	var limit: int = int(VipData.get_vip_field(pd.vip_level, "Max Skill Points", pd.cm))
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", pd.cm))
 	if limit > 0:
 		pd.skill_points = min(pd.skill_points + amount, limit)
 	else:
@@ -33,7 +34,7 @@ static func add(pd: PlayerData, amount: int) -> void:
 ## 满（chance >= max）时 cd_time = now（停止累积）；否则 cd_time = now - (dt % cd)（保留不足 1 次 CD 的零头）。
 ## 返回本次恢复量（addChance，受上限钳制后差值）。
 static func recover(pd: PlayerData, now_seconds: int) -> int:
-	var limit: int = int(VipData.get_vip_field(pd.vip_level, "Max Skill Points", pd.cm))
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", pd.cm))
 	if limit <= 0:
 		return 0   # VIP 表无上限字段（不应发生），降级不恢复避越界
 	if pd.skill_points >= limit:

@@ -230,7 +230,8 @@ func _on_box_pressed(i: int) -> void:
 
 
 func _apply_box_reward(stage: int) -> void:
-	var slots: Array = player.crusade_manager.draw_reward_slots(stage)
+	# 单机去 VIP 限制：宝箱奖励档按特权档（满级 Crusade Chest Bonus Valid）取 VIP 加成档。
+	var slots: Array = player.crusade_manager.draw_reward_slots(stage, player.is_vip_unlocked("Crusade Chest Bonus Valid"))
 	if slots.is_empty():
 		result_label.text = "第 " + str(stage) + " 关 不可领"
 		return
@@ -254,7 +255,8 @@ func _show_reward_preview(i: int) -> void:
 	# 用 CrusadeRewardsData.get_reward_slots 无副作用版（旧误用 draw_reward_slots 带领取
 	# 标记副作用）。浮层构建下沉 CrusadeFills；2026-08-22 巡检重做旧 result_label 文本降级。
 	_clear_reward_preview()
-	var slots: Array = CrusadeRewardsData.get_reward_slots(player.cm, i, 1, false)
+	# 单机去 VIP 限制：预览与实发同档（特权满级 → VIP 加成档）。
+	var slots: Array = CrusadeRewardsData.get_reward_slots(player.cm, i, 1, player.is_vip_unlocked("Crusade Chest Bonus Valid"))
 	if slots.is_empty():
 		return
 	_reward_preview = CrusadeFills.build_reward_preview(_content, slots, player.cm)

@@ -188,9 +188,15 @@ func sell_equip(item_id: int, count: int) -> int:
 	return sell_price * count
 
 
-## VIP 特权解锁查询（源 VIP[level].field bool）。
+## 单机特权 VIP 等级：无充值系统，VIP 特权按表内最高档生效（2026-09-08 去 VIP 限制）。
+## 显示层（角标/金框/排行榜）仍用 vip_level，与特权解耦。
+func privilege_vip_level() -> int:
+	return VipData.get_max_level(cm)
+
+
+## VIP 特权解锁查询（源 VIP[level].field bool）；单机化后按特权档（满级）判。
 func is_vip_unlocked(field: String) -> bool:
-	return bool(VipData.get_vip_field(vip_level, field, cm))
+	return bool(VipData.get_vip_field(privilege_vip_level(), field, cm))
 
 ## 设置参战阵容（inst_id 列表；调用方保证 inst_id 有效 + 数量合规）。
 func set_team(inst_ids: Array[int]) -> void: team = inst_ids.duplicate()
