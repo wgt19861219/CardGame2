@@ -39,7 +39,9 @@ var _auto_refresh_accum: float = 0.0   # _process 自动刷新轮询累加器
 
 func setup_panel(p_shop_id: int, p_mgr: ShopManager, p_pd: PlayerData, p_rng: BattleRng) -> void:
 	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
-	hud_identity = "shop"   # T4：原 apply/remove override 样板上收基类
+	# HUD 遮蔽（2026-09-08 用户实机裁决）：源 shop 虽是 pushScene 场景（HUD 属场景语义），
+	# 但用户观感弹窗打开货币栏应压暗不可点——观感优先于源直译（2026-08-30 战前布阵判例同族），
+	# 退役 identity 接线走通用遮蔽（纯弹窗默认路径）。
 	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	shop_id = p_shop_id
 	shop_mgr = p_mgr
