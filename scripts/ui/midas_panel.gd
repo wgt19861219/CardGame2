@@ -85,8 +85,7 @@ func setup_panel(p_player: PlayerData) -> void:
 	_cm = _player.cm
 	var limit := FeatureLimit.new(_cm)
 	_multi_unlocked = limit.check_area_unlock(LSTR_MULTI_UNLOCK, _player.team_level, _player.vip_level)
-	setup()
-	hud_identity = "midas"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
+	setup()   # HUD 版式不随弹窗切（源 midas 挂 mainLayer z=300 盖 HUD，通用遮蔽接管，2026-09-08）
 	_build_content()
 	_refresh_view()
 

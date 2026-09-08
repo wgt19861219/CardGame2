@@ -70,6 +70,7 @@ var _frame: Control = null  # .tscn %Frame（base 容器，fill 动态数据的�
 # 本项目 cell_data 含 {id, makeId, amount, category, type, needAmount}（EquipmentClassifier 输出）。
 func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData, p_modal: bool = false) -> void:
 	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
+	hud_occlude = false   # 源例外族：equipboardofpackage 挂 package mainLayer z=0 无遮罩悬浮（唯一刻意低于 statusbar 的"弹窗"）——不遮蔽 HUD（2026-09-08 通用治理梳理）
 	cm = p_cm
 	pd = p_pd
 	_update_cell_fields(p_cell_data)
