@@ -147,8 +147,11 @@ func _init(unit_proto: Dictionary, unit_camp: int, unit_config: Dictionary, cm: 
 	rebuild()
 	BattleUnitInit.init_hp_mp(self)
 	state = State.IDLE
+	# 无引擎构建（recalc_hero_gs 算战力）不装 hero hook：hook 是战斗行为装配（ai_mode/
+	# create_npc/rng 等），rebuild 属性（:147 先于本行）不依赖 hook——源 Lua nil 宽容语义
+	# （bool(nil)=false 不炸）的 Godot 强类型适配；hook 单测直调 BattleHeroScripts.apply 不受影响。
 	var script_path: String = String(info.get("Script", ""))
-	if script_path != "":
+	if script_path != "" and engine != null:
 		BattleHeroScripts.apply(script_path, self)
 	puppet_stack = [String(info.get("Puppet", ""))]
 

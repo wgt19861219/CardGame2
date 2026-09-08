@@ -14,8 +14,7 @@ var hero_cache: Dictionary = {}  # tid(int) -> {pre_exp,pre_level,exp_increment}
 
 const MAX_EQUIP_RANK: int = 22  # 玩家装备 rank 进阶上限（源 player.lua:2066 canUpgrade `_rank < 22`；Hero_equip 表 23 档是数据，rank 23 玩家不可达，照源）
 const EQUIP_SLOT_COUNT: int = 6  # 装备槽数（源 player._items 1-6，本项目 equip_slots 0-5）
-const GS_BASE: int = 5  # 战斗力基础值（源 addHero hero._gs=5，player.lua:1490）
-const GS_PER_SKILL_LEVEL: int = 10
+const GS_ROUND: float = 0.5  # 战力取整（源 recalcHeroGs math.floor(gs+0.5) 四舍五入）
 
 func _init(cm: ConfigManager) -> void:
 	config = cm
@@ -25,7 +24,7 @@ func add_hero(tid: int) -> int:
 	var data := HeroData.from_config(config, tid)
 	var hero := HeroInstance.new(tid, data.initial_stars, next_id)
 	_init_skill_levels(hero)
-	hero.gs = calc_gs(hero)
+	recalc_hero_gs(hero)
 	heroes[next_id] = hero
 	next_id += 1
 	return hero.inst_id
@@ -64,6 +63,7 @@ func evolve(inst_id: int) -> bool:
 	_add_fragment(frag_id, -cost_frags)
 	gold -= cost_gold
 	hero.stars += 1
+	recalc_hero_gs(hero)   # 星级改变成长属性 → 重算战力
 	return true
 
 
@@ -169,26 +169,18 @@ func upgrade_rank(inst_id: int) -> bool:
 	for slot in range(EQUIP_SLOT_COUNT):
 		hero.equip_slots[slot] = int(rank_equip.get("Init" + str(slot + 1) + " ID", 0))
 		hero.equip_exp[slot] = 0.0
-	hero.gs = calc_gs(hero)
+	recalc_hero_gs(hero)
 	return true
 
 
-## 战斗力 GS（照源 main.lua:1750 穿戴 delta + player.lua:1490 addHero _gs=5）：
-## 重算 = 基础 5 + sum(6 槽 Equip.GS × Hero_equip.EquipLevel)。源增量维护 _gs（wear/upgrade ±delta，
-## math.floor），本项目重算语义等价（calc_gs = GS_BASE + 当前 6 槽贡献总和，int floor）。
-func calc_gs(hero: HeroInstance) -> int:
-	var rank_equip: Dictionary = config.get_raw_table(&"Hero_equip").get(str(hero.tid), {}).get(str(hero.rank), {})
-	var equip_level: float = float(rank_equip.get("EquipLevel", 1.0))
-	var total: float = float(GS_BASE)
-	for slot in range(EQUIP_SLOT_COUNT):
-		var item_id: int = int(hero.equip_slots[slot])
-		if item_id > 0:
-			total += config.get_float(&"Equip", item_id, &"GS") * equip_level
-	var sg: Dictionary = config.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
-	for i in hero.skill_levels.size():
-		var init_lv: int = int(sg.get(str(i + 1), {}).get("Init Level", 1))
-		total += maxi(hero.skill_levels[i] - init_lv, 0) * GS_PER_SKILL_LEVEL
-	return int(total)
+## 战斗力重算（单一事实来源，2026-09-08 定稿）：hero.gs = 战斗单位全属性加权 gs
+## （源 recalcHeroGs=UnitCreate 属性加权，源登录后 main.lua:1106/强化后 :1236/战斗结算后
+## player.lua:1363 均以该值覆盖增量近似值）。废除旧近似公式 calc_gs（5+Σ Equip.GS×EquipLevel+
+## 技能×10——不含等级/星级/附魔强化，升级升星附魔均不反映）；现在一切进 rebuild 属性的养成
+## （等级/星级/rank/装备/附魔强化/被动/觉醒）自动反映，新增养成无需记得改战力公式。
+func recalc_hero_gs(hero: HeroInstance) -> void:
+	var u := BattleUnit.new(hero.to_battle_proto(), BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, config)
+	hero.gs = int(floor(u.gs + GS_ROUND))
 
 
 ## 英雄加经验升级（照源 player.lua:1972-2010 addExp）：入口快照 hero_cache + 循环 Levels.Exp 累减升级。
@@ -216,6 +208,8 @@ func add_hero_exp(inst_id: int, exp: int) -> bool:
 		hero.exp -= levelup_exp
 		hero.level += 1
 		leveled = true
+	if leveled:
+		recalc_hero_gs(hero)   # 等级改变成长属性 → 重算战力（源靠战斗结算后 recalcHeroGs 兜底，此处入口直算）
 	return leveled
 
 
@@ -240,7 +234,7 @@ func upgrade_skill_level(inst_id: int, skill_idx: int) -> bool:
 		return false
 	gold -= cost
 	hero.skill_levels[skill_idx] += 1
-	hero.gs = calc_gs(hero)
+	recalc_hero_gs(hero)
 	return true
 
 
@@ -267,7 +261,7 @@ func wear_equip(inst_id: int, slot: int) -> bool:
 	if item_id <= 0:
 		return false
 	hero.equip_slots[slot] = item_id
-	hero.gs = calc_gs(hero)
+	recalc_hero_gs(hero)
 	return true
 
 func _fragment_count(frag_id: int) -> int:
@@ -360,7 +354,7 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> HeroManager:
 		for j in range(hero.equip_exp.size()):
 			if j < ee.size():
 				hero.equip_exp[j] = float(ee[j])
-		hero.gs = int(hd.get("gs", GS_BASE))
+		hero.gs = 0   # 占位；函数尾部全量重算统一赋真值（旧存档 gs 为近似公式脏值，读档即修正）
 		hero.awake = bool(hd.get("awake", false))
 		mgr.heroes[hero.inst_id] = hero
 	var hc_data: Dictionary = data.get("hero_cache", {})
@@ -371,4 +365,7 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> HeroManager:
 		dst["pre_level"] = int(src.get("pre_level", 0))
 		dst["exp_increment"] = int(src.get("exp_increment", 0))
 		mgr.hero_cache[int(tid)] = dst
+	# 读档后全量重算战力（照源登录后 recalcHeroGs 全量覆盖 main.lua:1106-1111）
+	for hero in mgr.heroes.values():
+		mgr.recalc_hero_gs(hero as HeroInstance)
 	return mgr

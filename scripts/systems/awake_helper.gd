@@ -57,4 +57,5 @@ static func awake_hero(player: PlayerData, hero: HeroInstance) -> Dictionary:
 	if not player.hero_manager.spend_fragment(frag_id, AWAKE_FRAGMENT_COST):
 		return {"ok": false}
 	hero.awake = true
+	player.hero_manager.recalc_hero_gs(hero)   # 觉醒改变战斗装配（_awake）→ 重算战力
 	return {"ok": true}

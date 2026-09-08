@@ -254,13 +254,13 @@ func test_refresh_gs_after_wear_updates() -> void:
 	var panel := HeroDetailPanel.new("herodetail", {})
 	panel.setup_panel(hero, cm, mgr)
 	panel.show_window(root)
-	var current_gs: int = mgr.calc_gs(hero)
-	panel._pre_gs = current_gs - 1   # 模拟穿戴后 gs 已变（_pre_gs 旧 ≠ calc_gs 新）
+	var current_gs: int = hero.gs   # add_hero 已重算（单一来源 recalc_hero_gs）
+	panel._pre_gs = current_gs - 1   # 模拟穿戴后 gs 已变（_pre_gs 旧 ≠ hero.gs 新）
 	panel.refresh_gs_after_wear()
 	# 源 gs 数字独立 label（gs_title"战力:"独立 label，refreshgsLabel:1175 text=hero._gs 纯数字）
 	var expected_gs_text: String = str(current_gs)
-	assert_eq(panel._gs_label.text, expected_gs_text, "gs ≠ _pre_gs → label 更新为 calc_gs 数字（title 独立）")
-	assert_eq(panel._pre_gs, current_gs, "_pre_gs 同步到 calc_gs")
+	assert_eq(panel._gs_label.text, expected_gs_text, "gs ≠ _pre_gs → label 更新为 hero.gs 数字（title 独立）")
+	assert_eq(panel._pre_gs, current_gs, "_pre_gs 同步到 hero.gs")
 	panel.remove_window()
 	root.queue_free()
 
@@ -276,7 +276,7 @@ func test_refresh_gs_after_wear_no_change() -> void:
 	panel.setup_panel(hero, cm, mgr)
 	panel.show_window(root)
 	var text_before: String = panel._gs_label.text
-	panel.refresh_gs_after_wear()   # setup 后 _pre_gs == calc_gs → 守卫 return
+	panel.refresh_gs_after_wear()   # setup 后 _pre_gs == hero.gs → 守卫 return
 	assert_eq(panel._gs_label.text, text_before, "gs 未变 → label 不动")
 	panel.remove_window()
 	root.queue_free()

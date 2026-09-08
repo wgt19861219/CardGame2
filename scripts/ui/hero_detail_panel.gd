@@ -269,11 +269,11 @@ func _handle_scroll_event(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-# window.lua:170-191 refreshgsAfterWear：gs 变 → 更新文本 + 居中 scale 1.2→1（EASE_BACK_OUT）+ 还原锚点左中。本项目 hero_manager.calc_gs 重算（语义等价）。
+# window.lua:170-191 refreshgsAfterWear：gs 变 → 更新文本 + 居中 scale 1.2→1（EASE_BACK_OUT）+ 还原锚点左中。穿戴入口 wear_equip 已重算 hero.gs（单一来源），此处直读。
 func refresh_gs_after_wear() -> void:
 	if hero == null or hero_manager == null or _gs_label == null:
 		return
-	var gs: int = hero_manager.calc_gs(hero)
+	var gs: int = hero.gs
 	if gs == _pre_gs:
 		return
 	_gs_label.text = str(gs)
