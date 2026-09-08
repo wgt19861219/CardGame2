@@ -9,15 +9,21 @@ extends RefCounted
 ## + 源对照：createnpcTalk:11 + doTalk:44 + doSpeak:51 + hideTalk:62 +
 ## initHeroEquip:1505 + playEnhanceAnim:1544 + playStarAnim:1512。
 
+const AtlasSprite = preload("res://scripts/ui/atlas_sprite.gd")
+const FcaAnimation = preload("res://scripts/ui/fca_animation.gd")
+
 # 气泡高度（源 createnpcTalk :39-41：height=max(60, label.height+42)，宽恒 224）
 const TALK_FRAME_MIN_H: float = 60.0
 const TALK_FRAME_LABEL_PAD: float = 42.0
-# 强化成功动画（源 playEnhanceAnim:1544 + playStarAnim:1512；FCA eff_UI_enhance_success Spine 未落地→Tween 降级）
+# 强化成功动画（源 playEnhanceAnim:1544 + playStarAnim:1512）：FCA eff_UI_enhance_success
+# （方案 C 已落地，2026-09-08 特效根修；资源缺失时 Tween 金星降级兜底）。
+const ENHANCE_FX_RES: String = "eff_UI_enhance_success"
 const STAR_ANIM_DELAY: float = 0.5
 const STAR_ANIM_SHOW_SCALE: float = 2.0
 const STAR_ANIM_DUR: float = 0.2
-const ENHANCE_FX_DUR: float = 0.4            # FCA 降级脉冲淡出时长（源 FCA 时长未知，合理估）
-const ENHANCE_FX_PEAK_SCALE: float = 3.0     # FCA 降级中心金星放大峰值
+const ENHANCE_FX_DUR: float = 0.4            # Tween 降级脉冲淡出时长（源 FCA 时长未知，合理估）
+const ENHANCE_FX_PEAK_SCALE: float = 3.0     # Tween 降级中心金星放大峰值
+const ENHANCE_FX_FALLBACK_LIFE: float = 2.0  # FCA 挂 icon 后保险寿命（防 action_finished 缺发泄漏）
 const SPEAK_DELAY: float = 1.0
 const SPEAK_FADE: float = 0.2
 const HALF: float = 0.5
@@ -114,8 +120,42 @@ static func play_star_anim(panel, stars: Array, index: int, eof: int, isdelay: b
 		EquipStrengthenAnim.play_star_anim(panel, stars, index + 1, eof, false))
 
 
-# Spine 方案 C 未落地 → Tween 降级：icon 中心金星放大淡出（成功爆裂感，复刻铁律允许纯 Godot 适配）。
+# 源 playEnhanceAnim:1544-1553：createFcaNode("eff_UI_enhance_success") 挂 icon 中心（升
+# 级时播）。路径照 battle_effect.create 范式（effect/ 子目录回退）；.abc zip 用
+# FileAccess 检存在。资源缺失 → Tween 金星降级（原 2026-08-15 占位实现保留兜底）。
 static func play_enhance_effect(panel, icon: Control) -> void:
+	var atlas := AtlasSprite.new()
+	var zip_path := "res://assets/anim_frames/" + ENHANCE_FX_RES + ".abc"
+	if not FileAccess.file_exists(zip_path):
+		zip_path = "res://assets/anim_frames/effect/" + ENHANCE_FX_RES + ".abc"
+	if FileAccess.file_exists(zip_path) and atlas.load_atlas_from_ani(zip_path):
+		var fca := FcaAnimation.new()
+		if fca.load_from_ani(ENHANCE_FX_RES, atlas):
+			var names := fca.get_action_names()
+			var action := "Start" if fca.has_action("Start") else (names[0] if names.size() > 0 else "")
+			if action == "":
+				fca.free()
+				_play_fallback_glow(panel, icon)
+				return
+			icon.add_child(fca)
+			fca.position = icon.size * HALF   # 源 icon 中心锚 → Node2D 挂 Control 下 (size/2)
+			fca.play(action, false)
+			fca.action_finished.connect(func(_a: String) -> void:
+				if is_instance_valid(fca):
+					fca.queue_free())
+			# 保险寿命：action_finished 不发（异常 action）时定时清理，防 icon 上特效节点泄漏
+			if panel.is_inside_tree():
+				var life_tw: Tween = panel.create_tween()
+				life_tw.tween_interval(ENHANCE_FX_FALLBACK_LIFE)
+				life_tw.tween_callback(func() -> void:
+					if is_instance_valid(fca):
+						fca.queue_free())
+			return
+	_play_fallback_glow(panel, icon)
+
+
+# Tween 金星降级（资源缺失兜底）：icon 中心金星放大淡出（原占位实现）。
+static func _play_fallback_glow(panel, icon: Control) -> void:
 	var tex: Texture2D = load(ReadequipIcon.STAR_BLUE_RES)
 	var glow := TextureRect.new()
 	if tex != null:

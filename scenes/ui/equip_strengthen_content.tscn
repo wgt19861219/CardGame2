@@ -1,8 +1,9 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equipupgrade/equipupgrade_frame.png" id="2_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/hero_icon_frame_1.png" id="3_heroicon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/handbook_icon_lock.png" id="18_nolock"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="4_back"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="5_backp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/gocha.png" id="6_gocha"]
@@ -66,7 +67,8 @@ expand_mode = 1
 mouse_filter = 2
 
 ; 英雄头像宿主（源 setHeroIcon:1740-1749 readhero.createIcon 替换 heroIcon，
-; 单机化 hero 已定 → fill 即挂；104=ReadheroIcon CONTAINER_SIZE）
+; 单机化 hero 已定 → fill 即挂；104=ReadheroIcon CONTAINER_SIZE。
+; mouse_filter=STOP：点头像=换英雄入口（源 doChangeHero:1720，2026-09-08 根修补回）
 [node name="HeroHeadHost" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -74,7 +76,7 @@ offset_left = 83.0
 offset_top = 88.0
 offset_right = 187.0
 offset_bottom = 192.0
-mouse_filter = 2
+mouse_filter = 0
 
 ; 头像框（源 :2018-2027 hero_icon_frame_1 106x106 at (135,340) 中心锚 → 82.73 显示；
 ; fill 头像后 visible=false 照源 :1741 removeFromParent）
@@ -89,7 +91,21 @@ expand_mode = 1
 mouse_filter = 2
 
 ; 英雄名（源 :1753-1760 createHeroName anchor(0,0.5) at (130-min(w,120)/2, 395)
-; → 名字中心 x≈130+80=210 中心 y=165；贴图字降级 Label，规格同 EatexpHeroNameLabel）
+; → 名字中心 x≈130+80=210 中心 y=165；贴图字降级 Label，规格同 EatexpHeroNameLabel。
+; mouse_filter=STOP：点名字同头像=换英雄入口
+
+; 未选英雄占位（源 ui_info nohead：handbook_icon_lock.png 82x82 @ heroIcon 内 (41,41)
+; 中心锚 z=-1 框下层，fix_size 82 直译不÷CS；选英雄后随 HeroIcon 隐藏级联）
+[node name="NoHead" type="TextureRect" parent="HeroIcon"]
+layout_mode = 3
+offset_left = 0.37
+offset_top = 0.37
+offset_right = 82.37
+offset_bottom = 82.37
+texture = ExtResource("18_nolock")
+expand_mode = 1
+mouse_filter = 2
+
 [node name="HeroName" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
@@ -98,7 +114,7 @@ offset_top = 73.0
 offset_right = 195.0
 offset_bottom = 97.0
 theme_type_variation = &"EatexpHeroNameLabel"
-mouse_filter = 2
+mouse_filter = 0
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "英雄名"
@@ -113,6 +129,32 @@ offset_top = 37.0
 offset_right = 273.0
 offset_bottom = 113.0
 mouse_filter = 0
+
+
+; 选择英雄按钮（源 create ui_info select_hero 组：Scale9 herodetail-upgrade.png
+; cap(20,20,53,29) 110x45 @ ccp(135,270) 中心锚 → 中心 (135,210)；label EATEXPLIST.CHOOSE_A_HERO
+; fontinfo ui_normal_button=BtnLabel 同款。doSelectHeroTouch→doChangeHero 弹英雄选择。
+; 2026-09-08 三轮补回可见入口（单机化裁剪「按钮组不入树」致换英雄不可发现=「锁死船长」）
+[node name="SelectHeroBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 80.0
+offset_top = 187.5
+offset_right = 190.0
+offset_bottom = 232.5
+theme_type_variation = &"EquipStrenButton"
+mouse_filter = 0
+
+[node name="SelectHeroBtnLabel" type="Label" parent="SelectHeroBtn"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"BtnLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "选择英雄"
 
 [node name="EmptyRect" type="TextureRect" parent="EquipSlot0"]
 layout_mode = 3
