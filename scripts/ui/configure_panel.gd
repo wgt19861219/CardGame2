@@ -56,8 +56,8 @@ func _build_content() -> void:
 	_content_ref = content
 	container.add_child(content)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	var vip_idx: int = 1 if _pd.vip_level > 0 else 0
-	(content.get_node("%HeadFrame") as TextureRect).texture = load(HEAD_FRAME_RES[vip_idx])
+	# 单机去 VIP 限制（2026-09-08）：头像框恒银框（源 :1206-1207 vip>0 金框显示层退役）
+	(content.get_node("%HeadFrame") as TextureRect).texture = load(HEAD_FRAME_RES[0])
 	_add_head_icon(content.get_node("%HeadIconHost") as Control)
 	(content.get_node("%NameLabel") as Label).text = _pd.player_name
 	_fill_info_lines(content)

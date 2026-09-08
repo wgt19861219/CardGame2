@@ -133,8 +133,7 @@ func test_draw_produces() -> void:
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
-	pd.diamond = 500
-	pd.vip_level = 11   # C5：magic 抽卡需 VIP 11 解锁（unlock vip for Magic Soul Box）
+	pd.diamond = 500   # 单机去 VIP 限制：特权档恒满级，magic 无 VIP 门禁
 	var rng := BattleRng.new(7)
 	var panel := TavernPanel.new("tavern", {})
 	panel.setup_panel(pd, rng)
@@ -240,18 +239,19 @@ func test_arrow_float_anim_running() -> void:
 
 # C5 源 tavern.lua:1402-1418 refreshItemLayer：magic board 按 getAreaShowvip 门控显隐。
 # VIP.json: Magic Soul Box unlock VIP = 11（首个 true）；show = max(11-2,0) = 9。
-func test_magic_board_hidden_below_showvip() -> void:
+# 单机去 VIP 限制（2026-09-08）：显隐按特权档（满级）判 → 恒显示。
+func test_magic_board_visible_below_showvip_after_unlock_removal() -> void:
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
-	pd.vip_level = 5   # showvip 9 > 5 → magic board 隐藏
+	pd.vip_level = 5   # 旧逻辑 showvip 9 > 5 应隐藏；特权档放开 → 显示
 	var rng := BattleRng.new(7)
 	var panel := TavernPanel.new("tavern", {})
 	panel.setup_panel(pd, rng)
 	panel.show_window(root)
 	var magic_board: Dictionary = panel._boards.get("MagicSoul", {})
 	var container: Control = magic_board.get("container", null)
-	assert_false(container.visible, "VIP 5 < showvip 9 → magic board 隐藏")
+	assert_true(container.visible, "特权档放开：VIP 5 magic board 也显示")
 	panel.remove_window()
 	root.queue_free()
 
@@ -260,35 +260,36 @@ func test_magic_board_visible_at_showvip() -> void:
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
-	pd.vip_level = 9   # showvip 9 <= 9 → magic board 显示（灰显，仍不可抽）
+	pd.vip_level = 0   # 特权档放开：任意 vip_level 均显示
 	var rng := BattleRng.new(7)
 	var panel := TavernPanel.new("tavern", {})
 	panel.setup_panel(pd, rng)
 	panel.show_window(root)
 	var magic_board: Dictionary = panel._boards.get("MagicSoul", {})
 	var container: Control = magic_board.get("container", null)
-	assert_true(container.visible, "VIP 9 = showvip → magic board 显示（灰显）")
+	assert_true(container.visible, "特权档放开：VIP 0 magic board 也显示")
 	panel.remove_window()
 	root.queue_free()
 
 
 # C5 源 tavern.lua:57-64 doTavern：magic 抽卡前 getAreaUnlockvip > vip → toRecharge 拒绝。
-# VIP 0 < unlock 11 → _on_draw 拒绝（result_label 提示），不抽卡。
-func test_magic_draw_blocked_below_unlock_vip() -> void:
+# 单机去 VIP 限制（2026-09-08）：门禁按特权档（满级）判 → 恒通过，VIP 0 也可抽。
+func test_magic_draw_allowed_at_vip0_after_unlock_removal() -> void:
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
-	pd.vip_level = 0   # unlock 11 > 0 → 拒绝
-	pd.diamond = 9999   # 钻石够但 VIP 不足仍拒绝
+	pd.vip_level = 0   # 旧逻辑 unlock 11 > 0 应拒绝；特权档放开 → 可抽
+	pd.diamond = 9999
 	var rng := BattleRng.new(7)
 	var panel := TavernPanel.new("tavern", {})
 	panel.setup_panel(pd, rng)
 	panel.show_window(root)
-	var before_diamond: int = pd.diamond
+	var emitted: Array[bool] = [false]
+	panel.drawn.connect(func() -> void: emitted[0] = true)
 	panel._on_draw(pd, rng, "MagicSoul", false)
-	assert_eq(pd.diamond, before_diamond, "VIP 0 magic 抽卡被拒，钻石未扣")
-	assert_true(panel._result_label.text.find("VIP") >= 0 or panel._result_label.text.find("解锁") >= 0,
-		"result_label 提示 VIP 解锁（拒绝文案）")
+	assert_true(emitted[0], "特权档放开：VIP 0 magic 抽卡放行（drawn 信号；首抽每日免费不扣钻）")
+	assert_false(panel._result_label.text.find("VIP") >= 0 and panel._result_label.text.find("解锁") >= 0,
+		"result_label 无 VIP 拒绝文案")
 	panel.remove_window()
 	root.queue_free()
 

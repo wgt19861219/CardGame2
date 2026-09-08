@@ -68,9 +68,11 @@ func test_draw_tavern_full() -> void:
 
 
 func test_is_vip_unlocked() -> void:
+	# 单机去 VIP 限制（2026-09-08）：特权查询按特权档（满级）判，与显示 vip_level 解耦。
+	# VIP.json 满级 Multiple Midas=true → VIP0 显示也解锁。
 	var pd := PlayerData.new(cm)
 	pd.vip_level = 0
-	assert_eq(pd.is_vip_unlocked("Multiple Midas"), false, "VIP 0 Multiple Midas=false")
+	assert_eq(pd.is_vip_unlocked("Multiple Midas"), true, "特权档满级 Multiple Midas=true（与 vip_level 解耦）")
 
 
 # ---- 新英雄/重复碎魂/魔晶计数(原版 _new_heroes/_smash_idx/DrawTimes26 单机化,2026-09-07)----

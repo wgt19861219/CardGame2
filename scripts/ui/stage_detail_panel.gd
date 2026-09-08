@@ -342,11 +342,13 @@ func _show_sweep_reward(r: Dictionary) -> void:
 # + checkStageLimitResetTimesMax VIP 次数上限（needHighervip dialog 拒绝）
 # + 弹确认框（showConfirmDialog，RESET_COSTS 文案 + 已重置次数）
 # + doResetElite 扣钻 + refreshStageEliteLimit（清 stage_limit + reset_times++）。
-# 项目单机化：CrusadeResetConfirm 范式简化（文案 + 确认/取消），needHighervip/toRecharge 用 Toast。
+# 项目单机化：CrusadeResetConfirm 范式简化（文案 + 确认/取消）。
+# 单机去 VIP 限制（2026-09-08）：上限按特权档（满级 Elite Reset=14 次）取值，
+# 达上限文案改通用（原 needHighervip 文案不再成立——玩家无提升 VIP 途径）。
 func _on_reset_pressed() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	if StageResetData.is_reset_times_max(player, stage_id):
-		Toast.show_message("VIP 等级不足，无法继续重置")  # 项目适配 toast（源 needHighervip dialog）
+		Toast.show_message("今日重置次数已达上限")
 		return
 	var cost: int = StageResetData.get_reset_cost(player, stage_id)
 	if cost <= 0:

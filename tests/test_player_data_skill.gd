@@ -27,8 +27,8 @@ func test_add_skill_point() -> void:
 func test_add_skill_point_vip_limit() -> void:
 	var pd := PlayerData.new(cm)
 	pd.skill_points = 0
-	pd.vip_level = 0
-	var limit: int = int(VipData.get_vip_field(0, "Max Skill Points", cm))
+	pd.vip_level = 0  # 单机去 VIP 限制：上限按特权档（满级）取值，与 vip_level 解耦
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", cm))
 	SkillPointManager.add(pd, 1000)
 	if limit > 0:
 		assert_eq(pd.skill_points, limit, "受 VIP Max Skill Points 上限")
@@ -173,26 +173,28 @@ func test_recover_skill_point_by_time() -> void:
 
 func test_recover_skill_point_clamped_by_max() -> void:
 	# 源 :672 chance = min(chance + addChance, max)，恢复受 VIP 上限钳制
+	# 单机去 VIP 限制：上限按特权档（满级 Max Skill Points=20）取值
 	var pd := PlayerData.new(cm)
-	pd.vip_level = 0  # VIP0 max=10
-	pd.skill_points = 9   # 差 1 点满
+	pd.vip_level = 0  # 显示层 0，特权档 max=20
+	pd.skill_points = 19   # 差 1 点满
 	pd.skill_cd_time = 1000
-	# 经过 900s → addChance = 3，但 9+3=12 被 max=10 钳到 10
+	# 经过 900s → addChance = 3，但 19+3=22 被 max=20 钳到 20
 	SkillPointManager.recover(pd, 1000 + 900)
-	assert_eq(pd.skill_points, 10, "受 VIP0 上限 10 钳制")
+	assert_eq(pd.skill_points, 20, "受特权档上限 20 钳制")
 	# 源 :676-678 满后 cd_time = now（停止累积）
 	assert_eq(pd.skill_cd_time, 1900, "满后 cd_time = now（源 :676）")
 
 
 func test_recover_skill_point_at_max_no_accumulate() -> void:
 	# 源 :661-664 chance >= max → isOverfull=true，cd_time = now（满时不计恢复）
+	# 单机去 VIP 限制：满 = 特权档（满级）上限
 	var pd := PlayerData.new(cm)
 	pd.vip_level = 0
-	pd.skill_points = 10   # 已满 VIP0 上限
+	pd.skill_points = int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", cm))
 	pd.skill_cd_time = 1000
 	var recovered: int = SkillPointManager.recover(pd, 1000 + 99999)
 	assert_eq(recovered, 0, "满后不恢复")
-	assert_eq(pd.skill_points, 10, "维持上限")
+	assert_eq(pd.skill_points, int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", cm)), "维持上限")
 	assert_eq(pd.skill_cd_time, 100999, "cd_time 刷新为 now")
 
 

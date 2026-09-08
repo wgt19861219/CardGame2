@@ -133,7 +133,7 @@ func test_claim_reward_status_2_no_double_regardless_vip() -> void:
 	var mgr := DailyLoginManager.new()
 	var pd := PlayerData.new(cm)
 	pd.apply_default_data()
-	pd.vip_level = 99  # 远超任何 vip_req，验证「status=2 不双倍」是 status 决定非 VIP 决定
+	pd.vip_level = 0  # 单机去 VIP 限制：特权档恒满级，验证「status=2 不双倍」是 status 决定非 VIP 决定
 	var r: Dictionary = mgr.claim_reward(pd, cm, now, 2)  # status=2 common
 	assert_true(bool(r.get("ok", false)), "status=2 领取成功")
 	var expected: int = 1 if rtype == "Hero" else base_amount
@@ -156,7 +156,7 @@ func test_claim_reward_status_1_double_when_vip_met() -> void:
 	var mgr := DailyLoginManager.new()
 	var pd := PlayerData.new(cm)
 	pd.apply_default_data()
-	pd.vip_level = vip_req  # 正好达标
+	pd.vip_level = 0  # 单机去 VIP 限制：特权档恒满级 → 恒达标
 	var r: Dictionary = mgr.claim_reward(pd, cm, now, 1)  # status=1 all
 	assert_true(bool(r.get("ok", false)), "status=1 领取成功")
 	assert_eq(int(r.get("amount", 0)), base_amount * 2, "status=1 + VIP 达标 → 双倍（源 :2152-2153）")

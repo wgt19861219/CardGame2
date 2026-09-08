@@ -26,6 +26,15 @@ static func get_area_unlock_vip(key: String, cm: Variant) -> int:
 	return index
 
 
+# VIP 表最高档（0..N 连续编号）。单机去 VIP 限制后作为特权档：所有特权查询按最高档取值。
+static func get_max_level(cm: Variant) -> int:
+	var vip_table: Dictionary = cm.get_raw_table("VIP")
+	var index: int = 0
+	while vip_table.has(str(index + 1)):
+		index += 1
+	return index
+
+
 # 未达 unlock-2 → 隐藏；达 unlock-2 → 显示（灰显）；达 unlock → 可用。
 static func get_area_show_vip(key: String, cm: Variant) -> int:
 	return maxi(get_area_unlock_vip(key, cm) - SHOW_VIP_OFFSET, 0)

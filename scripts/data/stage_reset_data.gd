@@ -23,7 +23,8 @@ static func get_reset_times(player: PlayerData, stage_id: int) -> int:
 
 
 static func is_reset_times_max(player: PlayerData, stage_id: int) -> bool:
-	var vip_max: int = int(VipData.get_vip_field(player.vip_level, "Elite Reset", player.cm))
+	# 单机去 VIP 限制：重置上限按特权档（满级 Elite Reset）取值。
+	var vip_max: int = int(VipData.get_vip_field(player.privilege_vip_level(), "Elite Reset", player.cm))
 	var nt: int = get_reset_times(player, stage_id)
 	return vip_max <= nt
 

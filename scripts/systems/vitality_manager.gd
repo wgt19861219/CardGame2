@@ -16,15 +16,16 @@ const RECOVER_INTERVAL: int = 360  # 每 360s 恢复 1 点（速率待核源 syn
 
 ## 是否还能买体力（照源 player.lua:603 canBuyVitality：今日次数 < VIP["Buy Vit Max"]）。
 ## UI 预检用，与 buy 互补：本方法只查 VIP 当日上限，buy 还查钻石是否够。
+## 单机去 VIP 限制：上限按特权档（满级）取值。
 static func can_buy(pd: PlayerData) -> bool:
-	var limit: int = int(VipData.get_vip_field(pd.vip_level, "Buy Vit Max", pd.cm))
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Buy Vit Max", pd.cm))
 	return limit <= 0 or pd.vitality_today_buy < limit
 
 
 ## 买体力（照源 local_server:1793 buy_vitality + player.lua:605 VIP 上限）。
 ## 扣 50 钻 + 体力+120（硬上限 9999）+ today_buy++。返是否成功。
 static func buy(pd: PlayerData) -> bool:
-	var limit: int = int(VipData.get_vip_field(pd.vip_level, "Buy Vit Max", pd.cm))
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Buy Vit Max", pd.cm))
 	if limit > 0 and pd.vitality_today_buy >= limit:
 		return false   # 超 VIP 当日上限
 	if pd.diamond < BUY_COST:

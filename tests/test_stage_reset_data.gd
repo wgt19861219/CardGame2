@@ -34,20 +34,25 @@ func test_get_reset_cost_gradient() -> void:
 
 
 # 源 is_reset_times_max（player.lua:1006-1019）：VIP[vip]["Elite Reset"] <= 已重置次数 → 达上限。
-# VIP.json: VIP 0 ["Elite Reset"]=0（默认）；VIP 2=1；VIP 11=10。
-func test_is_reset_times_max_vip0_blocked() -> void:
+# 单机去 VIP 限制（2026-09-08）：上限按特权档（满级）取值，与显示 vip_level 解耦。
+# VIP.json: 最高档 VIP 15 ["Elite Reset"]=14。
+func test_is_reset_times_max_privilege_level_decoupled() -> void:
 	var pd := PlayerData.new(cm)
-	pd.vip_level = 0  # VIP 0 → Elite Reset 上限 0
-	assert_true(StageResetData.is_reset_times_max(pd, 10001), "VIP 0 上限 0 → 达上限（无法 reset）")
+	pd.vip_level = 0  # 显示层 VIP 0，特权档仍满级
+	assert_false(StageResetData.is_reset_times_max(pd, 10001), "VIP 0（特权满级）→ 未达上限，可 reset")
 
 
-func test_is_reset_times_max_vip11_can_reset_9_times() -> void:
+func test_is_reset_times_max_privilege_cap() -> void:
 	var pd := PlayerData.new(cm)
-	pd.vip_level = 11  # VIP 11 → Elite Reset 上限 10
-	assert_false(StageResetData.is_reset_times_max(pd, 10001), "VIP 11 上限 10，0 次 → 未达上限")
-	for i in range(10):
+	var cap: int = int(VipData.get_vip_field(VipData.get_max_level(cm), "Elite Reset", cm))
+	if cap <= 0:
+		assert_true(true, "特权档 Elite Reset=0，无上限语义，跳过")
+		return
+	for i in range(cap - 1):
 		StageResetData.refresh_elite_limit(pd, 10001)
-	assert_true(StageResetData.is_reset_times_max(pd, 10001), "VIP 11 reset 10 次后达上限")
+	assert_false(StageResetData.is_reset_times_max(pd, 10001), "特权档上限-1 次 → 未达上限")
+	StageResetData.refresh_elite_limit(pd, 10001)
+	assert_true(StageResetData.is_reset_times_max(pd, 10001), "特权档 reset 满 cap 次后达上限")
 
 
 # 源 refreshStageEliteLimit（player.lua:1045-1051）：清 stage_limit[nid] + reset_times[nid]++。
