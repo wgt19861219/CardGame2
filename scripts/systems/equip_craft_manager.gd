@@ -50,6 +50,7 @@ static func enhance_equip(pd: PlayerData, inst_id: int, slot: int, materials: Di
 		if need > 0:
 			pd.items[int(mat_id)] = int(pd.items[int(mat_id)]) - need
 	hero.equip_exp[slot] = min(cur_exp + add_exp, max_exp)
+	pd.hero_manager.recalc_hero_gs(hero)   # 强化改变单位属性 → 重算战力（源 main.lua:1236 落地后 recalcHeroGs）
 	if pd.task_manager != null:
 		pd.task_manager.record_by_type(pd.cm, "EnhanceLevelUp")
 	return true
@@ -79,6 +80,7 @@ static func enhance_equip_to_max(pd: PlayerData, inst_id: int, slot: int) -> boo
 	if cost <= 0 or not pd.spend_diamond(cost):
 		return false   # 钻石不足（源 _rmb < rmbCost）
 	hero.equip_exp[slot] = max_exp
+	pd.hero_manager.recalc_hero_gs(hero)   # 同上：一键满级改变单位属性 → 重算战力
 	return true
 
 

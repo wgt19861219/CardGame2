@@ -331,7 +331,7 @@ func _refresh_gs() -> void:
 	var total: int = 0
 	for t in _team:
 		var hero = player.hero_manager.heroes[t.inst_id]
-		total += int(player.hero_manager.calc_gs(hero))
+		total += int(hero.gs)   # 单一来源：养成入口已重算（recalc_hero_gs）
 	# 源 gs_title（COMBAT 标题）+ gs（数值）两行（battleprepare.lua:2252-2279），拆成两个 Label。
 	if _gs_title_label != null:
 		_gs_title_label.text = String(cm.get_lstr(LSTR_COMBAT))

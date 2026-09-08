@@ -96,7 +96,9 @@ func test_upgrade_hero_skill_insufficient() -> void:
 
 
 func test_upgrade_hero_skill_gs_increment() -> void:
-	# 源 local_server.lua:1343 hero._gs += totalUpgrades*10（每升 1 级技能 +10 战力）
+	# 单一事实来源（2026-09-08）：hero.gs=全属性加权，技能等级不进 rebuild 属性 → gs 不变
+	# （源 local_server.lua:1343 +10/级 系近似公式补偿项，随 calc_gs 一并退役；技能对战斗的
+	# 影响在伤害/治疗公式，不在属性战力）。
 	var pd := PlayerData.new(cm)
 	pd.skill_points = 0
 	SkillPointManager.add(pd, 5)
@@ -104,9 +106,10 @@ func test_upgrade_hero_skill_gs_increment() -> void:
 	var inst_id: int = pd.hero_manager.add_hero(1)
 	var hero := pd.hero_manager.get_hero(inst_id)
 	hero.level = 5
+	pd.hero_manager.recalc_hero_gs(hero)   # 手工改 level 后取真基线
 	var old_gs: int = hero.gs
 	assert_true(SkillPointManager.upgrade_hero_skill(pd, inst_id, 0), "升级技能")
-	assert_eq(hero.gs, old_gs + 10, "技能升级 +10 战力（源 :1343 totalUpgrades*10）")
+	assert_eq(hero.gs, old_gs, "技能等级不进加权属性 → gs 不变（纯属性战力语义）")
 
 
 # ── buy_skill_stren_point（源 local_server:2184-2193 + skillstren.lua:463-468）──

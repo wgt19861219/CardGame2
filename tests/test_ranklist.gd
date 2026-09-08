@@ -38,7 +38,7 @@ func test_rank_type_5_buckets() -> void:
 	# 源 :2259-2272 5 档 rank_type 聚合不同维度（旧版 5 榜同分，修后应区分）
 	var rm := RanklistManager.new()
 	var pd := PlayerData.new(cm)
-	pd.hero_manager.add_hero(1)  # HeroInstance: gs=calc_gs, stars=1, rank=1
+	pd.hero_manager.add_hero(1)  # HeroInstance: gs=recalc_hero_gs 加权战力, stars=1, rank=1
 	var top_gs: int = int(rm.generate_ranklist(pd, "top_gs")["self_param"])         # top15Gs
 	var full_gs: int = int(rm.generate_ranklist(pd, "full_hero_gs")["self_param"])  # totalGs
 	var evo_star: int = int(rm.generate_ranklist(pd, "hero_evo_star")["self_param"])  # Σstars

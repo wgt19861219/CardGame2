@@ -55,19 +55,22 @@ func test_upgrade_rank_caps_at_22() -> void:
 	assert_false(mgr.upgrade_rank(inst_id), "rank 22 为上限，不可再进阶（源 _rank<22）")
 
 
-# 战斗力 GS（照源 main.lua:1750 + player.lua:1490 _gs=5）：基础 5 + sum(Equip.GS × Hero_equip.EquipLevel)。
-func test_calc_gs_base_no_gear() -> void:
+# 战斗力 GS（单一事实来源，2026-09-08 定稿）：hero.gs = 战斗单位全属性加权 gs
+# （源 recalcHeroGs=UnitCreate 属性加权；废除旧近似公式 5+Σ Equip.GS×EquipLevel+技能×10——
+# 不含等级/星级/附魔强化，升级升星附魔均不反映）。
+func test_recalc_gs_base_no_gear() -> void:
 	var mgr := HeroManager.new(cm)
 	var inst_id := mgr.add_hero(1)
 	var hero := mgr.get_hero(inst_id)
-	assert_eq(mgr.calc_gs(hero), 5, "无装备 GS=5（基础）")
+	assert_gt(hero.gs, 0, "无装备 GS=全属性加权（等级/星级基础属性仍计入）")
 
-func test_calc_gs_increases_with_gear() -> void:
+func test_recalc_gs_increases_with_gear() -> void:
 	var mgr := HeroManager.new(cm)
 	var inst_id := mgr.add_hero(1)
 	var hero := mgr.get_hero(inst_id)
+	var gs0: int = hero.gs
 	_wear_full_gear(mgr, inst_id)
-	assert_true(mgr.calc_gs(hero) > 5, "穿齐后 GS > 5（基础+装备贡献）")
+	assert_gt(hero.gs, gs0, "穿齐后 GS > 裸装（装备属性计入加权战力）")
 
 func test_wear_equip_updates_hero_gs() -> void:
 	var mgr := HeroManager.new(cm)
