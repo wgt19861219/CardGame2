@@ -403,3 +403,21 @@ func test_pay_icon_path_gold_vs_diamond() -> void:
 	assert_eq(panel._pay_icon_path("gold"), "res://assets/ui/alpha/HVGA/shop_gold_icon.png", "gold→shop_gold_icon")
 	assert_eq(panel._pay_icon_path("diamond"), "res://assets/ui/alpha/HVGA/shop_token_icon.png", "diamond→shop_token_icon")
 	panel.free()
+
+
+# icon 挂点（源 board.lua:320 ccp(50,328) 中心锚 → 左上 (13.3,19.9)=中心(50,57)-半显示尺寸(36.7,37.1)）。
+# 守卫 2026-09-08 坐标债清偿：旧 (14,21) 误用容器 72 半尺寸 36（与 equipboard_panel 同批）。
+func test_icon_pos_source_semantics() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipboardOfbuyPanel.new("equipboardofbuy", {})
+	panel.setup_panel({"id": 371, "amount": 1, "pay": "gold", "price": 100, "cost": 100}, cm, null)
+	panel.show_window(root)
+	var frame: Control = panel.get("_frame") as Control
+	var host: Control = frame.get_node("%IconHost") as Control
+	assert_gt(host.get_child_count(), 0, "IconHost 有 icon")
+	var icon: Control = host.get_child(0) as Control
+	assert_almost_eq(icon.position.x, 13.3, 0.05, "icon 左上 x=13.3")
+	assert_almost_eq(icon.position.y, 19.9, 0.05, "icon 左上 y=19.9")
+	panel.remove_window()
+	root.queue_free()

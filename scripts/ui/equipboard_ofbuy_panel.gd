@@ -15,8 +15,10 @@ signal confirmed()
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/equipboard_ofbuy_content.tscn")
 
-# icon 定位（源 board.lua:320 ccp(50,328) 中心锚 → 左上 (14,21)，同 EquipboardPanel 实证口径）
-const ICON_POS: Vector2 = Vector2(14.0, 21.0)
+# icon 定位（源 board.lua:320 ccp(50,328) 中心锚 → 左上 (13.3,19.9) = 中心 (50,57) - 半显示尺寸
+# (36.7,37.1)，frame 纹理 94/CS×95/CS 的一半；旧 (14,21) 误用容器 72 半尺寸 36，
+# 2026-09-08 与 equipboard_panel 同批清偿，equipcraft 2026-09-06 先修定口径）
+const ICON_POS: Vector2 = Vector2(13.3, 19.9)
 # 用户视觉偏好：EquipboardPanel 定稿 0.8×CS=75.2 基数（9bc640e 统一 ÷CS 后乘回 CS，
 # 2026-08-22 修——ofbuy 漏跟姊妹文件同批修复，旧 0.8 缩到 58.7）；源 createIcon 无 scale。
 const ICON_SCALE: float = 0.8 * CONTENT_SCALE
