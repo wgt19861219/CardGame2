@@ -35,21 +35,18 @@ func after_each() -> void:
 	_root.queue_free()
 
 
-# ① 纯弹窗 show → HUD 遮蔽（容器压暗 + 子树禁点）；remove → 恢复（白色 + 可点）。
+# ① 纯弹窗 show → HUD 遮蔽（三容器整体隐藏，弹窗期间让位）；remove → 按 identity 恢复。
 func test_pure_popup_occludes_and_restores() -> void:
+	var main_p: Panel = HudOverlay._status_parent_main
 	var sub: Panel = HudOverlay._status_parent_sub
-	var bar: Control = sub.get_child(0)   # 首个货币条（金币条整条 STOP 可点→midas）
-	var bar_filter_orig: int = bar.mouse_filter   # 原值须在遮蔽前置位前读
 	var w := PopWindow.new("occl1", {})
 	w.show_window(_root)
 	assert_true(HudOverlay.is_occluded(), "纯弹窗（hud_identity 空）show → HUD 遮蔽")
-	assert_false(HudOverlay.OCCLUDED_MODULATE == Color.WHITE, "常量自检：遮蔽色≠白")
-	assert_eq(sub.modulate, HudOverlay.OCCLUDED_MODULATE, "sub 版容器压暗（源黑遮罩罩 statusbar 等价）")
-	assert_eq(bar.mouse_filter, Control.MOUSE_FILTER_IGNORE, "货币条子树禁点（点击穿到弹窗层）")
+	assert_false(main_p.visible, "遮蔽=三容器整体隐藏（二轮用户观感裁决：恒顶层 HUD 压暗仍'在最前'，唯隐藏让位）")
+	assert_false(sub.visible, "sub 版容器同隐")
 	w.remove_window()
 	assert_false(HudOverlay.is_occluded(), "remove → 解除遮蔽")
-	assert_eq(sub.modulate, Color.WHITE, "容器恢复亮色")
-	assert_eq(bar.mouse_filter, bar_filter_orig, "货币条恢复原 mouse_filter（可点）")
+	assert_true(main_p.visible, "解除后按 identity 重放显隐（main → main 版容器恢复可见）")
 
 
 # ② 场景模拟型（hud_identity 非空，源 pushScene 场景族）不遮蔽。
@@ -84,15 +81,15 @@ func test_nested_stack_depth_aware() -> void:
 	assert_false(HudOverlay.is_occluded(), "栈空 → 解除")
 
 
-# ⑤ 全隐 identity（battle 族）下遮蔽态置位（modulate/禁点对不可见容器无视觉副作用——
-# 不存在"黑条悬空"问题，modulate 挂容器自身随显隐）。
+# ⑤ 全隐 identity（battle 族）下遮蔽态置位无副作用（容器本就隐藏，无黑条悬空类问题）。
 func test_hidden_identity_no_occluder_visual() -> void:
 	HudOverlay.apply_identity("battle")
 	var w := PopWindow.new("occl5", {})
 	w.show_window(_root)
 	assert_true(HudOverlay.is_occluded(), "遮蔽态置位")
-	assert_eq(HudOverlay._status_parent_sub.visible, false, "battle 全隐：容器不可见（无视觉副作用）")
+	assert_false(HudOverlay._status_parent_sub.visible, "battle 全隐：容器不可见（叠加遮蔽无副作用）")
 	w.remove_window()
+	HudOverlay.apply_identity("main")
 
 
 # ⑥ task/dailyTask 退役守卫：不再进 HUD_HIDDEN_IDENTITIES（源 z=101 scene 级弹窗盖 HUD，
