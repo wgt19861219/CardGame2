@@ -36,6 +36,7 @@ signal close_requested
 
 func setup_popup(p_boss_idx: int, p_boss_name: String, p_difficulties: Array, p_player_level: int) -> void:
 	boss_idx = p_boss_idx
+	hud_occlude = false   # 源例外族：degreePopup 挂 dungeon_map 链（exercise 系容器低于 statusbar，HUD 浮于其上），不遮蔽（2026-09-08 通用治理梳理）
 	setup()
 	register_on_enter(play_scale_in)
 	_build_content(p_boss_name)

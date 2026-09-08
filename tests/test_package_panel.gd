@@ -243,14 +243,16 @@ func test_status_bar_built_on_fragment_identity_too() -> void:
 	root.queue_free()
 
 
-# hud_identity 接线（show_window 切 HudOverlay 的前提）：setup_panel 后 hud_identity=identity。
-# 曾有顺序 bug：hud_identity 在 _identity 赋值前取值，首次恒空串 → HudOverlay 不切换。
+# HUD 遮蔽语义（2026-09-08 通用治理）：package 源 z=120 scene 级弹窗盖 HUD → B 族纯弹窗，
+# hud_identity 接线退役（show 后 HUD 保持场景版式 + 被弹窗栈驱动的局部黑罩盖住，
+# 详见 test_hud_occlusion.gd）；本守卫锁"不再切版式 + 默认参与遮蔽"防接线回潮。
 func test_hud_identity_wired() -> void:
 	var root := Node.new()
 	add_child(root)
 	var pd := PlayerData.new(cm)
 	var panel := _make_panel("package", pd)
-	assert_eq(panel.hud_identity, "package", "setup_panel 后 hud_identity=package（顺序正确）")
+	assert_eq(panel.hud_identity, "", "B 族退役：package 不再设 hud_identity（通用遮蔽接管）")
+	assert_true(panel.hud_occlude, "package 默认参与 HUD 遮蔽（源 z=120 盖 HUD）")
 	panel.remove_window()
 	root.queue_free()
 

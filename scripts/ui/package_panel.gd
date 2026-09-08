@@ -77,8 +77,7 @@ var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipL
 func setup_panel(p_cm: Variant, p_pd: PlayerData) -> void:
 	play_open_sfx = true   # T4：原 register_on_enter 音效样板上收基类
 	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
-	_identity = identity
-	hud_identity = _identity   # T4：身份切换上收基类（须在 _identity 赋值后取，先取恒空串）
+	_identity = identity   # HUD 版式不随弹窗切（源 package z=120 scene 级盖 HUD，通用遮蔽接管，2026-09-08）
 	cm = p_cm
 	pd = p_pd
 	_tabs = TABS_PACKAGE if _identity == IDENTITY_PACKAGE else TABS_FRAGMENT

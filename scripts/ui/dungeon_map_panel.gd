@@ -69,7 +69,7 @@ var _content: Control = null             # .tscn 根（静态层持有者）
 
 
 func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: BattleRng, p_mode: String, p_group_ids: Array[int]) -> void:
-	hud_identity = "dungeonMap"   # T4：原 apply/remove override 样板上收基类
+	hud_identity = "dungeonMap"   # T4：原 apply/remove override 样板上收基类；非空=场景模拟型不遮蔽 HUD（源 dungeon_map 挂 panel root z=200 且宿主 exercise 链被 HUD 压，2026-09-08 通用治理梳理）
 	transparent_shade = true   # T4：原 shade 透明 hack 上收基类（content 自带全屏 FrameworkBg）
 	player = p_player
 	stage_manager = p_stage_manager

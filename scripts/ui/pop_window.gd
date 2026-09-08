@@ -41,9 +41,17 @@ var shade_close_on_click: bool = true
 # HudOverlay identity（非空时 show_window 切换 / remove_window 恢复打开前记录值；
 # 原 8 份 remove_window override 样板。嵌套弹窗（如 package→handbook）关内层恢复外层
 # identity 而非硬编码 main，否则 main 版含头像 HUD 透过外层弹窗显示（2026-08-20 用户反馈）。
-# 动态 identity/恢复的面板（battle_prepare 记 _prev_identity、package 构造传入）不适用，保留各自 override）。
+# 动态 identity/恢复的面板（battle_prepare 记 _prev_identity、package 构造传入）不适用，保留各自 override。
 var hud_identity: String = ""
 var _hud_identity_prev: String = "main"   # show_window 打开前 identity（remove 恢复用；默认 main=旧行为兜底）
+# --- HUD 遮蔽通用治理（2026-09-08，P1）---
+# 本弹窗是否遮蔽 HUD（局部黑罩盖货币栏/头像/快捷栏）。源主线：scene 级弹窗 z≥100 一律
+# 盖住 mainLayer(100) 内 statusbar（黑遮罩物理覆盖，隐约可见+不可点）→ 默认 true。
+# 例外=源刻意低于 HUD 的悬浮板（如 equipboardofpackage 挂 mainLayer z=0 无遮罩）→ 置 false。
+# 由 _refresh_stack_z 栈重算统一驱动 HudOverlay.set_occluded，替代 HUD_HIDDEN_IDENTITIES
+# 打地鼠（旧模式每弹窗须清单+接线两处手工登记）。非 PopWindow external 节点用
+# set_meta("hud_occlude", true) 声明（默认 false 不遮蔽，battle_prepare 等全屏页走 identity 隐藏）。
+var hud_occlude: bool = true
 
 
 func _init(p_identity: String = "", p_param: Dictionary = {}) -> void:
@@ -133,6 +141,27 @@ static func _refresh_stack_z() -> void:
 		var p: CanvasItem = _open_stack[i]
 		p.z_index = Z_BASE + i * Z_STEP
 		p.z_as_relative = false
+	# HUD 遮蔽联动（栈状态唯一咽喉，show/remove/PREDELETE/external 全经此）：栈内存在任一
+	# 遮蔽弹窗 → HUD 局部黑罩；栈空/仅剩不遮蔽弹窗 → 恢复。嵌套弹窗天然深度感知。
+	_sync_hud_occlusion()
+
+
+static func _sync_hud_occlusion() -> void:
+	var occ := false
+	for p in _open_stack:
+		if p is PopWindow:
+			var w := p as PopWindow
+			# hud_identity 非空 = 场景模拟型弹窗（源 pushScene 场景如 shop/tavern/stageselect/crusade，
+			# HUD 版式属场景语义、货币条清晰可见）→ 不遮蔽；hud_identity 空 = 纯弹窗
+			# （源 scene/mainLayer 级 z≥100 一律盖 HUD）→ 默认遮蔽；hud_occlude=false =
+			# 显式例外（源刻意低于 statusbar 的悬浮板，如 equipboardofpackage z=0）。
+			if w.hud_occlude and w.hud_identity == "":
+				occ = true
+				break
+		elif p.has_meta("hud_occlude") and bool(p.get_meta("hud_occlude")):
+			occ = true
+			break
+	HudOverlay.set_occluded(occ)
 
 
 func _unregister_from_stack() -> void:

@@ -67,8 +67,7 @@ func setup_panel(p_player: PlayerData) -> void:
 	_player = p_player
 	_mgr = _player.daily_login
 	_cm = _player.cm
-	setup()
-	hud_identity = "dailylogin"   # 2026-08-18 修复轮二 R2：主城直开——切子场景 StatusBar（无头像，excavate 判例），用户反馈主头像透到二级界面
+	setup()   # HUD 版式不随弹窗切（源 dailylogin 挂 mainLayer z=200 盖 HUD，通用遮蔽接管，2026-09-08）
 	_build_content()
 
 

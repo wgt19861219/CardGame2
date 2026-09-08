@@ -31,10 +31,7 @@ func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_tm: TaskManager,
 	_cm = p_cm
 	_tm = p_tm
 	_kind = p_kind
-	setup()
-	# HUD 隐藏：源 task/dailyTask 均 popup 挂 scene z=101 盖住 statusbar（framework.lua:644/:34，
-	# CanvasLayer(150) 恒浮弹窗上致货币栏穿透，2026-09-03 根修）；identity 即 kind。
-	hud_identity = p_kind
+	setup()   # HUD 不再全隐：源 task/dailyTask 挂 scene z=101 盖 HUD（黑遮罩罩住货币栏隐约可见），通用遮蔽接管（2026-09-08 治理，替代 2026-09-03 清单打地鼠）
 	if shade_layer != null:
 		shade_layer.color.a = SHADE_ALPHA
 	_build_content()
