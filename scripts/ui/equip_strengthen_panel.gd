@@ -26,6 +26,13 @@ const TEXT_FAIL_KEY: String = "EQUIPSTRENGTHEN.UNFORTUNATELY_ENCHANTED_FAILED"
 const TEXT_ENCHANT_KEY: String = "EQUIPSTRENGTHEN.ENCHANTING"
 const TEXT_ONECLICK_KEY: String = "EQUIPSTRENGTHEN.ONECLICK_ENCHANTING"
 const TEXT_DIAMOND_SHORT: String = "钻石不足"   # 单机化 fallback（源 toRecharge 弹窗省略）
+# 换英雄三态提示（源 setHeroIcon:1765-1773 count/maxQuality/allMax 分支）
+const TEXT_NO_EQUIP_KEY: String = "EQUIPSTRENGTHEN.THIS_HERO_DOE_NOT_WEAR_ANY_EQUIPMENT_PLEASE_RESELECT_HERO"
+const TEXT_NO_ENCHANTABLE_KEY: String = "EQUIPSTRENGTHEN.THIS_HERO_DOESNT_HAVE_EQUIPMENT_FOR_ENHANCED_PLEASE_RESELECT_HERO"
+const TEXT_ALL_MAXED_KEY: String = "EQUIPSTRENGTHEN.THIS_HERO_HAS_ALL_EQUIPMENTS_ENHANCED_TO_THE_MAXED_LEVEL_PLEASE_RESELECT_HERO"
+const TEXT_PLEASE_SELECT_EQUIP_KEY: String = "EQUIPSTRENGTHEN.PLEASE_SELECT_EQUIPMENT"
+const TEXT_PLEASE_SELECT_HERO_KEY: String = "EQUIPSTRENGTHEN.PLEASE_SELECT_HERO"   # 源 create:2165 未选态提示
+const TEXT_SWITCH_HEROES_KEY: String = "EQUIPSTRENGTHEN.SWITCH_HEROES"   # 源 :1257 换过英雄后按钮文字
 
 var hero: HeroInstance = null
 var cm: Variant = null
@@ -59,6 +66,15 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -
 	setup()
 	_build_content()
 	EquipStrengthenAtt.show_material_bg(self, -1)
+	if hero == null:
+		# 源 create 未选英雄态（2026-09-08 四轮补回）：nohead 占位 + doTalk「请选择英雄」
+		# （:2165），材料/装备区空（initMaterialData 在 setHeroIcon 选英雄后才跑），
+		# 经验条不显示（源 createExpBar :1114-1116 空数据移除容器）
+		_fill_hero_head()
+		(_content.get_node("BarHost") as Control).visible = false
+		_show_hint_sticky(_T(TEXT_PLEASE_SELECT_HERO_KEY))
+		_maybe_start_ee()
+		return
 	EquipStrengthenAtt.show_equips(self)
 	_show_hint(_T(TEXT_ADD_MATERIAL_KEY))
 	if pd != null:
@@ -66,7 +82,7 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_pd: PlayerData = null) -
 		EquipStrengthenMaterial.show_materials(self)
 	# 推进 EEclickHero/EEselectHero 到 EEclickEquip 等 select_slot(0) emit（架构无选英雄动作）。
 	_maybe_start_ee()
-	select_slot(0)   # 默认选槽 0（源 create:2163 doSelectSlot）+ emit EEclickEquip/EEopenMaterial
+	_auto_select_or_hint()   # 源 create:2163 doSelectSlot() 无参 + setHeroIcon:1765-1773 三态提示
 
 
 # 绑 .tscn 静态节点 + fill 静态文案（动态数据走 helper fill 函数）。零静态节点构造。
@@ -99,20 +115,33 @@ func _build_content() -> void:
 	for i in EquipStrengthenAtt.SLOT_COUNT:
 		var host: Control = _content.get_node("%EquipSlot" + str(i)) as Control
 		host.gui_input.connect(_make_slot_handler(i))
+	# 换英雄入口（源 doSelectHeroTouch:1830 → doChangeHero:1720）：「选择英雄」按钮（源 select_hero
+	# 按钮组，2026-09-08 三轮补回可见入口）+ 点头像/名字区弹浮层（保留便利交互）
+	(_content.get_node("%SelectHeroBtn") as Button).pressed.connect(_on_select_hero_btn)
+	(_content.get_node("%HeroHeadHost") as Control).gui_input.connect(_on_hero_head_clicked)
+	(_content.get_node("%HeroName") as Control).gui_input.connect(_on_hero_head_clicked)
 	_fill_hero_head()
 
 
 # 英雄头像 + 名字（源 setHeroIcon:1728-1776：readhero.createIcon 替换 heroIcon 框
 # + createHeroName 名字；单机化 hero 已定 → setup 即 fill，贴图名降级 Label）。
+# 换英雄重入（switch_hero）：先清宿主旧头像再挂新。
+# hero==null 未选态（源 create nohead 占位）：显示 heroIcon 框 + NoHead 锁图 + 空名字。
 func _fill_hero_head() -> void:
+	var head_host: Control = _content.get_node("%HeroHeadHost") as Control
+	for c in head_host.get_children():
+		c.queue_free()
+	var hero_icon: TextureRect = _content.get_node("HeroIcon") as TextureRect
+	var name_lbl: Label = _content.get_node("%HeroName") as Label
 	if hero == null:
+		hero_icon.visible = true   # 框 + 子 NoHead 占位随显（源 nohead @ heroIcon 内 z=-1）
+		name_lbl.text = ""
 		return
 	var head := ReadheroIcon.new()
 	head.setup({"id": int(hero.tid), "rank": int(hero.rank), "stars": int(hero.stars)}, cm)
-	var head_host: Control = _content.get_node("%HeroHeadHost") as Control
 	head_host.add_child(head)   # Node2D 默认 (0,0)=Host 左上，104×104 恰铺满 Host
-	(_content.get_node("HeroIcon") as TextureRect).visible = false   # 源 :1741 框被替换
-	(_content.get_node("%HeroName") as Label).text = HeroDetailFills.get_display_name(hero, cm)
+	hero_icon.visible = false   # 源 :1741 框被替换（NoHead 级联隐藏）
+	name_lbl.text = HeroDetailFills.get_display_name(hero, cm)
 
 
 func _maybe_start_ee() -> void:
@@ -124,6 +153,90 @@ func _maybe_start_ee() -> void:
 	Events.bus.emit_tutorial_switch(Array(TutorialData.EE_STEPS))
 	Events.bus.emit_tutorial_step(&"EEclickHero")    # 架构无选英雄 → 推进
 	Events.bus.emit_tutorial_step(&"EEselectHero")   # 推进到 EEclickEquip 等 select_slot
+
+
+# 初始槽选择 + 三态提示（源 create:2163 doSelectSlot() 无参 + setHeroIcon:1762-1774）。
+# 源为未选态等玩家点槽；本项目便利：自动选第一个可附魔未满级槽（select_slot 内含 EE emit），
+# 无可附魔装备时播源三态常驻提示引导换英雄（2026-09-08 根修「附魔锁死船长」）。
+func _auto_select_or_hint() -> void:
+	if hero == null:
+		return
+	var count: int = 0
+	var max_quality: int = 0
+	var all_max: bool = true
+	var first_ok: int = -1
+	for i in EquipStrengthenAtt.SLOT_COUNT:
+		var item_id: int = int(hero.equip_slots[i])
+		if item_id <= 0:
+			continue
+		count += 1
+		var quality: int = int(cm.get_raw_table(&"Equip").get(str(item_id), {}).get("Quality", 0))
+		max_quality = maxi(max_quality, quality)
+		if not _slot_is_max(i):
+			all_max = false
+			if first_ok < 0 and int(ReadequipData.get_equip_level_exp(item_id, cm)["ml"]) > 0:
+				first_ok = i
+	if first_ok >= 0:
+		select_slot(first_ok)
+		return
+	if count <= 0:
+		_show_hint_sticky(_T(TEXT_NO_EQUIP_KEY))
+	elif max_quality <= 1:
+		_show_hint_sticky(_T(TEXT_NO_ENCHANTABLE_KEY))
+	elif all_max:
+		_show_hint_sticky(_T(TEXT_ALL_MAXED_KEY))
+	else:
+		_show_hint_sticky(_T(TEXT_PLEASE_SELECT_EQUIP_KEY))
+
+
+# 单槽满级判定（源 checkMaxLevel:1306-1313；白装 le 空 total=0 恒满级，不计入 all_max 翻转）。
+func _slot_is_max(slot: int) -> bool:
+	var total: float = EquipStrengthenAtt.get_total_exp(self, slot)
+	if total <= 0.0:
+		return true
+	return float(hero.equip_exp[slot]) >= total
+
+
+# 「选择英雄」按钮（源 doSelectHeroTouch → doChangeHero；Button 不需要 InputEvent 判定）。
+# 英雄列表=全部拥有英雄（源 selectwindow ofhero 遍历 ed.player.heroes，非仅 team）。
+func _on_select_hero_btn() -> void:
+	if pd == null:
+		return
+	var heroes: Array = []
+	for h in pd.hero_manager.heroes.values():
+		heroes.append(h)
+	if heroes.size() <= 1:
+		return   # 单英雄无需选择（源 selectwindow 列表空同理）
+	var sel := EquipStrengthenHeroSelect.new("equip_strengthen_hero_select", {})
+	sel.setup_panel(heroes, int(hero.inst_id) if hero != null else -1, cm, switch_hero)
+	sel.show_window(self)
+
+
+# 点头像/名字 → 弹 team 英雄选择浮层（源 doChangeHero:1720-1727 selectwindow(hero)）。
+func _on_hero_head_clicked(ev: InputEvent) -> void:
+	if not (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed):
+		return
+	_on_select_hero_btn()
+
+
+# 换英雄（源 setHeroIcon:1728-1776：initMaterialData + 换头像/名 + createEquip + doSelectSlot + 三态提示）。
+# :1731-1735 换过英雄后按钮文字「选择英雄」→「切换英雄」（hid 置位标记，首次切换生效）。
+func switch_hero(p_hero: HeroInstance) -> void:
+	if p_hero == null or (hero != null and int(p_hero.inst_id) == int(hero.inst_id)):
+		return
+	hero = p_hero
+	_selected_slot = -1
+	_addmt_info = {}
+	_fill_hero_head()
+	EquipStrengthenAtt.show_equips(self)
+	EquipStrengthenAtt.show_material_bg(self, -1)
+	if pd != null:
+		_materials = EquipStrengthenMaterial.build_material_list(self)
+		EquipStrengthenMaterial.show_materials(self)
+		var sel_label: Label = _content.get_node("%SelectHeroBtn/SelectHeroBtnLabel") as Label
+		if sel_label.text != _T(TEXT_SWITCH_HEROES_KEY):
+			sel_label.text = _T(TEXT_SWITCH_HEROES_KEY)
+	_auto_select_or_hint()
 
 
 # 槽点击 handler（EquipSlot host gui_input.connect 用）。
@@ -246,6 +359,8 @@ func perform_enhance_fast() -> bool:
 func do_click_stren() -> void:
 	Events.bus.emit_tutorial_step(&"EEclickEnhance")
 	if pd == null or hero == null or _selected_slot < 0:
+		if hero != null:
+			_show_hint(_T(TEXT_PLEASE_SELECT_EQUIP_KEY))   # 无槽选中不再静默（源初始态 NPC 引导等价）
 		return
 	if EquipStrengthenAtt.is_max_level_target(self):
 		_show_hint(_T(TEXT_EXP_MAXED_KEY))
@@ -262,6 +377,8 @@ func do_click_stren() -> void:
 # 单机化：省 showConfirmDialog（无通用确认框组件）+ playerlimit VIP 锁（视为解锁）。
 func do_click_fast_stren() -> void:
 	if pd == null or hero == null or _selected_slot < 0:
+		if hero != null:
+			_show_hint(_T(TEXT_PLEASE_SELECT_EQUIP_KEY))   # 无槽选中不再静默
 		return
 	if EquipStrengthenAtt.is_max_level_current(self):
 		_show_hint(_T(TEXT_MAX_LEVEL_KEY))

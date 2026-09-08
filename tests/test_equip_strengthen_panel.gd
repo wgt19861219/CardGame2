@@ -101,7 +101,8 @@ func test_select_enchantable_slot() -> void:
 	root.queue_free()
 
 
-# 源 selectEquip:1646 quality 1（ml=0）不可附魔提示
+# 源 selectEquip:1646 quality 1（ml=0）不可附魔 + setHeroIcon:1767 无可强化 → 引导换英雄
+# （2026-09-08 根修：select_slot(0) 误译改 _auto_select_or_hint，初始提示升级三态）
 func test_select_low_quality_slot_hint() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -121,8 +122,44 @@ func test_select_low_quality_slot_hint() -> void:
 	panel.setup_panel(hero, cm)
 	panel.show_window(root)
 	assert_eq(panel._selected_slot, -1, "quality 1 ml=0 不可选")
-	# 源 ONLY_GREEN_AND_OVER... LSTR value
-	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.ONLY_GREEN_AND_OVER_THE_QUALITY_OF_THE_EQUIPMENT_CAN_BE_ENCHANTED")), "低品质提示照源 LSTR")
+	# 源 THIS_HERO_DOESNT_HAVE_EQUIPMENT_FOR_ENHANCED... LSTR（setHeroIcon:1767 mq<=1 分支）
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.THIS_HERO_DOESNT_HAVE_EQUIPMENT_FOR_ENHANCED_PLEASE_RESELECT_HERO")), "无可强化装备 → 引导换英雄（源 LSTR）")
+	# 点白装槽本身仍走源 selectEquip:1646 品质提示
+	panel.select_slot(0)
+	assert_eq(panel._selected_slot, -1, "点白装槽仍不可选")
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.ONLY_GREEN_AND_OVER_THE_QUALITY_OF_THE_EQUIPMENT_CAN_BE_ENCHANTED")), "低品质点击提示照源 LSTR")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 源 setHeroIcon:1765 三态之一：无装备 → NO_EQUIP 提示（_auto_select_or_hint）
+func test_auto_hint_no_equipment() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)   # 全槽空
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm)
+	panel.show_window(root)
+	assert_eq(panel._selected_slot, -1, "全空槽不自动选")
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.THIS_HERO_DOE_NOT_WEAR_ANY_EQUIPMENT_PLEASE_RESELECT_HERO")), "无装备 → 引导换英雄（源 LSTR）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 2026-09-08 根修：无槽点强化/一键按钮不再静默 → 请选择装备提示
+func test_do_click_no_slot_hint() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)   # 无装备 → 无槽
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm)
+	var pd := PlayerData.new(cm)
+	panel.pd = pd
+	panel.show_window(root)
+	panel.do_click_stren()
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.PLEASE_SELECT_EQUIPMENT")), "无槽点强化 → 请选择装备提示")
+	panel.do_click_fast_stren()
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.PLEASE_SELECT_EQUIPMENT")), "无槽点一键 → 请选择装备提示")
 	panel.remove_window()
 	root.queue_free()
 
@@ -243,6 +280,7 @@ func test_refresh_stren_cost_shows_gold() -> void:
 
 
 # 源 addMaterial:278 满级守卫（targetExp 达 total → add 拒，hint 经验已满）
+# 2026-09-08 根修后：满级槽不自动选（_auto_select_or_hint 跳过）→ 先手选再验守卫
 func test_add_material_max_level_blocked() -> void:
 	var parts_id: int = _find_category_equip("EQUIP.PARTS")
 	var eid: int = _find_enchantable_equip()
@@ -259,6 +297,9 @@ func test_add_material_max_level_blocked() -> void:
 	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
 	panel.setup_panel(hero, cm, pd)
 	panel.show_window(root)
+	assert_eq(panel._selected_slot, -1, "满级槽不自动选（源 setHeroIcon:1771 全满级 → 引导换英雄）")
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.THIS_HERO_HAS_ALL_EQUIPMENTS_ENHANCED_TO_THE_MAXED_LEVEL_PLEASE_RESELECT_HERO")), "全满级三态提示照源 LSTR")
+	panel.select_slot(0)   # 源 selectEquip 满级仍可选中（checkMaxLevel 仅 doTalk）
 	var idx: int = _find_mt_idx(panel, parts_id)
 	EquipStrengthenMaterial.add_material(panel,idx)
 	# 源 EXPERIENCE_MAXED_OUT LSTR value
@@ -1019,13 +1060,13 @@ func test_fill_hero_head_and_name() -> void:
 	root.queue_free()
 
 
-# 两件套红线：panel 静态结构零 .new()（白名单式；静态节点全在 content tscn，
-# ReadheroIcon=头像数据工厂，eatexp ReadheroIcon 同款白名单先例。
-# 计数用 ".new(" 宽口径（带参构造不含 ".new()" 字面，窄口径漏检））
+# 两件套红线：panel 静态结构零 .new(（白名单式；静态节点全在 content tscn，
+# ReadheroIcon=头像数据工厂（eatexp 先例）；EquipStrengthenHeroSelect=换英雄浮层弹窗
+# 组件（2026-09-08 根修补回，PopWindow 子类）。计数用 ".new(" 宽口径。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/equip_strengthen_panel.gd")
-	assert_eq(text.count(".new("), text.count("ReadheroIcon.new("),
-		"panel 静态节点零 .new(，仅头像工厂白名单")
+	assert_eq(text.count(".new("), text.count("ReadheroIcon.new(") + text.count("EquipStrengthenHeroSelect.new("),
+		"panel 静态节点零 .new(，仅头像工厂+换英雄浮层白名单")
 
 
 # 源 refreshStrenCost:527 YOUR_MONEY_IS_NOT_ENOUGH 不足提示（金币不足路径）
@@ -1048,5 +1089,302 @@ func test_money_short_uses_lstr() -> void:
 	var idx: int = _find_mt_idx(panel, parts_id)
 	EquipStrengthenMaterial.add_material(panel,idx)
 	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.YOUR_MONEY_IS_NOT_ENOUGH")), "金币不足提示照源 LSTR")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ===== 2026-09-08 根修「附魔锁死船长」：换英雄（源 doChangeHero:1720 + setHeroIcon:1728）=====
+
+func _make_team_pd(eid_a: int, eid_b: int) -> Array:
+	# 建 pd + 两英雄（inst_id 不同），返回 [pd, hero_a, hero_b]
+	var pd := PlayerData.new(cm)
+	var ia: int = pd.hero_manager.add_hero(1)
+	var ib: int = pd.hero_manager.add_hero(2)
+	var ha: HeroInstance = pd.hero_manager.get_hero(ia)
+	var hb: HeroInstance = pd.hero_manager.get_hero(ib)
+	ha.equip_slots[0] = eid_a
+	hb.equip_slots[0] = eid_b
+	pd.team = [ia, ib]
+	return [pd, ha, hb]
+
+
+# switch_hero 换英雄后：头像/槽 fill 刷新 + 自动选新英雄可附魔槽（源 setHeroIcon:1762）
+func test_switch_hero_refreshes_and_reselects() -> void:
+	var eid: int = _find_enchantable_equip()
+	var et: Dictionary = cm.get_raw_table(&"Equip")
+	var low_id: int = 0
+	for id in et:
+		if int(et[id].get("Quality", 0)) == 1:
+			low_id = int(id)
+			break
+	if eid == 0 or low_id == 0:
+		pass_test("数据表缺可附魔/白装，跳过")
+		return
+	var prep: Array = _make_team_pd(low_id, eid)
+	var pd: PlayerData = prep[0]
+	var ha: HeroInstance = prep[1]
+	var hb: HeroInstance = prep[2]
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(ha, cm, pd)   # 英雄 A 仅白装 → 无槽
+	panel.show_window(root)
+	assert_eq(panel._selected_slot, -1, "英雄 A（白装）初始无槽（原 bug 场景）")
+	panel.switch_hero(hb)
+	assert_eq(int(panel.hero.inst_id), int(hb.inst_id), "英雄已切换")
+	assert_eq(panel._selected_slot, 0, "英雄 B 有可附魔装备 → 自动选槽 0")
+	assert_ne(panel.get_talk_text(), "", "选槽后有 NPC 提示")
+	var name_lbl: Label = panel._content.get_node("%HeroName")
+	assert_eq(name_lbl.text, HeroDetailFills.get_display_name(hb, cm), "名字随英雄刷新")
+	panel.remove_window()
+	root.queue_free()
+
+
+# switch_hero 同英雄 → no-op（源选择窗重选当前）
+func test_switch_hero_same_noop() -> void:
+	var eid: int = _find_enchantable_equip()
+	if eid == 0:
+		pass_test("数据表无可附魔装备，跳过")
+		return
+	var prep: Array = _make_team_pd(eid, eid)
+	var pd: PlayerData = prep[0]
+	var ha: HeroInstance = prep[1]
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(ha, cm, pd)
+	panel.show_window(root)
+	panel.switch_hero(ha)
+	assert_eq(int(panel.hero.inst_id), int(ha.inst_id), "同英雄切换无效但不出错")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 换英雄浮层组装（EquipStrengthenHeroSelect）：标题 + team 英雄格数
+func test_hero_select_layer_assembles() -> void:
+	var eid: int = _find_enchantable_equip()
+	if eid == 0:
+		pass_test("数据表无可附魔装备，跳过")
+		return
+	var prep: Array = _make_team_pd(eid, eid)
+	var pd: PlayerData = prep[0]
+	var ha: HeroInstance = prep[1]
+	var hb: HeroInstance = prep[2]
+	var root := Node.new()
+	add_child(root)
+	var sel := EquipStrengthenHeroSelect.new("equip_strengthen_hero_select", {})
+	sel.setup_panel([ha, hb], int(ha.inst_id), cm, func(_h: HeroInstance) -> void: pass)
+	sel.show_window(root)
+	assert_gt(sel.container.get_child_count(), 0, "浮层内容已建")
+	# 递归数英雄格：VBoxContainer 且带 gui_input 的单元（CELL_SIZE 规格）
+	var cells: int = _count_select_cells(sel.container)
+	assert_eq(cells, 2, "两英雄格")
+	sel.remove_window()
+	root.queue_free()
+
+
+func _count_select_cells(node: Node) -> int:
+	var count: int = 0
+	for c in node.get_children():
+		if c is VBoxContainer and (c as Control).custom_minimum_size.y >= 100.0:
+			count += 1
+		count += _count_select_cells(c)
+	return count
+
+
+# 面板点头像区触发浮层（gui_input 链路）：_on_hero_head_clicked 直调（GUT 无真点击）
+func test_hero_head_click_opens_select() -> void:
+	var eid: int = _find_enchantable_equip()
+	if eid == 0:
+		pass_test("数据表无可附魔装备，跳过")
+		return
+	var prep: Array = _make_team_pd(eid, eid)
+	var pd: PlayerData = prep[0]
+	var ha: HeroInstance = prep[1]
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(ha, cm, pd)
+	panel.show_window(root)
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	panel._on_hero_head_clicked(ev)
+	var has_select: bool = false
+	for c in panel.get_children():
+		if c is EquipStrengthenHeroSelect:
+			has_select = true
+			(c as EquipStrengthenHeroSelect).remove_window()
+	assert_true(has_select, "点头像 → 换英雄浮层弹出")
+	await get_tree().process_frame   # 让首个浮层的 queue_free 真正释放
+	# 单人 team → 不弹
+	var pd_solo := PlayerData.new(cm)
+	var iid: int = pd_solo.hero_manager.add_hero(1)
+	pd_solo.team = [iid]
+	panel.pd = pd_solo
+	panel._on_hero_head_clicked(ev)
+	var count_solo: int = 0
+	for c in panel.get_children():
+		if c is EquipStrengthenHeroSelect:
+			count_solo += 1
+	assert_eq(count_solo, 0, "单人 team 不弹浮层")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ===== 2026-09-08 特效根修：FCA eff_UI_enhance_success（源 playEnhanceAnim:1544-1553）=====
+
+# ml≥2 可附魔装备（升级特效需「升 1 级且不满级」窗口：target∈[le[0], total)；
+# ml=1 装备加满材料即顶满级线，被 do_click_stren 的 EXP_MAXED 拦截，永无升级路径）。
+func _find_multilevel_equip() -> int:
+	var et: Dictionary = cm.get_raw_table(&"Equip")
+	for id in et:
+		var row: Dictionary = et[id]
+		if int(row.get("Quality", 0)) >= 2 and String(row.get("Category", "")) != "EQUIP.SOUL_STONE":
+			if not _has_base_att(row):
+				continue
+			if ReadequipData.get_equip_level_exp(int(id), cm)["le"].size() >= 2:
+				return int(id)
+	return 0
+
+
+# 源 playEnhanceAnim level<nl（升级）→ createFcaNode("eff_UI_enhance_success") 挂 icon 中心。
+# 守卫：升级路径 icon 子树出现 FcaAnimation 节点（方案 C 已落地，2026-08-15 Tween 降级退役为兜底）。
+func test_upgrade_anim_spawns_fca_effect() -> void:
+	var eid: int = _find_multilevel_equip()
+	var parts_id: int = _find_category_equip("EQUIP.PARTS")
+	if eid == 0 or parts_id == 0:
+		pass_test("数据表缺 ml>=2 可附魔装备或材料，跳过")
+		return
+	var le: Array = ReadequipData.get_equip_level_exp(eid, cm)["le"]
+	var pd := PlayerData.new(cm)
+	pd.add_item(parts_id, 99)
+	pd.hero_manager.add_money(1000000)
+	var root := Node.new()
+	add_child(root)
+	var iid: int = pd.hero_manager.add_hero(1)   # 须注册进 hero_manager（enhance_equip 按 inst_id 查）
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	hero.equip_slots[0] = eid
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(hero, cm, pd)
+	panel.show_window(root)
+	var idx: int = _find_mt_idx(panel, parts_id)
+	# 加足量材料过第 1 级线（exp 0 → ≥le[0]；ml≥2 保证不顶满级线）
+	var ehc: int = int(cm.get_raw_table(&"Equip")[str(parts_id)].get("Enhance Value", 0))
+	var need: int = int(ceil(float(le[0]) / float(ehc)))
+	for i in maxi(1, need):
+		EquipStrengthenMaterial.add_material(panel, idx)
+	assert_true(panel._target_exp >= float(le[0]), "材料加到升级线（前置自检）")
+	panel.do_click_stren()
+	assert_true(float(hero.equip_exp[0]) >= float(le[0]), "强化执行且 exp 达升级线（前置自检）")
+	var icon: Control = panel._equip_icons[0]
+	var has_fca: bool = false
+	for c in icon.get_children():
+		if c is FcaAnimation:
+			has_fca = true
+	assert_true(has_fca, "升级后 icon 子树挂 FCA 特效节点（源 createFcaNode 等价）")
+	await get_tree().process_frame
+	panel.remove_window()
+	root.queue_free()
+
+
+# 资源在位守卫（方案 C 落地后 .abc 是特效播放前提，防误删资源静默回退降级）
+func test_enhance_fx_resource_present() -> void:
+	assert_true(
+		FileAccess.file_exists("res://assets/anim_frames/effect/eff_UI_enhance_success.abc"),
+		"eff_UI_enhance_success.abc 特效资源在位")
+
+
+# ===== 2026-09-08 三轮：选择英雄按钮补回（源 select_hero 组/doSelectHeroTouch）=====
+
+# 源 select_hero 按钮组布局：110x45 @ ccp(135,270) 中心锚 → Godot 中心 (135,210)
+func test_select_hero_btn_layout() -> void:
+	var inst: Control = _instantiate_content()
+	var btn: Button = inst.get_node("%SelectHeroBtn") as Button
+	assert_almost_eq((btn.offset_left + btn.offset_right) / 2.0, 135.0, 0.5, "按钮中心 x=135（源 ccp(135,270)）")
+	assert_almost_eq((btn.offset_top + btn.offset_bottom) / 2.0, 210.0, 0.5, "按钮中心 y=210（源 480-270）")
+	assert_almost_eq(btn.offset_right - btn.offset_left, 110.0, 0.5, "按钮宽 110（源 scaleSize）")
+	assert_almost_eq(btn.offset_bottom - btn.offset_top, 45.0, 0.5, "按钮高 45")
+	var lbl: Label = btn.get_node("SelectHeroBtnLabel") as Label
+	assert_eq(lbl.text, String(cm.get_lstr("EATEXPLIST.CHOOSE_A_HERO")), "初始文字「选择英雄」照源 LSTR")
+
+
+# 按钮点击弹浮层 + 换英雄后文字变「切换英雄」（源 setHeroIcon:1731-1735）
+func test_select_hero_btn_opens_and_switches_label() -> void:
+	var eid: int = _find_enchantable_equip()
+	if eid == 0:
+		pass_test("数据表无可附魔装备，跳过")
+		return
+	var prep: Array = _make_team_pd(eid, eid)
+	var pd: PlayerData = prep[0]
+	var ha: HeroInstance = prep[1]
+	var hb: HeroInstance = prep[2]
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(ha, cm, pd)
+	panel.show_window(root)
+	(panel._content.get_node("%SelectHeroBtn") as Button).pressed.emit()
+	var has_select: bool = false
+	for c in panel.get_children():
+		if c is EquipStrengthenHeroSelect:
+			has_select = true
+			(c as EquipStrengthenHeroSelect).remove_window()
+	assert_true(has_select, "点「选择英雄」按钮 → 浮层弹出")
+	await get_tree().process_frame
+	panel.switch_hero(hb)   # 浮层点选回调（GUT 直调等价）
+	var lbl: Label = panel._content.get_node("%SelectHeroBtn/SelectHeroBtnLabel") as Label
+	assert_eq(lbl.text, String(cm.get_lstr("EQUIPSTRENGTHEN.SWITCH_HEROES")), "换过英雄后按钮文字变「切换英雄」（源 :1731-1735）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ===== 2026-09-08 四轮：打开面板未选英雄态（源 create nohead 占位 +「请选择英雄」）=====
+
+# 源 create:1994-2165：无默认英雄——nohead 占位 + doTalk(PLEASE_SELECT_HERO)，先选英雄再看内容
+func test_unselected_state_on_open() -> void:
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	pd.team = [iid]
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(null, cm, pd)   # 源空态（router open_equip_strengthen 传 null）
+	panel.show_window(root)
+	assert_eq(panel.get_talk_text(), String(cm.get_lstr("EQUIPSTRENGTHEN.PLEASE_SELECT_HERO")), "未选态 NPC「请选择英雄」（源 :2165）")
+	var name_lbl: Label = panel._content.get_node("%HeroName")
+	assert_eq(name_lbl.text, "", "未选态无英雄名")
+	assert_true(panel._content.get_node("HeroIcon").visible, "未选态 heroIcon 框显示")
+	assert_true(panel._content.get_node("HeroIcon/NoHead").visible, "NoHead 占位显示（源 nohead）")
+	var btn_lbl: Label = panel._content.get_node("%SelectHeroBtn/SelectHeroBtnLabel")
+	assert_eq(btn_lbl.text, String(cm.get_lstr("EATEXPLIST.CHOOSE_A_HERO")), "初始文字「选择英雄」")
+	# 未选态选英雄 → 内容填充
+	var iid2: int = pd.hero_manager.add_hero(2)
+	panel.switch_hero(pd.hero_manager.get_hero(iid2))
+	assert_eq(name_lbl.text, HeroDetailFills.get_display_name(pd.hero_manager.get_hero(iid2), cm), "选英雄后名字 fill")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 未选态点「选择英雄」按钮 → 浮层列全部英雄（源 selectwindow ofhero 遍历 ed.player.heroes）
+func test_unselected_btn_lists_all_heroes() -> void:
+	var pd := PlayerData.new(cm)
+	for tid in [1, 2, 3]:
+		pd.hero_manager.add_hero(int(tid))
+	var root := Node.new()
+	add_child(root)
+	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
+	panel.setup_panel(null, cm, pd)
+	panel.show_window(root)
+	(panel._content.get_node("%SelectHeroBtn") as Button).pressed.emit()
+	var sel: EquipStrengthenHeroSelect = null
+	for c in panel.get_children():
+		if c is EquipStrengthenHeroSelect:
+			sel = c as EquipStrengthenHeroSelect
+			break
+	assert_not_null(sel, "未选态点按钮弹浮层")
+	if sel != null:
+		assert_eq(_count_select_cells(sel.container), 3, "浮层列全部 3 英雄（非仅 team）")
+		sel.remove_window()
 	panel.remove_window()
 	root.queue_free()

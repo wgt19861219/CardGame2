@@ -20,12 +20,14 @@ func test_open_midas_builds_panel() -> void:
 
 
 func test_open_equip_strengthen_empty_team_toasts() -> void:
+	# 2026-09-08 四轮对齐源：入口不看 team（选英雄窗列全部英雄），仅英雄库空才 Toast 拦截；
+	# team 空 + 英雄库有 → 建面板（未选英雄空态，nohead 占位 +「请选择英雄」）。
 	var scene := Node.new()
 	add_child(scene)
 	var saved_team: Array = GameData.player.team.duplicate()
 	GameData.player.team.clear()
 	MainSceneEntryRouter.open_equip_strengthen(scene)
-	assert_eq(scene.get_child_count(), 0, "空阵容不建 panel")
+	assert_eq(scene.get_child_count(), 1, "team 空但英雄库有 → 建面板（源 selectwindow 列全部英雄）")
 	GameData.player.team = saved_team
 	scene.free()
 

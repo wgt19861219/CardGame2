@@ -42,18 +42,16 @@ static func open_midas(scene: Node) -> void:
 	panel.show_window(scene)
 
 
-# 装备强化入口（含阵容校验，单机化裁剪 select_hero 流程，从 team[0] 作默认 hero）。
+# 装备强化入口（源 create:1994-2165 无默认英雄：nohead 占位 + doTalk「请选择英雄」，
+# 玩家点「选择英雄」→ doChangeHero → selectwindow 列全部拥有英雄。2026-09-08 四轮
+# 用户指示「窗口不要默认放船长/不放默认英雄」→ 对齐源传 null 未选态）。
 static func open_equip_strengthen(scene: Node) -> void:
 	var p: PlayerData = GameData.player
-	if p.team.is_empty():
-		Toast.show_message("阵容为空，无法进入装备强化")
-		return
-	var hero: HeroInstance = p.hero_manager.get_hero(p.team[0])
-	if hero == null:
-		Toast.show_message("英雄不存在")
+	if p.hero_manager.heroes.is_empty():
+		Toast.show_message("没有英雄，无法进入装备强化")
 		return
 	var panel := EquipStrengthenPanel.new("equipstrengthen", {})
-	panel.setup_panel(hero, GameData.config, p)
+	panel.setup_panel(null, GameData.config, p)
 	panel.show_window(scene)
 
 
