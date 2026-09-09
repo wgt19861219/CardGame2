@@ -133,13 +133,16 @@ func _wire_arrow(node_path: String, show: bool, cb: Callable) -> void:
 		btn.pressed.connect(cb)
 
 
-# 翻页箭头：显隐=多英雄；任一 tab 打开时左箭头平移列表左缘外（全局 12，各 tab 面板左缘 56 外；
-# 2026-08-30 用户两轮定谳：equip 平移合格后要求三 tab 同样处理）。局部 x：源位 38 / tab 态 -128。
+# 翻页箭头：显隐=多英雄；tab 态箭头平移面板左右缘外（base 右移 140 对称补偿：左全局 12、右全局 748
+# 贴屏缘 12px；2026-08-30 定谳 equip 起三 tab 同样处理；2026-09-09 补右箭头——旧版只补左致其出屏
+# 至全局 862>800）。无 tab 态回源位 38/722。
 func _refresh_arrows(tab_open: bool) -> void:
 	var l: TextureButton = _base_layer.get_node("%LeftArrow") as TextureButton
 	l.position.x = -128.0 if tab_open else 38.0
 	l.visible = _hero_ids.size() > 1
-	(_base_layer.get_node("%RightArrow") as TextureButton).visible = _hero_ids.size() > 1
+	var r: TextureButton = _base_layer.get_node("%RightArrow") as TextureButton
+	r.position.x = 608.0 if tab_open else 722.0
+	r.visible = _hero_ids.size() > 1
 
 
 # turnPrePage/turnNextPage：环形索引切 hero，refresh 复用 _rebuild_content。

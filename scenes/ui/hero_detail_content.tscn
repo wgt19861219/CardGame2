@@ -582,7 +582,8 @@ offset_left = 38.0
 offset_top = 270.5
 offset_right = 78.0
 offset_bottom = 329.5
-mouse_filter = 2
+; mouse_filter 缺省 STOP（2026-09-09 二轮修：旧 mouse_filter=2 IGNORE 系误套装饰节点红线，
+; 按钮收不到输入点击穿透翻页无反应；源 btRegisterRectClick 箭头本就可点）。
 texture_normal = ExtResource("16_arrow_l")
 ignore_texture_size = true
 stretch_mode = 0
@@ -597,7 +598,7 @@ offset_left = 722.0
 offset_top = 270.5
 offset_right = 762.0
 offset_bottom = 329.5
-mouse_filter = 2
+; mouse_filter 缺省 STOP（同 LeftArrow，2026-09-09 二轮修）。
 texture_normal = ExtResource("17_arrow_r")
 ignore_texture_size = true
 stretch_mode = 0

@@ -907,3 +907,46 @@ func test_skill_desc_board_position_follows_slot() -> void:
 		assert_almost_eq(bg.position.y, 93.0 + 90.0 * slot, 0.5,
 			"slot%d y=93+90×slot 随槽下移（源 387-90×i 翻转）" % slot)
 		bg.free()
+
+
+# 翻页箭头 tab 态屏内落位（2026-09-09 回归：右箭头随 base 右移 140 出屏至全局 862>800）。
+# 默认 DEFAULT_TAB=card → 面板一打开就是 tab 态；两箭头 global_rect 须整框在 800×480 屏内。
+func test_arrows_on_screen_in_tab_state() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	mgr.add_hero(1)   # 同 tid 两实例（heroes 按 inst_id 键控 → 2 英雄）
+	var hero := mgr.get_hero(mgr.get_owned_hero_ids()[0])
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, mgr)
+	panel.show_window(root)
+	var l: TextureButton = panel._base_layer.get_node("%LeftArrow") as TextureButton
+	var r: TextureButton = panel._base_layer.get_node("%RightArrow") as TextureButton
+	assert_true(l.visible and r.visible, "多英雄两箭头 visible")
+	assert_gt(l.get_global_rect().position.x, 0.0, "左箭头框不入负区")
+	assert_lt(l.get_global_rect().end.x, 800.0, "左箭头右缘屏内")
+	assert_gt(r.get_global_rect().position.x, 0.0, "右箭头左缘屏内（回归点：旧全局 862 出屏）")
+	assert_lt(r.get_global_rect().end.x, 800.0, "右箭头右缘屏内")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 翻页箭头可点性（2026-09-09 二轮回归：mouse_filter=2 IGNORE 致点击穿透翻页无反应）。
+# TextureButton 收输入的必要条件 = STOP（源 btRegisterRectClick 箭头带可点热区的等价语义）。
+func test_arrows_clickable_mouse_filter() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	mgr.add_hero(1)
+	var hero := mgr.get_hero(mgr.get_owned_hero_ids()[0])
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, mgr)
+	panel.show_window(root)
+	var l: TextureButton = panel._base_layer.get_node("%LeftArrow") as TextureButton
+	var r: TextureButton = panel._base_layer.get_node("%RightArrow") as TextureButton
+	assert_eq(l.mouse_filter, Control.MOUSE_FILTER_STOP, "左箭头 STOP 可点（回归点：旧 IGNORE 穿透）")
+	assert_eq(r.mouse_filter, Control.MOUSE_FILTER_STOP, "右箭头 STOP 可点")
+	panel.remove_window()
+	root.queue_free()
