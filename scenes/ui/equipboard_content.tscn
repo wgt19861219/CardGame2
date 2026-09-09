@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://cjof0dept03f5"]
 
-[ext_resource type="Texture2D" uid="uid://cc6bi20j03cwn" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="1_bg"]
-[ext_resource type="Texture2D" uid="uid://b0algsjshx18n" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
-[ext_resource type="Texture2D" uid="uid://wffh0hxoauao" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
-[ext_resource type="Texture2D" uid="uid://cfm866l805uvy" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="4_attbg"]
-[ext_resource type="Texture2D" uid="uid://cvdgb3lbuptak" path="res://assets/ui/alpha/HVGA/money_board.png" id="5_money"]
-[ext_resource type="Texture2D" uid="uid://wrsbxie1wclt" path="res://assets/ui/alpha/HVGA/goldicon.png" id="6_gold"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="1_wvnwb" uid="uid://cc6bi20j03cwn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/money_board.png" id="2_frffl" uid="uid://cvdgb3lbuptak"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/goldicon.png" id="3_hoj7a" uid="uid://wrsbxie1wclt"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="4_1crvy" uid="uid://b0algsjshx18n"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="5_wlytc" uid="uid://wffh0hxoauao"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="6_pscrp"]
 
 [node name="EquipboardContent" type="Control" unique_id=906102287]
 layout_mode = 3
@@ -30,7 +30,7 @@ layout_mode = 0
 offset_right = 288.0
 offset_bottom = 385.0
 mouse_filter = 2
-texture = ExtResource("1_bg")
+texture = ExtResource("1_wvnwb")
 expand_mode = 1
 
 [node name="IconHost" type="Control" parent="Frame" unique_id=1215626439]
@@ -63,27 +63,6 @@ offset_bottom = 90.0
 theme_type_variation = &"EquipboardHaveLabel"
 vertical_alignment = 1
 
-[node name="AttBg" type="TextureRect" parent="Frame" unique_id=2066330222]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 15.0
-offset_top = 95.0
-offset_right = 275.0
-offset_bottom = 265.0
-mouse_filter = 2
-texture = ExtResource("4_attbg")
-expand_mode = 1
-
-[node name="AttHost" type="VBoxContainer" parent="Frame" unique_id=1812386752]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 22.0
-offset_top = 100.0
-offset_right = 265.0
-offset_bottom = 260.0
-mouse_filter = 2
-theme_override_constants/separation = 2
-
 [node name="MoneyBoard" type="TextureRect" parent="Frame" unique_id=36319701]
 unique_name_in_owner = true
 layout_mode = 0
@@ -92,7 +71,7 @@ offset_top = 268.0
 offset_right = 275.0
 offset_bottom = 308.0
 mouse_filter = 2
-texture = ExtResource("5_money")
+texture = ExtResource("2_frffl")
 expand_mode = 1
 
 [node name="MoneyContent" type="HBoxContainer" parent="Frame/MoneyBoard" unique_id=1970006217]
@@ -121,7 +100,7 @@ custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 size_flags_vertical = 0
 mouse_filter = 2
-texture = ExtResource("6_gold")
+texture = ExtResource("3_hoj7a")
 expand_mode = 1
 
 [node name="SellNumberLabel" type="Label" parent="Frame/MoneyBoard/MoneyContent" unique_id=1086656744]
@@ -145,17 +124,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"EquipboardBtnLabel"
+text = "卖出"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "卖出"
 
 [node name="RightBtn" type="Button" parent="Frame" unique_id=568152928]
 unique_name_in_owner = true
@@ -172,17 +146,12 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_type_variation = &"EquipboardBtnLabel"
+text = "详情"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "详情"
 
 [node name="CloseBtn" type="TextureButton" parent="Frame" unique_id=818309875]
 unique_name_in_owner = true
@@ -191,7 +160,33 @@ offset_left = 286.0
 offset_top = 27.0
 offset_right = 337.0
 offset_bottom = 78.0
-texture_normal = ExtResource("2_close")
-texture_pressed = ExtResource("3_closep")
+texture_normal = ExtResource("4_1crvy")
+texture_pressed = ExtResource("5_wlytc")
 ignore_texture_size = true
 stretch_mode = 0
+
+; 源 board.lua:114-125 att_bg Scale9Sprite package_detail_bg_2（326×192px÷CS=254.44×149.85）
+; capInsets CCRectMake(10,10,230,120) → patch_margin L8/T48/R67/B8（px÷CS，4dd3b7c 口径）
+; anchor(0.5,1)@ccp(143,287) → 左 15.78、顶 98（帧内 385-y）；高度 panel _relayout_att_bg 动态
+[node name="AttBg" type="NinePatchRect" parent="Frame" unique_id=728835477]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.78
+offset_top = 98.0
+offset_right = 270.22
+offset_bottom = 247.85
+texture = ExtResource("6_pscrp")
+patch_margin_left = 8
+patch_margin_top = 48
+patch_margin_right = 67
+patch_margin_bottom = 8
+
+[node name="AttHost" type="VBoxContainer" parent="Frame" unique_id=44562873]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 22.0
+offset_top = 100.0
+offset_right = 265.0
+offset_bottom = 260.0
+mouse_filter = 2
+theme_override_constants/separation = 2

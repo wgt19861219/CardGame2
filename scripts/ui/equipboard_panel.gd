@@ -98,7 +98,7 @@ func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData, p_mod
 		# 让 frame 外区域（cell 网格）点击穿透到下层 package（根 IGNORE 不影响子按钮 STOP 独立命中）。
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
-	# 模态弹窗 frame 居中（package 非模态用 .tscn 固定 offset 118,154.5 在右侧，
+	# 模态弹窗 frame 居中（package 非模态用 .tscn 固定 offset 38,74.5 在右侧，
 	# handbook 模态需居中屏幕：(800-frame_w)/2, (480-frame_h)/2）
 	if p_modal and _frame != null:
 		var fw: float = _frame.offset_right - _frame.offset_left
@@ -250,7 +250,7 @@ func _add_blank_row(host: VBoxContainer) -> void:
 func _relayout_att_bg() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	var host_min: Vector2 = host.get_combined_minimum_size()
-	var bg: TextureRect = _frame.get_node("%AttBg") as TextureRect
+	var bg: NinePatchRect = _frame.get_node("%AttBg") as NinePatchRect
 	var bg_h: float = host_min.y + 12.0
 	bg.offset_top = ATT_TOP
 	bg.size.y = bg_h
@@ -259,7 +259,7 @@ func _relayout_att_bg() -> void:
 
 
 func _play_slide_in() -> void:
-	var target_pos: Vector2 = _frame.position   # .tscn offset 目标 (118, 154.5)
+	var target_pos: Vector2 = _frame.position   # .tscn offset 目标 (38, 74.5)
 	_frame.position = Vector2(SLIDE_START_X, target_pos.y)   # 起始屏幕左外
 	var tw: Tween = create_tween()
 	tw.tween_property(_frame, "position", target_pos, SLIDE_TIME).set_ease(Tween.EASE_OUT)
