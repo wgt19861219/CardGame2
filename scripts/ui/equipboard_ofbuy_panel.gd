@@ -157,6 +157,7 @@ func _add_att_label(host: VBoxContainer, text: String, kind: String) -> void:
 	if kind == "desc":
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：属性行框内水平居中（源左对齐受控偏离）
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	host.add_child(lbl)
 

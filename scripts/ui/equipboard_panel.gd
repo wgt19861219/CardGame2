@@ -205,6 +205,7 @@ func _fill_att() -> void:
 		lbl.theme_type_variation = &"EquipboardAttLabel"
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：属性行框内水平居中（源左对齐受控偏离）
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(lbl)
 	else:
@@ -214,6 +215,7 @@ func _fill_att() -> void:
 			var lbl := Label.new()
 			lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
 			lbl.theme_type_variation = &"EquipboardAttLabel"
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：水平居中
 			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			host.add_child(lbl)
 	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title LSTR + fragment_amount "X/Y"；
@@ -224,6 +226,7 @@ func _fill_att() -> void:
 		var frag_lbl := Label.new()
 		frag_lbl.text = "%s %d/%d" % [cm.get_lstr(LSTR_SYNTHESIS_REQ), int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
 		frag_lbl.theme_type_variation = &"EquipboardFragmentLabel"
+		frag_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：水平居中
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
 	_relayout_att_bg()

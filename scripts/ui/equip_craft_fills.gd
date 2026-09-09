@@ -59,6 +59,7 @@ static func fill_equip_layer(panel) -> void:
 		var lbl := Label.new()
 		lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
 		lbl.theme_type_variation = &"EquipCraftAttLabel"
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：属性行框内水平居中（源左对齐受控偏离）
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel._att_host.add_child(lbl)
 	# 源 board.lua:259-263：att_bg 高度随行数动态 setContentHeight（AttBg 静态 254.44 宽 + fill 动态高）。
