@@ -249,7 +249,9 @@ func _relayout_att_bg() -> void:
 	var bg_h: float = max(host_min.y + 12.0, ATT_BG_MIN_H)
 	bg.offset_top = ATT_TOP
 	bg.size.y = bg_h
-	host.offset_top = ATT_TOP + 6.0
+	# host 在框内垂直居中：min 兜底撑高时（单/少行属性）顶=底对称（2026-09-09 二轮观感裁决：
+	# 旧 +6 贴顶使 1 行属性底空 ~42 vs 顶 6）；多行时 (bg_h-内容)/2 = 6 与旧值不变。
+	host.offset_top = ATT_TOP + (bg_h - host_min.y) * 0.5
 	host.size.y = host_min.y
 
 

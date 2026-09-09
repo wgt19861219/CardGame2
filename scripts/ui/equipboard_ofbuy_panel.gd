@@ -193,7 +193,11 @@ func _layout_dynamic() -> void:
 		name_lbl.scale = Vector2(NAME_MAX_W / name_w, NAME_MAX_W / name_w)
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	var host_min: Vector2 = host.get_combined_minimum_size()
-	(_frame.get_node("%AttBg") as NinePatchRect).size.y = max(host_min.y + ATT_BG_PAD, ATT_BG_MIN_H)
+	var att_bg: NinePatchRect = _frame.get_node("%AttBg") as NinePatchRect
+	var bg_h: float = max(host_min.y + ATT_BG_PAD, ATT_BG_MIN_H)
+	att_bg.size.y = bg_h
+	# host 框内垂直居中（2026-09-09 二轮观感裁决：min 撑高时顶=底对称，多行时=+6 不变）
+	host.offset_top = att_bg.offset_top + (bg_h - host_min.y) * 0.5
 
 
 func _on_close() -> void:

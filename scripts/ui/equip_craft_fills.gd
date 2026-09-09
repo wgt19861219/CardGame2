@@ -68,9 +68,13 @@ static func fill_equip_layer(panel) -> void:
 	_update_att_bg_height.call_deferred(panel._att_host, att_bg)
 
 
-# 帧末（content 已挂树、theme 可解析）按属性行实际高度设 AttBg 高度（min 兜底防 1 行孤框）。
+# 帧末（content 已挂树、theme 可解析）按属性行实际高度设 AttBg 高度（min 兜底防 1 行孤框），
+# host 在框内垂直居中：min 撑高时单/少行属性顶=底对称（2026-09-09 二轮观感裁决，多行时=+6 不变）。
 static func _update_att_bg_height(host: VBoxContainer, att_bg: Control) -> void:
-	att_bg.size.y = max(host.get_combined_minimum_size().y + ATT_BG_PAD_Y, ATT_BG_MIN_H)
+	var content_h: float = host.get_combined_minimum_size().y
+	var bg_h: float = maxf(content_h + ATT_BG_PAD_Y, ATT_BG_MIN_H)
+	att_bg.size.y = bg_h
+	host.offset_top = att_bg.offset_top + (bg_h - content_h) * 0.5
 
 
 # 历史栏容器（源 createHistoryLayer :799-816 draglist.listLayer → HBox 挂 %HistoryClip 裁剪域）。
