@@ -311,8 +311,7 @@ func test_fill_att_description_branch() -> void:
 	assert_eq(first.text, String(cm.get_lstr(desc_key)), "首行 = Description 翻译（魂石属性全 0 不走属性行）")
 	assert_eq(first.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "desc 行 wrap（源 dimensions CCSizeMake(252,0)）")
 	assert_almost_eq(first.custom_minimum_size.x, 252.0, 0.1, "desc 行 wrap 宽 252")
-	assert_eq(host.get_child_count(), 2, "desc 1 行 + <5 补 1 空行（源 board.lua:231-237）")
-	assert_eq((host.get_child(1) as Label).text, " ", "补行是空行占位")
+	assert_eq(host.get_child_count(), 1, "desc 1 行不补空行（2026-09-09 观感裁决：<5 补行改 min 框高兜底）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -336,3 +335,43 @@ func test_fill_att_fragment_branch_blank_row() -> void:
 	assert_string_contains(last.text, "5/10", "合成行 X/Y 挂末位")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── AttBg 九宫格守卫（2026-09-08 三姊妹口径统一，源 board.lua:114-125 Scale9Sprite → NinePatchRect）──
+
+func test_att_bg_ninepatch_type_and_cap_margins() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipboard_content.tscn") as PackedScene
+	if scene == null:
+		assert_true(false, "content tscn 存在")
+		return
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	var frame: Control = content.get_node("%Frame") as Control
+	var att_bg: NinePatchRect = frame.get_node("%AttBg") as NinePatchRect
+	assert_true(att_bg is NinePatchRect, "AttBg 是 NinePatchRect（源 Scale9）")
+	if not (att_bg is NinePatchRect):
+		content.queue_free()
+		return
+	assert_eq(att_bg.patch_margin_left, 8, "cap left=10px÷CS（capInsets x=10）")
+	assert_eq(att_bg.patch_margin_bottom, 8, "cap bottom=10px÷CS（capInsets y=10）")
+	assert_eq(att_bg.patch_margin_top, 48, "cap top=62px÷CS（192-10-120）")
+	assert_eq(att_bg.patch_margin_right, 67, "cap right=86px÷CS（326-10-230）")
+	assert_lt(att_bg.get_index(), (frame.get_node("%AttHost") as Control).get_index(),
+		"AttBg 声明序在 AttHost 之前（背景画在属性文字下层）")
+	content.queue_free()
+
+
+func test_att_bg_static_rect_source_translation() -> void:
+	var scene: PackedScene = load("res://scenes/ui/equipboard_content.tscn") as PackedScene
+	if scene == null:
+		assert_true(false, "content tscn 存在")
+		return
+	var content: Control = scene.instantiate() as Control
+	add_child(content)
+	var att_bg: Control = (content.get_node("%Frame") as Control).get_node("%AttBg")
+	# 源 att_bg anchor(0.5,1)@ccp(143,287)（board.lua:120-123）→ 帧内左上：左=143-254.44/2、顶=385-287
+	assert_almost_eq(att_bg.offset_left, 15.78, 0.01, "AttBg 左 15.78")
+	assert_almost_eq(att_bg.offset_top, 98.0, 0.01, "AttBg 顶 98（385-287）")
+	assert_almost_eq(att_bg.offset_right, 270.22, 0.01, "AttBg 右 270.22（15.78+254.44）")
+	assert_almost_eq(att_bg.offset_bottom, 247.85, 0.01, "AttBg 底 247.85（98+149.85，192px÷CS）")
+	content.queue_free()

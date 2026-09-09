@@ -72,13 +72,23 @@ func test_create_equip_slot_icon_unknown_slot() -> void:
 	assert_eq(icon.modulate, Color.WHITE, "lock 占位不灰显")
 	assert_true(icon.has_meta(&"equip_slot"), "lock 占位也标记 equip_slot meta")
 	# lock 图标挂为子节点（白框 frame Sprite2D 在 index 0，lock TextureRect 在之后）
-	var has_lock_child: bool = false
+	var lock_child: TextureRect = null
 	for i in icon.get_child_count():
 		var c: Node = icon.get_child(i)
 		if c is TextureRect:
-			has_lock_child = true
+			lock_child = c as TextureRect
 			break
-	assert_true(has_lock_child, "lock 占位含 TextureRect 子节点（lock 图标）")
+	assert_not_null(lock_child, "lock 占位含 TextureRect 子节点（lock 图标）")
+	# px 直抄回归守卫（2026-09-09 修复：旧 FRAME_TEX_SIZE=(94,95) 使 container 中心锚
+	# 相对 frame 显示中心右下偏 +10.3/+10.4，用户实测未知槽图标偏右下）
+	assert_almost_eq(icon.size.x, 94.0 / 1.28125, 0.1, "container 宽=frame 显示宽 73.37（÷CS）")
+	assert_almost_eq(icon.size.y, 95.0 / 1.28125, 0.1, "container 高=frame 显示高 74.17（÷CS）")
+	# 实际中心 = anchor 点(container 尺寸半分) + offset 中点（PRESET_CENTER anchor=0.5,0.5）
+	var lock_center_x: float = icon.size.x * 0.5 + (lock_child.offset_left + lock_child.offset_right) * 0.5
+	var lock_center_y: float = icon.size.y * 0.5 + (lock_child.offset_top + lock_child.offset_bottom) * 0.5
+	assert_almost_eq(lock_center_x, icon.size.x * 0.5, 0.15, "lock 中心 x=frame 中心（源 ccp(0,2) 仅 y 上偏）")
+	assert_almost_eq(lock_center_y, icon.size.y * 0.5 - 2.0, 0.15, "lock 中心 y=frame 中心-2（源 ccp(0,2) 上偏）")
+	assert_almost_eq(lock_child.offset_right - lock_child.offset_left, 86.0 / 1.28125, 0.1, "lock 显示宽 67.1（86px÷CS，与 frame 86/94 同源比例）")
 	icon.free()
 
 

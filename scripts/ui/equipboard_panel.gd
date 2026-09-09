@@ -37,8 +37,11 @@ const ATT_TOP: float = 98.0
 const NAME_MAX_W: float = 208.0
 # desc 行 wrap 宽（源 board.lua:135 dimensions CCSizeMake(252,0)，Description 分支专用）
 const ATT_WRAP_W: float = 252.0
-# att 行最少行数（源 board.lua:231-237 lineCount<5 补 1 空行）
-const ATT_MIN_LINES: int = 5
+# AttBg 最小框高：1 行属性不缩成孤框的兜底（≈2 行行高+12，bridge 实测校准）。
+# 受控偏离源：源 board.lua:231-237「<5 补空格行撑高」在 4 行属性时底部空出一整行
+# （2026-09-09 用户观感裁决「下边间距太大」），改最小框高等价实现；fragment 分支的
+# 合成行前空行（源 :193-198）是视觉分隔，保留不受影响。
+const ATT_BG_MIN_H: float = 78.0
 # frame 切换 fadeIn（源 board.lua:406-413 refresh 时 frame modulate.a 0→1）。
 const FRAME_FADE_DUR: float = 0.15
 
@@ -98,7 +101,7 @@ func setup_panel(p_cell_data: Dictionary, p_cm: Variant, p_pd: PlayerData, p_mod
 		# 让 frame 外区域（cell 网格）点击穿透到下层 package（根 IGNORE 不影响子按钮 STOP 独立命中）。
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_content()
-	# 模态弹窗 frame 居中（package 非模态用 .tscn 固定 offset 118,154.5 在右侧，
+	# 模态弹窗 frame 居中（package 非模态用 .tscn 固定 offset 38,74.5 在右侧，
 	# handbook 模态需居中屏幕：(800-frame_w)/2, (480-frame_h)/2）
 	if p_modal and _frame != null:
 		var fw: float = _frame.offset_right - _frame.offset_left
@@ -193,8 +196,6 @@ func _fill_att() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	for c in host.get_children():
 		c.free()
-	var line_count: int = 0
-	var is_frag_branch: bool = false
 	# 源 board.lua:127-135：Equip.Description 存在 → 单行描述覆盖属性行（wrap 252）。
 	# 魂石/碎片/卷轴/消耗品全走此分支（属性全 0，get_description 返空）；装备类无 Description 走属性行。
 	var desc_key: String = String(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Description", ""))
@@ -204,9 +205,9 @@ func _fill_att() -> void:
 		lbl.theme_type_variation = &"EquipboardAttLabel"
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：属性行框内水平居中（源左对齐受控偏离）
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(lbl)
-		line_count = 1
 	else:
 		var rows: Array = ReadequipData.get_description(_item_id, 0, cm)   # level 0（package 物品未装备无强化等级）
 		for row in rows:
@@ -214,23 +215,20 @@ func _fill_att() -> void:
 			var lbl := Label.new()
 			lbl.text = String(r.get("att", "")) + String(r.get("add", ""))
 			lbl.theme_type_variation = &"EquipboardAttLabel"
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：水平居中
 			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			host.add_child(lbl)
-		line_count = rows.size()
 	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title LSTR + fragment_amount "X/Y"；
 	# 源判定 uinfo.isFragment = Category==FRAGMENT，本项目 fragments 容器=魂石模型以 prop_type
 	# 判定（2026-07-19 定稿适配保留）。合成行前补源空行（源 :193-198）。
 	if _prop_type == PROPTYPE_FRAGMENT:
-		is_frag_branch = true
 		_add_blank_row(host)
 		var frag_lbl := Label.new()
 		frag_lbl.text = "%s %d/%d" % [cm.get_lstr(LSTR_SYNTHESIS_REQ), int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
 		frag_lbl.theme_type_variation = &"EquipboardFragmentLabel"
+		frag_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：水平居中
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
-	# 行数不足 5 补 1 空行（源 board.lua:231-237 elseif lineCount<5，与 fragment 分支互斥）。
-	if not is_frag_branch and line_count < ATT_MIN_LINES:
-		_add_blank_row(host)
 	_relayout_att_bg()
 
 
@@ -250,16 +248,18 @@ func _add_blank_row(host: VBoxContainer) -> void:
 func _relayout_att_bg() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	var host_min: Vector2 = host.get_combined_minimum_size()
-	var bg: TextureRect = _frame.get_node("%AttBg") as TextureRect
-	var bg_h: float = host_min.y + 12.0
+	var bg: NinePatchRect = _frame.get_node("%AttBg") as NinePatchRect
+	var bg_h: float = max(host_min.y + 12.0, ATT_BG_MIN_H)
 	bg.offset_top = ATT_TOP
 	bg.size.y = bg_h
-	host.offset_top = ATT_TOP + 6.0
+	# host 在框内垂直居中：min 兜底撑高时（单/少行属性）顶=底对称（2026-09-09 二轮观感裁决：
+	# 旧 +6 贴顶使 1 行属性底空 ~42 vs 顶 6）；多行时 (bg_h-内容)/2 = 6 与旧值不变。
+	host.offset_top = ATT_TOP + (bg_h - host_min.y) * 0.5
 	host.size.y = host_min.y
 
 
 func _play_slide_in() -> void:
-	var target_pos: Vector2 = _frame.position   # .tscn offset 目标 (118, 154.5)
+	var target_pos: Vector2 = _frame.position   # .tscn offset 目标 (38, 74.5)
 	_frame.position = Vector2(SLIDE_START_X, target_pos.y)   # 起始屏幕左外
 	var tw: Tween = create_tween()
 	tw.tween_property(_frame, "position", target_pos, SLIDE_TIME).set_ease(Tween.EASE_OUT)

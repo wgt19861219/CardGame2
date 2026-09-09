@@ -28,8 +28,9 @@ const NAME_MAX_W: float = 160.0
 const ATT_BG_PAD: float = 12.0
 # 描述行 wrap 宽（源 board.lua:153 dimensions CCSizeMake(252, 0)）
 const ATT_WRAP_W: float = 252.0
-# att 行最少行数（源 board.lua:241-249 lineCount<5 补一行空白）
-const ATT_MIN_LINES: int = 5
+# AttBg 最小框高（1 行属性不缩孤框兜底；源 <5 补空行改 min 高，2026-09-09 用户观感裁决，
+# 与 equipboard_panel 同口径，详见该文件注释）
+const ATT_BG_MIN_H: float = 78.0
 # money icon 中心锚（源 ofbuy.lua:131 ccp(145,95) → Godot (145, 290)）
 const MONEY_ICON_CENTER: Vector2 = Vector2(145.0, 290.0)
 # CS：贴图显示尺寸 = 原始像素 ÷ 1.28125（本弹窗贴图均无 TextureConfig 条目）
@@ -130,30 +131,21 @@ func _fill_att() -> void:
 		c.free()
 	var item_id: int = int(_param.get("id", 0))
 	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(item_id), {})
-	var line_count: int = 0
-	var is_frag_branch: bool = false   # 源 uinfo 仅在 equipDesc 分支赋值 → 碎片行只在 desc 分支内触发
 	var desc_key: String = String(equip_row.get(&"Description", ""))
 	if desc_key != "":
 		_add_att_label(host, String(cm.get_lstr(desc_key)), "desc")
-		line_count = 1
 		var is_fragment: bool = String(equip_row.get(&"Category", "")) == CAT_FRAGMENT
 		if is_fragment:
-			is_frag_branch = true
 			var owned: int = int(pd.items.get(item_id, 0)) if pd != null else 0
 			var need: int = _fragment_need(item_id)
 			_add_att_label(host, " ", "row")
 			_add_att_label(host, String(cm.get_lstr(LSTR_SYNTHESIS)) + "%d/%d" % [owned, need], "synthesis")
-			line_count += 2
 	else:
 		var rows: Array = ReadequipData.get_description(item_id, 0, cm)
 		for row in rows:
 			var r: Dictionary = row as Dictionary
 			_add_att_label(host,
 				String(r.get("att", "")) + String(r.get("add", "")) + String(r.get("suffix", "")), "row")
-		line_count = rows.size()
-	# 补行互斥（源 board.lua:197-249 if isFragment ... elseif lineCount<5：碎片路径不走 <5 补行）
-	if not is_frag_branch and line_count < ATT_MIN_LINES:
-		_add_att_label(host, " ", "row")
 
 
 # att 行 Label：kind "desc"=描述行（wrap 252）/"row"=普通行（OfbuyAttLabel）/
@@ -165,6 +157,7 @@ func _add_att_label(host: VBoxContainer, text: String, kind: String) -> void:
 	if kind == "desc":
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER   # 三轮观感裁决：属性行框内水平居中（源左对齐受控偏离）
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	host.add_child(lbl)
 
@@ -201,7 +194,11 @@ func _layout_dynamic() -> void:
 		name_lbl.scale = Vector2(NAME_MAX_W / name_w, NAME_MAX_W / name_w)
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	var host_min: Vector2 = host.get_combined_minimum_size()
-	(_frame.get_node("%AttBg") as NinePatchRect).size.y = host_min.y + ATT_BG_PAD
+	var att_bg: NinePatchRect = _frame.get_node("%AttBg") as NinePatchRect
+	var bg_h: float = max(host_min.y + ATT_BG_PAD, ATT_BG_MIN_H)
+	att_bg.size.y = bg_h
+	# host 框内垂直居中（2026-09-09 二轮观感裁决：min 撑高时顶=底对称，多行时=+6 不变）
+	host.offset_top = att_bg.offset_top + (bg_h - host_min.y) * 0.5
 
 
 func _on_close() -> void:
