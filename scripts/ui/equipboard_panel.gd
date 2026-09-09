@@ -37,8 +37,11 @@ const ATT_TOP: float = 98.0
 const NAME_MAX_W: float = 208.0
 # desc 行 wrap 宽（源 board.lua:135 dimensions CCSizeMake(252,0)，Description 分支专用）
 const ATT_WRAP_W: float = 252.0
-# att 行最少行数（源 board.lua:231-237 lineCount<5 补 1 空行）
-const ATT_MIN_LINES: int = 5
+# AttBg 最小框高：1 行属性不缩成孤框的兜底（≈2 行行高+12，bridge 实测校准）。
+# 受控偏离源：源 board.lua:231-237「<5 补空格行撑高」在 4 行属性时底部空出一整行
+# （2026-09-09 用户观感裁决「下边间距太大」），改最小框高等价实现；fragment 分支的
+# 合成行前空行（源 :193-198）是视觉分隔，保留不受影响。
+const ATT_BG_MIN_H: float = 78.0
 # frame 切换 fadeIn（源 board.lua:406-413 refresh 时 frame modulate.a 0→1）。
 const FRAME_FADE_DUR: float = 0.15
 
@@ -193,8 +196,6 @@ func _fill_att() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	for c in host.get_children():
 		c.free()
-	var line_count: int = 0
-	var is_frag_branch: bool = false
 	# 源 board.lua:127-135：Equip.Description 存在 → 单行描述覆盖属性行（wrap 252）。
 	# 魂石/碎片/卷轴/消耗品全走此分支（属性全 0，get_description 返空）；装备类无 Description 走属性行。
 	var desc_key: String = String(cm.get_raw_table(&"Equip").get(str(_item_id), {}).get(&"Description", ""))
@@ -206,7 +207,6 @@ func _fill_att() -> void:
 		lbl.custom_minimum_size = Vector2(ATT_WRAP_W, 0.0)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(lbl)
-		line_count = 1
 	else:
 		var rows: Array = ReadequipData.get_description(_item_id, 0, cm)   # level 0（package 物品未装备无强化等级）
 		for row in rows:
@@ -216,21 +216,16 @@ func _fill_att() -> void:
 			lbl.theme_type_variation = &"EquipboardAttLabel"
 			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			host.add_child(lbl)
-		line_count = rows.size()
 	# fragment 合成信息（碎片类，源 initAtt :197-240 fragment_title LSTR + fragment_amount "X/Y"；
 	# 源判定 uinfo.isFragment = Category==FRAGMENT，本项目 fragments 容器=魂石模型以 prop_type
 	# 判定（2026-07-19 定稿适配保留）。合成行前补源空行（源 :193-198）。
 	if _prop_type == PROPTYPE_FRAGMENT:
-		is_frag_branch = true
 		_add_blank_row(host)
 		var frag_lbl := Label.new()
 		frag_lbl.text = "%s %d/%d" % [cm.get_lstr(LSTR_SYNTHESIS_REQ), int(_cell_data.get("amount", 0)), int(_cell_data.get("needAmount", 0))]
 		frag_lbl.theme_type_variation = &"EquipboardFragmentLabel"
 		frag_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(frag_lbl)
-	# 行数不足 5 补 1 空行（源 board.lua:231-237 elseif lineCount<5，与 fragment 分支互斥）。
-	if not is_frag_branch and line_count < ATT_MIN_LINES:
-		_add_blank_row(host)
 	_relayout_att_bg()
 
 
@@ -251,7 +246,7 @@ func _relayout_att_bg() -> void:
 	var host: VBoxContainer = _frame.get_node("%AttHost") as VBoxContainer
 	var host_min: Vector2 = host.get_combined_minimum_size()
 	var bg: NinePatchRect = _frame.get_node("%AttBg") as NinePatchRect
-	var bg_h: float = host_min.y + 12.0
+	var bg_h: float = max(host_min.y + 12.0, ATT_BG_MIN_H)
 	bg.offset_top = ATT_TOP
 	bg.size.y = bg_h
 	host.offset_top = ATT_TOP + 6.0

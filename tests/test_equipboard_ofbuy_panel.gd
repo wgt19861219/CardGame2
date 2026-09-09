@@ -210,9 +210,8 @@ func test_fill_att_attribute_branch() -> void:
 	root.queue_free()
 
 
-# att 面板碎片分支（源 board.lua:197-240：Description + Category=FRAGMENT → 合成所需碎片 X/Y）
-# 行数互斥守卫（源 :197-249 if isFragment ... elseif lineCount<5 互斥）：
-# 碎片路径 3 行（desc+空行+合成行）不再补 <5 空行；非碎片 desc 路径 1 行 → 补 1 空行 = 2 行。
+# att 面板碎片分支（源 board.lua:197-240：Description + Category=FRAGMENT → 合成所需碎片 X/Y）：
+# 碎片路径 3 行（desc+空行+合成行）。
 func test_fill_att_fragment_branch() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -235,8 +234,8 @@ func test_fill_att_fragment_branch() -> void:
 	root.queue_free()
 
 
-# <5 补行仅在非碎片路径生效（源 :241-249 elseif：Description 非碎片 1 行 → 补 1 空行 = 2 行）
-func test_fill_att_pad_only_non_fragment() -> void:
+# <5 补空行已退役（2026-09-09 观感裁决：改 min 框高兜底）→ 非碎片 desc 1 行不补行防回潮守卫
+func test_fill_att_no_pad_rows_non_fragment() -> void:
 	var root := Node.new()
 	add_child(root)
 	var panel := EquipboardOfbuyPanel.new("equipboardofbuy", {})
@@ -244,7 +243,7 @@ func test_fill_att_pad_only_non_fragment() -> void:
 	panel.show_window(root)
 	var frame: Control = panel.get("_frame") as Control
 	var host: VBoxContainer = frame.get_node("%AttHost") as VBoxContainer
-	assert_eq(host.get_child_count(), 2, "非碎片 desc 路径 1 行 desc + 1 空行 = 2 行（源 elseif 补一行）")
+	assert_eq(host.get_child_count(), 1, "非碎片 desc 路径 1 行不补空行（min 框高兜底替代）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -259,8 +258,9 @@ func test_att_bg_height_adapts() -> void:
 	var frame: Control = panel.get("_frame") as Control
 	var host: VBoxContainer = frame.get_node("%AttHost") as VBoxContainer
 	var att_bg: NinePatchRect = frame.get_node("%AttBg") as NinePatchRect
-	var expect_h: float = host.get_combined_minimum_size().y + 12.0
-	assert_almost_eq(att_bg.size.y, expect_h, 0.5, "AttBg 高 = att 内容高 + 12（源 :263）")
+	var expect_h: float = max(host.get_combined_minimum_size().y + 12.0, EquipboardOfbuyPanel.ATT_BG_MIN_H)
+	assert_almost_eq(att_bg.size.y, expect_h, 0.5,
+		"AttBg 高 = max(att 内容高 + 12, min 兜底)（源 :263 + 2026-09-09 观感裁决）")
 	panel.remove_window()
 	root.queue_free()
 

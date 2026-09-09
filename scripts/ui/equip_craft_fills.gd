@@ -29,9 +29,12 @@ const HISTORY_ARROW_PATH: String = "res://assets/ui/alpha/HVGA/view_history_arro
 #（2026-09-07 复验实测图标中心 (477.5,99) vs 源 (459,82) 修正）。
 const HISTORY_CLIP_ORIGIN: Vector2 = Vector2(43.0, 30.0) - HISTORY_ICON_DISP * 0.5
 # 源 board.lua:259-263 att_bg:setContentSize(bw, attListHeight+12)：bg 高 = 属性行总高 + 12
-#（宽度不变 254.4 = package_detail_bg_2 326÷CS，静态进 tscn）。旧实现静态固定 160 → 属性 1 行
+#（宽度不变 254.44 = package_detail_bg_2 326÷CS，静态进 tscn）。旧实现静态固定 160 → 属性 1 行
 # 时框内 130px 空白（2026-09-06 修复）。
 const ATT_BG_PAD_Y: float = 12.0
+# AttBg 最小框高（1 行属性不缩孤框兜底，bridge 实测校准；源 <5 补空行改 min 高，
+# 2026-09-09 用户观感裁决「下边间距太大」，与 equipboard_panel 同口径，详见该文件注释）。
+const ATT_BG_MIN_H: float = 66.0
 
 
 # 装备详情 fill（源 board.lua refreshAmount:22-42 + initTitle:322-341 + initAtt:106-259）：
@@ -58,13 +61,6 @@ static func fill_equip_layer(panel) -> void:
 		lbl.theme_type_variation = &"EquipCraftAttLabel"
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel._att_host.add_child(lbl)
-	# 源 board.lua:231-237：非碎片装备 lineCount<5 时补 1 空行（att_bg 高度兜底，防 1 行属性贴顶孤框）
-	if rows.size() < 5:
-		var blank := Label.new()
-		blank.text = " "
-		blank.theme_type_variation = &"EquipCraftAttLabel"
-		blank.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel._att_host.add_child(blank)
 	# 源 board.lua:259-263：att_bg 高度随行数动态 setContentHeight（AttBg 静态 254.44 宽 + fill 动态高）。
 	# fill 时 content 尚未随 show_window 挂树，Label theme 沿树解析不到 → combined minimum size 为 0
 	#（实测首帧 AttBg 高度塌成 12=纯 padding），须 deferred 到帧末挂树后再量。
@@ -72,9 +68,9 @@ static func fill_equip_layer(panel) -> void:
 	_update_att_bg_height.call_deferred(panel._att_host, att_bg)
 
 
-# 帧末（content 已挂树、theme 可解析）按属性行实际高度设 AttBg 高度。
+# 帧末（content 已挂树、theme 可解析）按属性行实际高度设 AttBg 高度（min 兜底防 1 行孤框）。
 static func _update_att_bg_height(host: VBoxContainer, att_bg: Control) -> void:
-	att_bg.size.y = host.get_combined_minimum_size().y + ATT_BG_PAD_Y
+	att_bg.size.y = max(host.get_combined_minimum_size().y + ATT_BG_PAD_Y, ATT_BG_MIN_H)
 
 
 # 历史栏容器（源 createHistoryLayer :799-816 draglist.listLayer → HBox 挂 %HistoryClip 裁剪域）。

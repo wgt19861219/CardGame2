@@ -311,8 +311,7 @@ func test_fill_att_description_branch() -> void:
 	assert_eq(first.text, String(cm.get_lstr(desc_key)), "首行 = Description 翻译（魂石属性全 0 不走属性行）")
 	assert_eq(first.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "desc 行 wrap（源 dimensions CCSizeMake(252,0)）")
 	assert_almost_eq(first.custom_minimum_size.x, 252.0, 0.1, "desc 行 wrap 宽 252")
-	assert_eq(host.get_child_count(), 2, "desc 1 行 + <5 补 1 空行（源 board.lua:231-237）")
-	assert_eq((host.get_child(1) as Label).text, " ", "补行是空行占位")
+	assert_eq(host.get_child_count(), 1, "desc 1 行不补空行（2026-09-09 观感裁决：<5 补行改 min 框高兜底）")
 	panel.remove_window()
 	root.queue_free()
 
