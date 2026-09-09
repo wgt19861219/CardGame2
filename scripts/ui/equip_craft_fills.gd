@@ -65,7 +65,7 @@ static func fill_equip_layer(panel) -> void:
 		blank.theme_type_variation = &"EquipCraftAttLabel"
 		blank.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel._att_host.add_child(blank)
-	# 源 board.lua:259-263：att_bg 高度随行数动态 setContentHeight（AttBg 静态 254.4 宽 + fill 动态高）。
+	# 源 board.lua:259-263：att_bg 高度随行数动态 setContentHeight（AttBg 静态 254.44 宽 + fill 动态高）。
 	# fill 时 content 尚未随 show_window 挂树，Label theme 沿树解析不到 → combined minimum size 为 0
 	#（实测首帧 AttBg 高度塌成 12=纯 padding），须 deferred 到帧末挂树后再量。
 	var att_bg: Control = panel._content.get_node("EquipLayer/AttBg") as Control

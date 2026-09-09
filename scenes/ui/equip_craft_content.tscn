@@ -1,52 +1,54 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="1_back"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="2_backp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_craft_bg.png" id="3_craftbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="4_pkgbtn"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="5_pkgbtnp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="6_detailbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="7_attbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="1_co3ij"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="2_dejvv"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg.png" id="3_nsr72"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_detail_bg_2.png" id="4_567uh"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_craft_bg.png" id="5_qmvxh"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="6_rq6eg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="7_1erjx"]
 
-[node name="EquipCraftContent" type="Control"]
+[node name="EquipCraftContent" type="Control" unique_id=1700685310]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="CloseBtn" type="TextureButton" parent="."]
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=1768368073]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 20.0
 offset_top = 15.0
 offset_right = 77.76
 offset_bottom = 73.54
-texture_normal = ExtResource("1_back")
-texture_pressed = ExtResource("2_backp")
+texture_normal = ExtResource("1_co3ij")
+texture_pressed = ExtResource("2_dejvv")
 ignore_texture_size = true
 stretch_mode = 0
 
 ; 装备详情面板（照源 equipboard ofcraft：frame package_detail_bg.png 288×385 + 名称 + 数量 + 属性介绍）
-; 位置：水平居中（game bridge 实测中心 480,320 调整）
-[node name="EquipLayer" type="Control" parent="."]
+; 位置：水平居中（EquipLayer 288×385 于 800×480 屏，屏心即层心）
+[node name="EquipLayer" type="Control" parent="." unique_id=279204346]
 unique_name_in_owner = true
-layout_mode = 0
+anchors_preset = 0
 offset_left = 256.0
 offset_top = 48.0
 offset_right = 544.0
 offset_bottom = 433.0
 mouse_filter = 2
 
-[node name="Bg" type="TextureRect" parent="EquipLayer"]
+[node name="Bg" type="TextureRect" parent="EquipLayer" unique_id=2067774024]
 layout_mode = 0
 offset_right = 288.0
 offset_bottom = 385.0
 mouse_filter = 2
-texture = ExtResource("6_detailbg")
+texture = ExtResource("3_nsr72")
 expand_mode = 1
 
-[node name="IconHost" type="Control" parent="EquipLayer"]
+[node name="IconHost" type="Control" parent="EquipLayer" unique_id=496207012]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -57,7 +59,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 ; 装备名（源 board.lua:332-341 name anchor(0,0.5)@ccp(92,345) size24 → 左缘 92、中心线 y=385-345=40）
-[node name="NameLabel" type="Label" parent="EquipLayer"]
+[node name="NameLabel" type="Label" parent="EquipLayer" unique_id=1086850186]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 92.0
@@ -68,7 +70,7 @@ theme_type_variation = &"EquipCraftNameLabel"
 vertical_alignment = 1
 
 ; 拥有量（源 board.lua:55-70 amount_title anchor(0,0.5)@ccp(90,310) size20 → 左缘 90、中心线 y=385-310=75）
-[node name="AmountLabel" type="Label" parent="EquipLayer"]
+[node name="AmountLabel" type="Label" parent="EquipLayer" unique_id=252412939]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 90.0
@@ -78,20 +80,24 @@ offset_bottom = 87.0
 theme_type_variation = &"EquipCraftHaveLabel"
 vertical_alignment = 1
 
-; 属性背景框（源 board.lua:116-124 att_bg Scale9 package_detail_bg_2 326×192px÷CS=254.4×149.8，
-; anchor(0.5,1)@ccp(143,287) → left=143-127.2=15.8、top=385-287=98；高度 fill 按行数动态 =行高+12）
-[node name="AttBg" type="TextureRect" parent="EquipLayer"]
+; 属性背景框（源 board.lua:116-124 att_bg Scale9 package_detail_bg_2 326×192px÷CS=254.44×149.85，
+; capInsets CCRectMake(10,10,230,120) → patch_margin L8/T48/R67/B8；anchor(0.5,1)@ccp(143,287)
+; → left=143-127.22=15.78、top=385-287=98；高度 fill 按行数动态 =行高+12）
+[node name="AttBg" type="NinePatchRect" parent="EquipLayer" unique_id=1565931260]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 15.8
+offset_left = 15.78
 offset_top = 98.0
-offset_right = 270.2
-offset_bottom = 247.8
-mouse_filter = 2
-texture = ExtResource("7_attbg")
-expand_mode = 1
+offset_right = 270.22
+offset_bottom = 247.85
+texture = ExtResource("4_567uh")
+patch_margin_left = 8
+patch_margin_top = 48
+patch_margin_right = 67
+patch_margin_bottom = 8
 
 ; 属性行容器（源 board.lua:225-231 att_list ChaosNode anchor(0,1)@ccp(22,282) → top=385-282=103，行距 offset=2）
-[node name="AttHost" type="VBoxContainer" parent="EquipLayer"]
+[node name="AttHost" type="VBoxContainer" parent="EquipLayer" unique_id=384119495]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 22.0
@@ -101,80 +107,80 @@ offset_bottom = 253.0
 mouse_filter = 2
 theme_override_constants/separation = 2
 
-[node name="CraftWindow" type="Control" parent="."]
+[node name="CraftWindow" type="Control" parent="." unique_id=1059709027]
 unique_name_in_owner = true
-layout_mode = 3
+anchors_preset = 0
 offset_left = 548.0
 offset_top = 240.0
 offset_right = 548.0
 offset_bottom = 240.0
 mouse_filter = 2
 
-[node name="Bg" type="TextureRect" parent="CraftWindow"]
-layout_mode = 3
+[node name="Bg" type="TextureRect" parent="CraftWindow" unique_id=1190740384]
+layout_mode = 0
 offset_left = -143.91
 offset_top = -192.36
 offset_right = 143.92
 offset_bottom = 192.37
-texture = ExtResource("3_craftbg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("5_qmvxh")
+expand_mode = 1
 
-[node name="TreeHost" type="Control" parent="CraftWindow"]
+[node name="TreeHost" type="Control" parent="CraftWindow" unique_id=1949660021]
 unique_name_in_owner = true
-layout_mode = 3
+anchors_preset = 0
 mouse_filter = 2
 
 ; 历史栏裁剪层（源 equipcraft.lua:799-816 draglist cliprect CCRectMake(12,300,265,80)，bg 局部
 ; → CraftWindow 中心空间：left=12-144.0 / top=192.39-380 / right=277-144.0 / bottom=192.39-300；
 ; 半尺寸 144.0/192.39 = equip_craft_bg 369×493px ÷2÷CS（2026-08-22 溢出修复：旧值按 px 半尺寸
 ; 184.5/246.5 换算，历史区整体偏下 54 点悬空离 bg 底缘）
-[node name="HistoryClip" type="Control" parent="CraftWindow"]
+[node name="HistoryClip" type="Control" parent="CraftWindow" unique_id=1216984254]
 unique_name_in_owner = true
-layout_mode = 3
+clip_contents = true
+anchors_preset = 0
 offset_left = -131.99
 offset_top = -187.61
 offset_right = 133.0
 offset_bottom = -107.61
-clip_contents = true
 mouse_filter = 2
 
 ; infoButton（源 equipcraft.lua:695-701 infoButton @frame 局部 ccp(147,40) anchor 0.5 → 中心
 ; (147,345)，package_button 335×67px÷CS=261.46×52.29 → 局部 (16.27,318.85)-(277.73,371.15)
 ; → 全局 +EquipLayer(256,48)。旧值 244×50 偏窄 17.5）
-[node name="InfoButton" type="TextureButton" parent="."]
+[node name="InfoButton" type="TextureButton" parent="." unique_id=977263658]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 272.27
 offset_top = 366.85
 offset_right = 533.73
 offset_bottom = 419.15
-texture_normal = ExtResource("4_pkgbtn")
-texture_pressed = ExtResource("5_pkgbtnp")
+texture_normal = ExtResource("6_rq6eg")
+texture_pressed = ExtResource("7_1erjx")
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="InfoButtonLabel" type="Label" parent="InfoButton"]
+[node name="InfoButtonLabel" type="Label" parent="InfoButton" unique_id=740090201]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_type_variation = &"WhiteLabel18"
-mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
 ; infoButton 上方 remark（源 equipcraft.lua:675-682 infoButtonRemark @frame 局部 ccp(147,80) size18
 ; anchor 0.5 → 中心线 (147,305) → 全局中心 (403,353)，水平区间 403±122 与按钮同轴）
-[node name="InfoRemark" type="Label" parent="."]
+[node name="InfoRemark" type="Label" parent="." unique_id=999105028]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 281.0
 offset_top = 343.0
 offset_right = 525.0
 offset_bottom = 363.0
+theme_type_variation = &"EquipCraftRemarkLabel"
 horizontal_alignment = 1
 vertical_alignment = 1
-theme_type_variation = &"EquipCraftRemarkLabel"
-mouse_filter = 2
