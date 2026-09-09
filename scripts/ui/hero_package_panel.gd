@@ -239,16 +239,13 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	# 不只 ListBg）→ 须整体隐藏 container。detail 关闭（tree_exiting）恢复。
 	# _scroll 内的 draglist 照源 :228 也 setVisible(false)，container.visible 已含，无需单独设。
 	container.visible = false
-	# 货币栏（hero_scene 顶部）也要隐藏：hero_detail 是 PopWindow（shade 半透 0.588）盖不住货币栏，
-	# 货币栏从 shade 半透露出（变暗叠在 detail tab view 上）视觉遮挡（2026-07-20 用户反馈）。
+	# 货币栏隐藏：hero_detail/stone_detail 均为纯弹窗（hud_identity 空）→ HUD 遮蔽治理
+	#（弹窗栈驱动整体隐藏，2026-09-08 二轮定稿）自动接管，无需 hero_scene 手动隐藏
+	#（旧 set_bars_visible 链已删，set_status_visible 系 8a8d9f8 退役符号）。
 	var host: Node = get_parent()
-	if host != null and host.has_method(&"set_bars_visible"):
-		host.set_bars_visible(false)
 	detail.show_window(host)
 	detail.tree_exiting.connect(func() -> void:
-		container.visible = true
-		if host != null and host.has_method(&"set_bars_visible"):
-			host.set_bars_visible(true))
+		container.visible = true)
 
 
 func _on_miss_clicked(entry: Variant) -> void:
@@ -265,16 +262,13 @@ func _on_miss_clicked(entry: Variant) -> void:
 func _open_stone_detail(tid: int) -> void:
 	var panel := StoneDetailPanel.new("stonedetail", {})
 	panel.setup_panel(tid, cm, pd, _hero_mgr)
-	# 盖不住 hero_package 全部内容 → 须整体隐藏 container（同 _on_hero_clicked 范式）。
+	# 盖不住 hero_package 全部内容 → 须整体隐藏 container（同 _on_hero_clicked 范式）；
+	# 货币栏由 HUD 遮蔽治理自动隐藏（同上）。
 	container.visible = false
 	var host: Node = get_parent()
-	if host != null and host.has_method(&"set_bars_visible"):
-		host.set_bars_visible(false)
 	panel.show_window(host)
 	panel.tree_exiting.connect(func() -> void:
-		container.visible = true
-		if host != null and host.has_method(&"set_bars_visible"):
-			host.set_bars_visible(true))
+		container.visible = true)
 
 
 func _refresh_after_change() -> void:

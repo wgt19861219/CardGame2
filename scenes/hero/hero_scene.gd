@@ -38,14 +38,6 @@ func _open_hero_package() -> void:
 	panel.show_window(self)
 
 
-## 设置货币条可见性。hero_detail 是 PopWindow（shade 半透 0.588）盖不住本场景顶部货币栏，
-## 货币栏会从 shade 半透露出（变暗叠在 detail tab view 上）视觉遮挡。照源 hero_detail 独立场景
-## （mainLayer z=120 + 不透明 bg）盖底层；本项目简化为 PopWindow，须 hero_package 点英雄时手动隐藏。
-## HudOverlay 模式下直接切其 StatusBar visible。
-func set_bars_visible(v: bool) -> void:
-	HudOverlay.set_status_visible(v)
-
-
 ## 装备合成获取途径跳转：由 HeroDetailEquipSlots.on_equip_craft_jump 经 get_tree().current_scene
 ## 反射调（名字不可改，与 main_scene.gd 同款）。英雄按钮经 SceneManager 切到本独立场景，
 ## 英雄详情的获取途径跳转曾断链——current_scene=HeroScene 无此方法 → on_equip_craft_jump
