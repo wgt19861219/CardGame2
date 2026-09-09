@@ -16,22 +16,24 @@ const EQUIP_SLOT_COUNT: int = 6
 const EQUIP_GRAY_MODULATE: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0, 180.0 / 255.0)
 # TexDisplaySize SOP 口径（2026-08-22）：源 createSprite 对无 TextureConfig 条目纹理
 # 显示=纹理÷CS（setContentScaleFactor 615/480 下 getContentSize 返回点尺寸），equip_frame
-# 94×95 显示 73.37×74.17。ReadequipIcon 的 frame Sprite2D 系原尺寸渲染（全局口径债），
-# 本面板挂载处对 icon 整树 ×1/CS 补偿（等价源 bg:setScale 缩整树），视觉对齐槽 host。
+# 94×95 显示 73.37×74.17。ReadequipIcon 2026-08-22 重写后 frame Sprite2D 内部已 scale=1/CS
+# 渲染（显示即槽 host 尺寸），本面板无需额外补偿（旧注释"挂载处 ×1/CS 补偿"系重写前口径已过时）。
 const CONTENT_SCALE: float = 1.28125
 
 # 装备图标 container 逻辑尺寸（与 ReadequipIcon.ICON_SIZE 对齐）
 const ICON_SIZE: float = 72.0
-# frame texture 实际尺寸（equip_frame_*.png 94×95，Sprite2D centered=false scale=1.0 原尺寸渲染，溢出 container 72）
-# lock 居中 / tagIcon 坐标换算都基于 frame 实际渲染区，非 container 逻辑尺寸。源 getCenterPos=node texture/2。
-const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
-# 源 tagIcon 角标素材 + 坐标（herodetail/window.lua:1051-1061 + param.lua:9-13）
+# frame 显示尺寸（equip_frame_*.png 94×95px ÷CS 显示 73.37×74.17；ReadequipIcon 2026-08-22
+# 重写后 frame Sprite2D scale=1/CS 渲染，显示区与槽 host 73.37×74.17 重合。旧值 (94,95) 系
+# px 直抄残留：container 被撑到 94×95 → lock 中心锚 (47,47.5) 相对 frame 中心 (36.7,37.1)
+# 右下偏 (+10.3,+10.4)，2026-09-09 用户实机反馈未知槽图标偏右下（视觉量测吻合）。
+const FRAME_TEX_SIZE: Vector2 = Vector2(94.0 / CONTENT_SCALE, 95.0 / CONTENT_SCALE)
+# 源 tagIcon 角标素材 + 坐标（herodetail/window.lua:1051-1061 + param.lua:9-13）；37×39px ÷CS 显示
 const TAG_ICON_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"
 const TAG_ICON_CANNOTWEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail_icon_plus_yellow.png"
-const TAG_ICON_SIZE: Vector2 = Vector2(37.0, 39.0)
-# 源 eid==0 lock 占位素材（readequip.lua:604-629 getUnknownIcon）
+const TAG_ICON_SIZE: Vector2 = Vector2(37.0 / CONTENT_SCALE, 39.0 / CONTENT_SCALE)
+# 源 eid==0 lock 占位素材（readequip.lua:604-629 getUnknownIcon）；86×86px ÷CS 显示（lock/frame=86/94 同源比例）
 const LOCK_ICON_RES: String = "res://assets/ui/alpha/HVGA/handbook_icon_lock.png"
-const LOCK_ICON_SIZE: Vector2 = Vector2(86.0, 86.0)
+const LOCK_ICON_SIZE: Vector2 = Vector2(86.0 / CONTENT_SCALE, 86.0 / CONTENT_SCALE)
 # eid==0 点击 Toast 文案（源 LSTR window.1.10.1.001 缺失，用硬编码 fallback）
 const LOCK_TOAST_TEXT: String = "该装备槽尚未解锁"
 
@@ -94,11 +96,10 @@ static func create_equip_slot_icon(slot: int, ceid: int, eid: int, hero: HeroIns
 static func _create_lock_icon(cm: Variant) -> Control:
 	# 复用 create_icon(id=0) 拿白框（id=0 → quality=1 白框，无 icon 路径 → 空槽）
 	var container: Control = ReadequipIcon.create_icon(0, 1, cm)
-	# 补 lock 图标（居中略上偏 2px，照源 getCenterPos(bg)+ccp(0,2)；lock 86>frame 72 允许溢出）
+	# 补 lock 图标（居中略上偏 2px，照源 getCenterPos(bg)+ccp(0,2)；lock 显示 67.1 < frame 73.4）
 	if ResourceLoader.exists(LOCK_ICON_RES):
-		# 让 container size = frame 渲染区（94×95），使 anchor 相对的父尺寸 = frame 视觉区
-		# （create_icon 默认 container 72×72，但 frame Sprite2D 渲染 94×95 溢出 container；
-		# 不改 container size 则 anchor 算的中心是 36,36 而非 frame 中心 47,47.5，lock 会偏）
+		# container size = frame 显示区（73.37×74.17，与槽 host 重合），使 anchor 中心 = frame 视觉中心
+		# （create_icon 默认 container 72×72 近似但不精确；不改则 anchor 中心是 36,36 有 ~0.9 点偏差）
 		container.size = FRAME_TEX_SIZE
 		container.custom_minimum_size = FRAME_TEX_SIZE
 		# lock 用 TextureRect + anchors_preset=CENTER：引擎自动让节点中心对齐父(container=frame区)中心
