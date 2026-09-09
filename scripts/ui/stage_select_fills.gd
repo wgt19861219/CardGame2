@@ -154,11 +154,16 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 		# STAGE_HIT_SIZE 注释，源圆形命中 r45 直译）。
 		btn.size = Vector2(STAGE_HIT_SIZE, STAGE_HIT_SIZE)
 		btn.position = center - btn.size * 0.5
+		# 2026-09-09 统一分发：按钮不再各自接收输入（树序 rect 命中在密集据点下互吞，
+		# 数据序靠后 add 恒上层 + disabled 也吞输入，见 _add_hit_catcher 注释）。
+		btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var icon := TextureRect.new()
 		icon.texture = load(icon_res) as Texture2D
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.size = display_size(icon_res)
 		icon.position = (btn.size - icon.size) * 0.5
+		# pivot 居中：panel 按下 0.95 缩放反馈以关卡中心为基准（源 setScale 语义）
+		icon.pivot_offset = icon.size * 0.5
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn.add_child(icon)
 		btn.set_meta(&"stage_info", info)
@@ -173,7 +178,24 @@ static func create_map_layer(container: Control, chapter: int, mode: String, cm:
 			var sid: int = _current_sid(info, mode)
 			if sid > 0:
 				buttons[sid] = btn
-	return {"node": layer, "stage_buttons": buttons}
+	var catcher := _add_hit_catcher(layer)
+	return {"node": layer, "stage_buttons": buttons, "hit_catcher": catcher}
+
+
+## 输入捕获层（2026-09-09 统一分发）：覆盖整个裁剪区的透明 STOP Control，挂在按钮
+## 之后（最上层），gui_input 由 panel 连接分发——在全部 stage 按钮中取"距点击最近中心
+## （<r45）"者触发。替代按钮各自树序 rect 命中的根因：据点最小间距 41px < 命中层 90，
+## 相邻按钮命中层互叠，数据序靠后 add 恒在上层优先命中，实测章 1 dot5 可见圆盘右 1/3
+## 的点击被 dot6 吞且点中隔壁关无感知；disabled（locked）按钮同样吞输入。源
+## doStageTouch :126-131 是 r45 圆形命中 + locked/passed 普通关不进命中循环，无此问题。
+static func _add_hit_catcher(layer: Control) -> Control:
+	var catcher := Control.new()
+	catcher.name = "StageHitCatcher"
+	catcher.set_meta(&"ss_hit_catcher", true)
+	catcher.mouse_filter = Control.MOUSE_FILTER_STOP
+	catcher.size = layer.size
+	layer.add_child(catcher)
+	return catcher
 
 
 ## 章节 bg/route（源 createMap :1386-1393 createSprite pos 直译，中心锚）。

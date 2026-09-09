@@ -622,8 +622,8 @@ func test_builder_retired_and_new_whitelist() -> void:
 	assert_false(panel_src.contains("stage_select_builder"), "panel 无 builder 引用（代码级守卫，注释头不计）")
 	var fills_src: String = FileAccess.get_file_as_string(FILLS_PATH)
 	var fills_new: PackedStringArray = _collect_new_calls(fills_src)
-	# 13 = 12 + 命中根修贴图显示层 1（2026-09-07 stage icon 子 TextureRect，源 r45 圆形命中直译）
-	assert_eq(fills_new.size(), 13, "fills .new( 恰 13 处（动态行+动画节点+GetWay 引导+贴图显示层白名单）")
+	# 14 = 13 + 统一分发捕获层 1（2026-09-09 _add_hit_catcher Control.new，最近中心者胜）
+	assert_eq(fills_new.size(), 14, "fills .new( 恰 14 处（动态行+动画节点+GetWay 引导+贴图显示层+命中捕获层白名单）")
 	var joined: String = "\n".join(fills_new)
 	assert_true(joined.contains("Control.new()"), "MapLayer 裁剪层（章节 slide 动画需新旧并存）在白名单")
 	assert_true(joined.contains("TextureButton.new()"), "stage 圆点按钮（数量/位置随章节数据）在白名单")
@@ -790,17 +790,137 @@ func test_small_stage_click_hits_enlarged_area() -> void:
 		assert_almost_eq(icon.size.y, 41.0 / CS, 0.5, "小圆盘贴图高 = 41px÷CS")
 	assert_almost_eq(btn.size.x, 90.0, 0.1, "小圆盘命中层宽 = 源半径45×2（贴图 29×32 → 90，主诉根修）")
 	assert_almost_eq(btn.size.y, 90.0, 0.1, "小圆盘命中层高 = 源半径45×2")
-	# 贴图显示区右缘 + 20px（贴图外、命中区内）→ 仍在按钮 rect 内可点。
-	# 点击链路说明：headless GUT 下 root Window 物理 64×64，push_input 分发坐标与
-	# 设计空间不一致，端到端鼠标模拟依赖环境细节（实测 push_input 两口径均不分发），
-	# 故此处断言引擎命中契约的前提组合（rect 命中 + mouse_filter + 可用态），真实鼠标
-	# 链路由用户实机验收兜底（项目惯例）。TextureButton 空纹理不影响 BaseButton 的
-	# rect 命中与 pressed 信号（引擎基类契约，皮肤与命中解耦）。
+	# 2026-09-09 统一分发后：按钮 IGNORE，命中归捕获层 _pick_nearest_stage（圆形 r45
+	# 最近者胜，见 test_pick_nearest_stage_nearest_wins）；本测试守卫按钮结构前提
+	# （rect 中心 = 关卡中心、贴图最小态、disabled 仅 locked）。TextureButton 空纹理
+	# 不影响 BaseButton 的 pressed 信号手动 emit（引擎基类契约，皮肤与命中解耦）。
 	var click_local: Vector2 = (btn.size * 0.5) + Vector2(20.0, 0.0)
 	if icon != null:
 		assert_true(click_local.x > icon.size.x * 0.5 + 5.0, "点击点确在贴图显示区外")
 	assert_true(Rect2(Vector2.ZERO, btn.size).has_point(click_local), "点击点在命中层 rect 内")
-	assert_eq(btn.mouse_filter, Control.MOUSE_FILTER_STOP, "命中层接收输入（非 IGNORE）")
+	assert_eq(btn.mouse_filter, Control.MOUSE_FILTER_IGNORE, "按钮不各自接收输入（2026-09-09 统一分发，树序 rect 命中互吞根修）")
 	assert_false(btn.disabled, "passed 据点可点（disabled 仅 locked）")
 	assert_null(btn.texture_normal, "命中层无纹理（贴图在显示子层，命中不依赖纹理）")
+	panel.remove_window()
+
+
+# ---- 2026-09-09 命中统一分发（最近中心者胜）守卫 ----
+# 旧 TextureButton 树序 rect 命中在密集据点下互吞（章 1 dot5↔dot6 中心距 50px，dot6
+# 命中层左缘切进 dot5 可见圆盘，圆盘右 1/3 点击被吞且点中隔壁关无感知——数据序靠后
+# add 恒上层；disabled locked 据点也吞输入；全图实测 dot5 采样 169 点 78 点被吞）。
+# 源 doStageTouch :126-131 是 r45 圆形命中 + passed 普通关不参与，无此问题。故按钮全
+# IGNORE + 裁剪区捕获层统一分发：最近中心（<r45）者胜，平局取数据序靠后（源循环
+# 覆盖语义），locked（disabled）不参与（源 locked 不进命中循环）。
+# 章 1 按钮中心（layer 局部系，实测）：dot1(128,108) dot2(173,192) dot3(93,222) KEY4(116,294)。
+
+func test_stage_hit_dispatcher_structure() -> void:
+	var panel := _make_panel_with_progress({1: 3, 2: 3}, 1)
+	var layer: Control = panel._map_host.get_child(0) as Control
+	var btn_count: int = 0
+	for c in layer.get_children():
+		if c is TextureButton:
+			btn_count += 1
+			assert_eq((c as Control).mouse_filter, Control.MOUSE_FILTER_IGNORE,
+				"stage 按钮不各自接收输入（树序 rect 命中互吞根因，统一走捕获层）")
+	assert_true(btn_count > 0, "章 1 有 stage 按钮")
+	var catcher: Control = layer.get_child(layer.get_child_count() - 1) as Control
+	assert_not_null(catcher, "捕获层存在")
+	assert_true(catcher.has_meta(&"ss_hit_catcher"), "捕获层带 meta 标识")
+	assert_eq(catcher.mouse_filter, Control.MOUSE_FILTER_STOP, "捕获层 STOP 接收输入")
+	assert_almost_eq(catcher.size.x, StageSelectFills.CLIP_RECT.size.x, 0.5,
+		"捕获层宽 = 裁剪区宽（全地图命中）")
+	assert_almost_eq(catcher.size.y, StageSelectFills.CLIP_RECT.size.y, 0.5,
+		"捕获层高 = 裁剪区高")
+	panel.remove_window()
+
+
+func test_pick_nearest_stage_nearest_wins() -> void:
+	var panel := _make_panel_with_progress({1: 3, 2: 3}, 1)
+	var layer: Control = panel._map_host.get_child(0) as Control
+	# (133,200)：dot2/dot3 命中层重叠区（旧树序逆序命中后 add 的 dot3），距 dot2=40.8
+	# 最近 → dot2 胜（用户点哪儿选视觉最近的）。
+	var picked: TextureButton = panel._pick_nearest_stage(layer, Vector2(133.0, 200.0))
+	assert_not_null(picked, "重叠区点击有归属（不再被邻居吞）")
+	if picked != null:
+		var info: Dictionary = picked.get_meta(&"stage_info")
+		assert_eq(int(info.get("id", 0)), 2, "距 dot2 更近 → dot2（旧树序逻辑误选 dot3）")
+	# (133,207)：dot2/dot3 严格等距（42.7）→ 数据序靠后 dot3 胜（源循环覆盖语义）。
+	picked = panel._pick_nearest_stage(layer, Vector2(133.0, 207.0))
+	assert_not_null(picked, "等距点有归属")
+	if picked != null:
+		var info2: Dictionary = picked.get_meta(&"stage_info")
+		assert_eq(int(info2.get("id", 0)), 3, "平局取数据序靠后（源 pressStageID 循环覆盖）")
+	# (116,294)：locked KEY4 城堡中心 → disabled 不参与 + 距最近可点关 75.6>45 → null。
+	assert_null(panel._pick_nearest_stage(layer, Vector2(116.0, 294.0)),
+		"locked 城堡中心点击无归属（源 locked 不进命中循环，disabled 不再吞邻居）")
+	# (174,108)：距 dot1=46 > r45 圆外 → null（圆形命中语义，非 90 方形四角）。
+	assert_null(panel._pick_nearest_stage(layer, Vector2(174.0, 108.0)),
+		"r45 圆外无归属（源 isPointInCircle 语义）")
+	panel.remove_window()
+
+
+func test_map_hit_press_release_flow() -> void:
+	var panel := _make_panel_with_progress({1: 3, 2: 3}, 1)
+	panel.mgr = null   # _on_stage_clicked 早退，防弹 StageDetailPanel 破坏 GUT 树
+	var layer: Control = panel._map_host.get_child(0) as Control
+	var catcher: Control = layer.get_child(layer.get_child_count() - 1) as Control
+	var btn: TextureButton = panel._stage_buttons[3] as TextureButton
+	assert_not_null(btn, "stage3（current）可点")
+	if btn == null:
+		panel.remove_window()
+		return
+	watch_signals(btn)
+	var icon: TextureRect = null
+	for c in btn.get_children():
+		if c is TextureRect:
+			icon = c
+			break
+	assert_not_null(icon, "stage3 贴图显示层存在")
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	ev.position = Vector2(93.0, 222.0)   # dot3 中心（gui_input 契约：已是 catcher 局部坐标）
+	panel._on_map_hit_input(ev, catcher)
+	if icon != null:
+		assert_almost_eq(icon.scale.x, 0.95, 0.001, "按下贴图缩 0.95（源 setScale(0.95)）")
+		assert_almost_eq(icon.scale.y, 0.95, 0.001, "按下贴图 y 同缩（pivot 居中）")
+	assert_signal_emit_count(btn, "pressed", 0, "按下未松开不触发 pressed")
+	ev = InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = false
+	ev.position = Vector2(93.0, 222.0)
+	panel._on_map_hit_input(ev, catcher)
+	if icon != null:
+		assert_almost_eq(icon.scale.x, 1.0, 0.001, "松开贴图复原")
+	assert_signal_emit_count(btn, "pressed", 1, "松开触发 pressed（复用 panel 既有连接链路）")
+	panel.remove_window()
+
+
+func test_map_hit_animation_guard() -> void:
+	var panel := _make_panel_with_progress({1: 3, 2: 3}, 1)
+	var layer: Control = panel._map_host.get_child(0) as Control
+	var catcher: Control = layer.get_child(layer.get_child_count() - 1) as Control
+	var btn: TextureButton = panel._stage_buttons[3] as TextureButton
+	if btn == null:
+		panel.remove_window()
+		return
+	var icon: TextureRect = null
+	for c in btn.get_children():
+		if c is TextureRect:
+			icon = c
+			break
+	# 章节 slide 进行中（layer.position.x 偏离基线 44）→ 不分发（源 numberOfRunningActions 守卫）
+	layer.position.x += 30.0
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	ev.position = Vector2(93.0, 222.0)   # dot3 中心（gui_input 契约：已是 catcher 局部坐标）
+	panel._on_map_hit_input(ev, catcher)
+	if icon != null:
+		assert_almost_eq(icon.scale.x, 1.0, 0.001, "slide 动画期按下无缩放反馈（守卫生效）")
+	# 归位后恢复分发
+	layer.position.x = StageSelectFills.CLIP_RECT.position.x
+	panel._on_map_hit_input(ev, catcher)
+	if icon != null:
+		assert_almost_eq(icon.scale.x, 0.95, 0.001, "动画结束恢复分发")
 	panel.remove_window()

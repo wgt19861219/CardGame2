@@ -43,6 +43,11 @@ const META_GUIDE_FINGER: StringName = StageSelectFills.META_GUIDE_FINGER
 const GUIDE_SCALE_TIME: float = 0.65
 const GUIDE_SCALE_MAX: float = 1.35
 const GUIDE_FINGER_SHIFT: Vector2 = Vector2(17.5, 17.5)   # 源起终点位移 (x+13.5,y-13.5)-(x-4,y+4) 的 Godot 换算
+# 命中统一分发（2026-09-09）：源 doStageTouch began setScale(0.95) 按下反馈。
+const STAGE_PRESS_SCALE: float = 0.95
+# 动画期分发守卫容差（源 doStageTouch numberOfRunningActions/getOpacity 守卫的几何等价：
+# slide 期 layer.position.x 偏离 CLIP 基线 / fade 期 modulate.a < 1）。
+const STAGE_HIT_ANIM_EPS: float = 0.5
 
 var mgr: StageManager = null
 var player: PlayerData = null
@@ -51,6 +56,9 @@ var _current_chapter: int = 1
 var _pre_chapter: int = 1   # 切换前章节，算 map slide 方向（源 self.preChapter）
 var _mode: String = "normal"
 var _stage_buttons: Dictionary = {}   # sid -> TextureButton（_refresh_view 重建）
+# 命中统一分发的按下态（源 pressStageID：began 记目标+缩放，ended 触发后清空；
+# 章节切换层被 free 后经 is_instance_valid 兜底弃触）。
+var _pressed_stage_btn: TextureButton = null
 # 源 create :1585-1592 带 stage 参（createByStage 经装备获取途径跳入）：getWayStage 定位
 # 目标关 + forGetWay 引导态（目标关上呼吸圈+手指，:1331-1351）；0 = 非 GetWay。
 var _get_way_stage: int = 0
@@ -151,6 +159,10 @@ func _refresh_view(op: String = "init") -> void:
 	_stage_buttons = map_layer["stage_buttons"]
 	for sid in _stage_buttons:
 		(_stage_buttons[sid] as TextureButton).pressed.connect(_on_stage_clicked.bind(sid))
+	# 命中统一分发：按钮全 IGNORE，捕获层 gui_input 分发最近中心者（2026-09-09 根修，
+	# 树序 rect 命中互吞见 fills _add_hit_catcher 注释）。
+	var catcher: Control = map_layer["hit_catcher"] as Control
+	catcher.gui_input.connect(_on_map_hit_input.bind(catcher))
 	_play_map_transition(old_map, map_layer["node"] as Control, op)
 	# --- frame（源 createFrame:944，章节 skip；init 清+建；mode 重建 fade）---
 	if op == "init":
@@ -419,6 +431,71 @@ func _change_chapter(delta: int) -> void:
 		return
 	if _current_chapter != _pre_chapter:
 		_refresh_view("chapter")
+
+
+# ---- 命中统一分发（2026-09-09 根修）----
+# 源 doStageTouch :119-152 等价：began 在全部可点关中圆形命中（r45）取归属（源循环
+# 无 break 逐个覆盖 = 平局取数据序靠后）+ setScale(0.95) 按下反馈；ended 触发 pressStageID。
+# 旧树序 rect 命中在密集据点（最小间距 41 < 命中层 90）下互吞的根因与实证见 fills
+# _add_hit_catcher 注释。locked（disabled）不参与（源 type=="locked" 不进命中循环）。
+func _on_map_hit_input(event: InputEvent, catcher: Control) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var emb := event as InputEventMouseButton
+	if emb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var layer: Control = catcher.get_parent() as Control
+	# 动画期守卫（源 numberOfRunningActions/getOpacity）：章节 slide 中 position.x 偏离
+	# CLIP 基线；mode fade 中 modulate.a < 1。began 后切章节旧层被 free，由
+	# is_instance_valid 弃触（同源 ended 章节校验）。
+	if absf(layer.position.x - StageSelectFills.CLIP_RECT.position.x) > STAGE_HIT_ANIM_EPS \
+			or layer.modulate.a < 1.0 - STAGE_HIT_ANIM_EPS * 0.01:
+		return
+	if emb.pressed:
+		# gui_input 契约：event.position 已是接收 Control 的局部坐标（引擎预变换，
+		# 2026-09-09 实机取证 make_input_local=(181,287)=点击的 dot24 局部中心），
+		# 勿再 make_input_local（double transform 会整体偏移 (44,88) 点错关）。
+		# catcher position=ZERO → 其局部系即 MapLayer 局部系，与按钮 position 同系。
+		var btn := _pick_nearest_stage(layer, emb.position)
+		if btn == null:
+			return
+		_pressed_stage_btn = btn
+		var icon := _stage_icon_of(btn)
+		if icon != null:
+			icon.scale = Vector2.ONE * STAGE_PRESS_SCALE
+	elif _pressed_stage_btn != null and is_instance_valid(_pressed_stage_btn):
+		var icon2 := _stage_icon_of(_pressed_stage_btn)
+		if icon2 != null:
+			icon2.scale = Vector2.ONE
+		_pressed_stage_btn.pressed.emit()
+		_pressed_stage_btn = null
+	else:
+		_pressed_stage_btn = null
+
+
+## 距点击最近中心（< r45 = STAGE_HIT_SIZE/2，源 isPointInCircle 半径）的可点按钮；
+## 平局取数据序靠后（children 逆序遍历 + 严格小于，先评估的靠后者平局保留）。
+func _pick_nearest_stage(layer: Control, local: Vector2) -> TextureButton:
+	var best_d: float = StageSelectFills.STAGE_HIT_SIZE * 0.5
+	var hit: TextureButton = null
+	var children := layer.get_children()
+	for i in range(children.size() - 1, -1, -1):
+		var btn := children[i] as TextureButton
+		if btn == null or btn.disabled:
+			continue
+		var d: float = (btn.position + btn.size * 0.5 - local).length()
+		if d < best_d:
+			best_d = d
+			hit = btn
+	return hit
+
+
+## 按钮的贴图显示层（fills 命中根修后 icon = 首个 TextureRect 子节点）。
+func _stage_icon_of(btn: TextureButton) -> TextureRect:
+	for c in btn.get_children():
+		if c is TextureRect:
+			return c as TextureRect
+	return null
 
 
 func _on_stage_clicked(sid: int) -> void:
