@@ -125,11 +125,13 @@ func test_item_mark_rect_aspect() -> void:
 
 
 # 白名单式 .new( 断言：HeroPackageItem.new（自身工厂）+ ReadheroIcon（head 动态工厂）+
-# TextureRect（plusSign/equip icon 动态数据图标，源运行时按槽位状态创建）。静态结构（bg/slot/bar 组）零 .new(。
+# TextureRect（plusSign/equip icon 动态数据图标，源运行时按槽位状态创建）+ AtlasTexture（进度条
+# 纹理按 ratio 动态截取，照源 setTextureRect 语义）。静态结构（bg/slot/bar 组）零 .new(。
 func test_item_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_package_item.gd")
 	assert_eq(text.count(".new("), text.count("HeroPackageItem.new(") + text.count("ReadheroIcon.new(")
-		+ text.count("TextureRect.new("), "静态节点零 .new(，仅工厂与动态图标白名单")
+		+ text.count("TextureRect.new(") + text.count("AtlasTexture.new("),
+		"静态节点零 .new(，仅工厂与动态图标/动态纹理白名单")
 
 
 # ── 卡片红点 canDealTag（2026-08-18 修复轮 A：快捷栏红点亮但卡片无红点）──
@@ -310,3 +312,64 @@ func test_scroll_cliprect_fullwidth_and_grid_origin() -> void:
 		"首列 bg 左缘=源 112.84（GRID_ORIGIN.x 承载源 offsetx+rect 基准）")
 	assert_almost_eq(87.0 + HeroPackagePanel.GRID_ORIGIN.y + 2.0, 480.0 - 335.0 - 96.0 / 2.0, 0.1,
 		"首行 bg 顶=源 97（源 getpos toy=335 全屏 cocos → 480−335−48）")
+
+
+# ── 灵魂石进度条贴合守卫（2026-09-10 根修）──
+# 源 heroitem.lua:147 bar setTextureRect(150,26) 漏考虑父 barBg scaleX0.93 级联：满宽 139.5
+# vs 框 147.9 右侧空 8.4（实机 VisualCoding 实测 ≈6% 框宽），「可召唤」100% 视觉像 94%。
+# 根修：fill 几何从 BarBg offset 推导四边贴合框（对齐 hero_detail StoneBar 满宽=框宽范式）。
+
+# 满进度（sa=sn，可召唤）：BarFill 四边贴合 BarBg。
+func test_item_stone_bar_fill_fits_bar_bg_at_full() -> void:
+	var entry: Dictionary = {"tid": 2, "miss": true}
+	var mgr := HeroManager.new(cm)
+	var sid: int = ReadheroHandbook.get_stone_id(2, cm)
+	var need: int = ReadheroHandbook.get_stone_need(2, cm, mgr)
+	if need <= 0:
+		pending("tid=2 无召唤需求数据，跳过")
+		return
+	mgr.add_fragment(sid, need)
+	var item := HeroPackageItem.create_from_entry(entry, cm, mgr)
+	var stone: Control = (item.get_child(0) as Control).get_node("%StoneGroup") as Control
+	var bar_bg: TextureRect = stone.get_node("BarBg") as TextureRect
+	var fill: TextureRect = stone.get_node("%BarFill") as TextureRect
+	assert_almost_eq(fill.offset_left, bar_bg.offset_left, 0.01, "fill 左缘=框左缘")
+	assert_almost_eq(fill.offset_top, bar_bg.offset_top, 0.01, "fill 顶缘=框顶缘")
+	assert_almost_eq(fill.offset_right, bar_bg.offset_right, 0.01, "满进度 fill 右缘=框右缘（治右侧空 8.4）")
+	assert_almost_eq(fill.offset_bottom, bar_bg.offset_bottom, 0.01, "fill 底缘=框底缘")
+	var lbl: Label = stone.get_node("%StoneLabel") as Label
+	var ls: Vector2 = lbl.get_minimum_size()
+	assert_almost_eq(lbl.position.x + ls.x * 0.5, (bar_bg.offset_left + bar_bg.offset_right) * 0.5, 0.01,
+		"进度文字中心 x=框中心（源 setPosition(80,13) 系未缩放宽 159.2 坐标系的居中意图，80 直译偏右 6）")
+
+
+# 部分进度（0<sa<sn）：fill 左缘贴框、宽度按 sa/sn 比例落框内、右缘不越框。
+func test_item_stone_bar_fill_partial_ratio_in_frame() -> void:
+	var entry: Dictionary = {"tid": 2, "miss": true}
+	var mgr := HeroManager.new(cm)
+	var sid: int = ReadheroHandbook.get_stone_id(2, cm)
+	var need: int = ReadheroHandbook.get_stone_need(2, cm, mgr)
+	if need <= 0:
+		pending("tid=2 无召唤需求数据，跳过")
+		return
+	var sa: int = maxi(1, int(need / 2))
+	mgr.add_fragment(sid, sa)
+	var item := HeroPackageItem.create_from_entry(entry, cm, mgr)
+	var stone: Control = (item.get_child(0) as Control).get_node("%StoneGroup") as Control
+	var bar_bg: TextureRect = stone.get_node("BarBg") as TextureRect
+	var fill: TextureRect = stone.get_node("%BarFill") as TextureRect
+	var frame_w: float = bar_bg.offset_right - bar_bg.offset_left
+	assert_almost_eq(fill.offset_left, bar_bg.offset_left, 0.01, "fill 左缘=框左缘")
+	assert_almost_eq(fill.offset_right - fill.offset_left, frame_w * float(sa) / float(need), 0.01,
+		"部分进度 fill 宽=框宽×sa/sn")
+	assert_lt(fill.offset_right, bar_bg.offset_right + 0.01, "部分进度 fill 右缘不超框")
+	# 2026-09-10 二轮根修：纹理照源 setTextureRect 截取左段（AtlasTexture region）。SCALE 整条压缩
+	# 会把条左端 13px 透明带随 ratio 缩小（9.4×ratio），小比例时条内容起点左移出框描边（框透明带恒
+	# 8.7 点）→「数量小时左边不对齐边框」；截取后 region 与 rect 同比例，压缩比恒=框，任意比例对齐。
+	assert_true(fill.texture is AtlasTexture, "部分进度纹理走 AtlasTexture 截取（照源 setTextureRect 语义）")
+	if fill.texture is AtlasTexture:
+		var at: AtlasTexture = fill.texture as AtlasTexture
+		var src_w: float = float(at.atlas.get_width())
+		assert_almost_eq(at.region.size.x, src_w * float(sa) / float(need), 0.01,
+			"region 宽=源纹理宽×sa/sn（纹理像素不随比例压缩变形）")
+		assert_eq(at.region.position.x, 0.0, "region 从纹理左端截取（含左透明带，与框描边恒对齐）")
