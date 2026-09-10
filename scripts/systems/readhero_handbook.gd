@@ -42,7 +42,7 @@ static func get_stone_id(tid: int, cm: Variant) -> int:
 
 static func get_stone_amount(tid: int, cm: Variant, hero_mgr: HeroManager) -> int:
 	var sid: int = get_stone_id(tid, cm)
-	return int(hero_mgr.fragments.get(sid, 0))
+	return hero_mgr.fragment_count(sid)
 
 
 # 已拥有：HeroStars[stars+1]["Upgrade Fragments"]（无上限行返 0，源 :664 return nil）。

@@ -85,7 +85,7 @@ func test_new_hero_and_duplicate_fragment() -> void:
 	pd._settle_tavern_loot([{"id": 1, "amount": 2}])
 	assert_eq(pd.hero_manager.heroes.size(), 1, "重复英雄不再入库")
 	var frag_id: int = pd._fragment_id_for_hero(1)
-	assert_eq(int(pd.hero_manager.fragments.get(frag_id, 0)), 2, "重复英雄转魂石 ×2")
+	assert_eq(pd.hero_manager.fragment_count(frag_id), 2, "重复英雄转魂石 ×2（单账本 items）")
 
 
 # MagicSoul 十连计数递增(26 次切池依据)。

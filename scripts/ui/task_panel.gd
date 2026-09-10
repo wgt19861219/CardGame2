@@ -71,11 +71,11 @@ func _add_empty_prompt(text: String) -> void:
 # 打开/刷新即发现（源 :1343 behindShowHandler → getTaskList classifyTask 发现可接任务并
 # 服务器登记；单机合并为 TaskManager.sync_current_tasks 本地一步，2026-09-03 根修任务不显示）；
 # 显示序照源 orderList（:1315-1333 可领优先 + chain/id 升序）。
+# finished 行不显示（源 getCurrentTaskInChain :1147-1165：finished 且下一任务门槛未达 →
+# 返 nil；可推进的已被 sync 替换、链尾的已被 task_finished 清。entry 保留在 tm.task 不丢
+# 状态，门槛达成后 sync 推进。2026-09-09 修：finished 行残留渲染致点击后不消失+可重复领奖）。
 func _fill_main_list() -> void:
 	_tm.sync_current_tasks(_player, _cm)
-	if _tm.task.is_empty():
-		_add_empty_prompt(_cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED"))
-		return
 	var task_table: Dictionary = _cm.get_raw_table("Task")
 	var reward_title_text: String = _cm.get_lstr("EXERCISE.AWARDS_")
 	var fast_btn_text: String = _cm.get_lstr("TASK.HEAD_TO")
@@ -86,9 +86,13 @@ func _fill_main_list() -> void:
 		var row: Dictionary = task_table.get(str(chain), {}).get(str(tid), {})
 		if row.is_empty():
 			continue
-		var is_finished: bool = str(entry.get("status", "working")) == "finished"
-		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, is_finished, _cm, _player)
+		if str(entry.get("status", "working")) == "finished":
+			continue
+		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, false, _cm, _player)
 		rows.append({"chain": chain, "id": tid, "task": task})
+	if rows.is_empty():
+		_add_empty_prompt(_cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED"))
+		return
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var a_ready: bool = int(a["task"]["progress"]) >= int(a["task"]["target"])
 		var b_ready: bool = int(b["task"]["progress"]) >= int(b["task"]["target"])

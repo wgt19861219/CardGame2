@@ -559,6 +559,13 @@ EatexpHeroNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
 EatexpHeroNameLabel/constants/shadow_offset_x = 0
 EatexpHeroNameLabel/constants/shadow_offset_y = 2
 EatexpHeroNameLabel/font_sizes/font_size = 20
+; 源 announce.lua getNewHero name :282-292 ui_herotitle_stroke size30 白字黑描边（2026-09-09 召唤链）
+GetNewHeroNameLabel/base_type = &"Label"
+GetNewHeroNameLabel/colors/font_color = Color(1, 1, 1, 1)
+GetNewHeroNameLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+GetNewHeroNameLabel/constants/shadow_offset_x = 0
+GetNewHeroNameLabel/constants/shadow_offset_y = 2
+GetNewHeroNameLabel/font_sizes/font_size = 30
 ; 源 :424-436 满级 shade 标签 size22 ccc3(255,148,62)
 EatexpShadeLabel/base_type = &"Label"
 EatexpShadeLabel/colors/font_color = Color(1, 0.580392, 0.243137, 1)

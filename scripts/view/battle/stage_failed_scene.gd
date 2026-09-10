@@ -133,7 +133,7 @@ func _can_hero_evolve(hm: HeroManager) -> bool:
 		var data := HeroData.from_config(_cm, h.tid)
 		if h.stars < data.max_stars:
 			var frag_id: int = _cm.get_int(&"Fragment", h.tid, &"Fragment ID")
-			var need: int = _cm.get_int(&"HeroStars", h.stars, &"Upgrade Fragments")
+			var need: int = _cm.get_int(&"HeroStars", h.stars + 1, &"Upgrade Fragments")   # stars+1 行（源 controller :236-248，同 evolve/get_stone_need 口径）
 			if hm._fragment_count(frag_id) >= need:
 				return true
 	return false

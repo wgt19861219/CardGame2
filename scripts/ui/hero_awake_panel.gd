@@ -11,6 +11,8 @@ extends PopWindow
 ##   4. add card_<color> FCA at z=10 scale=1.5（:38-44）
 ##   5. 点击任意处关闭（:45-46 + doClickLayer :49-72；觉醒恒单卡，源多卡残留分支不迁移）
 ## FCA 资源 eff_UI_tavern_bubble / eff_UI_tavern_card_<color> 在 assets/anim_frames/effect/。
+## 2026-09-09 起双用途：召唤成功卡展示复用本弹窗（源 popherocard.lua 姊妹弹窗同动画
+## 序列；hero_package._show_summon_card，点击关闭经 set_close_handler 链 getNewHero）。
 
 signal awake_shown   # 展示动画启动（点击关闭前的视觉完成节点）
 signal closed        # 用户点击关闭
@@ -23,7 +25,6 @@ const LIGHT_REPEAT: int = 3
 const FADE_IN_SEC: float = 0.4
 const CARD_FADE_SEC: float = 0.2
 const CARD_FADE_DELAY: float = 0.4
-const CARD_HOST_SHIFT_X: float = 200.0   # card_tab 原居左，设 offset 200 让 CardFrame center 落屏幕 (480,320)
 
 const BG_RES_MAP: Dictionary = {
 	"red": "res://assets/ui/alpha/HVGA/tavern_get_hero_bg_red.jpg",
@@ -51,11 +52,19 @@ var _close_handler: Callable = Callable()
 
 # 本项目单机化直接调 setup_awake + show_window 后开动画（无 announce 中介）。
 func setup_awake(hero: HeroInstance, cm: Variant) -> void:
-	transparent_shade = true   # 源 noShade=true（shade 全透不吞点击，基类 T4 样板字段）
+	# 源 popherocard 全屏模态：mainLayer setTouchEnabled(true) + registerTouchHandler
+	# (:92-105) 全屏吞触摸、doClickLayer 任意点击关；popwindow 注册表 popherocard 无
+	# no_shade/layer_opacity → mainLayer 默认 CCLayerColor(0,0,0,150) 全屏黑幕 0.588。
+	# 旧实现 transparent_shade（shade IGNORE 不吞）+ _unhandled_input 关闭——空白区点击
+	# 穿到底层列表 ScrollContainer（STOP）被吞，_unhandled_input 永不触发 → 卡关不掉
+	# 盖住列表（2026-09-09 根修：全屏 STOP 模态 + 三路 gui_input → _on_click_layer）。
+	# 2026-09-10 三轮订正：上轮"源 noShade 视觉全透"系考证偏误（注册表并无 no_shade），
+	# 恢复 setup 默认黑幕 150/255——用户实机「特效应全屏而且在最前」即黑幕缺失致列表全露。
+	shade_close_on_click = false   # 吞点击但不走基类点外关闭（关闭统一走 _on_click_layer 链 close_handler）
 	_hero = hero
 	_cm = cm
 	_color = _resolve_color(cm, hero)
-	setup()
+	setup()   # shade 取基类默认 Color(0,0,0,150/255)=源 mainLayer CCLayerColor 同值
 	_build_content()
 
 
@@ -70,6 +79,9 @@ func _resolve_color(cm: Variant, hero: HeroInstance) -> String:
 # _resolve_color 已兜底 red，三图齐备无降级路径——原迁移期 fallback 循环删除，见任务报告）。
 func _build_content() -> void:
 	_content = CONTENT_SCENE.instantiate() as Control
+	_content.mouse_filter = Control.MOUSE_FILTER_STOP   # 模态吞（tscn 默认 IGNORE 系旧穿透设计）
+	_content.gui_input.connect(_on_modal_input)
+	shade_layer.gui_input.connect(_on_modal_input)   # shade STOP：空白区点击关（不走基类点外关闭）
 	container.add_child(_content)
 	_bg = _content.get_node("%BgRect") as TextureRect
 	_light = _content.get_node("%LightSprite") as Sprite2D
@@ -82,17 +94,20 @@ func _build_content() -> void:
 
 # 卡牌视觉（源 :136 ed.readhero.getHeroCard(hid, {disableswap=true, showAwake=true}).container）。
 # 复用 hero_detail_card_tab.tscn（CardFrame + Art + Name + stars + type icon，HeroDetailTabs.fill_card_view 填数据）。
-# card_tab 原为 hero_detail 设计（CardFrame center 205,320），觉醒弹窗居中需 offset 200 → center (480,320)。
 func _build_hero_card() -> void:
 	if _hero == null or _cm == null:
 		return
 	var card: Control = CARD_SCENE.instantiate() as Control
 	card.visible = true   # .tscn 默认 visible=false，强制显示
-	card.offset_left = CARD_HOST_SHIFT_X
-	card.offset_right = CARD_HOST_SHIFT_X
+	# card_tab root（TabCardView）full rect 锚，卡框中心在 root 内 ≈(402,237)：天然近屏幕
+	# 中心 (400,240)，零偏移即居中。旧 shift 200/195 系 960 口径误算——full-rect 锚下
+	# offset_left/right 双边语义是平移整个 root，2026-09-09 实拍（卡中心偏右 200 逻辑）纠正。
+	card.offset_left = 0.0
+	card.offset_right = 0.0
 	card.modulate.a = 0.0   # 源 :142 config opacity=0（外部场景实例，初始态由 fill 设）
 	_card_host.add_child(card)
 	HeroDetailTabs.fill_card_view(card, _hero, _cm)
+	card.gui_input.connect(_on_modal_input)   # TabCardView 默认 STOP：点卡区也关（源 doClickLayer 全屏）
 
 
 func show_window(parent: Node) -> void:
@@ -162,7 +177,13 @@ func _add_fca(resource: String, host: Node2D) -> void:
 		fca.play(actions[0], true)
 
 
-# 走 _unhandled_input（事件未被 GUI 内按钮消费才触发，本弹窗无按钮，等价全屏点击关闭）。
+# 模态层点击（shade/content/卡实例 gui_input 统一入口）：任意按下即关（源 doClickLayer）。
+func _on_modal_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		_on_click_layer()
+
+
+# 兜底：事件未被 GUI 内按钮消费才触发（主路径已改 gui_input 模态链，2026-09-09）。
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_inside_tree():
 		return

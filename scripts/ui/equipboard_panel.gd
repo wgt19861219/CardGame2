@@ -133,9 +133,9 @@ func refresh(p_cell_data: Dictionary) -> void:
 	_refresh_content()
 
 
-# 本项目双容器：fragment cell 来自 HeroManager.fragments（**魂石**，Category=SOUL_STONE，Fragment 表映射召唤英雄），
-# 故用 cell_data.type==2 判 fragment（适配本项目数据模型，魂石有配方 makeId!=id → 可合成）。
-# items 的 EXPERIENCE_PILL → consume；其他 → prop。
+# 单账本（2026-09-09 根修）：fragment cell 来自 items 中 Fragment 表命中的碎片域
+#（**魂石** Category=SOUL_STONE，映射召唤英雄），故用 cell_data.type==2 判 fragment
+#（适配本项目数据模型，魂石有配方 makeId!=id → 可合成）。items 的 EXPERIENCE_PILL → consume；其他 → prop。
 func _judge_prop_type() -> String:
 	var cell_type: int = int(_cell_data.get("type", 1))
 	if cell_type == 2:   # fragments 容器（魂石）

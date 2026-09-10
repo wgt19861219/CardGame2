@@ -23,8 +23,12 @@ var _cm: Variant = null   # 由 set_message 注入，供按钮文字 LSTR 化
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# 2026-09-10 根修：set_anchors_and_offsets_preset 才真正拉满父 rect——
+	# set_anchors_preset 在树内调用会调整 offsets 保持当前 rect(0×0) 不变 → 尺寸恒 0
+	# （商店刷新确认框自 P1-8 起从未真正显示过，SummonConfirm 复用带进召唤链后暴露）。
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截底层（模态）
+	z_index = 50   # 绘制层盖宿主 content 内 relative z（ SummonConfirm.DIALOG_Z 同值同因）
 	_build_content()
 
 

@@ -101,8 +101,14 @@ static func _fill_card_name(name_label: Label, art_label: Label, bg_line: Textur
 	var display_name: String = HeroDetailFills.get_display_name(hero, cm)
 	name_label.text = display_name
 	# 称号（Art Name 字段，LSTR key → 本地化）。可能为空（部分英雄无称号），art_label.text 留空。
+	# 2026-09-10 五轮（用户「要修」）：zh-CN 实测全部 54 真英雄称号=主名同值，卡上两行
+	# 同名观感重复——同值去重（受控偏离，用户观感裁决）；get_lstr 未命中返 key 原文一并置空。
 	var art_key: String = String(cm.lookup("Unit", "Art Name", int(hero.tid)))
-	art_label.text = cm.get_lstr(art_key) if not art_key.is_empty() else ""
+	if art_key.is_empty():
+		art_label.text = ""
+	else:
+		var resolved: String = cm.get_lstr(art_key)
+		art_label.text = resolved if resolved != art_key and resolved != display_name else ""
 	# 底纹条按 name 像素宽选贴图（源 readhero.lua:1143 name:getSize().width > 120 判定）。
 	# 用 name_label 当前 font 量宽，无 font 时回退 display_name.length() 近似。
 	var name_width: float = _measure_label_text_width(name_label, display_name)
