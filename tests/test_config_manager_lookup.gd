@@ -38,3 +38,12 @@ func test_lookup_missing() -> void:
 	assert_true((row as Dictionary).is_empty(), "column 空查不到返空字典")
 	var val: Variant = _cm.lookup(&"Buff", "Name", "not_exist_buff")
 	assert_eq(val, null, "column 非空查不到返 null")
+
+
+# 2026-09-10 根修守卫：lookup_str 三态（正常 String / 字段缺失 null / 行缺失 null → ""）。
+# 源头：Unit.Narrative 9 真英雄无字段，String(lookup(...)) 裸写 String(null) 构造器崩。
+func test_lookup_str_three_states() -> void:
+	assert_eq(_cm.lookup_str(&"Unit", &"Display Name", 1), "Unit.hero.alias.001", "正常字段返 String 原值")
+	assert_eq(_cm.lookup_str(&"Unit", &"Narrative", 45), "", "字段缺失（tid=45 无 Narrative）返空串不崩")
+	assert_eq(_cm.lookup_str(&"Unit", &"NoSuchField", 1), "", "任意英雄无字段返空串")
+	assert_eq(_cm.lookup_str(&"NoSuchTable", &"X", 1), "", "表缺失返空串")

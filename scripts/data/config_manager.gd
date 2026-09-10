@@ -136,6 +136,14 @@ func lookup(table: StringName, column: String, key: Variant) -> Variant:
 		return null
 	return row.get(column, null)
 
+
+## lookup 的 String 安全版：字段缺失/值为 null/非 String 一律返 ""（区别于 get_string 走
+## _get_field 的 push_error——字段缺失在源表是正常形态如 Unit.Narrative 9 英雄无此字段，
+## 不该灌错误日志）。Godot 4 String(null) 构造器直接崩，调用方禁 String(lookup(...)) 裸写。
+func lookup_str(table: StringName, column: String, key: Variant) -> String:
+	var v: Variant = lookup(table, column, key)
+	return v if v is String else ""
+
 func get_table_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	for key in _tables:

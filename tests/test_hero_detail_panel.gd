@@ -950,3 +950,18 @@ func test_arrows_clickable_mouse_filter() -> void:
 	assert_eq(r.mouse_filter, Control.MOUSE_FILTER_STOP, "右箭头 STOP 可点")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 2026-09-10 根修守卫：9 个真英雄（tid 18/21/27/31/34/37/38/41/45）Unit 表无 Narrative 字段，
+# cm.lookup 返 null → String(null) 构造器崩溃（用户 tid=45 首次点开详情属性 tab 实爆，
+# Godot 4.7 实测 String(null) = Invalid call 'String' constructor）。
+# 根修 = ConfigManager.lookup_str null 安全读取。断言无 Narrative 英雄属性区正常渲染不崩。
+func test_attribs_fill_hero_without_narrative() -> void:
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(45)
+	var hero: HeroInstance = mgr.find_hero_by_tid(45)
+	assert_not_null(hero, "tid=45 英雄应存在")
+	var box := VBoxContainer.new()
+	add_child_autofree(box)
+	HeroDetailAttribs.fill_attributes(box, hero, cm)
+	assert_gt(box.get_child_count(), 2, "无 Narrative 英雄属性区应正常渲染（简介标题+描述+属性标题起）")
