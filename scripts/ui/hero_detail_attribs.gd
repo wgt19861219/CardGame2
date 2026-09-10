@@ -39,11 +39,13 @@ static func fill_attributes(vbox: VBoxContainer, hero: HeroInstance, cm: Variant
 	_add_section_title(vbox, &"HERODETAILATT.HERO_INTROUDUCEMENT", "英雄简介", cm)
 	# Unit 表 Description/Narrative 字段值是 LSTR key（如 UNIT.FRONT_TANKS_...），
 	# 直接 lookup 拿到的是 key 本身（用户看到的英文 key），需过 get_lstr 翻译。
-	var desc_raw: String = String(cm.lookup(&"Unit", "Description", int(hero.tid)))
+	# lookup_str（2026-09-10 根修）：9 个真英雄（tid 18..45）无 Narrative 字段，lookup 返
+	# null → String(null) 构造器崩（Godot 4 实测），null 安全读取返 ""。
+	var desc_raw: String = cm.lookup_str(&"Unit", &"Description", int(hero.tid))
 	var desc: String = cm.get_lstr(desc_raw) if cm != null and not desc_raw.is_empty() else desc_raw
 	if not desc.is_empty():
 		_add_text(vbox, desc, 18, ATT_DESC_COLOR)
-	var narrative_raw: String = String(cm.lookup(&"Unit", "Narrative", int(hero.tid)))
+	var narrative_raw: String = cm.lookup_str(&"Unit", &"Narrative", int(hero.tid))
 	var narrative: String = cm.get_lstr(narrative_raw) if cm != null and not narrative_raw.is_empty() else narrative_raw
 	if not narrative.is_empty():
 		_add_text(vbox, narrative, 16, ATT_PRE_COLOR)

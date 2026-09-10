@@ -22,7 +22,7 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/hero_package_item_content.tscn")
 # 源 hello.lua:311 setContentScaleFactor(615/480)=1.28125（iPhone 资源档）：cocos sprite contentSize=纹理/CS，position 不变。
-# 2026-08-28 根修后仅用于贴图显示尺寸换算（head 104 点直挂、bar 满宽 150×0.93），不再做 root 整卡缩放。
+# 2026-08-28 根修后仅用于贴图显示尺寸换算（head 104 点直挂），不再做 root 整卡缩放。
 const CONTENT_SCALE: float = 1.28125
 const CELL_SIZE: Vector2 = Vector2(260.0, 100.0)
 const EQUIP_SLOT_COUNT: int = 6
@@ -31,14 +31,14 @@ const EQUIP_SLOT_COUNT: int = 6
 const EQUIP_BG_SIZE: float = 22.0
 const EQUIP_ICON_SIZE: float = 16.0
 const EQUIP_EMPTY_ALPHA: float = 100.0 / 255.0
-# 源 bar 满 progress 宽：setTextureRect(150*sa/sn,26) ×barBg scaleX0.93 = 139.5（2026-08-28 根修
-# 回归；旧 204×0.93=189.7 漏 ÷CS 偏大 1.28×）。barBg 显示 204px÷CS×0.93=147.9 宽 ×26.5 高。
-const BAR_BG_W: float = 150.0 * 0.93
-const BAR_BG_H: float = 26.5
-const BAR_FILL_H: float = 26.0
-const BAR_FILL_OFFSET: Vector2 = Vector2(97.83, 63.25)    # .tscn 烘焙（barBg 左 + (0, 0.5)）
-const BAR_LABEL_POS: Vector2 = Vector2(80.0, 13.0)
-const BAR_BG_POS: Vector2 = Vector2(97.83, 62.75)         # .tscn 烘焙（barBg 左上，bg 局部(90,22)直译）
+# 源 bar 满 progress 宽：setTextureRect(150*sa/sn,26)。2026-09-10 贴合根修：源 150 漏考虑父
+# barBg scaleX0.93 级联（满宽 139.5 vs 框 147.9 右侧空 8.4，「可召唤」100% 视觉像 94%，源视觉债
+# 不再照译）——fill 几何改从 BarBg 节点 offset 推导，满进度四边贴合框（对齐 hero_detail StoneBar
+# 满宽=框宽范式）。barBg 自身 204px÷CS×0.93=147.9 宽×26.5 高照旧 .tscn 烘焙。
+# 源 label createttf(text,18)@barBg 局部 (80,13)（锚 0.5 中心）：x=80 于未缩放宽 159.2 坐标系≈居中
+# 意图（80≈159.2/2，父 scaleX0.93 级联后显示 74.4≈框显示半宽 73.95），故 Godot 版取框中心不直译 80
+# （80 直译进 147.9 框偏右 6 点）；y=13 距框底（cocos y 翻转）照译。
+const BAR_LABEL_Y_FROM_BOTTOM: float = 13.0
 const AVAILABLE_ALPHA: float = 150.0 / 255.0
 # 源 heroitem.lua:225/227 plusSign sr + :244 canDealTag tag 资源。
 const PLUS_WEAR_RES: String = "res://assets/ui/alpha/HVGA/herodetail-equipadd.png"
@@ -80,7 +80,9 @@ var _stone_group: Control = null
 var _equip_slots: Array[TextureRect] = []
 var _tip_host: Control = null
 var _deal_tag: TextureRect = null
+var _bar_bg: TextureRect = null
 var _bar_fill: TextureRect = null
+var _bar_fill_src: Texture2D = null   # tscn 原纹理（fill 会换成 AtlasTexture，防二次取宽错读 region）
 var _stone_label: Label = null
 var _summon_light: TextureRect = null
 var _summon_light_tween: Tween = null
@@ -134,7 +136,9 @@ func _cache_nodes() -> void:
 	_stone_group = _content.get_node("%StoneGroup") as Control
 	_tip_host = _content.get_node("%TipHost") as Control
 	_deal_tag = _content.get_node("%DealTag") as TextureRect
+	_bar_bg = _content.get_node("%BarBg") as TextureRect
 	_bar_fill = _content.get_node("%BarFill") as TextureRect
+	_bar_fill_src = _bar_fill.texture
 	_stone_label = _content.get_node("%StoneLabel") as Label
 	_summon_light = _content.get_node("%SummonLight") as TextureRect
 	_equip_slots.clear()
@@ -288,12 +292,27 @@ func _fill_stone() -> void:
 	var sn: int = ReadheroHandbook.get_stone_need(tid, cm, hero_mgr)
 	var need: int = sn if sn > 0 else 1
 	var ratio: float = clampf(float(sa) / float(need), 0.0, 1.0)
-	var fill_w: float = BAR_BG_W * ratio
-	_bar_fill.offset_left = BAR_FILL_OFFSET.x
-	_bar_fill.offset_top = BAR_FILL_OFFSET.y
-	_bar_fill.offset_right = BAR_FILL_OFFSET.x + fill_w
-	_bar_fill.offset_bottom = BAR_FILL_OFFSET.y + BAR_FILL_H
+	# 2026-09-10 贴合根修：fill 四边几何从 BarBg offset 推导（_build 未挂树 size 可能 0，用 offset 差，
+	# 同 _relayout_name host_w 范式）——满进度右缘=框右缘、高=框高，不再复刻源 setTextureRect(150)
+	# 漏父级 scaleX0.93 的右侧 8.4 空隙。
+	var frame_w: float = _bar_bg.offset_right - _bar_bg.offset_left
+	_bar_fill.offset_left = _bar_bg.offset_left
+	_bar_fill.offset_top = _bar_bg.offset_top
+	_bar_fill.offset_right = _bar_bg.offset_left + frame_w * ratio
+	_bar_fill.offset_bottom = _bar_bg.offset_bottom
+	# 纹理照源 setTextureRect(150*sa/sn,26) 截取左段语义（2026-09-10 二轮根修）：stretch SCALE 整条
+	# 压缩会把条左端 13px 透明带随 ratio 缩小（9.4×ratio 点 vs 框描边恒 8.7 点），小比例时条内容
+	# 起点左移出框描边——「数量小时左边不对齐边框」。AtlasTexture region 与 rect 同步按 ratio 截取，
+	# 纹理有效压缩比恒等于框 → 任意比例条内容恒与框描边对齐、纹理无水平压扁。
+	var fill_tex := AtlasTexture.new()
+	fill_tex.atlas = _bar_fill_src
+	fill_tex.region = Rect2(0.0, 0.0, float(_bar_fill_src.get_width()) * ratio,
+		float(_bar_fill_src.get_height()))
+	_bar_fill.texture = fill_tex
 	_fill_stone_label(sa, sn)
+	# label 中心化尺寸测量同 _relayout_name 坑：_build 未挂树 theme 链断，get_minimum_size 用
+	# 默认字体测量（48）≠ 挂树后 variation 渲染宽（54）→ 中心偏移 3 点；deferred 重定位校正。
+	call_deferred("_fill_stone_label", sa, sn)
 	# 源 heroitem.lua:154-167：可召唤时 SummonLight 呼吸 FadeTo 循环（_modulate.a 1→0.3→1 pingpong）。
 	_play_summon_light_breath(sa >= sn)
 	if head != null and head.ori_icon != null:
@@ -325,7 +344,11 @@ func _fill_stone_label(sa: int, sn: int) -> void:
 	var text: String = "可召唤" if sa >= sn else "%d/%d" % [sa, sn]
 	_stone_label.text = text
 	var ls: Vector2 = _stone_label.get_minimum_size()
-	_stone_label.position = BAR_BG_POS + Vector2(BAR_LABEL_POS.x, BAR_BG_H - BAR_LABEL_POS.y) - ls * 0.5
+	# 中心 x=框中心 / y=框底上 13（均自 BarBg offset 推导，同 _fill_stone 单一事实源）。
+	var center: Vector2 = Vector2(
+		(_bar_bg.offset_left + _bar_bg.offset_right) * 0.5,
+		_bar_bg.offset_bottom - BAR_LABEL_Y_FROM_BOTTOM)
+	_stone_label.position = center - ls * 0.5
 
 
 func _rank() -> int:

@@ -186,6 +186,7 @@ mouse_filter = 2
 ; 源 heroitem.lua:141-145 barBg anchor(0,0.5)@(90,22) scaleX0.93：204px÷CS×0.93=147.9 宽×26.5 高
 ; → cell rect (7.83+90, 2+96−22−13.25)~(+147.9, +26.5)（旧 189.7 宽=px×scale 漏 ÷CS）
 [node name="BarBg" type="TextureRect" parent="StoneGroup" unique_id=1612391235]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 97.83
 offset_top = 62.75
@@ -195,12 +196,13 @@ mouse_filter = 2
 texture = ExtResource("4_progbg")
 expand_mode = 1
 
-; 源 bar anchor(0,0)@barBg(0,0) setTextureRect(150*ratio,26)：fill 26 高贴 barBg 底、满宽 150×0.93=139.5
+; fill 几何运行时从 %BarBg offset 推导（2026-09-10 贴合根修）：满进度四边贴框，宽度=框宽×sa/sn。
+; 源 setTextureRect(150,26) 漏父级 scaleX0.93（满宽 139.5 右侧空 8.4 视觉债，不再照译）。
 [node name="BarFill" type="TextureRect" parent="StoneGroup" unique_id=892270563]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 97.83
-offset_top = 63.25
+offset_top = 62.75
 offset_right = 97.83
 offset_bottom = 89.25
 mouse_filter = 2

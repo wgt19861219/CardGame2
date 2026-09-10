@@ -225,6 +225,19 @@ static func fill_stone_bar(base: Control, hero: HeroInstance, cm: Variant, hero_
 		return
 	var ratio: float = clampf(float(sa) / float(sn if sn > 0 else 1), 0.0, 1.0)
 	bar.offset_right = STONE_BAR_OFFSET_X + STONE_BAR_W * ratio
+	# 纹理照源 window.lua:1694 ClippingNode 裁剪语义（2026-09-10 根修）：SCALE 整条压缩会把条左端
+	# 13px 透明带随 ratio 压小（条内容起点左移），而框 NinePatch 左 patch 恒显示 ~14.1 点——比例越
+	# 小条内容越画出框左圆头外（用户实拍：魂石 20/100 时条压框左圆头 11.8 点、魂石 1 时条整体在框
+	# 左边）。AtlasTexture region 与 rect 同乘 ratio → 压缩比恒 = 框（180/204），条内容起点恒定，
+	# 任意比例恒与满进度同位（同 hero_package_item 二轮修法）。
+	var src_tex: Texture2D = bar.texture
+	if src_tex is AtlasTexture:
+		src_tex = (src_tex as AtlasTexture).atlas
+	var bar_tex := AtlasTexture.new()
+	bar_tex.atlas = src_tex
+	bar_tex.region = Rect2(0.0, 0.0, float(src_tex.get_width()) * ratio,
+		float(src_tex.get_height()))
+	bar.texture = bar_tex
 
 
 # 收集 3 tab 按钮（%TabDetailBtn/%TabCardBtn/%TabSkillBtn）→ {key: Button}。
