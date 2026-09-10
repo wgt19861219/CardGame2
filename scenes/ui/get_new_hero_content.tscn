@@ -1,0 +1,65 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/lettherebelight.png" id="1_w1db5"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/get_new_hero_bar.png" id="2_218up"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button.png" id="3_okbtn"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/sell_number_button_down.png" id="4_okbtnp"]
+
+; get_new_hero 新英雄获得展示弹窗静态树（2026-09-09 召唤动画链）。照源 announce.lua
+; getNewHero create(:225-365) ui_info 直译（title get_new_hero_title.png 源 res 缺图照源省略）。
+; 坐标 cocos(800×480 左下) → godot(800×480 左上) via (x, 480-y)；显示尺寸=纹理像素÷CS(1.28125)。
+; 树序=绘制序：light < name_bg < 立绘宿主 < ok 按钮（源 actor z=5 画在按钮上；
+; ActorHost Node2D 不参与 GUI 命中，OkBtn 唯一 Control 可点）。
+
+[node name="GetNewHeroContent" type="Control" unique_id=1673777151]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LightSprite" type="Sprite2D" parent="." unique_id=1215521233]
+; 源 light ccp(400,250) → (400,230)；lettherebelight 385×385 原尺寸（源无缩放），panel 播 370°×3 旋转。
+position = Vector2(400, 230)
+texture = ExtResource("1_w1db5")
+
+[node name="NameBg" type="TextureRect" parent="." unique_id=1583486744]
+; 源 name_bg get_new_hero_bar ccp(400,110) 中心锚 → offset=中心−半尺寸（435×95÷CS=339.51×74.15）。
+layout_mode = 0
+offset_left = 230.25
+offset_top = 332.93
+offset_right = 569.76
+offset_bottom = 407.08
+mouse_filter = 2
+expand_mode = 1
+texture = ExtResource("2_218up")
+
+[node name="NameLbl" type="Label" parent="NameBg" unique_id=775232323]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 339.51
+offset_bottom = 74.15
+theme_type_variation = &"GetNewHeroNameLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="ActorHost" type="Node2D" parent="." unique_id=1152133758]
+; 源 actor getActor(hid,"Move") ccp(400,160) → (400,320)；FCA 立绘 panel fill 挂入（缺资源降级 Portrait 静态）。
+unique_name_in_owner = true
+position = Vector2(400, 320)
+
+[node name="OkBtn" type="TextureButton" parent="."]
+; 源 ok Scale9 sell_number_button scaleSize(100,50) ccp(400,40) → 中心 (400,440)；「确定」文字 panel 动态挂（fast button 惯例）。
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 350.0
+offset_top = 415.0
+offset_right = 450.0
+offset_bottom = 465.0
+ignore_texture_size = true
+stretch_mode = 0
+texture_normal = ExtResource("3_okbtn")
+texture_pressed = ExtResource("4_okbtnp")

@@ -258,7 +258,7 @@ func test_list_line_position_follows_source() -> void:
 	var mgr := HeroManager.new(cm)
 	mgr.add_hero(1)   # 1 拥有（占 row0）→ 边界在 row0/row1 之间
 	# miss 列表只收有碎片的未拥有（get_miss_list stone_amount>0）：喂 1 片（<召唤需求）→ tid=2 追加尾部
-	mgr.fragments[ReadheroHandbook.get_stone_id(2, cm)] = 1
+	mgr.items[ReadheroHandbook.get_stone_id(2, cm)] = 1
 	var panel := HeroPackagePanel.new("heropackage", {})
 	panel.setup_panel(mgr, cm)
 	panel.show_window(root)
@@ -276,12 +276,17 @@ func test_list_line_position_follows_source() -> void:
 
 
 # 两件套红线：静态结构零 .new(（herosplit/listLine/占位 spacer 全静态或模板 instantiate）。
-# 白名单 = 3 个业务弹窗工厂（HeroDetailPanel/StoneDetailPanel/HeroSplitWindow）。
+# 白名单 = 5 个业务弹窗工厂（HeroDetailPanel/StoneDetailPanel/HeroSplitWindow
+# + 2026-09-09 召唤链 HeroAwakePanel 卡展示 / SummonConfirm 确认框——SummonConfirm
+# 是 Control 非 PopWindow，工厂 .new 挂 panel；GetNewHeroPopup 由卡 close_handler 链式
+# 工厂（在回调里 .new，也被本计数覆盖））。
 # 计数用 ".new("（带参构造 HeroDetailPanel.new("id") 不含 ".new()" 字面，旧写法漏检）。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string("res://scripts/ui/hero_package_panel.gd")
 	assert_eq(text.count(".new("), text.count("HeroDetailPanel.new(") + text.count("StoneDetailPanel.new(")
-		+ text.count("HeroSplitWindow.new("), "静态节点零 .new(，仅 3 弹窗工厂白名单")
+		+ text.count("HeroSplitWindow.new(") + text.count("HeroAwakePanel.new(")
+		+ text.count("SummonConfirm.new(") + text.count("GetNewHeroPopup.new("),
+		"静态节点零 .new(，仅 5 弹窗工厂白名单（召唤链 +2）")
 
 
 # herosplit 按钮 → HeroSplitWindow（2026-07-19 接线，本批静态化后行为保持）。
@@ -363,3 +368,207 @@ func test_theme_hero_package_entries() -> void:
 	# item 石头进度文字（源 heroitem.lua:151 createttf(text,18) 无色配置→白）
 	assert_eq(theme.get_theme_item(Theme.DATA_TYPE_FONT_SIZE, "font_size", "HeroPackageStoneLabel"), 18,
 		"item 石头文字字号 18 照源（旧实现 14 为随手值修正）")
+
+
+# ── 召唤动画链（2026-09-09 补全：源 heropackage.lua clickMissHero :160-172
+#    showConfirmDialog → doSummon → doSummonReply :107-124 announce popHeroCard
+#    → popherocard doClickLayer → getNewHero 展示 → 确定）──
+# 此前迁移漏整链：点击直接静默召唤（无确认框、无卡展示、无新英雄展示动画）。
+
+const SUMMON_LSTR_KEY: String = "HEROPACKAGE.SUMMON_HERO_TAKES_D_GOLD_COINS_CONFIRM_TO_CALL"
+
+func _find_first_of_type(node: Node, type_class: Variant) -> Node:
+	for c in node.get_children():
+		if is_instance_of(c, type_class):
+			return c
+		var found: Node = _find_first_of_type(c, type_class)
+		if found != null:
+			return found
+	return null
+
+
+func test_summon_flow_confirm_card_and_new_hero() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	# tid=2 初始 1 星：召唤需 10 碎片（HeroStars[1].Summon Fragments）+ 1000 金币
+	mgr.items[ReadheroHandbook.get_stone_id(2, cm)] = 10
+	mgr.gold = 2000
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	panel._on_miss_clicked({"tid": 2, "miss": true})
+	# ① 确认框弹出（源 :163-172），确认前不召唤
+	var dlg: SummonConfirm = _find_first_of_type(panel, SummonConfirm) as SummonConfirm
+	assert_not_null(dlg, "可召唤 miss 点击 → 召唤确认框（源 showConfirmDialog）")
+	if dlg == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	assert_null(mgr.find_hero_by_tid(2), "确认前不执行召唤")
+	assert_true(dlg.get_message().find(str(ReadheroHandbook.get_summon_cost(2, cm))) != -1,
+		"确认框文案含金币花费（源 getSummonCost %d 格式化）")
+	# ② 确认 → 召唤 + 英雄卡弹窗（源 doSummonReply → announce popHeroCard）
+	dlg._on_ok()
+	assert_not_null(mgr.find_hero_by_tid(2), "确认后召唤成功（hero_evolve miss 分支）")
+	await get_tree().process_frame
+	var card: HeroAwakePanel = _find_first_of_type(root, HeroAwakePanel) as HeroAwakePanel
+	assert_not_null(card, "召唤成功弹英雄卡展示（源 popHeroCard：bg/light/卡/FCA 动画）")
+	if card == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	# ③ 卡点击 → 新英雄展示（源 doClickLayer amount<=1 → getNewHero）
+	card._on_click_layer()
+	await get_tree().process_frame
+	var popup: GetNewHeroPopup = _find_first_of_type(root, GetNewHeroPopup) as GetNewHeroPopup
+	assert_not_null(popup, "卡点击 → getNewHero 新英雄展示弹窗")
+	if popup == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	# ④ 确定 → 关闭
+	popup._on_ok()
+	await get_tree().process_frame
+	assert_false(is_instance_valid(popup) and popup.is_inside_tree(),
+		"确定关闭 getNewHero（源 dookTouch destroy；freed 实例按判例 is_instance_valid 先判）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# ── 列表拖拽滚动 + 行点击 tap 判定（2026-09-10：魂石修复后可召唤置顶、列表变长，
+#    暴露按下即触发进详情 + ScrollContainer 桌面无鼠标拖拽两个缺口；
+#    源 draglist.lua:906 not dragMode 才 doClickIn，照 ranklist/evolve_equip 修复轮四范式）──
+
+static func _mb(pressed: bool, pos: Vector2) -> InputEventMouseButton:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = pressed
+	ev.global_position = pos
+	ev.position = pos
+	return ev
+
+
+# 纯按下（未释放）不开详情：拖拽滚动的起始 press 不误触。
+func test_item_press_only_does_not_open_detail() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	var hero: HeroInstance = mgr.heroes.values()[0]
+	panel._on_item_gui_input(_mb(true, Vector2(200, 150)), hero)
+	assert_true(panel.container.visible,
+		"纯 press 不开详情（源 draglist release 才 doClickIn，2026-09-10 前按下即触发）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 按住拖动（release 位移 >8px 阈值）不触发详情：拖拽滚动全程可放心按在卡片上。
+func test_item_drag_release_does_not_open_detail() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	var hero: HeroInstance = mgr.heroes.values()[0]
+	panel._on_item_gui_input(_mb(true, Vector2(200, 150)), hero)
+	panel._on_item_gui_input(_mb(false, Vector2(200, 185)), hero)   # 位移 35px > 8px 阈值
+	assert_true(panel.container.visible, "拖动后 release 位移超阈值 → 不开详情")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 完整 tap 链（press + release 位移 <8px）仍进英雄详情。
+func test_item_tap_within_threshold_opens_detail() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	var hero: HeroInstance = mgr.heroes.values()[0]
+	panel._on_item_gui_input(_mb(true, Vector2(200, 150)), hero)
+	panel._on_item_gui_input(_mb(false, Vector2(203, 152)), hero)   # 位移 ~3.6px < 8px
+	assert_false(panel.container.visible, "tap（release 位移 <8px）→ 进英雄详情（源 doClickIn）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 召唤确认框全屏模态（2026-09-10 二轮根修）：_ready 在树内 set_anchors_preset(FULL_RECT)
+# 会调整 offsets 保持当前 rect(0×0) 不变 → 尺寸恒 0 → 不可见+无命中+模态失效
+# （用户实机「点击可召唤英雄无反应」=确认框弹出但 0 尺寸不渲染）。修复=改
+# set_anchors_and_offsets_preset 真正拉满父 rect。
+func test_summon_confirm_full_rect_when_parented() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	var dlg := SummonConfirm.new()
+	dlg.set_message("test")
+	panel.add_child(dlg)
+	await get_tree().process_frame
+	assert_eq(dlg.size, Vector2(800.0, 480.0), "SummonConfirm 挂 panel 后全屏（修复前 size=0 不可见）")
+	assert_eq(dlg.mouse_filter, Control.MOUSE_FILTER_STOP, "全屏 STOP 模态拦截底层")
+	assert_eq(dlg.z_index, 50, "绘制层盖宿主 content 内 z 10~15（修复前 z=0 被列表盖，文字只从行缝漏出）")
+	dlg.queue_free()
+	panel.remove_window()
+	root.queue_free()
+
+
+# ShopRefreshConfirm 同病守卫（shop 挂 container.add_child 同样在树内 _ready）。
+func test_shop_refresh_confirm_full_rect_when_parented() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	var popup := ShopRefreshConfirm.new()
+	popup.set_message("test")
+	panel.container.add_child(popup)
+	await get_tree().process_frame
+	assert_eq(popup.size, Vector2(800.0, 480.0), "ShopRefreshConfirm 挂 container 后全屏")
+	popup.queue_free()
+	panel.remove_window()
+	root.queue_free()
+
+
+# 鼠标拖拽滚动（DragScrollHelper 补源 draglist 手势）：上滑 → scroll_vertical 增。
+# miss 段照源 get_miss_list 只收持有碎片的未拥有英雄——须塞碎片列表才超视口可滚。
+func test_drag_helper_scrolls_hero_list() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	for tid: int in range(2, 13):   # 11 个未拥有英雄各 1 碎片 → 12 条 6 行 648px > 348 视口
+		mgr.items[ReadheroHandbook.get_stone_id(tid, cm)] = 1
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	await get_tree().process_frame   # 布局完成再读 global_rect
+	var scroll: ScrollContainer = panel._scroll
+	var rect: Rect2 = scroll.get_global_rect()
+	var press_pos: Vector2 = rect.position + rect.size * 0.5
+	var state: Dictionary = {}
+	var before: float = scroll.scroll_vertical
+	DragScrollHelper.handle_input(scroll, _mb(true, press_pos), state)
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.global_position = press_pos + Vector2(0, -60.0)   # 上滑 60px 看下方内容
+	motion.position = motion.global_position
+	DragScrollHelper.handle_input(scroll, motion, state)
+	assert_gt(scroll.scroll_vertical, before,
+		"鼠标拖拽上滑滚动英雄包裹列表（源 draglist drag；Godot 桌面 ScrollContainer 无拖拽）")
+	panel.remove_window()
+	root.queue_free()

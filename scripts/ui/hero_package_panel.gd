@@ -51,6 +51,15 @@ var _tab_labels: Dictionary = {}   # key -> Label
 var _scroll: ScrollContainer = null
 var _grid: Control = null
 var _hero_by_class: Dictionary = {}   # clid -> Array[Variant]（HeroInstance 或 {tid,miss} dict）
+var _item_press: Variant = null   # 行点击位移判别（2026-09-10：源 draglist.lua:906 not dragMode 才 doClickIn）
+var _drag_state: Dictionary = {}   # DragScrollHelper 拖拽滚动跨帧基准
+
+
+# 拖拽滚动（2026-09-10：Godot 4 ScrollContainer 桌面仅滚轮/滚动条无拖拽，
+# 源 draglist 手势补齐；ranklist/evolve_equip 修复轮四同范式）。
+func _input(event: InputEvent) -> void:
+	if _scroll != null:
+		DragScrollHelper.handle_input(_scroll, event, _drag_state)
 
 
 func setup_panel(hero_mgr: HeroManager, p_cm: Variant = null, p_pd: PlayerData = null) -> void:
@@ -196,9 +205,19 @@ func _add_list_line_at(boundary_row: int) -> void:
 	_grid.add_child(line)
 
 
+# 行点击（2026-09-10 根修）：press 记录 → release 位移 <8px 才触发（DragScrollHelper.is_tap）。
+# 旧实现按下即触发，魂石修复后可召唤置顶列表变长，拖拽滚动起始 press 误触进详情。
+# 源 draglist.lua:906 touchEnded 且 not dragMode 才 doClickIn（tap 语义照译）。
 func _on_item_gui_input(event: InputEvent, entry: Variant) -> void:
 	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		_on_entry_clicked(entry)
+		_item_press = (event as InputEventMouseButton).global_position
+	elif event is InputEventMouseButton and not (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		if DragScrollHelper.is_tap(_item_press, (event as InputEventMouseButton).global_position):
+			_item_press = null
+			_on_entry_clicked(entry)
+		else:
+			_item_press = null
 
 
 func _on_close_pressed() -> void:
@@ -248,15 +267,58 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 		container.visible = true)
 
 
+# 源 clickMissHero :163-172：碎片够 → showConfirmDialog「召唤英雄需要花费 N 金币」→ doSummon；
+# doSummonReply :107-124 成功 → refreshHeroItem + announce popHeroCard（卡展示）→ 点击 →
+# getNewHero（新英雄大立绘展示）→ 确定（2026-09-09 召唤动画链补全，此前直接静默召唤）。
+const SUMMON_LSTR_KEY: String = "HEROPACKAGE.SUMMON_HERO_TAKES_D_GOLD_COINS_CONFIRM_TO_CALL"
+const SUMMON_LSTR_FALLBACK: String = "召唤英雄需要花费%d金币，是否召唤?"
+
+
 func _on_miss_clicked(entry: Variant) -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var miss_tid: int = ReadheroHandbook.entry_tid(entry)
 	if ReadheroHandbook.check_stone_enough(miss_tid, cm, _hero_mgr):
-		var result: Dictionary = _hero_mgr.hero_evolve(miss_tid)
-		if bool(result.get("ok", false)):
-			_refresh_after_change()
+		_open_summon_confirm(miss_tid)
 	else:
 		_open_stone_detail(miss_tid)
+
+
+func _open_summon_confirm(tid: int) -> void:
+	var cost: int = ReadheroHandbook.get_summon_cost(tid, cm)
+	var text: String = String(cm.get_lstr(SUMMON_LSTR_KEY)) % cost if cm != null \
+			else SUMMON_LSTR_FALLBACK % cost
+	var dlg := SummonConfirm.new()
+	dlg.set_message(text, cm)
+	add_child(dlg)
+	dlg.confirmed.connect(_do_summon.bind(tid))
+
+
+func _do_summon(tid: int) -> void:
+	var result: Dictionary = _hero_mgr.hero_evolve(tid)
+	if not bool(result.get("ok", false)):
+		Toast.show_message("金币不足")   # 源 doSummon :127-130 金币不足提示（useMidas 单机化降级 Toast）
+		return
+	_refresh_after_change()   # 源 doSummonReply refreshHeroItem（列表先刷新，卡弹窗盖其上）
+	_show_summon_card(tid)
+
+
+# 卡展示（源 announce popHeroCard → popherocard.lua）：复用 HeroAwakePanel
+#（姊妹弹窗 popheroawake 同动画序列：bg 三色 FadeIn/light 旋转/卡 FadeIn/双 FCA 特效）。
+func _show_summon_card(tid: int) -> void:
+	var hero: HeroInstance = _hero_mgr.find_hero_by_tid(tid)
+	if hero == null:
+		return
+	var card := HeroAwakePanel.new("popherocard", {})
+	card.setup_awake(hero, cm)
+	card.set_close_handler(_show_get_new_hero.bind(tid))
+	card.show_window(get_parent())
+
+
+# 新英雄展示（源 popherocard doClickLayer amount<=1 → announce getNewHero）。
+func _show_get_new_hero(tid: int) -> void:
+	var popup := GetNewHeroPopup.new("getnewhero", {})
+	popup.setup_popup(tid, cm)
+	popup.show_window(get_parent())
 
 
 func _open_stone_detail(tid: int) -> void:
