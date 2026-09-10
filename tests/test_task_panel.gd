@@ -138,3 +138,44 @@ func test_empty_prompt_anchored_at_frame_center() -> void:
 		assert_almost_eq(prompt.anchor_top, 262.0 / 480.0, 0.001, "提示锚点 y=262（源 frame 正中）")
 		panel.free()
 
+
+# ── 已领任务行隐藏（2026-09-09 修复：已完成的任务点击领奖后行不消失、可无限重复领奖）──
+# 源 task.lua:1147-1165 getCurrentTaskInChain：当前任务 finished 且下一任务门槛未达 →
+# 返回 nil（行不显示）；链状态保留，门槛达成后再开面板经 sync 推进。迁移漏了该显示过滤。
+func test_finished_task_with_gated_next_not_rendered() -> void:
+	var pd := PlayerData.new(cm)
+	var tm := TaskManager.new()
+	pd.stage_manager.progress[4] = 3   # chain2 id1 门槛 CompleteStage 4 已达（Triggers[2]）
+	tm.sync_current_tasks(pd, cm)      # 发现 chain2 id1 + chain40 id1
+	tm.claim_task_reward(pd, 2, 1, cm)   # 领 chain2 id1 → finished；id2 门槛 stage 11 未达不推进
+	# 不变量：finished entry 保留在 tm.task（卡门槛态，门槛达成后可推进，不丢状态）
+	var kept: bool = false
+	for e in tm.task:
+		if int(e.get("chain", -1)) == 2 and str(e.get("status", "")) == "finished":
+			kept = true
+	assert_true(kept, "前置：finished entry 状态保留在 tm.task（源服务器侧保留链状态）")
+	var panel := TaskPanel.new()
+	add_child(panel)
+	panel.setup_panel(pd, cm, tm)
+	var row_21: Dictionary = cm.get_raw_table("Task").get("2", {}).get("1", {})
+	var name_21: String = cm.get_lstr(str(row_21.get("Task Name", "")))
+	assert_false(_collect_label_texts(panel.container).has(name_21),
+		"已领且下一任务门槛未达的行不渲染（源 getCurrentTaskInChain :1147-1165 返 nil）")
+	panel.free()
+
+
+# 全部链不可显示（finished 卡门槛 + 其余 task_finished）→ 空态提示出现
+#（空态判据从 tm.task 非空改为渲染行数为 0，覆盖"有 entry 但全被过滤"的态）。
+func test_all_entries_filtered_shows_empty_prompt() -> void:
+	var pd := PlayerData.new(cm)
+	var tm := TaskManager.new()
+	tm.task_finished.append(40)   # 无门槛链 40 领完
+	tm.task.append({"chain": 2, "id": 1, "status": "finished", "target": 0})   # 卡门槛 finished
+	var panel := TaskPanel.new()
+	add_child(panel)
+	panel.setup_panel(pd, cm, tm)
+	var empty_text: String = cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED")
+	var has_prompt: bool = _collect_label_texts(panel.container).has(empty_text)
+	assert_true(has_prompt, "无可显示行（tm.task 非空但全被过滤）→ 空态提示出现")
+	panel.free()
+
