@@ -82,6 +82,14 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 		pd.team.append(int(inst_id))
 	var hm_data: Dictionary = data.get("hero_manager", {})
 	pd.hero_manager = HeroManager.from_dict(hm_data, cm)
+	pd.hero_manager.items = pd.items   # 碎片/魂石单账本（源 equip_qunty；_init 注入随换实例失效需重注入）
+	# 旧档迁移（2026-09-09 前 fragments 独立容器）：并入 items 单账本。相加——两侧
+	# 获得路径互斥（重复英雄碎魂/分解写 fragments，抽卡魂石/GM 写 items），无重复计数。
+	var legacy_frags: Variant = hm_data.get("fragments", {})
+	if legacy_frags is Dictionary:
+		for frag_id in (legacy_frags as Dictionary):
+			var fid := int(frag_id)
+			pd.items[fid] = int(pd.items.get(fid, 0)) + int((legacy_frags as Dictionary)[frag_id])
 	var cd_data: Dictionary = data.get("crusade_manager", {})
 	pd.crusade_manager = CrusadeManager.from_dict(cd_data, cm)
 	var td_data: Dictionary = data.get("tutorial_manager", {})

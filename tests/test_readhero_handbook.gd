@@ -16,7 +16,7 @@ func test_get_stone_id_from_fragment_table() -> void:
 	assert_gt(sid, 0, "Fragment 表 tid=1 应有 Fragment Id > 0")
 
 
-# 源 getStoneAmount :649-653 — player.equip_qunty[stone_id]；本项目 fragments 容器。
+# 源 getStoneAmount :649-653 — player.equip_qunty[stone_id]；本项目同账本 pd.items（2026-09-09 根修）。
 func test_get_stone_amount_no_fragment_zero() -> void:
 	var mgr := HeroManager.new(cm)
 	assert_eq(ReadheroHandbook.get_stone_amount(1, cm, mgr), 0, "无碎片时 amount=0")

@@ -172,7 +172,7 @@ func _make_name() -> String:
 func _frag_count(frag_id: int) -> int:
 	if pd == null or pd.hero_manager == null:
 		return 0
-	return int(pd.hero_manager.fragments.get(frag_id, 0))
+	return pd.hero_manager.fragment_count(frag_id)
 
 
 func _player_money() -> int:

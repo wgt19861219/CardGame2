@@ -259,7 +259,7 @@ func test_split_removes_hero_and_adds_fragment() -> void:
 	var inst_id: int = hero.inst_id
 	var preview: Dictionary = mgr.preview_split(inst_id)
 	var frag_id: int = int(preview["fragment_id"])
-	var before_count: int = int(mgr.fragments.get(frag_id, 0))
+	var before_count: int = int(mgr.items.get(frag_id, 0))
 	var window := HeroSplitWindow.new("herosplit", {})
 	window.setup_panel(mgr, cm)
 	window.show_window(root)
@@ -267,7 +267,7 @@ func test_split_removes_hero_and_adds_fragment() -> void:
 	window._select_hero(hero)
 	window._perform_split()
 	assert_eq(mgr.heroes.size(), 1, "分解后英雄数 -1")
-	assert_eq(int(mgr.fragments.get(frag_id, 0)), before_count + int(preview["count"]), "碎片 +Convert Fragments")
+	assert_eq(int(mgr.items.get(frag_id, 0)), before_count + int(preview["count"]), "碎片 +Convert Fragments")
 	assert_signal_emitted(window, "split_done", "split_done 信号触发（hero_package 刷新列表）")
 	window.remove_window()
 	root.queue_free()

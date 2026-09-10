@@ -7,7 +7,10 @@ extends RefCounted
 
 var config: ConfigManager
 var heroes: Dictionary = {}   # inst_id(int) -> HeroInstance
-var fragments: Dictionary = {}  # fragment_id(int) -> count(int)
+# 碎片/魂石计数（源 equip_qunty 单容器语义）：与宿主 PlayerData.items 同一字典引用
+#（PlayerData._init / serde from_dict 注入；独立 new 时为自身字典）。2026-09-09 根修
+# 魂石双账本脱节——获得路径 add_item 写 items 而读侧走独立 fragments 致英雄详情不体现。
+var items: Dictionary = {}
 var gold: int = 0
 var next_id: int = 1
 var hero_cache: Dictionary = {}  # tid(int) -> {pre_exp,pre_level,exp_increment}（源 ed.player.heroCache，结算升级动画用，player.lua:1977-1982）
@@ -56,8 +59,10 @@ func evolve(inst_id: int) -> bool:
 	if hero.stars >= data.max_stars:
 		return false
 	var frag_id := config.get_int(&"Fragment", hero.tid, &"Fragment ID")
-	var cost_frags := config.get_int(&"HeroStars", hero.stars, &"Upgrade Fragments")
-	var cost_gold := config.get_int(&"HeroStars", hero.stars, &"Upgrade Price")
+	# HeroStars[k] = 升到 k 星的花费（源 controller.getHeroEvolveStoneNeed/Cost :236-248
+	# 读 stars+1 行；2026-09-09 修 off-by-one——旧读 stars 行 = 上一档已付花费，1→2 星扣 0 白嫖）
+	var cost_frags := config.get_int(&"HeroStars", hero.stars + 1, &"Upgrade Fragments")
+	var cost_gold := config.get_int(&"HeroStars", hero.stars + 1, &"Upgrade Price")
 	if _fragment_count(frag_id) < cost_frags or gold < cost_gold:
 		return false
 	_add_fragment(frag_id, -cost_frags)
@@ -265,7 +270,7 @@ func wear_equip(inst_id: int, slot: int) -> bool:
 	return true
 
 func _fragment_count(frag_id: int) -> int:
-	return int(fragments.get(frag_id, 0))
+	return int(items.get(frag_id, 0))
 
 
 ## 碎片可合成查询（照源 readequip.lua:810-840 isFragmentEnough + createIconWithTag :855-861）。
@@ -284,7 +289,7 @@ func is_fragment_composable(tid: int) -> bool:
 
 
 func _add_fragment(frag_id: int, delta: int) -> void:
-	fragments[frag_id] = _fragment_count(frag_id) + delta
+	items[frag_id] = _fragment_count(frag_id) + delta
 
 
 ## 添加碎片（抽卡/副本奖励产出公开入口；包装 _add_fragment + 入口校验）。
@@ -322,7 +327,7 @@ func to_dict() -> Dictionary:
 			"gs": h.gs,
 			"awake": h.awake,
 		})
-	return {"gold": gold, "fragments": fragments.duplicate(true), "heroes": heroes_data, "next_id": next_id, "hero_cache": hero_cache.duplicate(true)}
+	return {"gold": gold, "heroes": heroes_data, "next_id": next_id, "hero_cache": hero_cache.duplicate(true)}
 
 
 ## 加金币（源 player.lua:434 addMoney：math.max(_money+money, 0)，非负保护）。
@@ -335,9 +340,8 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> HeroManager:
 	var mgr := HeroManager.new(cm)
 	mgr.gold = int(data.get("gold", 0))
 	mgr.next_id = int(data.get("next_id", 1))
-	var frags: Dictionary = data.get("fragments", {})
-	for frag_id in frags:
-		mgr.fragments[int(frag_id)] = int(frags[frag_id])
+	# fragments 独立容器已退役（2026-09-09 单账本根修）：旧档该字段由
+	# PlayerDataSerde.from_dict 迁移并入 pd.items，此处不读。
 	var heroes_list: Array = data.get("heroes", [])
 	for h in heroes_list:
 		var hd: Dictionary = h

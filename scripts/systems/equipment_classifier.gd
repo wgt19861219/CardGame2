@@ -2,8 +2,9 @@ class_name EquipmentClassifier
 extends RefCounted
 
 ## 装备/物品/碎片分类（Logic 层）— 照源 readequip.classify（readequip.lua:416-480）。
-## 适配本项目双容器：PlayerData.items（装备/物品，type=1）→ prop 表；
-## HeroManager.fragments（碎片物品 id，type=2）→ fragment 表。
+## 源单容器 equip_qunty：prop/fragment 双页同一账本。本项目同账本（2026-09-09 根修后）：
+## PlayerData.items（装备/物品，type=1）→ prop 表；items 中 Fragment 表命中的碎片域
+##（魂石+装备碎片，type=2）→ fragment 表。
 ## 输出 both = {prop: {all/equip/scroll/stone/consume}, fragment: {all/equip/scroll/hero}}。
 ## 每 cell: {id, makeId, amount, category, type, [needAmount]}。
 ## 单机化：isEquipOpen 无 ban（源 ban_item 黑名单依赖 global_config，本项目不接）。
@@ -13,9 +14,9 @@ const CAT_REEL: String = "EQUIP.REEL"                # 卷轴
 const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"  # 消耗品
 const CAT_SOUL_STONE: String = "EQUIP.SOUL_STONE"    # 魂石
 const CAT_HERO: String = "BATTLE.HERO"               # 英雄（碎片产物是英雄时按 itemType 设）
-const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"        # 碎片（本项目 fragments 容器独立，items 不含）
+const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"        # 碎片（装备碎片；prop 页跳过，见 classify）
 
-# type: 1=prop（普通物品，items 容器）, 2=fragment（碎片，fragments 容器）— 源 list[k].type
+# type: 1=prop（普通物品）, 2=fragment（碎片域，Fragment 表命中）— 源 list[k].type
 const TYPE_PROP: int = 1
 const TYPE_FRAGMENT: int = 2
 
@@ -42,11 +43,21 @@ static func classify(pd: PlayerData, cm: Variant) -> Dictionary:
 			"category": category, "type": TYPE_PROP,
 		}
 		_push_to_tab(prop, _prop_tab_key(category), cell)
-	# type=2 fragment：遍历 fragments，反查 Fragment 表
+	# type=2 fragment：遍历 items 中 Fragment 表命中的碎片域（魂石+装备碎片；
+	# 2026-09-09 单账本根修——独立 fragments 容器退役，碎片计数即 pd.items），
+	# 反查 Fragment 表补配方。
 	var frag_table: Dictionary = cm.get_raw_table(&"Fragment")
-	var owned_frags: Dictionary = pd.hero_manager.fragments
-	for frag_id in owned_frags:
-		var amount: int = int(owned_frags[frag_id])
+	var frag_ids: Dictionary = {}
+	for tid_str in frag_table:
+		var frow: Variant = frag_table[tid_str]
+		if not frow is Dictionary or not str(tid_str).is_valid_int():
+			continue
+		frag_ids[int((frow as Dictionary).get(&"Fragment ID", 0))] = true
+	for item_id in pd.items:
+		if not frag_ids.has(int(item_id)):
+			continue
+		var frag_id := int(item_id)
+		var amount: int = int(pd.items[item_id])
 		if amount <= 0:
 			continue
 		if not _is_equip_open(int(frag_id), cm):

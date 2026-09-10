@@ -74,6 +74,7 @@ var save_hook: Callable = Callable()
 func _init(p_cm: ConfigManager) -> void:
 	cm = p_cm
 	hero_manager = HeroManager.new(cm)
+	hero_manager.items = items   # 碎片/魂石单账本（源 equip_qunty；serde from_dict 换实例后重注入）
 	crusade_manager = CrusadeManager.new(cm)
 	tutorial_manager = TutorialManager.new(TutorialData.default_steps())
 	task_manager = TaskManager.new()
@@ -278,7 +279,7 @@ func _owns_hero(tid: int) -> bool:
 
 
 ## 反查 Fragment 表得英雄碎片物品 id（源 Fragment[tid]["Fragment ID"]）。
-## 抽卡产 heroId（源 local_server:1761），本项目 fragments 容器 key 是 Fragment ID，需转换。
+## 抽卡产 heroId（源 local_server:1761），碎片账本 key 是 Fragment ID，需转换。
 func _fragment_id_for_hero(tid: int) -> int:
 	return int(cm.get_raw_table(&"Fragment").get(str(tid), {}).get(&"Fragment ID", 0))
 

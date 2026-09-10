@@ -96,17 +96,29 @@ func test_classify_fragment_hero() -> void:
 	assert_true(int(cell["needAmount"]) > 0, "needAmount 反查 Fragment Count")
 
 
-# ── 双容器隔离 + 过滤 ──
+# ── 单账本分流（2026-09-09 根修：独立 fragments 容器退役，碎片计数即 pd.items）──
+# 装备碎片（Category=FRAGMENT）不进 prop 页、经 Fragment 表命中进 fragment 页（源 type 语义）。
 
-func test_classify_double_container_isolation() -> void:
+# 从 Fragment 表取一个装备产物配方（tid>=100）：{tid, frag_id}（其 Equip.Category=FRAGMENT）。
+func _find_equip_fragment_recipe() -> Dictionary:
+	var raw: Dictionary = cm.get_raw_table(&"Fragment")
+	for tid_str in raw:
+		if int(tid_str) >= 100:
+			return {"tid": int(tid_str), "frag_id": int(raw[tid_str].get(&"Fragment ID", 0))}
+	return {}
+
+
+func test_classify_single_ledger_split() -> void:
 	var pd := PlayerData.new(cm)
 	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
-	var recipe: Dictionary = _find_hero_fragment_recipe()
+	var recipe: Dictionary = _find_equip_fragment_recipe()
+	assert_false(recipe.is_empty(), "Fragment 表有装备产物配方")
+	var frag_id: int = int(recipe["frag_id"])
 	pd.add_item(eid, 1)
-	pd.hero_manager.add_fragment(int(recipe["frag_id"]), 1)
+	pd.add_item(frag_id, 1)
 	var r: Dictionary = EquipmentClassifier.classify(pd, cm)
-	assert_eq((r["prop"]["all"] as Array).size(), 1, "prop 只收 items")
-	assert_eq((r["fragment"]["all"] as Array).size(), 1, "fragment 只收 fragments")
+	assert_eq((r["prop"]["all"] as Array).size(), 1, "装备碎片（FRAGMENT 类）不进 prop 页，prop 只收普通物品")
+	assert_eq((r["fragment"]["all"] as Array).size(), 1, "装备碎片经 Fragment 表命中 → fragment 页（同账本）")
 
 
 func test_classify_filter_zero_amount() -> void:
