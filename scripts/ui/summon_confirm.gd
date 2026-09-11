@@ -3,14 +3,17 @@ extends Control
 
 ## 召唤确认框（View 层）— 照源 heropackage.lua:160-172 clickMissHero showConfirmDialog
 ##（「召唤英雄需要花费 N 金币，是否召唤?」+ 取消/确认 → doSummon）。
-## 视觉复用 shop_refresh_confirm_content.tscn（shade/frame/msg/cancel/ok 通用确认框静态树，
+## 视觉复用 shop_refresh_confirm_content.tscn（shade/bg/line/msg/cancel/ok 通用确认框静态树，
 ## ShopRefreshConfirm 范式）；2026-09-09 召唤动画链补全（此前点击直接召唤无确认无动画）。
+## 2026-09-10 按钮变形根修：content 照源 dialog.lua 直译重建（120x49 按钮 + dialog_bg 贴图框）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_refresh_confirm_content.tscn")
 const CANCEL_LSTR: String = "CHATCONFIG.CANCEL"
-const CONFIRM_LSTR: String = "CHATCONFIG.CONFIRM"
+# 2026-09-10 照源修正：源 dialog.lua:304-310 rightText 默认 T(LSTR("FASTSELL.GOOD"))="好的"
+# （heropackage.lua clickMissHero 未传 rightText），非 CHATCONFIG.CONFIRM"确定"。
+const CONFIRM_LSTR: String = "FASTSELL.GOOD"
 const CANCEL_FALLBACK: String = "取消"
-const CONFIRM_FALLBACK: String = "确定"
+const CONFIRM_FALLBACK: String = "好的"
 # 绘制层置顶：盖宿主 content 内 relative z（hero_package tab label 15 最大）；恒低于
 # PopWindow 栈步进 100——并存弹窗栈序不受扰。输入命中走树序（dlg 恒最后 add）无需 z。
 const DIALOG_Z: int = 50

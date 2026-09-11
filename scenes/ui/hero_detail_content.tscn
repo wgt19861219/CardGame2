@@ -439,7 +439,7 @@ stretch_mode = 0
 
 [node name="UpgradeRankBtn" type="Button" parent="BaseLayer" unique_id=686800647]
 unique_name_in_owner = true
-theme_type_variation = &"HeroDetailTab"
+theme_type_variation = &"HeroDetailRankBtn"
 layout_mode = 0
 ; 源 window.lua:2095 upgrade Scale9Sprite @(335,155) 挂 ui.bg，scaleSize(100,42)
 ; → 中心 (198.5+335,462.5-155)=(533.5,307.5)（2026-08-22 Bg ÷CS 后回源；旧 528..628 系 960 时代遗留）。

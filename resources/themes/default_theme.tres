@@ -1,8 +1,5 @@
-[gd_resource type="Theme" load_steps=65 format=3]
+[gd_resource type="Theme" load_steps=79 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-n.png" id="1_detailn"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-a.png" id="2_detaila"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-pressed-n.png" id="3_detailp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="4_commentbg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="5_upg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png" id="6_upgm"]
@@ -20,6 +17,29 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button.png" id="18_pkgn"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_button_down.png" id="19_pkgp"]
 [ext_resource type="FontFile" path="res://resources/fonts/arial_unicode_ms.ttf" id="20_arialuni"]
+; ── 2026-09-10 二轮按钮高度根修：herodetail-upgrade 系九宫格烘焙成品图（assets/ui/baked/）──
+; 根因=实机（真 GPU）StyleBoxTexture.get_minimum_size() 返回 texture_margin 之和，Button
+; min=size 计入 → margin(57,38)+字高(28)=min(97,66) 把源 49/45 高按钮实机撑到 66+（四处
+; 确认框/equip 强化/碎片合成全族）；headless 下 sb_min=(8,8) 环境差异致 GUT 守卫假绿。
+; 修=九宫格语义离线烘焙为各按钮源尺寸成品图（帽原样+中段 LANCZOS，生成脚本见
+; 验收记录-召唤确认框按钮变形根修-2026-09-10 二轮节），margin=0 后 min=字高，尺寸直译生效。
+[ext_resource type="Texture2D" path="res://assets/ui/baked/confirm_btn_120x49_n.png" id="21_bkconfn"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/confirm_btn_120x49_p.png" id="22_bkconfp"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/stren_btn_125x45_n.png" id="23_bkstrn"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/stren_btn_125x45_p.png" id="24_bkstrp"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/select_hero_btn_110x45_n.png" id="25_bkseln"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/select_hero_btn_110x45_p.png" id="26_bkselp"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/fc_ok_btn_250x49_n.png" id="27_bkfcn"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/fc_ok_btn_250x49_p.png" id="28_bkfcp"]
+; ── 2026-09-11 herodetail-detail 系烘焙（英雄详情 tab/进阶觉醒/宝石返回；同机制，批 1 遗留
+; SB_detail top/bottom 互换截掉底帽 18px + 实机 min 撑高双重根因；三档尺寸各自烘焙）──
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_tab_btn_120x49_n.png" id="29_dtabn"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_tab_btn_120x49_a.png" id="30_dtaba"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_tab_btn_120x49_p.png" id="31_dtabp"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_rank_btn_100x42_n.png" id="32_drkn"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_rank_btn_100x42_p.png" id="33_drkp"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_stone_ok_btn_200x49_n.png" id="34_dson"]
+[ext_resource type="Texture2D" path="res://assets/ui/baked/detail_stone_ok_btn_200x49_p.png" id="35_dsop"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0oxu6"]
 
@@ -91,68 +111,72 @@ texture_margin_top = 25.0
 texture_margin_right = 65.0
 texture_margin_bottom = 25.0
 
-; hero_detail tab 底（试点遗留，批 1 终审必修 1 顺带修正公式）：herodetail-detail-*.png
-; 219x67，cap CCRectMake(15,15,138,19)（stonedetail.lua:561 / herodetail/window.lua:1406）
-; → left=15 top=67-15-19=33 right=219-15-138=66 bottom=15（top/bottom 曾按 y/H-y-h 误写互换）。
+; hero_detail tab 底：herodetail-detail-*.png 219x67，cap CCRectMake(15,15,138,19)
+; （stonedetail.lua:561 / herodetail/window.lua:1406）。2026-09-11 五轮判例订正：Cocos
+; CCRect y 从贴图底部起算（左下原点坐标系）→ 图像坐标 l=15 t=H-(y+h)=33 r=66 b=y=15；
+; 一轮"capRect 左上原点直译（t=15/b=33）"系误判（PIL 亮度验证未分辨上下方向），四轮按
+; 误口径烘焙出"细红芯+厚底座"=用户 F5 所见变形，五轮按正确口径重烘=红芯大头（用户 MuMu
+; 参考图实证）。批 1 公式 top=H-y-h 本就正确，批 1 期 SB_detail 真正病灶是实机 min 撑高。
+; margin=0 烘焙防 Button min 撑高不变；a 态源 124x50 凸边按 rect 120x49 烘焙记验收记录。
+; 生成脚本见 验收记录-召唤确认框按钮变形根修-2026-09-10.md 四/五轮节。
 [sub_resource type="StyleBoxTexture" id="SB_detail_n"]
-texture = ExtResource("1_detailn")
-texture_margin_left = 15.0
-texture_margin_top = 33.0
-texture_margin_right = 66.0
-texture_margin_bottom = 15.0
+texture = ExtResource("29_dtabn")
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_a"]
-texture = ExtResource("2_detaila")
-texture_margin_left = 15.0
-texture_margin_top = 33.0
-texture_margin_right = 66.0
-texture_margin_bottom = 15.0
+texture = ExtResource("30_dtaba")
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_p"]
-texture = ExtResource("3_detailp")
-texture_margin_left = 15.0
-texture_margin_top = 33.0
-texture_margin_right = 66.0
-texture_margin_bottom = 15.0
+texture = ExtResource("31_dtabp")
+
+; 进阶/觉醒按钮（源 window.lua:2095 upgrade 及 awake 同款 herodetail-detail-n
+; cap(15,15,138,19) scaleSize(100,42)）：与 tab 尺寸不同故独立 SB（帽和 48>42，
+; 烘焙时按 Godot margin 等比压缩为 t13/b29，中段 0 属预期）。
+[sub_resource type="StyleBoxTexture" id="SB_detail_rank_n"]
+texture = ExtResource("32_drkn")
+
+[sub_resource type="StyleBoxTexture" id="SB_detail_rank_p"]
+texture = ExtResource("33_drkp")
+
+; 宝石详情返回按钮（源 stonedetail.lua:561 ok scaleSize(200,49)）：
+; 同贴图第三档尺寸，独立 SB 防跨档拉伸。
+[sub_resource type="StyleBoxTexture" id="SB_detail_stone_ok_n"]
+texture = ExtResource("34_dson")
+
+[sub_resource type="StyleBoxTexture" id="SB_detail_stone_ok_p"]
+texture = ExtResource("35_dsop")
 
 ; exercise 入口按钮底（批 1 Task 1）：act_comment_bg 源语义即文字行底图（vit 行/advise 行），
 ; 无 patch 等比整体缩放（182x44 → 142x34.4 = ÷CS），按钮 rect 须等于显示尺寸防变形。
 [sub_resource type="StyleBoxTexture" id="SB_comment"]
 texture = ExtResource("4_commentbg")
 
-; equip_strengthen 强化按钮底（批 1 Task 5）：源 createStrenButton:867-880 stren/faststren
-; Scale9 herodetail-upgrade capInsets CCRectMake(20,20,53,29)（贴图像素空间，97x67 →
-; top=67-20-29=18 / bottom=y=20，口径同 SB_detail_n）。
+; equip_strengthen 强化按钮底：源 createStrenButton:867-880 stren/faststren Scale9
+; herodetail-upgrade capInsets CCRectMake(20,20,53,29)（97x67）。2026-09-10 二轮换烘焙
+; 成品图 stren_btn_125x45（帽 20/20/24/18 烘入图，margin=0 防 Button min 撑高——见
+; 头部 ext_resource 21-28 注释）；按钮 rect 须为 125x45 与图等大（draw_center 整绘）。
 [sub_resource type="StyleBoxTexture" id="SB_upgrade_n"]
-texture = ExtResource("5_upg")
-texture_margin_left = 20.0
-texture_margin_top = 18.0
-texture_margin_right = 24.0
-texture_margin_bottom = 20.0
+texture = ExtResource("23_bkstrn")
 
 [sub_resource type="StyleBoxTexture" id="SB_upgrade_p"]
-texture = ExtResource("6_upgm")
-texture_margin_left = 20.0
-texture_margin_top = 18.0
-texture_margin_right = 24.0
-texture_margin_bottom = 20.0
+texture = ExtResource("24_bkstrp")
 
-; fragment_compose 合成按钮底（批 1 Task 6）：源 fragmentcompose.lua:426-465 ok/ok_down
-; Scale9 herodetail-upgrade capInsets CCRectMake(20,20,20,20)（贴图 97x67 →
-; top=67-40=27 / bottom=y=20；cap 与 EquipStrenButton(53,29) 不同故独立）。
+; equip_strengthen 选英雄按钮（源 herodetail-upgrade 110x45 同 cap）：与 stren 尺寸不同
+; 故独立 SB（2026-09-10 二轮从 EquipStrenButton 拆出，SelectHeroBtn 走本样式）。
+[sub_resource type="StyleBoxTexture" id="SB_equip_select_n"]
+texture = ExtResource("25_bkseln")
+
+[sub_resource type="StyleBoxTexture" id="SB_equip_select_p"]
+texture = ExtResource("26_bkselp")
+
+; fragment_compose 合成按钮底：源 fragmentcompose.lua:426-465 ok/ok_down Scale9
+; herodetail-upgrade capInsets CCRectMake(20,20,20,20)（97x67 → l=20 t=20 r=57 b=67-40=27）。
+; 2026-09-10 二轮换烘焙成品图 fc_ok_btn_250x49（margin=0 防 min 撑高）+top/bottom 互换
+; 一并随烘焙口径修正（旧 27/20 系批 1 翻转公式误写）。
 [sub_resource type="StyleBoxTexture" id="SB_fc_ok_n"]
-texture = ExtResource("5_upg")
-texture_margin_left = 20.0
-texture_margin_top = 27.0
-texture_margin_right = 57.0
-texture_margin_bottom = 20.0
+texture = ExtResource("27_bkfcn")
 
 [sub_resource type="StyleBoxTexture" id="SB_fc_ok_p"]
-texture = ExtResource("6_upgm")
-texture_margin_left = 20.0
-texture_margin_top = 27.0
-texture_margin_right = 57.0
-texture_margin_bottom = 20.0
+texture = ExtResource("28_bkfcp")
 
 ; equip_detail 段面板底（批 1 Task 7）：源 equipdetail.lua :152/188/228
 ; createScale9Sprite equip_detail_panel_bg capInsets CCRectMake(10,30,400,65)
@@ -282,22 +306,15 @@ texture_margin_top = 24.0
 texture_margin_right = 48.0
 texture_margin_bottom = 10.0
 
-; stage_reset_confirm 确认按钮（批 3 Task 1）：源 dialog.lua confirmDialog :276-317
-; 左右按钮 Scale9 herodetail-upgrade/mask cap CCRectMake(20,20,40,29)（97x67 →
-; left=20 top=67-20-29=18 right=97-20-40=37 bottom=20，批 1 公式）。
+; stage_reset_confirm 确认按钮：源 dialog.lua confirmDialog :276-317 左右按钮 Scale9
+; herodetail-upgrade/mask cap CCRectMake(20,20,40,29)（97x67）。2026-09-10 二轮换烘焙
+; 成品图 confirm_btn_120x49（margin=0 防 Button min 撑高 49→66）；四处确认框弹窗
+; （stage_reset/crusade_reset/shop_refresh+summon 共用 content）统一走本样式。
 [sub_resource type="StyleBoxTexture" id="SB_dialog_confirm_n"]
-texture = ExtResource("5_upg")
-texture_margin_left = 20.0
-texture_margin_top = 18.0
-texture_margin_right = 37.0
-texture_margin_bottom = 20.0
+texture = ExtResource("21_bkconfn")
 
 [sub_resource type="StyleBoxTexture" id="SB_dialog_confirm_p"]
-texture = ExtResource("6_upgm")
-texture_margin_left = 20.0
-texture_margin_top = 18.0
-texture_margin_right = 37.0
-texture_margin_bottom = 20.0
+texture = ExtResource("22_bkconfp")
 
 ; stage_detail 扫荡按钮（批 3 Task 6）：源 stagedetail.lua createRepeatBattle:375-448
 ; some/once Scale9Sprite tavern_button_normal(166x63) cap CCRectMake(20,15,90,15)
@@ -633,6 +650,13 @@ HeroDetailTabActive/base_type = &"Button"
 HeroDetailTabActive/styles/normal = SubResource("SB_detail_a")
 HeroDetailTabActive/styles/hover = SubResource("SB_detail_a")
 HeroDetailTabActive/styles/pressed = SubResource("SB_detail_p")
+; 进阶/觉醒按钮（100x42 烘焙图，2026-09-11 自 HeroDetailTab 拆出；字色/字号同
+; HeroDetailTabLabel 系——tscn/fx 子节点 Label 填文字）
+HeroDetailRankBtn/base_type = &"Button"
+HeroDetailRankBtn/styles/normal = SubResource("SB_detail_rank_n")
+HeroDetailRankBtn/styles/hover = SubResource("SB_detail_rank_n")
+HeroDetailRankBtn/styles/pressed = SubResource("SB_detail_rank_p")
+HeroDetailRankBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 HeroDetailTabLabel/base_type = &"Label"
 HeroDetailTabLabel/colors/font_color = Color(0, 0, 0, 1)
 HeroDetailTabLabel/colors/font_outline_color = Color(1, 1, 1, 1)
@@ -801,18 +825,18 @@ StoneDetailBoardLabel/font_sizes/font_size = 18
 StoneDetailEliteLabel/base_type = &"Label"
 StoneDetailEliteLabel/colors/font_color = Color(1, 0, 0, 1)
 StoneDetailEliteLabel/font_sizes/font_size = 18
-; 返回按钮（源 :556-600 ok Scale9 herodetail-detail-n cap(15,15,138,19) → 复用
-; SB_detail_n/SB_detail_p 同贴图同 cap + ok_label fontinfo ui_normal_button
-; 17 号白字 + 阴影(63,5,0) 偏移(0,2)）
+; 返回按钮（源 :556-600 ok Scale9 herodetail-detail-n cap(15,15,138,19) scaleSize 200x49
+; + ok_label fontinfo ui_normal_button 17 号白字 + 阴影(63,5,0) 偏移(0,2)）：
+; 2026-09-11 自 SB_detail_n/p 拆出 200x49 独立烘焙档 SB_detail_stone_ok_n/p。
 StoneDetailOkButton/base_type = &"Button"
 StoneDetailOkButton/colors/font_color = Color(1, 1, 1, 1)
 StoneDetailOkButton/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1)
 StoneDetailOkButton/constants/shadow_offset_x = 0
 StoneDetailOkButton/constants/shadow_offset_y = 2
 StoneDetailOkButton/font_sizes/font_size = 17
-StoneDetailOkButton/styles/normal = SubResource("SB_detail_n")
-StoneDetailOkButton/styles/hover = SubResource("SB_detail_n")
-StoneDetailOkButton/styles/pressed = SubResource("SB_detail_p")
+StoneDetailOkButton/styles/normal = SubResource("SB_detail_stone_ok_n")
+StoneDetailOkButton/styles/hover = SubResource("SB_detail_stone_ok_n")
+StoneDetailOkButton/styles/pressed = SubResource("SB_detail_stone_ok_p")
 StoneDetailOkButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 ; ── equip_strengthen 两件套（批 1 Task 5，2026-08-15）──
 ; 通用 18 号白+黑阴影(0,2)（源 :817-866 no_cost/money/rmb/no_fastcost + :1456-1473 装备名同规格）
@@ -882,6 +906,14 @@ EquipStrenButton/styles/hover = SubResource("SB_upgrade_n")
 EquipStrenButton/styles/pressed = SubResource("SB_upgrade_p")
 EquipStrenButton/styles/disabled = SubResource("SB_upgrade_n")
 EquipStrenButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; equip_strengthen 选英雄按钮（110x45 烘焙图，2026-09-10 二轮自 EquipStrenButton 拆出；
+; 字色/字号同 EquipStrenButton 旧口径——tscn 自带 SelectHeroBtnLabel 子节点填文字）
+EquipSelectHeroBtn/base_type = &"Button"
+EquipSelectHeroBtn/styles/normal = SubResource("SB_equip_select_n")
+EquipSelectHeroBtn/styles/hover = SubResource("SB_equip_select_n")
+EquipSelectHeroBtn/styles/pressed = SubResource("SB_equip_select_p")
+EquipSelectHeroBtn/styles/disabled = SubResource("SB_equip_select_n")
+EquipSelectHeroBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 ; ── fragment_compose 两件套（批 1 Task 6，2026-08-15）──
 ; name 标题（源 :273-281 size18 ccc3(184,6,6)）
 FragmentComposeNameLabel/base_type = &"Label"
@@ -1761,14 +1793,6 @@ LadderTimeLabel20/font_sizes/font_size = 20
 LadderCreamLabel18/base_type = &"Label"
 LadderCreamLabel18/colors/font_color = Color(1, 0.917647, 0.776471, 1)
 LadderCreamLabel18/font_sizes/font_size = 18
-; 商店刷新确认框双按钮（2026-08-22 巡检：运行时 UiScale9Button.apply_with_label 退役迁移，
-; 照 MailOverfullBtn 先例；样式复用 SB_upgrade_n/p[herodetail-upgrade 三态，equip_strengthen
-; 先例 cap(20,20,53,29)]，字色/字号同 overfull 确认系 ccc3(239,230,209) 20）
-ShopConfirmBtn/base_type = &"Button"
-ShopConfirmBtn/colors/font_color = Color(0.937255, 0.901961, 0.819608, 1)
-ShopConfirmBtn/font_sizes/font_size = 20
-ShopConfirmBtn/styles/normal = SubResource("SB_upgrade_n")
-ShopConfirmBtn/styles/hover = SubResource("SB_upgrade_n")
-ShopConfirmBtn/styles/pressed = SubResource("SB_upgrade_p")
-ShopConfirmBtn/styles/disabled = SubResource("SB_upgrade_n")
-ShopConfirmBtn/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
+; （2026-09-10 召唤确认框根修：旧 ShopConfirmBtn 已删——cap 误用 equip_strengthen
+; 口径 right=24（源 dialog 确认框 cap w=40 → right=37）+ 自创 90x35 尺寸，弹窗按钮
+; 端头拉宽/内框方折的根因；通用确认框统一改走 DialogConfirmBtn，见 SB_dialog_confirm_n 注释）

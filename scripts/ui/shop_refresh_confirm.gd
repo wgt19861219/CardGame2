@@ -11,9 +11,11 @@ extends Control
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/shop_refresh_confirm_content.tscn")
 const CANCEL_LSTR: String = "CHATCONFIG.CANCEL"
-const CONFIRM_LSTR: String = "CHATCONFIG.CONFIRM"
+# 2026-09-10 照源修正：源 dialog.lua:304-310 rightText 默认 T(LSTR("FASTSELL.GOOD"))="好的"
+# （market/shop.lua doClickRefresh 未传 rightText），非 CHATCONFIG.CONFIRM"确定"。
+const CONFIRM_LSTR: String = "FASTSELL.GOOD"
 const CANCEL_FALLBACK: String = "取消"   # cm 未注入降级（源同样中文）
-const CONFIRM_FALLBACK: String = "确定"
+const CONFIRM_FALLBACK: String = "好的"
 
 signal confirmed
 
@@ -40,9 +42,10 @@ func set_message(text: String, p_cm: Variant = null) -> void:
 		_msg_label.text = text
 
 
-# 建 UI 内容：静态节点（shade/frame/msg/cancel/ok）从 .tscn instantiate（位置/size .tscn 固化）。
-# cancel/ok 按钮样式走 theme variation ShopConfirmBtn（tscn 声明三态，2026-08-22 巡检迁移
-# 旧运行时 UiScale9Button.apply_with_label，照 MailOverfullBtn 先例），此处只填文字。
+# 建 UI 内容：静态节点（shade/bg/line/msg/cancel/ok）从 .tscn instantiate（位置/size .tscn 固化）。
+# 2026-09-10 召唤按钮变形根修：content 照源 dialog.lua 直译重建（dialog_bg 贴图框 + 120x49
+# 按钮 + line 分隔线，同构 stage_reset_confirm_content.tscn）；cancel/ok 样式走 theme
+# variation DialogConfirmBtn（tscn 声明三态），此处只填文字。
 func _build_content() -> void:
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	add_child(content)

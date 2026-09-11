@@ -1,56 +1,79 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene format=3 load_steps=2]
 
-[node name="ShopRefreshConfirmContent" type="Control"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_bg.png" id="1_7xkn0"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_line.png" id="2_nbvvc"]
+
+[node name="ShopRefreshConfirmContent" type="Control" unique_id=1334912320]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
+
+[node name="Bg" type="TextureRect" parent="." unique_id=1593403855]
+layout_mode = 0
+offset_left = 225.56
+offset_top = 129.56
+offset_right = 574.44
+offset_bottom = 350.44
+mouse_filter = 2
+texture = ExtResource("1_7xkn0")
+expand_mode = 1
+
 
 [node name="Shade" type="ColorRect" parent="."]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.5)
+color = Color(0, 0, 0, 0.588235)
 mouse_filter = 2
+z_index = -1
 
-[node name="Frame" type="Panel" parent="."]
-layout_mode = 3
-offset_left = 250.0
-offset_top = 150.0
-offset_right = 550.0
-offset_bottom = 300.0
+[node name="Line" type="TextureRect" parent="Bg" unique_id=1847190911]
+layout_mode = 0
+offset_left = 14.73
+offset_top = 144.32
+offset_right = 329.27
+offset_bottom = 147.44
+mouse_filter = 2
+texture = ExtResource("2_nbvvc")
+expand_mode = 1
 
-[node name="MsgLabel" type="Label" parent="Frame"]
+[node name="CancelBtn" type="Button" parent="Bg" unique_id=869248847]
 unique_name_in_owner = true
-layout_mode = 3
-offset_left = 0.0
-offset_top = 20.0
-offset_right = 300.0
-offset_bottom = 75.0
-horizontal_alignment = 1
+layout_mode = 0
+offset_left = 40.0
+offset_top = 152.38
+offset_right = 160.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "取消"
+mouse_filter = 0
+
+[node name="OkBtn" type="Button" parent="Bg" unique_id=521826493]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 190.0
+offset_top = 152.38
+offset_right = 310.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "好的"
+mouse_filter = 0
+
+[node name="MsgLabel" type="Label" parent="Bg" unique_id=1445845989]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 23.38
+offset_right = 330.0
+offset_bottom = 148.38
+theme_type_variation = &"DialogMsgLabel"
+text = "花费钻石刷新？"
+horizontal_alignment = 0
 vertical_alignment = 1
 autowrap_mode = 3
 mouse_filter = 2
-text = "花费钻石刷新？"
-
-[node name="CancelBtn" type="Button" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 40.0
-offset_top = 90.0
-offset_right = 130.0
-offset_bottom = 125.0
-mouse_filter = 0
-theme_type_variation = &"ShopConfirmBtn"
-
-[node name="OkBtn" type="Button" parent="Frame"]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 170.0
-offset_top = 90.0
-offset_right = 260.0
-offset_bottom = 125.0
-mouse_filter = 0
-theme_type_variation = &"ShopConfirmBtn"
