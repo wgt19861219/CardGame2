@@ -142,7 +142,8 @@ offset_left = 80.0
 offset_top = 187.5
 offset_right = 190.0
 offset_bottom = 232.5
-theme_type_variation = &"EquipStrenButton"
+; 2026-09-10 二轮：110x45 烘焙图独立样式（与 stren 125x45 尺寸不同拆分，防 min 撑高）
+theme_type_variation = &"EquipSelectHeroBtn"
 mouse_filter = 0
 
 [node name="SelectHeroBtnLabel" type="Label" parent="SelectHeroBtn"]

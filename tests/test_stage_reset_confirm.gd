@@ -91,7 +91,9 @@ func test_content_draw_order() -> void:
 # theme variation 接线（GUT 下节点级不解析 variation，读 tres 文本表项）。
 # 源按钮字：dialog.lua:285-288 createttf(text,20,ed.selfFont) 白 normalColor +
 # 阴影 ccc3(63,5,0) 偏移 (1,2)；SB cap CCRectMake(20,20,40,29)（97x67 纹理 →
-# left=20 top=67-20-29=18 right=97-20-40=37 bottom=20，批 1 公式）。
+# left=20 top=67-20-29=18 right=97-20-40=37 bottom=20，批 1 公式；2026-09-11 五轮
+# 判例订正：Cocos CCRect y 从贴图底部起算，批 1 公式 top=H-y-h 本就正确——一轮
+# "capRect 左上原点"系误判曾反向，五轮全部烘焙图已按正确口径 t18/b20 重烘）。
 func test_theme_variations_wired() -> void:
 	var t: String = FileAccess.get_file_as_string(THEME_PATH)
 	assert_true(t.contains("DialogConfirmBtn/font_sizes/font_size = 20"),
@@ -107,10 +109,15 @@ func test_theme_variations_wired() -> void:
 	var sb_n: int = t.find("SB_dialog_confirm_n")
 	assert_gt(sb_n, 0, "SB_dialog_confirm_n sub_resource 存在")
 	var sb_block: String = t.substr(sb_n - 60, 400)
-	assert_true(sb_block.contains("texture_margin_left = 20.0"), "SB margin left=源 cap.x=20")
-	assert_true(sb_block.contains("texture_margin_top = 18.0"), "SB margin top=67-20-29=18（批 1 公式）")
-	assert_true(sb_block.contains("texture_margin_right = 37.0"), "SB margin right=97-20-40=37")
-	assert_true(sb_block.contains("texture_margin_bottom = 20.0"), "SB margin bottom=源 cap.y=20")
+	# 2026-09-10 二轮：换烘焙成品图 confirm_btn_120x49（帽 20/20/37/18 已烘入图），
+	# texture_margin 必须为 0——实机 StyleBoxTexture.get_minimum_size()=margin 之和计入
+	# Button min，margin(57,38)+字高 28=min(97,66) 会把源 49 高按钮撑到 66（四处确认框
+	# 全族偏高+文字相对红芯偏移的根因）；headless sb_min=(8,8) 环境差异致旧 margin 断言
+	# 无法暴露——守卫只能锁 theme 静态构成（margin=0+烘焙图），实机行为靠 bridge 探针。
+	assert_true(sb_block.contains('texture = ExtResource("21_bkconfn")'),
+		"SB normal=烘焙图 confirm_btn_120x49_n（九宫格帽已烘入）")
+	assert_false(sb_block.contains("texture_margin_left"),
+		"SB 无 texture_margin（margin 计入 Button min size 致实机撑高，禁回潮）")
 	assert_true(t.contains("DialogMsgLabel/font_sizes/font_size = 20"),
 		"DialogMsgLabel 字号 20（源 createttf(text,20)）")
 	assert_true(t.contains("DialogMsgLabel/colors/font_color = Color(1, 1, 1, 1)"),

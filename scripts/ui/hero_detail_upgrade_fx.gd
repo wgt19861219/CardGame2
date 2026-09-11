@@ -448,7 +448,7 @@ static func setup_awake_button(base_layer: Control, hero: HeroInstance, cm: Vari
 	if not can_show:
 		return
 	if awake_btn is Button:
-		(awake_btn as Button).theme_type_variation = &"HeroDetailTab"   # 样式进 theme variation（两件套范式）
+		(awake_btn as Button).theme_type_variation = &"HeroDetailRankBtn"   # 样式进 theme variation（两件套范式；2026-09-11 自 HeroDetailTab 拆出 100x42 档）
 		var lbl: Label = awake_btn.get_node_or_null("%AwakeLabel") as Label
 		if lbl != null:
 			lbl.text = String(cm.get_lstr(awake_lstr)) if cm != null and cm.has_method("get_lstr") else awake_fallback
