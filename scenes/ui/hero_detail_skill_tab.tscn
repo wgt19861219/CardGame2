@@ -110,6 +110,11 @@ offset_bottom = 160.5
 ignore_texture_size = true
 stretch_mode = 0
 
+; 2026-09-11 三轮容器基准重排（用户设计规范）：SkillNBoard 四角铆钉中心围成内容容器
+; y 100.9-158.7（bg_1 纹理铆钉 (13.7,13.9)/(45.1,13.8)/(13.6,45.8)/(46.1,45.6) 经 NinePatch 角区
+; 1:1 映射）；名称可见顶贴容器顶、金币+金额可见底贴容器底、lv 居名称/消耗正中（上下间隙
+; 对称 8.2px）、升级按钮可见中心=容器中心线 129.8 与左侧图标框（129.4）对称锚定；消耗组内部
+; 维持二轮「数字可见中心=金币可见中心」。行内元素按行距 90 递推同步（以下二轮注释为历史层次）。
 ; 源 skillstren.lua:422 nameLabel 18pt 左锚 @ccp(365,ori_height+20-90(i-1))（AccentGoldRowLabel 基 16 → override 18）。
 [node name="Skill1Name" type="Label" parent="."]
 unique_name_in_owner = true
@@ -117,9 +122,9 @@ theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 theme_override_font_sizes/font_size = 18
 offset_left = 365
-offset_top = 100
+offset_top = 94.4
 offset_right = 485
-offset_bottom = 120
+offset_bottom = 114.4
 text = "技能名1"
 
 [node name="Skill1Lvl" type="Label" parent="."]
@@ -127,18 +132,20 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 365
-offset_top = 125
+offset_top = 119.4
 offset_right = 485
-offset_bottom = 145
+offset_bottom = 139.4
 text = "lv.1"
 
+; 2026-09-11 三轮容器基准：升级按钮可见中心=内容容器中心线 129.8（与左侧图标框 129.4 对称
+; 锚定容器）；二轮「源中点设计」注释作废保留于验收记录。源 skillstren.lua:345-353。
 [node name="Skill1Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 470.5
-offset_top = 119
+offset_top = 105
 offset_right = 519.5
-offset_bottom = 171
+offset_bottom = 157
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -188,9 +195,9 @@ theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 theme_override_font_sizes/font_size = 18
 offset_left = 365
-offset_top = 190
+offset_top = 184.4
 offset_right = 485
-offset_bottom = 210
+offset_bottom = 204.4
 text = "技能名2"
 
 [node name="Skill2Lvl" type="Label" parent="."]
@@ -198,18 +205,18 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 365
-offset_top = 215
+offset_top = 209.4
 offset_right = 485
-offset_bottom = 235
+offset_bottom = 229.4
 text = "lv.1"
 
 [node name="Skill2Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 470.5
-offset_top = 209
+offset_top = 195
 offset_right = 519.5
-offset_bottom = 261
+offset_bottom = 247
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -259,9 +266,9 @@ theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 theme_override_font_sizes/font_size = 18
 offset_left = 365
-offset_top = 280
+offset_top = 274.4
 offset_right = 485
-offset_bottom = 300
+offset_bottom = 294.4
 text = "技能名3"
 
 [node name="Skill3Lvl" type="Label" parent="."]
@@ -269,18 +276,18 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 365
-offset_top = 305
+offset_top = 299.4
 offset_right = 485
-offset_bottom = 325
+offset_bottom = 319.4
 text = "lv.1"
 
 [node name="Skill3Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 470.5
-offset_top = 299
+offset_top = 285
 offset_right = 519.5
-offset_bottom = 351
+offset_bottom = 337
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -330,9 +337,9 @@ theme_type_variation = &"AccentGoldRowLabel"
 layout_mode = 0
 theme_override_font_sizes/font_size = 18
 offset_left = 365
-offset_top = 370
+offset_top = 364.4
 offset_right = 485
-offset_bottom = 390
+offset_bottom = 384.4
 text = "技能名4"
 
 [node name="Skill4Lvl" type="Label" parent="."]
@@ -340,18 +347,18 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 365
-offset_top = 395
+offset_top = 389.4
 offset_right = 485
-offset_bottom = 415
+offset_bottom = 409.4
 text = "lv.1"
 
 [node name="Skill4Btn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 470.5
-offset_top = 389
+offset_top = 375
 offset_right = 519.5
-offset_bottom = 441
+offset_bottom = 427
 ignore_texture_size = true
 texture_normal = ExtResource("5_upbtn")
 texture_pressed = ExtResource("6_upbtnp")
@@ -361,23 +368,26 @@ stretch_mode = 0
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 361.5
-offset_top = 149
+offset_top = 144.4
 offset_right = 378.5
-offset_bottom = 165
+offset_bottom = 160.4
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
 
 ; 源 skillstren.lua:384-393 cost Label 15pt 中心锚 @ccp(400,ori_height-27-90(i-1)) → 水平居中对齐；
 ; 金币图标 scale 0.5 @ccp(370,...) 位置照源已对（goldicon 43×40px÷CS×0.5≈17×16）。
+; 2026-09-11 二轮中心线订正（用户裁决"中心对齐"思想）：金币可见内容中心 157.4（纹理顶 5px
+; 透明边），数字字形中心=盒顶+11.95 实测；盒顶 145.5 令数字中心=金币中心（源 skillstren.lua:384-393
+; 图标与 Label 同 y 中心锚=中心对齐设计）。一轮"底部平齐"系误读用户诉求，已订正。
 [node name="Skill1Cost" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 horizontal_alignment = 1
 offset_left = 370
-offset_top = 149
+offset_top = 140.9
 offset_right = 430
-offset_bottom = 165
+offset_bottom = 156.9
 mouse_filter = 2
 theme_override_font_sizes/font_size = 15
 
@@ -386,18 +396,18 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 397
-offset_top = 125
+offset_top = 119.4
 offset_right = 460
-offset_bottom = 145
+offset_bottom = 139.4
 mouse_filter = 2
 
 [node name="Skill2MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 361.5
-offset_top = 239
+offset_top = 234.4
 offset_right = 378.5
-offset_bottom = 255
+offset_bottom = 250.4
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -407,9 +417,9 @@ unique_name_in_owner = true
 layout_mode = 0
 horizontal_alignment = 1
 offset_left = 370
-offset_top = 239
+offset_top = 230.9
 offset_right = 430
-offset_bottom = 255
+offset_bottom = 246.9
 mouse_filter = 2
 theme_override_font_sizes/font_size = 15
 
@@ -418,18 +428,18 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 397
-offset_top = 215
+offset_top = 209.4
 offset_right = 460
-offset_bottom = 235
+offset_bottom = 229.4
 mouse_filter = 2
 
 [node name="Skill3MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 361.5
-offset_top = 329
+offset_top = 324.4
 offset_right = 378.5
-offset_bottom = 345
+offset_bottom = 340.4
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -439,9 +449,9 @@ unique_name_in_owner = true
 layout_mode = 0
 horizontal_alignment = 1
 offset_left = 370
-offset_top = 329
+offset_top = 320.9
 offset_right = 430
-offset_bottom = 345
+offset_bottom = 336.9
 mouse_filter = 2
 theme_override_font_sizes/font_size = 15
 
@@ -450,18 +460,18 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 397
-offset_top = 305
+offset_top = 299.4
 offset_right = 460
-offset_bottom = 325
+offset_bottom = 319.4
 mouse_filter = 2
 
 [node name="Skill4MoneyIcon" type="TextureRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 361.5
-offset_top = 419
+offset_top = 414.4
 offset_right = 378.5
-offset_bottom = 435
+offset_bottom = 430.4
 mouse_filter = 2
 expand_mode = 1
 texture = ExtResource("7_gold")
@@ -471,9 +481,9 @@ unique_name_in_owner = true
 layout_mode = 0
 horizontal_alignment = 1
 offset_left = 370
-offset_top = 419
+offset_top = 410.9
 offset_right = 430
-offset_bottom = 435
+offset_bottom = 426.9
 mouse_filter = 2
 theme_override_font_sizes/font_size = 15
 
@@ -482,9 +492,9 @@ unique_name_in_owner = true
 theme_type_variation = &"WhiteLabel16"
 layout_mode = 0
 offset_left = 397
-offset_top = 395
+offset_top = 389.4
 offset_right = 460
-offset_bottom = 415
+offset_bottom = 409.4
 mouse_filter = 2
 
 
