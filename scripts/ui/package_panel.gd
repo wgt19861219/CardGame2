@@ -6,7 +6,9 @@ extends PopWindow
 ## Logic 走 EquipmentClassifier.classify（双容器适配，第 22 段交付）。
 ## 批 2 两件套（2026-08-16 核对级）：主壳静态化进 package_content.tscn（bg/equipbg/close/
 ## handbook/tab/scroll/grid 位置贴图字号全在 tscn+theme），panel 只做业务+信号 connect+fill；
-## 物品 cell 动态 fill 挂 %Grid。cell 点击 emit cell_clicked（接 equipboard 浮层）。
+## 物品 cell 动态 fill 挂 %Grid。cell 点击 emit cell_clicked（接 equipboard 浮层）：
+## press 记录 → release 位移 <8px 才 emit（源 draglist.lua:906 not dragMode 才 doClickIn），
+## 列表拖拽滚动走 DragScrollHelper（2026-09-12 根修，hero_package/ranklist 同范式）。
 ## 单机化：去掉 lsr 统计上报 + framework statusbar 返回（自带关闭按钮，源 close 注释掉靠 framework）。
 
 # ── identity（源 create(identity)）──
@@ -67,6 +69,9 @@ var _cur_tab: String = "all"
 var _tab_buttons: Dictionary = {}  # tab_key(String) -> TextureButton
 var _tab_labels: Dictionary = {}   # tab_key(String) -> Label（运行时跟随 button position/size）
 var _grid: GridContainer = null
+var _scroll: ScrollContainer = null     # %ScrollHost（拖拽滚动宿主）
+var _drag_state: Dictionary = {}        # DragScrollHelper 拖拽滚动跨帧基准
+var _cell_press: Variant = null         # cell press 位置基准（tap 位移判定）
 var _status_refs: Dictionary = {}   # 已废弃，保留兼容（HudOverlay autoload 接管 HUD）
 var _content: Control = null        # .tscn instantiate 根节点（cleanup 引用）
 var _equipboard: EquipboardPanel = null   # 单例装备浮层（源 self.equipLayer，点 cell refresh 非重建）
@@ -99,6 +104,18 @@ func _build_content() -> void:
 	_setup_handbook_button()
 	_setup_tab_buttons()
 	_grid = _content.get_node("%Grid") as GridContainer
+	_scroll = _content.get_node("%ScrollHost") as ScrollContainer
+
+
+# 拖拽滚动（2026-09-12：Godot 4 ScrollContainer 桌面仅滚轮/滚动条无拖拽，源 draglist
+# 手势补齐；hero_package/ranklist/evolve_equip 同范式）。equipboard 浮层打开时不转发
+# （源 bt 触摸优先级：顶层浮层吃掉事件，背后列表不响应）。
+func _input(event: InputEvent) -> void:
+	if _scroll == null:
+		return
+	if _equipboard != null and is_instance_valid(_equipboard):
+		return
+	DragScrollHelper.handle_input(_scroll, event, _drag_state)
 
 
 # %HandbookBtn 常驻 tscn（三态/字号走 theme variation），fragment 时 visible=false；
@@ -290,10 +307,19 @@ func _center_cell_icon(cell: Control) -> void:
 		return
 
 
+# cell 点击（2026-09-12 根修）：press 记录 → release 位移 <8px 才触发（DragScrollHelper.is_tap）。
+# 旧实现按下即 emit，想按住拖动滚动时起始 press 误触弹 equipboard、列表没法拖。
+# 源 draglist.lua:906 touchEnded 且 not dragMode 才 doClickIn（tap 语义照译，hero_package 同范式）。
 func _on_cell_gui_input(event: InputEvent, cell_data: Dictionary) -> void:
-	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		AudioPlayer.play_sfx("common_click_feedback")
-		cell_clicked.emit(cell_data)
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var mb := event as InputEventMouseButton
+		if mb.pressed:
+			_cell_press = mb.global_position
+		else:
+			if DragScrollHelper.is_tap(_cell_press, mb.global_position):
+				AudioPlayer.play_sfx("common_click_feedback")
+				cell_clicked.emit(cell_data)
+			_cell_press = null
 
 
 func _on_close_pressed() -> void:

@@ -601,3 +601,84 @@ func test_tab_global_position() -> void:
 	assert_almost_eq(hb.global_position.x, 670.0, 0.5, "HandbookBtn global x")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── 列表拖拽滚动 + cell tap 判定（2026-09-12 根修：按下即弹 equipboard + ScrollContainer
+#    桌面无拖拽两个缺口；源 draglist.lua:906 not dragMode 才 doClickIn，
+#    照 hero_package/ranklist 修复轮四范式）──
+
+static func _mb(pressed: bool, pos: Vector2) -> InputEventMouseButton:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = pressed
+	ev.global_position = pos
+	ev.position = pos
+	return ev
+
+
+# 纯按下（未释放）不弹 equipboard：拖拽滚动的起始 press 不误触。
+func test_cell_press_only_does_not_open_equipboard() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	panel._on_cell_gui_input(_mb(true, Vector2(300, 200)), {"id": eid, "amount": 1, "type": 1})
+	assert_null(panel._equipboard, "纯 press 不弹 equipboard（源 draglist release 才 doClickIn）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 按住拖动（release 位移 >8px 阈值）不触发详情：拖拽滚动全程可放心按在格子上。
+func test_cell_drag_release_does_not_open_equipboard() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	panel._on_cell_gui_input(_mb(true, Vector2(300, 200)), {"id": eid, "amount": 1, "type": 1})
+	panel._on_cell_gui_input(_mb(false, Vector2(300, 235)), {"id": eid, "amount": 1, "type": 1})   # 位移 35px > 8px
+	assert_null(panel._equipboard, "拖动后 release 位移超阈值 → 不弹 equipboard")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 完整 tap 链（press + release 位移 <8px）仍弹 equipboard 详情。
+func test_cell_tap_within_threshold_opens_equipboard() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	pd.add_item(eid, 1)
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	panel._on_cell_gui_input(_mb(true, Vector2(300, 200)), {"id": eid, "amount": 1, "type": 1})
+	panel._on_cell_gui_input(_mb(false, Vector2(303, 202)), {"id": eid, "amount": 1, "type": 1})   # 位移 ~3.6px < 8px
+	assert_not_null(panel._equipboard, "tap（release 位移 <8px）→ 弹 equipboard（源 doClickIn）")
+	assert_true(is_instance_valid(panel._equipboard), "equipboard 实例有效")
+	panel.remove_window()
+	root.queue_free()
+
+
+# equipboard 浮层打开时 _input 不转发拖拽（源 bt 触摸优先级：顶层浮层吃掉事件）。
+func test_input_drag_blocked_while_equipboard_open() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var eid: int = _find_equip_id_by_category("EQUIP.PARTS")
+	var panel := _make_panel("package", pd)
+	panel.show_window(root)
+	panel._on_cell_gui_input(_mb(true, Vector2(300, 200)), {"id": eid, "amount": 1, "type": 1})
+	panel._on_cell_gui_input(_mb(false, Vector2(303, 202)), {"id": eid, "amount": 1, "type": 1})   # tap 弹出 equipboard
+	var c: Vector2 = panel._scroll.get_global_rect().get_center()
+	panel._input(_mb(true, c))
+	assert_false(panel._drag_state.has("press_y"), "equipboard 打开时拖拽基准不记录（背后列表不响应）")
+	# 关闭浮层后恢复转发（remove_window=queue_free 帧末生效，等一帧贴近运行时时序）
+	panel._equipboard.remove_window()
+	await get_tree().process_frame
+	panel._input(_mb(true, c))
+	assert_true(panel._drag_state.has("press_y"), "equipboard 关闭后拖拽转发恢复")
+	panel.remove_window()
+	root.queue_free()
