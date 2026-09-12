@@ -165,8 +165,8 @@ func _get_stage_info() -> Dictionary:
 		"title": String(player.cm.get_lstr(title_raw)),
 		"detail": String(player.cm.get_lstr(detail_raw)),
 		"power": _stage_data.vitality_cost if _stage_data != null else 0,
-		"count_limit": int(row.get("Daily Limit", 0)),
-		"count": int(player.stage_limit.get(stage_id, 0)),
+		"count_limit": _daily_limit(),
+		"count": _used_times(),
 		"chapter": int(row.get("Chapter ID", 1)),
 		"star": mgr.stage_stars(stage_id) if mgr != null else 0,
 		"is_key_stage": false,
@@ -221,11 +221,29 @@ func _check_enabled() -> void:
 
 
 func _left_times() -> int:
-	return _daily_limit() - int(player.stage_limit.get(stage_id, 0))
+	return _daily_limit() - _used_times()
 
 
+# act 段（资源试炼 20001-20005）组次数语义：limit 查 ActStageGroup.DailyLimit、
+# 已用查 mgr.act_times[Stage Group]（进战斗计次在 StageDungeonLogic.check_enter_act_group）；
+# 其余类型照旧查 Stage 单关 Daily Limit / player.stage_limit（源 getRepeatInformation 分支）。
 func _daily_limit() -> int:
+	if StageAccount.stage_type(stage_id) == "act":
+		return int(player.cm.get_raw_table("ActStageGroup").get(str(_act_group_id()), {}).get("DailyLimit", 0))
 	return int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Daily Limit", 0))
+
+
+func _used_times() -> int:
+	if StageAccount.stage_type(stage_id) == "act":
+		if mgr != null:
+			StageDungeonLogic.check_act_times_daily_reset(mgr, int(Time.get_unix_time_from_system()))
+			return int(mgr.act_times.get(_act_group_id(), 0))
+		return 0
+	return int(player.stage_limit.get(stage_id, 0))
+
+
+func _act_group_id() -> int:
+	return int(player.cm.get_raw_table("Stage").get(str(stage_id), {}).get("Stage Group", 0))
 
 
 # 扫荡集群（源 createRepeatBattle:266-468）：满 3 星 + normal/elite 才显示。

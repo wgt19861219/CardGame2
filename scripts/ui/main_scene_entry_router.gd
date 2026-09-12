@@ -132,14 +132,17 @@ static func open_star_shop(scene: Node) -> void:
 	panel.show_window(scene)
 
 
-# 试炼入口选择（ExercisePanel 嵌入子组件，add_child 非 show_window）。
-static func open_exercise_panel(scene: Node, on_dungeon_groups: Callable) -> void:
-	var panel := ExercisePanel.new()
-	panel.set_entry_callback(on_dungeon_groups)
-	scene.add_child(panel)
+# 资源副本难度弹窗入口（源 degreeWindow.create(key)）。2026-09-12 二轮：源终版
+# exercise.create 直转 dungeon_map 后资源试炼在源无入口（degreeWindow 死代码）；
+# 本项目保留已验收组件 + 此公共入口 helper，待入口挂载设计拍板（见任务看板）。
+static func open_exercise_degree(scene: Node, key: String) -> void:
+	var panel := ExerciseDegreePanel.new("exerciseDegree", {})
+	panel.setup_panel(key, GameData.player, GameData.player.stage_manager)
+	panel.show_window(scene)
 
 
-# 副本入口（dungeon groups 数据转换 Array → Array[int]）。
+# 副本入口（dungeon groups 数据转换 Array → Array[int]）。em=英雄试炼 50005-7 /
+# equip=装备副本 50001-4（照源 exercise.create 终版直转的 groupIds）。
 static func open_dungeon_groups(scene: Node, mode: String, groups: Array) -> void:
 	var gi: Array[int] = []
 	for g in groups:

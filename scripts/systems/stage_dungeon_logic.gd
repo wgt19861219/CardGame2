@@ -57,9 +57,14 @@ const SECONDS_PER_MINUTE: int = 60
 ## act_times 跨日清零（源 DailyLimit 每日语义，服务器每日重置→单机本地跨日；锚点
 ## mgr.act_times_reset_ts。2026-08-22 巡检接线）。
 static func check_act_times_daily_reset(mgr: StageManager, now: int) -> void:
+	# 锚点未初始化先建锚点不清表（2026-09-12 修 off-by-one：旧逻辑空表提前返回不设锚点，
+	# 首次计数后被下一次调用的 clear 吞掉——dungeon/act 每组第一次计数实际被清，多放行一次）。
+	if mgr.act_times_reset_ts <= 0:
+		mgr.act_times_reset_ts = now
+		return
 	if mgr.act_times.is_empty():
 		return
-	if mgr.act_times_reset_ts <= 0 or _crossed_day(mgr.act_times_reset_ts, now):
+	if _crossed_day(mgr.act_times_reset_ts, now):
 		mgr.act_times.clear()
 		mgr.act_times_reset_ts = now
 
@@ -74,6 +79,35 @@ static func _crossed_day(last_ts: int, now: int) -> bool:
 static func _local_day_key(ts: int, off_min: int) -> int:
 	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + off_min * SECONDS_PER_MINUTE)
 	return int(dt["year"]) * DAY_KEY_YEAR_WEIGHT + int(dt["month"]) * DAY_KEY_MONTH_WEIGHT + int(dt["day"])
+
+
+## enter 统一分派（enter_act_stage / assemble_stage_battle 共用）：dungeon 段走
+## check_enter_dungeon（钥匙/前置/次数/买次），其余 act 段走 check_enter_act_group
+## （资源副本组计次；普通/精英关 Stage Group 指章节、不在 ActStageGroup 表 → no-op）。
+static func check_enter(mgr: StageManager, stage_id: int, stage_group: int, player: PlayerData, cm: ConfigManager) -> String:
+	if StageData.is_dungeon_stage(stage_id):
+		return check_enter_dungeon(mgr, stage_id, stage_group, player, cm)
+	return check_enter_act_group(mgr, stage_id, cm)
+
+
+## 资源副本（ActStageGroup 20001-20005：经验/金币/智力/敏捷/力量试炼）每日次数检查 + 计次。
+## 源客户端 degreeWindow.getLeftTimes 读 DailyLimit-getActTimes，计次在服务端 enterActStage
+## ——单机并入此处（进战斗即计次）。组键 sgid = Stage 表 "Stage Group" 字段（20001 组四难度
+## 同键共享次数，源 getsgid 语义）。CD 字段全表实测为 0（2026-09-12）不实现 CD 检查。
+## 返 "" 放行（已计次）；"no_attempts" 次数用尽。
+static func check_enter_act_group(mgr: StageManager, stage_id: int, cm: ConfigManager) -> String:
+	var sgid: int = int(cm.get_raw_table(&"Stage").get(str(stage_id), {}).get("Stage Group", 0))
+	if sgid <= 0:
+		return ""
+	check_act_times_daily_reset(mgr, int(Time.get_unix_time_from_system()))
+	var limit: int = int(cm.get_raw_table(&"ActStageGroup").get(str(sgid), {}).get("DailyLimit", 0))
+	if limit <= 0:
+		return ""
+	var used: int = int(mgr.act_times.get(sgid, 0))
+	if used >= limit:
+		return "no_attempts"
+	mgr.act_times[sgid] = used + 1
+	return ""
 
 
 static func check_enter_dungeon(mgr: StageManager, stage_id: int, stage_group: int, player: PlayerData, cm: ConfigManager) -> String:

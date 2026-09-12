@@ -48,11 +48,11 @@ func test_open_excavate_search_when_empty() -> void:
 	scene.free()
 
 
-func test_open_exercise_panel_with_callback() -> void:
+func test_open_exercise_degree_builds_panel() -> void:
+	# 2026-09-12 二轮：ExercisePanel 占位弹窗退役，路由改主城建筑直连 dungeon 地图
+	# （照源 exercise.create 终版直转）；资源试炼弹窗入口 helper 保留（组件可用）。
 	var scene := Node.new()
 	add_child(scene)
-	var cb_called: Array[bool] = [false]
-	var cb: Callable = func(_m: String, _g: Array) -> void: cb_called[0] = true
-	MainSceneEntryRouter.open_exercise_panel(scene, cb)
-	assert_true(scene.get_child_count() > 0, "ExercisePanel 挂到 scene")
+	MainSceneEntryRouter.open_exercise_degree(scene, "exp")
+	assert_true(scene.get_child_count() > 0, "ExerciseDegreePanel 挂到 scene")
 	scene.free()

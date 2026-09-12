@@ -1,6 +1,5 @@
-[gd_resource type="Theme" load_steps=79 format=3]
+[gd_resource type="Theme" load_steps=78 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="4_commentbg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade.png" id="5_upg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-upgrade-mask.png" id="6_upgm"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_panel_bg.png" id="7_edpanel"]
@@ -144,11 +143,6 @@ texture = ExtResource("34_dson")
 
 [sub_resource type="StyleBoxTexture" id="SB_detail_stone_ok_p"]
 texture = ExtResource("35_dsop")
-
-; exercise 入口按钮底（批 1 Task 1）：act_comment_bg 源语义即文字行底图（vit 行/advise 行），
-; 无 patch 等比整体缩放（182x44 → 142x34.4 = ÷CS），按钮 rect 须等于显示尺寸防变形。
-[sub_resource type="StyleBoxTexture" id="SB_comment"]
-texture = ExtResource("4_commentbg")
 
 ; equip_strengthen 强化按钮底：源 createStrenButton:867-880 stren/faststren Scale9
 ; herodetail-upgrade capInsets CCRectMake(20,20,53,29)（97x67）。2026-09-10 二轮换烘焙
@@ -794,16 +788,6 @@ ExerciseTitleLabel/colors/font_shadow_color = Color(0.247, 0.02, 0, 1)
 ExerciseTitleLabel/constants/shadow_offset_x = 0
 ExerciseTitleLabel/constants/shadow_offset_y = 2
 ExerciseTitleLabel/font_sizes/font_size = 17
-; 入口按钮（聚合层发明，源无对应按钮贴图）：act_comment_bg 文字底条，文字色照源 dungeon
-; 入口标签 ccc3(233,214,181)。
-ExerciseEntryButton/base_type = &"Button"
-ExerciseEntryButton/colors/font_color = Color(0.914, 0.839, 0.710, 1)
-ExerciseEntryButton/font_sizes/font_size = 18
-ExerciseEntryButton/styles/normal = SubResource("SB_comment")
-ExerciseEntryButton/styles/hover = SubResource("SB_comment")
-ExerciseEntryButton/styles/pressed = SubResource("SB_comment")
-ExerciseEntryButton/styles/disabled = SubResource("SB_comment")
-ExerciseEntryButton/styles/focus = SubResource("StyleBoxEmpty_0oxu6")
 ; ── stone_detail 两件套（批 1 Task 2，2026-08-15）──
 ; 英雄名（源 stonedetail.lua:518-531 size18 ccc3(184,6,6)）
 StoneDetailNameLabel/base_type = &"Label"
@@ -1796,3 +1780,19 @@ LadderCreamLabel18/font_sizes/font_size = 18
 ; （2026-09-10 召唤确认框根修：旧 ShopConfirmBtn 已删——cap 误用 equip_strengthen
 ; 口径 right=24（源 dialog 确认框 cap w=40 → right=37）+ 自创 90x35 尺寸，弹窗按钮
 ; 端头拉宽/内框方折的根因；通用确认框统一改走 DialogConfirmBtn，见 SB_dialog_confirm_n 注释）
+; ── exercise_degree 难度弹窗（2026-09-12，源 exercise.lua degreeWindow :380-455/:692-770）──
+; times_title 源 :398-407 size20 ccc3(241,193,113)；times 数字源 :408-417 size20 ccc3(233,214,181)。
+ExerciseTimesTitleLabel/base_type = &"Label"
+ExerciseTimesTitleLabel/colors/font_color = Color(0.945, 0.757, 0.443, 1)
+ExerciseTimesTitleLabel/font_sizes/font_size = 20
+ExerciseTimesNumberLabel/base_type = &"Label"
+ExerciseTimesNumberLabel/colors/font_color = Color(0.914, 0.839, 0.710, 1)
+ExerciseTimesNumberLabel/font_sizes/font_size = 20
+; 难度槽标题（源 act_select_difficulty_*_1.png 标题图资源库缺失→文字替代；无源字号，
+; 16 号白+黑影自定，阴影参数照 ExerciseEntryButton 系先例）
+ExerciseDegreeSlotLabel/base_type = &"Label"
+ExerciseDegreeSlotLabel/colors/font_color = Color(1, 1, 1, 1)
+ExerciseDegreeSlotLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+ExerciseDegreeSlotLabel/constants/shadow_offset_x = 0
+ExerciseDegreeSlotLabel/constants/shadow_offset_y = 2
+ExerciseDegreeSlotLabel/font_sizes/font_size = 16
