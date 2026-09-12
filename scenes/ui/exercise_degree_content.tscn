@@ -1,0 +1,403 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="1_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="2_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="3_vittips"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_select_bg.png" id="4_selbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_icon_difficulty_1.png" id="5_icon1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_icon_difficulty_2.png" id="6_icon2"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_icon_difficulty_3.png" id="7_icon3"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_icon_difficulty_4.png" id="8_icon4"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_comment_bg.png" id="9_cmtbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/vitalityicon.png" id="10_vit"]
+
+; exercise_degree 两件套静态树（2026-09-12）。资源副本（exp/money/int/agi/str =
+; ActStageGroup 20001-20005）难度选择弹窗，照源 exercise.lua degreeWindow.create(:692-770)
+; 骨架（蒙层/9patch frame/close/title 与 exercise_content 同款直译）+ createDegree(:449-560)
+; 4 难度槽：act_select_bg 按钮(221x195px÷CS=172.5x152.2) + act_icon_difficulty_N
+; (165px÷CS=128.8) 居中 + 体力行(act_comment_bg 142x34.4 + 数字 + vitalityicon 高35)。
+; 坐标：源 position 挂 frame（左下原点，frame 中心场景(400,220)）→ PanelLayer 局部
+; (x-47.5, 370-y)。槽中心 x=97+170*(i-1)，button y=140→局部160，title y=95→205，vit y=45→255。
+; 难度标题图 act_select_difficulty_*_1/2.png 与 act_select_lock.png 源资源库缺失
+; （CardGameAxmol res/UI/.../act/ 实测无）→ 文字 Label 替代（ExerciseDegreeSlotLabel）。
+
+[node name="ExerciseDegreeContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; 蒙层照源 mainLayer CCLayerColor ccc4(0,0,0,150)（:697 同款）。
+[node name="Bg" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.588)
+mouse_filter = 2
+
+; 关闭按钮照源 close 中心 ccp(750,350)（:723-731 同款）；65x66px÷CS = 50.7x51.5。
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 724.6
+offset_top = 104.2
+offset_right = 775.4
+offset_bottom = 155.8
+texture_normal = ExtResource("1_close")
+texture_pressed = ExtResource("2_closep")
+ignore_texture_size = true
+stretch_mode = 0
+
+; 面板层照源 frame（:705-720）Scale9 main_vit_tips capInsets(10,10,58,26) scaleSize 705x300
+; 中心 ccp(400,220) → offset (47.5,110)-(752.5,410)（与 exercise_content 同款）。
+[node name="PanelLayer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 47.5
+offset_top = 110.0
+offset_right = 752.5
+offset_bottom = 410.0
+mouse_filter = 2
+
+[node name="Frame" type="NinePatchRect" parent="PanelLayer"]
+layout_mode = 3
+offset_right = 705.0
+offset_bottom = 300.0
+texture = ExtResource("3_vittips")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+; 标题照源 title（:749-762）「选择难度」(EXERCISE.PLEASE_SELECT_DIFFICULTY_LEVEL)，
+; 中心场景 (399.5,342) → PanelLayer 局部 (352,28)（与 exercise_content Title 同位）。
+[node name="Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.093333
+anchor_right = 0.5
+anchor_bottom = 0.093333
+offset_left = -80.0
+offset_top = -12.0
+offset_right = 80.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"ExerciseTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "选择难度"
+
+; 次数行照源 createcdBoard else 分支（:383-432）：times_title(241,193,113)+times(233,214,181)
+; size20，y=232 → 局部 68。源 tx 随 CD 动态挪位（CD 全表 0）→ 单机简化为以框中心分列。
+[node name="TimesTitle" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 222.0
+offset_top = 56.0
+offset_right = 340.0
+offset_bottom = 80.0
+theme_type_variation = &"ExerciseTimesTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "今日剩余次数:"
+
+[node name="TimesNumber" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 356.0
+offset_top = 56.0
+offset_right = 424.0
+offset_bottom = 80.0
+theme_type_variation = &"ExerciseTimesNumberLabel"
+mouse_filter = 2
+vertical_alignment = 1
+text = "0"
+
+; ── 难度槽 1（中心局部 (97,160)）──
+[node name="Slot1" type="TextureButton" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 10.75
+offset_top = 83.9
+offset_right = 183.25
+offset_bottom = 236.1
+texture_normal = ExtResource("4_selbg")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Slot1Icon" type="TextureRect" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 32.61
+offset_top = 95.61
+offset_right = 161.39
+offset_bottom = 224.39
+texture = ExtResource("5_icon1")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot1Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 27.0
+offset_top = 193.0
+offset_right = 167.0
+offset_bottom = 217.0
+theme_type_variation = &"ExerciseDegreeSlotLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "难度 I"
+
+[node name="Slot1VitBg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 25.97
+offset_top = 237.83
+offset_right = 168.03
+offset_bottom = 272.17
+texture = ExtResource("9_cmtbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot1VitNum" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 42.0
+offset_top = 241.0
+offset_right = 92.0
+offset_bottom = 269.0
+theme_type_variation = &"DungeonVitNumberLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "6"
+
+[node name="Slot1VitIcon" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 102.0
+offset_top = 237.5
+offset_right = 128.11
+offset_bottom = 272.5
+texture = ExtResource("10_vit")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+; ── 难度槽 2（中心局部 (267,160)）──
+[node name="Slot2" type="TextureButton" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 180.75
+offset_top = 83.9
+offset_right = 353.25
+offset_bottom = 236.1
+texture_normal = ExtResource("4_selbg")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Slot2Icon" type="TextureRect" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 202.61
+offset_top = 95.61
+offset_right = 331.39
+offset_bottom = 224.39
+texture = ExtResource("6_icon2")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot2Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 197.0
+offset_top = 193.0
+offset_right = 337.0
+offset_bottom = 217.0
+theme_type_variation = &"ExerciseDegreeSlotLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "难度 II"
+
+[node name="Slot2VitBg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 195.97
+offset_top = 237.83
+offset_right = 338.03
+offset_bottom = 272.17
+texture = ExtResource("9_cmtbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot2VitNum" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 212.0
+offset_top = 241.0
+offset_right = 262.0
+offset_bottom = 269.0
+theme_type_variation = &"DungeonVitNumberLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "6"
+
+[node name="Slot2VitIcon" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 272.0
+offset_top = 237.5
+offset_right = 298.11
+offset_bottom = 272.5
+texture = ExtResource("10_vit")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+; ── 难度槽 3（中心局部 (437,160)）──
+[node name="Slot3" type="TextureButton" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 350.75
+offset_top = 83.9
+offset_right = 523.25
+offset_bottom = 236.1
+texture_normal = ExtResource("4_selbg")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Slot3Icon" type="TextureRect" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 372.61
+offset_top = 95.61
+offset_right = 501.39
+offset_bottom = 224.39
+texture = ExtResource("7_icon3")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot3Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 367.0
+offset_top = 193.0
+offset_right = 507.0
+offset_bottom = 217.0
+theme_type_variation = &"ExerciseDegreeSlotLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "难度 III"
+
+[node name="Slot3VitBg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 365.97
+offset_top = 237.83
+offset_right = 508.03
+offset_bottom = 272.17
+texture = ExtResource("9_cmtbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot3VitNum" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 382.0
+offset_top = 241.0
+offset_right = 432.0
+offset_bottom = 269.0
+theme_type_variation = &"DungeonVitNumberLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "6"
+
+[node name="Slot3VitIcon" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 442.0
+offset_top = 237.5
+offset_right = 468.11
+offset_bottom = 272.5
+texture = ExtResource("10_vit")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+; ── 难度槽 4（中心局部 (607,160)）──
+[node name="Slot4" type="TextureButton" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 520.75
+offset_top = 83.9
+offset_right = 693.25
+offset_bottom = 236.1
+texture_normal = ExtResource("4_selbg")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Slot4Icon" type="TextureRect" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 542.61
+offset_top = 95.61
+offset_right = 671.39
+offset_bottom = 224.39
+texture = ExtResource("8_icon4")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot4Title" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 537.0
+offset_top = 193.0
+offset_right = 677.0
+offset_bottom = 217.0
+theme_type_variation = &"ExerciseDegreeSlotLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "难度 IV"
+
+[node name="Slot4VitBg" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 535.97
+offset_top = 237.83
+offset_right = 678.03
+offset_bottom = 272.17
+texture = ExtResource("9_cmtbg")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="Slot4VitNum" type="Label" parent="PanelLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 552.0
+offset_top = 241.0
+offset_right = 602.0
+offset_bottom = 269.0
+theme_type_variation = &"DungeonVitNumberLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "6"
+
+[node name="Slot4VitIcon" type="TextureRect" parent="PanelLayer"]
+layout_mode = 3
+offset_left = 612.0
+offset_top = 237.5
+offset_right = 638.11
+offset_bottom = 272.5
+texture = ExtResource("10_vit")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2

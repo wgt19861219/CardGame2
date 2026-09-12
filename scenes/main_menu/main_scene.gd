@@ -332,9 +332,11 @@ func _on_entry_pressed(entry_id: String) -> void:
 		"starshop":
 			MainSceneEntryRouter.open_star_shop(self)
 		"defence":
-			_open_exercise_panel()
+			# 时光之穴建筑 → 英雄试炼地图 50005-7，直连无中间弹窗（溯源见 router）。
+			MainSceneEntryRouter.open_dungeon_groups(self, "em", [50005, 50006, 50007])
 		"exercise":
-			_open_exercise_panel()
+			# 英雄试炼建筑 → 装备副本地图 50001-4，直连无中间弹窗（溯源见 router）。
+			MainSceneEntryRouter.open_dungeon_groups(self, "equip", [50001, 50002, 50003, 50004])
 		"estren":
 			MainSceneEntryRouter.open_equip_strengthen(self)
 		"mailbox":
@@ -376,7 +378,6 @@ func _open_crusade() -> void:
 
 
 # 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。
-# _open_dungeon_groups 由 ExercisePanel entry_callback 反射调，转给 helper。
+# 2026-09-12 二轮：占位聚合弹窗退役后此快跳直开 em 地图（FarmChapter 语义，溯源见 router）。
 func _open_exercise_panel() -> void:
-		MainSceneEntryRouter.open_exercise_panel(self, func(m: String, g: Array) -> void:
-			MainSceneEntryRouter.open_dungeon_groups(self, m, g))
+		MainSceneEntryRouter.open_dungeon_groups(self, "em", [50005, 50006, 50007])

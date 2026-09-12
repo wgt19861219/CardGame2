@@ -57,7 +57,7 @@ func mode_for_group(group_id: int) -> int:
 	return Mode.HERO_TRIAL if HERO_TRIAL_GROUPS.has(group_id) else Mode.TIME_CAVERN
 
 
-# ===== 查询方法（照源 exercise.lua，服务 ExercisePanel UI 装配）=====
+# ===== 查询方法（照源 exercise.lua，服务 ExerciseDegreePanel 难度弹窗装配）=====
 
 func _act_row(key: String) -> Dictionary:
 	var sgid: int = int(ENTRY_STAGE.get(key, 0))

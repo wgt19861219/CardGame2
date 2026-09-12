@@ -108,9 +108,9 @@ func enter_act_stage(stage_id: int, stage_group: int, player: PlayerData, rng: B
 	var cfg: Dictionary = config.get_raw_table(table).get(str(stage_id), {})
 	if cfg.is_empty(): return {"ok": false, "error": "invalid_stage"}
 	if player.team_level < int(cfg.get("Unlock Level", 0)): return {"ok": false, "error": "level_lock"}
-	if StageData.is_dungeon_stage(stage_id):
-		var err: String = StageDungeonLogic.check_enter_dungeon(self, stage_id, stage_group, player, config)
-		if err != "": return {"ok": false, "error": err}
+	# dungeon/act 段入场检查统一分派（次数/钥匙/前置；源 dungeon_map.lua:499-504 enterStage 即计次）
+	var enter_err: String = StageDungeonLogic.check_enter(self, stage_id, stage_group, player, config)
+	if enter_err != "": return {"ok": false, "error": enter_err}
 	var vit_cost: int = maxi(int(cfg.get("Vitality Cost", 0)) - int(cfg.get("Vit Return", 0)), 0)
 	if vit_cost > 0 and not player.spend_vitality(vit_cost): return {"ok": false, "error": "no_vitality"}
 	return {"ok": true, "rseed": rng.get_seed(), "loots": generate_loot_list(stage_id, rng), "stage_id": stage_id}
@@ -149,12 +149,10 @@ func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int]
 	if StageData.is_dungeon_stage(sid) or StageAccount.stage_type(sid) in ["act", "raid"]:
 		var table: StringName = &"StageDungeon" if StageData.is_dungeon_stage(sid) else &"Stage"
 		var cfg: Dictionary = config.get_raw_table(table).get(str(sid), {})
-		if StageData.is_dungeon_stage(sid):
-			# 每日次数/钥匙/前置/等级全查（enter_act_stage 同款；源 dungeon_map.lua:499-504
-			# enterStage 即计次；2026-08-22 巡检接线：旧只查体力致 DailyLimit 失效）。
-			var err: String = StageDungeonLogic.check_enter_dungeon(self, sid, StageDungeonLogic.DUNGEON_BOSS_BASE + sid % StageDungeonLogic.DUNGEON_BOSS_MOD, player, config)
-			if err != "":
-				return {"ok": false, "error": err}
+		# 每日次数/钥匙/前置/等级统一分派（源 dungeon_map.lua:499-504 enterStage 即计次；
+		# 2026-08-22 巡检接线：旧只查体力致 DailyLimit 失效；act 组计次 2026-09-12 接入）。
+		var enter_err: String = StageDungeonLogic.check_enter(self, sid, StageDungeonLogic.DUNGEON_BOSS_BASE + sid % StageDungeonLogic.DUNGEON_BOSS_MOD, player, config)
+		if enter_err != "": return {"ok": false, "error": enter_err}
 		var vit_cost: int = maxi(int(cfg.get("Vitality Cost", 0)) - int(cfg.get("Vit Return", 0)), 0)
 		if vit_cost > 0 and not player.spend_vitality(vit_cost):
 			return {"ok": false, "error": "no_vitality"}
