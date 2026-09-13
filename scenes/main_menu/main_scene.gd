@@ -315,7 +315,7 @@ func _on_entry_pressed(entry_id: String) -> void:
 		var prompt: String = fl.get_area_unlock_prompt(StringName(entry["unlock"]), GameData.player.team_level)
 		Toast.show_message(prompt if prompt != "" else "功能未解锁")
 		return
-	# 入口路由（联机玩法 pvp/handbook/volcano/ranklist 单机裁剪）。
+	# 入口路由（联机玩法 pvp/guild/volcano/ranklist 单机裁剪）。
 	match entry_id:
 		"pve":
 			_open_stage_select()
@@ -341,8 +341,8 @@ func _on_entry_pressed(entry_id: String) -> void:
 			MainSceneEntryRouter.open_equip_strengthen(self)
 		"mailbox":
 			MainSceneEntryRouter.open_mailbox(self)
-		"handbook":
-			MainSceneEntryRouter.open_handbook(self)   # 第九轮 P1-B2：图鉴入口（自建图鉴面板）
+		"guild":
+			MainSceneEntryRouter.open_guild(self)   # 公会：联机裁剪，点击 Toast（图鉴走背包专属入口）
 		"excavate":
 			MainSceneEntryRouter.open_excavate(self)
 		"pvp":
