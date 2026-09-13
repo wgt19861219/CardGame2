@@ -8,7 +8,7 @@ extends Node2D
 ## 入 actor_list 复用 _advance_actor_list 推进（源 actor_list 混装 UnitActor+NpcActor，:791-812 统一推进）。
 
 const UnitSprite = preload("res://scripts/view/battle/unit_sprite.gd")
-const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
+const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 
 var model: Variant = null    # BattleNpc（duck：position/action_name/action_loop/terminated）
 var puppet: Variant = null   # UnitSprite（FCA 动画；Variant 避 preload :Script 注解推断坑）

@@ -6,7 +6,7 @@ extends Node2D
 ## 四 style：damage（上飘+放大+淡出，crit 加成）/heal（上飘+淡出 绿）/gold（fade in+上飘 黄）/text（上飘+放大+淡出）。
 ## 挂 ui_layer（battle_scene 调）。依赖 BattleViewCoords.to_view_position。record[actor] 排队去重（同帧飘字延后 2 tick 入场，源 :81-100）。
 
-const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
+const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 
 const LIFE: float = 0.8
 const DAMAGE_OFFSET_H: float = 75.0

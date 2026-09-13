@@ -190,7 +190,7 @@ chore: 升级 Godot 到 4.7
 
 - **项目类型**：游戏（原 Axmol/Lua 卡牌手游的 Godot 版，单机，迁移已完成，当前为 Godot 原生适配/优化阶段）
 - **技术栈**：
-  - 引擎：Godot 4.7（`D:\godot\Godot_v4.7-stable_win64_console.exe`）—— 由 4.6.3 升级（GUT 9.6.0 兼容验证，`tests/` 下 187 个 `test_*.gd` 文件；核查命令 `ls tests/test_*.gd | wc -l`）
+  - 引擎：Godot 4.7（`D:\godot\Godot_v4.7-stable_win64_console.exe`）—— 由 4.6.3 升级（GUT 9.6.0 兼容验证，`tests/` 下 254 个 `test_*.gd` 文件；核查命令 `ls tests/test_*.gd | wc -l`，2026-09-12 架构体检实测）
   - 渲染器：gl_compatibility
   - 分辨率：800×480 横屏（aspect=ignore 拉伸，复刻源实机 EXACT_FIT）
   - 语言：GDScript（strict 类型）
@@ -200,7 +200,7 @@ chore: 升级 Godot 到 4.7
 - **施工蓝图**：`D:\workspace\Obsidian\CardGameGodot2\系统文档\施工蓝图-全局重制.md`
 - **知识库**：`D:\workspace\Obsidian\CardGameGodot2\`
 - **仓库结构**：
-  - `scenes/<feature>/` — View 资产层：入口场景 tscn（3 个，绑同目录本地脚本）+ content 底板 tscn（69 个，无脚本）
+  - `scenes/<feature>/` — View 资产层：入口场景 tscn（3 个，绑同目录本地脚本）+ content 底板 tscn（71 个，无脚本）+ 行/格模板 tscn（17 个：item 11/cell 2/line 1/tab 3，无脚本）
   - `scripts/systems/` — Logic 层：纯业务逻辑，不依赖 Node/Control，可 headless 单测
   - `scripts/data/` — Data 层：PlayerData / SaveManager / ConfigManager + feature_catalog（源 71 handler 功能对照清单，CI catalog_check 依赖）
   - `scripts/autoload/` — 自动加载单例
@@ -294,22 +294,22 @@ bash tools/ci/check.sh
 
 ### tscn↔gd 绑定规范（一轨制，2026-08-14 阶段二立）
 
-按 tscn 用途分三轨，每轨固定唯一绑定方式，禁混用（基线实测 76 tscn = 69 + 4 + 3）：
+按 tscn 用途分三轨，每轨固定唯一绑定方式，禁混用（基线实测 95 tscn = 88 无脚本 + 4 战斗 + 3 入口，2026-09-12 架构体检实测；88 = content 底板 71 + 行/格模板 17）：
 
 | 轨 | 用途 | 绑定方式 | 实例 |
 |----|------|---------|------|
-| A（69 个，主体） | panel content 底板 | **无脚本**；panel/builder `preload(.tscn).instantiate()` + fill（详见下节范式） | `scenes/ui/*_content.tscn` |
+| A（88 个，主体） | panel content 底板 + 行/格模板 | **无脚本**；panel/builder `preload(.tscn).instantiate()` + fill（详见下节范式） | `scenes/ui/*_content.tscn`、`*_item.tscn` 等 |
 | B（4 个） | 战斗完整场景 | 绑远端 `scripts/view/battle/*.gd`（root 节点 ext_resource Script） | battle_scene / battle_hud / stage_done / stage_failed |
 | C（3 个） | 游戏入口场景 | 绑**同目录本地脚本** | main_scene / loading_scene / hero_scene |
 
 - 新增 panel 默认走轨 A；新增战斗整场景走轨 B；入口场景固定三个不再增。
 - **禁止**：content tscn 绑脚本（与 fill 范式双头管理）、非 root 节点绑业务脚本。
-- panel 脚本归位：battle 专属进 `scripts/view/battle/`，跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui，禁反向）。
+- panel 脚本归位：battle 专属进 `scripts/view/battle/`，跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui，禁反向；2026-09-12 架构体检起由 CI **LAYER003** 强制——`scripts/ui` 禁 preload/load `res://scripts/view/` 路径且禁引 view 层 class_name，存量债登记于 `tools/ci/layer_check.py` 的 `UI_VIEW_CLASS_WHITELIST`，只减不增）。
 - `scenes/` 只放 tscn 资产与 3 个入口脚本，纯代码控件/panel 一律进 `scripts/ui/` 或 `scripts/view/battle/`（2026-08-14 收官：confirm_dialog/number_roll/star_display 三控件已从 scenes/ui/ 归位）。
 
 ### UI 两件套范式 SOP（2026-08-15 试点 shop+hero_detail 定稿，取代 2026-07-17 三件套范式）
 
-每个功能 panel = **完整静态 `*_content.tscn`（无脚本）+ `*_panel.gd`（业务+信号+fill）** 两个文件；builder 层退役（`scripts/ui/` 下 `_builder.gd` 随批次消亡，试点前 10 个→9 个）。位置/贴图/字号全进 tscn+theme，编辑器所见即所得，调布局只动 tscn 一个文件。
+每个功能 panel = **完整静态 `*_content.tscn`（无脚本）+ `*_panel.gd`（业务+信号+fill）** 两个文件；builder 层退役（`scripts/ui`+`scripts/view` 下 `_builder.gd` 现存 5 个：4 个范式内 `*_row_builder.gd`（动态行轻量构建）+ 1 个 `main_map_builder.gd` 主城容器工厂特例，2026-09-12 实测）。位置/贴图/字号全进 tscn+theme，编辑器所见即所得，调布局只动 tscn 一个文件。
 
 - **content tscn**：完整静态节点树。被引用节点开 `unique_name_in_owner`（同名节点不能都开）；静态背景节点不开；`.tscn` 禁 `#` 注释用 `;`；ext_resource 不写 uid。
 - **panel.gd**：只做业务、信号 connect、fill（`get_node("%Xxx")` 取节点填动态数据）。fill 并入后逼近 View 550 行门槛时，fill 函数下沉独立 fills helper（如 `hero_detail_fills.gd`：纯数据绑定，禁建静态节点/禁样式 override）。
@@ -377,3 +377,4 @@ bash tools/ci/check.sh
 | 2026-07-27 | 修订 `.tscn` 红线：结构性改动（节点/ext_resource/uid/unique_id/load_steps）仍禁外部 patch，**纯数值改动**（offset/size/position/scale/color 等）放开允许 Edit 改 + import/CI 兜底。依据：战役 HUD 补全时 4 节点 8 行 offset 替换 + CI 1732/1732 全绿实证风险可控；旧版铁律源于 ext_resource id/uid 错乱致引用断裂，对纯数值改动过严 |
 | 2026-08-14 | 架构重构阶段二（目录与规范统一）：View 职责重划（battle panel 归 `scripts/view/battle/` + 3 通用展示工具下沉 `scripts/ui/`，治反向依赖）；删 ModuleRegistry/InstanceModule 死骨架；feature_catalog 并入 `scripts/data/`（`scripts/server/` 目录消失，顶层 6→5）；新增「tscn↔gd 绑定规范（一轨制）」节；仓库结构描述同步实况 |
 | 2026-08-15 | UI 重做试点（shop+hero_detail）定稿两件套范式：新增「UI 两件套范式 SOP」节取代 2026-07-17 三件套范式（builder 层退役、theme variation 优先、坐标系三坑、主题链 Control 根红线）；CLAUDE.md 镜像同步 |
+| 2026-09-12 | 架构九轮迭代体检收尾：①layer_check 新增 **LAYER003**（ui 禁依赖 view，存量白名单只减不增）；②BattleViewCoords 归位 `scripts/ui/`（坐标换算跨域通用工具）；③GUT_MIN_TESTS 基线 1590→2600（防丢失灵敏度同步）；④基线数字同步实况（tscn 95 = 88+4+3、tests 254、builder 5）；CLAUDE.md 镜像同步 |

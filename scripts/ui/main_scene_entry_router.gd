@@ -62,11 +62,11 @@ static func open_daily_login(scene: Node) -> void:
 	panel.show_window(scene)
 
 
-# 图鉴入口（单机化自建，源该按钮=公会联机）。
-static func open_handbook(scene: Node) -> void:
-	var panel := HandbookPanel.new("handbook", {})
-	panel.setup_panel(GameData.player)
-	panel.show_window(scene)
+# 公会入口（源该按钮联机打开公会界面，guild handler 在 SKIPPED_HANDLERS 单机裁剪清单）。
+# 2026-09-13 用户拍板②：恢复公会名义——图鉴有背包面板专属入口（PackagePanel %HandbookBtn），
+# 主城建筑不再兼任图鉴。单机无公会面板，点击 Toast 提示（对应源未解锁分支 showToast 语义）。
+static func open_guild(scene: Node) -> void:
+	Toast.show_message("公会功能未开放")
 
 
 # 日常任务入口。用 player 持久化 task_manager（2026-09-03 根修任务不显示：临时

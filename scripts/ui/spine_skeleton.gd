@@ -1,12 +1,15 @@
 class_name SpineSkeleton
 extends Node2D
 
-## Spine 2.1.07 简化骨骼动画播放器（View 层）— region-only（无 mesh/权重/IK/约束/事件/变形）。
-## 骨骼层级 Node2D + region Sprite2D 附件 + 每帧贝塞尔插值 bone rotate/translate/scale + slot color。
+## Spine 2.1.07 简化骨骼动画播放器（View 层）— region Sprite2D + skinnedmesh 顶点蒙皮 Polygon2D
+##（无 mesh 之外附件类型/IK/约束/事件/FFD 变形）。骨骼层级 Node2D + 每帧贝塞尔插值 bone
+## rotate/translate/scale + slot color；skinnedmesh 顶点按骨骼权重每帧重算（SpineMeshDeformer）。
 ## 配套 assets/spine/<name>/<name>.json + .atlas + .png。Spine y 上 → Godot y 下：整体 scale.y=-1 翻转。
+## 绘制顺序：所有附件节点 z_index = slot 索引（骨骼 z=0；z_as_relative 累加语义下叶子间全序 = Spine slot 序）。
 
 const SpineAtlas = preload("res://scripts/ui/spine_atlas.gd")
 const SpineSkeletonData = preload("res://scripts/ui/spine_skeleton_data.gd")
+const SpineMeshDeformer = preload("res://scripts/ui/spine_mesh_deformer.gd")
 
 signal action_finished(action_name: String)
 
@@ -14,6 +17,7 @@ var _data: SpineSkeletonData = null
 var _atlas: SpineAtlas = null
 var _bone_nodes: Dictionary = {}        # name -> Node2D
 var _slot_sprites: Array = []           # [{sprite, slot_name, setup_color}]
+var _slot_meshes: Array = []            # [{poly, slot_name, bindings, setup_color}]（skinnedmesh）
 var _setup_pos: Dictionary = {}         # bone -> Vector2（setup position）
 var _setup_rot: Dictionary = {}         # bone -> float rad
 var _setup_scale: Dictionary = {}       # bone -> Vector2
@@ -59,13 +63,20 @@ func _build_nodes() -> void:
 			add_child(node)
 		else:
 			_bone_nodes[parent].add_child(node)
-	# slot Sprite 附件
+	# slot 附件（z_index = slot 索引：跨骨骼子树的叶子按 Spine slot 序全序绘制）
+	var slot_idx: int = 0
 	for slot in _data.slots:
 		var slot_name: String = String(slot["name"])
-		var att: Dictionary = _data.get_attachment(slot_name, String(slot["attachment"]))
+		var att_name: String = String(slot["attachment"])
+		var att: Dictionary = _data.get_attachment(slot_name, att_name)
+		slot_idx += 1
 		if att.is_empty():
 			continue
-		var tex: Texture2D = _atlas.get_region_texture(String(slot["attachment"]))
+		var col: Color = SpineSkeletonData.parse_color_hex(String(slot["color"]))
+		if String(att.get("type", "region")) == "skinnedmesh":
+			_build_mesh(slot_idx, slot_name, att_name, att, col)
+			continue
+		var tex: Texture2D = _atlas.get_region_texture(att_name)
 		if tex == null:
 			continue
 		var sprite := Sprite2D.new()
@@ -76,12 +87,38 @@ func _build_nodes() -> void:
 		var sx: float = float(att.get("scaleX", 1.0))
 		var sy: float = float(att.get("scaleY", 1.0))
 		sprite.scale = Vector2(sx, sy)
+		sprite.z_index = slot_idx
 		var bone_name: String = String(slot["bone"])
 		if _bone_nodes.has(bone_name):
 			_bone_nodes[bone_name].add_child(sprite)
-		var col: Color = SpineSkeletonData.parse_color_hex(String(slot["color"]))
 		sprite.modulate = col
-		_slot_sprites.append({"sprite": sprite, "slot_name": slot_name, "setup_color": col, "default_att": String(slot["attachment"])})
+		_slot_sprites.append({"sprite": sprite, "slot_name": slot_name, "setup_color": col, "default_att": att_name})
+
+
+# skinnedmesh 顶点蒙皮渲染（Polygon2D 挂骨架根：顶点为骨架空间坐标，跨多骨骼无法挂单一 bone 下）。
+# 降级路径（整贴图挂 slot bone 原点）丢失网格姿态——2026-09-12 信箱歪斜根因，详见 spine_mesh_deformer.gd 头注。
+func _build_mesh(slot_idx: int, slot_name: String, att_name: String, att: Dictionary, col: Color) -> void:
+	var tex: Texture2D = _atlas.get_region_texture(att_name)
+	if tex == null:
+		return
+	# MeshInstance2D+ArrayMesh（与 Sprite2D 同 mesh 管线）；Polygon2D 在本项目 gl_compatibility
+	# 管线下实测不光栅化（2026-09-12 四变体实验：原样/无索引/绕向翻转/正 scale 全不显示）。
+	var mi := MeshInstance2D.new()
+	mi.texture = tex
+	# Spine uv(v=0 底) → Godot 纹理 uv(y=0 顶)：v 翻转（提取器 flip_y 链路实测出上下颠倒，2026-09-12 实机纠正）
+	var raw_uvs: Array = att["uvs"]
+	var uvs := PackedVector2Array()
+	uvs.resize(raw_uvs.size() / 2)
+	for i in uvs.size():
+		uvs[i] = Vector2(float(raw_uvs[i * 2]), 1.0 - float(raw_uvs[i * 2 + 1]))
+	var bindings: Array = SpineMeshDeformer.parse_bindings(att["vertices"], _data.bone_order)
+	var pts: PackedVector2Array = SpineMeshDeformer.skin_points(bindings, SpineMeshDeformer.bone_xforms(_bone_nodes, _data.bones))
+	var indices: PackedInt32Array = PackedInt32Array(att["triangles"])
+	mi.mesh = SpineMeshDeformer.build_tri_mesh(pts, uvs, indices)
+	mi.z_index = slot_idx
+	mi.modulate = col
+	add_child(mi)
+	_slot_meshes.append({"mesh": mi, "uvs": uvs, "indices": indices, "slot_name": slot_name, "bindings": bindings, "setup_color": col})
 
 
 func play(action: String, loop: bool = true) -> void:
@@ -141,6 +178,8 @@ func _apply(t: float) -> void:
 		n.scale = _setup_scale[name]
 	for e in _slot_sprites:
 		(e["sprite"] as Sprite2D).modulate = e["setup_color"]
+	for m in _slot_meshes:
+		(m["mesh"] as MeshInstance2D).modulate = m["setup_color"]
 	var anim: Dictionary = _data.animations.get(_action, {})
 	if anim.is_empty():
 		return
@@ -190,6 +229,18 @@ func _apply(t: float) -> void:
 						sp.visible = true
 				if has_col:
 					sp.modulate = col
+		# skinnedmesh 的 color timeline（attachment 切换仅 region 用例，mesh 不涉及）
+		if has_col:
+			for m in _slot_meshes:
+				if String(m["slot_name"]) == String(sn):
+					(m["mesh"] as MeshInstance2D).modulate = col
+	# skinnedmesh 顶点蒙皮重算（骨骼 timeline 已应用；setup 时等值，动画时顶点随权重混合骨骼动）
+	if not _slot_meshes.is_empty():
+		var xforms: Dictionary = SpineMeshDeformer.bone_xforms(_bone_nodes, _data.bones)
+		for m in _slot_meshes:
+			var mi: MeshInstance2D = m["mesh"]
+			var pts: PackedVector2Array = SpineMeshDeformer.skin_points(m["bindings"], xforms)
+			mi.mesh = SpineMeshDeformer.build_tri_mesh(pts, m["uvs"], m["indices"])
 
 
 func _get_action_duration(action: String) -> float:

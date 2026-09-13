@@ -5,6 +5,9 @@ extends RefCounted
 ## Logic 坐标 (x, y) + height（离地高度）→ View 像素坐标。
 ## 即正交投影：x 不变，y 直接映射为垂直偏移，地面 y=265。
 ##
+## 归位（2026-09-12 架构体检）：自 scripts/view/battle/ 迁入 ui/——坐标换算纯函数
+## 属跨域通用工具（ui 侧 pop_tavern_loot/story_view 等在用），依赖方向恒 view/battle → ui。
+##
 ## 职责边界（2026-07-31 战斗 HUD 重构后）：本类仅服务**战斗世界对象**（B 类坐标）——
 ## actor 站位/行走、特效播放、伤害飘字、掉落物等跟随镜头、含离地高度正交投影的对象。
 ## HUD 固定界面（A 类：血条/按钮/面板/标记）已改用 Godot 原生锚点/容器（battle_hud.tscn），

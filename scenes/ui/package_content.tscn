@@ -16,15 +16,17 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+z_index = 100
+z_as_relative = false
 
-; z 逃逸修复（审查 F1，2026-08-16）：Cocos zOrder 是 mainLayer 兄弟局部排序；Godot 默认
-; z_as_relative=true 沿祖先累加，本 content 挂 PackagePanel（PopWindow z=100 absolute，
-; pop_window.gd show_window），Tab*Label z=24 → effective 124 穿透弹窗兜底 100（如
-; HandbookPanel 图鉴）。修法=全部直接子节点 z_as_relative=false 绝对化（z 值保持源序：
-; 底图/close/handbook 0 < equipbg 2（源 :618）< tab 按钮 1/3（源 :395）< draglist 10
-; （源 :355）< label 24（源 :425），均 < 100）。⚠️ z=0 节点（FrameworkBg/CloseBtn/
-; HandbookBtn/Tab*Btn）必须一并绝对化——若保持 relative 其 effective=100 会反盖绝对化
-; 后的 24/10/3 元素。按钮 z 由 panel _update_tab_visual 运行时设（1/3）。
+; z 层设计（2026-09-13 根修，取代 2026-08-16 审查 F1 的全树绝对化方案）：
+; 约束三角=①盖主城建筑链（绝对层 0-64：spine≤23/TITLE_Z=64）②不穿透嵌套弹窗
+; （HandbookPanel/Equipboard 走 PopWindow 动态栈 ≥200）③内部保持源序（底图 0 <
+; equipbg 2（源 :618）< tab 1/3（源 :395）< draglist 10（源 :355）< label 24（源 :425））。
+; 旧方案全部子节点 z_as_relative=false 绝对化压到 0-24 层——违反①被主城建筑标签
+; （64）压过，建筑/标签浮在背包/碎片界面之上（2026-09-13 用户反馈，三轮排查定位）。
+; 新方案=内容根 PackageContent 绝对 z=100（同面板根层），子节点恢复 relative 累加
+; → effective 100-124。按钮 z 由 panel _update_tab_visual 运行时设（1/3，相对值语义不变）。
 [node name="FrameworkBg" type="TextureRect" parent="."]
 layout_mode = 3
 offset_right = 800.0
@@ -32,12 +34,12 @@ offset_bottom = 480.0
 texture = ExtResource("1_bg")
 expand_mode = 1
 mouse_filter = 2
-z_as_relative = false
+
 
 [node name="Bg" type="TextureRect" parent="."]
 layout_mode = 3
 z_index = 2
-z_as_relative = false
+
 offset_left = 328.7
 offset_top = 75.4
 offset_right = 671.3
@@ -49,7 +51,7 @@ mouse_filter = 2
 [node name="CloseBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 20.0
 offset_top = 15.0
 offset_right = 77.76
@@ -65,7 +67,7 @@ stretch_mode = 0
 [node name="HandbookBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 670.0
 offset_top = 396.0
 offset_right = 762.0
@@ -106,7 +108,7 @@ text = "图鉴"
 [node name="TabAllBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 653.696
 offset_top = 87.732
 offset_right = 758.304
@@ -119,7 +121,7 @@ stretch_mode = 0
 [node name="TabEquipBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 653.696
 offset_top = 147.732
 offset_right = 758.304
@@ -132,7 +134,7 @@ stretch_mode = 0
 [node name="TabScrollBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 653.696
 offset_top = 207.732
 offset_right = 758.304
@@ -145,7 +147,7 @@ stretch_mode = 0
 [node name="TabStoneBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 653.696
 offset_top = 267.732
 offset_right = 758.304
@@ -158,7 +160,7 @@ stretch_mode = 0
 [node name="TabConsumeBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
-z_as_relative = false
+
 offset_left = 653.696
 offset_top = 327.732
 offset_right = 758.304
@@ -172,12 +174,12 @@ stretch_mode = 0
 ; size20 白 shadow ccc3(42,31,22)(0,2) 走 PackageTabLabel variation；text 由 panel fill LSTR；
 ; z_index=24 照源 :424 label z=24 恒居底图（normal z=1/3、press z=20）之上——task-11 修
 ; （panel _update_tab_visual 设按钮 z 1/3 后 z=0 的文字被 classbtn 纹理盖住）；
-; z_as_relative=false 见顶部注释（审查 F1：relative 累加 PopWindow z=100 → 124 穿透弹窗））
+; z 相对累加见顶部「z 层设计」（2026-09-13 根修：内容根绝对 100 + 子节点 relative））
 [node name="TabAllLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
 z_index = 24
-z_as_relative = false
+
 offset_left = 661.0
 offset_top = 102.0
 offset_right = 761.0
@@ -192,7 +194,7 @@ text = "全部"
 unique_name_in_owner = true
 layout_mode = 0
 z_index = 24
-z_as_relative = false
+
 offset_left = 661.0
 offset_top = 162.0
 offset_right = 761.0
@@ -207,7 +209,7 @@ text = "装备"
 unique_name_in_owner = true
 layout_mode = 0
 z_index = 24
-z_as_relative = false
+
 offset_left = 661.0
 offset_top = 222.0
 offset_right = 761.0
@@ -222,7 +224,7 @@ text = "卷轴"
 unique_name_in_owner = true
 layout_mode = 0
 z_index = 24
-z_as_relative = false
+
 offset_left = 661.0
 offset_top = 282.0
 offset_right = 761.0
@@ -237,7 +239,7 @@ text = "灵魂石"
 unique_name_in_owner = true
 layout_mode = 0
 z_index = 24
-z_as_relative = false
+
 offset_left = 661.0
 offset_top = 342.0
 offset_right = 761.0
@@ -254,7 +256,7 @@ text = "消耗品"
 unique_name_in_owner = true
 layout_mode = 3
 z_index = 10.0
-z_as_relative = false
+
 offset_left = 355.0
 offset_top = 90.0
 offset_right = 650.0

@@ -6,7 +6,7 @@ extends Node2D
 ## + 拾取（on_tapped/on_auto_collect emit 信号，scene 端 showMonsterLoots/addLootMarker + createIcon 装备图标后续补）。
 ## 挂 ui_layer。源 ed.toViewPosition → BattleViewCoords。源 ed.readequip.createIcon → 信号回调（桩）。
 
-const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
+const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 
 const BOUNCE_X: float = 785.0
 const GRAVITY: float = -1000.0

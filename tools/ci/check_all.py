@@ -35,6 +35,14 @@ def main(argv: list[str]) -> int:
     if violations:
         has_failure = True
 
+    # 压线信息性警告（架构体检 2026-09-12 立，不 fail）：代码行 ≥90% 上限的文件清单，
+    # 供"大功能落入前主动预拆"决策——LINT005 只拦超限看不见逼近。
+    near_warnings = lint_check.collect_near_limit_warnings(root)
+    if near_warnings:
+        print(f"\n压线警告（{len(near_warnings)} 个文件 ≥90% 上限，不 fail，预拆候选）：")
+        for w in near_warnings:
+            print(f"⚠️ {w}")
+
     # ③ catalog handler 实现引用校验（防借单机化偷裁）
     print("\nCatalog handler 引用校验：")
     if catalog_check.run(root):

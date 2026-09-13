@@ -109,10 +109,10 @@ func setup_panel(p_player: PlayerData) -> void:
 	setup()
 	# handbook 照源是全屏场景(源 handbook.lua:618 base=basescene + bg.jpg,.tscn FrameworkBg 已固化),
 	# shade 透明不遮背景(同 HeroPackagePanel)。
-	# 全屏场景(照源 pushScene 替换 package):z_index 提高盖住底层 package 内部高 z 元素。
-	# package tab/Grid z=1-3 照源 package.lua,Godot z_index 同 canvas 全局比较(cocos z 局部于 mainLayer),
-	# handbook 挂 MainScene z=0 会被 package z=3 元素穿透显示在上。z=100 盖住(> package 内部 z max)。
-	z_index = 100
+	# z 走 PopWindow 动态栈(_refresh_stack_z):主城直开=100 盖主城建筑(≤64);package 内嵌套
+	# 打开=200,盖 package 内容(effective 100-124,2026-09-13 z 层根修后)。旧手动 z_index=100
+	# 已删——它在 setup_panel(show_window 前调)设值,会被 _refresh_stack_z 栈位覆盖,死值且
+	# 语义误导(2026-08-16 F1 时代的 package 内容绝对化 0-24 方案已废弃)。
 	_tabs_data = EquipmentClassifier.classify_equip(_cm, _player.MAX_TEAM_LEVEL)
 	_build_content()
 

@@ -5,6 +5,7 @@ extends RefCounted
 ## 配套 assets/spine/<name>/<name>.json。timeline curve：缺省线性 / "stepped" / [c1,c2,c3,c4] 贝塞尔。
 
 var bones: Dictionary = {}       # name -> {parent, x, y, rotation, scaleX, scaleY, length}
+var bone_order: PackedStringArray = PackedStringArray()   # 骨骼名按 JSON 数组序（skinnedmesh 绑定 boneIdx 的索引源）
 var slots: Array = []            # [{name, bone, attachment, color}]
 var skins: Dictionary = {}       # slot -> {attachment -> {x, y, rotation, scaleX, scaleY, width, height}}
 var animations: Dictionary = {}  # action -> {bones: {bone: {rotate,translate,scale:[timeline]}}, slots: {slot: {color:[timeline]}}}
@@ -49,6 +50,7 @@ func _parse_bones(arr: Array) -> void:
 			"scaleY": float(b.get("scaleY", 1.0)),
 			"length": float(b.get("length", 0.0)),
 		}
+		bone_order.append(name)
 
 
 func _parse_slots(arr: Array) -> void:

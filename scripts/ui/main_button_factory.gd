@@ -26,6 +26,18 @@ const FCA_ANI_DIR: String = "res://assets/anim_frames/effect/"   # eff_UI_*.ani 
 # "主界面建筑图标整体缩小10%"）。源 createMainFca:419 setScale((v.scale or 1)*FCA_SCALE) 对
 # Spine 与 FCA 两种 node 都生效（Node::setScale），故 Godot 端 _add_spine/_add_fca 双路径都乘。
 const FCA_SCALE: float = 0.9
+# 按钮内三层显式 z（press 光效最底 / Spine 骨架中层 / title 标签最上，源 createMainButton
+# add 顺序语义）。Spine 附件带 slot 索引 z（骨架内 mesh/region 按 slot 序全序，spine_skeleton.gd），
+# title 恒最高使标签不被附件盖住（2026-09-12 回归：附件 z 盖标签）。z_as_relative 为**全局累加
+# 排序**（effective z 沿父链累加后跨整 canvas 比较）——分层禁用负值：骨架压负区会被 z=0 的
+# parallax 背景层整层盖住（建筑全灭，同日二连回归实证）。
+# TITLE_Z 双向约束（2026-09-12 三连回归：1024 越层致建筑标签浮在所有弹窗上，用户实机反馈）：
+#   下界 > SPINE_Z + 全资源最大 slot 数（实测 21，eff_UI_Main_Pve）= 23——低于则标签被附件盖住；
+#   上界 < PopWindow.Z_BASE(100)——高于则主城标签压过全部弹窗（PopWindow 栈 z=100/200/…）。
+#   附件最高 effective = 2+21 = 23，title 取 64 居安全区正中（余量到 63/99）。
+const PRESS_Z: int = 1
+const SPINE_Z: int = 2
+const TITLE_Z: int = 64
 
 
 ## 建入口按钮（照源 createMainButton + createMainFca）。e = ENTRIES 条目，on_pressed = 点击回调，is_locked = 未解锁灰显。
@@ -69,6 +81,7 @@ static func _add_press(btn: Button, e: Dictionary) -> void:
 	# 中心 = btn 中心 + lightPos（翻 Y）；左上 = 中心 - size/2
 	press.position = Vector2(btn.size.x * 0.5 + float(l[0]) - press_size.x * 0.5, btn.size.y * 0.5 - float(l[1]) - press_size.y * 0.5)
 	press.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	press.z_index = PRESS_Z
 	press.visible = false
 	btn.add_child(press)
 	btn.button_down.connect(func() -> void: press.visible = true)
@@ -82,6 +95,7 @@ static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
 		return null
 	var sk_scale: float = float(e.get("scale", 1.0))
 	var sk := SpineSkeleton.new()
+	sk.z_index = SPINE_Z
 	# （0.39 仅 LegendAminationEffect/.abc 自家系统用；createFcaNode:581 Type_Spine 走 createAnimation，:589 FCA 走 LegendAminationEffect）。
 	# 净 scale = v.scale × FCA_SCALE(0.9)（照源 main.lua:419 setScale((v.scale or 1)*FCA_SCALE)）；
 	# load_skeleton:37 自动翻 y 并保留 |scale|（0.9v, 0.9v) → (0.9v, -0.9v)）。
@@ -147,6 +161,7 @@ static func _add_title(btn: Button, title_text: String, is_locked: bool = false)
 	title.texture = tex
 	title.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title.size = display_size
+	title.z_index = TITLE_Z   # 标签恒在骨架附件（SPINE_Z+slot_idx）之上
 	title.position = Vector2(btn.size.x * 0.5 - display_size.x * 0.5, btn.size.y * 0.5 + TITLE_OFFSET_Y - display_size.y * 0.5)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 未解锁灰显（源 main_title_disable 纹理 fallback：无 disable 纹理资源，整体 modulate 灰化替代）

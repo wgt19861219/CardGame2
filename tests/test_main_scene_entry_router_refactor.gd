@@ -52,3 +52,36 @@ func test_main_scene_line_count() -> void:
 	var script_text: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
 	var lines: int = script_text.count("\n") + 1
 	assert_lte(lines, 400, "main_scene ≤400 行（当前 %d）" % lines)
+
+
+# ── 公会入口恢复守卫（2026-09-13 用户拍板②：图鉴有背包专属入口，主城建筑恢复公会名义）──
+
+# ENTRIES 数据：id 恢复 guild、title 回 mainres.Guild，无 handbook 残留。
+func test_guild_entry_restored() -> void:
+	var found: Dictionary = {}
+	for e in MainSceneEntries.ENTRIES:
+		if String(e["id"]) == "guild":
+			found = e
+		assert_false(String(e["id"]) == "handbook", "无 handbook 条目残留（已恢复公会名义）")
+	assert_false(found.is_empty(), "存在 id= guild 条目")
+	assert_eq(String(found["title"]), "mainres.Guild", "guild title=mainres.Guild（显示「公会」）")
+	assert_eq(String(found["unlock"]), "Guild", "unlock=Guild 照源 unlock_keys")
+
+# main_scene 路由：match "guild" 分支调 open_guild，无 open_handbook 残留。
+func test_main_scene_routes_guild() -> void:
+	var script_text: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
+	assert_true(script_text.find("\"guild\":") != -1, "match 含 guild 分支")
+	assert_true(script_text.find("MainSceneEntryRouter.open_guild(self)") != -1, "guild 分支调 open_guild")
+	assert_false(script_text.find("open_handbook") != -1, "无 open_handbook 残留调用")
+
+# open_guild 行为：点击 Toast「公会功能未开放」（公会联机裁剪无面板，对应源未解锁 showToast 语义）。
+func test_open_guild_shows_toast() -> void:
+	Toast._queue.clear()
+	Toast._free_current()
+	MainSceneEntryRouter.open_guild(null)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_not_null(Toast._current_label, "Toast 已显示")
+	if Toast._current_label != null:
+		assert_eq(Toast._current_label.text, "公会功能未开放", "Toast 文案「公会功能未开放」")
+	Toast._free_current()
