@@ -76,7 +76,7 @@ static func play_upgrade_effect(base_layer: Control) -> void:
 		var actions: PackedStringArray = fca.get_action_names()
 		if actions.size() > 0:
 			fca.play(actions[0], false)
-		fca.action_finished.connect(fca.queue_free)
+		fca.action_finished.connect(func(_a: String) -> void: fca.queue_free())   # 信号带 action 参数，直连报参数数不匹配（实机 2026-09-13 evolve 链抓获同款）
 
 
 # 装备上交动画（源 playEquipAnim upgradeReply :612-649，2026-09-05 补译）：
@@ -171,7 +171,7 @@ static func play_skill_upgrade_fx(skill_view: Control, skill_idx: int, scene_roo
 				var actions: PackedStringArray = fca.get_action_names()
 				if actions.size() > 0:
 					fca.play(actions[0], false)
-				fca.action_finished.connect(fca.queue_free)
+				fca.action_finished.connect(func(_a: String) -> void: fca.queue_free())   # 同上：信号参数数不匹配修
 			else:
 				fca.free()   # Node2D 不在 tree 内用 free（queue_free 需 tree 内 frame 才生效）
 	# 属性飘字：源 :85-122 多个 Label（这里只发 1 个，通用文案）。

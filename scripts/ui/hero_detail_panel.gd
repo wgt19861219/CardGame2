@@ -384,17 +384,10 @@ func _close_tab() -> void:
 
 # ---- 信号→Logic 便捷封装 ----
 
-# 升星：hero_manager.evolve（扣碎片+金币，stars+1）。
+# 升星：hero_manager.evolve（扣碎片+金币，stars+1）+ 表现链（源 doEvolveReply :789-816
+# 双 FCA/21 属性飘字/欢呼/back 播完弹成长公告窗，实现全在 HeroDetailEvolveFx 控行数）。
 func perform_evolve() -> bool:
-	if hero_manager == null or hero == null:
-		return false
-	var ok: bool = hero_manager.evolve(hero.inst_id)
-	if ok:
-		AudioPlayer.play_sfx("common_hero_upgrade")   # heroDetail.upgradeReply（升星回复成功，soundres.lua:223）
-		GameData.save()   # 照源 main.lua:1991 evolve 回调后即时存（升星扣碎片+金币）
-	else:
-		AudioPlayer.play_sfx("common_alert")          # heroDetail.clickDisabledUpgrade（条件不满足拒，soundres.lua:216）
-	return ok
+	return HeroDetailEvolveFx.perform_evolve(self)
 
 
 func perform_upgrade_rank() -> bool:
