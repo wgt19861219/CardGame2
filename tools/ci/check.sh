@@ -48,9 +48,9 @@ fi
 
 # P1-2（GUT 审查 2026-07-10）：passing-count 下限，防 test_ 改名等方法被 GUT 静默丢失
 # （extends GutTest 但 0 个 test_ 方法 GUT 不告警；上面 grep 防 load 失败，此条防
-# "load 成功但方法没被收集"致测试数下降）。加测试后调高 GUT_MIN_TESTS（当前基线 1590）。
-# env 覆盖便于验证断言生效：GUT_MIN_TESTS=2000 bash check.sh 应 fail。
-GUT_MIN_TESTS=${GUT_MIN_TESTS:-1590}
+# "load 成功但方法没被收集"致测试数下降）。加测试后调高 GUT_MIN_TESTS（当前基线 2600）。
+# env 覆盖便于验证断言生效：GUT_MIN_TESTS=3500 bash check.sh 应 fail。
+GUT_MIN_TESTS=${GUT_MIN_TESTS:-2600}
 gut_tests=$(awk '/^Tests[[:space:]]+/{print $2; exit}' <<<"$GUT_OUTPUT")   # here-string：避 printf|awk 管道 SIGPIPE（awk exit 致 printf broken pipe，pipefail 放大为 141）
 if [ -z "$gut_tests" ]; then
 	echo "❌ 无法从 GUT 输出解析 Tests 计数（输出格式变？），门禁失败"

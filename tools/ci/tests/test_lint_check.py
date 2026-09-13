@@ -187,6 +187,54 @@ class LintLineCountTest(unittest.TestCase):
             self.assertNotIn(lint_check.RULE_TOO_LONG, rules, "豁免清单中的 mcp_bridge.gd 不应报超长")
 
 
+class NearLimitWarningTest(unittest.TestCase):
+    """压线信息性警告（架构体检 2026-09-12 立）：≥90% 上限曝光，不进 violations。"""
+
+    def test_near_limit_logic_warned(self) -> None:
+        # 297/300 = 99% ≥ 90% → 警告（stage_manager.gd 真实场景）
+        with tempfile.TemporaryDirectory() as root:
+            sys_dir = os.path.join(root, "scripts", "systems")
+            os.makedirs(sys_dir)
+            with open(os.path.join(sys_dir, "mgr.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends RefCounted\n")
+                for i in range(296):
+                    handle.write(f"const A{i}: int = 0\n")
+            warnings = lint_check.collect_near_limit_warnings(root)
+            self.assertTrue(any("mgr.gd" in w for w in warnings), "297/300 行应触发压线警告")
+
+    def test_below_ratio_not_warned(self) -> None:
+        # 250/300 ≈ 83% < 90% → 不警告
+        with tempfile.TemporaryDirectory() as root:
+            sys_dir = os.path.join(root, "scripts", "systems")
+            os.makedirs(sys_dir)
+            with open(os.path.join(sys_dir, "ok.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends RefCounted\n")
+                for i in range(249):
+                    handle.write(f"const A{i}: int = 0\n")
+            self.assertEqual(lint_check.collect_near_limit_warnings(root), [])
+
+    def test_warning_not_in_violations(self) -> None:
+        # 压线（未超限）文件：警告通道有、violations 通道无（不 fail）
+        with tempfile.TemporaryDirectory() as root:
+            sys_dir = os.path.join(root, "scripts", "systems")
+            os.makedirs(sys_dir)
+            with open(os.path.join(sys_dir, "mgr.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends RefCounted\n")
+                for i in range(296):
+                    handle.write(f"const A{i}: int = 0\n")
+            self.assertEqual(lint_check.run(root), [], "297 ≤ 300 不应违规")
+            self.assertTrue(lint_check.collect_near_limit_warnings(root), "同文件应压线警告")
+
+    def test_exempt_file_not_warned(self) -> None:
+        # 豁免清单文件不参与压线警告（与 run() 行数扫描口径一致）
+        with tempfile.TemporaryDirectory() as root:
+            with open(os.path.join(root, "mcp_bridge.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends Node\n")
+                for i in range(500):
+                    handle.write(f"const A{i}: int = 0\n")
+            self.assertEqual(lint_check.collect_near_limit_warnings(root), [])
+
+
 class LintAutoloadScanTest(unittest.TestCase):
     def test_autoload_scanned_for_magic_number(self) -> None:
         # line 32：autoload 也扫 LINT001-004（Logic 入口核心，非 LOGIC_DIRS 但 lint 专用 LINT_TYPE_DIRS）

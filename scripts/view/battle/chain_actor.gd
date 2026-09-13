@@ -9,7 +9,7 @@ extends Node2D
 ## 拉伸（照源 :141）：content.scaleX = dist/100（贴图原宽 100px 基准拉伸到实际距离）。
 ## 高度（照源 :131）：endPos 取 target 高度 48*unitScale；startPos 取 launchPoint 高度（首跳）或 12（后续）。
 
-const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
+const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
 
 const CHAIN_CONTENT_BASE_W: float = 100.0  # 源 setScaleX(dist/100) 基准：贴图按 100px 宽拉伸

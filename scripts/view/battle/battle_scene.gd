@@ -5,7 +5,7 @@ extends Node2D
 ## 4 层节点（bg/main/top/ui）+ reset + step（速度倍率 quantize + engine.update + syncActors
 ## + actor/effect/ui list 推进）+ play_effect_on_scene（FCA .abc 特效）+ actor 桥。
 
-const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
+const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 const BattleFloatingBar = preload("res://scripts/view/battle/battle_floating_bar.gd")
 const BattleBigHpBar = preload("res://scripts/view/battle/battle_big_hp_bar.gd")
 const BattleSpeedButton = preload("res://scripts/view/battle/battle_speed_button.gd")

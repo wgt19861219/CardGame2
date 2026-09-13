@@ -30,6 +30,9 @@ Thumbs.db
 # NVIDIA 驱动 shader 缓存（Godot Windows 运行时意外写到项目根的空目录产物）
 NVIDIA Corporation/
 
+# 架构审查工作产物（diff 输出/对照脚本，本地工具产物不入库；2026-09-12 体检出库）
+/_audit/
+
 # 重构临时截图/工具产物（不入库）
 tools/refactor/
 

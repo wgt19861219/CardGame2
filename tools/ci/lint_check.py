@@ -218,6 +218,36 @@ def _check_line_limits(root: str, rel: str, violations: list[Violation]) -> None
         )
 
 
+NEAR_LIMIT_RATIO = 0.9  # 压线预警阈值（代码行 ≥90% 上限，架构体检 2026-09-12 立）
+
+
+def collect_near_limit_warnings(root: str) -> list[str]:
+    """压线信息性警告：代码行 ≥ NEAR_LIMIT_RATIO × 上限的文件清单（不 fail）。
+
+    LINT005 只拦"超限"，看不见"逼近"——压线债由 check_all 打印曝光，
+    供"大功能落入前主动预拆"（fills helper/纯函数下沉）决策用。
+    文件集覆盖 run() 行数检查的全部两个来源（LINT_TYPE_DIRS 含 systems/data
+    + LINE_COUNT_DIRS 含 scenes/ui/view/autoload，autoload 重叠去重），豁免逻辑一致。
+    """
+    warnings: list[str] = []
+    files = list(dict.fromkeys(
+        find_gd_files(root, LINT_TYPE_DIRS)
+        + find_gd_files(root, LINE_COUNT_DIRS)
+        + _find_root_level_gds(root)
+    ))
+    for rel in files:
+        if os.path.basename(rel.replace("\\", "/")) in _LINE_COUNT_EXEMPT:
+            continue
+        actual = count_code_lines(root, rel)
+        max_lines = _max_lines_for(rel)
+        if actual >= max_lines * NEAR_LIMIT_RATIO:
+            warnings.append(
+                f"{rel}: 代码 {actual}/{max_lines} 行（{actual * 100 // max_lines}%）压线，"
+                f"大功能落入前建议预拆（fills helper/纯函数下沉）"
+            )
+    return warnings
+
+
 def _find_root_level_gds(root: str) -> list[str]:
     """收集项目根目录（非子目录）下的 .gd 文件相对路径。
 

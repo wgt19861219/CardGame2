@@ -18,12 +18,7 @@ const HERO_PERC_MAX: int = 10000  # hp/mp 万分比（0-10000，对齐源 _hp_pe
 const SWEEP_PROB_MAX: int = 100
 const SWEEP_PROB_DICE: int = 100
 const SWEEP_DIAMOND_PRICE: int = 1
-# 章节星数奖励 tier（源 player.lua:925-932 getChapterStarRewardTiers 硬编码 3 档：30/60/90 星）
-const CHAPTER_STAR_TIERS: Array = [
-	{"tier": 1, "stars": 30, "rewards": [{"type": "money", "amount": 30000}, {"type": "item", "id": 14001, "amount": 2}]},
-	{"tier": 2, "stars": 60, "rewards": [{"type": "money", "amount": 80000}, {"type": "item", "id": 14002, "amount": 2}]},
-	{"tier": 3, "stars": 90, "rewards": [{"type": "rmb", "amount": 100}, {"type": "item", "id": 14003, "amount": 1}]},
-]
+# 章节星数奖励 tier 与领取逻辑见 StageChapterReward（2026-09-12 架构体检压线预拆下沉）
 
 var config: ConfigManager
 var progress: Dictionary = {}  # stage_id(int) -> stars(int)，通关星数
@@ -46,58 +41,18 @@ func _init(cm: ConfigManager) -> void:
 func stage_stars(sid: int) -> int: return int(progress.get(sid, 0))
 
 
-# ---- 章节星数奖励（照源 player.lua:910-973 chapter_star_reward handler 配套）----
+# ---- 章节星数奖励（照源 player.lua:910-973 chapter_star_reward handler 配套；逻辑下沉 StageChapterReward）----
 
 func get_chapter_stars(chapter_id: int) -> int:
-	var st: Dictionary = config.get_raw_table("Stage")
-	var total: int = 0
-	for sid_str in st:
-		var sid: int = int(sid_str)
-		if int(st[sid_str].get("Chapter ID", 0)) == chapter_id and StageAccount.stage_type(sid) == "normal":
-			total += stage_stars(sid)
-	return total
+	return StageChapterReward.chapter_stars(progress, config.get_raw_table("Stage"), chapter_id)
 
 
-func get_chapter_star_status(player: PlayerData, chapter_id: int) -> Dictionary:
-	var total: int = get_chapter_stars(chapter_id)
-	var tiers: Array = []
-	for t in CHAPTER_STAR_TIERS:
-		var td: Dictionary = t
-		var tier: int = int(td["tier"])
-		var key: String = "%d_%d" % [chapter_id, tier]
-		tiers.append({
-			"tier": tier,
-			"stars": int(td["stars"]),
-			"unlocked": total >= int(td["stars"]),
-			"claimed": bool(chapter_star_claimed.get(key, false)),
-			"rewards": td["rewards"],
-		})
-	return {"tiers": tiers, "total_stars": total}
+func get_chapter_star_status(_player: PlayerData, chapter_id: int) -> Dictionary:
+	return StageChapterReward.star_status(chapter_star_claimed, chapter_id, get_chapter_stars(chapter_id))
 
 
 func claim_chapter_star_reward(player: PlayerData, chapter_id: int, tier: int) -> Dictionary:
-	var td: Dictionary = {}
-	for t in CHAPTER_STAR_TIERS:
-		if int((t as Dictionary)["tier"]) == tier:
-			td = t
-			break
-	if td.is_empty():
-		return {"ok": false}
-	if get_chapter_stars(chapter_id) < int(td["stars"]):
-		return {"ok": false}
-	var key: String = "%d_%d" % [chapter_id, tier]
-	if bool(chapter_star_claimed.get(key, false)):
-		return {"ok": false}
-	for rw in td["rewards"]:
-		var rwd: Dictionary = rw
-		var rtype: String = String(rwd["type"])
-		if rtype == "money":
-			player.hero_manager.add_money(int(rwd["amount"]))
-		elif rtype == "rmb":
-			player.add_diamond(int(rwd["amount"]))
-		elif rtype == "item": player.add_item(int(rwd["id"]), int(rwd["amount"]))
-	chapter_star_claimed[key] = true
-	return {"ok": true, "rewards": td["rewards"]}
+	return StageChapterReward.claim(player, chapter_star_claimed, chapter_id, tier, get_chapter_stars(chapter_id))
 
 
 func enter_stage(sid: int, _player: PlayerData) -> Dictionary: return {"ok": true, "stage_id": sid}

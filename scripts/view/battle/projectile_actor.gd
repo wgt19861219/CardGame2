@@ -9,7 +9,7 @@ extends Node2D
 ## 本项目正交投影 DEEP_PROJECTION_X=0 / DEEP_PROJECTION_Y=1，简化为 -atan2(zSpeed + v.y, v.x)（弧度）。
 ## 朝向（照源 :301）：scale.y = v.x > 0 ? 1 : -1（朝右不翻转，朝左沿 Y 轴翻转贴图）。
 
-const BattleViewCoords = preload("res://scripts/view/battle/battle_view_coords.gd")
+const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
 
 var model: Variant = null  # BattleProjectile（Logic 层投射物）

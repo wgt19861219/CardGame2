@@ -30,7 +30,7 @@
 ## 四大架构原则（每个 PR 必须满足，CI 门禁强制）
 
 ### 1. 三层分离（治架构耦合）
-- `scenes/<feature>/` — **View 资产层**：入口场景 tscn（3 个，绑同目录本地脚本）+ content 底板 tscn（69 个，无脚本）
+- `scenes/<feature>/` — **View 资产层**：入口场景 tscn（3 个，绑同目录本地脚本）+ content 底板 tscn（71 个，无脚本）+ 行/格模板 tscn（17 个，无脚本）
 - `scripts/systems/` — **Logic 层**：纯业务逻辑，不依赖 Node/Control，可 headless 单测
 - `scripts/data/` — **Data 层**：PlayerData / SaveManager / ConfigManager + feature_catalog
 - `scripts/ui/` — **主 View 层**：功能 panel + builder + 跨域通用展示工具
@@ -76,11 +76,11 @@
 
 ### tscn↔gd 绑定规范（一轨制，2026-08-14 阶段二立）
 
-按用途三轨、每轨唯一绑定方式（基线 76 tscn = 69 + 4 + 3）：**A** content 底板无脚本（builder instantiate + fill，主体范式）｜**B** 战斗完整场景绑远端 `scripts/view/battle/*.gd`（4 个）｜**C** 入口场景绑同目录本地脚本（3 个，固定不再增）。禁 content tscn 绑脚本；panel 脚本归位 battle 专属进 `scripts/view/battle/`、跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui）；`scenes/` 只放 tscn 资产与入口脚本。详见 AGENTS.md 同名节。
+按用途三轨、每轨唯一绑定方式（基线 95 tscn = 88 无脚本 + 4 战斗 + 3 入口，2026-09-12 实测）：**A** 无脚本底板/模板（content 71 + 行模板 17，builder instantiate + fill，主体范式）｜**B** 战斗完整场景绑远端 `scripts/view/battle/*.gd`（4 个）｜**C** 入口场景绑同目录本地脚本（3 个，固定不再增）。禁 content tscn 绑脚本；panel 脚本归位 battle 专属进 `scripts/view/battle/`、跨域通用进 `scripts/ui/`（依赖方向恒为 view/battle → ui，CI **LAYER003** 强制 + 存量白名单只减不增）；`scenes/` 只放 tscn 资产与入口脚本。详见 AGENTS.md 同名节。
 
 ### UI 两件套范式 SOP（2026-08-15 试点 shop+hero_detail 定稿，取代 2026-07-17 三件套范式）
 
-每个功能 panel = **完整静态 `*_content.tscn`（无脚本）+ `*_panel.gd`（业务+信号+fill）** 两个文件；builder 层退役（`scripts/ui/` 下 `_builder.gd` 随批次消亡，试点前 10 个→9 个）。位置/贴图/字号全进 tscn+theme，编辑器所见即所得，调布局只动 tscn 一个文件。
+每个功能 panel = **完整静态 `*_content.tscn`（无脚本）+ `*_panel.gd`（业务+信号+fill）** 两个文件；builder 层退役（`scripts/ui`+`scripts/view` 下 `_builder.gd` 现存 5 个：4 个范式内 `*_row_builder.gd` + 1 个 `main_map_builder.gd` 容器工厂特例，2026-09-12 实测）。位置/贴图/字号全进 tscn+theme，编辑器所见即所得，调布局只动 tscn 一个文件。
 
 - **content tscn**：完整静态节点树。被引用节点开 `unique_name_in_owner`（同名节点不能都开）；静态背景节点不开；`.tscn` 禁 `#` 注释用 `;`；ext_resource 不写 uid。
 - **panel.gd**：只做业务、信号 connect、fill（`get_node("%Xxx")` 取节点填动态数据）。fill 并入后逼近 View 550 行门槛时，fill 函数下沉独立 fills helper（如 `hero_detail_fills.gd`：纯数据绑定，禁建静态节点/禁样式 override）。

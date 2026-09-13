@@ -82,5 +82,69 @@ class AllowedLogicBasesDefenseTest(unittest.TestCase):
             self.assertIn(cls, ALLOWED_LOGIC_BASES, f"{cls} 应在 Logic 白名单")
 
 
+class Layer003UiViewRefTest(unittest.TestCase):
+    """LAYER003（架构体检 2026-09-12）：ui 禁依赖 view（方向恒 view/battle → ui）。"""
+
+    def _check_ui(self, rel: str, view_classes: set[str], whitelist: dict | None = None) -> list:
+        tree = parse_file(FIXTURES, rel)
+        return layer_check.check_ui_file(rel, tree, view_classes, whitelist)
+
+    def test_ui_ok_no_violation(self) -> None:
+        # 引 ui 类/场景资源/注释提 view 类名，均不违规
+        self.assertEqual(self._check_ui("ui_ok.gd", {"SomeViewClass"}), [])
+
+    def test_ui_view_class_ref_caught(self) -> None:
+        violations = self._check_ui("ui_bad_view_ref.gd", {"BattleFake"})
+        class_v = [v for v in violations if v.rule == layer_check.RULE_UI_VIEW_REF and "BattleFake" in v.message]
+        self.assertEqual(len(class_v), 1)
+
+    def test_ui_view_path_ref_caught(self) -> None:
+        violations = self._check_ui("ui_bad_view_ref.gd", set())
+        path_v = [v for v in violations if "scripts/view/" in v.message]
+        self.assertEqual(len(path_v), 1)
+
+    def test_ui_whitelisted_class_passes(self) -> None:
+        # 白名单内的 view 类引用放行（存量债机制）
+        wl = {"ui_whitelist_ref.gd": frozenset({"BattleFake"})}
+        self.assertEqual(self._check_ui("ui_whitelist_ref.gd", {"BattleFake"}, wl), [])
+
+    def test_ui_non_whitelisted_class_caught(self) -> None:
+        # 白名单未覆盖的 view 类仍 fail（只减不增）
+        wl = {"ui_whitelist_ref.gd": frozenset({"OtherClass"})}
+        violations = self._check_ui("ui_whitelist_ref.gd", {"BattleFake"}, wl)
+        self.assertTrue(any(v.rule == layer_check.RULE_UI_VIEW_REF for v in violations))
+
+    def test_run_scans_ui_layer(self) -> None:
+        """run() 集成：ui 文件引 view 类被 LAYER003 抓出。"""
+        with tempfile.TemporaryDirectory() as root:
+            ui_dir = os.path.join(root, "scripts", "ui")
+            view_dir = os.path.join(root, "scripts", "view", "battle")
+            os.makedirs(ui_dir)
+            os.makedirs(view_dir)
+            with open(os.path.join(view_dir, "battle_fake.gd"), "w", encoding="utf-8") as handle:
+                handle.write("class_name BattleFake\nextends Node2D\n")
+            with open(os.path.join(ui_dir, "panel.gd"), "w", encoding="utf-8") as handle:
+                handle.write("extends Control\n\nfunc open() -> void:\n\tvar p := BattleFake.new()\n")
+
+            violations = layer_check.run(root)
+            self.assertTrue(
+                any(v.rule == layer_check.RULE_UI_VIEW_REF and v.file == "scripts/ui/panel.gd" for v in violations)
+            )
+
+    def test_whitelist_only_shrinks_guard(self) -> None:
+        """白名单防御：项目白名单键必须真实存在（防拼写漂移致白名单失效成摆设）。"""
+        import re
+
+        ci_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(ci_dir, "layer_check.py"), encoding="utf-8") as handle:
+            src = handle.read()
+        keys = re.findall(r'"(scripts/ui/[a-z0-9_]+\.gd)":', src)
+        for key in keys:
+            self.assertTrue(
+                os.path.isfile(os.path.join(ci_dir, "..", "..", key)),
+                f"UI_VIEW_CLASS_WHITELIST 键 {key} 指向不存在的文件，白名单已失效",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
