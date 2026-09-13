@@ -103,3 +103,33 @@ func test_enter_crusade_assembles_with_crusade_hp() -> void:
 	var enemies_arr: Array = eng.alive_units.get(BattleEngine.CAMP_ENEMY, [])
 	var e0: BattleUnit = enemies_arr[0]
 	assert_gt(e0.position.x, 400.0, "敌方 X 镜像 >400（源 :534-537）")
+
+
+# ── 缠绕回归守卫（2026-09-13 竞技场缠绕根修）──
+# 根因链：表名 hero_equip（小写查空表）+ estimate_max_rank 误译（源 enableMaxAttStrategy
+# 仅 bot.lua 测试脚本置 true，正常游戏走 else：estimate 全由 is_bot 决定）→ Hero rank=0 →
+# init_skill 全锁（Unlock≥1>0）→ skill_list 空 + attack_range=0 → AI 永不攻击且 walk_to
+# 无停止距离 → 双方贴近后互相追逐 + 碰撞推移，缠绕并沿 Y 轴漂移出屏。
+func test_enter_arena_both_sides_have_skills() -> void:
+	var eng := BattleEngine.new()
+	var heroes: Array[Dictionary] = [{"_tid": 1, "_level": 1, "_stars": 1, "_rank": 1}]
+	var enemies: Array[Dictionary] = [{"_tid": 1, "_level": 1, "_stars": 1, "_rank": 1}]
+	BattleEngineArena.enter_arena(eng, cm, lib, heroes, enemies, false, true)
+	assert_eq(eng.unit_list.size(), 2, "双方各 1 英雄")
+	for unit in eng.unit_list:
+		assert_gt(unit.skill_list.size(), 0, "camp=%d skill_list 非空（缠绕守卫）" % int(unit.camp))
+		assert_true(unit.basic_skill != null, "camp=%d 普攻装配（缠绕守卫）" % int(unit.camp))
+		assert_gt(float(unit.attack_range), 0.0, "camp=%d attack_range>0（缠绕守卫）" % int(unit.camp))
+
+
+# estimate 策略照源 else 分支（battle_engine.lua:162-165）：玩家方（hero_is_bot=false）
+# 走真实 _rank；敌方 bot（enemy_is_bot=true）走 estimate_rank=floor((lv+9)/10)。
+func test_enter_arena_estimate_follows_is_bot() -> void:
+	var eng := BattleEngine.new()
+	var heroes: Array[Dictionary] = [{"_tid": 1, "_level": 1, "_stars": 1, "_rank": 3}]
+	var enemies: Array[Dictionary] = [{"_tid": 1, "_level": 1, "_stars": 1, "_rank": 3}]
+	BattleEngineArena.enter_arena(eng, cm, lib, heroes, enemies, false, true)
+	var p0: BattleUnit = eng.alive_units.get(BattleEngine.CAMP_PLAYER, [])[0]
+	assert_eq(int(p0.rank), 3, "玩家方走真实 _rank=3（estimate_max_rank=false）")
+	var e0: BattleUnit = eng.alive_units.get(BattleEngine.CAMP_ENEMY, [])[0]
+	assert_eq(int(e0.rank), 1, "敌方 bot 估算 rank=floor((1+9)/10)=1（estimate_rank=is_bot）")

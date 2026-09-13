@@ -35,7 +35,7 @@ func test_upgrade_rank_resets_to_init() -> void:
 	_wear_full_gear(mgr, inst_id)
 	mgr.upgrade_rank(inst_id)
 	var hero := mgr.get_hero(inst_id)
-	var init_row: Dictionary = cm.get_raw_table(&"hero_equip").get("1", {}).get(str(hero.rank), {})
+	var init_row: Dictionary = cm.get_raw_table(&"Hero_equip").get("1", {}).get(str(hero.rank), {})
 	for slot in range(6):
 		var init_id: int = int(init_row.get("Init" + str(slot + 1) + " ID", 0))
 		assert_eq(int(hero.equip_slots[slot]), init_id, "slot %d 重置为 Init 装备" % slot)
