@@ -270,6 +270,8 @@ func _finalize_battle() -> void:
 	var m := String(_battle_context.get("mode", "stage"))
 	if m == "excavate":
 		BattleSceneFinalizer.finalize_excavate(self)
+	elif m == "crusade":
+		BattleSceneFinalizer.finalize_crusade(self)
 	elif m == "pvp":
 		BattleSceneFinalizer.finalize_pvp(self)
 	else:

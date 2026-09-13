@@ -66,6 +66,7 @@ func test_settlement_targets_arena_no_jump() -> void:
 
 
 # 失败结算页 arena 模式隐藏重打按钮（源 stagefailed.lua:212 visible=arena_mode==false）。
+# 2026-09-14 收敛为 sid>0：crusade 负数关（-3~-17）无 stagedetail 可跳，同语义隐藏。
 func test_stage_failed_arena_hides_back() -> void:
 	var scene := StageFailedScene.new()
 	add_child_autofree(scene)
@@ -75,6 +76,14 @@ func test_stage_failed_arena_hides_back() -> void:
 	add_child_autofree(scene2)
 	scene2.setup({"stage_id": 1, "victory": false, "lose_type": "fail"}, cm)
 	assert_true(bool((scene2._content.get_node("Back") as BaseButton).visible), "PVE 失败页保留重打")
+
+
+# crusade 失败页隐藏重打（负数关 -3=-2-1；重打无 stagedetail 目标）。
+func test_stage_failed_crusade_hides_back() -> void:
+	var scene := StageFailedScene.new()
+	add_child_autofree(scene)
+	scene.setup({"stage_id": -3, "victory": false, "lose_type": "fail"}, cm)
+	assert_false(bool((scene._content.get_node("Back") as BaseButton).visible), "crusade 失败页隐藏重打（sid=-3）")
 
 
 # 最高排名奖励弹窗：best_rank_reward>0 时 stage_done 装配后 3s 弹出，结构+文案齐。
