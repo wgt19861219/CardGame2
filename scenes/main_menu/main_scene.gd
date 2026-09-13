@@ -64,6 +64,7 @@ func _ready() -> void:
 	_refresh_status()
 	# _maybe_start_tutorial()   # 2026-08-20 用户指示：一进游戏的新手引导暂不弹（与剧情/解锁公告一并禁用）；恢复取消本行注释即可
 	_maybe_resume_excavate()
+	_maybe_resume_crusade()
 	_maybe_resume_stage_result()
 
 
@@ -98,6 +99,15 @@ func _maybe_resume_excavate() -> void:
 	panel.show_window(self)
 	panel.focus_excavate(excavate_id)
 	Toast.show_message(EXCAVATE_WIN_TEXT if won else EXCAVATE_LOSE_TEXT)
+
+
+# crusade 战斗结束重弹远征面板（源 crusade.lua:700-703 endBattle 胜利 replaceScene(crusade.create())；
+# 失败走结算场景，其 menu 按钮回主城后不重弹——与源 popScene 语义一致）。
+func _maybe_resume_crusade() -> void:
+	if GameData.pending_crusade.is_empty():
+		return
+	GameData.pending_crusade.clear()
+	MainSceneEntryRouter.open_crusade(self)
 
 
 # pvp 战斗结束改切结算场景（stageDone/stageFailed，2026-09-13 PVP 结算补全，行为对齐源

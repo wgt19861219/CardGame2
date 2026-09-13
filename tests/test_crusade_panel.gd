@@ -213,22 +213,16 @@ func test_start_opens_battle_prepare_mode_crusade() -> void:
 	assert_eq((bp as BattlePreparePanel).min_level, 20, "min_level=20（源 :436 heroLimit detail）")
 	assert_eq((bp as BattlePreparePanel).stage_id, -3, "stage_id=-2-1=-3（源 :432 stageId=-2-currentStage）")
 	assert_false(panel.start_btn.visible, "start_btn 隐藏（源 :440 battleLayer setVisible(false)）")
+	# 2026-09-14 crusade 战斗改装配切 battle_scene 观战：旧同步信号链退役（防回潮守卫）。
+	assert_false(bp.has_signal("crusade_battle_finished"), "crusade_battle_finished 信号已退役")
+	assert_false(panel.has_method("_on_crusade_battle_finished"), "面板旧回调已退役")
 	(bp as BattlePreparePanel).queue_free()
 	panel.remove_window()
 	root.queue_free()
 
 
-# crusade 战斗结束（同步）通过 crusade_battle_finished 信号回调刷新面板。
-func test_crusade_battle_finished_refreshes_label() -> void:
-	var root := Node.new()
-	add_child(root)
-	var panel := _make_panel(root, 1)
-	panel._on_crusade_battle_finished(true, 3)
-	assert_true(panel.result_label.text.contains("胜利"), "won → result_label 含\"胜利\"")
-	panel._on_crusade_battle_finished(false, 5)
-	assert_true(panel.result_label.text.contains("失败"), "lost → result_label 含\"失败\"")
-	panel.remove_window()
-	root.queue_free()
+# 旧 test_crusade_battle_finished_refreshes_label（同步信号刷新 label）随 2026-09-14
+# 战斗观战化退役：结束反馈改经 pending_crusade 重弹面板由 setup_panel 全量刷新承载。
 
 
 # 源选关交互：点 stage → 选中 + 敌方预览 + 显 start（源 :206）。
@@ -646,3 +640,24 @@ func test_panel_new_whitelist() -> void:
 	# fills 白名单：格子动态行 TextureButton 恰 2 处。
 	var fills_src: String = FileAccess.get_file_as_string("res://scripts/ui/crusade_fills.gd")
 	assert_eq(fills_src.count("TextureButton.new()"), 2, "fills 恰 2 处 TextureButton（box+battle 动态行）")
+
+
+# 2026-09-14 战斗观战化：胜利后经 pending_crusade 重弹远征面板（源 endBattle :702
+# replaceScene(crusade.create())）。守卫：pending 非空 → 清空 + open_crusade 弹面板。
+func test_maybe_resume_crusade_reopens_panel() -> void:
+	var root := Node.new()
+	add_child(root)
+	var old_pd: Variant = GameData.player
+	GameData.player = PlayerData.new(cm)
+	GameData.player.hero_manager.add_hero(1)
+	GameData.pending_crusade = {"won": true}
+	MainSceneEntryRouter.open_crusade(root)
+	var found: bool = false
+	for c in root.get_children():
+		if c is CrusadePanel:
+			found = true
+			c.queue_free()
+	assert_true(found, "open_crusade 弹出 CrusadePanel（pending 重弹目标）")
+	GameData.pending_crusade.clear()
+	GameData.player = old_pd
+	root.queue_free()

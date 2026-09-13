@@ -383,28 +383,20 @@ func _on_stage_n(i: int) -> void:
 		result_label.text = "第 %d/%d 关  (无敌人数据)" % [i, max_stage]
 
 
-## 目标单机化：弹 BattlePreparePanel（mode=crusade，源 :431-441 heroLimit level=20）。
+## 目标单机化：弹 BattlePreparePanel（mode=crusade，源 :431-441 heroLimit level=20）；
+## 2026-09-14 起确认开战后装配切 battle_scene 观战，结束经 pending_crusade 回本面板
+## （旧 crusade_battle_finished 同步信号链随 _run_crusade_go 退役）。
 func _on_start_pressed() -> void:
 	if player == null or rng == null or current_select == 0:
 		return
 	var stage_id: int = -2 - current_select
 	var panel := BattlePreparePanel.new()
 	panel.setup(stage_id, player, player.crusade_manager, rng, player.cm, "crusade", CRUSADE_HERO_MIN_LEVEL)
-	panel.crusade_battle_finished.connect(_on_crusade_battle_finished)
 	var parent: Node = get_parent()
 	if parent != null:
 		parent.add_child(panel)
 	if start_btn != null:
 		start_btn.visible = false
-
-
-func _on_crusade_battle_finished(won: bool, stage: int) -> void:
-	if won:
-		result_label.text = "第 " + str(stage) + " 关 胜利"
-	else:
-		result_label.text = "第 " + str(stage) + " 关 失败"
-	_refresh_stage_states()
-	_apply_initial_scroll()
 
 
 ## 源 openShop（:681-683）：shop.create(4) 龙鳞商店 → 单机化弹 ShopPanel(shop_id=4)。

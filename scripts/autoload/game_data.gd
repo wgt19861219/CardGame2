@@ -23,6 +23,7 @@ var skill_groups: SkillGroupData
 var last_result: Dictionary = {}  # 最近战斗结算 param（结算场景 _ready 读，等价源 stagefailed/stagedone create(param)；battle 衔接存）
 var battle_context: Dictionary = {}  # 战斗上下文（assemble 存 / battle_scene._ready 装配 + _finalize 结算读）
 var pending_excavate: Dictionary = {}  # excavate 战斗结束待重弹标记（battle_scene._finalize_excavate 存 / main_scene._ready 读后清）
+var pending_crusade: Dictionary = {}  # crusade 战斗结束待重弹远征面板标记（battle_scene_finalizer.finalize_crusade 存 / main_scene._ready 读后清）
 var pending_stage_result: Dictionary = {}  # stage 结算页重试/下一关待重弹标记（settlement_common 存 / main_scene 读后清）
 var _dirty: bool = false  # 脏标（照源 ed.saveDirty，60s Timer 合并刷盘）
 var _test_mode: bool = false  # 测试模式（env GODOT_TEST_MODE / 编辑器 hint），隔离真实存档

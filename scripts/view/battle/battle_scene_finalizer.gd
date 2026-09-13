@@ -5,7 +5,10 @@ extends RefCounted
 ## static 方法第一参 scene，照 equip_strengthen_anim.gd 静态拆分范式。
 ## 主类 _finalize_battle 直接调本类（私有，不需转发桩）。
 ##
-## 三种模式：excavate（回主菜单重弹 map）/ pvp（排名互换回 ladder_panel）/ stage（切结算场景）。
+## 四种模式：excavate（回主菜单重弹 map）/ crusade（胜利回远征面板、失败切结算场景）/
+## pvp（排名互换回 ladder_panel）/ stage（切结算场景）。
+## crusade 照源 crusade.lua:684-704 endBattle + battle_engine.lua:1117-1120 downExit
+## crusade_mode 胜利短路（不进 stageaccount 结算页）。
 
 const STAGE_DONE_PATH: String = "res://scenes/battle/stage_done_scene.tscn"
 const STAGE_FAILED_PATH: String = "res://scenes/battle/stage_failed_scene.tscn"
@@ -47,6 +50,38 @@ static func finalize_excavate(scene) -> void:
 	GameData.battle_context.clear()
 	_clear_battle_resources()
 	SceneManager.change_scene(MAIN_SCENE_PATH)
+
+
+# crusade 战斗结算（源 crusade.lua:684-704 endBattle）：胜利→fight 存跨关 HP/MP+推进 →
+# pending_crusade → 回 main_scene 重弹 CrusadePanel（无结算页，源 downExit :1117-1120 短路）；
+# 失败→doFailed 语义切 stagefailed（源 :1050-1062），exp 走 Stage[-2-stage] 行（全 0）；
+# 失败页 menu 回主城不重弹远征（源场景栈：失败页 popScene 回 main，仅胜利 replaceScene 重开 crusade）。
+static func finalize_crusade(scene) -> void:
+	var ctx: Dictionary = scene._battle_context
+	var mgr: Variant = ctx["mgr"]
+	var r: Dictionary = CrusadeBattle.finalize_crusade_battle(mgr, scene.engine)
+	var won: bool = bool(r.get("won", false))
+	if won:
+		GameData.pending_crusade = {"won": true}
+	else:
+		var hero_tids: Array[int] = []
+		hero_tids.assign(ctx.get("player_tids", []))
+		var sid: int = int(ctx["stage_id"])
+		var result_param: Dictionary = {
+			"stage_id": sid, "victory": false, "heroes": hero_tids,
+			"stars": 0, "loots": [], "excavate_mode": false, "isPveMode": false,
+			"hero_hp_mp": r.get("hero_hp_mp", {}),
+			"lose_type": "timeout" if int(scene.engine.last_result) == BattleEngine.RESULT_TIMEOUT else "fail",
+			"unit_list": _snapshot_units(scene.engine),
+		}
+		GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
+	GameData.save()
+	GameData.battle_context.clear()
+	_clear_battle_resources()
+	if won:
+		SceneManager.change_scene(MAIN_SCENE_PATH)
+	else:
+		SceneManager.change_scene(STAGE_FAILED_PATH)
 
 
 # pvp 战斗结算（照源 stageaccount.lua initialize：victory→stagedone / defeat→stagefailed，

@@ -6,9 +6,7 @@ extends RefCounted
 
 const MAX_STAGE: int = 15
 const FULL_HP_MP: float = 1.0
-const CRUSADE_MAX_TICKS: int = 300  # 战斗最大 tick（防死循环，同 StageManager.BATTLE_MAX_TICKS）
 const DEFAULT_WAVE: int = 1         # Crusade 单波（源每关 wave=1）
-const PERC_DENOM: int = 10000
 const TEAM_SIZE: int = 5
 const FORMATION_MAX_PER_LINE: int = 3
 const LINE_REAR: int = 2           # 阵型数组后列索引（lint 禁裸 2）
@@ -200,57 +198,12 @@ func get_stage_enemies(stage: int) -> Array:
 	return info.get("heroes", [])
 
 
-## 端到端 Crusade 战斗：玩家英雄（跨关 HP/MP）+ 敌人英雄（max_rank 装备）+ BattleEngine 跑 + fight 存状态。
-## 敌人来源 enemies[stage].heroes（init_crusade 生成）；玩家跨关 HP/MP from hero_hp_perc/hero_mp_perc。
+## 端到端 Crusade 战斗（测试兼容薄包装）：组装/结算体已下沉 CrusadeBattle
+## （2026-09-14 拆 assemble/finalize 接 battle_scene View；View 接入走那两个入口）。
+## 空队伍拒绝（对齐源 enterStage 空队防护）：必败 fight() 会污染 crusade
+## 跨关 HP/MP 与进度状态，拒绝进入而非记一场空队败仗。
 func run_crusade_battle(stage: int, player: PlayerData, player_tids: Array[int], rng: BattleRng) -> Dictionary:
-	# 空队伍拒绝（对齐源 2026-08-19 enterStage 空队防护）：必败 fight() 会污染 crusade
-	# 跨关 HP/MP 与进度状态，拒绝进入而非记一场空队败仗。
-	if player_tids.is_empty():
-		return {"ok": false, "error": "empty_team"}
-	if config == null or rng == null:
-		return {"ok": false}
-	var stage_enemies: Array = get_stage_enemies(stage)
-	if stage_enemies.is_empty():
-		return {"ok": false}
-	var eng := BattleEngine.new()
-	eng.rng = rng
-	eng.sfx_hook = sfx_hook   # T3 注入（胜/败音效；crusade 不走 waves，无需 skill_lib）
-	var hero_list: Array[Dictionary] = []
-	var self_crusade: Dictionary = {}
-	for tid in player_tids:
-		var proto: Dictionary = {"_tid": tid}
-		var hero: HeroInstance = StageManager._find_hero_by_tid(player.hero_manager, tid)
-		if hero != null:
-			proto["_level"] = hero.level
-			proto["_stars"] = hero.stars
-			proto["_rank"] = hero.rank
-			proto["_items"] = StageManager._hero_items(hero)
-		else:
-			proto["_level"] = 1
-			proto["_stars"] = 1
-		hero_list.append(proto)
-		self_crusade[tid] = {
-			"_hp_perc": int(hero_hp(tid) * PERC_DENOM),
-			"_mp_perc": int(hero_mp(tid) * PERC_DENOM),
-		}
-	var lib := SkillLibrary.new(config)
-	BattleEngineArena.enter_crusade(eng, config, lib, hero_list, stage_enemies, true, self_crusade, {}, stage)
-	var ticks: int = CRUSADE_MAX_TICKS
-	while eng.running and not eng.stage_ended and ticks > 0:
-		eng.update(BattleEngine.TICK_INTERVAL)
-		ticks -= 1
-	var won: bool = eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY).is_empty()
-	# 存跨关 HP/MP（存活英雄当前 HP/MP 占比；阵亡 0）
-	var hp_map: Dictionary = {}
-	var mp_map: Dictionary = {}
-	var player_units: Array = eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
-	for u in player_units:
-		var max_hp: float = float(u.attribs.get("HP", 0.0))
-		var max_mp: float = float(u.attribs.get("MP", 0.0))
-		hp_map[u.tid] = float(u.hp) / max_hp if max_hp > 0 else 0.0
-		mp_map[u.tid] = float(u.mp) / max_mp if max_mp > 0 else 0.0
-	fight(won, hp_map, mp_map)
-	return {"ok": true, "won": won}
+	return CrusadeBattle.run_crusade_battle(self, stage, player, player_tids, rng)
 
 
 ## 序列化（持久化，含旧版跨关状态 + 敌人配置）。

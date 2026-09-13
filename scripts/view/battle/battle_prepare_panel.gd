@@ -10,12 +10,14 @@ extends Control
 ##
 ## mode（源 battleprepare.lua:1746 self.mode = info.mode）：
 ##   "stage"（默认）= 普通关卡，_on_go_pressed 走 mgr.assemble_stage_battle 进 battle_scene。
-##   "crusade"（源 crusade.lua:434-438 start() 传 mode=crusade + heroLimit level=20）=
-##     同步跑 mgr.run_crusade_battle + emit crusade_battle_finished（crusade_panel 接回刷新）。
-
-signal crusade_battle_finished(won: bool, stage: int)
+##   "crusade"（源 crusade.lua:431-441 start() 传 mode=crusade + heroLimit level=20）=
+##     照源 doCrusade→gotoBattle enterCrusade+replaceScene：走 CrusadeBattle.assemble 进
+##     battle_scene 观战（2026-09-14 改造，旧同步数值结算 _run_crusade_go 退役）；
+##     战斗结束 battle_scene._finalize 加 crusade 分支 → 胜利回远征面板/失败切结算场景
+##     （旧 crusade_battle_finished 同步信号链退役——跨场景后面板销毁，信号无人可收）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/battle_prepare_content.tscn")
+const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
 const ReadheroIcon = preload("res://scripts/ui/readhero_icon.gd")
 const TEAM_MAX: int = 5
 
@@ -376,7 +378,8 @@ func _on_back_pressed() -> void:
 	queue_free()
 
 
-# 同步跑（不进 battle_scene，照 crusade_panel 既有实现），emit crusade_battle_finished 给 crusade_panel。
+# 确认开战：crusade 走 CrusadeBattle.assemble 装配 engine → battle_context(mode=crusade) →
+# 切 battle_scene 观战（源 doCrusade→gotoBattle enterCrusade+replaceScene）；stage 分支照旧。
 func _on_go_pressed() -> void:
 	AudioPlayer.play_sfx("battle_begin")
 	if _team.size() < TEAM_MAX:
@@ -388,7 +391,7 @@ func _on_go_pressed() -> void:
 		Toast.show_message(cm.get_lstr(LSTR_NOTENOUGH))
 		return
 	if mode == "crusade":
-		_run_crusade_go(tids)
+		_go_crusade_battle(tids)
 		return
 	var asm_r: Dictionary = mgr.assemble_stage_battle(stage_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
@@ -398,15 +401,20 @@ func _on_go_pressed() -> void:
 		"loots": asm_r["loots"], "stage_id": stage_id, "player_tids": tids, "mgr": mgr,
 	}
 	queue_free()
-	SceneManager.change_scene("res://scenes/battle/battle_scene.tscn")
+	SceneManager.change_scene(BATTLE_SCENE_PATH)
 
 
-# stage_id 负值，run_crusade_battle 需还原 stage 号（1-15）= -stage_id - 2。同步跑 + emit + queue_free。
-func _run_crusade_go(tids: Array[int]) -> void:
-	var stage: int = -stage_id - 2
-	var r: Dictionary = mgr.run_crusade_battle(stage, player, tids, rng)
-	var won: bool = bool(r.get("won", false))
+# 装配远征战斗切场景（照源 crusade.start 负数 stage_id 直传；空队/装配失败仅 Toast 反馈不切场景）。
+func _go_crusade_battle(tids: Array[int]) -> void:
+	var asm_c: Dictionary = CrusadeBattle.assemble_crusade_battle(mgr, stage_id, player, tids, rng)
+	if not bool(asm_c.get("ok", false)):
+		Toast.show_message(cm.get_lstr(LSTR_NOTENOUGH))
+		return
+	GameData.battle_context = {
+		"mode": "crusade", "engine": asm_c["engine"], "battle_info": asm_c["battle_info"],
+		"stage_id": stage_id, "player_tids": tids, "mgr": mgr,
+	}
 	queue_free()
-	crusade_battle_finished.emit(won, stage)
+	SceneManager.change_scene(BATTLE_SCENE_PATH)
 
 
