@@ -121,16 +121,13 @@ static func _init_unit_info(engine: Variant, cm: ConfigManager, self_unit: Array
 	BattleEngineWaves.reset_unit_list(engine)
 
 
-static func _set_up_config_estimate_info(config: Dictionary, cm: ConfigManager, tid: int, is_bot: bool) -> void:
-	var unit_type: String = String(cm.get_raw_table(&"Unit").get(str(tid), {}).get(&"Unit Type", ""))
-	if unit_type == &"Monster":
-		config[&"estimate_rank"] = is_bot
-		config[&"estimate_skill"] = is_bot
-		config[&"estimate_max_rank"] = false
-	else:
-		config[&"estimate_rank"] = false
-		config[&"estimate_skill"] = false
-		config[&"estimate_max_rank"] = true
+## 照源 battle_engine.lua:152-168 setUpConfigEstimateInfo 的 else 分支（enableMaxAttStrategy
+## 仅源 headless 测试脚本 bot.lua:6 置 true，正常游戏恒 nil/false）——estimate 三项全由 is_bot
+## 决定，不分 Hero/Monster。误译 max_rank 分支曾致竞技场双方英雄走估算 rank（源 2026-09-13 排查）。
+static func _set_up_config_estimate_info(config: Dictionary, _cm: ConfigManager, _tid: int, is_bot: bool) -> void:
+	config[&"estimate_rank"] = is_bot
+	config[&"estimate_skill"] = is_bot
+	config[&"estimate_max_rank"] = false
 
 
 static func _arena_hp_mod(cm: ConfigManager, proto: Dictionary) -> float:

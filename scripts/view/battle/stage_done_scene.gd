@@ -14,6 +14,7 @@ extends Control
 ## hero/loot icon（数量随 _param 变）保留 procedural 挂 %HeroHost/%LootHost（Node2D/RefCounted 无法 .tscn 实例化）。
 
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
+const BestRankPopup = preload("res://scripts/view/battle/stage_done_best_rank_popup.gd")
 
 # 静态节点（bg/shelter/light/star×3/info_bg 父/replay/next/HeroHost/LootHost）坐标已固化进
 # stage_done_scene.tscn（2026-08-05 合并 content.tscn）。这里仅保留动态节点（hero/loot icon 间距、bar 偏移）所需常量。
@@ -99,6 +100,19 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 	_create_loot_icons()
 	_animator = StageDoneAnimator.new(self)
 	_animator.play_enter()
+	_schedule_best_rank_reward()
+
+
+# PVP 最高排名奖励弹窗调度（源 playEnterAnim :829-847：bestRankReward>0 时 Timer 3s 后弹出）。
+# 弹窗本体见 stage_done_best_rank_popup.gd（动态层 procedural，控场景脚本 400 行红线拆出）。
+func _schedule_best_rank_reward() -> void:
+	if int(_param.get("best_rank_reward", 0)) <= 0:
+		return
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		if is_inside_tree():
+			var popup: Control = BestRankPopup.new(_param)
+			add_child(popup)
+			popup.popup())
 
 
 # UI 节点已全部固化进 stage_done_scene.tscn（2026-08-05 合并 content.tscn）。

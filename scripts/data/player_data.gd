@@ -348,6 +348,19 @@ func take_stage_reward(stage_id: int, _stars: int, hero_tids: Array[int], loots:
 			add_item(item_id)
 
 
+## 竞技场胜利奖励入库（源服务端 endBattle 下发，单机化落 Logic）：金币/钻石/队伍经验全 0
+## （Stage[-1] 行 Exp/Money Reward=0），只发英雄经验 = PlayerLevel[team_level]["Arena Hero Exp"] 均分
+## （源 stageaccount.lua:63-66/71 展示口径同源，2026-09-13 PVP 结算补全）。排名/竞技场币走 LadderManager。
+func take_arena_reward(hero_tids: Array[int]) -> void:
+	var arena_exp: int = int(cm.get_raw_table(&"PlayerLevel").get(str(team_level), {}).get("Arena Hero Exp", 0))
+	var hero_count: int = max(hero_tids.size(), 1)
+	var hero_exp: int = int(arena_exp / hero_count)
+	for tid in hero_tids:
+		var inst_id: int = _find_hero_inst_by_tid(int(tid))
+		if inst_id > 0:
+			hero_manager.add_hero_exp(inst_id, hero_exp)
+
+
 ## 扫荡券持有数（照源 player.lua:760 getSweepTimes：equip_qunty[sweep_coin_id]）。
 ## 单机化：扫荡券合并进 items 通用背包（源独立 equip_qunty）。
 func get_sweep_times() -> int:

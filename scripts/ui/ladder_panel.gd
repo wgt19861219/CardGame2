@@ -267,7 +267,11 @@ func _on_challenge(oppo_user_id: int) -> void:
 	if not bool(asm.get("ok", false)):
 		Toast.show_message("挑战失败（阵容为空或对手无效）")
 		return
-	GameData.battle_context = {"engine": asm["engine"], "mode": "pvp", "mgr": _ladder, "battle_info": asm["battle_info"]}
+	var hero_tids: Array[int] = []
+	for h in (asm["hero_list"] as Array):
+		hero_tids.append(int((h as Dictionary).get("_tid", 0)))
+	GameData.battle_context = {"engine": asm["engine"], "mode": "pvp", "mgr": _ladder,
+		"battle_info": asm["battle_info"], "hero_tids": hero_tids}   # hero_tids：finalize 结算页英雄列表+Arena Hero Exp 均分
 	remove_window()
 	SceneManager.change_scene(BATTLE_SCENE_PATH)
 

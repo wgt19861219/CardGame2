@@ -11,7 +11,7 @@ static func get_unit_info(cm: ConfigManager, unit_id: int, unit_rank: int) -> Di
 	for k in uinfo:
 		info[k] = uinfo[k]
 	var unit_db_id: int = int(info.get("ID", unit_id))
-	info["equipInfo"] = cm.get_raw_table(&"hero_equip").get(str(unit_db_id), {}).get(str(unit_rank), {})
+	info["equipInfo"] = cm.get_raw_table(&"Hero_equip").get(str(unit_db_id), {}).get(str(unit_rank), {})
 	info["rankInfo"] = cm.get_raw_table(&"UnitRank").get(str(unit_db_id), {}).get(str(unit_rank), {})
 	info["nextRankInfo"] = cm.get_raw_table(&"UnitRank").get(str(unit_db_id), {}).get(str(unit_rank + 1), {})
 	return info
@@ -21,11 +21,12 @@ static func get_max_rank_level(unit: Variant, cm: ConfigManager) -> int:
 	var max_rank: int = BattleUnit.RANK_MAX
 	var result: int = 0
 	var unit_db_id: int = int(cm.get_raw_table(&"Unit").get(str(unit.tid), {}).get("ID", unit.tid))
-	var hero_equips: Dictionary = cm.get_raw_table(&"hero_equip").get(str(unit_db_id), {})
+	var hero_equips: Dictionary = cm.get_raw_table(&"Hero_equip").get(str(unit_db_id), {})
 	for rank_level in range(1, max_rank + 1):
 		var lv_req: int = int(hero_equips.get(str(rank_level), {}).get("LvReq", BattleUnit.LV_REQ_UNREACHABLE))
 		if lv_req <= unit.level:
-			result = rank_level if rank_level < max_rank else max_rank
+			# 照源 unit.lua:535 tmpRank = rankLevel + 1（rank 档解锁值 = 满足 LvReq 的档位 +1）
+			result = rank_level + 1 if rank_level < max_rank else max_rank
 	return result
 
 

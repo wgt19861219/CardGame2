@@ -62,7 +62,10 @@ func _build_content() -> void:
 	# title text 动态（源 :191-201 getLoseTitleRes，lose_type 决定；源 Sprite 资源缺 → Label 降级）。
 	(_content.get_node("Title") as Label).text = TITLE_TIMEOUT_TEXT if lose_type == "timeout" else TITLE_FAIL_TEXT
 	# back/menu 按钮（源 :202-247 TextureButton + doClickBack/doClickMenu）。
-	(_content.get_node("Back") as BaseButton).pressed.connect(_on_back_pressed)
+	# arena（PVP）失败隐藏重打按钮（源 :212 visible = arena_mode == false——PVP 无关卡可重打）。
+	var back_btn: BaseButton = _content.get_node("Back") as BaseButton
+	back_btn.visible = stage_id != StageAccount.ARENA_STAGE_ID
+	back_btn.pressed.connect(_on_back_pressed)
 	(_content.get_node("Menu") as BaseButton).pressed.connect(_on_menu_pressed)
 	# battleStatist 按钮（源 :345-392 Scale9 + count Label）：.tscn 普通 Button（坐标已源直译），
 	# 运行时套 Scale9 StyleBox；count 文案由 apply_with_label 内建 Label 挂按钮内居中（源 :383-389 范式）。

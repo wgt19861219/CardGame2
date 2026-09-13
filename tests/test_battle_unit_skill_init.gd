@@ -96,3 +96,16 @@ func test_dr_ult_arrow_reaches_distant_target() -> void:
 	assert_true(bool(arrow.terminated), "箭已落地/命中终止")
 	assert_almost_eq(float(arrow.position.x), 420.0, 20.0,
 		"箭落在目标头上（落点 x=%.1f，目标 420±20；修复前 ~300 处提前落地）" % float(arrow.position.x))
+
+
+# 回归守卫（2026-09-13 竞技场缠绕根修）：get_max_rank_level 照源 unit.lua:527-542
+# tmpRank = rankLevel + 1（满足 LvReq 的最高档 +1）。hero_equip 表名大小写错（查空表
+# LvReq 全缺省 9999）或漏 +1 都会让 estimate_max_rank 单位 rank 偏低 → 技能组解锁滞后。
+# tid=1 rank1 LvReq=2：lv=2 → rank=2（Unlock≤2 技能解锁，照源）。
+func test_estimate_max_rank_level_plus_one() -> void:
+	var eng := _make_eng()
+	var u := BattleUnit.new(
+		{"_tid": 1, "_level": 2, "_stars": 1},
+		BattleEngine.CAMP_PLAYER, {"estimate_max_rank": true}, cm, eng, {}, lib
+	)
+	assert_eq(int(u.rank), 2, "estimate_max_rank lv=2 → rank=2（源 +1 语义，修复前 1/0）")

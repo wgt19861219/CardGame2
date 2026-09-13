@@ -130,20 +130,10 @@ func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, play
 	if won and player_tids.size() > 0:
 		player.take_stage_reward(sid, stars, player_tids, loots)
 		_record_stage_dailyjob(player, sid)
-	return {"ok": true, "won": won, "stars": stars, "exp": int(exit_r["exp"]), "money": int(exit_r["money"]), "loots": loots, "hero_hp_mp": _collect_hero_hp_mp(eng), "lose_type": "timeout" if int(eng.last_result) == BattleEngine.RESULT_TIMEOUT else "fail"}
+	return {"ok": true, "won": won, "stars": stars, "exp": int(exit_r["exp"]), "money": int(exit_r["money"]), "loots": loots, "hero_hp_mp": StageAccount.collect_hero_hp_mp(eng), "lose_type": "timeout" if int(eng.last_result) == BattleEngine.RESULT_TIMEOUT else "fail"}
 
 
-## 玩家单位 hp/mp 万分比快照（源 stageaccount:138-139 hp=hero:hp_perc() 返 0-10000，本项目 HeroInstance
-## 无 hp/mp 从 BattleUnit 快照）。存活单位真实，死亡不在 alive → 不收录（stage_account 默认 0，照源死亡英雄 hp=0）。
-func _collect_hero_hp_mp(eng: BattleEngine) -> Dictionary:
-	var hp_mp: Dictionary = {}
-	for u in eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
-		# ceil 对齐 battle_engine_result.gd:25（源 _hp_perc 万分比 ceil，setHp 不丢血）
-		hp_mp[int(u.tid)] = {
-			"hp": clampi(int(ceil(float(u.hp) / float(maxi(int(u.attribs.get(&"HP", 1)), 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX),
-			"mp": clampi(int(ceil(float(u.mp) / float(maxi(int(u.attribs.get(&"MP", 1)), 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX),
-		}
-	return hp_mp
+## 玩家单位 hp/mp 万分比快照 → 2026-09-13 下沉 StageAccount.collect_hero_hp_mp（PVP 结算复用）。
 
 
 ## 单机化：跳过副本难度 diff 调整（联机 _pendingDungeonDifficulty）+ initUnitMercenaryData（View run_with_scene）。

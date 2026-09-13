@@ -4,10 +4,12 @@ extends RefCounted
 ## 战斗结算参数装配（Logic 层）— 照源 ui/stageaccount.lua 翻译（2026-07-03，Phase 4 续）。
 ## 纯计算：输入战斗结果 param + 玩家/英雄数据，输出结算 UI 所需展示参数（player_info/heroes/loot_list）。
 ## 不修改玩家数据（加经验/金币/掉落由上游 stage_manager / battle 衔接完成），不推场景（View 层调度）。
-## 单机化去：mercenary（佣兵借将）/ guildInstanceData（公会副本）/ bestRankReward（PVP 排名）/
-##   isDungeon 数据分支（StageDungeon 表未接入，is_dungeon_stage 判断保留）/ arena（sid==-1）。
+## 单机化去：mercenary（佣兵借将）/ guildInstanceData（公会副本）/ isDungeon 数据分支
+##   （StageDungeon 表未接入，is_dungeon_stage 判断保留）。
+## bestRankReward（PVP 排名）2026-09-13 结算补全时恢复（arena 分支 + collect_hero_hp_mp 下沉）。
 
 const ARENA_STAGE_ID: int = -1
+const HERO_PERC_MAX: int = 10000  # hp/mp 万分比（0-10000，对齐源 _hp_perc + battle_engine_result PERC_DENOM）
 const EXP_DIVISOR_MIN: int = 1
 const UI_RES_PREFIX: String = "UI/alpha/HVGA/"
 const STAGE_TYPE_NORMAL: String = "normal"
@@ -92,7 +94,9 @@ static func deal_victory_param(param: Dictionary, cm: ConfigManager, player: Pla
 	param["loot_list"] = _aggregate_loots(param.get("loots", []))
 	var total_exp: int = 0
 	if sid == ARENA_STAGE_ID:
-		total_exp = 0
+		# 照源 stageaccount.lua:64-66：PVP 胜利英雄经验走 PlayerLevel[team_level]["Arena Hero Exp"]
+		# （Stage[-1] Heroexp Reward=0 不用）；旧写死 0 系漏译，2026-09-13 PVP 结算补全修正。
+		total_exp = int(cm.get_raw_table(&"PlayerLevel").get(str(player.team_level), {}).get("Arena Hero Exp", 0))
 	elif is_dungeon:
 		total_exp = data.exp_reward * EXP_DUNGEON_MULTIPLIER
 	else:
@@ -272,3 +276,16 @@ static func get_max_chapter(mode: String, progress: Dictionary, st: Dictionary) 
 	if ps == 0: return 1
 	if mode == "elite": ps = int(st.get(str(ps), {}).get("Stage Group", ps))
 	return int(st.get(str(ps), {}).get("Chapter ID", 1))
+
+
+## 玩家单位 hp/mp 万分比快照（源 stageaccount:138-139 hp=hero:hp_perc() 返 0-10000，本项目 HeroInstance
+## 无 hp/mp 从 BattleUnit 快照）。存活单位真实，死亡不在 alive → 不收录（stage_account 默认 0，照源死亡英雄 hp=0）。
+## 2026-09-13 自 StageManager 下沉（PVP finalize 复用，ceil 对齐 battle_engine_result.gd:25 源 _hp_perc）。
+static func collect_hero_hp_mp(eng: BattleEngine) -> Dictionary:
+	var hp_mp: Dictionary = {}
+	for u in eng.foreach_alive_unit(BattleEngine.CAMP_PLAYER):
+		hp_mp[int(u.tid)] = {
+			"hp": clampi(int(ceil(float(u.hp) / float(maxi(int(u.attribs.get(&"HP", 1)), 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX),
+			"mp": clampi(int(ceil(float(u.mp) / float(maxi(int(u.attribs.get(&"MP", 1)), 1)) * HERO_PERC_MAX)), 0, HERO_PERC_MAX),
+		}
+	return hp_mp

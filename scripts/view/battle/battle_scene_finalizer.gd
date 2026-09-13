@@ -49,17 +49,35 @@ static func finalize_excavate(scene) -> void:
 	SceneManager.change_scene(MAIN_SCENE_PATH)
 
 
-# pvp 战斗结算：finalize_pvp_battle 排名互换+奖励 → 存 pending_pvp → 回主菜单。
+# pvp 战斗结算（照源 stageaccount.lua initialize：victory→stagedone / defeat→stagefailed，
+# PVE/PVP 共用结算场景）：finalize_pvp_battle 排名互换+奖励+英雄经验入库 → last_result → 切结算场景。
+# 玩家经验/金币=0（Stage[-1] 行）、英雄经验=PlayerLevel.Arena Hero Exp 均分（take_arena_reward）。
 static func finalize_pvp(scene) -> void:
 	var ctx: Dictionary = scene._battle_context
 	var ladder: Variant = ctx["mgr"]
 	var now: int = int(Time.get_unix_time_from_system())
 	var r: Dictionary = LadderBattle.finalize_pvp_battle(ladder, scene.engine, GameData.player, scene.cm, scene.engine.rng, now)
-	GameData.pending_pvp = {"won": bool(r["won"]), "reply": r["reply"]}
-	GameData.mark_save_dirty()
+	var hero_tids: Array[int] = []
+	hero_tids.assign(ctx.get("hero_tids", []))
+	var won: bool = bool(r["won"])
+	if won:
+		GameData.player.take_arena_reward(hero_tids)
+	var result_param: Dictionary = {
+		"stage_id": StageAccount.ARENA_STAGE_ID, "victory": won, "heroes": hero_tids,
+		"stars": 0, "loots": [], "excavate_mode": false, "isPveMode": false,
+		"hero_hp_mp": StageAccount.collect_hero_hp_mp(scene.engine),
+		"lose_type": "timeout" if int(scene.engine.last_result) == BattleEngine.RESULT_TIMEOUT else "fail",
+		"unit_list": _snapshot_units(scene.engine),
+		"arena_mode": true,
+		"best_rank_reward": int((r["reply"] as Dictionary).get("best_rank_reward", 0)),
+		"best_rank": int((r["reply"] as Dictionary).get("best_rank", 0)),
+		"cur_rank": int((r["reply"] as Dictionary).get("rank", 0)),
+	}
+	GameData.last_result = StageAccount.build_result_param(result_param, GameData.player.cm, GameData.player, GameData.player.hero_manager)
+	GameData.save()
 	GameData.battle_context.clear()
 	_clear_battle_resources()
-	SceneManager.change_scene(MAIN_SCENE_PATH)
+	SceneManager.change_scene(STAGE_DONE_PATH if won else STAGE_FAILED_PATH)
 
 
 # stage 战斗结算：finalize_stage_battle 算胜负发奖 → 存 last_result → 切结算场景。
