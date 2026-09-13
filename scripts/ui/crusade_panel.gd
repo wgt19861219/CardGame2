@@ -42,6 +42,9 @@ const LSTR_SHOW_RULE: String = "CRUSADECONFIG.REVIEW_RULES"
 const LSTR_SHOW_RULE_FALLBACK: String = "查看规则"
 const LSTR_SHOP_KEY: String = "CRUSADECONFIG.REDEEM"
 const LSTR_SHOP_FALLBACK: String = "兑换奖励"
+# 源公会行 hint（crusade.lua:238-240 无公会时 guildHint=NOT_IN_GUILDS；2026-09-13 三轮补全）。
+const LSTR_GUILD_HINT_KEY: String = "CRUSADE.NOT_IN_GUILDS"
+const LSTR_GUILD_HINT_FALLBACK: String = "未加入公会"
 # 源 openShop（crusade.lua:681-683）pushScene shop.create(4) → 龙鳞（crusadepoint）商店。
 const CRUSADE_SHOP_ID: int = 4
 
@@ -49,6 +52,7 @@ var player: PlayerData = null
 var rng: BattleRng = null
 var stage_buttons: Array[TextureButton] = []
 var box_rects: Array[TextureButton] = []
+var stage_lights: Array[TextureRect] = []
 var fog_rects: Array[TextureRect] = []
 var result_label: Label = null
 var current_select: int = 0
@@ -100,6 +104,10 @@ func _build_content() -> void:
 	# 源拖动后 refreshHintPos 重算（crusade.lua:471-474）：滚动值变化 → 箭头跟随重算。
 	h_bar.value_changed.connect(_on_scroll_moved)
 	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	# 参考页对齐（2026-09-13）：卷轴标题文字（参考页"远征"大字），LSTR 复用规则页键。
+	(_content.get_node("%TitleBg/TitleLabel") as Label).text = _lstr(CrusadeFills.RULE_TITLE_KEY, CrusadeFills.RULE_TITLE_FALLBACK)
+	# 源公会行（crusadeconfig :1497-1523）：单机无公会恒显 NOT_IN_GUILDS（2026-09-13 三轮补全）。
+	(_content.get_node("%BattleLayer/BattleInfo/GuildHintLbl") as Label).text = _lstr(LSTR_GUILD_HINT_KEY, LSTR_GUILD_HINT_FALLBACK)
 	var reset_btn: Button = _content.get_node("%ResetBtn") as Button
 	(_content.get_node("%ResetLabel") as Label).text = _lstr(LSTR_RESET_KEY, LSTR_RESET_FALLBACK)
 	reset_btn.pressed.connect(_on_reset)
@@ -143,6 +151,7 @@ func _fill_stage_grid() -> void:
 		_content, player, Callable(self, "_on_stage_n"), Callable(self, "_on_box_pressed"))
 	stage_buttons = grid["stages"]
 	box_rects = grid["boxes"]
+	stage_lights = grid["lights"]
 
 
 ## 源 refreshLeftTime（:494-496）：lefttime 节点动态文案（格式化剩余次数）。
@@ -326,6 +335,9 @@ func _show_battle_info(stage: int) -> void:
 			"stars": int(hero.get("_stars", 0)),
 			"hp": ENEMY_HP_FULL,
 		}, player.cm)
+		# 源 crusade.lua:231 heroIcon.icon:setScale(0.8)——2026-09-13 二轮补施（旧漏施
+		# 致 104×104 原大相邻叠 29px，浮窗拥挤主根因之一）。
+		icon.scale = Vector2(ENEMY_ICON_SCALE, ENEMY_ICON_SCALE)
 		(_bl_hero_hosts[idx] as Control).add_child(icon)
 		idx += 1
 	_bl_start.visible = not cm_mgr.is_stage_cleared(stage)
@@ -479,15 +491,20 @@ func _on_scroll_moved(_value: float) -> void:
 	_refresh_hint_pos.call_deferred()
 
 
-## 刷新 stage 按钮状态（源 :324-343 两态：normal + disable 换图）+ disabled + box 宝箱。
+## 刷新 stage 按钮状态（源 :324-343 两态：normal + disable 换图）+ disabled + box 宝箱
+## + 已通关白光底晕/可领宝箱金光（2026-09-13 二轮：四态换图回归两态，标记改光效叠加）。
 func _refresh_stage_states() -> void:
 	var i: int = 1
 	while i <= stage_buttons.size():
 		stage_buttons[i - 1].texture_normal = CrusadeFills.stage_button_normal_texture(i)
 		stage_buttons[i - 1].texture_disabled = CrusadeFills.stage_button_locked_texture(i)
 		stage_buttons[i - 1].disabled = _is_stage_locked(i)
+		if i - 1 < stage_lights.size():
+			stage_lights[i - 1].visible = player.crusade_manager.is_stage_cleared(i)
 		if i - 1 < box_rects.size():
 			box_rects[i - 1].texture_normal = CrusadeFills.box_button_texture(player, i)
+			CrusadeFills.set_box_light(box_rects[i - 1],
+				player.crusade_manager.is_stage_cleared(i) and not player.crusade_manager.is_stage_rewarded(i))
 		i += 1
 	_refresh_fog()
 	_refresh_hint_pos()

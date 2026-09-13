@@ -10,7 +10,7 @@
 ; 贴图口径（ crusade 系 TextureConfig 条目全 Prescaled=false → 条目 CS 不施加，
 ; 只算显式 scale 累乘，批 3 Task 4 五重证据定稿）：bg=px/CS×2.0、fog=px/CS×4.0、
 ;   其余 = px/CS。
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=31 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/toast_bg.png" id="TOASTBG"]
@@ -38,6 +38,8 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="20_vit"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_title_bg.png" id="21_pvp"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="22_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tip_detail_bg.png" id="23_tipdetail"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_delimiter.png" id="24_delim"]
 
 [node name="CrusadeContent" type="Control"]
 layout_mode = 3
@@ -236,6 +238,23 @@ mouse_filter = 2
 ; (482,170)）。F1（2026-08-27 走查）：源 res 无 crusade/ 目录该图缺载，zh-CN 实机布条
 ; 空白（screen_crusade.png 佐证）；本图系 en-US 渠道补图（红字 Crusade），与原版视觉
 ; 不符故隐藏，资产保留待正版资源
+
+; 参考页对齐（2026-09-13）：卷轴上叠金色描边标题（参考页"远征"大字设计）；文字走
+; LSTR BURNING_CRUSADE（panel fill），样式照规则页标题金 (251,206,16) 放大到 36。
+[node name="TitleLabel" type="Label" parent="TitleBg"]
+offset_bottom = 92.1
+offset_left = 0
+offset_right = 398.04
+offset_top = 0
+horizontal_alignment = 1
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 36
+text = "燃烧的远征"
+vertical_alignment = 1
+
 [node name="Title" type="TextureRect" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -427,10 +446,10 @@ mouse_filter = 0
 [node name="BattleInfo" type="NinePatchRect" parent="BattleLayer"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 150.0
-offset_top = 170.0
-offset_right = 650.0
-offset_bottom = 350.0
+offset_left = 110.0
+offset_top = 168.0
+offset_right = 690.0
+offset_bottom = 358.0
 mouse_filter = 2
 texture = ExtResource("TOASTBG")
 patch_margin_left = 13
@@ -441,9 +460,9 @@ patch_margin_bottom = 8
 [node name="BlCloseBtn" type="TextureButton" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 456.7
+offset_left = 516.7
 offset_top = -6.7
-offset_right = 507.4
+offset_right = 567.4
 offset_bottom = 44.7
 texture_normal = ExtResource("CLOSE1")
 ignore_texture_size = true
@@ -452,19 +471,19 @@ stretch_mode = 5
 [node name="EnemyIconHost" type="Control" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = -4.0
-offset_top = 7.5
-offset_right = 104.0
-offset_bottom = 71.5
+offset_left = 10.0
+offset_top = 5.0
+offset_right = 118.0
+offset_bottom = 69.0
 mouse_filter = 2
 
 [node name="LevelBg" type="TextureRect" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 54.0
-offset_top = 24.7
-offset_right = 126.0
-offset_bottom = 55.2
+offset_left = 130.0
+offset_top = 26.0
+offset_right = 202.0
+offset_bottom = 56.5
 mouse_filter = 2
 texture = ExtResource("SILVER")
 expand_mode = 1
@@ -472,9 +491,9 @@ expand_mode = 1
 [node name="HeroNameLbl" type="Label" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 110.0
+offset_left = 212.0
 offset_top = 26.0
-offset_right = 250.0
+offset_right = 352.0
 offset_bottom = 54.0
 theme_type_variation = &"CrusadeBattleLayerLabel"
 mouse_filter = 2
@@ -482,9 +501,9 @@ mouse_filter = 2
 [node name="LevelLbl" type="Label" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 62.0
+offset_left = 136.0
 offset_top = 28.0
-offset_right = 118.0
+offset_right = 196.0
 offset_bottom = 52.0
 theme_type_variation = &"CrusadeBattleLayerLabel"
 mouse_filter = 2
@@ -494,9 +513,9 @@ vertical_alignment = 1
 [node name="CurrentBattleLbl" type="Label" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 250.0
+offset_left = 362.0
 offset_top = 26.0
-offset_right = 360.0
+offset_right = 452.0
 offset_bottom = 54.0
 theme_type_variation = &"CrusadeBattleLayerLabel"
 mouse_filter = 2
@@ -504,59 +523,95 @@ mouse_filter = 2
 [node name="HeroHost1" type="Control" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 54.0
-offset_top = 53.0
-offset_right = 158.0
-offset_bottom = 157.0
+offset_left = 15.0
+offset_top = 62.0
+offset_right = 119.0
+offset_bottom = 166.0
 mouse_filter = 2
 
 [node name="HeroHost2" type="Control" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 129.0
-offset_top = 53.0
-offset_right = 233.0
-offset_bottom = 157.0
+offset_left = 106.0
+offset_top = 62.0
+offset_right = 210.0
+offset_bottom = 166.0
 mouse_filter = 2
 
 [node name="HeroHost3" type="Control" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 204.0
-offset_top = 53.0
-offset_right = 308.0
-offset_bottom = 157.0
+offset_left = 197.0
+offset_top = 62.0
+offset_right = 301.0
+offset_bottom = 166.0
 mouse_filter = 2
 
 [node name="HeroHost4" type="Control" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 279.0
-offset_top = 53.0
-offset_right = 383.0
-offset_bottom = 157.0
+offset_left = 288.0
+offset_top = 62.0
+offset_right = 392.0
+offset_bottom = 166.0
 mouse_filter = 2
 
 [node name="HeroHost5" type="Control" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 354.0
-offset_top = 53.0
-offset_right = 458.0
-offset_bottom = 157.0
+offset_left = 379.0
+offset_top = 62.0
+offset_right = 483.0
+offset_bottom = 166.0
 mouse_filter = 2
 
-; 源 start (442,75) 中心 → Godot (442,105)；startbtn 128×123px÷CS=99.9×96
+; 源 start (442,75) 中心 → Godot (442,105)；startbtn 128×123px÷CS=99.9×96×源 scale 0.75
+; =74.9×72（2026-09-13 三轮：scale 0.75 漏乘订正，旧 99.9×96 偏大 25% 压视觉）。
 [node name="StartBtn2" type="TextureButton" parent="BattleLayer/BattleInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 392.1
-offset_top = 57.0
-offset_right = 491.9
-offset_bottom = 153.0
+offset_left = 490.0
+offset_top = 67.5
+offset_right = 564.9
+offset_bottom = 139.5
 texture_normal = ExtResource("STARTBTN")
 ignore_texture_size = true
 stretch_mode = 5
+
+
+; 源 battleinfo 名字行装饰（crusadeconfig :1371-1378 tip_detail_bg pos(160,140) 中心
+; → 弹窗内左上 (97,29)；本布局居中式名字行 → 底板中心对队名框中心 (282,40)，z=-1 垫底）
+[node name="TipDetailBg" type="TextureRect" parent="BattleLayer/BattleInfo"]
+mouse_filter = 2
+offset_bottom = 50.55
+offset_left = 219.15
+offset_right = 344.85
+offset_top = 29.45
+texture = ExtResource("23_tipdetail")
+z_index = -1
+
+; 源分隔线（crusadeconfig :1482-1492 pvp_tip_delimiter pos(200,33) 中心，500 宽弹窗居中
+; → 本 580 宽居中 x=290；475×2px÷CS=370.9×1.56，头像行 icon 底缘下方）
+[node name="TipDelimiter" type="TextureRect" parent="BattleLayer/BattleInfo"]
+mouse_filter = 2
+offset_bottom = 151.56
+offset_left = 104.55
+offset_right = 475.45
+offset_top = 150
+texture = ExtResource("24_delim")
+
+; 源公会行（crusadeconfig :1497-1523 guildHint pos(24,21) size16 ccc3(241,193,113)；
+; 单机无公会恒显 LSTR NOT_IN_GUILDS「未加入公会」，guildName 无源数据不迁移）
+[node name="GuildHintLbl" type="Label" parent="BattleLayer/BattleInfo"]
+unique_name_in_owner = true
+mouse_filter = 2
+offset_bottom = 176
+offset_left = 24
+offset_right = 260
+offset_top = 160
+theme_override_colors/font_color = Color(0.945098, 0.756863, 0.443137, 1)
+theme_override_font_sizes/font_size = 13
+text = "未加入公会"
 
 [node name="StartBtn" type="TextureButton" parent="."]
 unique_name_in_owner = true
