@@ -24,6 +24,7 @@ const OPPONENT_RANK_BASE: int = 50
 const BOARD_SIZE: int = 20
 const REWARD_MIN: int = 10
 const REWARD_BASE: int = 100
+const BEST_RANK_DIAMOND: int = 20  # 刷新最高排名奖励（源服务端算法不可考，对齐 PVE DIAMOND_NORMAL 量级）
 const CLEAR_CD_COST: int = 50
 const BUY_COST_DEFAULT: int = 50
 const RECORDS_MAX: int = 20
@@ -248,15 +249,24 @@ func _cmd_end_battle(cmd: Variant, player: PlayerData, now: int) -> Dictionary:
 		(pvp["records"] as Array).pop_back()
 	if result_str == "victory" or result_str == "0":
 		var old_rank: int = int(pvp["rank"])
+		var old_highest: int = int(pvp["highest_rank"])
 		var oppo_rank: int = int(pvp.get("last_oppo_rank", pvp["rank"]))
 		if oppo_rank < old_rank:
 			pvp["rank"] = oppo_rank
-		if int(pvp["rank"]) < int(pvp["highest_rank"]):
+		if int(pvp["rank"]) < old_highest:
 			pvp["highest_rank"] = pvp["rank"]
 		var reward: int = maxi(REWARD_MIN, REWARD_BASE - int(pvp["rank"]))
 		player.add_point("arenapoint", reward)
-		return {"result": "victory", "rank": pvp["rank"], "prev_rank": old_rank, "reward": reward}
-	return {"result": "defeat", "rank": pvp["rank"], "prev_rank": pvp["rank"], "reward": 0}
+		# 最高排名奖励（源 down.proto end_battle._best_rank_reward 服务端下发，算法无源码；源 UI
+		# stagedone pvpLayer 用 rmbicon 计价=钻石）：单机化拍板 = 刷新最高排名发 20 钻石
+		# （对齐 PVE 普通关 DIAMOND_NORMAL 量级）；未刷新为 0。View 凭 >0 追弹"最高排名"奖励窗。
+		var best_rank_reward: int = BEST_RANK_DIAMOND if int(pvp["highest_rank"]) < old_highest else 0
+		if best_rank_reward > 0:
+			player.add_diamond(best_rank_reward)
+		return {"result": "victory", "rank": pvp["rank"], "prev_rank": old_rank, "reward": reward,
+			"best_rank_reward": best_rank_reward, "best_rank": int(pvp["highest_rank"])}
+	return {"result": "defeat", "rank": pvp["rank"], "prev_rank": pvp["rank"], "reward": 0,
+		"best_rank_reward": 0, "best_rank": int(pvp["highest_rank"])}
 
 
 func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:

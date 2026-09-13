@@ -64,7 +64,6 @@ func _ready() -> void:
 	_refresh_status()
 	# _maybe_start_tutorial()   # 2026-08-20 用户指示：一进游戏的新手引导暂不弹（与剧情/解锁公告一并禁用）；恢复取消本行注释即可
 	_maybe_resume_excavate()
-	_maybe_resume_pvp()
 	_maybe_resume_stage_result()
 
 
@@ -101,16 +100,8 @@ func _maybe_resume_excavate() -> void:
 	Toast.show_message(EXCAVATE_WIN_TEXT if won else EXCAVATE_LOSE_TEXT)
 
 
-# pvp 战斗结束回主菜单重弹 LadderPanel（PopWindow 跨场景丢失，battle_scene._finalize_pvp 存 pending_pvp）。
-func _maybe_resume_pvp() -> void:
-	if GameData.pending_pvp.is_empty():
-		return
-	var pp: Dictionary = GameData.pending_pvp.duplicate()   # 同 excavate：先拷贝再清
-	GameData.pending_pvp.clear()
-	var reply: Dictionary = pp.get("reply", {})
-	var won: bool = bool(pp.get("won", false))
-	Toast.show_message(("PVP 胜利！排名 %d 奖励 %d" % [int(reply.get("rank", 0)), int(reply.get("reward", 0))]) if won else "PVP 失败")
-	_open_ladder()
+# pvp 战斗结束改切结算场景（stageDone/stageFailed，2026-09-13 PVP 结算补全，行为对齐源
+# stageaccount 调度）；旧 _maybe_resume_pvp（回主菜单 Toast+重开 LadderPanel）退役，pending_pvp 字段已删。
 
 
 # stage 结算页重试/下一关按钮跨场景重弹（源 doClickReplay/doClickBack → stagedetail、doClickNext →

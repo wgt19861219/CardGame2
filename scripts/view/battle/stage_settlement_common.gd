@@ -54,15 +54,18 @@ static func goto_main_scene(sfx_name: String = "common_click_feedback") -> void:
 # 重试跳转目标（源 stagedone.lua:93 doClickReplay / stagefailed.lua:42 doClickBack →
 # replaceScene(stagedetail)：回关卡详情可再开战）。dungeon 关卡（mode 走 stage 结算）本项目无
 # 独立详情面板 → 空 target 保持回主界面（受控简化）；源 hasTriggerShop 弹商店分支无 trigger shop 系统不实现。
+# PVP（sid=-1）源 replay 按钮胜利页 isKeyStage=false 天然隐藏 / 失败页 arena_mode 隐藏，无跳转目标。
 static func replay_target(stage_id: int) -> Dictionary:
-	if StageAccount.is_dungeon_stage(stage_id):
+	if StageAccount.is_dungeon_stage(stage_id) or stage_id == StageAccount.ARENA_STAGE_ID:
 		return {}
 	return {"target": "stagedetail", "stage_id": stage_id}
 
 
 # 下一关跳转目标（源 stagedone.lua:111 doClickNext → popScene + WinBackToSelect → 选关）。
+# PVP（sid=-1）源 next 恒可见（stagedone.lua:577），点击 popScene 回主城（WinBackToSelect 监听在
+# stageselect 未开时 no-op）→ 空 target 回主界面，不跳选关（旧逻辑会误跳 stageselect，2026-09-13 修正）。
 static func next_target(stage_id: int) -> Dictionary:
-	if StageAccount.is_dungeon_stage(stage_id):
+	if StageAccount.is_dungeon_stage(stage_id) or stage_id == StageAccount.ARENA_STAGE_ID:
 		return {}
 	return {"target": "stageselect"}
 

@@ -46,10 +46,11 @@ func test_failed_scene_back_wired() -> void:
 
 # main_scene 消费 pending_stage_result（跨场景重弹面板链闭合）。
 # duplicate 守卫：GDScript Dictionary 引用型，先拷贝再 clear（否则 pr 同步清空读值恒默认走错分支；
-# 实机五轮取证实锤 select_panel=1 误弹，excavate/pvp 存量同病一并修）。
+# 实机五轮取证实锤 select_panel=1 误弹，excavate 存量同病一并修）。pvp 消费 2026-09-13 退役
+# （PVP 结算补全改切 stageDone/stageFailed 场景，回主菜单 Toast+重开面板方案删除）。
 func test_main_scene_consumes_pending() -> void:
 	var src: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
 	assert_true(src.contains("func _maybe_resume_stage_result()"), "存在消费函数")
 	assert_true(src.contains("_maybe_resume_stage_result()\n") or src.contains("_maybe_resume_stage_result()"), "_ready 调用消费")
 	assert_true(src.contains("pending_stage_result"), "读 pending_stage_result")
-	assert_eq(src.count(".duplicate()   #"), 3, "三处 pending 消费均先 duplicate 再 clear（excavate/pvp/stage_result）")
+	assert_eq(src.count(".duplicate()   #"), 2, "两处 pending 消费均先 duplicate 再 clear（excavate/stage_result）")
