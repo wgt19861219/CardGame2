@@ -7,8 +7,11 @@ extends RefCounted
 ## 逐图 px/CS 实测尺寸）+ ui/crusade.lua:543-595 initRuleLayer 17 项。
 ## 贴图口径（批 3 Task 4 定稿）：crusade 系条目 Prescaled=false → 只算显式 scale 累乘
 ## （box=px/CS×0.8；battle 无 scale=px/CS；rect 恒 normal 图口径，源 setTexture 不改 contentSize）。
-## 战节点两态（第二轮验收归源 2026-08-17）：源 crusadeconfig:285-286 仅 normal/disable 两键；
-## _current/_passed 系美术死资产（源全工程零引用），旧三态自造致当前关图标透明。
+## 战节点状态（2026-09-13 二轮修正）：battle 贴图回归源两态（normal/locked——
+## _current/_passed 黑剪影资产实机观感"透底发灰+光晕暗淡"，用户验收"图标变透明了"，
+## 与 2026-08-17 归源守卫判断一致，受控启用作废）；已通关标记改白光底晕（silver_light
+## 叠彩色图下方，不换图不透明感不变，参考页「绿勾光晕=已过」等价表达）。宝箱可领取
+## 态叠 _light 金光星闪。
 
 const CONTENT_SCALE: float = 1.28125
 const STAGE_TEX_DIR := "res://assets/ui/alpha/HVGA/crusade/stage/crusade_stage_"
@@ -19,6 +22,18 @@ const BOX_SCALE: float = 0.8
 const BOX_CLOSED_PX := {
 	"bronze": Vector2(89.0, 84.0), "silver": Vector2(90.0, 84.0), "gold": Vector2(90.0, 84.0),
 }
+# 可领取宝箱金光星闪（参考页对齐 2026-09-13）：源 crusadeconfig _light 死资产启用；
+# gold_light 127×108px PIL 实测（无 TextureConfig 条目 → ÷CS），星芒叠宝箱上方。
+const BOX_LIGHT_RES: String = "res://assets/ui/alpha/HVGA/crusade/crusade_box_gold_light.png"
+const BOX_LIGHT_PX: Vector2 = Vector2(127.0, 108.0)
+const BOX_LIGHT_NAME: String = "BoxLight"
+const LIGHT_BREATH_MIN: float = 0.5
+const LIGHT_BREATH_TIME: float = 0.7
+# 已通关节点白光底晕（2026-09-13 二轮）：silver_light 128×108px÷CS 圆形柔光，垫在
+# 彩色 battle 图下方（挂 Map 先于按钮 → 绘制序在下），中心随节点对齐。
+const STAGE_LIGHT_RES: String = "res://assets/ui/alpha/HVGA/crusade/crusade_box_silver_light.png"
+const STAGE_LIGHT_NAME: String = "StageLight"
+const STAGE_LIGHT_SCALE: Vector2 = Vector2(1.3, 1.3)
 const MAP_NAMES: Array[String] = ["LaftMap", "RightMap", "RightMap2"]
 # 源 battle1-15 中心（Map 局部 cocos，crusadeconfig:280-579，每段 5 只）。
 const BATTLE_POS: Array[Array] = [
@@ -58,10 +73,12 @@ const RULE_TITLE_FALLBACK: String = "燃烧的远征"
 
 
 ## 格子动态行照源散点（box 先挂——源 z 序 box 下 battle 上）。返回
-## {"stages": Array[TextureButton], "boxes": Array[TextureButton]}（顺序均按 idx 1-15）。
+## {"stages": Array[TextureButton], "boxes": Array[TextureButton],
+## "lights": Array[TextureRect]}（stages/boxes 顺序按 idx 1-15，lights 与 stages 对位）。
 static func fill_stage_grid(content: Control, player: PlayerData, on_stage: Callable, on_box: Callable) -> Dictionary:
 	var stages: Array[TextureButton] = []
 	var boxes: Array[TextureButton] = []
+	var lights: Array[TextureRect] = []
 	for s in range(3):
 		var map_node: Control = content.get_node("%" + MAP_NAMES[s]) as Control
 		for b in range(BOX_POS[s].size()):
@@ -74,12 +91,16 @@ static func fill_stage_grid(content: Control, player: PlayerData, on_stage: Call
 			box.position = map_local_top_left(BOX_POS[s][b], box_sz)
 			box.size = box_sz
 			box.pressed.connect(on_box.bind(idx))
+			box.add_child(_make_box_light(box_sz))
 			map_node.add_child(box)
 			boxes.append(box)
 		for b in range(5):
 			var idx: int = s * 5 + b + 1
 			var tex: Texture2D = _load_tex(stage_texture_normal(idx)) as Texture2D
 			var btn_sz: Vector2 = (tex.get_size() if tex != null else Vector2(110.0, 110.0)) / CONTENT_SCALE
+			# 白光底晕先挂（树序在 battle 前 → 画在 battle 下方）。
+			map_node.add_child(_make_stage_light(BATTLE_POS[s][b]))
+			lights.append(map_node.get_child(map_node.get_child_count() - 1) as TextureRect)
 			var btn := TextureButton.new()
 			btn.texture_normal = tex
 			btn.texture_disabled = _load_tex(stage_texture_locked(idx))
@@ -90,7 +111,7 @@ static func fill_stage_grid(content: Control, player: PlayerData, on_stage: Call
 			btn.pressed.connect(on_stage.bind(idx))
 			map_node.add_child(btn)
 			stages.append(btn)
-	return {"stages": stages, "boxes": boxes}
+	return {"stages": stages, "boxes": boxes, "lights": lights}
 
 
 ## 源 Map 为空容器（中心点语义，无 contentSize）：cocos 子中心 (x,y 上正) 相对
@@ -167,6 +188,56 @@ static func stage_locked(player: PlayerData, i: int) -> bool:
 	var mgr = player.crusade_manager
 	return (not mgr.is_stage_cleared(i) and i > mgr.cur_stage) \
 		or (mgr.cur_stage == i and not mgr.is_stage_rewarded(i - 1) and i > 1)
+
+
+## 已通关节点白光底晕子节点（挂 Map 在 battle 按钮之前 → 绘制序在下；默认隐藏，
+## panel _refresh_stage_states 按 cleared 显隐）。
+static func _make_stage_light(cocos_pos: Vector2) -> TextureRect:
+	var light := TextureRect.new()
+	light.name = STAGE_LIGHT_NAME
+	light.texture = _load_tex(STAGE_LIGHT_RES)
+	var sz: Vector2 = Vector2(128.0, 108.0) / CONTENT_SCALE * STAGE_LIGHT_SCALE
+	light.size = sz
+	light.position = map_local_top_left(cocos_pos, sz)
+	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	light.visible = false
+	return light
+
+
+## 宝箱金光子节点（随 box 摇晃弹跳联动缩放；默认隐藏，状态启停见 set_box_light）。
+static func _make_box_light(box_sz: Vector2) -> TextureRect:
+	var light := TextureRect.new()
+	light.name = BOX_LIGHT_NAME
+	light.texture = _load_tex(BOX_LIGHT_RES)
+	var sz: Vector2 = BOX_LIGHT_PX / CONTENT_SCALE
+	light.size = sz
+	light.position = (box_sz - sz) * 0.5
+	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	light.visible = false
+	return light
+
+
+## 可领取（通关未领奖）宝箱金光呼吸启停（参考页宝箱发光对齐；与 panel 1.5s 摇晃
+## 提示同向叠加）。tween 挂 box 节点、引用存 light meta，防重复启停泄漏。
+static func set_box_light(box: TextureButton, on: bool) -> void:
+	var light: TextureRect = box.get_node_or_null(BOX_LIGHT_NAME) as TextureRect
+	if light == null:
+		return
+	# get_meta 带默认值在 4.7 仍 push error（GUT 记 Unexpected Errors），has_meta 预检。
+	var tw: Tween = null
+	if light.has_meta("tw"):
+		tw = light.get_meta("tw") as Tween
+	if tw != null and tw.is_valid():
+		tw.kill()
+	light.visible = on
+	if not on:
+		light.modulate.a = 1.0
+		return
+	tw = box.create_tween()
+	tw.set_loops(-1)
+	tw.tween_property(light, "modulate:a", LIGHT_BREATH_MIN, LIGHT_BREATH_TIME).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(light, "modulate:a", 1.0, LIGHT_BREATH_TIME).set_trans(Tween.TRANS_SINE)
+	light.set_meta("tw", tw)
 
 
 ## 面板刷新入口：路径 → 安全加载（exists 预检，返回 Texture2D 或 null）。

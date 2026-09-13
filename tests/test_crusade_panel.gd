@@ -3,6 +3,9 @@ extends GutTest
 # 两件套改造重写：格子照源散点（HBox 均排退役）+ fog 归源（scale=4 等比）+ 美术层/
 # 规则页静态进 tscn + builder/rule_renderer 退役）。用例 18→28 不缩水（第二轮验收
 # +2：两态贴图归源 + hint box 分支）。
+# 2026-09-13 参考页对齐：两态守卫反转四态（_current/_passed 死资产受控启用）+
+# 新增卷轴标题/可领宝箱金光守卫（28→30）；同日二轮：四态换图回退两态（黑剪影
+# 观感"透明"）改白光底晕叠加 + 浮窗拥挤治理守卫（30→31）。
 
 const BUILDER_PATH: String = "res://scripts/ui/crusade_panel_builder.gd"
 const RENDERER_PATH: String = "res://scripts/ui/crusade_rule_renderer.gd"
@@ -372,31 +375,101 @@ func test_stage_hint_points_box_when_prev_unrewarded() -> void:
 	root.queue_free()
 
 
-# 战节点两态归源守卫（第二轮验收）：源 crusadeconfig:285-286 battle 仅 normal/disable
-# 两键（_current/_passed 系死资产零引用）；锁定走 texture_disabled（源 enable(false) 换图）。
-func test_stage_textures_two_state_source_aligned() -> void:
+# 战节点两态归源守卫（2026-09-13 二轮回归）：battle 恒 normal/locked 两态——
+# 2026-09-13 一轮曾受控启用 _current/_passed 黑剪影资产，实机观感"透底发灰+光晕
+# 暗淡"（用户验收"图标变透明了"），与 2026-08-17 归源判断一致，已回退；已通关
+# 标记改 StageLight 白光底晕叠加（不换图）。锁定走 texture_disabled=_locked。
+func test_stage_textures_two_state_with_cleared_glow() -> void:
 	var root := Node.new()
 	add_child(root)
 	var panel := _make_panel(root, 1)
 	var stage_dir: String = "res://assets/ui/alpha/HVGA/crusade/stage/"
 	var b1: TextureButton = panel.stage_buttons[0]
 	assert_eq(b1.texture_normal.resource_path, stage_dir + "crusade_stage_1.png",
-		"cur=1 battle1 用 normal 图（非 _current 死资产）")
+		"cur=1 battle1 恒 normal 彩色图（_current 黑剪影已回退）")
 	assert_eq(b1.texture_disabled.resource_path, stage_dir + "crusade_stage_1_locked.png",
 		"battle1 disable 槽=_locked 图（源 disable 键）")
 	assert_false(b1.disabled, "第 1 关当前关不锁（源 :328）")
-	var b3: TextureButton = panel.stage_buttons[2]
-	assert_true(b3.disabled, "第 3 关超进度锁定（源 :328 条件一）")
-	assert_eq(b3.texture_disabled.resource_path, stage_dir + "crusade_stage_3_locked.png",
-		"锁定关 disabled 图=_locked")
-	assert_eq(b3.texture_normal.resource_path, stage_dir + "crusade_stage_3.png",
-		"锁定关 normal 槽恒 normal 图")
-	# 源 :328 条件二：cur==i 且前关未领奖且 i>1 → 锁（构造 cur=2、cleared[1] 未领）。
+	# StageLight 白光底晕：未 cleared 隐藏；cleared 点亮。
+	assert_eq(panel.stage_lights.size(), CrusadeData.MAX_STAGE, "15 StageLight 与 stages 对位")
+	assert_false(panel.stage_lights[0].visible, "未通关 battle1 白光隐藏")
 	panel.player.crusade_manager.cur_stage = 2
 	panel.player.crusade_manager.cleared_stages[1] = true
 	panel._refresh_stage_states()
+	assert_true(panel.stage_lights[0].visible, "cleared battle1 白光底晕点亮（参考页已过标记等价）")
+	assert_eq(b1.texture_normal.resource_path, stage_dir + "crusade_stage_1.png",
+		"cleared 后 battle1 仍 normal 彩色图（标记走光效叠加非换图）")
+	assert_false(panel.stage_lights[1].visible, "未通关 battle2 白光隐藏")
 	assert_true(panel.stage_buttons[1].disabled, "cur=2 且第 1 关未领奖 → battle2 锁（源条件二）")
 	assert_false(panel.stage_buttons[0].disabled, "已通关的第 1 关不锁")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 敌队浮窗拥挤治理守卫（2026-09-13 二轮）：icon 照源 :231 setScale(0.8)（旧漏施致
+# 104×104 原大相邻叠 29px）+ Host 步进 91（icon 显示 83×83 间隙 8）。
+func test_battle_info_icon_scale_and_spacing() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root, 1)
+	panel._on_stage_n(1)
+	for host in panel._bl_hero_hosts:
+		for c in (host as Control).get_children():
+			assert_almost_eq((c as Node2D).scale.x, 0.8, 0.01,
+				"敌方英雄 icon scale=0.8（源 crusade.lua:231，防漏施复发）")
+	var h1: Control = panel._bl_hero_hosts[0] as Control
+	var h2: Control = panel._bl_hero_hosts[1] as Control
+	assert_almost_eq(h2.position.x - h1.position.x, 91.0, 0.5,
+		"头像 Host 步进 91（icon 83 显示宽 + 8 间隙，旧 75 致叠 29px）")
+	var start_btn: TextureButton = (panel.container.get_child(0) as Control).get_node("%BattleLayer/BattleInfo/StartBtn2") as TextureButton
+	assert_gt(start_btn.position.x, (panel._bl_hero_hosts[4] as Control).position.x + 83.0,
+		"开战钮 x > 第 5 头像图标右缘（旧骑跨重叠 66px 已分离）")
+	# 三轮（2026-09-13）照源补全守卫：start scale 0.75（99.9×96×0.75=74.9×72，旧漏乘
+	# 偏大 25%）+ 名字条底板/分隔线/公会行三装饰元素（源 crusadeconfig :1371/:1482/:1497）。
+	assert_almost_eq(start_btn.size.x, 74.9, 0.5, "开战钮宽 =99.9×0.75（源 start config scale=0.75 漏乘订正）")
+	var info: Control = (panel.container.get_child(0) as Control).get_node("%BattleLayer/BattleInfo") as Control
+	assert_not_null((info.get_node("TipDetailBg") as TextureRect).texture, "名字条底板 tip_detail_bg 挂载（源 :1371-1378）")
+	assert_not_null((info.get_node("TipDelimiter") as TextureRect).texture, "底部分隔线 pvp_tip_delimiter 挂载（源 :1482-1492）")
+	var guild_hint: Label = info.get_node("%GuildHintLbl") as Label
+	assert_eq(guild_hint.text, "未加入公会", "公会行=LSTR NOT_IN_GUILDS（单机无公会恒显，源 :238-240）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 卷轴标题文字（参考页对齐 2026-09-13）：TitleLabel 挂 TitleBg 下，fill LSTR
+# BURNING_CRUSADE（源面板无标题文字系当年缺资产，参考页"远征"大字设计受控补齐）。
+func test_title_label_filled() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root, 1)
+	var title: Label = (panel.container.get_child(0) as Control).get_node("%TitleBg/TitleLabel") as Label
+	assert_not_null(title, "TitleLabel 挂 TitleBg 下")
+	if title != null:
+		assert_eq(title.text, "燃烧的远征", "标题文字=LSTR 燃烧的远征")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 可领宝箱金光（参考页对齐 2026-09-13）：cleared 未 rewarded → BoxLight 点亮；
+# 未通关隐藏；领取后熄灭。呼吸 tween 挂 box（随 1.5s 摇晃弹跳联动）。
+func test_box_light_on_claimable() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root, 1)
+	panel.player.crusade_manager.cur_stage = 2
+	panel.player.crusade_manager.cleared_stages[1] = true
+	panel._refresh_stage_states()
+	var light1: TextureRect = panel.box_rects[0].get_node_or_null("BoxLight") as TextureRect
+	assert_not_null(light1, "box1 挂 BoxLight 光效子节点")
+	if light1 != null:
+		assert_true(light1.visible, "可领（cleared 未领）box1 金光点亮")
+	var light2: TextureRect = panel.box_rects[1].get_node_or_null("BoxLight") as TextureRect
+	if light2 != null:
+		assert_false(light2.visible, "未通关 box2 金光隐藏")
+	panel.player.crusade_manager.rewarded_stages[1] = true
+	panel._refresh_stage_states()
+	if light1 != null:
+		assert_false(light1.visible, "领取后 box1 金光熄灭")
 	panel.remove_window()
 	root.queue_free()
 
