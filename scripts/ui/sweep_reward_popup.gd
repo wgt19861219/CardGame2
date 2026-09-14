@@ -9,6 +9,11 @@ extends PopWindow
 ## 项目无对应物）；尾标图 stagedetail_raid_title.png 源项目与本项目双缺（源实机同
 ## 不可见），仅保留 lettherebelight 光效；关闭时 playerLevelup 公告不补（本项目
 ## add_team_exp→check_unlocks 已有功能解锁公告链）；源 draglist 换 ScrollContainer。
+## 自动跟滚（源 playListLayerAnim :1961-1981 逐组 ey=max(lh-oh,0) 平移）以
+## scroll_vertical tween 承接，2026-09-14 补（曾漏译致 10 连扫荡新组在视口外闪现）。
+## 受控偏离（用户裁决 2026-09-14）：源时序尾标在末组前（createLootAnim :2257-2272
+## index==#lootList 先 createEndTag），改为显示完末组（额外奖励）再尾标收尾——尾标
+## 垫底+最后出场，滚动链仍单调（组 lh_end 递增 → 尾标底）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/sweep_reward_popup_content.tscn")
 
@@ -19,6 +24,7 @@ const ITEM_BG_RES: String = UI_DIR + "stagedetail/stagedetail_raid_item_bg.png"
 const GOLD_ICON_RES: String = UI_DIR + "goldicon_small.png"
 const LIGHT_RES: String = UI_DIR + "lettherebelight.png"
 const LIGHT_TEX_PX: float = 385.0       # lettherebelight.png PIL 实测 385×385
+const LIGHT_VIEW_HALF: float = LIGHT_TEX_PX * 0.8 / CS * 0.5  # 光效显示半高；源尾段滚动目标=尾标中心+endTagH/2（:1995-1998），双缺 raid_title 以光效高代
 # 显示尺寸（像素÷CS，源无 TextureConfig 条目/fix_wh）
 const SUBTITLE_BG_SIZE: Vector2 = Vector2(533.0 / CS, 44.0 / CS)
 const ITEM_BG_SIZE: Vector2 = Vector2(540.0 / CS, 98.0 / CS)
@@ -64,6 +70,8 @@ const FIRST_DELAY: float = 0.5
 const NODE_DELAY: float = 0.1
 const TAIL_DELAY: float = 0.2
 const LIGHT_ROT_DUR: float = 5.0      # 源 CCRotateBy(5, 360) 循环
+const SCROLL_DUR: float = 0.2          # 源 playListLayerAnim CCMoveTo(0.2)+EaseBackOut
+const SCROLL_SETTLE_SEC: float = 0.05  # skip 触底前等 ScrollContainer 布局就绪（滚动 max 更新）
 
 var cm: Variant = null
 var _loot_list: Array = []
@@ -74,8 +82,10 @@ var _close_btn: TextureButton = null
 var _title_label: Label = null
 var _scroll_wrap: Control = null
 var _list_layer: Control = null
+var _host: ScrollContainer = null
 var _end_light: Sprite2D = null
-var _groups: Array[Dictionary] = []   # 每组 {header: Array（即时可见）, reveal: Array（交错动画）}
+var _end_tag_end_y: float = 0.0
+var _groups: Array[Dictionary] = []   # 每组 {header: Array（即时可见）, reveal: Array（交错动画）, lh_end: float（组后累计高，源 playListLayerAnim 滚动目标）}
 
 
 func setup_popup(loot_list: Array, p_cm: Variant, p_skip_anim: bool = false) -> void:
@@ -97,6 +107,7 @@ func _build_content() -> void:
 	_title_label.text = _lstr("PRIVILEGE.FARM", "扫荡")
 	_title_label.visible = false   # 弹入后 playTitleAnim 闪现（源 :2451-2466）
 	var host: ScrollContainer = _content.get_node("%ScrollHost") as ScrollContainer
+	_host = host
 	# 双层：wrap 直挂 ScrollHost（minsize 驱动滚动范围；ScrollContainer 重排直接子层
 	# position，实测 minsize 变化即归零——单层平移不可行），_list_layer 挂 wrap 自由平移。
 	_scroll_wrap = Control.new()
@@ -113,13 +124,14 @@ func _build_content() -> void:
 
 
 # 全组静态构建（节点初隐藏，出现时机交 _play 照源逐组推进；skip 分支一次全显）。
+# 布局=组1..N → 尾标垫底（受控偏离：尾标最后收尾，滚动链组 lh_end 递增 → 尾标底单调）。
 func _build_all_groups() -> void:
 	var lh: float = 0.0
 	var total: int = _loot_list.size()
 	for k in range(1, total + 1):
 		lh = _create_group(k, total, lh)
-	var end_y: float = _create_end_tag(lh + END_TAG_PAD)
-	_scroll_wrap.custom_minimum_size = Vector2(LIST_W, end_y + LIST_BOTTOM_PAD)
+	_end_tag_end_y = _create_end_tag(lh + END_TAG_PAD)
+	_scroll_wrap.custom_minimum_size = Vector2(LIST_W, _end_tag_end_y + LIST_BOTTOM_PAD)
 
 
 # 建第 k 组（源 createLoot:2042-2184），返组后 lh。
@@ -156,7 +168,7 @@ func _create_group(k: int, total: int, lh: float) -> float:
 	for n in reveal:
 		(n as Control).visible = false
 	lh += ROW_STEP * float(maxi(rows - 1, 0)) + LH_GROUP_TAIL
-	_groups.append({"header": header, "reveal": reveal})
+	_groups.append({"header": header, "reveal": reveal, "lh_end": lh})
 	return lh
 
 
@@ -225,11 +237,15 @@ func _create_end_tag(y: float) -> float:
 	return y + LIGHT_TEX_PX * LIGHT_SCALE   # 光效显示高 = 像素÷CS×0.8（LIGHT_SCALE 已含 ÷CS）
 
 
-# 动画总控（源 show→createListLayer→createLootAnim(1) 链：第1..N-1 组逐组 → 尾标 → 末组 → close）。
+# 动画总控（源 show→createListLayer→createLootAnim(1) 链逐组推进；受控偏离：源尾标
+# 在末组前插播，用户裁决改为末组（额外奖励）显示完再尾标收尾，尾标动画完才 close）。
+# 每组显示前自动跟滚（源 createLoot 构建完即 playListLayerAnim）；动画期禁用户滚动
+# （源 draglist:setTouchEnabled(false):2337 → true:2407）。
 func _play() -> void:
 	if _skip_anim:
-		_finish_all()
+		await _finish_all()
 		return
+	_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_title_label.visible = true
 	_title_label.pivot_offset = _title_label.size * 0.5
 	_title_label.scale = Vector2(TITLE_SCALE_FROM, TITLE_SCALE_FROM)
@@ -240,12 +256,13 @@ func _play() -> void:
 	await tw.finished
 	var total: int = _loot_list.size()
 	for k in range(1, total + 1):
-		if k == total:
-			await _reveal_end_tag()
+		_scroll_to(float(_groups[k - 1].get("lh_end", 0.0)))
 		_show_header(k)
 		await _reveal_nodes(k)
+	await _reveal_end_tag()
 	_anim_done = true
 	_close_btn.visible = true
+	_host.mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 func _finish_all() -> void:
@@ -259,6 +276,10 @@ func _finish_all() -> void:
 	_start_light_rotation()
 	_anim_done = true
 	_close_btn.visible = true
+	# 源 skip 分支 ll:setPosition(ep) 瞬时到位；等一帧布局（滚动 max 就绪）再设值
+	await get_tree().create_timer(SCROLL_SETTLE_SEC).timeout
+	if is_instance_valid(_host):
+		_host.scroll_vertical = maxi(int(_end_tag_end_y - LIGHT_VIEW_HALF - _host.size.y), 0)
 
 
 func _show_header(k: int) -> void:
@@ -281,8 +302,10 @@ func _reveal_nodes(k: int) -> void:
 	await get_tree().create_timer(total).timeout
 
 
-# 尾标（源 createEndTag：0.5s 后显示 + 光效旋转）。
+# 尾标（源 createEndTag：0.5s 后显示 + 光效旋转；滚动目标=尾标中心+endTagH/2 :1995-1998，
+# 受控偏离布局尾标收尾——该目标使末组（额外奖励）与尾标同框可见）。
 func _reveal_end_tag() -> void:
+	_scroll_to(_end_tag_end_y - LIGHT_VIEW_HALF)
 	_end_light.scale = Vector2(LIGHT_SCALE * NODE_SCALE_FROM, LIGHT_SCALE * NODE_SCALE_FROM)
 	var tw: Tween = create_tween()
 	tw.tween_interval(FIRST_DELAY)
@@ -297,6 +320,19 @@ func _start_light_rotation() -> void:
 		return
 	var tw: Tween = create_tween().set_loops()
 	tw.tween_property(_end_light, "rotation", TAU, LIGHT_ROT_DUR).from(0.0)
+
+
+# 自动跟滚（源 playListLayerAnim:1961-1981：ey=max(lh-oh,0) 平移列表层 0.2s BackOut）。
+# 组 lh 超视口高才产生滚动；逐组触发时布局早已稳定，可直接 tween。
+func _scroll_to(target_lh: float) -> void:
+	if _host.size.y <= 0.0:
+		return
+	var target: int = maxi(int(target_lh - _host.size.y), 0)
+	if target == _host.scroll_vertical:
+		return
+	var tw := create_tween()
+	tw.tween_property(_host, "scroll_vertical", target, SCROLL_DUR)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 # 动画未完不响应关闭（源 doMainLayerTouch endPlayLootAnim 前吞全部触摸）。
