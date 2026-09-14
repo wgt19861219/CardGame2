@@ -398,7 +398,8 @@ func perform_upgrade_rank() -> bool:
 		Toast.show_message(String(cm.get_lstr(LSTR_MAX_RANK)) if cm != null else "已进阶到顶级")
 		AudioPlayer.play_sfx("common_alert")
 		return false
-	# 自动穿戴（源 doClickUpgrade :706-747 needWear 补译）：已持有槽一键全穿；无法就绪→下方 toast
+	# 自动穿戴（源 doClickUpgrade :706-747 needWear 补译 + 2026-09-14 受控偏离自动合成）：
+	# 已持有槽一键全穿；canCraft 槽材料齐+金币足自动合成再穿；无法就绪→下方 toast
 	if pd != null and hero_manager != null:
 		var worn: int = EquipCraftManager.autowear_for_upgrade(pd, hero.inst_id)
 		if worn > 0:

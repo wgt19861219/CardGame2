@@ -314,6 +314,23 @@ func sweep(sid: int, times: int, rng: Variant = null, player: PlayerData = null,
 					sweep_loot_record[stage_key][item_key] = miss_count + 1
 	var raid_bonus: Array[Dictionary] = StageSweepLoot.build_raid_bonus(stage_row, times)
 	var waves: Array[Dictionary] = StageSweepLoot.build_waves(times, single_exp, single_money, per_wave)
+	# 入账（照源 sweep_stage_reply local_server.lua:4744-4775：addExp 队伍经验 + addMoney 金币
+	# + 每件掉落 addEquip + Raid Bonus addEquip。2026-09-14 补——此前只算不发，弹窗显示获得
+	# 物品但 items/gold/team_exp 全不动，用户实测扫荡获智力长袍 173 后英雄详情持有 0）。
+	# hero 掉落对齐 take_stage_reward 分支（add_hero + handbook；正数关卡掉落表实测无 hero id，
+	# 同构保留）。UI 侧 _do_sweep 仅消费返回值显示，无重复入账。
+	if player != null:
+		player.add_team_exp(single_exp * times)
+		player.hero_manager.add_money(single_money * times)
+		for loot_id in loots:
+			if _item_type(int(loot_id)) == "hero":
+				player.hero_manager.add_hero(int(loot_id))
+				if player.handbook != null:
+					player.handbook.record_hero(int(loot_id))
+			else:
+				player.add_item(int(loot_id))
+		for bonus in raid_bonus:
+			player.add_item(int(bonus["id"]), int(bonus["amount"]))
 	return {"ok": true, "exp": single_exp * times, "money": single_money * times, "loots": loots, "raid_bonus": raid_bonus, "waves": waves}
 
 

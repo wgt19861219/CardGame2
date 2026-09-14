@@ -89,25 +89,54 @@ static func enhance_equip_to_max(pd: PlayerData, inst_id: int, slot: int) -> boo
 # 源语义：逐槽 getHeroEquipState——isEquiped 跳过；canWear（背包持有 + Equip Level Requirement 达标）
 # 收集进 needWear；其余任一（canCraft/notHave/cannotwear）→ toast"穿齐装备"+return（整体拒绝，零消耗）。
 # 全就绪 → 逐槽 consumeEquip(eid,1)（纯扣背包）+ hero:equip(slot)，再继续发进阶。
+# 2026-09-14 受控偏离（用户拍板"加自动合成"）：canCraft 槽（配方存在+等级达标）且材料递归齐备
+# +金币足 → 自动合成再穿（源要求手动点槽合成，此处增强使绿+角标 eti=wear 语义与进阶行为一致；
+# 材料或金币不足仍整单拒绝零消耗）。
 # 返值：>=0 = 实穿槽数（可继续进阶）；-1 = 存在无法就绪的槽（调用方弹"穿齐装备"）。
 static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
 	var hm: HeroManager = pd.hero_manager
 	var hero: HeroInstance = hm.get_hero(inst_id)
 	if hero == null:
 		return -1
-	var need_slots: Array[int] = []
+	var ect: Dictionary = pd.cm.get_raw_table(&"Equipcraft")
+	var wear_slots: Array[int] = []    # 背包已可穿的槽
+	var craft_slots: Array[int] = []   # 需先合成的槽
+	var planned: Dictionary = {}       # item_id -> 跨槽计划消耗总数（craft_recurse 的 allocated 联动）
+	var planned_cost: int = 0          # 跨槽合成金币预算
+	# 第一遍：逐槽定性 + 零消耗预检（任一槽不可就绪 → 整单拒绝，材料/金币/槽全不动）
 	for slot in range(HeroManager.EQUIP_SLOT_COUNT):
 		var ett: String = String(EquipdetailQuery.get_hero_equip_state(hero, slot, pd.cm, pd)["ett"])
 		if ett == "isEquiped":
 			continue
-		if ett != "canWear":
-			return -1
-		need_slots.append(slot)
-	for slot in need_slots:
+		var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot + 1, pd.cm)
+		if ett == "canWear":
+			if int(pd.items.get(eid, 0)) - int(planned.get(eid, 0)) < 1:
+				return -1   # 跨槽同 id 争用超量（预算联动）
+			planned[eid] = int(planned.get(eid, 0)) + 1
+			wear_slots.append(slot)
+			continue
+		if ett == "canCraft":
+			# 照源 isEquipCraftable 递归语义预检材料（craft_recurse 只读 pd；allocated=planned
+			# 使合成材料消耗与直穿预算共用账本，防执行时序性超扣）
+			var rec: Dictionary = craft_recurse(pd, eid, ect, {}, planned)
+			if not bool(rec["ok"]) or hm.gold - planned_cost < int(rec["cost"]):
+				return -1
+			planned_cost += int(rec["cost"])
+			craft_slots.append(slot)
+			continue
+		return -1   # notHave/cannotwear/ignore
+	# 第二遍：全部可就绪才执行——先合成（真扣材料+金币，产出进背包），再统一穿戴
+	for slot in craft_slots:
+		var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot + 1, pd.cm)
+		if not synthesize_equip(pd, eid):
+			return -1   # 防御：预检过理论必成
+	var all_slots: Array[int] = craft_slots.duplicate()
+	all_slots.append_array(wear_slots)
+	for slot in all_slots:
 		var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot + 1, pd.cm)
 		pd.items[eid] = int(pd.items.get(eid, 0)) - 1
 		hm.wear_equip(inst_id, slot)
-	return need_slots.size()
+	return all_slots.size()
 
 
 # 装备合成（照源 local_server:1059-1115 equip_synthesis + collectCraftChain:1026-1057）。

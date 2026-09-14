@@ -147,17 +147,18 @@ func compose(target_tid: int) -> bool:
 	add_hero(target_tid)
 	return true
 
-## 进阶条件（照源 player.lua:2059 canUpgrade）：6 槽全穿齐 hero_equip[tid][rank] 要求装备 + rank<上限。
+## 进阶条件（照源运行时门槛：UI canHeroUpgrade :688-699 槽非空 + doClickUpgrade :706-716
+## isEquiped/canWear 放行 + main.lua:1561 服务端仅校验 rank<max）：6 槽全非空 + rank<上限。
+## 已穿任意装备即过，不比对配方 ID——player.lua:2058 canUpgrade 的"已穿==配方"是
+## 从未被调用的死代码断言（EDDebug），2026-09-14 误照译修正（用户存档六槽全穿被拒）。
 func can_upgrade_rank(inst_id: int) -> bool:
 	var hero := get_hero(inst_id)
 	if hero == null:
 		return false
 	if hero.rank >= MAX_EQUIP_RANK:
 		return false
-	var rank_equip: Dictionary = config.get_raw_table(&"Hero_equip").get(str(hero.tid), {}).get(str(hero.rank), {})
 	for slot in range(EQUIP_SLOT_COUNT):
-		var requirement: int = int(rank_equip.get("Equip" + str(slot + 1) + " ID", 0))
-		if int(hero.equip_slots[slot]) != requirement:
+		if int(hero.equip_slots[slot]) <= 0:
 			return false
 	return true
 

@@ -60,6 +60,7 @@ func test_sweep_consumes_vitality_and_coin() -> void:
 	var mgr := StageManager.new(cm)
 	var data := StageData.from_config(cm, 1)
 	var pd := PlayerData.new(cm)
+	pd.team_level = 80   # 固定初态：2026-09-14 sweep 入账补全后经验会触发升级回体力（Vitality Reward），lv80 需 6000 exp 不升级
 	pd.vitality = data.vitality_cost * 3 + 10   # 足 3 次 + 余量
 	pd.add_item(PlayerData.SWEEP_COIN_ID, 5)
 	var v_before := pd.vitality
