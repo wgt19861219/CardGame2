@@ -116,14 +116,49 @@ static func get_slot_expected_equip(hero: HeroInstance, slot: int, cm: Variant) 
 
 
 # 已持有 (pd.items[eid]>0) → true（源 :576 has 优先，直接可穿）；
-# 否则配方 Components>0 → true（源递归判材料，本项目简化仅判配方存在，差异注释）。
-# pd=null 时跳过持有检查（View 未持 PlayerData 引用时降级）。
+# 否则照源 tools.lua:573-593 isEquipCraftable 递归判材料——getMaterials 收集叶子材料需求，
+# 任一 demand > 持有 → false。2026-09-14 根修：旧实现仅判配方存在（Components>0）恒 true
+# （漏译递归），致装备槽缺材料仍显绿+（用户实机反馈小鹿回复之巾缺卷轴 117）。
+# pd=null 时跳过持有/材料检查（View 未持 PlayerData 引用时降级为仅判配方存在）。
 static func is_equip_craftable(eid: int, cm: Variant, pd: PlayerData) -> bool:
 	if eid <= 0:
 		return false
 	if pd != null and int(pd.items.get(eid, 0)) > 0:
 		return true
-	return int(EquipcraftData.get_recipe(eid, cm).get("Components", 0)) > 0
+	if int(EquipcraftData.get_recipe(eid, cm).get("Components", 0)) < 1:
+		return false
+	if pd == null:
+		return true
+	var consume: Dictionary = {}
+	var materials: Dictionary = {}
+	_collect_materials(consume, materials, eid, cm, pd)
+	for item_id in materials:
+		if int(materials[item_id]) > int(pd.items.get(int(item_id), 0)):
+			return false
+	return true
+
+
+# 源 tools.lua:541-571 getMaterials 直译：cs=直接消耗账本（可合成组件剩余持有足够时记入，不递归），
+# mt=叶子材料需求（无配方组件如卷轴 117，或持有不足递归展开子配方）。源宽松语义照译：cs 记入时
+# 不校验 use+need<=持有（部分持有即整笔直接消耗，缺额不递归）——与 local_server recurse（合成
+# 执行，见 EquipCraftManager.craft_recurse 精确部分消耗+递归补足）是源中并存的两套判定，各自照译。
+# 组件有配方行但 Components=0：源两分支均不进（不消耗不计料），照译跳过。
+static func _collect_materials(cs: Dictionary, mt: Dictionary, id: int, cm: Variant, pd: PlayerData) -> void:
+	var craft: Dictionary = cm.get_raw_table(&"Equipcraft")
+	var row: Dictionary = craft.get(str(id), {})
+	var components: int = int(row.get("Components", 0))
+	for i in range(1, components + 1):
+		var cid: int = int(row.get("Component" + str(i), 0))
+		var need: int = maxi(int(row.get("Component" + str(i) + " Count", 1)), 1)
+		var sub: Dictionary = craft.get(str(cid), {})
+		if not sub.is_empty() and int(sub.get("Components", 0)) > 0:
+			var use: int = int(cs.get(cid, 0))
+			if use >= int(pd.items.get(cid, 0)):
+				_collect_materials(cs, mt, cid, cm, pd)
+			else:
+				cs[cid] = use + need
+		elif sub.is_empty():
+			mt[cid] = int(mt.get(cid, 0)) + need
 
 
 # 返 {can, hlv, elv}（源 Lua 多返回值，本项目 Dictionary）。
@@ -154,9 +189,10 @@ static func is_slot_ready_to_wear(hero: HeroInstance, slot: int, cm: Variant, pd
 #   - 有配方未装，按"可穿戴 + 可合成 + 持有"三维判定：
 #     · 持有>0 + 可穿 → 绿+（canWear）
 #     · 持有>0 + 不可穿 → 黄+（cannotwear）
-#     · 持有=0 + 可合成 + 可穿 → 绿+（canCraft+wear）
+#     · 持有=0 + 可合成（材料递归齐备）+ 可穿 → 绿+（canCraft+wear）
 #     · 持有=0 + 可合成 + 不可穿 → 黄+（canCraft+cannotwear）
-#     · 持有=0 + 不可合成 → 无角标（notHave，源不画）
+#     · 持有=0 + 不可合成（材料不足）→ 黄+（notHave；2026-09-14 受控偏离：源不画角标，
+#       用户拍板缺材料显黄+ 提示，绿+ 只留给"持有可穿/材料齐全可合成可穿"）
 # 注：can_wear_equip 判 Level Requirement（hero.level >= equip 的等级要求）。
 static func get_hero_equip_state(hero: HeroInstance, slot: int, cm: Variant, pd: PlayerData) -> Dictionary:
 	if hero == null:
@@ -174,7 +210,7 @@ static func get_hero_equip_state(hero: HeroInstance, slot: int, cm: Variant, pd:
 		# 未持有：看可合成
 		if is_equip_craftable(eid, cm, pd):
 			return {"ett": "canCraft", "eti": "wear" if can_wear else "cannotwear"}
-		return {"ett": "notHave", "eti": ""}   # 没持有+不可合成：源不画角标
+		return {"ett": "notHave", "eti": "cannotwear"}   # 缺材料：黄+（受控偏离，源不画）
 	# 已持有：看可穿戴
 	return {"ett": ("canWear" if can_wear else "cannotwear"), "eti": ("wear" if can_wear else "cannotwear")}
 

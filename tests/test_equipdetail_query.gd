@@ -227,3 +227,76 @@ func test_can_wear_equip_zero_eid_false() -> void:
 	var hero := HeroInstance.new(1)
 	var result: Dictionary = EquipdetailQuery.can_wear_equip(hero, 0, cm)
 	assert_false(bool(result["can"]), "eid=0 → can=false")
+
+
+# === 2026-09-14 根修：is_equip_craftable 补齐源 tools.lua:573-593 递归材料判定 ===
+# 用户实机反馈：小鹿（tid=45）rank2 第4槽配方回复之巾（Equip 123），缺卷轴（117）装备槽仍显绿+。
+# 旧实现只判配方存在（Components>0）恒 true（漏译源 getMaterials 递归）；表数据实证：
+# 回复之巾 123 = 卷轴 117 + 回复戒指 111 + 树枝 101（三者皆无配方的叶子材料，各需 max(Count,1)=1）。
+
+func test_is_equip_craftable_missing_material_false() -> void:
+	var pd := PlayerData.new(cm)
+	pd.items[111] = 1
+	pd.items[101] = 1   # 缺卷轴 117
+	assert_false(EquipdetailQuery.is_equip_craftable(123, cm, pd), "缺卷轴 117 → false（源递归材料判定）")
+
+
+func test_is_equip_craftable_all_base_materials_true() -> void:
+	var pd := PlayerData.new(cm)
+	pd.items[117] = 1
+	pd.items[111] = 1
+	pd.items[101] = 1
+	assert_true(EquipdetailQuery.is_equip_craftable(123, cm, pd), "材料齐（117/111/101 各 1）→ true")
+
+
+# 递归链：201 = 119(可合成) + 120(可合成)；119 = 115+103+106、120 = 105+110（全叶子）。
+# 持有 0 个中间组件时按源 getMaterials 递归展开叶子需求，缺任一叶子 → false。
+func test_is_equip_craftable_recursive_chain() -> void:
+	var pd := PlayerData.new(cm)
+	pd.items[103] = 1
+	pd.items[106] = 1
+	pd.items[105] = 1
+	pd.items[110] = 1   # 缺叶子 115（119 的组件）
+	assert_false(EquipdetailQuery.is_equip_craftable(201, cm, pd), "子链缺叶子 115 → false")
+	pd.items[115] = 1
+	assert_true(EquipdetailQuery.is_equip_craftable(201, cm, pd), "叶子全补齐（115/103/106/105/110）→ true")
+
+
+# 持有中间组件 119 一个 → 直接消耗（源 getMaterials cs 账本），只需再补 120 链叶子。
+func test_is_equip_craftable_consume_owned_component() -> void:
+	var pd := PlayerData.new(cm)
+	pd.items[119] = 1
+	pd.items[105] = 1
+	pd.items[110] = 1   # 120 铘叶子齐
+	assert_true(EquipdetailQuery.is_equip_craftable(201, cm, pd), "持 119 + 120 链叶子齐 → true")
+
+
+# === get_hero_equip_state 角标（源 herodetail/controller.lua:207-233 + 受控偏离）===
+# 2026-09-14 受控偏离（用户拍板）：材料不足（源 notHave）源不画角标，本项目改显黄+
+# （eti=cannotwear）——绿+ 只留给"持有可穿/材料齐全可合成可穿"。
+
+# 小鹿 45 rank2 slot4（0-based=3）配方 = 回复之巾 123（Level Requirement=10）。
+func _make_fawn_rank2() -> HeroInstance:
+	var hero := HeroInstance.new(45)
+	hero.rank = 2
+	hero.level = 99   # 等级远超 10，排除 cannotwear(等级) 干扰
+	return hero
+
+
+func test_get_hero_equip_state_missing_materials_yellow_plus() -> void:
+	var pd := PlayerData.new(cm)
+	pd.items[111] = 1
+	pd.items[101] = 1   # 缺卷轴 117
+	var state: Dictionary = EquipdetailQuery.get_hero_equip_state(_make_fawn_rank2(), 3, cm, pd)
+	assert_eq(String(state["ett"]), "notHave", "缺卷轴 → notHave")
+	assert_eq(String(state["eti"]), "cannotwear", "缺材料 → 黄+（受控偏离：源不画角标，用户拍板显黄）")
+
+
+func test_get_hero_equip_state_all_materials_green_plus() -> void:
+	var pd := PlayerData.new(cm)
+	pd.items[117] = 1
+	pd.items[111] = 1
+	pd.items[101] = 1
+	var state: Dictionary = EquipdetailQuery.get_hero_equip_state(_make_fawn_rank2(), 3, cm, pd)
+	assert_eq(String(state["ett"]), "canCraft", "材料齐 → canCraft")
+	assert_eq(String(state["eti"]), "wear", "材料齐 + 等级够 → 绿+")
