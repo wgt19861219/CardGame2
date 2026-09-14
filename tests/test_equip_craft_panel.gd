@@ -546,8 +546,100 @@ func test_on_get_way_clicked_emits_when_unlocked() -> void:
 	panel._on_get_way_clicked(target)
 	assert_eq(emitted.size(), 1, "已通关 → emit jump_to_stage（跳选关）")
 	assert_eq(int(emitted[0]), target, "emit raw id（源传 raw，转换在选关面板侧）")
-	if panel.get_parent() != null:   # 成功分支内已 remove_window
+	panel.remove_window()   # 2026-09-14 根修后跳转不再自我关闭，由测试收尾清理
+
+
+# 2026-09-14 根修：源 doClickGetWay :83 pushScene 压栈不清场——获取途径跳转不关 equipcraft
+# 自己，面板栈模拟源场景栈（stageselect 全屏盖住，扫荡完逐层退出回到 equipcraft 看材料，
+# 用户实机反馈"点击返回直接回到列表了"即旧实现清场误译）。
+func test_on_get_way_clicked_keeps_panel_open() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel(eid, pd)
+	var ids: Array = panel._get_way_ids
+	if ids.is_empty():
+		pass_test("该装备无获取途径，跳过")
 		panel.remove_window()
+		return
+	var target: int = int(ids[0])
+	pd.stage_manager.progress = {target: 3}
+	panel._on_get_way_clicked(target)
+	assert_false(panel.is_queued_for_deletion(), "已通关跳转 → equipcraft 不自我关闭（源 pushScene 压栈）")
+	panel.remove_window()
+
+
+# 2026-09-14 根修：on_equip_craft_jump 不再关宿主面板——旧实现 panel.remove_window() 在
+# heroDetail 上下文传入 HeroDetailPanel（hero_detail_panel.gd:95 传 self），点获取途径直接
+# 关掉英雄详情，扫荡返回无处可回落到列表。
+func test_on_equip_craft_jump_keeps_host_panel() -> void:
+	var pd := PlayerData.new(cm)
+	var iid: int = pd.hero_manager.add_hero(1)
+	var hero: HeroInstance = pd.hero_manager.get_hero(iid)
+	var root := Node.new()
+	add_child(root)
+	var detail := HeroDetailPanel.new("herodetail", {})
+	detail.setup_panel(hero, cm, pd.hero_manager, pd)
+	detail.show_window(root)
+	# GUT 环境 current_scene 无 open_stage_select_by_stage → 反射安全跳过，纯测宿主不被关
+	HeroDetailEquipSlots.on_equip_craft_jump(101, detail)
+	assert_false(detail.is_queued_for_deletion(), "跳转不关宿主英雄详情（源 pushScene 压栈不清场）")
+	detail.remove_window()
+	root.queue_free()
+
+
+# 2026-09-14 二轮（用户拍板受控增强）：扫荡返回后 equipcraft 数字刷新——源 Cocos 场景栈
+# popScene 回旧场景不重渲染（显示扫荡前旧数字），本项目优于源：选关面板关闭时刷新
+# 拥有量 + 合成树材料数（扫荡拿到卷轴/装备回来即见）。
+func test_refresh_after_stage_select_close() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel(eid, pd)
+	# 模拟场景入口已打开的选关面板（GUT 无 current_scene 反射入口，emit 无接收方；
+	# _on_get_way_clicked 的绑定逻辑从 PopWindow 栈里找 StageSelectPanel）
+	var sp := StageSelectPanel.new("stageselect", {})
+	sp.setup_panel(pd.stage_manager, pd, BattleRng.new(1))
+	sp.show_window(panel.get_parent())
+	var ids: Array = panel._get_way_ids
+	if ids.is_empty():
+		pass_test("该装备无获取途径，跳过")
+		sp.remove_window()
+		panel.remove_window()
+		return
+	var target: int = int(ids[0])
+	pd.stage_manager.progress = {target: 3}
+	panel._on_get_way_clicked(target)
+	# 模拟扫荡入账（选关在顶期间获得目标装备）
+	pd.items[eid] = 2
+	# 关闭选关（用户点返回）→ 应触发 equipcraft 刷新
+	sp.remove_window()
+	assert_true(panel._amount_label.text.find("2") >= 0, "选关关闭 → 拥有量刷新为 2（实际 %s）" % panel._amount_label.text)
+	panel.remove_window()
+
+
+# 2026-09-14 四轮（栈顶驱动兜底）：不依赖 register_on_exit 绑定——任意方式盖上选关再关，
+# equipcraft 复顶（PopWindow._on_became_top）即刷新。覆盖真实点击路径下单点钩子失灵的场景。
+func test_refresh_on_became_top_without_bind() -> void:
+	var eid: int = _find_drop_equip()
+	if eid == 0:
+		pass_test("数据表无纯掉落装备，跳过")
+		return
+	var pd := PlayerData.new(cm)
+	var panel := _make_panel(eid, pd)
+	# 直接盖一个选关面板（不走 _on_get_way_clicked，即无 on_exit 绑定）
+	var sp := StageSelectPanel.new("stageselect", {})
+	sp.setup_panel(pd.stage_manager, pd, BattleRng.new(1))
+	sp.show_window(panel.get_parent())
+	# 模拟扫荡入账后关闭选关 → equipcraft 复顶应刷新
+	pd.items[eid] = 3
+	sp.remove_window()
+	assert_true(panel._amount_label.text.find("3") >= 0, "复顶刷新（无绑定路径）：拥有量应为 3（实际 %s）" % panel._amount_label.text)
+	panel.remove_window()
 
 
 # 源 doGetWayTouch :91-123 board gui_input 连点击处理

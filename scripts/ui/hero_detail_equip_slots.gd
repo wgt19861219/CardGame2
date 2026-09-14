@@ -185,14 +185,16 @@ static func open_equip_craft_by_id(eid: int, cm: Variant, pd: PlayerData, parent
 	# 层级同 open_equip_craft：动态 z 栈自动置顶（原显式 z=200 已废弃）。
 
 
-# P1-10 源 equipcraft doClickGetWay :83 pushScene(stageselect.createByStage(id))。
-# panel 用 Node 弱类型（非 HeroDetailPanel），调 remove_window + get_tree（Node 链路方法）。
+# P1-10 源 equipcraft doClickGetWay :83 pushScene(stageselect.createByStage(id))——压栈不清场，
+# equipcraft 及其宿主全保留在栈底（扫荡完逐层 popScene 回 equipcraft）。2026-09-14 根修：
+# 旧实现 panel.remove_window() 关宿主——heroDetail 上下文传入的是 HeroDetailPanel（
+# hero_detail_panel.gd:95 传 self），点获取途径直接关掉英雄详情，扫荡返回落到列表（用户反馈）。
+# 现仅经 panel 取 tree 反射场景入口，不动任何面板；栈式面板层级由 PopWindow 动态 z 栈接管。
 # current_scene 反射入口须场景侧提供 open_stage_select_by_stage（main_scene/hero_scene 均有，
 # 2026-09-07 HeroScene 缺此方法曾致获取途径跳转断链——[GJ] 日志实锤后补齐）。
 static func on_equip_craft_jump(stage_id: int, panel: Node) -> void:
-	if panel == null or not panel.has_method(&"remove_window"):
+	if panel == null:
 		return
-	panel.remove_window()
 	var tree: SceneTree = panel.get_tree()
 	if tree == null or tree.current_scene == null:
 		return

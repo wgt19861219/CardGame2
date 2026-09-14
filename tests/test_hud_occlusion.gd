@@ -67,16 +67,20 @@ func test_explicit_optout_not_occlude() -> void:
 	w.remove_window()
 
 
-# ④ 嵌套深度感知：外层纯弹窗 + 内层场景型 → 仍遮蔽（外层在栈）；关内层仍遮蔽；栈空解除。
+# ④ 嵌套深度感知（2026-09-14 语义修正）：栈顶场景型 → 不遮蔽（源 pushScene 全屏场景盖住
+# 外层弹窗，statusbar 属新场景语义正常显示——真实链 equipcraft→stageselect，扫荡返回期间
+# HUD 应正常）；关内层后外层纯弹窗复顶 → 遮蔽；栈空解除。旧断言"外层纯弹窗在栈→仍遮蔽"
+# 系对 pushScene 压栈语义的误读（2026-09-08 写测试时无真实嵌套链路触发）。
 func test_nested_stack_depth_aware() -> void:
 	var outer := PopWindow.new("occl4a", {})
 	outer.show_window(_root)
+	assert_true(HudOverlay.is_occluded(), "外层纯弹窗在顶 → 遮蔽")
 	var inner := PopWindow.new("occl4b", {})
 	inner.hud_identity = "crusade"
 	inner.show_window(_root)
-	assert_true(HudOverlay.is_occluded(), "嵌套：外层纯弹窗在栈 → 仍遮蔽")
+	assert_false(HudOverlay.is_occluded(), "嵌套：栈顶场景型（源 pushScene 语义）→ 不遮蔽")
 	inner.remove_window()
-	assert_true(HudOverlay.is_occluded(), "关内层：外层仍在栈 → 仍遮蔽")
+	assert_true(HudOverlay.is_occluded(), "关内层：外层纯弹窗复顶 → 遮蔽")
 	outer.remove_window()
 	assert_false(HudOverlay.is_occluded(), "栈空 → 解除")
 

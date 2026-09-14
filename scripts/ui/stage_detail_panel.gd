@@ -318,9 +318,8 @@ func _on_sweep_some_pressed(stage_type: String) -> void:
 	_do_sweep(_sweep_some_times(stage_type))
 
 
-# 扫荡统一执行 + 前置校验（对齐源 doClickSweep:128-151 分层拦截，单机化裁剪网络/钻石路径）。
-# 成功弹 SweepRewardPopup 战利品弹窗（源 repeatRewardWindow:1946，2026-09-04 补全，
-# 原单机化 Toast 简化被用户复验否定）。
+# 扫荡统一执行 + 前置校验（源 doClickSweep:128-151 分层拦截）；成功弹 SweepRewardPopup
+#（源 repeatRewardWindow:1946，2026-09-04 补全，原 Toast 简化被用户复验否定）。
 func _do_sweep(times: int) -> void:
 	if mgr == null or player == null or times <= 0:
 		return
@@ -341,7 +340,8 @@ func _do_sweep(times: int) -> void:
 		_check_enabled()
 		_show_sweep_reward(r)
 	else:
-		Toast.show_message(String(r.get("msg", "扫荡失败")))  # 项目适配 toast
+		# sweep 失败返 reason 而非 msg——旧读 msg 恒落笼统"扫荡失败"，兜底时看不到真实原因。
+		Toast.show_message(str({"no_vitality": "体力不足", "no_sweep_coin": "扫荡券不足", "no_diamond": "钻石不足"}.get(String(r.get("reason", "")), "扫荡失败")))
 
 
 # 扫荡结果弹窗（源 doSendSweepReply:42-67 repeatRewardWindow.create(lootList)，2026-09-04

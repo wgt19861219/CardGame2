@@ -90,6 +90,9 @@ func setup_panel(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) ->
 # 旧实现只定位章节：精英关跳普通地图看不到目标关 + 落章后无任何目标指示（用户 2026-09-07
 # 报「去往正确的关卡没有实现」）。
 func setup_by_stage(p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng, stage_id: int) -> void:
+	hud_identity = "stageselect"   # 同 setup_panel 开头两行（2026-09-07 建本入口时漏抄——
+	transparent_shade = true       # identity 空 → 纯弹窗语义误遮 HUD + shade 不透明，实机探针
+	                              # 2026-09-14 抓获；装备槽获取途径跳转链 HUD 应正常显示）
 	mgr = p_mgr
 	player = p_player
 	rng = p_rng
