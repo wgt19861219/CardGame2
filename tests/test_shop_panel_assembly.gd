@@ -215,3 +215,35 @@ func test_top_bar_sourced_layout() -> void:
 	var talk_label: Label = pl.get_node("TalkLabel") as Label
 	assert_almost_eq(talk_label.position.y + talk_label.size.y * 0.5, 77.0, 1.0, "TalkLabel 中心 y=77（源 frame 中线）")
 	content.free()
+
+
+# ── 到期改裁决（2026-09-14 用户裁决）：到期不关面板，直接刷新商店 + 重计停留 ──
+
+# 行为守卫：已过期触发 _on_expire → 面板仍在树（不 remove_window）+ expire_end 重计 + 商品 rebuild 6 件。
+func test_on_expire_refreshes_not_closes() -> void:
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.gold = 10000
+	var mgr := ShopManager.new(cm)
+	var panel := ShopPanel.new("shop", {})
+	add_child(panel)
+	panel.setup_panel(2, mgr, pd, BattleRng.new(1))
+	var now: int = int(Time.get_unix_time_from_system())
+	pd.shop_expire_end[2] = now - 1   # 手动置过期（停留期满/持久化残留两种入口同管道）
+	panel._on_expire()
+	assert_true(panel.is_inside_tree(), "到期不关面板（面板仍在树）")
+	assert_true(int(pd.shop_expire_end.get(2, 0)) > now, "停留期重计 expire_end>now（不残留过期）")
+	var item_layer: Control = panel.get("_item_layer") as Control
+	assert_eq(item_layer.get_child_count(), 6, "商品 rebuild 后 6 件")
+	panel.free()
+
+
+# 源码守卫：_on_expire 函数体不含 remove_window（防回归到期关面板），且刷新走 open_shop。
+func test_on_expire_source_no_close() -> void:
+	var text: String = FileAccess.get_file_as_string("res://scripts/ui/shop_panel.gd")
+	var start: int = text.find("func _on_expire")
+	assert_true(start >= 0, "_on_expire 存在")
+	var end: int = text.find("\nfunc ", start + 1)
+	assert_true(end > start, "_on_expire 函数体边界可定位")
+	var body: String = text.substr(start, end - start)
+	assert_true(body.find("remove_window") == -1, "_on_expire 不调 remove_window（到期刷新不关面板）")
+	assert_true(body.find("open_shop") >= 0, "_on_expire 走 open_shop 重新生成商品")

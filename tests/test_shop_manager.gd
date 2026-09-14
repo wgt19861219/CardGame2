@@ -328,14 +328,16 @@ func test_get_expire_time() -> void:
 	assert_eq(ShopManager.get_expire_time(6, cm), 3600, "星际 Expire=3600")
 
 
-# init_expire：地精开店设 expire_end=now+3600；普通店不设；已记录不重设
+# init_expire：地精开店设 expire_end=now+3600；普通店不设；停留期内不重设；已过期重计（2026-09-14）
 func test_init_expire() -> void:
 	var sm := ShopManager.new(cm)
 	var pd := _make_pd()
 	assert_true(sm.init_expire(2, pd, 100000), "地精首次 init 设 expire_end")
 	assert_eq(int(pd.shop_expire_end.get(2, 0)), 100000 + 3600, "expire_end=now+3600")
-	assert_false(sm.init_expire(2, pd, 200000), "已记录不重设")
-	assert_eq(int(pd.shop_expire_end.get(2, 0)), 100000 + 3600, "expire_end 不变")
+	assert_false(sm.init_expire(2, pd, 101800), "停留期内已有记录不重设（源 NPC 停留期固定）")
+	assert_eq(int(pd.shop_expire_end.get(2, 0)), 100000 + 3600, "停留期内 expire_end 不变")
+	assert_true(sm.init_expire(2, pd, 200000), "已过期记录重计（200000>=expire_end 103600）")
+	assert_eq(int(pd.shop_expire_end.get(2, 0)), 200000 + 3600, "过期重计 expire_end=now+3600")
 	assert_false(sm.init_expire(1, pd, 100000), "普通店 Expire=0 不 init")
 	assert_false(pd.shop_expire_end.has(1), "普通店无记录")
 
