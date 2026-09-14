@@ -104,6 +104,36 @@ func test_sweep_consumes_sweep_coin() -> void:
 	assert_eq(bool(r2.get("ok", true)), false, "扫荡券不足 → ok=false")
 
 
+# 2026-09-14 修复回归：扫荡入账（照源 sweep_stage_reply local_server.lua:4744-4775——
+# addExp 队伍经验 + addMoney 金币 + 每件掉落 addEquip + Raid Bonus addEquip）。
+# 修复前 sweep 只算不发：弹窗显示获得物品但 items/gold/team_exp 全不动
+# （用户实测扫荡获智力长袍 173 后英雄详情持有 0，存档 items[173]=0 铁证）。
+# team_level=80 固定初态：防升级回体力/吃 team_exp 干扰断言（判例：存量断言遇新副作用先固定初态）。
+func test_sweep_credits_rewards_to_player() -> void:
+	var mgr := StageManager.new(cm)
+	mgr.exit_stage(1, 3, true)
+	var pd := PlayerData.new(cm)
+	pd.team_level = 80
+	pd.add_item(390, 5)
+	var gold0: int = pd.hero_manager.gold
+	var exp0: int = pd.team_exp
+	var r: Dictionary = mgr.sweep(1, 3, BattleRng.new(42), pd)
+	assert_true(bool(r.get("ok", false)), "前置：扫荡成功")
+	assert_eq(pd.hero_manager.gold, gold0 + int(r["money"]), "金币入账（money 合计）")
+	assert_eq(pd.team_exp, exp0 + int(r["exp"]), "队伍经验入账（exp 合计）")
+	var expected: Dictionary = {}
+	for loot_id in (r["loots"] as Array):
+		var lid: int = int(loot_id)
+		expected[lid] = int(expected.get(lid, 0)) + 1
+	for bonus in (r["raid_bonus"] as Array):
+		var b: Dictionary = bonus
+		expected[int(b["id"])] = int(expected.get(int(b["id"]), 0)) + int(b["amount"])
+	assert_gt(expected.size(), 0, "前置：本次扫荡有掉落+Raid Bonus 可验证")
+	for eid in expected:
+		assert_eq(int(pd.items.get(int(eid), 0)), int(expected[eid]),
+			"装备 %d 入账件数 = 掉落+Raid Bonus 合计" % int(eid))
+
+
 func test_generate_loots() -> void:
 	var mgr := StageManager.new(cm)
 	var rng := BattleRng.new(12345)
