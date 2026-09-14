@@ -143,9 +143,9 @@ func test_list_content_centered_in_host() -> void:
 		"最右图标（局部 550−200=350）落在滚动区宽 400 内")
 
 
-# 末组（额外奖励）subtitle 前源有 lh+20（stagedetail.lua:2038-2040，拉开与上一组间距），
-# Godot 版曾漏译只译标题后 +25。组1（6 物品）源累计 lh：0→35→90→250（icon 段起点 90+
-# 90×1 行距+70 组尾）；末组中心 y=250+20=270（_list_layer 局部坐标，垂直不平移）。
+# 末组（额外奖励）前源有 lh+20（stagedetail.lua:2038-2040，拉开与上一组间距）。
+# 布局（受控偏离，用户裁决尾标收尾）：组1..N → 尾标垫底。组1（6 物品）源累计 lh：
+# 0→35→90→250；末组 subtitle 中心 y=250+20=270；尾标在末组之下保滚动链单调。
 func test_last_group_head_gap() -> void:
 	var loots: Array = []
 	for i in range(6):
@@ -154,6 +154,11 @@ func test_last_group_head_gap() -> void:
 	var last_sub: TextureRect = popup._groups[1]["header"][0] as TextureRect
 	assert_almost_eq(last_sub.position.y + last_sub.size.y * 0.5, 270.0, 0.5,
 		"末组 subtitle 中心 y=270（组1 lh=250 + 源末组前 20）")
+	# 尾标垫底在末组之下（滚动链组 lh_end 递增 → 尾标底单调的前提，防倒滚回潮）
+	assert_true(popup._end_light.position.y > last_sub.position.y + last_sub.size.y * 0.5,
+		"尾标中心在末组标题之下（末组先显示、尾标最后收尾）")
+	assert_true(float(popup._groups.back().get("lh_end", 0.0)) < popup._end_tag_end_y,
+		"末组 lh_end < 尾标底（自动滚动链全程单调）")
 
 
 # 动画分支端到端（真跑 async 链 标题→组→尾标→末组→close，~1.6s）：
@@ -175,4 +180,80 @@ func test_popup_anim_branch_completes() -> void:
 	assert_true(popup._anim_done, "动画分支完整走完（%d 帧内）" % frames)
 	assert_true(popup._close_btn.visible, "动画完 close 显示（源 setAnimEnd 后）")
 	assert_true(popup._title_label.visible, "标题动画后可见")
+	popup.remove_window()
+
+
+# ---- 自动跟滚守卫（源 playListLayerAnim:1961-1981 每组构建完 ey=max(lh-oh,0) 平移列表层， ----
+# 曾漏译致 10 连扫荡新组在视口外闪现，2026-09-14 用户反馈后补）。
+# 断言用运行时视口高（GUT headless 视口有环境膨胀，见 test_list_content_centered_in_host）。
+
+
+func _host_of(popup: SweepRewardPopup) -> ScrollContainer:
+	return popup._content.get_node("%ScrollHost") as ScrollContainer
+
+
+# 组标题中心（_list_layer 内容坐标）滚入滚动后视口区间 [scroll, scroll+size.y]。
+func _assert_header_in_view(host: ScrollContainer, header: TextureRect, msg: String) -> void:
+	var cy: float = header.position.y + header.size.y * 0.5
+	assert_between(cy, host.scroll_vertical - 1.0, host.scroll_vertical + host.size.y + 1.0, msg)
+
+
+# 动画分支：4 战+末组总高远超视口 374，链走完后终态滚动 >0 且末组标题在视口内（~6s）。
+func test_auto_scroll_follows_groups_after_anim() -> void:
+	var loot_list: Array = []
+	for i in range(4):
+		loot_list.append({"exp": 12, "money": 34, "loots": [{"id": 390, "amount": 1}]})
+	loot_list.append({"loots": []})
+	var root := Node.new()
+	add_child(root)
+	var popup := SweepRewardPopup.new("sweepReward", {})
+	popup.setup_popup(loot_list, cm, false)
+	popup.show_window(root)
+	# 出场时序守卫（受控偏离）：末组最后节点先可见，尾标最后收尾（用户裁决）
+	var last_node: Control = (popup._groups[4]["reveal"] as Array).back() as Control
+	var node_seen: int = -1
+	var light_seen: int = -1
+	var frames: int = 0
+	while not popup._anim_done and frames < 3600:
+		await get_tree().process_frame
+		frames += 1
+		if node_seen < 0 and last_node.visible:
+			node_seen = frames
+		if light_seen < 0 and popup._end_light.visible:
+			light_seen = frames
+	assert_true(popup._anim_done, "动画链完整走完（%d 帧内）" % frames)
+	assert_true(node_seen > 0 and light_seen > node_seen,
+		"末组节点先显示、尾标光效最后收尾（受控偏离时序）")
+	var host: ScrollContainer = _host_of(popup)
+	assert_true(host.scroll_vertical > 0, "内容超高时动画终态滚动 >0（逐组跟滚）")
+	assert_eq(host.mouse_filter, Control.MOUSE_FILTER_STOP, "动画完恢复用户滚动（源 setTouchEnabled(true)）")
+	_assert_header_in_view(host, popup._groups[4]["header"][0] as TextureRect,
+		"末组标题滚入视口")
+	popup.remove_window()
+
+
+# skip 分支：源 skipLootAnim ll:setPosition(ep) 瞬时触底；等 SCROLL_SETTLE_SEC 布局就绪后断言。
+func test_skip_scroll_to_bottom() -> void:
+	var loot_list: Array = []
+	for i in range(4):
+		loot_list.append({"exp": 12, "money": 34, "loots": []})
+	loot_list.append({"loots": []})
+	var popup := _make_popup(loot_list)
+	await get_tree().create_timer(0.2).timeout
+	var host: ScrollContainer = _host_of(popup)
+	assert_true(host.scroll_vertical > 0, "skip 分支超高内容瞬时触底滚动 >0")
+	_assert_header_in_view(host, popup._groups[4]["header"][0] as TextureRect,
+		"skip 触底后末组标题在视口内")
+	popup.remove_window()
+
+
+# 目标 lh 低于视口（源 ey=max(lh-oh,0)=0）不滚：直调 _scroll_to 守卫 0 分支
+# （照源布局尾标高 270，最小 2 组内容 580>374 必滚，全链构造不出矮列表）。
+func test_no_scroll_when_target_below_view() -> void:
+	var popup := _make_popup([{"exp": 1, "money": 2, "loots": []}, {"loots": []}])
+	await get_tree().create_timer(0.2).timeout
+	var host: ScrollContainer = _host_of(popup)
+	host.scroll_vertical = 0
+	popup._scroll_to(300.0)
+	assert_eq(host.scroll_vertical, 0, "目标 lh(300)<视口高时 target=0 不滚动")
 	popup.remove_window()
