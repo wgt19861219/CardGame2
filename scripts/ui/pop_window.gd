@@ -29,6 +29,10 @@ var container: Control = null
 var _on_enter_handlers: Array[Callable] = []
 var _on_exit_handlers: Array[Callable] = []
 var _swallow: bool = true
+# 栈顶变化通知（2026-09-14）：_refresh_stack_z 检测栈顶面板变化时对新栈顶调 _on_became_top
+# （默认空实现）。服务"被全屏子面板盖住、回到栈顶时需刷新"的面板（equipcraft 扫荡返回刷新
+# 数字——register_on_exit 单点在真实点击路径存在未定位断点，栈顶驱动覆盖任意关闭方式）。
+static var _last_stack_top: CanvasItem = null
 # --- T4 样板收敛（审查报告-架构评估与重构方案-2026-08-14 阶段一；默认值保持旧默认行为，子类按需置位）---
 # 打开弹窗音效（原 10 份 register_on_enter(func(): AudioPlayer.play_sfx(...)) 样板上收；默认关）。
 var play_open_sfx: bool = false
@@ -144,18 +148,40 @@ static func _refresh_stack_z() -> void:
 	# HUD 遮蔽联动（栈状态唯一咽喉，show/remove/PREDELETE/external 全经此）：栈内存在任一
 	# 遮蔽弹窗 → HUD 局部黑罩；栈空/仅剩不遮蔽弹窗 → 恢复。嵌套弹窗天然深度感知。
 	_sync_hud_occlusion()
+	# 栈顶变化通知（2026-09-14）：新开面板与关闭后下层复顶都触发（幂等刷新无害）。
+	# external 节点（无 _on_became_top）安全跳过；栈空时仅记录。
+	var cur_top: CanvasItem = null
+	if not _open_stack.is_empty():
+		cur_top = _open_stack[_open_stack.size() - 1]
+	if cur_top != _last_stack_top:
+		_last_stack_top = cur_top
+		if cur_top is PopWindow:
+			(cur_top as PopWindow)._on_became_top()
 
 
+# 栈顶变化钩子：面板从非顶变顶（含新开）时回调，子类按需重写（默认空）。
+func _on_became_top() -> void:
+	pass
+
+
+# 栈顶定性（2026-09-14 语义修正）：从栈顶向下找第一个能定性的面板——场景模拟型
+# （hud_identity 非空）→ 不遮蔽；纯弹窗（hud_occlude）→ 遮蔽。源 pushScene 全屏场景盖住
+# 栈底一切弹窗，statusbar 属新场景语义正常显示——真实链 equipcraft（纯弹窗）上开
+# stageselect（场景型）扫荡返回期间 HUD 应正常（旧全栈扫描会误判栈底 equipcraft 遮蔽）。
+# 旧语义"栈内任一纯弹窗即遮蔽"系对 pushScene 压栈的误读（2026-09-08 治理时无嵌套链路触发）。
 static func _sync_hud_occlusion() -> void:
 	var occ := false
-	for p in _open_stack:
+	for i in range(_open_stack.size() - 1, -1, -1):
+		var p: CanvasItem = _open_stack[i]
 		if p is PopWindow:
 			var w := p as PopWindow
 			# hud_identity 非空 = 场景模拟型弹窗（源 pushScene 场景如 shop/tavern/stageselect/crusade，
 			# HUD 版式属场景语义、货币条清晰可见）→ 不遮蔽；hud_identity 空 = 纯弹窗
 			# （源 scene/mainLayer 级 z≥100 一律盖 HUD）→ 默认遮蔽；hud_occlude=false =
 			# 显式例外（源刻意低于 statusbar 的悬浮板，如 equipboardofpackage z=0）。
-			if w.hud_occlude and w.hud_identity == "":
+			if w.hud_identity != "":
+				break
+			if w.hud_occlude:
 				occ = true
 				break
 		elif p.has_meta("hud_occlude") and bool(p.get_meta("hud_occlude")):

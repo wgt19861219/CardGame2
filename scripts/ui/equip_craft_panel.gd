@@ -250,7 +250,12 @@ func _stage_stars(sid: int) -> int:
 	return pd.stage_manager.stage_stars(sid)
 
 
-# 本项目 pushScene 降级为 jump_to_stage signal（HeroDetailPanel 接 → main_scene 打开 StageSelectPanel）。
+# 源 doClickGetWay :77-89 只 pushScene(stageselect) 压栈不清场（equipcraft 场景保留在栈底，
+# 扫荡完逐层 popScene 回本面板看材料）。本项目等价：emit jump_to_stage（场景入口开
+# StageSelectPanel 全屏盖住），本面板留在 PopWindow 栈底不自我关闭——2026-09-14 根修，
+# 旧实现 remove_window 清场致扫荡返回无处可回落到列表（用户实机反馈）。
+# 2026-09-14 二轮（用户拍板受控增强）：源 popScene 回旧场景不重渲染（扫荡回来显示旧数字），
+# 本项目优于源——选关面板关闭时刷新拥有量+合成树（扫荡拿到卷轴/装备回来即见）。
 func _on_get_way_clicked(stage_id: int) -> void:
 	var st: String = StageAccount.stage_type(stage_id)
 	if st != "normal" and st != "elite":
@@ -260,9 +265,41 @@ func _on_get_way_clicked(stage_id: int) -> void:
 	if star + prev > 0:
 		AudioPlayer.play_sfx("common_click_feedback")
 		jump_to_stage.emit(stage_id)
-		remove_window()   # 关 equip_craft
+		_bind_stage_select_refresh()
 	else:
 		_show_toast(cm.get_lstr(LSTR_CHAPTER_YET_TO_OPEN))
+
+
+# emit 同步链终点（场景入口 open_stage_select_by_stage → show_window）完成后，栈顶即
+# 本次跳转打开的选关面板——从 PopWindow 栈向下找最近的 StageSelectPanel（各次跳转对应
+# 新实例，旧面板已销毁其 on_exit 随之而亡，不积累）。register_on_exit 在 remove_window
+# 内同步调用（早于 queue_free 帧末出树），无信号生命周期问题。
+func _bind_stage_select_refresh() -> void:
+	var select_panel: PopWindow = null
+	for i in range(PopWindow._open_stack.size() - 1, -1, -1):
+		var p: CanvasItem = PopWindow._open_stack[i]
+		if p is StageSelectPanel:
+			select_panel = p as PopWindow
+			break
+	if select_panel != null:
+		select_panel.register_on_exit(_refresh_after_stage_select)
+
+
+# 选关关闭（用户扫荡完点返回）→ 刷新详情层拥有量；合成窗打开态则重建树（skip_anim 跳
+# 开场动画，材料数/lack 态/金币判定随重建更新）。两 fill 均幂等可重入（清空重填/重建）。
+# 双保险：register_on_exit 钩子（二轮）+ _on_became_top 栈顶驱动（四轮，2026-09-14——
+# 单点钩子在真实点击路径存在未定位断点，栈顶变化由 _refresh_stack_z 统一驱动覆盖任意
+# 关闭方式；两路幂等无害）。
+func _refresh_after_stage_select() -> void:
+	_refresh_amount()
+	if _tree != null and is_instance_valid(_tree):
+		_create_craft_tree(_craft_id, true)
+
+
+# PopWindow._on_became_top（栈顶变化钩子）：选关/关卡详情等子面板任意方式关闭后
+# equipcraft 复顶即刷新（覆盖 CloseBtn/shade/级联等全部路径）。
+func _on_became_top() -> void:
+	_refresh_after_stage_select()
 
 
 func _make_get_way_handler(idx: int) -> Callable:
