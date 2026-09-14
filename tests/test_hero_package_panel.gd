@@ -572,3 +572,35 @@ func test_drag_helper_scrolls_hero_list() -> void:
 		"鼠标拖拽上滑滚动英雄包裹列表（源 draglist drag；Godot 桌面 ScrollContainer 无拖拽）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 2026-09-14 翻页顺序根修守卫：点英雄打开详情须传"当前 tab 已拥有英雄列表"
+# （照源 heropackage.lua:209-221），顺序 = order_heroes 等级→星级→rank 降序——
+# 旧实现详情内部取获得序致左右切换与列表显示不一致（用户反馈"切换顺序错乱"）。
+func test_hero_click_passes_ordered_paging_list() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	var a: HeroInstance = mgr.get_hero(mgr.add_hero(1))
+	var b: HeroInstance = mgr.get_hero(mgr.add_hero(2))
+	var c: HeroInstance = mgr.get_hero(mgr.add_hero(3))
+	a.level = 1   # 获得序 a,b,c；等级序 c(3) > b(2) > a(1)，两序刻意相反
+	b.level = 2
+	c.level = 3
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	panel._on_hero_clicked(a)
+	var detail: HeroDetailPanel = null
+	for ch in root.get_children():
+		if ch is HeroDetailPanel:
+			detail = ch
+			break
+	assert_not_null(detail, "HeroDetailPanel 弹出")
+	if detail != null:
+		assert_eq(detail._hero_ids, [c.inst_id, b.inst_id, a.inst_id],
+			"翻页列表 = order_heroes 等级降序（回归点：旧获得序 [a,b,c]）")
+		assert_eq(detail._current_idx, 2, "点击 a 在翻页列表中的索引")
+		detail.queue_free()
+	panel.remove_window()
+	root.queue_free()

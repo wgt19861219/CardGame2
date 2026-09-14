@@ -232,11 +232,21 @@ func _on_entry_clicked(entry: Variant) -> void:
 		_on_miss_clicked(entry)
 
 
+# 详情翻页列表（照源 heropackage.lua:209-221）：当前分类 tab 列表过滤已拥有英雄，
+# 保序（order_heroes 等级→星级→rank 降序）——详情左右切换与包裹列表显示顺序一致。
+func _owned_list_for_paging() -> Array:
+	var owned: Array = []
+	for v in _hero_by_class.get(_clid, []):
+		if v is HeroInstance:
+			owned.append(v)
+	return owned
+
+
 func _on_hero_clicked(hero: HeroInstance) -> void:
 	AudioPlayer.play_sfx("common_popup_window")
 	Events.bus.emit_tutorial_step(&"SUclickHero")
 	var detail := HeroDetailPanel.new("herodetail", {})
-	detail.setup_panel(hero, cm, _hero_mgr, pd)
+	detail.setup_panel(hero, cm, _hero_mgr, pd, _owned_list_for_paging())
 	detail.evolve_requested.connect(func() -> void:
 		if detail.perform_evolve():
 			detail.refresh_content())

@@ -57,16 +57,22 @@ var _skill_host: Control = null    # .tscn %SkillListHost（技能行动态挂�
 var _desc_host: Control = null     # .tscn %DescHost（技能描述动态挂）
 var _upgrade_light: Sprite2D = null   # 进阶按钮光效（可进阶时 fade 循环闪烁）
 var _light_tween: Tween = null        # 光效动画 tween（退出 kill 防泄漏）
-var _hero_ids: Array = []          # 拥有英雄 inst_id 列表（hero_manager.get_owned_hero_ids；翻页用）
+var _hero_ids: Array = []          # 翻页英雄 inst_id 列表（调用方传入；空 = 无翻页箭头，源 herolist=nil 同）
 var _current_idx: int = -1         # hero.inst_id 在 _hero_ids 中的索引（无则 -1）
 
-func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null, p_pd: PlayerData = null) -> void:
+func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null, p_pd: PlayerData = null, p_owned_list: Array = []) -> void:
 	hero = p_hero
 	cm = p_cm
 	hero_manager = p_mgr
 	pd = p_pd
-	_hero_ids = hero_manager.get_owned_hero_ids() if hero_manager != null and hero != null else []
-	_current_idx = _hero_ids.find(hero.inst_id) if hero != null else -1
+	# 翻页列表由调用方传入（heropackage.lua:209-221 当前 tab 过滤已拥有、order_heroes
+	# 等级→星级→rank 降序），不传则无 herolist 不建箭头。2026-09-14 根修翻页顺序错乱
+	# ——旧取 get_owned_hero_ids（获得序）与列表显示序不一致致切换跳跃。
+	_hero_ids = []
+	for v in p_owned_list:
+		if v is HeroInstance:
+			_hero_ids.append((v as HeroInstance).inst_id)
+	_current_idx = _hero_ids.find(hero.inst_id)
 	# popwindow.lua:33（源）：herodetail {touch_priority=-130} 黑半透 shade 吞点击、无点外关闭（关闭仅 %CloseBtn）。
 	# 缺省时内容区（全 IGNORE）点击穿透 shade 触发点外关闭 → 点详情页任意位置误返回英雄包裹（2026-08-29 用户反馈）。
 	shade_close_on_click = false

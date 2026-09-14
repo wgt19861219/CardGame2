@@ -911,6 +911,7 @@ func test_skill_desc_board_position_follows_slot() -> void:
 
 # 翻页箭头 tab 态屏内落位（2026-09-09 回归：右箭头随 base 右移 140 出屏至全局 862>800）。
 # 默认 DEFAULT_TAB=card → 面板一打开就是 tab 态；两箭头 global_rect 须整框在 800×480 屏内。
+# 2026-09-14 翻页根修：翻页列表改调用方传入（照源 herolist），箭头显隐随传入列表。
 func test_arrows_on_screen_in_tab_state() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -919,11 +920,11 @@ func test_arrows_on_screen_in_tab_state() -> void:
 	mgr.add_hero(1)   # 同 tid 两实例（heroes 按 inst_id 键控 → 2 英雄）
 	var hero := mgr.get_hero(mgr.get_owned_hero_ids()[0])
 	var panel := HeroDetailPanel.new("herodetail", {})
-	panel.setup_panel(hero, cm, mgr)
+	panel.setup_panel(hero, cm, mgr, null, _all_heroes(mgr))
 	panel.show_window(root)
 	var l: TextureButton = panel._base_layer.get_node("%LeftArrow") as TextureButton
 	var r: TextureButton = panel._base_layer.get_node("%RightArrow") as TextureButton
-	assert_true(l.visible and r.visible, "多英雄两箭头 visible")
+	assert_true(l.visible and r.visible, "传入列表多英雄两箭头 visible")
 	assert_gt(l.get_global_rect().position.x, 0.0, "左箭头框不入负区")
 	assert_lt(l.get_global_rect().end.x, 800.0, "左箭头右缘屏内")
 	assert_gt(r.get_global_rect().position.x, 0.0, "右箭头左缘屏内（回归点：旧全局 862 出屏）")
@@ -942,12 +943,71 @@ func test_arrows_clickable_mouse_filter() -> void:
 	mgr.add_hero(1)
 	var hero := mgr.get_hero(mgr.get_owned_hero_ids()[0])
 	var panel := HeroDetailPanel.new("herodetail", {})
-	panel.setup_panel(hero, cm, mgr)
+	panel.setup_panel(hero, cm, mgr, null, _all_heroes(mgr))
 	panel.show_window(root)
 	var l: TextureButton = panel._base_layer.get_node("%LeftArrow") as TextureButton
 	var r: TextureButton = panel._base_layer.get_node("%RightArrow") as TextureButton
 	assert_eq(l.mouse_filter, Control.MOUSE_FILTER_STOP, "左箭头 STOP 可点（回归点：旧 IGNORE 穿透）")
 	assert_eq(r.mouse_filter, Control.MOUSE_FILTER_STOP, "右箭头 STOP 可点")
+	panel.remove_window()
+	root.queue_free()
+
+
+# mgr 全部英雄列表（测试 helper：翻页列表传参用）。
+func _all_heroes(mgr: HeroManager) -> Array:
+	var list: Array = []
+	for inst_id in mgr.get_owned_hero_ids():
+		list.append(mgr.get_hero(inst_id))
+	return list
+
+
+# 2026-09-14 翻页顺序根修守卫：旧实现取 hero_manager 字典插入序（获得顺序），
+# 与包裹列表显示序（order_heroes 等级→星级→rank 降序）不一致 → 切换跳跃"顺序错乱"。
+# 根修 = 翻页列表由调用方传入（照源 heropackage.lua:209-221 当前 tab 过滤已拥有），
+# _advance 沿传入列表顺序环形切换。
+func test_advance_follows_passed_list_order() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	var a: HeroInstance = mgr.get_hero(mgr.add_hero(1))
+	var b: HeroInstance = mgr.get_hero(mgr.add_hero(1))
+	var c: HeroInstance = mgr.get_hero(mgr.add_hero(1))
+	a.level = 3
+	b.level = 1
+	c.level = 2
+	# 模拟 order_heroes 等级降序 [a,c,b]；获得序 [a,b,c]——从 a 右切：新行为到 c，旧获得序到 b
+	var ordered: Array = [a, c, b]
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(a, cm, mgr, null, ordered)
+	panel.show_window(root)
+	assert_eq(panel.hero.inst_id, a.inst_id, "初始英雄 a")
+	panel._advance(1)
+	assert_eq(panel.hero.inst_id, c.inst_id, "右箭头切到列表序下一个 c（回归点：旧获得序切 b）")
+	panel._advance(1)
+	assert_eq(panel.hero.inst_id, b.inst_id, "再切到 b")
+	panel._advance(1)
+	assert_eq(panel.hero.inst_id, a.inst_id, "末位环形回首 a")
+	panel._advance(-1)
+	assert_eq(panel.hero.inst_id, b.inst_id, "左箭头回退（首环形回尾 b）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 不传翻页列表（源 herolist=nil）：createArrowButton 直接 return——不显示箭头无翻页。
+func test_arrows_hidden_without_list() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	mgr.add_hero(1)
+	var hero := mgr.get_hero(mgr.get_owned_hero_ids()[0])
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, mgr)   # 无列表参数
+	panel.show_window(root)
+	var l: TextureButton = panel._base_layer.get_node("%LeftArrow") as TextureButton
+	var r: TextureButton = panel._base_layer.get_node("%RightArrow") as TextureButton
+	assert_false(l.visible or r.visible, "无传入列表箭头不显示（源 herolist=nil 不建翻页）")
+	assert_true(panel._hero_ids.is_empty(), "_hero_ids 空（不再回退获得序）")
 	panel.remove_window()
 	root.queue_free()
 

@@ -46,7 +46,9 @@ func get_hero(inst_id: int) -> HeroInstance:
 	return heroes.get(inst_id) as HeroInstance
 
 
-## 已拥有英雄的 inst_id 列表（照源 ed.player.heroes 顺序；hero_detail 翻页用）。
+## 已拥有英雄的 inst_id 列表（字典插入序 = 获得顺序）。注意：英雄列表/详情翻页显示序
+## 走 ReadheroHandbook.order_heroes（等级→星级→rank 降序），不是本函数（2026-09-14 翻页
+## 顺序根修后不再有 View 消费方，仅测试取"任意拥有英雄"用）。
 func get_owned_hero_ids() -> Array:
 	return heroes.keys()
 
