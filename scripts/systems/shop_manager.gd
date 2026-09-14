@@ -194,7 +194,9 @@ func get_time_type(shop_id: int, pd: PlayerData, now_ts: int) -> String:
 
 
 # ---- 停留到期（照源 Shop.Expire Time + shop.lua:686-694 到期分支）----
-# 单机化方案 B：开店起计 expire_end=now+Expire Time，ShopPanel._process 每秒 check，到期 showTalk(Expire)+关面板+清记录（再点重计）。
+# 开店起计 expire_end=now+Expire Time，ShopPanel._process 每秒 check。
+# 到期动作改裁决（2026-09-14 用户裁决）：不关面板，直接刷新商品+重计停留
+# （原单机化方案 B 到期 showTalk(Expire)+关面板+清记录）。
 
 const EXPIRE_TIME_KEY: StringName = &"Expire Time"
 const SECS_PER_HOUR: int = 3600
@@ -208,13 +210,16 @@ static func get_expire_time(shop_id: int, p_cm: Variant) -> int:
 
 
 ## 开店设 expire_end（源 local_server:1316 open_shop 设 _expire_time=now+Expire Time）。
-## Expire Time>0 且未记录 → expire_end=now+Expire Time。返是否初始化（普通店/已记录返 false）。
+## Expire Time>0 且（未记录或记录已过期）→ expire_end=now+Expire Time；停留期内已有记录不重置。
+## 过期重计（2026-09-14）：expire_end 持久化，隔超 Expire Time 再开视为新一轮停留重起表
+## （源 NPC 到期消失后再现即新一轮；否则残留过期记录开面板即触发到期分支）。
 func init_expire(shop_id: int, pd: PlayerData, now_ts: int) -> bool:
-	if pd.shop_expire_end.has(shop_id):
-		return false
 	var et: int = get_expire_time(shop_id, cm)
 	if et <= 0:
 		return false
+	var old_end: int = int(pd.shop_expire_end.get(shop_id, 0))
+	if old_end > now_ts:
+		return false   # 停留期内不重置（源 NPC 停留期固定）
 	pd.shop_expire_end[shop_id] = now_ts + et
 	return true
 
@@ -248,7 +253,7 @@ func get_expire_desc(shop_id: int, pd: PlayerData, now_ts: int) -> String:
 	return _hms_str(r)
 
 
-## 清除 expire 记录（到期关面板后调，下次开店重计；源 NPC 消失等价单机化常驻可重开）。
+## 清除 expire 记录（StarShopPanel 到期关面板后调；shop_panel 到期刷新改为 init_expire 重计，不再清）。
 func clear_expire(shop_id: int, pd: PlayerData) -> void:
 	pd.shop_expire_end.erase(shop_id)
 

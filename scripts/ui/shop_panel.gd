@@ -250,7 +250,8 @@ func _show_talk(key: String) -> void:
 			_talk_tween.tween_property(_talk_bg, "modulate:a", 0.0, 0.8)
 
 
-# 运行中轮询（源 shop.lua timeRefresh:648-698 每秒）：① 到期检查（地精/黑市停留 3600s）② 自动刷新（Refresh Times 点）③ 时刻 Label 刷新。
+# 运行中轮询（源 shop.lua timeRefresh:648-698 每秒）：① 到期检查（地精/黑市停留 3600s，到期刷新不关）
+# ② 自动刷新（Refresh Times 点）③ 时刻 Label 刷新。
 func _process(delta: float) -> void:
 	_auto_refresh_accum += delta
 	if _auto_refresh_accum < AUTO_REFRESH_CHECK_INTERVAL:
@@ -265,12 +266,14 @@ func _process(delta: float) -> void:
 	_update_next_refresh_label()
 
 
-# 单机化：Toast 替 alertDialog + remove_window + clear_expire（常驻按钮再点重计，源 NPC 消失等价）。
+# 到期改裁决（2026-09-14 用户裁决）：不关面板（原 Toast+clear+remove_window），
+# 直接刷新商店——重计停留期 + 重新生成商品 + NPC Refresh 台词（源到期关场景是 NPC 飘走观感，单机化弃）。
 func _on_expire() -> void:
-	_show_talk("Expire")
-	Toast.show_message(String(cm.get_lstr("SHOP.THE_MYSTERIOUS_BUSINESSMAN_HAS_DRIFTED_AWAY_PLEASE_BE_QUICK_NEXT_TIME")))
-	shop_mgr.clear_expire(shop_id, pd)
-	call_deferred("remove_window")
+	shop_mgr.init_expire(shop_id, pd, _now())   # 已过期 → 重计新停留期
+	shop_mgr.open_shop(shop_id, rng, cm)
+	GameData.mark_save_dirty()   # expire_end 持久化字段变更
+	_rebuild()
+	_show_talk("Refresh")
 
 
 # 两件套：PanelLayer rect 纯 tscn 静态（三型商店 frameRes 均为 shop_bg.png，源无逐型定位）；
