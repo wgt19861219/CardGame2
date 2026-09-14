@@ -1,5 +1,7 @@
 extends GutTest
-# 装备进阶单测（照源 player.lua:2059-2083 canUpgrade/upgrade）：rank 进阶需 6 槽穿齐 + 上限 + 重置 Init。
+# 装备进阶单测（照源运行时门槛：UI canHeroUpgrade :688-699 槽非空 + doClickUpgrade :706-716
+# isEquiped/canWear 放行 + main.lua:1561 服务端仅 rank<max）：
+# rank 进阶需 6 槽穿齐 + 上限 + 重置 Init。
 
 var cm: ConfigManager
 
@@ -18,6 +20,18 @@ func test_can_upgrade_rank_requires_full_gear() -> void:
 	assert_false(mgr.can_upgrade_rank(inst_id), "6 槽未穿齐 → 不可进阶")
 	_wear_full_gear(mgr, inst_id)
 	assert_true(mgr.can_upgrade_rank(inst_id), "6 槽穿齐 → 可进阶")
+
+# 2026-09-14 修复回归：源 doClickUpgrade :706-716 对 isEquiped 槽直接放行（不比对配方 ID），
+# 服务端 main.lua:1561 仅校验 rank<max；player.lua:2058 canUpgrade 的"已穿==配方"是
+# 从未被调用的死代码，误照译致用户存档六槽全穿（某槽为非配方装备）点进阶被拒。
+func test_can_upgrade_rank_allows_worn_off_recipe_gear() -> void:
+	var mgr := HeroManager.new(cm)
+	var inst_id := mgr.add_hero(1)
+	_wear_full_gear(mgr, inst_id)
+	var hero := mgr.get_hero(inst_id)
+	hero.equip_slots[3] = 219  # 模拟存档残留：穿着非本 rank 配方装备
+	assert_true(mgr.can_upgrade_rank(inst_id), "6 槽全穿（含非配方装备）→ 可进阶（源 isEquiped 放行）")
+	assert_true(mgr.upgrade_rank(inst_id), "进阶应成功")
 
 func test_upgrade_rank_increments() -> void:
 	var mgr := HeroManager.new(cm)
