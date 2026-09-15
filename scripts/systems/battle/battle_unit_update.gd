@@ -13,6 +13,25 @@ const COLLIDE_PUSH: float = 30.0
 const HP_LOW_RATIO: float = 0.2
 
 
+# CD 衰减步长（源 update :66-67 HAST 缩放同公式，提取供 update 与入场补偿共用）
+static func _cd_dt(u: Variant, dt: float) -> float:
+	var hast: float = float(u.attribs.get("HAST", 0.0))
+	return dt * ((hast + SPEEDER_DENOM) / SPEEDER_DENOM if hast > 0.0 else SPEEDER_DENOM / (SPEEDER_DENOM - hast))
+
+
+# 入场冻结期间技能 CD 照源衰减（2026-09-15 小技能不触发根修）：源切波 nextBattle（reset CD）
+# 与进场均维持 running=true 持续 tick（battle_engine.lua:127），入场走路+过场窗口 CD 一直转；
+# 本项目入场走 View 动画冻结 engine，battle_scene._process 在 _entering 分支调本方法补偿——
+# 只推 global_cd/技能 CD（dt_action=0 不推施法帧），不推 AI/伤害（保留入场表现不脱节）。
+static func tick_skill_cd_only(u: Variant, dt: float) -> void:
+	if not bool(u.is_alive()):
+		return
+	var dt_cd: float = _cd_dt(u, dt)
+	u.global_cd = float(u.global_cd) - dt_cd
+	for skill in u.skill_list:
+		skill.update(0.0, dt_cd)
+
+
 static func update(u: Variant, dt: float) -> void:
 	var attribs: Dictionary = u.attribs
 	var mspd: float = float(attribs.get("MSPD", 0.0))
@@ -63,8 +82,7 @@ static func update(u: Variant, dt: float) -> void:
 	if pos.x < min_x + STAGE_BOUNDARY_MARGIN and vel.x < 0.0:
 		vel.x = 0.0
 	u.position = Vector2(pos.x + vel.x * dt_action, pos.y + vel.y * dt_action)
-	var hast: float = float(attribs.get("HAST", 0.0))
-	var dt_cd: float = dt * ((hast + SPEEDER_DENOM) / SPEEDER_DENOM if hast > 0.0 else SPEEDER_DENOM / (SPEEDER_DENOM - hast))
+	var dt_cd: float = _cd_dt(u, dt)
 	u.global_cd = float(u.global_cd) - dt_cd
 	for skill in u.skill_list:
 		skill.update(dt_action, dt_cd)
