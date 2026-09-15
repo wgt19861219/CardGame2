@@ -239,6 +239,20 @@ func test_content_frame_layout_follows_source() -> void:
 	assert_eq(scroll.horizontal_scroll_mode, 0, "水平不滚动（源列表仅纵向）")
 
 
+# ── 关闭按钮层级守卫（2026-09-15 根修：关闭按钮点击无反应）──
+# 源 z 序（eatexplist.lua :91 close z=1；createListLayer draglist 默认 z=0）：
+# draglist(0) < close(1) < title_bg_1(10) < title(11)。Godot 同 parent 子节点后序=
+# 绘制/输入优先。旧 tscn 把 ScrollHost 追加在树序末尾（最高层），其 rect (120,105)-(690,425)
+# 与 CloseBtn (642.63,94.24)-(693.37,145.76) 重叠 x[642.63,690]×y[105,145.76]（按钮面积 74%），
+# 点击命中列表区英雄行被 STOP 吞 → CloseBtn 永远收不到点击（源靠 touch priority 保证 close 优先）。
+func test_closebtn_tree_order_above_scrollhost() -> void:
+	var inst: Control = _instantiate_content()
+	var close: Control = inst.get_node("%CloseBtn") as Control
+	var scroll: Control = inst.get_node("%ScrollHost") as Control
+	assert_gt(close.get_index(), scroll.get_index(),
+		"CloseBtn 树序在 ScrollHost 之后（源 z 序 draglist(0)<close(1)，按钮绘制/输入优先）")
+
+
 func test_content_title_variation() -> void:
 	# 源 title fontinfo ui_normal_button + size=24 + ccc3(250,205,16)
 	# → EatexpTitleLabel variation（数值断言走 theme 表项：GUT 节点级不解析 variation）。
@@ -462,3 +476,127 @@ func test_theme_eatexp_entries() -> void:
 		"shade 字号 22 照源")
 	_assert_color_eq(theme.get_theme_item(Theme.DATA_TYPE_COLOR, "font_color", "EatexpShadeLabel") as Color,
 		Color(1.0, 148.0 / 255.0, 62.0 / 255.0), "shade 色 (255,148,62) 照源")
+
+
+# ── 行输入 tap/长按语义（2026-09-15 根修：旧实现按下即吃药 → 对齐源 draglist tap 语义）──
+# 源 eatexplist.lua doPressList(:615-633) 按下只 registerKeepeatHandler 不吃；
+# endPressList doClick(:683-704) 抬起且 not isKeepeat + containsPoint 才 doEat 吃 1 颗；
+# draglist.lua:906 ended 且 not dragMode 才 doClickIn（拖动不吃）。
+# 同款 bug 2026-09-12 已在 package_panel 根修（press 记录 → DragScrollHelper.is_tap）。
+
+func _make_mb(pressed: bool, gpos: Vector2) -> InputEventMouseButton:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = pressed
+	ev.global_position = gpos
+	return ev
+
+
+func _make_motion(gpos: Vector2) -> InputEventMouseMotion:
+	var ev := InputEventMouseMotion.new()
+	ev.button_mask = MOUSE_BUTTON_MASK_LEFT
+	ev.global_position = gpos
+	return ev
+
+
+func _first_row_center(panel: EatexpPanel) -> Dictionary:
+	var row: Control = (panel._content.get_node("%Grid") as GridContainer).get_child(0) as Control
+	return {"row": row, "center": row.get_global_rect().get_center()}
+
+
+# press 单独不吃（源 doPressList 只注册长按 handler；拖动浏览列表误触的根因）。
+func test_press_alone_does_not_eat() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := _make_eatexp_panel(pill_id, pd)
+	panel.show_window(root)
+	var rc: Dictionary = _first_row_center(panel)
+	panel._on_cell_gui_input(_make_mb(true, rc["center"]), inst_id)
+	assert_eq(int(pd.items.get(pill_id, 0)), 3, "press 不吃（只注册长按计时）")
+	panel._stop_keepeat()
+	panel.remove_window()
+	root.queue_free()
+
+
+# tap（press+release 同点）release 时吃 1 颗（源 endPressList doClick）。
+func test_tap_release_eats_one() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := _make_eatexp_panel(pill_id, pd)
+	panel.show_window(root)
+	var rc: Dictionary = _first_row_center(panel)
+	panel._on_cell_gui_input(_make_mb(true, rc["center"]), inst_id)
+	panel._on_cell_gui_input(_make_mb(false, rc["center"]), inst_id)
+	assert_eq(int(pd.items.get(pill_id, 0)), 2, "tap release 吃 1 颗")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 拖动（位移超阈值）后 release 不吃（源 dragMode → cancelKeepeat + 不 doClickIn）。
+func test_drag_release_does_not_eat() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := _make_eatexp_panel(pill_id, pd)
+	panel.show_window(root)
+	var rc: Dictionary = _first_row_center(panel)
+	var center: Vector2 = rc["center"]
+	panel._on_cell_gui_input(_make_mb(true, center), inst_id)
+	panel._on_cell_gui_input(_make_motion(center + Vector2(30.0, 0.0)), inst_id)
+	panel._on_cell_gui_input(_make_mb(false, center + Vector2(30.0, 0.0)), inst_id)
+	assert_eq(int(pd.items.get(pill_id, 0)), 3, "拖动后 release 不吃（浏览列表不误触）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 按住超 KEEPEAT_DELAY(0.5s) 进入连吃；release 停止且不补吃单击颗（源 not isKeepeat 分支）。
+func test_hold_keepeat_eats_then_release_stops() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 10)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := _make_eatexp_panel(pill_id, pd)
+	panel.show_window(root)
+	var rc: Dictionary = _first_row_center(panel)
+	panel._on_cell_gui_input(_make_mb(true, rc["center"]), inst_id)
+	await get_tree().create_timer(0.6).timeout
+	var mid: int = int(pd.items.get(pill_id, 0))
+	assert_lt(mid, 10, "长按 0.6s 已开始连吃")
+	panel._on_cell_gui_input(_make_mb(false, rc["center"]), inst_id)
+	assert_eq(int(pd.items.get(pill_id, 0)), mid, "release 停止连吃且不补吃单击颗")
+	panel.remove_window()
+	root.queue_free()
+
+
+# release 位移 <8px 但移出行 rect（行边缘滑出）不吃（源 containsPoint 抬起须在行内）。
+func test_release_outside_row_does_not_eat() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := _make_eatexp_panel(pill_id, pd)
+	panel.show_window(root)
+	var rc: Dictionary = _first_row_center(panel)
+	var rect: Rect2 = (rc["row"] as Control).get_global_rect()
+	var edge: Vector2 = Vector2(rect.end.x - 2.0, rect.get_center().y)
+	var out: Vector2 = Vector2(rect.end.x + 4.0, rect.get_center().y)
+	panel._on_cell_gui_input(_make_mb(true, edge), inst_id)
+	panel._on_cell_gui_input(_make_mb(false, out), inst_id)
+	assert_eq(int(pd.items.get(pill_id, 0)), 3, "release 滑出行外不吃（位移 6px<8px）")
+	panel.remove_window()
+	root.queue_free()

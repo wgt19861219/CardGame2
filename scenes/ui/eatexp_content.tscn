@@ -9,7 +9,9 @@
 ; eatexp 吃经验弹窗两件套静态树（批 1 Task 3，2026-08-15）。框架照源 eatexplist.lua
 ; create(:33-111) 直译；坐标 cocos(800x480 左下) → godot(960x640 左上) via (x+80, 560-y)，
 ; 中心锚元素 = 中心点映射后取对称 offsets；显示尺寸 = 纹理像素 ÷ CS(1.28125)。
-; 源 z 序：frame(0)/title_bg(0) < close(1) < title_bg_1(10) < title(11) → 子节点顺序照排。
+; 源 z 序：frame(0)/title_bg(0)/draglist(0) < close(1) < title_bg_1(10) < title(11)
+; → 子节点顺序照排（2026-09-15 根修：ScrollHost 系 draglist z=0 曾误排树序末尾=最高层，
+; rect 与 CloseBtn 重叠 74% 面积致按钮收不到点击，照源序移到 CloseBtn 之前）。
 ; 列表层（draglist）→ ScrollHost + ListHost（源 listLayer）+ Grid 两列；
 ; 英雄行结构在 eatexp_item.tscn（行模板，源 createHero :204-302）。
 
@@ -44,47 +46,6 @@ offset_bottom = 89.59
 texture = ExtResource("2_titlebg")
 expand_mode = 1
 mouse_filter = 2
-
-; 关闭按钮（源 :87-110 close 65x66 at (668,360) 中心锚 + closePress 按下态）：
-; 显示 50.7x51.5，中心 _g(668,360)=(748,200)；双态 TextureButton
-[node name="CloseBtn" type="TextureButton" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 642.63
-offset_top = 94.24
-offset_right = 693.37
-offset_bottom = 145.76
-texture_normal = ExtResource("3_close")
-texture_pressed = ExtResource("4_closep")
-ignore_texture_size = true
-stretch_mode = 0
-
-; 标题短底（源 :45-56 crusade_title_short_bg 445x79 at (400,379) 中心锚 z=10）：
-; 显示 347.3x61.7，中心 _g(400,379)=(480,181)
-[node name="TitleBg1" type="TextureRect" parent="."]
-layout_mode = 3
-offset_left = 226.34
-offset_top = 70.16
-offset_right = 573.66
-offset_bottom = 131.84
-texture = ExtResource("5_titlebg1")
-expand_mode = 1
-mouse_filter = 2
-
-; 标题（源 :57-72 "选择英雄" size24 ccc3(250,205,16) fontinfo ui_normal_button z=11
-; at (400,379) 中心锚）：色/字号/阴影走 EatexpTitleLabel variation，text 由 panel fill
-[node name="TitleLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 300.0
-offset_top = 86.0
-offset_right = 500.0
-offset_bottom = 116.0
-theme_type_variation = &"EatexpTitleLabel"
-mouse_filter = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-text = "选择英雄"
 
 ; 列表滚动宿主（源 createListLayer :152-170 draglist：cliprect CCRectMake(0,55,800,320)
 ; 场景空间 → 垂直裁剪界 y 185..505；rect CCRectMake(120,55,570,320) 触摸响应区 →
@@ -135,3 +96,46 @@ theme_override_constants/h_separation = 1
 theme_override_constants/v_separation = 4
 columns = 2
 mouse_filter = 2
+
+; 关闭按钮（源 :87-110 close 65x66 at (668,360) 中心锚 + closePress 按下态，z=1）：
+; 显示 50.7x51.5，中心 _g(668,360)=(748,200)；双态 TextureButton。
+; 2026-09-15 根修：树序排列表层（draglist z=0）之后照源 z=1 —— 旧序按钮在列表层
+; 之下，rect 重叠区（按钮面积 74%）点击命中英雄行被吞，关闭按钮收不到输入。
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 642.63
+offset_top = 94.24
+offset_right = 693.37
+offset_bottom = 145.76
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
+
+; 标题短底（源 :45-56 crusade_title_short_bg 445x79 at (400,379) 中心锚 z=10）：
+; 显示 347.3x61.7，中心 _g(400,379)=(480,181)
+[node name="TitleBg1" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 226.34
+offset_top = 70.16
+offset_right = 573.66
+offset_bottom = 131.84
+texture = ExtResource("5_titlebg1")
+expand_mode = 1
+mouse_filter = 2
+
+; 标题（源 :57-72 "选择英雄" size24 ccc3(250,205,16) fontinfo ui_normal_button z=11
+; at (400,379) 中心锚）：色/字号/阴影走 EatexpTitleLabel variation，text 由 panel fill
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 300.0
+offset_top = 86.0
+offset_right = 500.0
+offset_bottom = 116.0
+theme_type_variation = &"EatexpTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "选择英雄"

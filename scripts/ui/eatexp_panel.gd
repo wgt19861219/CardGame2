@@ -62,6 +62,9 @@ var _grid: GridContainer = null
 var _list_host: Control = null
 var _cells: Dictionary = {}    # inst_id → {cell, level_label, exp_bar, display_level, eat_count, is_max}
 var _keepeat_inst: int = -1    # 长按目标 inst_id（-1=空闲）
+var _press_pos: Vector2 = Vector2.ZERO    # 行按下基准（tap 位移判别用）
+var _press_dragged: bool = false          # 按下期间拖动超阈值（拖动浏览列表，非点击）
+var _did_keepeat: bool = false            # 长按已开始连吃（release 不再补吃单击颗）
 
 
 # LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失返空串避免 null 解引用）。
@@ -294,17 +297,39 @@ func _show_eat_amount(inst_id: int) -> void:
 	tw.tween_callback(lbl.queue_free)
 
 
+# 行输入（照源 draglist tap 语义，2026-09-15 根修；package_panel 同款范式）：
+# press 只记基准 + 注册长按计时，不吃（源 doPressList :615-633 只 registerKeepeatHandler）；
+# 拖动超阈值视为浏览列表，取消长按且 release 不吃（源 keepeatHandler :569-571 dragMode
+# cancel + draglist.lua:906 not dragMode 才 doClickIn）；release 时未拖动 + 未长按连吃 +
+# 位移<8px 且仍在行内 → 吃 1 颗（源 endPressList doClick :683-704 not isKeepeat + containsPoint）。
 func _on_cell_gui_input(event: InputEvent, inst_id: int) -> void:
+	if event is InputEventMouseMotion:
+		if _keepeat_inst != inst_id:
+			return
+		var mm: InputEventMouseMotion = event
+		if (mm.global_position - _press_pos).length() >= DragScrollHelper.TAP_THRESHOLD_PX:
+			_press_dragged = true
+			if not _did_keepeat:
+				_stop_keepeat()
+		return
 	if not (event is InputEventMouseButton):
 		return
 	var mb: InputEventMouseButton = event
 	if mb.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if mb.pressed:
-		do_eat_hero(inst_id)
+		_press_pos = mb.global_position
+		_press_dragged = false
+		_did_keepeat = false
 		_start_keepeat(inst_id)
-	else:
-		_stop_keepeat()
+		return
+	var tap_eat: bool = not _press_dragged and not _did_keepeat \
+			and DragScrollHelper.is_tap(_press_pos, mb.global_position)
+	_stop_keepeat()
+	if tap_eat:
+		var row: Control = (_cells.get(inst_id, {}).get("cell", null) as Control)
+		if row != null and row.get_global_rect().has_point(mb.global_position):
+			do_eat_hero(inst_id)
 
 
 func _start_keepeat(inst_id: int) -> void:
@@ -312,12 +337,14 @@ func _start_keepeat(inst_id: int) -> void:
 	var target: int = inst_id
 	await get_tree().create_timer(KEEPEAT_DELAY).timeout
 	while _keepeat_inst == target and is_instance_valid(self):
+		_did_keepeat = true
 		do_eat_hero(target)
 		await get_tree().create_timer(KEEPEAT_INTERVAL).timeout
 
 
 func _stop_keepeat() -> void:
 	_keepeat_inst = -1
+	_did_keepeat = false
 
 
 # 单机化：无 playerlimit，靠 Levels 表末位（levelup_exp<=0）判满级。
