@@ -330,15 +330,21 @@ func _remove_team_member(inst_id: int) -> void:
 
 
 func _refresh_team_display() -> void:
-	for i in range(TEAM_MAX):
-		var slot: TextureRect = _team_slots[i]
+	for j in range(TEAM_MAX):
+		# 源 getTeamMemberPos（battleprepare.lua:100-104）：index1 中心 x=593（cocos 左下
+		# 原点 → Godot 最右，tscn MemberBg5 中心 x=592 即源 index1 位），每 +1 左移 100 →
+		# 槽位序从右往左数。_team[j]（maxRange 升序第 j 小，源 index=j+1）挂
+		# MemberBg{TEAM_MAX-j}：视觉左→右 = maxRange 大→小，空位在左端（源 setMemberIndex
+		# 从 1 起往左扩）。旧实现 j→MemberBg{j+1} 从左填，视觉序与源左右颠倒（2026-09-15
+		# 用户报出击阵容排列顺序问题）。
+		var slot: TextureRect = _team_slots[TEAM_MAX - 1 - j]
 		var halo: CanvasItem = slot.get_node_or_null("Halo") as CanvasItem
 		for c in slot.get_children():
-			if c is ReadheroIcon:
+			if c is ReadheroIcon or (c is Button and c.has_meta("inst_id")):
 				c.queue_free()
-		var occupied: bool = i < _team.size()
+		var occupied: bool = j < _team.size()
 		if occupied:
-			var hero = player.hero_manager.heroes[_team[i].inst_id]
+			var hero = player.hero_manager.heroes[_team[j].inst_id]
 			var icon := ReadheroIcon.create_icon_by_hero(hero, cm)
 			# ReadheroIcon 是 Node2D，position = container(104×104) 左上角。
 			# 头像在桶内视觉居中（2026-08-30 用户观感裁决：源 getTeamMemberPos 锚点偏左下
@@ -348,8 +354,31 @@ func _refresh_team_display() -> void:
 			var slot_center: Vector2 = slot.size * 0.5
 			icon.position = slot_center - Vector2(39.0, 65.0)
 			slot.add_child(icon)
+			_attach_slot_click(slot, icon, int(_team[j].inst_id))
 		if halo != null:
 			halo.visible = occupied
+
+
+# 底部已上阵头像点击下阵（源 doTeamTouch battleprepare.lua:843-878）：began 命中 icon 缩放
+# 0.95、ended 仍命中则 destroyTeamMember。Godot 用 GhostButton 透明点击层承接（铺满槽，源
+# containsPoint=icon 包围盒，桶边缘几像素差异受控偏离）：button_down 按压缩放 / button_up
+# 回弹 / pressed 下阵（_remove_team_member 三刷新含列表对勾同步）。旧实现无任何点击处理
+# （2026-09-15 用户报「点击事件也没有做」，漏译补全）。
+func _attach_slot_click(slot: TextureRect, icon: ReadheroIcon, inst_id: int) -> void:
+	var btn := Button.new()
+	btn.theme_type_variation = &"GhostButton"
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+	btn.set_meta("inst_id", inst_id)
+	btn.button_down.connect(func() -> void: icon.scale = Vector2(0.95, 0.95))
+	btn.button_up.connect(func() -> void: icon.scale = Vector2.ONE)
+	btn.pressed.connect(_on_team_slot_clicked.bind(inst_id))
+	slot.add_child(btn)
+
+
+func _on_team_slot_clicked(inst_id: int) -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	_remove_team_member(inst_id)
 
 
 func _refresh_gs() -> void:

@@ -460,3 +460,81 @@ func test_confirm_callback_does_not_persist_team() -> void:
 	panel._on_go_pressed()
 	assert_eq(pd.team, [], "回调模式确认不应写回 player.team（写回集合照源=仅 stage 模式）")
 	panel.queue_free()
+
+
+# ── 底部出击阵容槽位（2026-09-15：用户报「最底下的出击阵容排列顺序有问题 + 点击事件也没做」）──
+# 源 getTeamMemberPos（battleprepare.lua:100-104）：index1 中心 x=593（cocos 左下原点 →
+# Godot 最右，tscn MemberBg5 中心 x=592 即源 index1 位），每 +1 左移 100 → 槽位序从右往左
+# 数。_team[j]（maxRange 升序第 j 小，源 index=j+1）应挂 MemberBg{5-j}：视觉左→右 =
+# maxRange 大→小，空位在左端（源 setMemberIndex 从 1 起往左扩）。旧实现 j→MemberBg{j+1}
+# 从左填，视觉序与源左右颠倒。
+
+# 从左到右（MemberBg1→5）槽内点击层 inst_id 序列 = _team 反转（源槽位右到左数的镜像守卫）。
+func test_team_slots_map_right_to_left() -> void:
+	var panel := _make_panel()
+	assert_eq(panel._team.size(), 5, "默认队伍 5 人（满员样本前提）")
+	var observed: Array[int] = []
+	for slot in panel._team_slots:   # MemberBg1..5 = 从左到右
+		var inst: int = -1
+		for c in slot.get_children():
+			if c is Button and not c.is_queued_for_deletion() and c.has_meta("inst_id"):
+				inst = int(c.get_meta("inst_id"))
+				break
+		observed.append(inst)
+	var expected: Array[int] = []
+	for j in range(panel._team.size() - 1, -1, -1):   # _team 升序反转 = 左到右 maxRange 大到小
+		expected.append(int(panel._team[j].inst_id))
+	assert_eq(observed, expected,
+		"从左到右槽内成员 = _team 反转（源 index1 最右；视觉左→右 maxRange 大→小）")
+	panel.queue_free()
+
+
+# 空位恒在左端：源 orderTeam 移除分支（battleprepare.lua:718-726）table.remove 后续成员
+# 前移补位（move to pos(i)），空位总留在最左（MemberBg1 端）。下阵 _team[0]（最右）后
+# 原第二小前移占 MemberBg5，MemberBg1 空。
+func test_team_slots_fill_from_right() -> void:
+	var panel := _make_panel()
+	assert_eq(panel._team.size(), 5, "先满员")
+	var removed: int = int(panel._team[0].inst_id)   # _team[0] 挂 MemberBg5（最右）
+	var shifted_in: int = int(panel._team[1].inst_id)   # 原第二小 → 下阵后挂 MemberBg5（前移补位）
+	panel._remove_team_member(removed)
+	assert_eq(panel._team.size(), 4, "下阵 1 人")
+	var right_slot_btn: Button = null
+	for c in panel._team_slots[4].get_children():   # MemberBg5
+		if c is Button and not c.is_queued_for_deletion():
+			right_slot_btn = c
+			break
+	assert_ne(right_slot_btn, null, "下阵最右成员后原第二小应前移补位 MemberBg5（源 table.remove+前移）")
+	if right_slot_btn != null:
+		assert_eq(int(right_slot_btn.get_meta("inst_id")), shifted_in,
+			"MemberBg5 现挂原 _team[1]（前移补位照源 move to pos(i)）")
+	var left_slot_btn: Button = null
+	for c in panel._team_slots[0].get_children():   # MemberBg1
+		if c is Button and not c.is_queued_for_deletion():
+			left_slot_btn = c
+			break
+	assert_eq(left_slot_btn, null, "空位应留在最左端 MemberBg1（源前移补位语义）")
+	panel.queue_free()
+
+
+# 源 doTeamTouch（battleprepare.lua:843-878）：点底部已上阵头像 → destroyTeamMember 下阵。
+# 旧实现槽位无任何点击处理（漏译）。
+func test_team_slot_click_removes_member() -> void:
+	var panel := _make_panel()
+	var initial: int = panel._team.size()
+	assert_gt(initial, 0, "默认队伍非空")
+	var btn: Button = null
+	var target: int = -1
+	for si in range(panel._team_slots.size()):
+		for c in panel._team_slots[si].get_children():
+			if c is Button and not c.is_queued_for_deletion() and c.has_meta("inst_id"):
+				btn = c
+				target = int(c.get_meta("inst_id"))
+				break
+		if btn != null:
+			break
+	assert_ne(btn, null, "已上阵槽应有点击层（源 doTeamTouch 补译）")
+	btn.pressed.emit()
+	assert_eq(panel._team.size(), initial - 1, "点击槽位应下阵该英雄（源 destroyTeamMember）")
+	assert_false(panel._team.any(func(t): return int(t.inst_id) == target), "被点英雄应移出队伍")
+	panel.queue_free()
