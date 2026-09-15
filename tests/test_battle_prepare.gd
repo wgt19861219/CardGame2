@@ -79,6 +79,54 @@ func test_hero_list_loads() -> void:
 	panel.queue_free()
 
 
+# 源 battleprepare.lua:1700-1704 classify("prepare","position") → readhero.lua:861-868
+# getAllListForPrepare → ed.orderHeroes()（tools.lua:819-857 orderHeroFunction）：
+# 等级降序 → 同级星级降序 → 同级同星 rank 降序；classifyByPos 分组保序。
+# 旧实现遍历 heroes 字典（获得序）未排序（2026-09-15 用户报出击列表排序问题——
+# 前期英雄练度高致获得序观感"像按练度"，但同级不按星级/rank 严格排）。
+# 构造刻意相反：获得序 [1,2,3] vs 等级序 tid2(30)>tid3(20)>tid1(10)。
+func test_hero_list_orders_by_level_desc() -> void:
+	var pd := _make_player()
+	(pd.hero_manager.heroes[1] as HeroInstance).level = 10
+	(pd.hero_manager.heroes[2] as HeroInstance).level = 30
+	(pd.hero_manager.heroes[3] as HeroInstance).level = 20
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, null, BattleRng.new(12345), cm)
+	assert_eq(panel._heroes_all[0].tid, 2, "列表首 = 最高等级（源 orderHeroes 等级降序）")
+	assert_eq(panel._heroes_all[1].tid, 3, "列表次 = 次高等级")
+	assert_eq(panel._heroes_all[2].tid, 1, "列表第三 = 最低等级（获得序不生效）")
+	panel.queue_free()
+
+
+# 同级按星级降序（源 orderHeroFunction 第二排序键 _stars）。
+# 构造：获得序 [1,2] 同级 20，tid1 星 1 < tid2 星 3 → 列表首 tid2。
+func test_hero_list_orders_tie_by_stars_desc() -> void:
+	var pd := _make_player()
+	(pd.hero_manager.heroes[1] as HeroInstance).level = 20
+	(pd.hero_manager.heroes[1] as HeroInstance).stars = 1
+	(pd.hero_manager.heroes[2] as HeroInstance).level = 20
+	(pd.hero_manager.heroes[2] as HeroInstance).stars = 3
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, null, BattleRng.new(12345), cm)
+	assert_eq(panel._heroes_all[0].tid, 2, "同级按星级降序（源 orderHeroFunction 第二键）")
+	panel.queue_free()
+
+
+# tab 分组保序（源 classifyByPos 在 orderHeroes 排序后分组）：front tab 内部同为等级降序。
+# 构造：tid1/tid5 均 FRONT_ROW，tid5(40) > tid1(30) → front tab 首个 tid5。
+func test_hero_list_tab_filter_keeps_level_order() -> void:
+	var pd := _make_player()
+	(pd.hero_manager.heroes[1] as HeroInstance).level = 30
+	(pd.hero_manager.heroes[5] as HeroInstance).level = 40
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, null, BattleRng.new(12345), cm)
+	panel._current_tab = "front"
+	panel._refresh_list()
+	assert_true(panel._heroes_filtered.size() >= 2, "front tab 至少含 tid1/tid5")
+	assert_eq(panel._heroes_filtered[0].tid, 5, "front tab 内部保持等级降序（分组保序）")
+	panel.queue_free()
+
+
 func test_add_team_member() -> void:
 	var panel := _make_panel()
 	# 先下阵一个腾出位置
