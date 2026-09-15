@@ -222,16 +222,24 @@ static func _make_stylebox(res_path: String) -> StyleBoxTexture:
 
 
 # 过滤掉 <20 级英雄（:7 min_crusade_level + :962 上阵校验双保险，列表源 :1154 getAllListWithLimit）。
+# 列表序照源 battleprepare.lua:1700-1704 classify → readhero getAllListForPrepare →
+# ed.orderHeroes()（tools.lua:819-857）：等级→星级→rank 降序，classifyByPos 分组保序
+#（_refresh_list 的 tab filter 同样保序）。旧实现遍历 heroes 字典（获得序）未排序，
+# 2026-09-15 用户报出击列表排序问题——前期英雄练度高致获得序观感"像按练度"但非源规则。
 func _load_hero_list() -> void:
 	_heroes_all.clear()
 	if player == null or player.hero_manager == null:
 		return
-	var unit_table: Dictionary = cm.get_raw_table(&"Unit")
-	var skill_table: Dictionary = cm.get_raw_table(&"Skill")
+	var owned: Array = []
 	for inst_id in player.hero_manager.heroes:
 		var hero = player.hero_manager.heroes[inst_id]
 		if mode == "crusade" and int(hero.level) < min_level:
 			continue
+		owned.append(hero)
+	owned = ReadheroHandbook.order_heroes(owned)
+	var unit_table: Dictionary = cm.get_raw_table(&"Unit")
+	var skill_table: Dictionary = cm.get_raw_table(&"Skill")
+	for hero in owned:
 		var tid: int = int(hero.tid)
 		var unit: Dictionary = unit_table.get(str(tid), {})
 		var pos_raw: String = String(unit.get("Position Type", ""))
@@ -242,7 +250,7 @@ func _load_hero_list() -> void:
 		var max_range: int = 0
 		if basic_skill > 0:
 			max_range = int(skill_table.get(str(basic_skill), {}).get("0", {}).get("Max Range", 0))
-		_heroes_all.append({inst_id = int(inst_id), tid = tid, pos_type = pos_type, max_range = max_range})
+		_heroes_all.append({inst_id = int(hero.inst_id), tid = tid, pos_type = pos_type, max_range = max_range})
 
 
 func _refresh_list() -> void:
