@@ -393,6 +393,7 @@ func _on_go_pressed() -> void:
 	if mode == "crusade":
 		_go_crusade_battle(tids)
 		return
+	_persist_team()
 	var asm_r: Dictionary = mgr.assemble_stage_battle(stage_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
 		return
@@ -402,6 +403,19 @@ func _on_go_pressed() -> void:
 	}
 	queue_free()
 	SceneManager.change_scene(BATTLE_SCENE_PATH)
+
+
+# 确认开战时写回阵容记忆。源 battleprepare.lua doGo :336-344 setTeamData(teamData) →
+# readconfig.lua CCUserDefault 按 stageType 分 key（td_cm 等）持久化，下次进布阵 getTeamData
+# 默认加载。本项目单机化收敛为 player.team 单字段（读点：_load_default_team/stage_detail/
+# dungeon_map/ladder/excavate/存档快照），跨会话随结算 GameData.save() 落盘。
+# 漏译后果：换人只改面板 _team，下一关 _load_default_team 再读 player.team 旧值 → 阵容回退
+# （2026-09-15 用户报「下了宙斯换小鹿，选下一关小鹿变回宙斯」）。crusade 分支照源 doGoCrusade
+# （:394-404 无 setTeamData）不写回——远征限 20 级阵容不污染关卡阵容记忆。
+func _persist_team() -> void:
+	player.team.clear()
+	for t in _team:
+		player.team.append(int(t.inst_id))
 
 
 # 装配远征战斗切场景（照源 crusade.start 负数 stage_id 直传；空队/装配失败仅 Toast 反馈不切场景）。

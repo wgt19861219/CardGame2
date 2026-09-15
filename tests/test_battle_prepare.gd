@@ -295,3 +295,64 @@ func test_selected_hero_has_shade_and_tick() -> void:
 			assert_false(c is ColorRect, "未选英雄不应有罩")
 	assert_eq(panel._team.size(), 5, "默认队伍 5 人（对勾样本前提）")
 	panel.queue_free()
+
+
+# ── 开战阵容写回（2026-09-15：用户报「下了宙斯换小鹿，战斗完成选下一关，小鹿变回宙斯」）──
+# 源 battleprepare.lua doGo :336-344 确认开战时 setTeamData(teamData) 把当前阵容写回本地阵容记忆
+# （readconfig.lua CCUserDefault 按 stageType 分 td_cm 等 key 持久化），下次进布阵 getTeamData
+# :66-76 默认加载上次阵容 + prepareLoadTeam 过滤当前列表外英雄。漏译后果：换人只改面板 _team，
+# 下一关 _load_default_team 再读 player.team 旧值 → 阵容回退。crusade 走源 doGoCrusade :394-404
+# （无 setTeamData，仅存 cruadeTeam 会话变量）→ 远征限级阵容不污染关卡阵容记忆，照此跟进。
+
+# Stub mgr：stage 分支装配失败（{"ok": false}）提前 return，隔离切场景副作用；写回在装配之前发生。
+class StubStageMgr:
+	extends RefCounted
+	var config = null
+
+	func assemble_stage_battle(_stage_id: int, _player: PlayerData, _tids: Array[int], _rng: BattleRng) -> Dictionary:
+		return {"ok": false}
+
+
+# Stub mgr：crusade 装配第一道容错（crusade_battle.gd:23 config==null → {"ok": false}）。
+# 继承 CrusadeManager 过强类型参数关（assemble_crusade_battle(mgr: CrusadeManager)）。
+class StubCrusadeMgr:
+	extends CrusadeManager
+
+
+func test_go_persists_team_to_player() -> void:
+	var pd := _make_player()
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, StubStageMgr.new(), BattleRng.new(12345), cm)
+	assert_eq(pd.team, [], "写回前 player.team 为初始空")
+	# 模拟用户换人：下第 1 个上阵英雄 + 上第 6 个未上阵英雄（6 英雄默认取 5）
+	var bench_id: int = int(panel._team[0].inst_id)
+	panel._remove_team_member(bench_id)
+	var new_id: int = 0
+	for h in panel._heroes_all:
+		# 排除刚下阵英雄（它在 _team 外，但换人语义要选的是另一个人）
+		if int(h.inst_id) != bench_id and not panel._team.any(func(t): return t.inst_id == h.inst_id):
+			new_id = int(h.inst_id)
+			break
+	assert_gt(new_id, 0, "应找到未上阵英雄")
+	panel._add_team_member(new_id)
+	panel._on_go_pressed()   # stub 装配失败提前 return；写回（源 setTeamData 位点）在装配之前
+	var expected: Array[int] = []
+	for t in panel._team:
+		expected.append(int(t.inst_id))
+	assert_eq(pd.team, expected, "开战应把当前阵容写回 player.team（源 doGo setTeamData）")
+	assert_false(pd.team.has(bench_id), "被下阵英雄不应残留在 player.team")
+	assert_true(pd.team.has(new_id), "新上阵英雄应写入 player.team")
+	panel.queue_free()
+
+
+func test_go_crusade_does_not_persist_team() -> void:
+	var pd := _make_player()
+	# 全部抬到 ≥20 级，保证 crusade 默认队伍非空（空队走 NOTENOUGH 提前 return 测不到目标分支）
+	var keys: Array = pd.hero_manager.heroes.keys()
+	for k in keys:
+		(pd.hero_manager.heroes[k] as HeroInstance).level = 25
+	var panel := BattlePreparePanel.new()
+	panel.setup(-3, pd, StubCrusadeMgr.new(), BattleRng.new(12345), cm, "crusade", 20)
+	panel._on_go_pressed()   # stub config=null 容错 → {"ok": false} → Toast 提前 return
+	assert_eq(pd.team, [], "crusade 开战不应写回 player.team（源 doGoCrusade 无 setTeamData）")
+	panel.queue_free()
