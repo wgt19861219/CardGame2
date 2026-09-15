@@ -396,23 +396,6 @@ func _do_reset_elite(cost: int) -> void:
 	_check_enabled()
 
 
-## 上场英雄 tid 列表（player.team inst_id → tid；同 stage_select_panel 范式）。
-func _team_tids() -> Array[int]:
-	var tids: Array[int] = []
-	if player == null or player.hero_manager == null:
-		return tids
-	for inst_id in player.team:
-		var hero: HeroInstance = player.hero_manager.get_hero(int(inst_id))
-		if hero != null:
-			tids.append(hero.tid)
-	if tids.is_empty():
-		for inst_id in player.hero_manager.heroes:
-			tids.append(int((player.hero_manager.heroes[inst_id] as HeroInstance).tid))
-			if tids.size() >= TEAM_MAX:
-				break
-	return tids
-
-
 # 敌方阵容：照源 createEnemy:1142-1192，容器化（ReadheroIcon 是 Node2D 不能直接进 HBox，
 # 套 Control wrapper + custom_minimum_size，范式同 excavate_team_panel._add_hero_icon）。
 # boss/普通尺寸差异通过 wrapper size + icon scale 处理，坐标交由 %EnemyHBox 自动排版。

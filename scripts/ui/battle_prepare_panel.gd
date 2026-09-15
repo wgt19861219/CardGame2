@@ -3,18 +3,25 @@ extends Control
 
 ## 战前布阵面板（View 层）— 照源 battleprepare.lua 核心单机段翻译。
 ## 选英雄（按 position 分类 tab all/front/middle/back）+ 上阵/下阵 + maxRange 自动排序 +
-## gs 显示 + 开始战斗。单机化裁剪：雇佣兵/PVP 防守/公会倒计时/挖矿改阵。
+## gs 显示 + 开始战斗。
+## 归位（2026-09-15）：自 scripts/view/battle/ 迁入 scripts/ui/——五域共用（关卡/远征/
+## 副本/竞技场攻守/挖矿换队进攻）属跨域通用组件，归位后 LAYER003 白名单 2 条清偿。
 ## 重构（2026-07-17）：UI 静态节点（bg/list_frame/team_bg/5 bucket/4 tab/go/gs label）
 ## 固化进 battle_prepare_content.tscn（位置/size 编辑器可视化调）。panel instantiate + fill
 ## 动态数据/样式 + 接业务信号。坐标源 cocos(800×480 左下) → Godot(800×480 左上) via (cx, 480-cy)。
 ##
 ## mode（源 battleprepare.lua:1746 self.mode = info.mode）：
-##   "stage"（默认）= 普通关卡，_on_go_pressed 走 mgr.assemble_stage_battle 进 battle_scene。
+##   "stage"（默认）= 普通关卡/副本（源 dungeon 同走 doGo+td_cm），_on_go_pressed 走
+##     mgr.assemble_stage_battle 进 battle_scene + _persist_team 写回 player.team。
 ##   "crusade"（源 crusade.lua:431-441 start() 传 mode=crusade + heroLimit level=20）=
 ##     照源 doCrusade→gotoBattle enterCrusade+replaceScene：走 CrusadeBattle.assemble 进
 ##     battle_scene 观战（2026-09-14 改造，旧同步数值结算 _run_crusade_go 退役）；
 ##     战斗结束 battle_scene._finalize 加 crusade 分支 → 胜利回远征面板/失败切结算场景
 ##     （旧 crusade_battle_finished 同步信号链退役——跨场景后面板销毁，信号无人可收）。
+##   其余模式（pvp_attack/pvp_defend/excavate_change/excavate_attack，2026-09-15 补全
+##     源 requestBattle :569-586 五入口选人）：走 on_confirm 回调注入——调用方自带装配/
+##     写防守逻辑（源 pvp attack 写 td_pp 独立记忆，本项目单字段下不写回防污染关卡阵容，
+##     受控偏离；pvp defend/excavateChange 初始阵容由 initial_tids 传入当前防守阵）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/battle_prepare_content.tscn")
 const BATTLE_SCENE_PATH: String = "res://scenes/battle/battle_scene.tscn"
@@ -77,6 +84,8 @@ var _heroes_all: Array = []      # 全部可选英雄 [{inst_id, tid, pos_type, 
 var _heroes_filtered: Array = [] # 当前 tab 过滤后
 var _team: Array = []            # 已上阵 [{inst_id, tid, max_range}]（按 maxRange 降序）
 var _current_tab: String = TAB_ALL
+var _initial_tids: Array[int] = []   # 外部初始阵容 tid（pvp defend/excavateChange 当前防守阵）
+var _on_confirm_cb: Callable = Callable()   # 确认回调（attack/防守系注入，替代面板内装配）
 var _list_grid: GridContainer = null
 var _team_slots: Array[TextureRect] = []  # 5 个槽位底（源 herobucket.png，.tscn %MemberBg1-5）
 var _gs_label: Label = null
@@ -88,9 +97,15 @@ var _prev_identity: String = ""     # 进入前 HUD identity（tree_exited 恢�
 
 
 # p_mode/p_min_level 可选（默认 "stage" + 0 = 不限等级），向后兼容 stage_detail_panel 5 参数调用。
-func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant, p_mode: String = "stage", p_min_level: int = 0) -> void:
+# p_initial_tids 可选（tid 列表）：外部初始阵容（pvp defend=当前防守阵/excavateChange=当前驻防队，
+# 源 getLastTeam :1428-1430/:1436-1437 用 create 传入阵容做默认队）；空则照旧 player.team/前 5。
+# p_on_confirm 可选：确认回调（签名 (tids: Array[int])），副本/竞技场攻守/挖矿系 View 调用方
+# 注入装配/写防守逻辑（源 requestBattle :569-586 各模式分发；本项目单机化=回调注入解耦，
+# 面板不耦合 ladder/excavate）。回调模式不走 stage 装配与 _persist_team 写回。
+func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant, p_mode: String = "stage", p_min_level: int = 0, p_initial_tids: Array[int] = [], p_on_confirm: Callable = Callable()) -> void:
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
 	mode = p_mode; min_level = p_min_level
+	_initial_tids = p_initial_tids; _on_confirm_cb = p_on_confirm
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# BattlePreparePanel 是 Control 非 PopWindow，经 PopWindow.push_external 入动态 z 栈
 	# 拿最高位+1，恒压栈内全部弹窗（详情 _on_go_pressed 在 add_child 后 remove_window 关详情，
@@ -357,14 +372,21 @@ func _on_tab_pressed(tab: String) -> void:
 
 func _load_default_team() -> void:
 	var loaded: Array[int] = []
-	for inst_id in player.team:
-		if player.hero_manager.heroes.has(int(inst_id)):
-			loaded.append(int(inst_id))
-	if loaded.is_empty():
-		var count := 0
-		for inst_id in player.hero_manager.heroes:
-			loaded.append(int(inst_id)); count += 1
-			if count >= TEAM_MAX: break
+	if not _initial_tids.is_empty():
+		# 外部初始阵容（源 getLastTeam：defend/excavateChange 用 create 传入阵容反查加载）
+		for tid in _initial_tids:
+			var hero: HeroInstance = player.hero_manager.find_hero_by_tid(int(tid))
+			if hero != null:
+				loaded.append(int(hero.inst_id))
+	else:
+		for inst_id in player.team:
+			if player.hero_manager.heroes.has(int(inst_id)):
+				loaded.append(int(inst_id))
+		if loaded.is_empty():
+			var count := 0
+			for inst_id in player.hero_manager.heroes:
+				loaded.append(int(inst_id)); count += 1
+				if count >= TEAM_MAX: break
 	for inst_id in loaded:
 		if _team.size() < TEAM_MAX:
 			var h_dict = _heroes_all.filter(func(x): return x.inst_id == inst_id)
@@ -393,9 +415,19 @@ func _on_go_pressed() -> void:
 	if mode == "crusade":
 		_go_crusade_battle(tids)
 		return
+	if _on_confirm_cb.is_valid():
+		# 确认回调模式（源 requestBattle :569-586 各模式分发；pvp defend→set_lineup /
+		# excavateChange→set_excavate_team / attack 系→发战斗）：View 调用方自带装配与写防守，
+		# 面板只关自己（源 popScene）。不写回 player.team（源写回集合=stage/dungeon→td_cm +
+		# pvp attack→td_pp；本项目单字段下 attack 不写回防污染关卡阵容，受控偏离记录于验收）。
+		var cb := _on_confirm_cb
+		queue_free()
+		cb.call(tids)
+		return
 	_persist_team()
 	var asm_r: Dictionary = mgr.assemble_stage_battle(stage_id, player, tids, rng)
 	if not bool(asm_r.get("ok", false)):
+		Toast.show_message(_assemble_error_text(String(asm_r.get("error", ""))))
 		return
 	GameData.battle_context = {
 		"engine": asm_r["engine"], "battle_info": asm_r["battle_info"],
@@ -403,6 +435,25 @@ func _on_go_pressed() -> void:
 	}
 	queue_free()
 	SceneManager.change_scene(BATTLE_SCENE_PATH)
+
+
+# 装配失败分码文案（自 dungeon_map_panel._enter_error_text 收编：dungeon 出击改走本面板
+# stage 分支装配后，错误反馈责任随装配点归面板，stage 路径静默失败同步获得反馈）。
+func _assemble_error_text(err: String) -> String:
+	match err:
+		"no_attempts":
+			return "今日次数已用完"
+		"not_enough_keys":
+			return "钥匙不足"
+		"not_enough_coins":
+			return "龙鳞硬币不足，无法购买次数"
+		"heroic_prereq":
+			return "需先通关对应普通副本"
+		"level_lock":
+			return "等级不足"
+		"no_vitality":
+			return "体力不足"
+	return "装配失败"
 
 
 # 确认开战时写回阵容记忆。源 battleprepare.lua doGo :336-344 setTeamData(teamData) →

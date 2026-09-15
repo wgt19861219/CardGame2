@@ -273,3 +273,40 @@ func test_d3_overlay_switch_semantics() -> void:
 	assert_false(rank_view.visible, "互斥切换")
 	panel._show_overlay(0)
 	assert_true(main_view.visible, "关闭钮回主屏")
+
+
+# ── 选人布阵守卫（2026-09-15 照源补全 pvp attack/defend 选人）──
+# 源 pvp.lua:1128-1134 doClickChallenge→battleprepare(pvpMode=attack)、:150-160 adjustHero→
+# battleprepare(pvpMode=defend，初始队=当前防守阵容 heros)；旧直接 player.team 开战/一键驻防
+# 系选人界面裁剪。守卫=两入口均弹 BattlePreparePanel 且模式正确。
+
+func _find_prepare(parent: Node, want_mode: String) -> BattlePreparePanel:
+	# 倒序按 mode 匹配：布阵面板由入口内部 add_child（非 autofree），跨测试可能残留
+	var kids: Array = parent.get_children()
+	kids.reverse()
+	for c in kids:
+		if c is BattlePreparePanel and (c as BattlePreparePanel).mode == want_mode:
+			return c as BattlePreparePanel
+	return null
+
+
+func test_challenge_opens_prepare_panel() -> void:
+	var panel := _panel()
+	var oppos: Array = panel._ladder.handle({"_open_panel": true}, _player, _cm, panel._rng, 0)["_open_panel"]["oppos"] as Array
+	panel._on_challenge(int((oppos[0] as Dictionary)["user_id"]))
+	var prepare: BattlePreparePanel = _find_prepare(panel.get_parent(), "pvp_attack")
+	assert_ne(prepare, null, "挑战应弹布阵面板选人（源 doClickChallenge→battleprepare）")
+	assert_eq(prepare.mode, "pvp_attack", "布阵模式=pvp_attack")
+	assert_eq(prepare.stage_id, -1, "stage_id=-1（源 pvp 布阵标识）")
+	assert_false(prepare._on_confirm_cb.is_valid() == false, "确认回调已注入（装配在回调）")
+
+
+func test_set_lineup_opens_prepare_with_current_lineup() -> void:
+	var panel := _panel()
+	panel._on_set_lineup()
+	var prepare: BattlePreparePanel = _find_prepare(panel.get_parent(), "pvp_defend")
+	assert_ne(prepare, null, "换防守应弹布阵面板选人（源 adjustHero→battleprepare defend）")
+	assert_eq(prepare.mode, "pvp_defend", "布阵模式=pvp_defend")
+	var cur_lineup: Array = panel._ladder.handle({"_open_panel": true}, _player, _cm, panel._rng, 0)["_open_panel"]["lineup"] as Array
+	var expect_n: int = mini(5, cur_lineup.size())
+	assert_eq(prepare._initial_tids.size(), expect_n, "初始队=当前防守阵容（源 heros=defandHeros）")

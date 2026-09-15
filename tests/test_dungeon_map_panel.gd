@@ -315,12 +315,13 @@ func test_two_piece_guards() -> void:
 		var line_end: int = panel_src.find("\n", idx)
 		new_calls.append(panel_src.substr(line_start, line_end - line_start).strip_edges())
 		idx = panel_src.find(".new(", idx + 1)
-	assert_eq(new_calls.size(), 4, "panel .new( 恰 4 处（ExerciseManager/TextureButton/TextureRect/DegreePopup）")
+	assert_eq(new_calls.size(), 5, "panel .new( 恰 5 处（ExerciseManager/TextureButton/TextureRect/DegreePopup/BattlePreparePanel）")
 	var joined: String = "\n".join(new_calls)
 	assert_true(joined.contains("ExerciseManager.new()"), "ExerciseManager（Logic）在白名单")
 	assert_true(joined.contains("TextureButton.new()"), "TextureButton（boss 动态行）在白名单")
 	assert_true(joined.contains("TextureRect.new()"), "TextureRect（box 动态行）在白名单")
 	assert_true(joined.contains("DegreePopup.new("), "DegreePopup（弹窗构造，带参）在白名单")
+	assert_true(joined.contains("BattlePreparePanel.new()"), "BattlePreparePanel（选人布阵，2026-09-15 照源 dungeon→stagedetail→battleprepare 补全）在白名单")
 	assert_false(panel_src.contains("crusade_panel_builder"), "panel 无 builder preload 引用（代码级守卫，头注不计）")
 	var builder_src: String = FileAccess.get_file_as_string(BUILDER_PATH)
 	assert_false(builder_src.contains("func build_dungeon_map"), "builder 侧 build_dungeon_map 函数定义已删（crusade 侧待 Task 5/6）")
@@ -336,3 +337,21 @@ func test_degree_popup_interface_intact() -> void:
 	assert_true(is_instance_valid(panel._active_popup), "弹窗有效")
 	panel._close_degree_popup()
 	assert_null(panel._active_popup, "关闭后 _active_popup 置空（close_requested 路径）")
+
+
+# 选人布阵守卫（2026-09-15 照源补全 dungeon 选人）：源 dungeon.lua:334 点 boss→
+# stagedetail(isExercise)→battleprepare（本侧无 stagedetail 层属受控裁剪，选完难度直接
+# 弹布阵 mode=stage，装配/写回/切场景在面板 stage 分支）。
+func test_degree_selected_opens_prepare_panel() -> void:
+	var panel := _make_panel("em", [50005])
+	add_child_autofree(panel)
+	panel._on_degree_selected(1, {"diff": 1})
+	var prepare: BattlePreparePanel = null
+	for c in panel.get_parent().get_children():
+		if c is BattlePreparePanel:
+			prepare = c as BattlePreparePanel
+			break
+	assert_ne(prepare, null, "选完难度应弹布阵面板（源 dungeon→stagedetail→battleprepare）")
+	assert_eq(prepare.mode, "stage", "布阵模式=stage（源 dungeon 同走 doGo 写回 td_cm）")
+	var lookup_id: int = int(panel.bosses[0]["base_id"])
+	assert_eq(prepare.stage_id, lookup_id, "布阵 stage_id=难度 lookup_id（diff=1 无偏移）")

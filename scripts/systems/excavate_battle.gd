@@ -11,7 +11,9 @@ const BATTLE_MAX_TICKS: int = 300   # 端到端测试用最大 tick（防死循�
 
 ## 装配挖掘战斗（View 接入用）：玩家阵容 vs monster 敌人。不跑战斗循环。
 ## 返 {ok, engine, battle_info, excavate_id, hero_list, enemy_list}；无矿点/非 monster/无敌人/无英雄返 {ok:false}。
-static func assemble_excavate_battle(mgr: Variant, excavate_id: int, player: PlayerData, rng: BattleRng) -> Dictionary:
+## player_tids 非空=布阵面板选中阵容（源 doExcavateAttack :513-516 heroids 直传）；空=照旧
+## player.team 组队（测试/无布阵路径向后兼容）。
+static func assemble_excavate_battle(mgr: Variant, excavate_id: int, player: PlayerData, rng: BattleRng, player_tids: Array[int] = []) -> Dictionary:
 	var d: Dictionary = mgr.get_data(excavate_id)
 	if d.is_empty() or String(d["_owner"]) != ExcavateManager.OWNER_MONSTER:
 		return {"ok": false}
@@ -22,7 +24,7 @@ static func assemble_excavate_battle(mgr: Variant, excavate_id: int, player: Pla
 	var enemy_list: Array[Dictionary] = []
 	for e in enemy:
 		enemy_list.append(e["base"])
-	var hero_list: Array[Dictionary] = _hero_list_from_player(player)
+	var hero_list: Array[Dictionary] = _hero_list_from_player(player, player_tids)
 	if hero_list.is_empty():
 		return {"ok": false}
 	var eng := BattleEngine.new()
@@ -65,8 +67,20 @@ static func run_excavate_battle(mgr: Variant, excavate_id: int, player: PlayerDa
 
 
 ## 玩家上场英雄 → hero_list（照 assemble 内联段抽出，run/assemble 共用）。{_tid,_level,_stars,_rank,_items}。
-static func _hero_list_from_player(player: PlayerData) -> Array[Dictionary]:
+## tids 非空=布阵选中阵容按 tid 反查（源 doExcavateAttack heroids）；空=player.team（原口径，
+## 空队由调用方 assemble 返 {ok:false} 拦）。
+static func _hero_list_from_player(player: PlayerData, tids: Array[int] = []) -> Array[Dictionary]:
 	var hero_list: Array[Dictionary] = []
+	if not tids.is_empty():
+		for tid in tids:
+			var h: HeroInstance = player.hero_manager.find_hero_by_tid(int(tid))
+			if h == null:
+				continue
+			hero_list.append({
+				"_tid": h.tid, "_level": h.level, "_stars": h.stars,
+				"_rank": h.rank, "_items": StageManager._hero_items(h),
+			})
+		return hero_list
 	for inst_id in player.team:
 		var hero: Variant = player.hero_manager.heroes.get(inst_id)
 		if hero == null:

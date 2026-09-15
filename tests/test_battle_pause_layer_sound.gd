@@ -42,5 +42,5 @@ func test_battle_scene_wiring_guards() -> void:
 	assert_true(scene_src.contains("AudioPlayer.play_battle_bgm"), "进战斗播战斗 BGM")
 	var main_src := FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
 	assert_true(main_src.contains("AudioPlayer.play_bgm(\"map\")"), "主场景播地图 BGM")
-	var prep_src := FileAccess.get_file_as_string("res://scripts/view/battle/battle_prepare_panel.gd")
+	var prep_src := FileAccess.get_file_as_string("res://scripts/ui/battle_prepare_panel.gd")
 	assert_true(prep_src.contains("AudioPlayer.play_sfx(\"battle_begin\")"), "开战音 battle_begin")

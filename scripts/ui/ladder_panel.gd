@@ -207,15 +207,24 @@ func _fill_lineup(lineup: Array) -> void:
 		(_lineup_slots[i] as Control).add_child(icon)
 
 
+# 换防守阵容（照源 pvp.lua:150-160 adjustHero → battleprepare pvpMode=defend 弹布阵：
+# 初始队=当前防守阵容，确认 set_lineup+popScene，selectDefendHeros :377-390 空队拒绝）。
+# 旧「一键 player.team 驻防」系 2026-09-15 排查发现的选人界面裁剪，照源补全。
 func _on_set_lineup() -> void:
-	var team_tids: Array = []
-	for inst_id in _player.team:
-		var hero: HeroInstance = _player.hero_manager.get_hero(inst_id)
-		if hero != null:
-			team_tids.append(hero.tid)
-	_ladder.handle({"_set_lineup": {"lineup": team_tids}}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
-	Toast.show_message("防守阵容已更新")
-	_fill_challenge_tab()
+	var reply: Dictionary = _ladder.handle({"_open_panel": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
+	var current: Array[int] = []
+	for tid in (reply["_open_panel"]["lineup"] as Array):
+		current.append(int(tid))
+	var panel := BattlePreparePanel.new()
+	panel.setup(-1, _player, null, _rng, _cm, "pvp_defend", 0, current,
+		func(tids: Array[int]) -> void:
+			_ladder.handle({"_set_lineup": {"lineup": tids}}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
+			Toast.show_message("防守阵容已更新")
+			_fill_challenge_tab()
+	)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(panel)
 
 
 # ── 覆盖层 1：排行榜（20 NPC 假榜 + self 行）── 源 initRankListData :1833-1850 + createRankInfo
@@ -258,22 +267,32 @@ func _fill_records_tab() -> void:
 	_records_host.custom_minimum_size = Vector2(LadderRows.REC_CLIP_W, LadderRows.REC_ROW_STEP * float(records.size()) + LadderRows.REC_ROW_TAIL)
 
 
+# 挑战对手（照源 pvp.lua:1128-1134 doClickChallenge → battleprepare pvpMode=attack 弹布阵
+# 确认后 doPvp 发 ladder _start_battle；旧直接用 player.team 开战系选人界面裁剪，照源补全）。
+# 源 pvp attack 写回独立 td_pp 记忆——本项目 player.team 单字段下不写回防污染关卡阵容（受控偏离）。
 func _on_challenge(oppo_user_id: int) -> void:
-	if int(_ladder.pvp["left_count"]) <= 0:
-		Toast.show_message("挑战次数不足")
-		return
-	var now: int = int(Time.get_unix_time_from_system())
-	var asm: Dictionary = LadderBattle.assemble_pvp_battle(_ladder, oppo_user_id, _player, _cm, _rng, now)
-	if not bool(asm.get("ok", false)):
-		Toast.show_message("挑战失败（阵容为空或对手无效）")
-		return
-	var hero_tids: Array[int] = []
-	for h in (asm["hero_list"] as Array):
-		hero_tids.append(int((h as Dictionary).get("_tid", 0)))
-	GameData.battle_context = {"engine": asm["engine"], "mode": "pvp", "mgr": _ladder,
-		"battle_info": asm["battle_info"], "hero_tids": hero_tids}   # hero_tids：finalize 结算页英雄列表+Arena Hero Exp 均分
-	remove_window()
-	SceneManager.change_scene(BATTLE_SCENE_PATH)
+	var panel := BattlePreparePanel.new()
+	panel.setup(-1, _player, null, _rng, _cm, "pvp_attack", 0, [],
+		func(tids: Array[int]) -> void:
+			if int(_ladder.pvp["left_count"]) <= 0:
+				Toast.show_message("挑战次数不足")
+				return
+			var now: int = int(Time.get_unix_time_from_system())
+			var asm: Dictionary = LadderBattle.assemble_pvp_battle(_ladder, oppo_user_id, _player, _cm, _rng, now, tids)
+			if not bool(asm.get("ok", false)):
+				Toast.show_message("挑战失败（阵容为空或对手无效）")
+				return
+			var hero_tids: Array[int] = []
+			for h in (asm["hero_list"] as Array):
+				hero_tids.append(int((h as Dictionary).get("_tid", 0)))
+			GameData.battle_context = {"engine": asm["engine"], "mode": "pvp", "mgr": _ladder,
+				"battle_info": asm["battle_info"], "hero_tids": hero_tids}   # hero_tids：finalize 结算页英雄列表+Arena Hero Exp 均分
+			remove_window()
+			SceneManager.change_scene(BATTLE_SCENE_PATH)
+	)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(panel)
 
 
 # 兑换奖励（源 :1864-1866 pvpShop → ed.ui.shop.create(5)）。

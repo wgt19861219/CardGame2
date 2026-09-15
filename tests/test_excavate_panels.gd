@@ -1623,8 +1623,8 @@ func test_team_fill_mine_and_monster() -> void:
 	root.queue_free()
 
 
-# 换队交互（源 :113-122 change_team_button → enterExcavateChange；单机化 = 当前阵容
-# 一键驻防 set_defend_team + 刷新）：驻防后槽重填且空态提示消隐。
+# 换队交互（源 :113-122 change_team → enterExcavateChange → battleprepare excavateChange 选人；
+# 2026-09-15 照源补全）：点换队弹布阵（初始队=当前驻防队），布阵确认后驻防生效+槽重填+空态消隐。
 func test_team_change_team_refresh() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -1642,8 +1642,19 @@ func test_team_change_team_refresh() -> void:
 	assert_true((fc.get_node("%EmptyHint") as Control).visible, "空队：空态提示可见（单机兜底，源空队直接进换队 :405-408）")
 	assert_eq((fc.get_node("HeroSlot1") as Control).get_child_count(), 0, "空队：槽1 空")
 	panel._on_change_team()
-	assert_false((fc.get_node("%EmptyHint") as Control).visible, "换队后空态提示隐藏")
-	assert_gt((fc.get_node("HeroSlot1") as Control).get_child_count(), 0, "换队后槽1 已填（当前阵容驻防）")
+	# 点换队应弹布阵面板（mode=excavate_change，初始队=空驻防队→player.team 空→前 5 英雄）
+	var prepare: BattlePreparePanel = null
+	for c in root.get_children():
+		if c is BattlePreparePanel:
+			prepare = c as BattlePreparePanel
+			break
+	assert_ne(prepare, null, "换队应弹 BattlePreparePanel 选人（源 enterExcavateChange）")
+	assert_eq(prepare.mode, "excavate_change", "布阵模式=excavate_change")
+	assert_gt(prepare._team.size(), 0, "布阵默认队非空（空驻防队回退前 5 英雄）")
+	prepare._on_go_pressed()   # 确认选人（默认队）→ 回调 set_defend_team + 槽重填
+	assert_false((fc.get_node("%EmptyHint") as Control).visible, "布阵确认后空态提示隐藏")
+	assert_gt((fc.get_node("HeroSlot1") as Control).get_child_count(), 0, "布阵确认后槽1 已填（选中阵容驻防）")
+	assert_eq(pd.excavate.get_defend_team(1).size(), prepare._team.size(), "驻防队=布阵确认阵容")
 	panel.remove_window()
 	root.queue_free()
 
