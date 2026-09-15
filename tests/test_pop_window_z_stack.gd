@@ -120,7 +120,7 @@ func test_pop_external_shrinks_and_no_leak() -> void:
 
 func test_battle_prepare_uses_stack_not_hardcoded_z() -> void:
 	# 源码守卫：布阵页入动态 z 栈，写死 z=210 根除（HeroScene 深栈 210 < 222 穿透根因）
-	var src: String = FileAccess.get_file_as_string("res://scripts/view/battle/battle_prepare_panel.gd")
+	var src: String = FileAccess.get_file_as_string("res://scripts/ui/battle_prepare_panel.gd")
 	assert_false(src.contains("z_index = 210"), "布阵页无写死 z=210（HeroScene 链穿透根因）")
 	assert_true(src.contains("PopWindow.push_external"), "布阵页经 push_external 入动态 z 栈")
 	assert_true(src.contains("PopWindow.pop_external"), "布阵页 tree_exited 配对出栈")

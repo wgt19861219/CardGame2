@@ -287,62 +287,21 @@ func _close_degree_popup() -> void:
 
 
 ## 注：Battle 表缺 dungeon 段（50013-53015，数据债），battle_info 空 → stage_manager stub 桩敌人兜底，下次补 Battle 表 dungeon 段。
+# 照源 dungeon.lua:334 点 boss→stagedetail(isExercise)→开战→battleprepare 选人（本侧无
+# stagedetail 层属受控裁剪，2026-09-15 补选人）：选完难度弹布阵（mode=stage 默认，源 dungeon
+# 同走 doGo 写回 td_cm），装配/错误 Toast/写回 player.team/切场景全在面板 stage 分支
+# （错误分码文案已随装配点收编面板 _assemble_error_text）。
 func _on_degree_selected(idx: int, diff: Dictionary) -> void:
 	_close_degree_popup()
 	var boss: Dictionary = bosses[idx - 1]
 	var base_id: int = int(boss["base_id"])
 	var diff_num: int = int(diff["diff"])
 	var lookup_id: int = base_id + (diff_num - 1) * DUNGEON_DIFF_OFFSET
-	var tids: Array[int] = _team_tids()
-	if tids.is_empty():
-		# 项目校验空队防 battle_scene 崩溃，toast 文案项目自定。
-		Toast.show_message("无上场英雄")
-		return
-	var asm_r: Dictionary = stage_manager.assemble_stage_battle(lookup_id, player, tids, rng)
-	if not bool(asm_r.get("ok", false)):
-		# 2026-08-22 巡检接入每日次数/钥匙/等级检查后 error 分码（文案项目自定，无源 LSTR key）。
-		Toast.show_message(_enter_error_text(str(asm_r.get("error", ""))))
-		return
-	GameData.battle_context = {
-		"engine": asm_r["engine"], "battle_info": asm_r["battle_info"],
-		"loots": asm_r["loots"], "stage_id": lookup_id, "player_tids": tids, "mgr": stage_manager,
-	}
-	remove_window()
-	SceneManager.change_scene("res://scenes/battle/battle_scene.tscn")
-
-
-func _enter_error_text(err: String) -> String:
-	match err:
-		"no_attempts":
-			return "今日次数已用完"
-		"not_enough_keys":
-			return "钥匙不足"
-		"not_enough_coins":
-			return "龙鳞硬币不足，无法购买次数"
-		"heroic_prereq":
-			return "需先通关对应普通副本"
-		"level_lock":
-			return "等级不足"
-		"no_vitality":
-			return "体力不足"
-	return "装配失败"
-
-
-## 上场英雄 tid 列表（player.team inst_id → tid；空则取前 TEAM_MAX 个，照 crusade_panel 范式）。
-func _team_tids() -> Array[int]:
-	var tids: Array[int] = []
-	if player == null or player.hero_manager == null:
-		return tids
-	for inst_id in player.team:
-		var hero: HeroInstance = player.hero_manager.get_hero(int(inst_id))
-		if hero != null:
-			tids.append(hero.tid)
-	if tids.is_empty():
-		for inst_id in player.hero_manager.heroes:
-			tids.append(int(player.hero_manager.heroes[inst_id].tid))
-			if tids.size() >= TEAM_MAX:
-				break
-	return tids
+	var panel := BattlePreparePanel.new()
+	panel.setup(lookup_id, player, stage_manager, rng, player.cm)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(panel)
 
 
 func _on_degree_close() -> void:

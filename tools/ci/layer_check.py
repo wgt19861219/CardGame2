@@ -44,9 +44,9 @@ VIEW_DIRS: tuple[str, ...] = ("scripts/view",)
 # LAYER003 存量白名单（架构体检 2026-09-12 登记）：ui 引 view 类的既有债，只减不增——
 # 新增反向依赖一律 fail；存量修复（类归位 ui/ 或调用方改造）后删对应条目。
 UI_VIEW_CLASS_WHITELIST: dict[str, frozenset[str]] = {
-    # 战役/关卡详情面板弹战斗准备与奖励弹窗（battle 前置流程被多域调用，归属待专项评估）
-    "scripts/ui/crusade_panel.gd": frozenset({"BattlePreparePanel", "BattleRewardPopup"}),
-    "scripts/ui/stage_detail_panel.gd": frozenset({"BattlePreparePanel"}),
+    # 战役面板弹战斗奖励弹窗（BattlePreparePanel 已于 2026-09-15 归位 scripts/ui/
+    # （五域共用跨域通用组件），对应白名单债清偿）
+    "scripts/ui/crusade_panel.gd": frozenset({"BattleRewardPopup"}),
     # e0fba4b 范式：走全局 class_name 实例化消 preload 路径依赖（见该文件头注释）
     "scripts/ui/excavate_history_panel.gd": frozenset({"ExcavateBattleReportPanel"}),
 }

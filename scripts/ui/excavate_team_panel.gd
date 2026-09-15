@@ -180,20 +180,26 @@ func _lstr(key: String, fallback: String) -> String:
 	return fallback
 
 
-# 换队（源 :113-122 change_team → enterExcavateChange 进 battleprepare；
-# 单机化 = 当前阵容一键驻防 set_defend_team + Toast + 重填槽）。
+# 换队（照源 :113-122 change_team → enterExcavateChange（excavateteam.lua:10-45）→ battleprepare
+# mode=excavateChange 弹布阵：初始队=当前驻防队，确认 set_excavate_team+excavateCallback+popScene）。
+# 旧「一键 player.team 驻防」系单机化裁剪（注释自述），2026-09-15 照源补全选人。
 func _on_change_team() -> void:
-	var tids: Array[int] = []
-	for inst_id in pd.team:
-		var hero: Variant = pd.hero_manager.heroes.get(inst_id)
-		if hero != null:
-			tids.append(int(hero.tid))
-	var now: int = int(Time.get_unix_time_from_system())
-	pd.excavate.set_defend_team(_excavate_id, tids, now)
-	Toast.show_message(TEAM_SET_TEXT)
-	var content: Control = container.get_node("ExcavateTeamContent") as Control
-	if content != null:
-		_fill_hero_slots(content)
+	var current: Array[int] = []
+	for tid in pd.excavate.get_defend_team(_excavate_id):
+		current.append(int(tid))
+	var panel := BattlePreparePanel.new()
+	panel.setup(0, pd, null, rng, pd.cm, "excavate_change", 0, current,
+		func(tids: Array[int]) -> void:
+			var now: int = int(Time.get_unix_time_from_system())
+			pd.excavate.set_defend_team(_excavate_id, tids, now)
+			Toast.show_message(TEAM_SET_TEXT)
+			var content: Control = container.get_node("ExcavateTeamContent") as Control
+			if content != null:
+				_fill_hero_slots(content)
+	)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(panel)
 
 
 func _on_giveup() -> void:
@@ -208,20 +214,30 @@ func _on_giveup_confirmed(_amount: int) -> void:
 	remove_window()
 
 
+# 开战打怪（照源 :212-229 go_battle → battleprepare mode=excavateAttack 弹布阵确认后
+# doExcavateAttack 发 excavate_start_battle；旧直接 player.team 开战系选人界面裁剪，照源补全。
+# 源 excavateTeam 会话记忆本项目 player.team 单字段下不写回，受控偏离同 pvp attack）。
 func _on_battle() -> void:
 	# View 接入：装配 engine（不跑循环）→ 存 battle_context mode=excavate → 切 battle_scene
 	# （照 stage_select_panel._on_stage_n 范式）。战斗结束 battle_scene._finalize 加 excavate 分支
 	# → 回 main_scene 重弹 ExcavateMapPanel + Toast 胜负。
-	var asm_r: Dictionary = ExcavateBattle.assemble_excavate_battle(pd.excavate, _excavate_id, pd, rng)
-	if not bool(asm_r.get("ok", false)):
-		return
-	GameData.battle_context = {
-		"mode": "excavate", "engine": asm_r["engine"], "battle_info": asm_r["battle_info"],
-		"excavate_id": _excavate_id, "hero_list": asm_r["hero_list"], "enemy_list": asm_r["enemy_list"],
-		"mgr": pd.excavate,
-	}
-	remove_window()
-	SceneManager.change_scene(BATTLE_SCENE_PATH)
+	var panel := BattlePreparePanel.new()
+	panel.setup(0, pd, null, rng, pd.cm, "excavate_attack", 0, [],
+		func(tids: Array[int]) -> void:
+			var asm_r: Dictionary = ExcavateBattle.assemble_excavate_battle(pd.excavate, _excavate_id, pd, rng, tids)
+			if not bool(asm_r.get("ok", false)):
+				return
+			GameData.battle_context = {
+				"mode": "excavate", "engine": asm_r["engine"], "battle_info": asm_r["battle_info"],
+				"excavate_id": _excavate_id, "hero_list": asm_r["hero_list"], "enemy_list": asm_r["enemy_list"],
+				"mgr": pd.excavate,
+			}
+			remove_window()
+			SceneManager.change_scene(BATTLE_SCENE_PATH)
+	)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(panel)
 
 
 # tid → 头像 info（rank/stars/level 从 HeroInstance 查；无则默认，照 readhero.createIcon info 结构）。

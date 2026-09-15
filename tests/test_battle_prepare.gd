@@ -356,3 +356,59 @@ func test_go_crusade_does_not_persist_team() -> void:
 	panel._on_go_pressed()   # stub config=null 容错 → {"ok": false} → Toast 提前 return
 	assert_eq(pd.team, [], "crusade 开战不应写回 player.team（源 doGoCrusade 无 setTeamData）")
 	panel.queue_free()
+
+
+# ── 选人布阵扩展（2026-09-15 二轮：副本/竞技场攻守/挖矿换队进攻五入口补选人界面）──
+# 源六模式对照（battleprepare.lua）：stage/dungeon=getTeamData 记忆；pvp attack=td_pp 记忆
+# （本项目单字段受控偏离共用 player.team）；pvp defend=create 传 heros（当前防守阵，
+# pvp.lua:154-156）；excavateChange=create 传 excavateDefendTeam（excavateteam.lua:14-16）；
+# 确认分发 requestBattle:569-586（defend→set_lineup / excavateChange→set_excavate_team+回调 /
+# attack 系→发战斗）。本项目=面板加 initial_tids（外部初始阵容）+ on_confirm（确认回调注入），
+# View 调用方自带装配/写防守逻辑，面板不耦合 ladder/excavate。
+
+# 外部初始阵容成为默认队（源 getLastTeam：defend/excavateChange 分支用 create 传入阵容）。
+func test_initial_tids_loads_as_default_team() -> void:
+	var pd := _make_player()
+	# 取英雄 2/4/6 的 tid 作外部初始阵容（tid 与 inst_id 同源同值，add_hero 自增分配）
+	var initial: Array[int] = [2, 4, 6]
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, StubStageMgr.new(), BattleRng.new(12345), cm, "pvp_defend", 0, initial)
+	var loaded: Array[int] = []
+	for t in panel._team:
+		loaded.append(int(t.inst_id))
+	# 加载序经 _order_team 按 maxRange 重排（源 getLastTeam resortTeam 同款），断言集合语义
+	assert_eq(loaded.size(), initial.size(), "initial_tids 全部加载")
+	var sorted_loaded: Array[int] = loaded.duplicate()
+	sorted_loaded.sort()
+	var sorted_initial: Array[int] = initial.duplicate()
+	sorted_initial.sort()
+	assert_eq(sorted_loaded, sorted_initial, "initial_tids 应成为默认队（序经 maxRange 重排照源 resortTeam）")
+	panel.queue_free()
+
+
+# 确认回调收到选中 tids（源 requestBattle 各模式分发；本项目 attack/防守系统一回调注入）。
+func test_confirm_callback_receives_tids() -> void:
+	var pd := _make_player()
+	var received: Array[int] = []
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, null, BattleRng.new(12345), cm, "excavate_attack", 0, [],
+		func(tids: Array[int]) -> void: received.assign(tids))
+	panel._on_go_pressed()
+	var expected: Array[int] = []
+	for t in panel._team:
+		expected.append(int(t.tid))
+	assert_eq(received, expected, "确认应把当前队伍 tid 列表传给 on_confirm 回调")
+	assert_true(panel.is_queued_for_deletion(), "回调模式确认后面板关闭（源 popScene）")
+	panel.queue_free()
+
+
+# 回调模式不写回 player.team（源写回集合=stage/dungeon→td_cm + pvp attack→td_pp；
+# pvp attack 本项目单字段下不写回防污染关卡阵容，防守/excavate 系写各自数据，均不走 _persist_team）。
+func test_confirm_callback_does_not_persist_team() -> void:
+	var pd := _make_player()
+	var panel := BattlePreparePanel.new()
+	panel.setup(1, pd, null, BattleRng.new(12345), cm, "pvp_defend", 0, [],
+		func(_tids: Array[int]) -> void: pass)
+	panel._on_go_pressed()
+	assert_eq(pd.team, [], "回调模式确认不应写回 player.team（写回集合照源=仅 stage 模式）")
+	panel.queue_free()

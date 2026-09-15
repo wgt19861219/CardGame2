@@ -10,8 +10,10 @@ const BATTLE_MAX_TICKS: int = 3000  # 端到端测试用最大 tick（View 接�
 
 ## 装配 PVP 战斗（View 接入用）：玩家进攻阵容 vs AI 对手。不跑战斗循环。
 ## 返 {ok, engine, battle_info, oppo_user_id, hero_list, enemy_list}；无对手/无英雄返 {ok:false}。
-static func assemble_pvp_battle(ladder: LadderManager, oppo_user_id: int, player: PlayerData, cm: ConfigManager, rng: BattleRng, now: int) -> Dictionary:
-	var lineup: Array = _attack_lineup_tids(player)
+static func assemble_pvp_battle(ladder: LadderManager, oppo_user_id: int, player: PlayerData, cm: ConfigManager, rng: BattleRng, now: int, player_tids: Array[int] = []) -> Dictionary:
+	# player_tids 非空=布阵面板选中阵容（源 doPvp :281-297 attack_lineup 直传）；空=照旧
+	# _attack_lineup_tids（player.team 空则前 5，测试/无布阵路径向后兼容）。
+	var lineup: Array = player_tids if not player_tids.is_empty() else _attack_lineup_tids(player)
 	if lineup.is_empty():
 		return {"ok": false}
 	var reply: Dictionary = ladder.handle({"_start_battle": {"oppo_user_id": oppo_user_id, "attack_lineup": lineup}}, player, cm, rng, now)
