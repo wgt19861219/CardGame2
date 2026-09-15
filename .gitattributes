@@ -1,0 +1,13 @@
+# Godot 文本资产统一 LF（2026-09-15 根治 reimport 幽灵修改）。
+# 根因：仓库 blob 为 LF + core.autocrlf=true 使 checkout 写 CRLF，Godot 编辑器
+# reimport/重写时恒写 LF —— 被编辑器碰过的文件出现「status 显示 M、diff 为空、
+# checkout 无法消除」的幽灵修改（assets/ui/baked 16 个 .png.import 漂移实例）。
+# 显式 eol=lf 后 checkout 与编辑器写入一致，幽灵修改消除且不回潮。
+*.gd text eol=lf
+*.uid text eol=lf
+*.gdshader text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.import text eol=lf
+*.cfg text eol=lf
+*.godot text eol=lf
