@@ -316,7 +316,7 @@ func _refresh_magicsoul_preview(key: String) -> void:
 	if _preview_label == null or _preview_container == null:
 		return
 	if key == "MagicSoul" and _rng != null:
-		var ids: Array[int] = TavernData.ask_magicsoul(_rng)
+		var ids: Array[int] = TavernData.ask_magicsoul(_rng, _cm)
 		_preview_label.text = "今日魂匣预览："
 		_preview_label.visible = true
 		# 面板级预览（兼容 test_tavern_magic，单行横排前 4 hero：extra+3hero）
@@ -375,19 +375,23 @@ func _add_magic_icon(scroll: Control, tid: int, cx: float, cy: float) -> void:
 
 func _make_hero_preview_icon(tid: int) -> Control:
 	# 源 tavern.lua:1307/1318/1332/1344 readhero.createIcon({id=id, length=38}).icon：
-	# 头像图标（品质框，info 无 rank → 源默认 1；length=38 → container 104 缩 38/104）。
-	# 2026-08-22 巡检订正：旧 Label 文本降级（位置/布局照源唯独内容是文字）。包 38×38
-	# Control wrapper 参与容器布局，ReadheroIcon 挂内部 scale 居中。
+	# 头像图标（品质框，info 无 rank → 源默认 1）。源 container 是 CCSprite
+	# anchor(0.5,0.5)：setPosition 定位容器中心、setScale(38/portrait_w) 缩放围绕
+	# 容器中心。Godot 复刻：包 38×38 wrap（几何中心=源定位点），缩放走 setup
+	# length 分支（设于内部 icon 层），再把容器中心 Godot(52,52) 平移到 wrap 中心
+	# (19,19)。portrait 贴容器左下（视觉中心局部 (39,65)≠容器中心）→ 相对 wrap
+	# 中心恒偏 (-13,+13)*s，与源锚点行为一致。旧实现按"容器中心=视觉中心"且把容器
+	# 中心对到 wrap 左上角 (0,0)，双重偏差 (-23.75,-14.25)——魂匣热点图标整体
+	# 左偏 24/上偏 10~14 的根因（2026-09-16）。
 	var wrap := Control.new()
 	wrap.custom_minimum_size = Vector2(38.0, 38.0)
 	wrap.size = Vector2(38.0, 38.0)
 	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon := ReadheroIcon.new()
-	icon.setup({"id": tid, "rank": 1}, _cm)
-	var s: float = 38.0 / ReadheroIcon.CONTAINER_SIZE.x
-	icon.scale = Vector2(s, s)
-	icon.position = -ReadheroIcon.CONTAINER_SIZE * s * 0.5
-	wrap.add_child(icon)
+	var ri := ReadheroIcon.new()
+	ri.setup({"id": tid, "rank": 1, "length": 38.0}, _cm)
+	var s: float = ri.icon.scale.x
+	ri.icon.position = wrap.size * 0.5 - ReadheroIcon.CONTAINER_SIZE * 0.5 * s
+	wrap.add_child(ri)
 	return wrap
 
 

@@ -17,8 +17,18 @@ const SHARD_ROLL_MAX: int = 10                            # 碎片概率分母�
 const SHARD_ROLL_THRESHOLD: int = 3                       # <=3 命中 = 30%（源 :1761）
 const SHARD_AMOUNT_MAX: int = 3                           # 碎片数量上限（源 :1763 rand(1,3)）
 const MAGICSOUL_PREVIEW_COUNT: int = 6                    # 魂匣预览英雄数（源 :1663 ask_magicsoul for 1..6）
-const MAGICSOUL_HERO_ID_MAX: int = 30                     # 魂匣英雄 ID 上限（源 :1664 math_random(1,30)）
-const MAGICSOUL_SPECIAL_ID_MAX: int = 15                  # 每日特别英雄 ID 上限（源 :1667 math_random(1,15)）
+const MAGICSOUL_HERO_ID_MAX: int = 30                     # 兜底随机英雄 ID 上限（表缺失时，源 local_server 简化语义）
+const MAGICSOUL_SPECIAL_ID_MAX: int = 15                  # 兜底每周特别英雄 ID 上限（同上）
+# ---- 魂匣表驱动重建（2026-09-16，源 tavern.lua:1239 getMagicHeroRow）----
+# 热点数据源=TavernDailyHero 当日行（Soul 1-3=今日魂石 / Soul 4=本周英雄整卡）；
+# 表止于 2014-06-14，超界按日序取模循环（确定性，受控偏离）。产出结构按文案
+# TAVERNRES.CAN_GET_MULTIPLE_SOUL_STONES + 面板热点框 + gold 十连必得先例重建
+# （原版服务器掉落组私有不可考，同 2026-09-07 品质分池重建口径）。
+const MAGIC_DAY_RESET_HOUR: int = 5                       # 热点日界 5:00（源 time.lua:299 reset_time，5 点前算前一天）
+const MAGIC_SOUL_AMOUNT_MAX: int = 3                      # 每位魂石数量上限（对齐源碎片位 rand(1,3)）
+const MAGIC_HERO_ROLL_MAX: int = 10                       # 单抽整卡概率分母
+const MAGIC_HERO_ROLL_THRESHOLD: int = 1                  # <=1 命中 = 10%（十连恒必得，对齐 gold 保底结构）
+const MAGIC_DAY_SOUL_COUNT: int = 3                       # 今日热点魂石数（表 Soul 1-3 ID 三槽）
 
 const BOX_CD: Dictionary = {"Bronze": 600, "Gold": 165600, "MagicSoul": 432000}
 const FREE_TIMES: Dictionary = {"Bronze": 5, "Gold": 1, "MagicSoul": 1}
@@ -26,6 +36,7 @@ const SECONDS_PER_MINUTE: int = 60          # 分钟→秒换算（_local_day_ke
 const SECONDS_PER_HOUR: int = 3600           # 小时→秒换算（_hms_string 倒计时格式）
 const DAY_KEY_YEAR_WEIGHT: int = 10000       # 年份权重（年*10000+月*100+日 → 唯一日序号）
 const DAY_KEY_MONTH_WEIGHT: int = 100        # 月份权重
+const DAY_KEY_DAY_WEIGHT: int = 100          # 日权重（_magic_day_row 展平键同公式复用）
 # 高16位=单抽首抽标记 of / 低16位=十连首抽标记 tf。1=已首抽，0=未首抽。
 const FIRST_DRAW_ONCE_SHIFT: int = 16
 const FIRST_DRAW_FLAG: int = 1
@@ -45,12 +56,9 @@ const EX_RANK_KEY_MAP: Dictionary = {"bronze": "Bronze", "silver": "Silver", "go
 const POOL_QUALITY_RANGES: Dictionary = {
 	"Bronze": [1, 2],
 	"Gold": [3, 4],
-	"MagicSoul": [4, 6],
 }
 const FALLBACK_POOL_QUALITY: Array = [1, 6]        # 未知类型兜底全量(兼容旧调用)
 const FIRST_DRAW_QUALITY_BOOST: int = 1            # 首抽池高一档(源首抽独立 Chest Group)
-const MAGIC_COMBO_GUARANTEE_COUNT: int = 26        # magic 第 26 次十连起切池(源 DrawTimes 26)
-const MAGIC_GUARANTEE_QUALITY: Array = [5, 6]      # 26 次后品质池(源组 24 等价)
 const QUALITY_MIN: int = 1
 const QUALITY_MAX: int = 6
 
@@ -107,25 +115,27 @@ static func get_ex_rank(box: String, cm: Variant) -> int:
 # ---- 产出 Logic（照源 local_server.lua:1673 tavern_draw handler + 品质分池重建 2026-09-07）----
 
 # 抽卡产出：draw_type 0=单抽/1=十连/"stone"=灵魂石。返 Array[{id,amount}]。
-# tavern_type 驱动品质分池；is_first 首抽高一档；magic_combo_count>=26 切保底池。
+# tavern_type 驱动品质分池；is_first 首抽高一档；MagicSoul 走魂匣专属分支（2026-09-16）。
 static func roll_tavern_loot(draw_type: Variant, box_type: Variant, rng: Variant, cm: Variant,
-		tavern_type: String = "", is_first: bool = false, magic_combo_count: int = 0) -> Array:
+		tavern_type: String = "", is_first: bool = false, magic_combo_count: int = 0,
+		now: int = 0) -> Array:
 	var loots: Array = []
 	if str(draw_type) == "stone":
 		_roll_stone(loots, str(box_type), rng, cm)
 		return loots
 	var draw_count: int = COMBO_DRAW_COUNT if draw_type == 1 else 1
+	if tavern_type == "MagicSoul":
+		_roll_magic_soul(loots, draw_count, rng, cm, now)
+		return loots
 	_roll_normal(loots, draw_count, rng, cm, tavern_type, is_first, magic_combo_count)
 	return loots
 
 
-# 箱子品质池范围：常规池 → 首抽 +1 档 → magic 26 次保底池覆盖，clamp 到 [1,6]。
-static func _quality_range(tavern_type: String, is_first: bool, magic_combo_count: int) -> Array:
+# 箱子品质池范围：常规池 → 首抽 +1 档，clamp 到 [1,6]（MagicSoul 不走品质池）。
+static func _quality_range(tavern_type: String, is_first: bool, _magic_combo_count: int) -> Array:
 	var q_range: Array = POOL_QUALITY_RANGES.get(tavern_type, FALLBACK_POOL_QUALITY).duplicate()
 	if is_first:
 		q_range = [int(q_range[0]) + FIRST_DRAW_QUALITY_BOOST, int(q_range[1]) + FIRST_DRAW_QUALITY_BOOST]
-	if tavern_type == "MagicSoul" and magic_combo_count >= MAGIC_COMBO_GUARANTEE_COUNT:
-		q_range = MAGIC_GUARANTEE_QUALITY.duplicate()
 	return [clampi(int(q_range[0]), QUALITY_MIN, QUALITY_MAX), clampi(int(q_range[1]), QUALITY_MIN, QUALITY_MAX)]
 
 
@@ -213,12 +223,93 @@ static func _roll_stone(loots: Array, box_type: String, rng: Variant, cm: Varian
 		i += 1
 
 
-# ---- 魂匣预览（照源 local_server.lua:1660-1669 ask_magicsoul handler）----
+# ---- 魂匣热点与产出（源 tavern.lua:1239 getMagicHeroRow 表驱动重建，2026-09-16）----
+# 源链路：服务器 ask_magicsoul 按 TavernDailyHero 当日行下发 hids；源 local_server
+# 单机化用随机数替代（:1660-1669）、tavern_draw 亦不分池——魂匣产出与热点脱钩 =
+# 用户报「介绍能获大量英雄/灵魂石实际同黄金池+热点英雄抽不到」根因。本节按表恢复意图。
 
-# 魂匣预览：返回 6 个随机英雄 ID（首个每日特别 1-15，其余 1-30）。纯随机无持久化（源同）。
-# ask_magicsoul handler 单机化：View 切 MagicSoul tab 时直调（源走 local_server dispatch）。
-static func ask_magicsoul(rng: BattleRng) -> Array[int]:
+# 5 点日界的当日行（源 getMagicHeroRow：checkBOA before 取前一天）；表外日期按
+# 日序取模循环全表（表止于 2014-06-14，确定性单机化）。返原始行（空=表空）。
+static func _magic_day_row(cm: Variant, now: int) -> Dictionary:
+	var off_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	var ts: int = (now if now > 0 else int(Time.get_unix_time_from_system())) \
+			- MAGIC_DAY_RESET_HOUR * SECONDS_PER_HOUR
+	var day_key: int = _local_day_key(ts, off_min)
+	var tdh: Dictionary = cm.get_raw_table("TavernDailyHero")
+	if tdh.is_empty():
+		return {}
+	# 展平 {日序键: 行}（键公式与 _local_day_key 同权重 y*10000+m*100+d）
+	var by_key: Dictionary = {}
+	for y in tdh:
+		for mo in tdh[y]:
+			for day in tdh[y][mo]:
+				var k: int = (int(str(y)) * DAY_KEY_MONTH_WEIGHT + int(str(mo))) \
+						* DAY_KEY_DAY_WEIGHT + int(str(day))
+				by_key[k] = tdh[y][mo][day]
+	if by_key.has(day_key):
+		return by_key[day_key]
+	# 表外日期：键单调增且相邻日差 1 → 排序取模等效按日序循环
+	var keys: Array = by_key.keys()
+	keys.sort()
+	return by_key[keys[absi(day_key) % keys.size()]]
+
+
+# 魂石物品 → 英雄 id（源 readhero.lua:299 getComposedID：Fragment 表 Fragment ID 反查）。
+static func _hero_of_soul(soul_id: int, cm: Variant) -> int:
+	if soul_id <= 0:
+		return 0
+	for tid in cm.get_raw_table("Fragment"):
+		if int(cm.get_raw_table("Fragment")[tid].get("Fragment ID", 0)) == soul_id:
+			return int(tid)
+	return 0
+
+
+# 魂匣产出（2026-09-16 重建）：每位 = 今日热点魂石三选一 ×1-3（TAVERNRES「可获大量
+# 灵魂石」）；本周英雄整卡为附加位——十连恒必得（对齐 gold 十连必得结构，magic 的
+# 保底升级为热点英雄）、单抽 10%。数值不可考按意图重建（受控偏离）。
+static func _roll_magic_soul(loots: Array, draw_count: int, rng: Variant, cm: Variant, now: int) -> void:
+	var row: Dictionary = _magic_day_row(cm, now)
+	var day_souls: Array[int] = []
+	for key in ["Soul 1 ID", "Soul 2 ID", "Soul 3 ID"]:
+		var soul_id: int = int(row.get(key, 0))
+		if soul_id > 0:
+			day_souls.append(soul_id)
+	if day_souls.is_empty():
+		day_souls = FALLBACK_EQUIP_IDS.duplicate()   # 表空防御（正常数据不达）
+	var i: int = 0
+	while i < draw_count:
+		var sid: int = day_souls[int(rng.randi_range(0, day_souls.size() - 1))]
+		loots.append({"id": sid, "amount": int(rng.randi_range(1, MAGIC_SOUL_AMOUNT_MAX))})
+		i += 1
+	var week_hero: int = int(row.get("Soul 4 ID", 0))
+	if week_hero <= 0:
+		return
+	if draw_count == COMBO_DRAW_COUNT \
+			or int(rng.randi_range(1, MAGIC_HERO_ROLL_MAX)) <= MAGIC_HERO_ROLL_THRESHOLD:
+		loots.append({"id": week_hero, "amount": 1})
+
+
+# 魂匣热点预览：返回 6 个英雄 id（[0]=本周特别 Soul 4、[1..3]=今日 Soul 1-3 经 Fragment
+# 转英雄——源 getMagicHero/getMagicExtraHero getComposedID 语义；[4,5] 从今日英雄随机补
+# 齐源 ask_magicsoul for 1..6 的下发量，UI 只消费前 4）。表缺失/反查失败回退纯随机
+# （源 local_server:1660-1669 简化语义兜底）。
+static func ask_magicsoul(rng: BattleRng, cm: Variant = null, now: int = 0) -> Array[int]:
 	var ids: Array[int] = []
+	if cm != null:
+		var row: Dictionary = _magic_day_row(cm, now)
+		var week_hero: int = int(row.get("Soul 4 ID", 0))
+		var day_heroes: Array[int] = []
+		for key in ["Soul 1 ID", "Soul 2 ID", "Soul 3 ID"]:
+			var h: int = _hero_of_soul(int(row.get(key, 0)), cm)
+			if h > 0:
+				day_heroes.append(h)
+		if week_hero > 0 and day_heroes.size() == MAGIC_DAY_SOUL_COUNT:
+			ids.append(week_hero)
+			ids.append_array(day_heroes)
+			while ids.size() < MAGICSOUL_PREVIEW_COUNT:
+				ids.append(day_heroes[int(rng.randi_range(0, day_heroes.size() - 1))])
+			return ids
+	# 兜底：无表/反查失败（源 local_server 随机简化）
 	for _i in MAGICSOUL_PREVIEW_COUNT:
 		ids.append(rng.randi_range(1, MAGICSOUL_HERO_ID_MAX))
 	ids[0] = rng.randi_range(1, MAGICSOUL_SPECIAL_ID_MAX)
