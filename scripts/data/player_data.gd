@@ -232,7 +232,8 @@ func draw_tavern(tavern_type: String, is_ten: bool, is_free: bool, count: int, c
 
 
 ## 完整抽卡：消耗钻石 + 产出物品/碎片进背包（照源 local_server.lua:1673 tavern_draw handler
-## + 品质分池/首抽高档/gold 保底/magic 计数/新英雄碎魂重建 2026-09-07）。
+## + 品质分池/首抽高档/gold 保底/新英雄碎魂重建 2026-09-07；MagicSoul 走魂匣表驱动分支
+## 2026-09-16，旧 26 次计数切组随之退役——存档 combo_count 字段不再读写）。
 ## equip（id>=100）→ items；英雄（id<100）→ 未拥有 add_hero / 已拥有转魂石（源 _smash_idx）。
 func draw_tavern_full(tavern_type: String, is_ten: bool, is_free: bool, count: int, rng: Variant) -> Dictionary:
 	var r: Dictionary = draw_tavern(tavern_type, is_ten, is_free, count, cm)
@@ -242,14 +243,8 @@ func draw_tavern_full(tavern_type: String, is_ten: bool, is_free: bool, count: i
 	# 首抽高一档（refresh_first_tavern 置位前读取；源首抽独立 Chest Group 重建）
 	var is_first: bool = TavernData.is_first_ten_draw(self, tavern_type) if is_ten \
 			else TavernData.is_first_one_draw(self, tavern_type)
-	# magic 十连计数（源 DrawTimes 26 切组依据；读旧值 roll，成功后 +1）
-	var magic_combo: int = int(tavern_record.get("MagicSoul", {}).get("combo_count", 0))
-	var loots: Array = TavernData.roll_tavern_loot(draw_type, 0, rng, cm, tavern_type, is_first, magic_combo)
+	var loots: Array = TavernData.roll_tavern_loot(draw_type, 0, rng, cm, tavern_type, is_first)
 	_settle_tavern_loot(loots)
-	if tavern_type == "MagicSoul" and is_ten:
-		if not tavern_record.has("MagicSoul"):
-			tavern_record["MagicSoul"] = {}
-		tavern_record["MagicSoul"]["combo_count"] = magic_combo + 1
 	return {"ok": true, "loots": loots}
 
 

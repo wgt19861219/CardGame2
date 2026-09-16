@@ -75,7 +75,7 @@ func test_is_vip_unlocked() -> void:
 	assert_eq(pd.is_vip_unlocked("Multiple Midas"), true, "特权档满级 Multiple Midas=true（与 vip_level 解耦）")
 
 
-# ---- 新英雄/重复碎魂/魔晶计数(原版 _new_heroes/_smash_idx/DrawTimes26 单机化,2026-09-07)----
+# ---- 新英雄/重复碎魂(原版 _new_heroes/_smash_idx 单机化,2026-09-07)----
 
 # 未拥有英雄 → add_hero 入库;重复英雄 → 转魂石(源 _smash_idx 语义)。
 func test_new_hero_and_duplicate_fragment() -> void:
@@ -88,10 +88,31 @@ func test_new_hero_and_duplicate_fragment() -> void:
 	assert_eq(pd.hero_manager.fragment_count(frag_id), 2, "重复英雄转魂石 ×2（单账本 items）")
 
 
-# MagicSoul 十连计数递增(26 次切池依据)。
-func test_magic_combo_count_increments() -> void:
+# magic 十连端到端（2026-09-16 魂匣重建）：大量今日热点魂石 + 本周英雄整卡（未拥有
+# 入库/已拥有转魂石由 _settle 分流），不再走装备品质池（用户报「介绍能获大量英雄或
+# 灵魂石，实际同黄金池」根修）。
+func test_draw_full_magic_soul_flow() -> void:
 	var pd := PlayerData.new(cm)
 	pd.diamond = 100000
-	var rng := BattleRng.new(7)
-	pd.draw_tavern_full("MagicSoul", true, false, 0, rng)
-	assert_eq(int(pd.tavern_record.get("MagicSoul", {}).get("combo_count", 0)), 1, "magic 十连后 combo_count=1")
+	var r: Dictionary = pd.draw_tavern_full("MagicSoul", true, false, 0, BattleRng.new(5))
+	assert_true(bool(r["ok"]), "magic 十连 ok")
+	var loots: Array = r["loots"]
+	var soul_count: int = 0
+	var hero_count: int = 0
+	var soul_gained: int = 0
+	for loot in loots:
+		if int(loot["id"]) >= 100:
+			soul_count += 1
+			soul_gained += int(loot["amount"])
+		else:
+			hero_count += 1
+	assert_eq(soul_count, 10, "十连主位 10 个全为魂石")
+	assert_eq(hero_count, 1, "附加 1 个本周英雄整卡位")
+	assert_true(soul_gained >= 10, "魂石总量 >=10（大量灵魂石，实得 %d）" % soul_gained)
+	# 魂石结算进 items（单账本，int 键；十连同 id 累计）
+	var soul_id: int = int(loots[0]["id"])
+	var expect_total: int = 0
+	for loot in loots:
+		if int(loot["id"]) == soul_id:
+			expect_total += int(loot["amount"])
+	assert_eq(int(pd.items.get(soul_id, 0)), expect_total, "首位魂石入 items 账本（同 id 累计）")

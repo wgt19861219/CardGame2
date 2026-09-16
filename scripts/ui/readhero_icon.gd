@@ -125,7 +125,11 @@ func setup(info: Dictionary, p_cm: Variant = null) -> void:
 	_add_hp_info(hp, mp)
 	if length_v != null:
 		var len_f: float = float(length_v)
-		icon.scale = Vector2(len_f / CONTAINER_SIZE.x, len_f / CONTAINER_SIZE.x)   # 源 :431-433 container:setScale(length/w)
+		# 源 :431-433 container:setScale(length / size.width)：size 是 portrait 点尺寸
+		# （拥有英雄=贴图 px÷CS≈78；unknow 分支=104），非 container 104——缩放后
+		# portrait 显示 length×length。container 是 CCSprite anchor(0.5,0.5)，缩放
+		# 围绕容器中心；Godot 锚点复刻见调用方（tavern_panel._make_hero_preview_icon）。
+		icon.scale = Vector2(len_f / _portrait_disp.x, len_f / _portrait_disp.x)
 
 
 # 源 :375-383 textLabel：24 号底部（anchor(0.5,0) y=12%高）+textColor+黑描边 2。

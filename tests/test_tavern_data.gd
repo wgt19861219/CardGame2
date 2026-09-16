@@ -268,24 +268,60 @@ func test_get_ex_rank_missing() -> void:
 	assert_eq(TavernData.get_ex_rank("nonexist", cm), 0, "未知 box → 0")
 
 
-# 源 local_server.lua:1660-1669 ask_magicsoul：6 个随机英雄 ID（首个每日特别 1-15，余 1-30）。
-func test_ask_magicsoul_returns_six_ids() -> void:
-	var ids: Array[int] = TavernData.ask_magicsoul(BattleRng.new(42))
-	assert_eq(ids.size(), 6, "ask_magicsoul 返回 6 个英雄 ID")
+# ---- 魂匣热点表驱动（2026-09-16 重建）----
+# 源链路：服务器 ask_magicsoul 按 TavernDailyHero 当日行下发 hids（[1]=Soul 4 本周英雄、
+# [2-4]=Soul 1-3 今日魂石，getMagicHero 经 Fragment 反查转英雄显示）；源 local_server
+# 单机化用随机数替代（:1660-1669）致热点与产出脱钩。重建按表驱动；表止于 2014-06-14，
+# 超界日序取模循环（确定性受控偏离）。
+
+func _local_ts(y: int, m: int, d: int, h: int) -> int:
+	# 本地时刻 → unix ts（抵消查询侧的时区偏移，测试不依赖测试机时区）
+	var off_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	return int(Time.get_unix_time_from_datetime_dict(
+		{"year": y, "month": m, "day": d, "hour": h, "minute": 0, "second": 0})) - off_min * 60
 
 
-func test_ask_magicsoul_id_range_and_special_first() -> void:
-	var ids: Array[int] = TavernData.ask_magicsoul(BattleRng.new(7))
-	assert_true(ids[0] >= 1 and ids[0] <= 15, "首个每日特别英雄 ID 在 1-15（=%d）" % ids[0])
-	for i in range(1, ids.size()):
-		assert_true(ids[i] >= 1 and ids[i] <= 30, "其余 ID 在 1-30（idx%d=%d）" % [i, ids[i]])
+func _soul_heroes_of_row(row: Dictionary) -> Array[int]:
+	var heroes: Array[int] = []
+	for key in ["Soul 1 ID", "Soul 2 ID", "Soul 3 ID"]:
+		var soul_id: int = int(row.get(key, 0))
+		for tid in cm.get_raw_table("Fragment"):
+			if int(cm.get_raw_table("Fragment")[tid].get("Fragment ID", 0)) == soul_id:
+				heroes.append(int(tid))
+				break
+	return heroes
 
 
-func test_ask_magicsoul_deterministic_same_seed() -> void:
-	# BattleRng 确定性契约：同 seed 同序列（源 math_random 非确定，单机化用 BattleRng 支持回放）
-	var a: Array[int] = TavernData.ask_magicsoul(BattleRng.new(99))
-	var b: Array[int] = TavernData.ask_magicsoul(BattleRng.new(99))
-	assert_eq(a, b, "同 seed 返回相同 ID 序列")
+func test_ask_magicsoul_table_driven_day() -> void:
+	# 2014-01-13 表内行：Soul 4=34（本周英雄）、今日三魂 152/151/137 → Fragment 转英雄
+	var ids: Array[int] = TavernData.ask_magicsoul(BattleRng.new(42), cm, _local_ts(2014, 1, 13, 12))
+	assert_eq(ids.size(), 6, "返回 6 个（源 ask_magicsoul for 1..6，后 2 个 UI 未用）")
+	assert_eq(ids[0], 34, "首个=本周特别英雄（Soul 4 ID）")
+	var expect: Array[int] = _soul_heroes_of_row(
+		{"Soul 1 ID": 152, "Soul 2 ID": 151, "Soul 3 ID": 137})
+	assert_eq(ids.slice(1, 4), expect, "今日热点=当日 Soul 1-3 对应英雄")
+
+
+func test_ask_magicsoul_out_of_table_loops_deterministically() -> void:
+	# 表外日期（2026）：日序取模循环——[0] 恒属全表 Soul 4 集合，同日两次调用相同
+	var soul4_set: Array = []
+	for month in cm.get_raw_table("TavernDailyHero").get("2014", {}).values():
+		for day in month.values():
+			soul4_set.append(int(day.get("Soul 4 ID", 0)))
+	var a: Array[int] = TavernData.ask_magicsoul(BattleRng.new(1), cm, _local_ts(2026, 9, 16, 12))
+	assert_true(soul4_set.has(a[0]), "表外日 [0]=%d 应属 Soul 4 集合" % a[0])
+	var b: Array[int] = TavernData.ask_magicsoul(BattleRng.new(1), cm, _local_ts(2026, 9, 16, 12))
+	assert_eq(a, b, "同日确定性（取模 + 同 seed）")
+
+
+func test_ask_magicsoul_all_ids_are_heroes() -> void:
+	# UI 直接把 id 喂 ReadheroIcon——全部须为有效英雄（魂石已转英雄 id）
+	var ids: Array[int] = TavernData.ask_magicsoul(BattleRng.new(7), cm, _local_ts(2026, 9, 16, 12))
+	var unit: Dictionary = cm.get_raw_table("Unit")
+	for i in ids.size():
+		var row: Dictionary = unit.get(str(ids[i]), {})
+		assert_true(String(row.get("Portrait", "")) != "" and String(row.get("Unit Type", "")) == "Hero",
+			"ids[%d]=%d 应为有效英雄" % [i, ids[i]])
 
 
 # ---- 品质分池(原版服务器掉落组的单机化重建,2026-09-07)----
@@ -307,9 +343,9 @@ func _quality_of(eid: int) -> int:
 	return int(cm.get_raw_table("Equip").get(str(eid), {}).get("Quality", 0))
 
 
-# 各箱品质池:Bronze 1-2 / Gold 3-4 / MagicSoul 4-6(实测池 76/190/152 非空)。
+# 各箱品质池:Bronze 1-2 / Gold 3-4（MagicSoul 2026-09-16 起走魂匣专属分支，不进品质池）。
 func test_pool_quality_ranges() -> void:
-	for entry in [["Bronze", 1, 2], ["Gold", 3, 4], ["MagicSoul", 4, 6]]:
+	for entry in [["Bronze", 1, 2], ["Gold", 3, 4]]:
 		var ids: Array = _roll_many_ids(entry[0], false, false, 0, 40)
 		assert_gt(ids.size(), 0, "%s 产出非空" % entry[0])
 		for eid in ids:
@@ -320,9 +356,9 @@ func test_pool_quality_ranges() -> void:
 				"%s equip 品质 %d 应在 [%d,%d]" % [entry[0], q, entry[1], entry[2]])
 
 
-# 首抽高一档(源首抽独立 Chest Group:Bronze 2-3 / Gold 4-5 / MagicSoul 5-6)。
+# 首抽高一档(源首抽独立 Chest Group:Bronze 2-3 / Gold 4-5)。
 func test_first_draw_quality_boost() -> void:
-	for entry in [["Bronze", 2, 3], ["Gold", 4, 5], ["MagicSoul", 5, 6]]:
+	for entry in [["Bronze", 2, 3], ["Gold", 4, 5]]:
 		var ids: Array = _roll_many_ids(entry[0], false, true, 0, 40)
 		for eid in ids:
 			if eid < 100:
@@ -344,11 +380,33 @@ func test_gold_ten_hero_guarantee() -> void:
 		assert_true(has_hero, "gold 十连必含英雄位(seed %d)" % i)
 
 
-# MagicSoul 第 26 次十连起品质池升 5-6(源 DrawTimes 26 组 23→24)。
-func test_magic_26_combo_pool() -> void:
-	var ids: Array = _roll_many_ids("MagicSoul", true, false, 26, 20)
-	for eid in ids:
-		if eid < 100:
-			continue
-		var q: int = _quality_of(eid)
-		assert_true(q >= 5 and q <= 6, "magic 26 次后品质 %d 应在 [5,6]" % q)
+# magic 池魂匣专属产出（2026-09-16 重建，TAVERNRES.CAN_GET_MULTIPLE_SOUL_STONES
+# + 面板今日/本周热点框 + gold 十连必得先例）：每位今日热点魂石 ×1-3，
+# 本周英雄整卡单抽 10% 附加 / 十连必得附加位。
+func test_magic_roll_single_day_soul() -> void:
+	var now: int = _local_ts(2014, 1, 13, 12)
+	var row: Dictionary = cm.get_raw_table("TavernDailyHero")["2014"]["1"]["13"]
+	var souls: Array = [int(row["Soul 1 ID"]), int(row["Soul 2 ID"]), int(row["Soul 3 ID"])]
+	for i in range(10):
+		var loots: Array = TavernData.roll_tavern_loot(0, 0, BattleRng.new(100 + i), cm, "MagicSoul", false, 0, now)
+		assert_gt(loots.size(), 0, "单抽产出非空")
+		var first: Dictionary = loots[0]
+		assert_true(souls.has(int(first["id"])), "单抽主位=今日热点魂石之一（id=%d）" % int(first["id"]))
+		assert_true(int(first["amount"]) >= 1 and int(first["amount"]) <= 3, "魂石数量 1-3")
+
+
+func test_magic_ten_guarantees_week_hero() -> void:
+	var now: int = _local_ts(2014, 1, 13, 12)
+	var row: Dictionary = cm.get_raw_table("TavernDailyHero")["2014"]["1"]["13"]
+	var week_hero: int = int(row["Soul 4 ID"])
+	for i in range(5):
+		var loots: Array = TavernData.roll_tavern_loot(1, 0, BattleRng.new(200 + i), cm, "MagicSoul", false, 0, now)
+		var has_week: bool = false
+		var soul_count: int = 0
+		for loot in loots:
+			if int(loot["id"]) == week_hero:
+				has_week = true
+			elif int(loot["id"]) >= 100:
+				soul_count += 1
+		assert_true(has_week, "magic 十连必得本周英雄 %d（seed %d）" % [week_hero, i])
+		assert_eq(soul_count, 10, "十连主位 10 个全为魂石（seed %d）" % i)
