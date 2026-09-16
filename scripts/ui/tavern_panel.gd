@@ -3,7 +3,8 @@ extends PopWindow
 
 ## 抽卡面板（View 层）——两件套范式（批2 Task 7，2026-08-16）。
 ## 静态结构全在 tavern_content.tscn：3 卡池 board（bronze/gold/magic）×
-## container(206×320) > BoardBg/TitleImage/TitleArt + Clip(裁剪) > Scroll（卡池内容，
+## container(206×320) > BoardBg/TitleImage/TitleLabel（2026-09-15 英文美术贴图
+## TitleArt 退役改 Label）+ Clip(裁剪) > Scroll（卡池内容，
 ## 源 createBaseBoard:594 + createCommonLayer:653 / createMagicLayer:949 静态化）。
 ## 原 procedural board 工厂（336 行）退役；panel 只做业务 + 信号 connect + fill
 ## （LSTR 文案/费用数值）+ 滑动 tween（源 doClickCheck:1576 上滑 320 / doClickArrow:1584）。
@@ -49,6 +50,13 @@ const FALLBACK_TEN_PROMPT: Dictionary = {
 	"gold": "十连抽必得英雄",
 	"magic": "可获大量灵魂石",
 }
+# 卡池标题 fallback（2026-09-15 英文美术贴图退役改 Label）：语言包无宝箱标题 key
+# （TUTORIALRES/PRIVILEGE 里只有间接文案），magic 照 PRIVILEGE.MAGIC_SOUL_BOX zh-CN 译名"魔幻魂匣"。
+const FALLBACK_TITLE: Dictionary = {
+	"bronze": "青铜宝箱",
+	"gold": "黄金宝箱",
+	"magic": "魔幻魂匣",
+}
 
 var _cm: Variant = null
 var _player: PlayerData = null
@@ -57,7 +65,7 @@ var _current_pool: String = "Bronze"
 var _boards: Dictionary = {}   # key -> board 节点 Dictionary（tscn 静态节点引用）
 var _content: Control = null
 var _result_label: Label = null
-var _status_label: Label = null
+var _count_labels: Dictionary = {}   # pool_key -> CountLabel（CostBg 条内倒计时/次数，2026-09-16 六轮迁回源位）
 var _preview_label: Label = null
 var _preview_container: HBoxContainer = null
 var _board_host: Control = null   # .tscn %BoardHost（3 board 挂载点）
@@ -79,13 +87,12 @@ func _build_content() -> void:
 	container.add_child(_content)
 	_board_host = _content.get_node("%BoardHost") as Control
 	_result_label = _content.get_node("%ResultLabel") as Label
-	_status_label = _content.get_node("%StatusLabel") as Label
 	_preview_container = _content.get_node("%PreviewContainer") as HBoxContainer
 	_preview_label = _content.get_node("%PreviewLabel") as Label
 	var close_btn: TextureButton = _content.get_node("%CloseBtn") as TextureButton
 	close_btn.pressed.connect(remove_window)
 	_bind_boards()
-	_refresh_countdown_label()
+	_refresh_countdown_labels()
 
 
 # 源 createItemLayer:1371：3 board 装配 + 末尾 playLightAnim（源 :1397 gold/magic light 旋转）。
@@ -106,12 +113,17 @@ func _bind_boards() -> void:
 # 绑定单张 board：tscn %XxxBoard 容器 + 相对路径取内部节点（board 内节点用通用名，
 # 不开 unique_name_in_owner——owner 级唯一，3 board 同名会冲突）+ fill + connect。
 # 返回 {container, scroll_board, check_btn, arrow_btn, once_btn, ten_btn,
-#   once_cost_lbl, ten_cost_lbl, box, light}（键名沿 builder 期约定，测试锚定）。
+#   once_cost_lbl, ten_cost_lbl, count_lbl, box, light}（键名沿 builder 期约定，测试锚定）。
 func _bind_board(key: String, cost_info: Dictionary, texts: Dictionary) -> Dictionary:
 	# tscn 节点前缀：MagicSoul 池键对应短名 Magic（%MagicBoard）
 	var board_id: String = "Magic" if key == "MagicSoul" else key
 	var container: Control = _content.get_node("%" + board_id + "Board") as Control
 	var scroll: Control = container.get_node("Clip/Scroll") as Control
+	(container.get_node("TitleLabel") as Label).text = String(texts["title"])
+	var ad_label: Label = scroll.get_node("AdLabel") as Label
+	ad_label.text = String(texts["ad_text"])
+	var count_lbl: Label = scroll.get_node("CountLabel") as Label
+	_count_labels[key] = count_lbl
 	var check: TextureButton = scroll.get_node("CheckBtn") as TextureButton
 	(check.get_node("CheckLabel") as Label).text = String(texts["check_label"])
 	check.pressed.connect(_on_check_pressed.bind(key))
@@ -146,6 +158,9 @@ func _bind_board(key: String, cost_info: Dictionary, texts: Dictionary) -> Dicti
 		"ten_btn": ten_buy,
 		"once_cost_lbl": once_cost_lbl,
 		"ten_cost_lbl": ten_cost_lbl,
+		"count_lbl": count_lbl,
+		"once_cost": int(cost_info.get("once_cost", 0)),
+		"ten_cost": int(cost_info.get("ten_cost", 0)),
 		"box": scroll.get_node("Box") as TextureRect,
 		"light": scroll.get_node_or_null("Light") as TextureRect,
 	}
@@ -168,6 +183,11 @@ func _refresh_magic_board_visibility() -> void:
 
 func _build_board_texts(src_key: String) -> Dictionary:
 	return {
+		# 2026-09-15 英文美术贴图退役改 Label：标题走 fallback 中文（语言包无宝箱标题 key），
+		# 描述复用 TAVERNRES.* 语言包 key（源贴图文案为过时英文版——10x/30x/50x 数字与现行
+		# 配置脱节且含 "Bule" 拼写错误，语言包 ten_prompt 才是与配置配套的保底文案）。
+		"title": String(FALLBACK_TITLE.get(src_key, "")),
+		"ad_text": _ten_prompt_text(src_key),
 		"check_label": _lstr_or(LSTR_CHECK, FALLBACK_CHECK),
 		"once_label": _lstr_or(LSTR_BUY_D, FALLBACK_BUY_FMT) % 1,
 		# magic ten_buy 标签照源 :1225 = BUY__D % 1（唯一按钮按单抽计费）
@@ -217,7 +237,7 @@ func _read_cost_info(key: String) -> Dictionary:
 # 切当前 pool + 刷新倒计时/Magic 预览（供 _on_check_pressed 与外部切池调用，不触滑动）。
 func _select_pool(key: String) -> void:
 	_current_pool = key
-	_refresh_countdown_label()
+	_refresh_countdown_labels()
 	_refresh_magicsoul_preview(key)
 
 
@@ -259,26 +279,34 @@ func _collapse_scroll(scroll: Control) -> void:
 
 # 源 playLightAnim :577-590 gold/magic light CCRotateBy(5,360) RepeatForever。
 # TextureRect rotation 绕 pivot_offset，照源 Sprite anchor(0.5,0.5) → pivot=size/2。
+# .from(0.0) 必须显式：循环重播时"当前值==目标值(2π)"会瞬间完成耗尽循环，光圈转一圈即死。
 func _play_light_anim(board: Dictionary) -> void:
 	var light: TextureRect = board.get("light", null)
 	if light == null:
 		return
 	light.pivot_offset = light.size * 0.5
 	var tw: Tween = light.create_tween().set_loops()
-	tw.tween_property(light, "rotation", deg_to_rad(FULL_CIRCLE_DEG), LIGHT_ROTATE_SEC)
+	tw.tween_property(light, "rotation", deg_to_rad(FULL_CIRCLE_DEG), LIGHT_ROTATE_SEC) \
+		.from(0.0)
 
 
 # 源 tavern.lua:566-574 getArrowudAnim：arrow MoveBy(1,(0,-5)) SineInOut ↔ reverse 循环。
+# .from() 同 _play_light_anim：显式锚定每轮起点，防绝对目标值循环一轮死。
+# 不做 is_inside_tree guard：bind 时刻（setup_panel→_build_content）面板尚未 show_window
+# 进树，guard 会静默 return 致动画从未创建（箭头浮动自迁移以来一直死的根因）；
+# Tween 绑定节点，进树后自动开始播放（同 _play_light_anim）。
 func _play_arrow_float_anim(board: Dictionary) -> void:
 	var arrow: TextureButton = board.get("arrow_btn", null)
-	if arrow == null or not arrow.is_inside_tree():
+	if arrow == null:
 		return
 	var base_y: float = arrow.position.y
 	var tw: Tween = arrow.create_tween().set_loops()
 	tw.tween_property(arrow, "position:y", base_y + ARROW_FLOAT_OFFSET_Y, ARROW_FLOAT_SEC) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT) \
+		.from(base_y)
 	tw.tween_property(arrow, "position:y", base_y, ARROW_FLOAT_SEC) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT) \
+		.from(base_y + ARROW_FLOAT_OFFSET_Y)
 	arrow.set_meta(&"arrow_float_active", true)   # headless 测试查 meta（Tween 推进不可靠）
 
 
@@ -321,11 +349,12 @@ func _fill_magic_heroicons(ids: Array[int]) -> void:
 	var hero_ids: Array[int] = []
 	for i in range(1, mini(ids.size(), 4)):
 		hero_ids.append(ids[i])
-	# left 3 hero（源 ccp(42,175)/(82,175)/(122,175)，ox=42 dx=40）
+	# left 3 hero（源 ccp(42,175)/(82,175)/(122,175)，ox=42 dx=40；六轮 DropBg 上移 15，
+	# left/right 组 cy 175→190 跟随，Godot 中心 130=新 DropBg(105-155) 中心）
 	for i in hero_ids.size():
-		_add_magic_icon(scroll, hero_ids[i], 42.0 + 40.0 * float(i), 175.0)
-	# right 1 extra（源 ccp(175,175)）
-	_add_magic_icon(scroll, extra_id, 175.0, 175.0)
+		_add_magic_icon(scroll, hero_ids[i], 42.0 + 40.0 * float(i), 190.0)
+	# right 1 extra（源 ccp(175,175)；六轮随 DropBg 上移）
+	_add_magic_icon(scroll, extra_id, 175.0, 190.0)
 	# day 3 hero（源 ccp(66,-140)/(108,-140)/(150,-140)，ox=66 dx=42）
 	for i in hero_ids.size():
 		_add_magic_icon(scroll, hero_ids[i], 66.0 + 42.0 * float(i), -140.0)
@@ -403,19 +432,47 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 	loot_popup.draw_again.connect(func() -> void: _on_draw(p_player, rng, tavern_type, is_ten))
 	loot_popup.show_window(get_parent())
 	drawn.emit()
-	_refresh_countdown_label()
+	_refresh_countdown_labels()
 
 
-# 免费状态刷新（源 getCountdownText：CD 倒计时 / bronze 剩余次数）。
-func _refresh_countdown_label() -> void:
-	if _player == null or _status_label == null:
+# 免费状态刷新（源 refreshCountdownHandler + refreshCost isFree 分支，单机化合并一处刷）：
+# ① 每卡 CountLabel（CostBg 单色条内，2026-09-16 六轮从 AdLabel 第二行迁回源位 y=135 底条）——
+#   CD 态 "HH:MM:SS 后免费"（源 countLabel+countSuffix 组合，受控偏离：单条恒白替代源金时间+白后缀双色）；
+#   bronze 无 CD 态 "剩余免费次数 N/5"（源单条居中 countLabel 文案）；gold/magic 空照源。
+# ② 费用条免费档 "免费" 替代价格（源 isFree 时 one_cost/magic ten_cost 置 GUILDCONFIG.FREE：
+#   bronze/gold 单抽免费档、magic 十连免费档；2026-09-15 三轮补齐，此前费用条恒显价格）。
+func _refresh_countdown_labels() -> void:
+	if _player == null:
 		return
 	var now: int = int(Time.get_unix_time_from_system())
-	_status_label.text = String(TavernData.get_countdown_text(_player, _current_pool, now)["text"])
+	for key: String in POOL_KEYS:
+		var count_label: Label = _count_labels.get(key, null)
+		if count_label != null:
+			var cd: Dictionary = TavernData.get_countdown_text(_player, key, now)
+			if bool(cd["is_counting"]):
+				count_label.text = "%s 后免费" % String(cd["text"])
+			else:
+				count_label.text = String(cd["text"])
+		_refresh_free_cost(key, now)
+
+
+# 费用条 "免费"/价格 切换（源 refreshCost :460-497 isFree 分支：isShowFree false 时恢复价格）。
+func _refresh_free_cost(key: String, now: int) -> void:
+	var board: Dictionary = _boards.get(key, {})
+	if board.is_empty():
+		return
+	var is_free: bool = TavernData.is_show_free(_player, key, now)
+	var once_lbl: Label = board.get("once_cost_lbl", null)
+	if once_lbl != null:
+		once_lbl.text = "免费" if is_free else str(int(board.get("once_cost", 0)))
+	# 源仅 magic 十连费用走免费替代（bronze/gold 十连恒付费）
+	var ten_lbl: Label = board.get("ten_cost_lbl", null)
+	if ten_lbl != null and key == "MagicSoul":
+		ten_lbl.text = "免费" if is_free else str(int(board.get("ten_cost", 0)))
 
 
 func _process(delta: float) -> void:
 	_refresh_timer += delta
 	if _refresh_timer >= REFRESH_INTERVAL_SEC:
 		_refresh_timer = 0.0
-		_refresh_countdown_label()
+		_refresh_countdown_labels()

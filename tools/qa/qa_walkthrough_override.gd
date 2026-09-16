@@ -15,7 +15,7 @@ const FragmentComposePanel = preload("res://scripts/ui/fragment_compose_panel.gd
 const RanklistSummary = preload("res://scripts/ui/ranklist_summary.gd")
 const UnlockAnnounceView = preload("res://scripts/ui/unlock_announce_view.gd")
 const StoryView = preload("res://scripts/ui/story_view.gd")
-const BattlePreparePanel = preload("res://scripts/view/battle/battle_prepare_panel.gd")
+const BattlePreparePanel = preload("res://scripts/ui/battle_prepare_panel.gd")
 const GmManager = preload("res://scripts/systems/gm_manager.gd")
 
 const QA_LEVEL: int = 99

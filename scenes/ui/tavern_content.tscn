@@ -1,884 +1,871 @@
-[gd_scene load_steps=31 format=3]
+[gd_scene format=3 load_steps=4]
 
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_co2ju"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_bg.png" id="2_nvrf0"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_v0wp8"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_jsfww"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_1.png" id="5_xuf1f"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_1.png" id="6_ucvsd"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_bg.png" id="7_wjoon"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="8_rouew"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="9_snvtp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_up.png" id="10_c88lk"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_frame.png" id="11_xxomj"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="12_e3cr5"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="13_78c8r"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="14_bqemu"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_discount.png" id="15_kev8h"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_3.png" id="16_x1hhd"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_3.png" id="17_dqsuc"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_3.png" id="18_riyse"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="19_ywlmm"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_2.png" id="20_icg6t"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_2.png" id="21_erv2h"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_mark1.png" id="22_v2fam"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_4.png" id="23_olycs"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_hero_bg.png" id="24_cmjlx"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_bg.png" id="2_titlebg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_back"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_backp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_1.png" id="5_brbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_3.png" id="6_gobg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_2.png" id="7_mabg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_1.png" id="8_brchest"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_3.png" id="9_gochest"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_4.png" id="10_machest"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_3.png" id="11_golight"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_2.png" id="12_malight"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_mark1.png" id="13_mamark"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_bg.png" id="14_costbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="15_btn1"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="16_btn2"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="17_obtn1"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="18_obtn2"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_up.png" id="19_arrow"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_frame.png" id="20_costframe"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="21_goldicon"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="22_rmbicon"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_hero_bg.png" id="23_herobg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_1.png" id="24_title1"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_3.png" id="25_title3"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_4.png" id="26_title4"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_4.png" id="27_ad4"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_6.png" id="28_ad6"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_13.png" id="29_ad13"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_discount.png" id="30_addisc"]
-
-[node name="TavernContent" type="Control"]
+[node name="TavernContent" type="Control" unique_id=1366431303]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-[node name="FrameworkBg" type="TextureRect" parent="."]
+[node name="FrameworkBg" type="TextureRect" parent="." unique_id=1745085472]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_right = 800.0
 offset_bottom = 480.0
-texture = ExtResource("1_bg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("1_co2ju")
+expand_mode = 1
 
-[node name="TitleBg" type="TextureRect" parent="."]
+[node name="TitleBg" type="TextureRect" parent="." unique_id=714406429]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 80.0
 offset_top = 100.0
 offset_right = 329.0
 offset_bottom = 178.0
-texture = ExtResource("2_titlebg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("2_nvrf0")
+expand_mode = 1
 
-[node name="CloseBtn" type="TextureButton" parent="."]
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=380668413]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 20.0
 offset_top = 15.0
 offset_right = 78.0
 offset_bottom = 74.0
-texture_normal = ExtResource("3_back")
-texture_pressed = ExtResource("4_backp")
+texture_normal = ExtResource("3_v0wp8")
+texture_pressed = ExtResource("4_jsfww")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="ResultLabel" type="Label" parent="."]
+[node name="ResultLabel" type="Label" parent="." unique_id=468126333]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 300.0
 offset_top = 340.0
 offset_right = 500.0
 offset_bottom = 364.0
-mouse_filter = 2
 text = "点击抽卡"
 
-[node name="StatusLabel" type="Label" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-offset_left = 300.0
-offset_top = 160.0
-offset_right = 580.0
-offset_bottom = 184.0
-mouse_filter = 2
-
-[node name="PreviewContainer" type="HBoxContainer" parent="."]
+[node name="PreviewContainer" type="HBoxContainer" parent="." unique_id=2078679047]
 unique_name_in_owner = true
 visible = false
-layout_mode = 3
+layout_mode = 0
 offset_left = 120.0
 offset_top = 380.0
 offset_right = 520.0
 offset_bottom = 440.0
 mouse_filter = 2
 
-[node name="PreviewLabel" type="Label" parent="."]
+[node name="PreviewLabel" type="Label" parent="." unique_id=465297126]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 0
 offset_left = 300.0
 offset_top = 380.0
 offset_right = 500.0
 offset_bottom = 404.0
-mouse_filter = 2
 
-[node name="BoardHost" type="Control" parent="."]
+[node name="BoardHost" type="Control" parent="." unique_id=1695831249]
 unique_name_in_owner = true
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
-
-[node name="BronzeBoard" type="Control" parent="BoardHost"]
+[node name="BronzeBoard" type="Control" parent="BoardHost" unique_id=1872821088]
 unique_name_in_owner = true
-layout_mode = 3
+anchors_preset = 0
 offset_left = 57.0
 offset_top = 115.0
 offset_right = 263.0
 offset_bottom = 435.0
 mouse_filter = 2
 
-[node name="BoardBg" type="TextureRect" parent="BoardHost/BronzeBoard"]
-layout_mode = 3
+[node name="BoardBg" type="TextureRect" parent="BoardHost/BronzeBoard" unique_id=413960924]
+layout_mode = 0
 offset_left = -7.83
 offset_top = -45.66
 offset_right = 213.83
 offset_bottom = 365.66
-texture = ExtResource("5_brbg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("5_xuf1f")
+expand_mode = 1
 
-[node name="TitleImage" type="TextureRect" parent="BoardHost/BronzeBoard"]
-layout_mode = 3
+[node name="TitleImage" type="TextureRect" parent="BoardHost/BronzeBoard" unique_id=1007077491]
+layout_mode = 0
 offset_left = -21.49
 offset_top = -14.03
 offset_right = 227.49
 offset_bottom = 64.03
-texture = ExtResource("2_titlebg")
-expand_mode = 1
 mouse_filter = 2
-
-[node name="TitleArt" type="TextureRect" parent="BoardHost/BronzeBoard"]
-layout_mode = 3
-offset_left = -18.76
-offset_top = -31.37
-offset_right = 224.76
-offset_bottom = 51.37
-texture = ExtResource("24_title1")
+texture = ExtResource("2_nvrf0")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="Clip" type="Control" parent="BoardHost/BronzeBoard"]
-layout_mode = 3
+[node name="Clip" type="Control" parent="BoardHost/BronzeBoard" unique_id=900495070]
+clip_contents = true
+anchors_preset = 0
 offset_right = 206.0
 offset_bottom = 320.0
-clip_contents = true
 mouse_filter = 2
 
-[node name="Scroll" type="Control" parent="BoardHost/BronzeBoard/Clip"]
-layout_mode = 3
+[node name="Scroll" type="Control" parent="BoardHost/BronzeBoard/Clip" unique_id=779713939]
+anchors_preset = 0
 mouse_filter = 2
 
-[node name="Box" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
-offset_left = 48.12
-offset_top = -6.2
-offset_right = 169.88
-offset_bottom = 106.2
-texture = ExtResource("8_brchest")
+[node name="Box" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1636012228]
+layout_mode = 0
+offset_left = 54.2
+offset_top = 36.0
+offset_right = 163.8
+offset_bottom = 137.2
+mouse_filter = 2
+texture = ExtResource("6_ucvsd")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="Ad" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
-offset_left = 11.83
-offset_top = 98.17
-offset_right = 206.17
-offset_bottom = 191.83
-texture = ExtResource("27_ad4")
-expand_mode = 1
-mouse_filter = 2
-
-[node name="CostBg" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="CostBg" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=718141278]
+layout_mode = 0
 offset_left = 4.42
 offset_top = 199.78
 offset_right = 213.58
 offset_bottom = 230.22
-texture = ExtResource("14_costbg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("7_wjoon")
+expand_mode = 1
 
-[node name="CheckBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="CheckBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=894421738]
+layout_mode = 0
 offset_left = 44.22
 offset_top = 235.42
 offset_right = 173.78
 offset_bottom = 284.58
-texture_normal = ExtResource("15_btn1")
-texture_pressed = ExtResource("16_btn2")
+texture_normal = ExtResource("8_rouew")
+texture_pressed = ExtResource("9_snvtp")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="CheckLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/CheckBtn"]
-layout_mode = 3
+[node name="CheckLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/CheckBtn" unique_id=16651279]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "查看"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "查看"
 
-[node name="ArrowBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="ArrowBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=508826791]
+layout_mode = 0
 offset_left = 93.0
 offset_top = 307.9
 offset_right = 125.0
 offset_bottom = 332.1
-texture_normal = ExtResource("19_arrow")
-texture_pressed = ExtResource("19_arrow")
+texture_normal = ExtResource("10_c88lk")
+texture_pressed = ExtResource("10_c88lk")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="OneCostFrame" type="NinePatchRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneCostFrame" type="NinePatchRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=6270447]
+layout_mode = 0
 offset_left = 59.0
 offset_top = 391.0
 offset_right = 159.0
 offset_bottom = 423.0
-texture = ExtResource("20_costframe")
+texture = ExtResource("11_xxomj")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
-mouse_filter = 2
 
-[node name="OneIcon" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneIcon" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1916439011]
+layout_mode = 0
 offset_left = 48.0
 offset_top = 392.56
 offset_right = 80.0
 offset_bottom = 421.44
-texture = ExtResource("21_goldicon")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("12_e3cr5")
+expand_mode = 1
 
-[node name="OneCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1373424684]
+layout_mode = 0
 offset_left = 104.0
 offset_top = 397.0
 offset_right = 144.0
 offset_bottom = 417.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 2
-mouse_filter = 2
 text = "0"
+horizontal_alignment = 2
 
-[node name="OneBuyBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneBuyBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=726462888]
+layout_mode = 0
 offset_left = 44.22
 offset_top = 425.42
 offset_right = 173.78
 offset_bottom = 474.58
-texture_normal = ExtResource("17_obtn1")
-texture_pressed = ExtResource("18_obtn2")
+texture_normal = ExtResource("13_78c8r")
+texture_pressed = ExtResource("14_bqemu")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="OneBuyLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/OneBuyBtn"]
-layout_mode = 3
+[node name="OneBuyLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/OneBuyBtn" unique_id=1545895374]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "购买1个"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "购买1个"
 
-[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=778535302]
+layout_mode = 0
 offset_left = 59.0
 offset_top = 516.0
 offset_right = 159.0
 offset_bottom = 548.0
-texture = ExtResource("20_costframe")
+texture = ExtResource("11_xxomj")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
-mouse_filter = 2
 
-[node name="TenIcon" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenIcon" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=677143658]
+layout_mode = 0
 offset_left = 48.0
 offset_top = 518.56
 offset_right = 80.0
 offset_bottom = 547.44
-texture = ExtResource("21_goldicon")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("12_e3cr5")
+expand_mode = 1
 
-[node name="TenCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1507580542]
+layout_mode = 0
 offset_left = 104.0
 offset_top = 522.0
 offset_right = 144.0
 offset_bottom = 542.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 2
-mouse_filter = 2
 text = "0"
+horizontal_alignment = 2
 
-[node name="TenPromptLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenPromptLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=378620827]
+layout_mode = 0
 offset_left = 5.0
 offset_top = 490.0
 offset_right = 211.0
 offset_bottom = 510.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
-mouse_filter = 2
-text = ""
 
-[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=245275877]
+layout_mode = 0
 offset_left = 44.22
 offset_top = 555.42
 offset_right = 173.78
 offset_bottom = 604.58
-texture_normal = ExtResource("15_btn1")
-texture_pressed = ExtResource("16_btn2")
+texture_normal = ExtResource("8_rouew")
+texture_pressed = ExtResource("9_snvtp")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="TenBuyLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/TenBuyBtn"]
-layout_mode = 3
+[node name="TenBuyLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll/TenBuyBtn" unique_id=1419871138]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "购买10个"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "购买10个"
 
-[node name="AdDiscount" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll/TenBuyBtn"]
-layout_mode = 3
+[node name="AdDiscount" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll/TenBuyBtn" unique_id=113594485]
+layout_mode = 0
 offset_left = 1.0
 offset_top = -2.79
 offset_right = 50.17
 offset_bottom = 47.16
-texture = ExtResource("30_addisc")
+mouse_filter = 2
+texture = ExtResource("15_kev8h")
 expand_mode = 1
+
+[node name="AdLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1376952347]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 148.0
+offset_right = 206.0
+offset_bottom = 188.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+
+[node name="CountLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 203.0
+offset_right = 198.0
+offset_bottom = 227.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+vertical_alignment = 1
 mouse_filter = 2
 
+[node name="TitleLabel" type="Label" parent="BoardHost/BronzeBoard" unique_id=1289199094]
+layout_mode = 0
+offset_left = -18.76
+offset_top = -31.37
+offset_right = 224.76
+offset_bottom = 51.37
+theme_type_variation = &"TavernBoardTitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="GoldBoard" type="Control" parent="BoardHost"]
+[node name="GoldBoard" type="Control" parent="BoardHost" unique_id=195621323]
 unique_name_in_owner = true
-layout_mode = 3
+anchors_preset = 0
 offset_left = 297.0
 offset_top = 115.0
 offset_right = 503.0
 offset_bottom = 435.0
 mouse_filter = 2
 
-[node name="BoardBg" type="TextureRect" parent="BoardHost/GoldBoard"]
-layout_mode = 3
+[node name="BoardBg" type="TextureRect" parent="BoardHost/GoldBoard" unique_id=1257592900]
+layout_mode = 0
 offset_left = -7.83
 offset_top = -45.66
 offset_right = 213.83
 offset_bottom = 365.66
-texture = ExtResource("6_gobg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("16_x1hhd")
+expand_mode = 1
 
-[node name="TitleImage" type="TextureRect" parent="BoardHost/GoldBoard"]
-layout_mode = 3
+[node name="TitleImage" type="TextureRect" parent="BoardHost/GoldBoard" unique_id=1760138209]
+layout_mode = 0
 offset_left = -21.49
 offset_top = -14.03
 offset_right = 227.49
 offset_bottom = 64.03
-texture = ExtResource("2_titlebg")
-expand_mode = 1
 mouse_filter = 2
-
-[node name="TitleArt" type="TextureRect" parent="BoardHost/GoldBoard"]
-layout_mode = 3
-offset_left = -18.76
-offset_top = -31.37
-offset_right = 224.76
-offset_bottom = 51.37
-texture = ExtResource("25_title3")
+texture = ExtResource("2_nvrf0")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="Clip" type="Control" parent="BoardHost/GoldBoard"]
-layout_mode = 3
+[node name="Clip" type="Control" parent="BoardHost/GoldBoard" unique_id=287758110]
+clip_contents = true
+anchors_preset = 0
 offset_right = 206.0
 offset_bottom = 320.0
-clip_contents = true
 mouse_filter = 2
 
-[node name="Scroll" type="Control" parent="BoardHost/GoldBoard/Clip"]
-layout_mode = 3
+[node name="Scroll" type="Control" parent="BoardHost/GoldBoard/Clip" unique_id=349070888]
+anchors_preset = 0
 mouse_filter = 2
 
-[node name="Light" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="Light" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1946626040]
+layout_mode = 0
 offset_left = -40.47
 offset_top = -99.86
 offset_right = 258.47
 offset_bottom = 199.86
-texture = ExtResource("11_golight")
-expand_mode = 1
 mouse_filter = 2
-
-[node name="Box" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
-offset_left = 48.12
-offset_top = -6.2
-offset_right = 169.88
-offset_bottom = 106.2
-texture = ExtResource("9_gochest")
+texture = ExtResource("17_dqsuc")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="Ad" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
-offset_left = 11.83
-offset_top = 98.17
-offset_right = 206.17
-offset_bottom = 191.83
-texture = ExtResource("28_ad6")
+[node name="Box" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=997184363]
+layout_mode = 0
+offset_left = 54.2
+offset_top = 36.0
+offset_right = 163.8
+offset_bottom = 137.2
+mouse_filter = 2
+texture = ExtResource("18_riyse")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="CostBg" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="CostBg" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=789391611]
+layout_mode = 0
 offset_left = 4.42
 offset_top = 199.78
 offset_right = 213.58
 offset_bottom = 230.22
-texture = ExtResource("14_costbg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("7_wjoon")
+expand_mode = 1
 
-[node name="CheckBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="CheckBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=251012909]
+layout_mode = 0
 offset_left = 44.22
 offset_top = 235.42
 offset_right = 173.78
 offset_bottom = 284.58
-texture_normal = ExtResource("15_btn1")
-texture_pressed = ExtResource("16_btn2")
+texture_normal = ExtResource("8_rouew")
+texture_pressed = ExtResource("9_snvtp")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="CheckLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/CheckBtn"]
-layout_mode = 3
+[node name="CheckLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/CheckBtn" unique_id=369679897]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "查看"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "查看"
 
-[node name="ArrowBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="ArrowBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=359233631]
+layout_mode = 0
 offset_left = 93.0
 offset_top = 307.9
 offset_right = 125.0
 offset_bottom = 332.1
-texture_normal = ExtResource("19_arrow")
-texture_pressed = ExtResource("19_arrow")
+texture_normal = ExtResource("10_c88lk")
+texture_pressed = ExtResource("10_c88lk")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="OneCostFrame" type="NinePatchRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneCostFrame" type="NinePatchRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=451278467]
+layout_mode = 0
 offset_left = 59.0
 offset_top = 391.0
 offset_right = 159.0
 offset_bottom = 423.0
-texture = ExtResource("20_costframe")
+texture = ExtResource("11_xxomj")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
-mouse_filter = 2
 
-[node name="OneIcon" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneIcon" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1711239389]
+layout_mode = 0
 offset_left = 47.61
 offset_top = 391.55
 offset_right = 80.39
 offset_bottom = 422.45
-texture = ExtResource("22_rmbicon")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("19_ywlmm")
+expand_mode = 1
 
-[node name="OneCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=287382776]
+layout_mode = 0
 offset_left = 104.0
 offset_top = 397.0
 offset_right = 144.0
 offset_bottom = 417.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 2
-mouse_filter = 2
 text = "0"
+horizontal_alignment = 2
 
-[node name="OneBuyBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="OneBuyBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1355326416]
+layout_mode = 0
 offset_left = 44.22
 offset_top = 425.42
 offset_right = 173.78
 offset_bottom = 474.58
-texture_normal = ExtResource("17_obtn1")
-texture_pressed = ExtResource("18_obtn2")
+texture_normal = ExtResource("13_78c8r")
+texture_pressed = ExtResource("14_bqemu")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="OneBuyLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/OneBuyBtn"]
-layout_mode = 3
+[node name="OneBuyLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/OneBuyBtn" unique_id=2135173351]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "购买1个"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "购买1个"
 
-[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1814034440]
+layout_mode = 0
 offset_left = 59.0
 offset_top = 516.0
 offset_right = 159.0
 offset_bottom = 548.0
-texture = ExtResource("20_costframe")
+texture = ExtResource("11_xxomj")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
-mouse_filter = 2
 
-[node name="TenIcon" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenIcon" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=736278450]
+layout_mode = 0
 offset_left = 47.61
 offset_top = 517.55
 offset_right = 80.39
 offset_bottom = 548.45
-texture = ExtResource("22_rmbicon")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("19_ywlmm")
+expand_mode = 1
 
-[node name="TenCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=358934272]
+layout_mode = 0
 offset_left = 104.0
 offset_top = 522.0
 offset_right = 144.0
 offset_bottom = 542.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 2
-mouse_filter = 2
 text = "0"
+horizontal_alignment = 2
 
-[node name="TenPromptLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenPromptLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1131379455]
+layout_mode = 0
 offset_left = 5.0
 offset_top = 490.0
 offset_right = 211.0
 offset_bottom = 510.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
-mouse_filter = 2
-text = ""
 
-[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1933800918]
+layout_mode = 0
 offset_left = 44.22
 offset_top = 555.42
 offset_right = 173.78
 offset_bottom = 604.58
-texture_normal = ExtResource("15_btn1")
-texture_pressed = ExtResource("16_btn2")
+texture_normal = ExtResource("8_rouew")
+texture_pressed = ExtResource("9_snvtp")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="TenBuyLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/TenBuyBtn"]
-layout_mode = 3
+[node name="TenBuyLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll/TenBuyBtn" unique_id=443442929]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "购买10个"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "购买10个"
 
-[node name="AdDiscount" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll/TenBuyBtn"]
-layout_mode = 3
+[node name="AdDiscount" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll/TenBuyBtn" unique_id=415433810]
+layout_mode = 0
 offset_left = 1.0
 offset_top = -2.79
 offset_right = 50.17
 offset_bottom = 47.16
-texture = ExtResource("30_addisc")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("15_kev8h")
+expand_mode = 1
+
+[node name="AdLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1461616965]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 148.0
+offset_right = 206.0
+offset_bottom = 188.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 
-[node name="MagicBoard" type="Control" parent="BoardHost"]
+[node name="CountLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 203.0
+offset_right = 198.0
+offset_bottom = 227.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+[node name="TitleLabel" type="Label" parent="BoardHost/GoldBoard" unique_id=312689771]
+layout_mode = 0
+offset_left = -18.76
+offset_top = -31.37
+offset_right = 224.76
+offset_bottom = 51.37
+theme_type_variation = &"TavernBoardTitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MagicBoard" type="Control" parent="BoardHost" unique_id=1562685181]
 unique_name_in_owner = true
-layout_mode = 3
+anchors_preset = 0
 offset_left = 537.0
 offset_top = 115.0
 offset_right = 743.0
 offset_bottom = 435.0
 mouse_filter = 2
 
-[node name="BoardBg" type="TextureRect" parent="BoardHost/MagicBoard"]
-layout_mode = 3
+[node name="BoardBg" type="TextureRect" parent="BoardHost/MagicBoard" unique_id=412185461]
+layout_mode = 0
 offset_left = -7.83
 offset_top = -45.66
 offset_right = 213.83
 offset_bottom = 365.66
-texture = ExtResource("7_mabg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("20_icg6t")
+expand_mode = 1
 
-[node name="TitleImage" type="TextureRect" parent="BoardHost/MagicBoard"]
-layout_mode = 3
+[node name="TitleImage" type="TextureRect" parent="BoardHost/MagicBoard" unique_id=221989622]
+layout_mode = 0
 offset_left = -21.49
 offset_top = -14.03
 offset_right = 227.49
 offset_bottom = 64.03
-texture = ExtResource("2_titlebg")
-expand_mode = 1
 mouse_filter = 2
-
-[node name="TitleArt" type="TextureRect" parent="BoardHost/MagicBoard"]
-layout_mode = 3
-offset_left = -18.76
-offset_top = -31.37
-offset_right = 224.76
-offset_bottom = 51.37
-texture = ExtResource("26_title4")
+texture = ExtResource("2_nvrf0")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="Clip" type="Control" parent="BoardHost/MagicBoard"]
-layout_mode = 3
+[node name="Clip" type="Control" parent="BoardHost/MagicBoard" unique_id=370540872]
+clip_contents = true
+anchors_preset = 0
 offset_right = 206.0
 offset_bottom = 320.0
-clip_contents = true
 mouse_filter = 2
 
-[node name="Scroll" type="Control" parent="BoardHost/MagicBoard/Clip"]
-layout_mode = 3
+[node name="Scroll" type="Control" parent="BoardHost/MagicBoard/Clip" unique_id=1206206726]
+anchors_preset = 0
 mouse_filter = 2
 
-[node name="Light" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="Light" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1400639504]
+layout_mode = 0
 offset_left = -39.47
 offset_top = -79.86
 offset_right = 259.47
 offset_bottom = 219.86
-texture = ExtResource("12_malight")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("21_erv2h")
+expand_mode = 1
 
-[node name="BoxBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="BoxBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1432372900]
+layout_mode = 0
 offset_left = 7.36
-offset_top = -32.64
+offset_top = -16.64
 offset_right = 212.64
-offset_bottom = 172.64
-texture = ExtResource("13_mamark")
-expand_mode = 1
+offset_bottom = 188.64
 mouse_filter = 2
-
-[node name="Box" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
-offset_left = 70.58
-offset_top = -10.34
-offset_right = 149.42
-offset_bottom = 90.34
-texture = ExtResource("10_machest")
+texture = ExtResource("22_v2fam")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="Ad" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
-offset_left = 12.83
-offset_top = 43.17
-offset_right = 207.17
-offset_bottom = 136.83
-texture = ExtResource("29_ad13")
+[node name="Box" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1407587223]
+layout_mode = 0
+offset_left = 54.2
+offset_top = 36.0
+offset_right = 163.8
+offset_bottom = 137.2
+mouse_filter = 2
+texture = ExtResource("23_olycs")
 expand_mode = 1
-mouse_filter = 2
 
-[node name="CostBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="CostBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=986323506]
+layout_mode = 0
 offset_left = 5.42
 offset_top = 199.78
 offset_right = 214.58
 offset_bottom = 230.22
-texture = ExtResource("14_costbg")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("7_wjoon")
+expand_mode = 1
 
-[node name="CheckBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="CheckBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1299396009]
+layout_mode = 0
 offset_left = 45.22
 offset_top = 235.42
 offset_right = 174.78
 offset_bottom = 284.58
-texture_normal = ExtResource("15_btn1")
-texture_pressed = ExtResource("16_btn2")
+texture_normal = ExtResource("8_rouew")
+texture_pressed = ExtResource("9_snvtp")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="CheckLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll/CheckBtn"]
-layout_mode = 3
+[node name="CheckLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll/CheckBtn" unique_id=781803403]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "查看"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
-text = "查看"
 
-[node name="ArrowBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="ArrowBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=500802920]
+layout_mode = 0
 offset_left = 94.0
 offset_top = 307.9
 offset_right = 126.0
 offset_bottom = 332.1
-texture_normal = ExtResource("19_arrow")
-texture_pressed = ExtResource("19_arrow")
+texture_normal = ExtResource("10_c88lk")
+texture_pressed = ExtResource("10_c88lk")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="DropBgLeft" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="DropBgLeft" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=639702476]
+layout_mode = 0
 offset_left = 17.0
-offset_top = 120.0
+offset_top = 105.0
 offset_right = 147.0
-offset_bottom = 170.0
-texture = ExtResource("23_herobg")
+offset_bottom = 155.0
+texture = ExtResource("24_cmjlx")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
 patch_margin_bottom = 8
-mouse_filter = 2
 
-[node name="DropBgRight" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="DropBgRight" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1759455578]
+layout_mode = 0
 offset_left = 150.0
-offset_top = 120.0
+offset_top = 105.0
 offset_right = 200.0
-offset_bottom = 170.0
-texture = ExtResource("23_herobg")
+offset_bottom = 155.0
+texture = ExtResource("24_cmjlx")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
 patch_margin_bottom = 8
-mouse_filter = 2
 
-[node name="DropBgDay" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="DropBgDay" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=705729177]
+layout_mode = 0
 offset_left = 32.0
 offset_top = 412.5
 offset_right = 182.0
 offset_bottom = 487.5
-texture = ExtResource("23_herobg")
+texture = ExtResource("24_cmjlx")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
 patch_margin_bottom = 8
-mouse_filter = 2
 
-[node name="DayTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="DayTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=2001876591]
+layout_mode = 0
 offset_left = 4.0
 offset_top = 416.0
 offset_right = 210.0
 offset_bottom = 436.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 1
-mouse_filter = 2
 text = "今日热点"
+horizontal_alignment = 1
 
-[node name="DropBgMonth" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="DropBgMonth" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1226269242]
+layout_mode = 0
 offset_left = 32.0
 offset_top = 334.5
 offset_right = 182.0
 offset_bottom = 409.5
-texture = ExtResource("23_herobg")
+texture = ExtResource("24_cmjlx")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
 patch_margin_bottom = 8
-mouse_filter = 2
 
-[node name="MonthTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="MonthTitle" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=624944874]
+layout_mode = 0
 offset_left = 4.0
 offset_top = 340.0
 offset_right = 210.0
 offset_bottom = 360.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 1
-mouse_filter = 2
 text = "本周热点"
+horizontal_alignment = 1
 
-[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenCostFrame" type="NinePatchRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=139913878]
+layout_mode = 0
 offset_left = 60.0
 offset_top = 516.0
 offset_right = 160.0
 offset_bottom = 548.0
-texture = ExtResource("20_costframe")
+texture = ExtResource("11_xxomj")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
-mouse_filter = 2
 
-[node name="TenIcon" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenIcon" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1093044224]
+layout_mode = 0
 offset_left = 47.61
 offset_top = 517.55
 offset_right = 80.39
 offset_bottom = 548.45
-texture = ExtResource("22_rmbicon")
-expand_mode = 1
 mouse_filter = 2
+texture = ExtResource("19_ywlmm")
+expand_mode = 1
 
-[node name="TenCostLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenCostLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=977201076]
+layout_mode = 0
 offset_left = 104.0
 offset_top = 522.0
 offset_right = 144.0
 offset_bottom = 542.0
 theme_type_variation = &"BodyLabelThin"
-horizontal_alignment = 2
-mouse_filter = 2
 text = "0"
+horizontal_alignment = 2
 
-[node name="TenPromptLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenPromptLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1306416544]
+layout_mode = 0
 offset_left = 5.0
 offset_top = 490.0
 offset_right = 211.0
 offset_bottom = 510.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
-mouse_filter = 2
-text = ""
 
-[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll"]
-layout_mode = 3
+[node name="TenBuyBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=253584527]
+layout_mode = 0
 offset_left = 45.22
 offset_top = 555.42
 offset_right = 174.78
 offset_bottom = 604.58
-texture_normal = ExtResource("15_btn1")
-texture_pressed = ExtResource("16_btn2")
+texture_normal = ExtResource("8_rouew")
+texture_pressed = ExtResource("9_snvtp")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="TenBuyLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll/TenBuyBtn"]
-layout_mode = 3
+[node name="TenBuyLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll/TenBuyBtn" unique_id=1982118688]
+layout_mode = 0
 offset_right = 129.56
 offset_bottom = 49.17
 theme_type_variation = &"BodyLabel"
+text = "购买1个"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AdLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1206072000]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 148.0
+offset_right = 206.0
+offset_bottom = 188.0
+theme_type_variation = &"BodyLabelThin"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+
+[node name="CountLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
+layout_mode = 0
+offset_left = 13.0
+offset_top = 203.0
+offset_right = 199.0
+offset_bottom = 227.0
+theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
-text = "购买1个"
+[node name="TitleLabel" type="Label" parent="BoardHost/MagicBoard" unique_id=1636461306]
+layout_mode = 0
+offset_left = -18.76
+offset_top = -31.37
+offset_right = 224.76
+offset_bottom = 51.37
+theme_type_variation = &"TavernBoardTitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1

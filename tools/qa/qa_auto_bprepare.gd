@@ -5,7 +5,7 @@ extends Node
 ## 等 fill → 截图 + dump ListScroll 滚动范围/tab rect/MemberBg+头像 rect → 竖滚一屏再取证。
 
 const GmManager = preload("res://scripts/systems/gm_manager.gd")
-const BattlePreparePanelScript = preload("res://scripts/view/battle/battle_prepare_panel.gd")
+const BattlePreparePanelScript = preload("res://scripts/ui/battle_prepare_panel.gd")
 
 
 func _ready() -> void:

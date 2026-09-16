@@ -35,8 +35,8 @@ func test_panel_assembles() -> void:
 	# board 卡片挂 %BoardHost 下（3 个 board container）。递归扫全子树 + 锚定 _boards 字典。
 	assert_eq(panel.container.get_child_count(), 1, "container 直接子 = content（.tscn instantiate）")
 	assert_eq(panel._boards.size(), 3, "3 board 装配（bronze/gold/magic）")
+	assert_eq(panel._count_labels.size(), 3, "3 卡 CountLabel 装配（CostBg 条内倒计时锚点）")
 	assert_not_null(panel._result_label, "ResultLabel 装配")
-	assert_not_null(panel._status_label, "StatusLabel 装配")
 	assert_not_null(panel._preview_container, "PreviewContainer 装配")
 	assert_not_null(panel._preview_label, "PreviewLabel 装配")
 	assert_not_null(panel._board_host, "BoardHost 装配")
@@ -45,17 +45,25 @@ func test_panel_assembles() -> void:
 	root.queue_free()
 
 
-# 选 Bronze → status label 显示剩余免费次数（源 getCountdownText bronze）。
+# Bronze → CountLabel（CostBg 单色条内）显示剩余免费次数（源 countLabel y=135 底条单条文案；
+# 2026-09-15 三轮并入 AdLabel 第二行，2026-09-16 六轮迁回 CostBg 条内源位）。
 func test_status_label_bronze() -> void:
 	var root := Node.new()
 	add_child(root)
 	var panel := _make_panel(root)
-	assert_true(String(panel._status_label.text).find("剩余免费次数") >= 0, "Bronze status 显示剩余免费次数")
+	var bronze_count: Label = panel._count_labels["Bronze"]
+	assert_true(String(bronze_count.text).find("剩余免费次数") >= 0,
+		"Bronze CountLabel 显示剩余免费次数")
+	var gold_count: Label = panel._count_labels["Gold"]
+	assert_eq(String(gold_count.text), "", "Gold 免费态 CountLabel 空（照源空文案）")
+	var bronze_ad: Label = panel._boards["Bronze"]["scroll_board"].get_node("AdLabel") as Label
+	assert_false(String(bronze_ad.text).contains("\n"), "AdLabel 恒单行纯描述（六轮倒计时迁出）")
 	panel.remove_window()
 	root.queue_free()
 
 
-# 默认选 Bronze（金币池）→ Bronze board 单抽 cost 10000 金币（源 Cost Type=Gold）
+# 默认选 Bronze（金币池）→ 新档免费态单抽费用条显示"免费"（源 refreshCost isFree 替代价格；
+# 2026-09-15 三轮补齐，此前费用条恒显价格数字）
 func test_default_bronze() -> void:
 	var root := Node.new()
 	add_child(root)
@@ -63,32 +71,39 @@ func test_default_bronze() -> void:
 	assert_eq(panel._current_pool, "Bronze", "默认 Bronze 卡池")
 	var bronze: Dictionary = panel._boards["Bronze"]
 	assert_true(bronze["once_btn"] != null, "Bronze 有单抽按钮")
-	assert_eq((bronze["once_cost_lbl"] as Label).text, "10000", "Bronze 单抽 10000 金币")
+	assert_eq((bronze["once_cost_lbl"] as Label).text, "免费", "Bronze 新档免费态单抽费用条显示 免费")
+	assert_eq(str(int(bronze["once_cost"])), "10000", "Bronze 单抽原价 10000 金币（非免费态恢复显示）")
 	panel.remove_window()
 	root.queue_free()
 
 
-# MagicSoul 源无单抽 → once_btn 为 null + 十连 400 钻
+# MagicSoul 源无单抽 → once_btn 为 null + 新档免费态十连费用条"免费"（源 magic isFree ten_cost）
 func test_magicsoul_no_once() -> void:
 	var root := Node.new()
 	add_child(root)
 	var panel := _make_panel(root)
 	var magic: Dictionary = panel._boards["MagicSoul"]
 	assert_true(magic["once_btn"] == null, "MagicSoul 无单抽按钮（源无单抽条目）")
-	assert_eq((magic["ten_cost_lbl"] as Label).text, "400", "MagicSoul 十连 400 钻")
+	assert_eq((magic["ten_cost_lbl"] as Label).text, "免费", "MagicSoul 新档免费态十连费用条显示 免费")
+	assert_eq(str(int(magic["ten_cost"])), "400", "MagicSoul 十连原价 400 钻")
 	panel.remove_window()
 	root.queue_free()
 
 
-# Gold 单抽 288 钻 / 十连 2590 钻（Cost Type=Diamond）
+# Gold 单抽 288 钻 / 十连 2590 钻（Cost Type=Diamond）——耗尽免费额度进 CD 后价格恢复显示
 func test_gold_cost() -> void:
 	var root := Node.new()
 	add_child(root)
-	var panel := _make_panel(root)
+	var pd := PlayerData.new(cm)
+	TavernData.use_free_tavern(pd, "Gold", int(Time.get_unix_time_from_system()))   # 耗尽免费进 CD
+	var rng := BattleRng.new(7)
+	var panel := TavernPanel.new("tavern", {})
+	panel.setup_panel(pd, rng)
+	panel.show_window(root)
 	var gold: Dictionary = panel._boards["Gold"]
 	assert_true(gold["once_btn"] != null, "Gold 有单抽按钮")
-	assert_eq((gold["once_cost_lbl"] as Label).text, "288", "Gold 单抽 288 钻")
-	assert_eq((gold["ten_cost_lbl"] as Label).text, "2590", "Gold 十连 2590 钻")
+	assert_eq((gold["once_cost_lbl"] as Label).text, "288", "Gold CD 态单抽费用条恢复 288 钻")
+	assert_eq((gold["ten_cost_lbl"] as Label).text, "2590", "Gold 十连恒付费 2590 钻（源仅 magic 十连走免费）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -204,6 +219,8 @@ func test_board_texts_lstr_injection() -> void:
 	assert_eq(String(texts["day_title"]), "今日热点", "day_title = TAVERN.TODAYS_HIGHLIGHT")
 	assert_eq(String(texts["month_title"]), "本周热点", "month_title = TAVERN.HOT_IN_THIS_WEEK")
 	assert_eq(String(texts["ten_prompt_text"]), "十连抽必得英雄", "ten_prompt_text = TAVERNRES.HERO_IS_...")
+	assert_eq(String(texts["title"]), "黄金宝箱", "title = 标题 fallback 中文（语言包无宝箱标题 key）")
+	assert_eq(String(texts["ad_text"]), "十连抽必得英雄", "ad_text = TAVERNRES.HERO_IS_... 译文")
 	panel.queue_free()
 
 
@@ -232,7 +249,10 @@ func test_arrow_float_anim_running() -> void:
 	var bronze: Dictionary = panel._boards["Bronze"]
 	var arrow: TextureButton = bronze.get("arrow_btn", null)
 	assert_not_null(arrow, "Bronze board 有 arrow 节点")
-	# arrow 浮动动画：headless Tween 推进不可靠，仅验证 arrow 节点存在（动画启动由 panel._create_boards 调 play_arrow_float_anim 保证）。
+	# 2026-09-16 卡死根修：bind 时刻（setup_panel，面板未 show_window 进树）动画函数必须跑到底
+	# 并设置 meta——旧 is_inside_tree guard 此刻必失败静默 return，箭头浮动自迁移以来从未启动。
+	assert_true(arrow.has_meta("arrow_float_active"),
+		"setup_panel 后 arrow 已设 arrow_float_active（动画函数跑到底，不依赖进树）")
 	panel.remove_window()
 	root.queue_free()
 
@@ -399,65 +419,94 @@ func test_cost_label_right_edge() -> void:
 	content.queue_free()
 
 
-# ── 缺图接线守卫（批2 Task 10，2026-08-16：英文资源区 7 图归位）──
+# ── 标题/描述汉化（2026-09-15：源英文美术贴图退役改 Label）──
+# 源 tavernres.board_title/common_ad_res 是英文美术贴图（源仓库无中文版资源——联网热更
+# 未入库，连 "Bule" 拼写错误都烧在图里）；TitleArt/Ad 贴图节点退役，改 TitleLabel/AdLabel
+# 走中文文案（标题 fallback 常量，描述走 TAVERNRES.* 语言包 key）。布局中心点沿用原贴图孔位。
 
-# board_title 图归位：源 createBaseBoard:594 board_title ccp(160,355) → Godot board 局部
-# 中心 (103,10)（公式 center=(cx-57,365-cy)，TitleImage/board_bg 现值双点验证）；
-# 显示尺寸 312×106÷CS(1.28125)=243.51×82.73（TextureConfig 无条目）；降级 TitleLabel 随图消亡。
-func test_board_title_art() -> void:
-	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
-	var content: Control = scene.instantiate() as Control
-	add_child(content)
-	var title_res: Dictionary = {
-		"BronzeBoard": "res://assets/ui/alpha/HVGA/tavern_title_1.png",
-		"GoldBoard": "res://assets/ui/alpha/HVGA/tavern_title_3.png",
-		"MagicBoard": "res://assets/ui/alpha/HVGA/tavern_title_4.png",
+# 三卡标题 Label：panel fill 后为中文（青铜宝箱/黄金宝箱/魔幻魂匣），中心照源孔位
+# （board_title ccp(160,355) → board 局部中心 (103,10)），英文贴图 TitleArt 已退役。
+func test_board_title_label() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root)
+	var titles: Dictionary = {"Bronze": "青铜宝箱", "Gold": "黄金宝箱", "MagicSoul": "魔幻魂匣"}
+	for board_key: String in titles.keys():
+		var board: Dictionary = panel._boards[board_key]
+		var container: Control = board["container"]
+		var label: Label = container.get_node_or_null("TitleLabel") as Label
+		assert_not_null(label, "%s TitleLabel 存在（英文贴图退役改 Label）" % board_key)
+		assert_eq(String(label.text), String(titles[board_key]), "%s 标题中文" % board_key)
+		assert_almost_eq((label.offset_left + label.offset_right) * 0.5, 103.0, 0.01,
+			"%s TitleLabel 中心 x=103（源 board_title ccp x=160-57）" % board_key)
+		assert_almost_eq((label.offset_top + label.offset_bottom) * 0.5, 10.0, 0.01,
+			"%s TitleLabel 中心 y=10（源 ccp y=355→365-355）" % board_key)
+		assert_null(container.get_node_or_null("TitleArt"),
+			"%s 英文标题贴图 TitleArt 已退役" % board_key)
+		# 宝箱图标与标题分离（2026-09-15 用户验收反馈"图标盖住标题"）：
+		# 源贴图宝箱顶 y=-6.2 与标题美术字 y[-5,29] 本就重叠（源靠黑底融入背景+浮雕字叠图
+		# 掩盖；宝箱贴图 RGB 全幅顶缘即实体 PIL 实测），中文白字描边需分离 → Box 下移 33px
+		# 受控偏离源 ccp(109,270) 直译位；标题文字底缘 y≈22（24 号字居中 y=10）。
+		var box: TextureRect = (board["scroll_board"] as Control).get_node_or_null("Box") as TextureRect
+		assert_not_null(box, "%s 宝箱 Box 存在" % board_key)
+		# 三轮（2026-09-15）：图标 ×0.9 再下移——bronze/gold 顶 36、magic 顶 32，
+		# 视觉与标题字底（y≈25）间隔 ≥10px（二轮 33px 平移后实测仍 3.5-4px 太近）
+		assert_true(box.offset_top >= 30.0,
+			"%s 宝箱顶缘 %.2f 不高于 30（图标与标题视觉分离）" % [board_key, box.offset_top])
+		# 六轮（2026-09-16）：三卡字段统一——magic Box 对齐 bronze/gold（36-137.2，×0.9 同尺寸）
+		assert_almost_eq(box.offset_bottom - box.offset_top, 101.2, 0.5,
+			"%s 图标高 = 源高 ×0.9（三卡统一 101.2）" % board_key)
+		# magic 魔石圆盘（BoxBg）同步下移 16：紫图形顶与标题字底分离（复验实锤圆盘顶叠入红幅）
+		if board_key == "MagicSoul":
+			var box_bg: TextureRect = (board["scroll_board"] as Control).get_node("BoxBg") as TextureRect
+			assert_true(box_bg.offset_top >= -17.0,
+				"magic 魔石圆盘顶缘 %.2f ≥ -17（下移 16 与标题分离）" % box_bg.offset_top)
+	panel.remove_window()
+	root.queue_free()
+
+
+# 三卡描述 Label：panel fill 后=保底文案单行（走 TAVERNRES.* 语言包；六轮倒计时迁出至 CountLabel）；
+# 三卡中心统一 (109,168)（六轮 2026-09-16 用户验收"三卡字段位置高度统一"——magic 从 200 对齐 168，
+# DropBg 头像组上移 105-155 避让）；CountLabel 三卡统一落 CostBg 单色条内（中心 y=215，源 y=135 底条）。
+func test_board_ad_label() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root)
+	var ads: Dictionary = {
+		"Bronze": "十连抽必得蓝色物品",
+		"Gold": "十连抽必得英雄",
+		"MagicSoul": "可获大量灵魂石",
 	}
-	for board_name: String in title_res.keys():
-		var board: Control = content.get_node("%BoardHost/" + board_name) as Control
-		var art: TextureRect = board.get_node("TitleArt") as TextureRect
-		assert_not_null(art, "%s TitleArt 静态存在（图版标题归位）" % board_name)
-		assert_eq(art.texture.resource_path, title_res[board_name],
-			"%s TitleArt 纹理照源 tavernres.board_title" % board_name)
-		assert_almost_eq((art.offset_left + art.offset_right) * 0.5, 103.0, 0.01,
-			"%s TitleArt 中心 x=103（源 ccp x=160-57）" % board_name)
-		assert_almost_eq((art.offset_top + art.offset_bottom) * 0.5, 10.0, 0.01,
-			"%s TitleArt 中心 y=10（源 ccp y=355→365-355）" % board_name)
-		assert_almost_eq(art.offset_right - art.offset_left, 243.51, 0.02,
-			"%s TitleArt 宽=312÷CS" % board_name)
-		assert_almost_eq(art.offset_bottom - art.offset_top, 82.73, 0.02,
-			"%s TitleArt 高=106÷CS" % board_name)
-		assert_null(board.get_node_or_null("TitleLabel"),
-			"%s 降级 TitleLabel 已随图消亡（迁移发明清理）" % board_name)
-	content.queue_free()
-
-
-# 广告图归位：源 createCommonLayer:691 ad ccp(109,175) / createMagicLayer:1001 ad ccp(110,230)
-# → scroll 局部中心 (109,145)/(110,90)（公式 center=(cx,320-cy)）；常驻 common_ad 系
-# （首抽 first_ad bronze=ad_1/gold=ad_3 未拷，简化记录；magic 首抽/常驻同图 ad_13 无损）。
-func test_board_ad_images() -> void:
-	var scene: PackedScene = load(CONTENT_SCENE_PATH) as PackedScene
-	var content: Control = scene.instantiate() as Control
-	add_child(content)
-	var cases: Array = [
-		["BronzeBoard", "res://assets/ui/alpha/HVGA/tavern_ad_4.png", 109.0, 145.0],
-		["GoldBoard", "res://assets/ui/alpha/HVGA/tavern_ad_6.png", 109.0, 145.0],
-		["MagicBoard", "res://assets/ui/alpha/HVGA/tavern_ad_13.png", 110.0, 90.0],
-	]
-	for c: Array in cases:
-		var ad: TextureRect = content.get_node(
-			"BoardHost/%s/Clip/Scroll/Ad" % c[0]) as TextureRect
-		assert_not_null(ad, "%s Ad 静态存在（广告图归位）" % c[0])
-		assert_eq(ad.texture.resource_path, c[1], "%s Ad 纹理照源 common_ad_res" % c[0])
-		assert_almost_eq((ad.offset_left + ad.offset_right) * 0.5, c[2], 0.01,
-			"%s Ad 中心 x=%.0f（源 ccp x）" % [c[0], c[2]])
-		assert_almost_eq((ad.offset_top + ad.offset_bottom) * 0.5, c[3], 0.01,
-			"%s Ad 中心 y=%.0f（源 320-cy）" % [c[0], c[3]])
-		assert_almost_eq(ad.offset_right - ad.offset_left, 194.34, 0.02,
-			"%s Ad 宽=249÷CS" % c[0])
-		assert_almost_eq(ad.offset_bottom - ad.offset_top, 93.66, 0.02,
-			"%s Ad 高=120÷CS" % c[0])
-	content.queue_free()
+	for board_key: String in ads.keys():
+		var board: Dictionary = panel._boards[board_key]
+		var scroll: Control = board["scroll_board"]
+		var label: Label = scroll.get_node_or_null("AdLabel") as Label
+		assert_not_null(label, "%s AdLabel 存在（英文贴图退役改 Label）" % board_key)
+		assert_eq(String(label.text), String(ads[board_key]),
+			"%s 描述单行保底文案（倒计时在 CountLabel）" % board_key)
+		assert_almost_eq((label.offset_left + label.offset_right) * 0.5, 109.0, 0.01,
+			"%s AdLabel 中心 x（卡池居中）" % board_key)
+		assert_almost_eq((label.offset_top + label.offset_bottom) * 0.5, 168.0, 0.01,
+			"%s AdLabel 中心 y=168（三卡统一）" % board_key)
+		assert_null(scroll.get_node_or_null("Ad"), "%s 英文描述贴图 Ad 已退役" % board_key)
+		# CountLabel 落 CostBg 单色条内（六轮：免费次数/倒计时源位回归）
+		var count_lbl: Label = scroll.get_node_or_null("CountLabel") as Label
+		assert_not_null(count_lbl, "%s CountLabel 存在（CostBg 条内）" % board_key)
+		assert_almost_eq((count_lbl.offset_top + count_lbl.offset_bottom) * 0.5, 215.0, 0.5,
+			"%s CountLabel 中心 y=215（CostBg 条 199.78-230.22 内）" % board_key)
+		var cost_bg: TextureRect = scroll.get_node("CostBg") as TextureRect
+		assert_true(count_lbl.offset_top >= cost_bg.offset_top and count_lbl.offset_bottom <= cost_bg.offset_bottom,
+			"%s CountLabel 完整落在 CostBg 条内" % board_key)
+		var box: TextureRect = scroll.get_node("Box") as TextureRect
+		assert_true(label.offset_top >= box.offset_bottom,
+			"%s 描述顶缘 ≥ 图标底缘（不再叠图）" % board_key)
+		if board_key == "MagicSoul":
+			# DropBg 头像组上移后与描述（148-188）零重叠（六轮统一布局）
+			var drop_left: NinePatchRect = scroll.get_node("DropBgLeft") as NinePatchRect
+			assert_true(drop_left.offset_bottom <= 155.0,
+				"magic DropBg 头像组底缘 %.2f ≤155（上移避让统一描述位）" % drop_left.offset_bottom)
+	panel.remove_window()
+	root.queue_free()
 
 
 # 十连折扣角标：源 tavern.lua:923 ad_discount 挂 createCommonLayer ten_buy 内 anchor(0,0)

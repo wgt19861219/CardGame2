@@ -670,6 +670,13 @@ ShopTimeLabel/colors/font_color = Color(0.858824, 0.780392, 0.658824, 1)
 ShopTimeLabel/font_sizes/font_size = 16
 ShopTitleLabel/base_type = &"Label"
 ShopTitleLabel/font_sizes/font_size = 24
+; 抽卡卡池标题（2026-09-15 英文美术贴图退役改 Label）：24 号白字黑描边 2
+; （源 tavern_title_1/3/4.png 美术字视觉档位；描边保证深色横幅底图上可读）。
+TavernBoardTitleLabel/base_type = &"Label"
+TavernBoardTitleLabel/colors/font_color = Color(1, 1, 1, 1)
+TavernBoardTitleLabel/colors/font_outline_color = Color(0, 0, 0, 1)
+TavernBoardTitleLabel/constants/outline_size = 2
+TavernBoardTitleLabel/font_sizes/font_size = 24
 HandbookEntryLabel/base_type = &"Label"
 HandbookEntryLabel/colors/font_color = Color(0.698039, 0.588235, 0.572549, 1)
 ; 批4 Task 5：源 doSelectTag :94 未选中 setShadow(ccc3(0,0,0), ccp(0,2))（两 variation 方案之未选中态）
