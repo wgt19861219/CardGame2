@@ -21,6 +21,15 @@ func test_apply_default_data_new_player() -> void:
 	assert_eq(pd_empty.team.size(), 5)            # 5 默认英雄入阵容
 	assert_eq(int(pd_empty.items.get(101, 0)), 10)  # 源 items[101]=10
 	assert_eq(int(pd_empty.items.get(106, 0)), 5)   # 源 items[106]=5
+	# 2026-09-17 用户拍板受控偏离守卫：电魂(5) 换 小鹿(45)；新号全队 1 星
+	# （源 DEFAULT_DATA stars=1 硬编码口径；旧版误走表 Initial Stars 致电魂 3 星）。
+	var tids: Array[int] = []
+	for inst_id in pd_empty.team:
+		var h: HeroInstance = pd_empty.hero_manager.get_hero(int(inst_id))
+		if h != null:
+			tids.append(h.tid)
+			assert_eq(h.stars, 1, "新号英雄 %d 应 1 星（源 DEFAULT_DATA 全 1 星口径）" % h.tid)
+	assert_eq(tids, [1, 2, 3, 4, 45], "新号队伍=船长/DR/火女/宙斯/小鹿（电魂→小鹿受控偏离）")
 
 func test_from_dict_no_default_residual() -> void:
 	# 存档加载不残留默认数据（from_dict 不调 apply_default_data）

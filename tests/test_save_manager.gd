@@ -14,7 +14,7 @@ func after_each() -> void:
 	DirAccess.remove_absolute(TEST_DIR + "save_int.json")
 	DirAccess.remove_absolute(TEST_DIR + "save_corrupt.json")
 	for f in DirAccess.get_files_at(TEST_DIR):
-		if f.begins_with("save_corrupt.json.corrupt_"):
+		if String(f).begins_with("save_corrupt.json.corrupt_"):
 			DirAccess.remove_absolute(TEST_DIR + f)
 
 func test_roundtrip_preserves_int() -> void:
@@ -67,3 +67,24 @@ func test_corrupt_parse_backs_up_then_returns_empty() -> void:
 		assert_eq(bf.get_as_text(), "this is { not a valid variant dict |||", "备份内容与原坏档一致")
 		bf.close()
 	assert_false(FileAccess.file_exists(path), "原路径坏档应已改名让位（新号首存不覆盖坏档内容）")
+
+
+# ── 多档位（2026-09-17）：list_slots 只认 SLOT_NAMES 槽且按其顺序输出 ──
+func _write_raw(name: String, content: String) -> void:
+	var f := FileAccess.open(TEST_DIR + name, FileAccess.WRITE)
+	if f != null:
+		f.store_string(content)
+		f.close()
+
+func test_list_slots_filters_and_orders() -> void:
+	_sm.save_slot("save_1", {"b": 2})
+	_sm.save_slot("auto", {"a": 1})
+	_sm.save_slot("slot9", {"c": 3})   # 非 SLOT_NAMES 历史槽名，应被过滤
+	_write_raw("save_index.json", "[]")   # 快照 index 同前缀杂项，应被过滤
+	_write_raw("save_snap_123.json", "{}")   # 快照文件，应被过滤
+	_write_raw("save_auto.json.tmp", "")   # 原子写临时文件，应被过滤
+	_write_raw("save_auto.json.bak_pre_import", "")   # 导入备份，应被过滤
+	assert_eq(_sm.list_slots(), ["auto", "save_1"] as Array[String], "只列 SLOT_NAMES 槽且顺序稳定")
+	for f in ["save_save_1.json", "save_auto.json", "save_slot9.json", "save_index.json",
+			"save_snap_123.json", "save_auto.json.tmp", "save_auto.json.bak_pre_import"]:
+		DirAccess.remove_absolute(TEST_DIR + f)
