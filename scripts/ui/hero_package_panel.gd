@@ -308,6 +308,9 @@ func _do_summon(tid: int) -> void:
 	if not bool(result.get("ok", false)):
 		Toast.show_message("金币不足")   # 源 doSummon :127-130 金币不足提示（useMidas 单机化降级 Toast）
 		return
+	GameData.save()   # 召唤扣灵魂石+金币后即时存（同升星链 perform_evolve 先例；源 hero_evolve 回复
+	# saveDirty=true + main.lua evolve 回复即存）。漏存时 60s 自动存窗口内进程被杀（编辑器停止/
+	# 崩溃，非 WM_CLOSE 关窗）读档整体回滚——用户报「灵魂石召唤和金币召唤没扣」根因（2026-09-17）。
 	_refresh_after_change()   # 源 doSummonReply refreshHeroItem（列表先刷新，卡弹窗盖其上）
 	_show_summon_card(tid)
 

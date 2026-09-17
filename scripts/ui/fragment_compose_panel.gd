@@ -155,6 +155,8 @@ func _on_compose_pressed() -> void:
 		return
 	var ok := pd.hero_manager.compose(_target_tid)
 	if ok:
+		GameData.save()   # 合成扣碎片+金币得英雄后即时存（同召唤 _do_summon 判例；HeroManager 写
+		# 操作无 save_hook，View 层漏存则 60s 窗口内进程被杀读档回滚，2026-09-17 同根因一并修）。
 		_show_toast(cm.get_lstr(LSTR_SUCCESS))
 		composed.emit()
 		remove_window()
