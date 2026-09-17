@@ -21,7 +21,11 @@ const HERO_ID_MAX: int = 100
 const SWEEP_COIN_ID: int = 390
 const DEFAULT_DIAMOND: int = 5000
 const DEFAULT_GOLD: int = 100000
-const DEFAULT_HERO_TIDS: Array[int] = [1, 2, 3, 4, 5]
+# 源 local_server.lua:63-69 DEFAULT_DATA heroes tid 1-5（全 stars=1 硬编码）。
+# 2026-09-17 用户拍板受控偏离：电魂(5) 换 小鹿(45, Enchantress)——新号送 1 星治疗；
+# 换人后全队走表 Initial Stars 恰全为 1（tid1-4/45 均是 1），与源全 1 星口径一致
+# （旧版新号误走表口径致电魂 3 星=源新号行为偏差，见验收记录-存档多档位新建 八节）。
+const DEFAULT_HERO_TIDS: Array[int] = [1, 2, 3, 4, 45]
 const DEFAULT_ITEMS: Dictionary = {101: 10, 102: 10, 106: 5, 107: 5, 108: 5, 109: 5, 110: 5, 111: 5}
 
 var diamond: int = 0

@@ -7,11 +7,33 @@ extends RefCounted
 const TEMP_SUFFIX := ".tmp"
 const FILE_PREFIX := "save_"
 const FILE_EXT := ".json"
+## 多档位槽名全集（Godot 原生阶段受控增强，源单账号无对应物）。
+## 固定三档；list_slots 据此过滤 save_index/save_snap 等同前缀杂项文件。
+const SLOT_NAMES: Array[String] = ["auto", "save_1", "save_2"]
 
 var _base_dir: String
 
 func _init(base_dir: String = "user://") -> void:
 	_base_dir = base_dir
+
+## 列出 base_dir 下存在的档位槽名（按 SLOT_NAMES 顺序输出，UI 渲染顺序稳定；
+## save_index.json/save_snap_*.json 同前缀文件与 .tmp/.corrupt/.bak 副本天然排除）。
+func list_slots() -> Array[String]:
+	var present := {}
+	var dir := DirAccess.open(_base_dir)
+	if dir != null:
+		dir.list_dir_begin()
+		var fname := dir.get_next()
+		while fname != "":
+			if fname.begins_with(FILE_PREFIX) and fname.ends_with(FILE_EXT):
+				present[fname.trim_prefix(FILE_PREFIX).trim_suffix(FILE_EXT)] = true
+			fname = dir.get_next()
+		dir.list_dir_end()
+	var slots: Array[String] = []
+	for slot in SLOT_NAMES:
+		if present.has(slot):
+			slots.append(slot)
+	return slots
 
 ## 保存数据到槽位，返回 Godot 错误码（OK=0 成功）。
 func save_slot(slot: String, data: Dictionary) -> int:

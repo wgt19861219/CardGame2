@@ -58,3 +58,96 @@ func test_real_save_writes_and_loads_auto_slot() -> void:
 	GameData.player.diamond = old_diamond
 	GameData._test_mode = old_mode
 	GameData.save_dir = old_dir
+
+
+# ── 多档位（2026-09-17）：switch_slot 往返/空档新号/拒绝未知槽/活跃槽持久化/slot_metas ──
+
+func _sandbox_wipe_slots() -> void:
+	for f in ["save_auto.json", "save_save_1.json", "save_save_2.json", "save_slot.txt"]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SANDBOX_DIR + f))
+
+
+func test_switch_slot_rejects_unknown_slot() -> void:
+	assert_eq(GameData.switch_slot("save_9"), ERR_INVALID_PARAMETER, "非 SLOT_NAMES 槽名拒绝（不动任何档）")
+
+func test_switch_slot_roundtrip_new_game_and_back() -> void:
+	var old_mode := GameData._test_mode
+	var old_dir := GameData.save_dir
+	var old_slot := GameData.active_slot
+	var old_diamond := GameData.player.diamond
+	GameData._test_mode = false
+	GameData.save_dir = SANDBOX_DIR
+	GameData.active_slot = "auto"
+	_sandbox_wipe_slots()
+	GameData.player.diamond = 987654
+	assert_eq(GameData.save(), OK, "auto 档先落盘")
+	# 切空档 save_1 = 在该档开新号（diamond 回默认 ≠标记值）+ 活跃槽切换并持久化。
+	assert_eq(GameData.switch_slot("save_1"), OK, "切空档返 OK")
+	assert_eq(GameData.active_slot, "save_1", "活跃槽已切")
+	assert_ne(GameData.player.diamond, 987654, "空档切换走新号（进度不串档）")
+	var sm := SaveManagerScript.new(SANDBOX_DIR)
+	assert_true("save_1" in sm.list_slots(), "新档已立即落盘")
+	# 切回 auto：标记值保真（换档零丢失）。
+	assert_eq(GameData.switch_slot("auto"), OK, "切回 auto 返 OK")
+	assert_eq(GameData.player.diamond, 987654, "切回原档进度保真")
+	var f := FileAccess.open(SANDBOX_DIR + "save_slot.txt", FileAccess.READ)
+	assert_not_null(f, "活跃槽记录文件已写")
+	if f != null:
+		assert_eq(f.get_as_text().strip_edges(), "auto", "活跃槽记录=当前档")
+		f.close()
+	_sandbox_wipe_slots()
+	GameData.player.diamond = old_diamond
+	GameData._test_mode = old_mode
+	GameData.save_dir = old_dir
+	GameData.active_slot = old_slot
+
+func test_active_slot_read_falls_back_on_bad_value() -> void:
+	var old_mode := GameData._test_mode
+	var old_dir := GameData.save_dir
+	GameData._test_mode = false
+	GameData.save_dir = SANDBOX_DIR
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SANDBOX_DIR))
+	var f := FileAccess.open(SANDBOX_DIR + "save_slot.txt", FileAccess.WRITE)
+	if f != null:
+		f.store_string("garbage_slot")
+		f.close()
+	assert_eq(GameData._read_active_slot(), "auto", "坏值回退 AUTO_SLOT（老玩家兼容）")
+	GameData._write_active_slot("save_2")
+	assert_eq(GameData._read_active_slot(), "save_2", "合法槽名读写往返")
+	GameData._write_active_slot("auto")
+	GameData._test_mode = old_mode
+	GameData.save_dir = old_dir
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SANDBOX_DIR + "save_slot.txt"))
+
+func test_slot_metas_shape() -> void:
+	var old_mode := GameData._test_mode
+	var old_dir := GameData.save_dir
+	var old_slot := GameData.active_slot
+	GameData._test_mode = false
+	GameData.save_dir = SANDBOX_DIR
+	GameData.active_slot = "auto"
+	_sandbox_wipe_slots()
+	var sm := SaveManagerScript.new(SANDBOX_DIR)
+	assert_eq(sm.save_slot("auto", {"team_level": 5}), OK, "裸档位 dict（slot_metas 只读 team_level）")
+	var metas := GameData.slot_metas()
+	assert_eq(metas.size(), 3, "三档 meta（SLOT_NAMES 顺序）")
+	assert_eq(String(metas[0].get("slot")), "auto", "首槽 auto")
+	assert_true(bool(metas[0].get("exists")), "auto 有档")
+	assert_eq(int(metas[0].get("level")), 5, "等级从槽 dict 读取")
+	assert_true(bool(metas[0].get("active")), "auto 为活跃档")
+	assert_false(bool(metas[1].get("exists")), "save_1 空档")
+	assert_false(bool(metas[1].get("active")), "save_1 非活跃")
+	_sandbox_wipe_slots()
+	GameData._test_mode = old_mode
+	GameData.save_dir = old_dir
+	GameData.active_slot = old_slot
+
+func test_slot_metas_test_mode_synthesizes() -> void:
+	# 测试模式合成数据不触真实档（含坏档 rename 备份副作用隔离）。
+	if not GameData._test_mode:
+		assert_true(true, "非 test_mode 跳过（合成分支只在测试模式生效）")
+		return
+	var metas := GameData.slot_metas()
+	assert_eq(metas.size(), 3, "测试模式同样返回三档结构")
+	assert_true(bool(metas[0].get("active")), "合成数据 auto 为活跃档")
+	assert_false(bool(metas[2].get("exists")), "合成数据 save_2 为空档")

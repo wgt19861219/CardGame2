@@ -139,3 +139,100 @@ func test_snapshot_header_uses_local_time() -> void:
 		return
 	var local_hour: int = Time.get_time_dict_from_system().get("hour", -1)
 	assert_true(header.text.contains("%02d:" % local_hour), "header 小时=本地时区（含 %02d:）" % local_hour)
+
+
+# ── 多档位轮（2026-09-17）：档位条构建/回调分流/确认流程守卫 ──
+
+func _chip_labels(chip: Button) -> Array:
+	var labels: Array = []
+	for c in chip.get_children():
+		if c is Label:
+			labels.append(c)
+	return labels
+
+func test_slot_display_names() -> void:
+	assert_eq(SaveManagerSlotBar.slot_display("auto"), "档1", "auto→档1")
+	assert_eq(SaveManagerSlotBar.slot_display("save_1"), "档2", "save_1→档2")
+	assert_eq(SaveManagerSlotBar.slot_display("save_2"), "档3", "save_2→档3")
+	assert_eq(SaveManagerSlotBar.slot_display("weird"), "weird", "未知槽名原样返回（守卫）")
+
+func test_slot_bar_builds_chips_and_routes_clicks() -> void:
+	var picked: Array = []
+	var bar: Control = SaveManagerSlotBar.build([
+		{"slot": "auto", "exists": true, "level": 35, "active": true},
+		{"slot": "save_1", "exists": true, "level": 12, "active": false},
+		{"slot": "save_2", "exists": false, "level": 1, "active": false},
+	], func(slot: String, exists: bool) -> void: picked.append([slot, exists]))
+	assert_eq(bar.get_child_count(), 3, "三档胶囊")
+	var chip_active := bar.get_child(0) as Button
+	var chip_other := bar.get_child(1) as Button
+	var chip_empty := bar.get_child(2) as Button
+	assert_eq(_chip_labels(chip_active).size(), 2, "胶囊两行标签（档名+副行）")
+	# 文案：有档副行 Lv.N；空档副行「新建」。
+	var active_labels: Array = _chip_labels(chip_active)
+	var empty_labels: Array = _chip_labels(chip_empty)
+	var active_sub := active_labels[1] as Label
+	var empty_sub := empty_labels[1] as Label
+	assert_eq(active_sub.text, "Lv.35", "当前档副行显等级")
+	assert_eq(empty_sub.text, "新建", "空档副行显「新建」")
+	# 当前档金色高亮；空档非金色。
+	var active_name := active_labels[0] as Label
+	var empty_name := empty_labels[0] as Label
+	assert_eq(active_name.get_theme_color("font_color"), SaveManagerSlotBar.ACTIVE_COLOR, "当前档金色")
+	assert_ne(empty_name.get_theme_color("font_color"), SaveManagerSlotBar.ACTIVE_COLOR, "空档非金色")
+	# 点击分流：当前档不触发；有档触发 (slot,true)；空档触发 (slot,false)。
+	chip_active.pressed.emit()
+	chip_other.pressed.emit()
+	chip_empty.pressed.emit()
+	assert_eq(picked.size(), 2, "当前档点击无操作，其余两档触发回调")
+	if picked.size() == 2:
+		assert_eq(picked[0], ["save_1", true], "有档点击回调 (slot,true)")
+		assert_eq(picked[1], ["save_2", false], "空档点击回调 (slot,false)→新建入口")
+
+func test_panel_slot_pick_opens_confirm_and_cancels() -> void:
+	var panel := _make_panel()
+	# 空档 → 新建确认（文案带档位显示名 + kind=new）。
+	panel._on_slot_picked("save_1", false)
+	assert_true(panel._confirm_layer.visible, "空档点击弹确认层")
+	assert_eq(panel._pending_slot_action, {"kind": "new", "slot": "save_1"}, "待确认动作=新建")
+	assert_true(panel._confirm_msg_label.text.contains("档2"), "确认文案含档位显示名")
+	assert_true(panel._confirm_msg_label.text.contains("新建"), "确认文案含新建语义")
+	# 取消 → 层收起 + pending 清空。
+	panel._on_confirm_cancel()
+	assert_false(panel._confirm_layer.visible, "取消后确认层收起")
+	assert_eq(panel._pending_slot_action, {}, "取消后 pending 清空")
+	# 有档 → 切换确认（kind=switch）。
+	panel._on_slot_picked("save_2", true)
+	assert_eq(panel._pending_slot_action, {"kind": "switch", "slot": "save_2"}, "待确认动作=切换")
+	assert_true(panel._confirm_msg_label.text.contains("切换"), "确认文案含切换语义")
+	panel._on_confirm_cancel()
+	# 当前档防御分支：无动作。
+	panel._pending_slot_action = {"kind": "switch", "slot": GameData.active_slot}
+	panel._on_slot_picked(GameData.active_slot, true)
+	assert_eq(panel._pending_slot_action, {"kind": "switch", "slot": GameData.active_slot}, "当前档点击不改写 pending（防御分支）")
+
+func test_panel_slot_bar_attached() -> void:
+	var panel := _make_panel()
+	assert_not_null(panel._slot_bar_host, "档位条宿主已建")
+	assert_gt(panel._slot_bar_host.get_child_count(), 0, "档位条含胶囊（测试模式合成三档）")
+
+
+# ── 确认接线单射守卫（2026-09-17 错误码31 根修）──
+# 根因：旧接线 _confirm.open(_on_confirm_ok) 登记的是确定按钮 handler 自身——点确定
+# → handler 里 _confirm.confirm() 的状态机回调又进 handler（重入）→ _apply_* 双跑，
+# 第二次空 slot switch_slot 返 ERR_INVALID_PARAMETER(31)；既有导入链第二次 apply
+# 空字典同病。修=登记动作回调 _on_confirmed（唯一执行点）。
+func test_confirm_wiring_single_shot() -> void:
+	var panel := _make_panel()
+	panel._on_slot_picked("save_1", false)
+	assert_true(panel._confirm._on_confirm == panel._on_confirmed,
+		"状态机登记回调=动作函数 _on_confirmed（登记按钮 handler 自身即重入双执行根因）")
+	assert_true(panel._confirm.is_open(), "待确认状态 OPEN")
+	panel._on_confirm_cancel()
+	assert_false(panel._confirm.is_open(), "取消后状态机 CLOSED")
+
+func test_confirmed_empty_pending_defensive_close() -> void:
+	var panel := _make_panel()
+	panel._confirm_layer.visible = true
+	panel._on_confirmed()   # 双 pending 皆空 → 防御分支仅收层
+	assert_false(panel._confirm_layer.visible, "空 pending 防御收层（不执行任何动作）")
