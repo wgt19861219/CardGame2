@@ -49,10 +49,12 @@ var _built: bool = false
 var _occluded: bool = false
 # 货币自动同步缓存（2026-09-07 抽卡扣费货币栏不刷根修）：扣费/入账点分散在
 # Data 层多处（抽卡 consume_tavern_cost/商店 buy·refresh/升星·技能·进阶/技能点
-# 购买/卖出/发奖），无全局货币变化信号——_process 每帧对比两个 int（开销可忽略），
+# 购买/卖出/发奖），无全局货币变化信号——_process 每帧对比 int（开销可忽略），
 # 变化即 _refresh_status，一处覆盖全部现在与未来的货币变化场景。
+# 2026-09-17 加 vitality 对比：GameData 60s 体力恢复接线后，恢复入账同机制刷新 HUD。
 var _last_gold: int = -1
 var _last_diamond: int = -1
+var _last_vitality: int = -1
 
 
 func _ready() -> void:
@@ -70,9 +72,10 @@ func _process(_delta: float) -> void:
 	var p: PlayerData = GameData.player
 	if p == null:
 		return
-	if p.hero_manager.gold != _last_gold or p.diamond != _last_diamond:
+	if p.hero_manager.gold != _last_gold or p.diamond != _last_diamond or p.vitality != _last_vitality:
 		_last_gold = p.hero_manager.gold
 		_last_diamond = p.diamond
+		_last_vitality = p.vitality
 		_refresh_status()
 
 

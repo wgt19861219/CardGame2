@@ -19,6 +19,7 @@ static func to_dict(pd: PlayerData) -> Dictionary:
 		"vitality_max": pd.vitality_max,
 		"vitality_last_recover": pd.vitality_last_recover,
 		"vitality_today_buy": pd.vitality_today_buy,
+		"vitality_buy_day": pd.vitality_buy_day,
 		"team_level": pd.team_level,
 		"team_exp": pd.team_exp,
 		"vip_level": pd.vip_level,
@@ -44,6 +45,7 @@ static func to_dict(pd: PlayerData) -> Dictionary:
 		"shop_auto_refresh": pd.shop_auto_refresh.duplicate(true),
 		"shop_expire_end": pd.shop_expire_end.duplicate(true),
 		"stage_limit": pd.stage_limit.duplicate(true),
+		"stage_limit_day": pd.stage_limit_day,
 		"stage_reset_times": pd.stage_reset_times.duplicate(true),
 	}
 
@@ -65,8 +67,12 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 		pd.items[int(k)] = int(items_data[k])
 	pd.vitality = int(data.get("vitality", 0))
 	pd.vitality_max = int(data.get("vitality_max", PlayerData.VITALITY_DEFAULT_MAX))
+	# 恢复接线（2026-09-17）前老档时间戳恒 0：补当前时间，防 recover 首调 elapsed 巨大一次性回满。
 	pd.vitality_last_recover = int(data.get("vitality_last_recover", 0))
+	if pd.vitality_last_recover <= 0:
+		pd.vitality_last_recover = int(Time.get_unix_time_from_system())
 	pd.vitality_today_buy = int(data.get("vitality_today_buy", 0))
+	pd.vitality_buy_day = int(data.get("vitality_buy_day", 0))
 	pd.team_level = int(data.get("team_level", 1))
 	pd.team_exp = int(data.get("team_exp", 0))
 	pd.vip_level = int(data.get("vip_level", 0))
@@ -121,6 +127,8 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 	for k in see_data: pd.shop_expire_end[int(k)] = int(see_data[k])
 	var sl_data: Dictionary = data.get("stage_limit", {})
 	for k in sl_data: pd.stage_limit[int(k)] = int(sl_data[k])
+	pd.stage_limit_day = int(data.get("stage_limit_day", 0))
 	var srt_data: Dictionary = data.get("stage_reset_times", {})
 	for k in srt_data: pd.stage_reset_times[int(k)] = int(srt_data[k])
+	pd.recalc_vitality_max()   # 上限按等级重算（2026-09-17 接线：老档恒 120 的存量失真矫正）
 	return pd

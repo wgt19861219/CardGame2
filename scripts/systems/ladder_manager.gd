@@ -58,6 +58,8 @@ const RANKLIST_LEVEL_MIN: int = 10
 var pvp: Dictionary = {}
 # T3 依赖倒置：战斗表现音效钩子（GameData 装配后注入 LadderBattle.assemble 用；缺省静默跳过）。
 var sfx_hook: Callable = Callable()
+# 存档标脏钩子（GameData 注入；每日奖励邮件落盘标脏，缺省 Callable 静默跳过，headless 可测）。
+var save_hook: Callable = Callable()
 
 
 static func generate_ai_player(rank: int, player_level: int, cm: ConfigManager, rng: BattleRng) -> Dictionary:
@@ -128,12 +130,30 @@ func ensure_pvp() -> void:
 ## 跨日重置挑战/购买次数（源 pvp 服务器每日重置 left_count；单机化本地跨日，照
 ## excavate_manager 范式——2026-08-22 巡检接线：旧 _open_panel 无条件回满致花钻购买
 ## 次数机制自相矛盾，已删）。
-func _check_daily_reset(now: int) -> void:
+## 2026-09-17 经济单机优化：跨日同时按昨日 rank 发 PVPRankReward 每日排名奖励
+## （系统邮件，源即邮件渠道；首次打开 last_reset_day=0 只重置不发——无"昨日排名"语义）。
+func _check_daily_reset(now: int, player: PlayerData, cm: ConfigManager) -> void:
 	var today: int = _local_day_key(now, int(Time.get_time_zone_from_system().get("bias", 0)))
-	if int(pvp.get("last_reset_day", 0)) != today:
-		pvp["last_reset_day"] = today
-		pvp["left_count"] = LEFT_COUNT_DEFAULT
-		pvp["buy_times"] = 0
+	var last_day: int = int(pvp.get("last_reset_day", 0))
+	if last_day == today:
+		return
+	pvp["last_reset_day"] = today
+	pvp["left_count"] = LEFT_COUNT_DEFAULT
+	pvp["buy_times"] = 0
+	if last_day <= 0 or player == null or cm == null:
+		return
+	_issue_daily_reward(player, cm, now)
+
+
+## 每日排名奖励邮件（LadderDailyReward 查表构造；表空静默跳过）。发放后标脏落盘。
+func _issue_daily_reward(player: PlayerData, cm: ConfigManager, now: int) -> void:
+	var mail_id: int = player.mailbox.next_mail_id()
+	var mail: Dictionary = LadderDailyReward.build_mail(int(pvp.get("rank", RANK_INIT)), mail_id, cm, now)
+	if mail.is_empty():
+		return
+	player.mailbox.add_system_mail(mail)
+	if save_hook.is_valid():
+		save_hook.call()
 
 
 const DAY_KEY_YEAR_WEIGHT: int = 10000
@@ -148,7 +168,7 @@ static func _local_day_key(ts: int, off_min: int) -> int:
 
 func handle(obj: Dictionary, player: PlayerData, cm: ConfigManager, rng: BattleRng, now: int) -> Dictionary:
 	ensure_pvp()
-	_check_daily_reset(now)
+	_check_daily_reset(now, player, cm)
 	pvp["gs"] = get_pvp_gs(player)
 	var reply: Dictionary = {}
 	if obj.has("_query_rankboard"):

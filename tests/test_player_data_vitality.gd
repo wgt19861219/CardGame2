@@ -57,6 +57,7 @@ func test_can_buy_vitality_at_vip_limit() -> void:
 	var pd := PlayerData.new(cm)
 	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Buy Vit Max", cm))
 	assert_eq(limit, int(VipData.get_vip_field(VipData.get_max_level(cm), "Buy Vit Max", cm)), "特权档当日买体力上限（满级）")
+	VitalityManager.can_buy(pd)   # 先落当日锚（2026-09-17 跨日清零接入；日锚 0 视作新的一天会清计数）
 	pd.vitality_today_buy = limit
 	assert_false(VitalityManager.can_buy(pd), "today_buy=limit 达 VIP 上限 → 不可买")
 	pd.vitality_today_buy = limit - 1

@@ -403,7 +403,7 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 		if ulv > p_player.privilege_vip_level():
 			var tpl: String = String(_cm.get_lstr("TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE"))
 			if tpl == "TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE":
-				tpl = "VIP等级达到%d级解锁该功能，是否充值？"
+				tpl = "VIP等级达到%d级解锁该功能"   # 死分支 fallback 文案（2026-09-17 去充值引导）
 			_result_label.text = tpl % ulv
 			Toast.show_message(tpl % ulv)
 			return
