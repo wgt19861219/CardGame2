@@ -132,6 +132,8 @@ func _perform_split() -> void:
 		return
 	var result: Dictionary = _hero_mgr.split(_selected.inst_id)
 	if result.has("fragment_id"):
+		GameData.save()   # 分解移除英雄+返碎片后即时存（同召唤 _do_summon 判例；HeroManager 写操作
+		# 无 save_hook，View 层漏存则 60s 窗口内进程被杀读档回滚，2026-09-17 同根因一并修）。
 		Toast.show_message(_lstr(SPLIT_DONE_KEY, SPLIT_DONE_FALLBACK))
 		_selected = null
 		_fill_hero_grid()
