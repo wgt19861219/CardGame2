@@ -1,0 +1,73 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_q2j33"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_title_bg.png" id="2_bvjxb"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_16vl1"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_mkvos"]
+
+[node name="MailClaimRewardsContent" type="Control" unique_id=1181771548]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="FrameBg" type="NinePatchRect" parent="." unique_id=1517164170]
+layout_mode = 0
+offset_left = 185.0
+offset_top = 82.5
+offset_right = 615.0
+offset_bottom = 467.5
+mouse_filter = 2
+texture = ExtResource("1_q2j33")
+patch_margin_left = 15
+patch_margin_top = 20
+patch_margin_right = 43
+patch_margin_bottom = 26
+
+[node name="TitleBg" type="TextureRect" parent="." unique_id=1445449406]
+layout_mode = 0
+offset_left = 235.31
+offset_top = 42.83
+offset_right = 564.69
+offset_bottom = 77.17
+mouse_filter = 2
+texture = ExtResource("2_bvjxb")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TitleLabel" type="Label" parent="." unique_id=1116261346]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 300.0
+offset_top = 47.0
+offset_right = 500.0
+offset_bottom = 73.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.906, 0.808, 0.075, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 20
+text = "获得物品"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Host" type="Control" parent="." unique_id=1688068950]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 230.0
+offset_top = 110.0
+offset_right = 570.0
+offset_bottom = 440.0
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="." unique_id=1775507781]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 584.63
+offset_top = 74.24
+offset_right = 635.37
+offset_bottom = 125.76
+texture_normal = ExtResource("3_16vl1")
+texture_pressed = ExtResource("4_mkvos")
+ignore_texture_size = true
+stretch_mode = 0

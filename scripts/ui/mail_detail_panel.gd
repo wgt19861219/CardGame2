@@ -55,6 +55,8 @@ const ATTACH_BG_W: float = 300.0
 const ATTACH_TOP_Y: float = 218.24
 # 货币行间距（源 :211 逐行 y-30）与行首偏移（源 createAttach y-30 后起排）
 const CURRENCY_ROW_DY: float = 30.0
+# 物品 icon 点击领取 press 反馈（照源 mailbox.lua:126-132 行 setScale(0.95) 惯例）
+const ITEM_ICON_PRESS_SCALE: float = 0.95
 
 var pd: PlayerData
 var _mail_id: int = 0
@@ -160,6 +162,11 @@ func _add_item_attach(y: float, items: Array) -> float:
 		# godot 中心 (66.5+65col, y+32.5+65row)；视觉盒左上 = 中心 - (30, vis_h/2)
 		icon.position = Vector2(36.5 + float(col) * ITEM_ICON_SIZE,
 			y + 32.5 + float(row_i) * ITEM_ICON_SIZE - vis_h * 0.5)
+		# 点击领取（2026-09-16 用户反馈「点附件物品图标没反应」）：源 createItemAttach 的
+		# icon 无点击绑定（唯一领取路径=ok 按钮），Godot 原生适配阶段受控增强——点物品
+		# icon 走 _on_ok 同一领取流程（overfull 检查 + claim + close）。
+		icon.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		icon.gui_input.connect(_on_item_icon_input.bind(icon))
 		_attach_host.add_child(icon)
 	var rows: int = ceili(float(items.size()) / float(ITEM_ICON_COLS))
 	return y + float(rows) * ITEM_ICON_SIZE
@@ -191,6 +198,21 @@ func _on_ok() -> void:
 		_close()
 
 
+# 物品 icon 点击输入（左键）：press 缩 0.95 反馈，release 回弹并走 _on_ok 领取
+# （与 ok 按钮同一三分支，见上注释）。基准 scale=ICON_SCALE，press 乘法不破坏基准。
+func _on_item_icon_input(event: InputEvent, icon: Control) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mb := event as InputEventMouseButton
+	if mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if mb.pressed:
+		icon.scale = Vector2(ICON_SCALE, ICON_SCALE) * ITEM_ICON_PRESS_SCALE
+	else:
+		icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
+		_on_ok()
+
+
 # overfull 检查（源 doReadMail :511-521）：物品 + 当前持有 > 上限 → {id, amount=溢出量 da}。
 func _check_overfull() -> Array:
 	var overfull: Array = []
@@ -212,6 +234,13 @@ func _on_overfull_confirmed() -> void:
 
 
 func _claim_and_close() -> void:
+	# 领取奖励展示（2026-09-16 受控增强，源 doReadMail 领取后 destroy({skipAnim=true})
+	# 无任何展示）：领取前快照附件（_mail 是 format 快照，不受 claim 清 raw 影响），
+	# 奖励弹窗走 PopWindow 链（六轮样式统一：挂详情父级、动态 z 栈自动盖住邮箱列表，
+	# 详情随即销毁、弹窗独立存活点选关闭）。
+	var rewards := MailClaimRewardsPopup.new("mail_claim_rewards", {})
+	rewards.setup_panel(_mail.get("attach_common", []), _mail.get("items", []), pd.cm)
+	rewards.show_window(get_parent())
 	pd.mailbox.claim_attach(_mail_id, pd)
 	GameData.mark_save_dirty()
 	_close()

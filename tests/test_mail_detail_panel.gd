@@ -28,13 +28,15 @@ func test_panel_assembles_attach_bg() -> void:
 	panel.free()
 
 
-# P1-4：attach_common 按 type 查 7 货币图标（mail 1：Gold 5000 + Diamond 200 → 2 货币 icon）。
+# P1-4：attach_common 按 type 查 7 货币图标（自造 mail：Gold 5000 + Diamond 200 → 2 货币 icon）。
+# 2026-09-16 改自造数据（原依赖 GameData.player 默认 mail 1，真实存档邮箱可空致脆弱）。
 func test_panel_currency_icons_match_attach_common() -> void:
+	var pd := _make_pd_with_mail(1, "unread", true)
 	var panel := MailDetailPanel.new("mail_detail", {})
-	panel.setup_panel(GameData.player, 1, Callable())
+	panel.setup_panel(pd, 1, Callable())
 	var ac: Array = panel._mail.get("attach_common", [])
-	# mail 1 attach_common 2 项（Gold+Diamond），frame 下应有 goldicon_small + shop_token_icon
-	assert_eq(ac.size(), 2, "mail 1 attach_common 2 项")
+	# attach_common 2 项（Gold+Diamond），frame 下应有 goldicon_small + shop_token_icon
+	assert_eq(ac.size(), 2, "attach_common 2 项")
 	assert_true(_has_tex(panel, panel.CURRENCY_ICONS["Gold"]), "Gold 货币图标装配")
 	assert_true(_has_tex(panel, panel.CURRENCY_ICONS["Diamond"]), "Diamond 货币图标装配")
 	panel.free()
@@ -53,16 +55,18 @@ func _has_tex(node: Node, path: String) -> bool:
 
 
 # P1（2026-07-16）：UI 文案 LSTR 化验证（ok label CLAIM + attach title 走 GameData.config）。
-# mail 1 welcome：unread + attached → ok = CLAIM（源 content.lua:463）。
+# 自造 mail（unread + attached）→ ok = CLAIM（源 content.lua:463）。
 # 批 2：ok 按钮 TextureButton+子 Label → Button + theme variation（文字走 Button.text）。
+# 2026-09-16 改自造数据（原依赖 GameData.player 默认 mail 1，真实存档邮箱可空致脆弱）。
 func test_panel_ok_label_uses_lstr() -> void:
+	var pd := _make_pd_with_mail(2, "unread", true)
 	var panel := MailDetailPanel.new("mail_detail", {})
-	panel.setup_panel(GameData.player, 1, Callable())
+	panel.setup_panel(pd, 2, Callable())
 	var cfg: ConfigManager = GameData.config
 	var ok_btns: Array = panel.find_children("*", "Button", true, false)
 	assert_eq(ok_btns.size(), 1, "1 个 ok 按钮（Button variation 承载文字）")
 	assert_eq(String((ok_btns[0] as Button).text), cfg.get_lstr("MAILBOX.CLAIM"),
-		"ok 文字 = LSTR MAILBOX.CLAIM（mail 1 unread+attached）")
+		"ok 文字 = LSTR MAILBOX.CLAIM（unread+attached）")
 	assert_true(_has_label_text(panel, cfg.get_lstr("MAILBOX.ATTACHMENTS_")), "attach title 走 LSTR MAILBOX.ATTACHMENTS_")
 	panel.free()
 
@@ -92,7 +96,7 @@ func _make_pd_with_mail(mail_id: int, status: String, attached: bool) -> PlayerD
 		"_date": "2026-07-23",
 		"_content": {"_plain_mail": {"_from": "系统", "_title": "通知", "_content": "内容"}},
 		"_money": 5000 if attached else 0,
-		"_diamonds": 0,
+		"_diamonds": 200 if attached else 0,
 		"_skill_point": 0,
 		"_items": [],
 	}
@@ -197,11 +201,12 @@ func test_currency_item_template_static_tree() -> void:
 
 
 # panel 零静态构造（宽口径白名单）：货币行走 mail_currency_item.tscn 模板 +
-# TitleBg/AttachBg/AttachTitle 静态化，仅溢满弹窗工厂 1 处 .new(。
+# TitleBg/AttachBg/AttachTitle 静态化，仅弹窗工厂 2 处 .new（溢满 + 领取奖励展示）。
 func test_panel_no_static_construction() -> void:
 	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
 	assert_eq(text.count("MailOverfullPopup.new("), 1, "仅 1 处溢满弹窗工厂 MailOverfullPopup.new(")
-	assert_eq(text.count(".new("), 1, "宽口径 .new( 总数 = 白名单之和")
+	assert_eq(text.count("MailClaimRewardsPopup.new("), 1, "仅 1 处奖励展示弹窗工厂 MailClaimRewardsPopup.new(")
+	assert_eq(text.count(".new("), 2, "宽口径 .new( 总数 = 白名单之和")
 
 
 # theme variation 接线（读 tres 文本表项）。
@@ -223,6 +228,128 @@ func test_theme_variations_wired() -> void:
 	assert_true(t.contains("MailDetailOkBtn/styles/normal = SubResource(\"SB_pkg_hb_n\")"),
 		"ok 按钮三态复用 SB_pkg_hb（同图同 cap(15,22,15,25)）")
 	assert_true(t.contains("MailDetailOkBtn/font_sizes/font_size = 17"), "ok 字号 17（ui_normal_button）")
+
+
+# ── 物品 icon 点击领取（2026-09-16 用户反馈「点附件物品图标没反应」）──
+# 源 content.lua createItemAttach 的 icon 无点击绑定（唯一领取路径=ok 按钮）；
+# Godot 原生适配阶段按用户期望增强：点物品 icon 走 _on_ok 同一三分支领取流程。
+
+func _make_pd_with_item_mail(mail_id: int) -> PlayerData:
+	var pd := PlayerData.new(GameData.config)
+	var md := MailData.new()
+	md._raw_mails = [{
+		"_id": mail_id,
+		"_status": "unread",
+		"_date": "2026-09-16",
+		"_content": {"_plain_mail": {"_from": "系统", "_title": "道具", "_content": "内容"}},
+		"_money": 100,
+		"_diamonds": 0,
+		"_skill_point": 0,
+		"_items": [{"id": 101, "amount": 2}],
+	}]
+	pd.mailbox = md
+	return pd
+
+
+# 点物品 icon（gui_input 左键 release）→ 触发 _on_ok 领取：邮件 erase + 回调关闭 + 物品到账。
+func test_item_icon_click_triggers_claim() -> void:
+	var pd := _make_pd_with_item_mail(300)
+	var panel := MailDetailPanel.new("mail_detail", {})
+	add_child(panel)
+	var closed := [false]
+	panel.setup_panel(pd, 300, Callable(func() -> void: closed[0] = true))
+	var icon: Control = panel._attach_host.get_child(panel._attach_host.get_child_count() - 1)   # 物品 icon 最后挂（货币行之后）
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = false
+	icon.gui_input.emit(ev)
+	assert_eq(pd.mailbox.get_mail(300), {}, "点物品 icon 后邮件被领取移除（claim_attach erase）")
+	assert_eq(int(pd.items.get(101, 0)), 2, "物品 101×2 到账")
+	assert_true(closed[0], "领取后面板关闭（_on_closed 回调）")
+	# 领取同时弹出的奖励展示窗（PopWindow 系）挂测试父节点，显式清理防污染后续用例
+	# （is 过滤脚本类，find_children type 参数不识别 class_name——Godot 4 ClassDB 无脚本类；
+	# is_instance_valid 前置防 queue_free 帧末窗口内已删实例参与 is 判定）。
+	for c in panel.get_parent().find_children("*", "Control", true, false):
+		if is_instance_valid(c) and c is MailClaimRewardsPopup:
+			c.free()
+	panel.free()
+
+
+# icon 可命中（mouse_filter 非 IGNORE，点击不穿透）+ 桌面手型光标。
+func test_item_icon_clickable_shape() -> void:
+	var pd := _make_pd_with_item_mail(301)
+	var panel := MailDetailPanel.new("mail_detail", {})
+	add_child(panel)
+	panel.setup_panel(pd, 301, Callable())
+	var icon: Control = panel._attach_host.get_child(panel._attach_host.get_child_count() - 1)
+	assert_ne(icon.mouse_filter, Control.MOUSE_FILTER_IGNORE, "物品 icon 可命中（非 IGNORE）")
+	assert_eq(icon.mouse_default_cursor_shape, Control.CURSOR_POINTING_HAND, "物品 icon 手型光标")
+	# 基准 scale 不被 press 反馈破坏：ICON_SCALE 保持
+	assert_almost_eq(icon.scale.x, 60.0 / (94.0 / 1.28125), 0.0001, "基准 scale 保持")
+	panel.free()
+
+
+# ── 领取奖励展示（2026-09-16 二轮，用户验收反馈「少了领取效果」）──
+# 源 doReadMail 领取后 destroy({skipAnim=true}) 无任何展示（源本无领取效果）；
+# 受控增强：领取后弹 MailClaimRewardsPopup（货币行+物品 icon），点击任意处关闭。
+
+# 领取（_on_ok 未读+附件分支）后弹出奖励展示：货币行数=attach_common、物品 icon 数=items。
+func test_claim_shows_rewards_popup() -> void:
+	var pd := _make_pd_with_item_mail(400)
+	var panel := MailDetailPanel.new("mail_detail", {})
+	add_child(panel)
+	panel.setup_panel(pd, 400, Callable())
+	panel._on_ok()
+	assert_eq(pd.mailbox.get_mail(400), {}, "领取发生（邮件 erase）")
+	var popups: Array = []
+	for c in panel.get_parent().find_children("*", "Control", true, false):
+		if c is MailClaimRewardsPopup:
+			popups.append(c)
+	assert_eq(popups.size(), 1, "领取后弹 1 个奖励展示弹窗")
+	if popups.is_empty():
+		panel.free()
+		return
+	var popup: Control = popups[0] as Control
+	# mail 400：money 100 → 1 货币行；items 1 个 → 1 物品 icon
+	var rows: Array = (popup.container.get_node("MailClaimRewardsContent/%Host") as Control).get_children()
+	assert_eq(rows.size(), 1 + 1, "Host 子节点 = 货币行 1 + 物品 icon 1")
+	assert_eq(int(pd.items.get(101, 0)), 2, "物品照常到账（展示不阻塞领取）")
+	popup.free()
+	panel.free()
+
+
+# 奖励展示 CloseBtn 关闭（PopWindow remove_window → queue_free）。
+func test_rewards_popup_click_closes() -> void:
+	var popup := MailClaimRewardsPopup.new("mail_claim_rewards", {})
+	popup.setup_panel([{"type": "Gold", "amount": 5}], [], GameData.config)
+	add_child(popup)
+	assert_false(popup.is_queued_for_deletion(), "弹窗初始存活")
+	(popup.container.get_node("MailClaimRewardsContent/%CloseBtn") as BaseButton).pressed.emit()
+	assert_true(popup.is_queued_for_deletion(), "点关闭后弹窗销毁（remove_window）")
+
+
+# 奖励内容落框内 + chrome 与 SweepRewardPopup 同款（六轮样式统一守卫：main_vit_tips
+# 框/task_title_bg 标题带/关闭钮；旧自建 common_alert_bg 小框系「变形」反馈源头）。
+func test_rewards_content_inside_frame() -> void:
+	var popup := MailClaimRewardsPopup.new("mail_claim_rewards", {})
+	popup.setup_panel([{"type": "Gold", "amount": 5}], [{"id": 101, "amount": 1}], GameData.config)
+	add_child(popup)
+	var content: Control = popup.container.get_node("MailClaimRewardsContent")
+	var frame: Control = content.get_node("FrameBg")
+	var host: Control = content.get_node("%Host")
+	assert_gt(host.global_position.y, frame.global_position.y, "Host 起于框内（上缘内）")
+	assert_lt(host.global_position.y + host.size.y, frame.global_position.y + frame.size.y + 0.5,
+		"Host 止于框内（下缘内）")
+	var frame_tex: Texture2D = (frame as NinePatchRect).texture
+	assert_eq(frame_tex.resource_path, "res://assets/ui/alpha/HVGA/main_vit_tips.png",
+		"框贴图 = sweep 同款 main_vit_tips")
+	var title_bg: TextureRect = content.get_node("TitleBg") as TextureRect
+	assert_eq((title_bg.texture as Texture2D).resource_path, "res://assets/ui/alpha/HVGA/task_title_bg.png",
+		"标题带 = sweep 同款 task_title_bg")
+	# root 全屏守卫（PopWindow.setup 离树时 set_anchors_preset → offsets 归零，anchors=1）
+	assert_eq(popup.anchor_right, 1.0, "root 右锚 1")
+	assert_almost_eq(popup.offset_right, 0.0, 0.5, "root 右 offset 归零")
+	popup.free()
 
 
 # 物品附件 icon 定位/缩放（task-11 守卫）：源 content.lua:137-151 getpos icon 中心
