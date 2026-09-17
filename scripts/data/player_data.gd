@@ -27,6 +27,10 @@ const DEFAULT_GOLD: int = 100000
 # （旧版新号误走表口径致电魂 3 星=源新号行为偏差，见验收记录-存档多档位新建 八节）。
 const DEFAULT_HERO_TIDS: Array[int] = [1, 2, 3, 4, 45]
 const DEFAULT_ITEMS: Dictionary = {101: 10, 102: 10, 106: 5, 107: 5, 108: 5, 109: 5, 110: 5, 111: 5}
+const DAY_KEY_YEAR_WEIGHT: int = 10000   # 本地日 key 权重（y*10000+m*100+d，照 ladder/excavate 范式）
+const DAY_KEY_MONTH_WEIGHT: int = 100
+const DAY_KEY_DAY_WEIGHT: int = 100
+const SECONDS_PER_MINUTE: int = 60       # 时区偏移分→秒换算
 
 var diamond: int = 0
 var crusade_point: int = 0  # 远征币（源 CrusadePoint 奖励货币）
@@ -38,6 +42,7 @@ var vitality: int = VITALITY_DEFAULT_MAX  # 新玩家初始体力（源 DEFAULT_
 var vitality_max: int = VITALITY_DEFAULT_MAX
 var vitality_last_recover: int = 0  # 上次恢复时间戳（秒）
 var vitality_today_buy: int = 0     # 今日买体力次数（源 todaybuy，受 VIP["Buy Vit Max"] 上限）
+var vitality_buy_day: int = 0       # 买体力日锚（本地日 key，跨日清零 today_buy；源服务器日重置的单机化）
 var team_level: int = 1
 var team_exp: int = 0
 var vip_level: int = 0  # VIP 等级（源 VIP 表特权查询）
@@ -65,8 +70,9 @@ var shop_expire_end: Dictionary = {}
 var tutorial_records: Dictionary = {}
 # key=box（Bronze/Gold/MagicSoul；单机化直接索引，源用 box_color 等价）。
 var tavern_record: Dictionary = {}
-# 日重置待 SaveManager 时间逻辑补全（当前累计不重置 → 剩余递减，降级）。
+# 精英关每日已打次数（key=stage_id；跨日清零见 check_stage_limit_daily_reset，源服务器日重置的单机化）。
 var stage_limit: Dictionary = {}
+var stage_limit_day: int = 0       # stage_limit/stage_reset_times 共用日锚（本地日 key）
 # key=normalStageId（源 elite2NormalStage），value=今日已重置次数。
 var stage_reset_times: Dictionary = {}
 var cm: ConfigManager
@@ -156,6 +162,35 @@ func spend_vitality(amount: int) -> bool:
 		return false
 	vitality -= amount
 	return true
+
+
+## 体力上限（照源 playerlimit.lua:26 maxVitality = PlayerLevel["Max Vitality"] + VIP["User Vitality Max"]；
+## 单机特权档满级取 VIP 加成）。表缺行兜底默认 120（不叠 VIP，防表空缩死上限）。
+## 2026-09-17 经济单机优化接线：此前恒 VITALITY_DEFAULT_MAX，PlayerLevel 60→160 等级成长未生效。
+func recalc_vitality_max() -> void:
+	var row: Dictionary = cm.get_raw_table(&"PlayerLevel").get(str(team_level), {})
+	if row.is_empty():
+		vitality_max = VITALITY_DEFAULT_MAX
+		return
+	var vip_bonus: int = int(VipData.get_vip_field(privilege_vip_level(), "User Vitality Max", cm))
+	vitality_max = int(row.get("Max Vitality", VITALITY_DEFAULT_MAX)) + vip_bonus
+
+
+## 精英关每日次数跨日清零（stage_limit 已打次数 + stage_reset_times 今日重置次数；源由服务器
+## 日重置，单机化本地日锚惰性判定——读点 stage_detail_panel 打开时调用）。
+func check_stage_limit_daily_reset(now: int) -> void:
+	var off_min: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	var day: int = _day_key(now, off_min)
+	if stage_limit_day == day:
+		return
+	stage_limit_day = day
+	stage_limit.clear()
+	stage_reset_times.clear()
+
+
+func _day_key(ts: int, off_min: int) -> int:
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + off_min * SECONDS_PER_MINUTE)
+	return int(dt["year"]) * DAY_KEY_YEAR_WEIGHT + int(dt["month"]) * DAY_KEY_MONTH_WEIGHT + int(dt["day"]) * DAY_KEY_DAY_WEIGHT
 
 
 func get_tutorial_record(step_id: int) -> int: return int(tutorial_records.get(step_id, 0))
@@ -282,7 +317,8 @@ func _owns_hero(tid: int) -> bool:
 func _fragment_id_for_hero(tid: int) -> int:
 	return int(cm.get_raw_table(&"Fragment").get(str(tid), {}).get(&"Fragment ID", 0))
 
-## 体力时间恢复 → VitalityManager.recover（阶段三 T3 迁出；⚠️ 当前零调用，恢复链路未接线，见验收记录）。
+## 体力时间恢复 → VitalityManager.recover（阶段三 T3 迁出；2026-09-17 经济单机优化接线：
+## GameData 60s autosave tick 调用，恢复量>0 标脏落盘）。
 
 ## 战队经验增加，自动升级（上限 MAX_TEAM_LEVEL）+ 发放 Vitality Reward（源 PlayerLevel）。
 ## 实际升级后调 check_unlocks（源 baselsr.lua:25-28 happenPlayerLevelup 仅升级时设标志）。
@@ -293,6 +329,7 @@ func add_team_exp(amount: int) -> void:
 		team_exp -= _exp_to_next()
 		var reward: int = PlayerLevelData.get_vitality_reward(team_level, cm)
 		team_level += 1
+		recalc_vitality_max()   # 上限随等级成长（源 playerlimit 口径，2026-09-17 接线）
 		vitality = min(vitality + reward, vitality_max)
 	if team_level >= MAX_TEAM_LEVEL:
 		team_exp = 0

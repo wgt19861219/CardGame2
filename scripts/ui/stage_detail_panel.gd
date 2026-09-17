@@ -73,6 +73,8 @@ func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: B
 	mgr = p_mgr
 	player = p_player
 	rng = p_rng
+	# 每日次数跨日清零（源服务器日重置；2026-09-17 经济单机优化补，惰性判定——打开面板即结算）
+	player.check_stage_limit_daily_reset(int(Time.get_unix_time_from_system()))
 	_stage_data = StageData.from_config(player.cm, p_sid)
 	var bd := BattleData.from_config(player.cm, p_sid, 3)
 	_enemies = bd.get_monsters()
@@ -389,7 +391,7 @@ func _on_reset_pressed() -> void:
 # 单机化：源走 netdata/netreply 网络流程，项目直接本地执行（doResetEliteLimit handler 内逻辑）。
 func _do_reset_elite(cost: int) -> void:
 	if player.diamond < cost:
-		Toast.show_message("钻石不足，请充值")  # 项目适配 toast（源 toRecharge dialog）
+		Toast.show_message("钻石不足")  # 项目适配 toast（源 toRecharge dialog；2026-09-17 去充值引导）
 		return
 	player.diamond -= cost
 	StageResetData.refresh_elite_limit(player, stage_id)

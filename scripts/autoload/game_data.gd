@@ -61,6 +61,8 @@ func _wire_player(p_pd: PlayerData) -> void:
 	p_pd.crusade_manager.sfx_hook = sfx
 	p_pd.excavate.sfx_hook = sfx
 	p_pd.ladder.sfx_hook = sfx
+	# 每日奖励邮件落盘标脏（2026-09-17 竞技场每日排名奖励链）。
+	p_pd.ladder.save_hook = mark_save_dirty
 
 func _start_autosave_timer() -> void:
 	var timer := Timer.new()
@@ -71,9 +73,21 @@ func _start_autosave_timer() -> void:
 	add_child(timer)
 
 func _on_autosave_timeout() -> void:
+	_recover_vitality()
 	if _dirty:
 		save()
 		_dirty = false
+
+
+## 体力时间恢复接线（源 player.lua:622 refreshVitality 惰性补点；2026-09-17 经济单机优化）：
+## 60s tick 节流调 VitalityManager.recover（幂等，按时间差补点，挂机回来一次补齐），
+## 有恢复量才标脏随 60s 存档落盘。此前 recover 零调用 = 恢复链路断链（只靠升级/购买）。
+func _recover_vitality() -> void:
+	if player == null:
+		return
+	var recovered: int = VitalityManager.recover(player, int(Time.get_unix_time_from_system()))
+	if recovered > 0:
+		mark_save_dirty()
 
 func _notification(what: int) -> void:
 	# 引擎适配补强（源 hello.lua:431 applicationDidEnterBackground 无 saveGame，源疏漏）：

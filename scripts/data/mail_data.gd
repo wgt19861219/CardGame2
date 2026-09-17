@@ -3,7 +3,8 @@ extends RefCounted
 
 ## 信箱数据层（Data 层）— 照源 ui/mailbox.lua formatMailData:11 + orderMailData:290 + doReadMail:184。
 ## 单机化：源联机 getMailData（ed.send get_maillist）+ read_mail → 本地程序生成系统邮件 + 直接 claim。
-## 邮件 raw dict：{_id, _status, _date, _content={_plain_mail={_from,_title,_content}}, _money, _diamonds, _skill_point, _items=[{id,amount}]}。
+## 邮件 raw dict：{_id, _status, _date, _content={_plain_mail={_from,_title,_content}}, _money, _diamonds,
+## _skill_point, _points={coin_type:amount}（2026-09-17 point 类附件）, _items=[{id,amount}]}。
 ## _format_mail 配置邮件（mailutil.getMailText mid）单机裁剪（仅 _plain_mail 纯文本）。
 
 const ICON_UNREAD: String = "res://assets/ui/alpha/HVGA/mailbox/mailbox_maillist_letter_icon.png"
@@ -17,6 +18,14 @@ const WELCOME_DIAMOND: int = 200
 const NEWBIE_MONEY: int = 10000
 const NEWBIE_ITEM_ID: int = 371
 const NEWBIE_ITEM_AMOUNT: int = 10
+# raw _points 附件（key=add_point 货币口径）→ attach_common type（View createCommonAttach
+# 7 货币口径，照源 content.lua:162-171：PvpMoney=竞技场币图标）。未知 key fallback Gold 同 View。
+const ATTACH_POINT_TYPE: Dictionary = {
+	"crusadepoint": "CrusadeMoney",
+	"arenapoint": "PvpMoney",
+	"guildpoint": "GuildMoney",
+}
+const ATTACH_TYPE_FALLBACK: String = "Gold"
 
 var _raw_mails: Array = []   # raw mail dicts
 
@@ -49,10 +58,12 @@ func format_mail(raw: Dictionary) -> Dictionary:
 	var diamond: int = int(raw.get("_diamonds", 0))
 	var skill_point: int = int(raw.get("_skill_point", 0))
 	var items: Array = raw.get("_items", [])
-	var attached: bool = (money + diamond + skill_point) > 0 or items.size() > 0
+	var points: Dictionary = raw.get("_points", {})
+	var attached: bool = (money + diamond + skill_point) > 0 or items.size() > 0 or not points.is_empty()
 	# P1-4：照源 content.lua:253-268 createAttach 拆 common/items。源 attach=[{type,amount}]，
-	# type ∈ 7 货币名（createCommonAttach :162-171）+ Item。单机 raw 只 _money/_diamonds/_skill_point
-	# → Gold/Diamond/SkillPoint 三种；View createCommonAttach 忠实支持全 7 种（存档/扩展邮件带其他货币可显示）。
+	# type ∈ 7 货币名（createCommonAttach :162-171）+ Item。单机 raw 覆盖 _money/_diamonds/
+	# _skill_point/_points（point 类 2026-09-17 竞技场每日奖励引入）；View createCommonAttach
+	# 忠实支持全 7 种（存档/扩展邮件带其他货币可显示）。
 	var attach_common: Array = []
 	if money > 0:
 		attach_common.append({"type": "Gold", "amount": money})
@@ -60,6 +71,8 @@ func format_mail(raw: Dictionary) -> Dictionary:
 		attach_common.append({"type": "Diamond", "amount": diamond})
 	if skill_point > 0:
 		attach_common.append({"type": "SkillPoint", "amount": skill_point})
+	for ptype in points:
+		attach_common.append({"type": String(ATTACH_POINT_TYPE.get(String(ptype), ATTACH_TYPE_FALLBACK)), "amount": int(points[ptype])})
 	var iconres: String = ICON_UNREAD if status == "unread" else ICON_READ
 	var from: String = ""
 	var mail_name: String = ""
@@ -112,6 +125,7 @@ func _compare_mail(a: Dictionary, b: Dictionary) -> bool:
 
 
 # 领附件（照 doReadMail:184-249 + mail/content.lua doReadMail:494）。发到 player + 清附件 + 标记已读。
+# _points（point 类货币附件，2026-09-17 竞技场每日奖励引入）逐 key 走 player.add_point 统一通道。
 func claim_attach(mail_id: int, player: Variant) -> void:
 	var raw: Dictionary = _find_raw(mail_id)
 	if raw.is_empty():
@@ -119,6 +133,7 @@ func claim_attach(mail_id: int, player: Variant) -> void:
 	var money: int = int(raw.get("_money", 0))
 	var diamond: int = int(raw.get("_diamonds", 0))
 	var skill_point: int = int(raw.get("_skill_point", 0))
+	var points: Dictionary = raw.get("_points", {})
 	if money > 0 and player != null:
 		player.hero_manager.add_money(money)
 	if diamond > 0 and player != null:
@@ -126,15 +141,31 @@ func claim_attach(mail_id: int, player: Variant) -> void:
 	if skill_point > 0 and player != null:
 		SkillPointManager.add(player, skill_point)
 	if player != null:
+		for ptype in points:
+			player.add_point(String(ptype), int(points[ptype]))
 		for item in raw.get("_items", []):
 			player.add_item(int(item["id"]), int(item["amount"]))
 	raw["_money"] = 0
 	raw["_diamonds"] = 0
 	raw["_skill_point"] = 0
+	raw["_points"] = {}
 	raw["_items"] = []
 	raw["_status"] = "read"
 	# 客户端 _mail_list 仅返剩余）。单机照此从 _raw_mails 移除（raw 是列表内同一引用，erase 安全）。
 	_raw_mails.erase(raw)
+
+
+## 下一封系统邮件 id（在列 max+1；已领邮件已 erase，id 重用无冲突——_find_raw 只查在列）。
+func next_mail_id() -> int:
+	var max_id: int = 0
+	for raw in _raw_mails:
+		max_id = maxi(max_id, int(raw["_id"]))
+	return max_id + 1
+
+
+## 追加本地程序生成的系统邮件（2026-09-17 竞技场每日结算奖励渠道，照源服务器邮件下发语义）。
+func add_system_mail(raw: Dictionary) -> void:
+	_raw_mails.append(raw)
 
 
 # 标记已读（无附件邮件点开 → read，照 refreshMailAt:370 data.status="read"）。

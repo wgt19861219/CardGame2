@@ -27,7 +27,8 @@ var dungeon_bosses_cleared: Dictionary = {}
 var act_times: Dictionary = {}  # 副本组当日次数（源 getActTimes/addActTimes，group→count）
 var act_times_reset_ts: int = 0  # act_times 跨日清零锚点（StageDungeonLogic.check_act_times_daily_reset）
 # 章节星数奖励已领记录（key "chapter_tier" → true）。源 player.lua:911 _chapter_star_claimed。
-# 注：本项目 StageManager 不由 GameData 持久化（既有 stage 进度同此限制），claimed 会话内有效。
+# 持久化：PlayerDataSerde.to_dict 序列化 stage_manager（含本字段），随存档落盘
+# （2026-09-17 核正：旧注释"会话内有效"系 serde 接入前的过时描述）。
 var chapter_star_claimed: Dictionary = {}
 # 结构 {stage_key: {item_key: miss_count}}，会话内有效（照源 M.sweep_loot_record 生命周期）。
 var sweep_loot_record: Dictionary = {}
@@ -129,6 +130,7 @@ func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, play
 	var exit_r: Dictionary = exit_stage(sid, stars, won)
 	if won and player_tids.size() > 0:
 		player.take_stage_reward(sid, stars, player_tids, loots)
+		_record_stage_limit(player, sid, 1)
 		_record_stage_dailyjob(player, sid)
 	return {"ok": true, "won": won, "stars": stars, "exp": int(exit_r["exp"]), "money": int(exit_r["money"]), "loots": loots, "hero_hp_mp": StageAccount.collect_hero_hp_mp(eng), "lose_type": "timeout" if int(eng.last_result) == BattleEngine.RESULT_TIMEOUT else "fail"}
 
@@ -322,6 +324,7 @@ func sweep(sid: int, times: int, rng: Variant = null, player: PlayerData = null,
 	if player != null:
 		player.add_team_exp(single_exp * times)
 		player.hero_manager.add_money(single_money * times)
+		_record_stage_limit(player, sid, times)
 		for loot_id in loots:
 			if _item_type(int(loot_id)) == "hero":
 				player.hero_manager.add_hero(int(loot_id))
@@ -345,6 +348,18 @@ func _record_stage_dailyjob(player: PlayerData, sid: int) -> void:
 		player.task_manager.record_by_type(config, "FarmPVEStage")
 	if s_type == "elite":
 		player.task_manager.record_by_type(config, "FarmElitePVEStage")
+
+
+## 精英关每日已打次数累加（源服务器 exit 记数；2026-09-17 经济单机优化补写入端——
+## 此前 stage_limit 只有 UI 读与花钻重置清零、无累加，Daily Limit 恒放行=精英关无限刷钻）。
+## 胜利结算与扫荡两路径共用；非精英关（Daily Limit=0）不计。跨日清零见
+## PlayerData.check_stage_limit_daily_reset（stage_detail_panel 打开时惰性触发）。
+static func _record_stage_limit(player: PlayerData, sid: int, times: int) -> void:
+	if player == null or times <= 0:
+		return
+	if StageAccount.stage_type(sid) != StageAccount.STAGE_TYPE_ELITE:
+		return
+	player.stage_limit[sid] = int(player.stage_limit.get(sid, 0)) + times
 
 
 ## 存档序列化。

@@ -30,7 +30,10 @@ const MAGIC_HERO_ROLL_MAX: int = 10                       # 单抽整卡概率�
 const MAGIC_HERO_ROLL_THRESHOLD: int = 1                  # <=1 命中 = 10%（十连恒必得，对齐 gold 保底结构）
 const MAGIC_DAY_SOUL_COUNT: int = 3                       # 今日热点魂石数（表 Soul 1-3 ID 三槽）
 
-const BOX_CD: Dictionary = {"Bronze": 600, "Gold": 165600, "MagicSoul": 432000}
+# 免费抽 CD（源 parameterTable bronze_cd=600/gold_cd=165600/magic_cd=432000）。
+# Gold 单机化 165600s(46h)→86400s(24h)：2026-09-17 经济单机优化用户拍板（适度爽快档）——
+# 源 CD 46h 使"每日 1 次免费"名义实际两天一次，网游拉日活设计在单机下只拖节奏。
+const BOX_CD: Dictionary = {"Bronze": 600, "Gold": 86400, "MagicSoul": 432000}
 const FREE_TIMES: Dictionary = {"Bronze": 5, "Gold": 1, "MagicSoul": 1}
 const SECONDS_PER_MINUTE: int = 60          # 分钟→秒换算（_local_day_key 时区偏移）
 const SECONDS_PER_HOUR: int = 3600           # 小时→秒换算（_hms_string 倒计时格式）
