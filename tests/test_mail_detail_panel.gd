@@ -373,3 +373,17 @@ func test_item_attach_icon_scale_position() -> void:
 	assert_almost_eq(icon1.position.x, 36.5 + 65.0, 0.1, "第 2 列左 = 66.5+65-30（源 dx=icon_len=65）")
 	assert_almost_eq(icon1.position.y, icon0.position.y, 0.01, "同行 y 相同")
 	panel.free()
+
+
+# ── 领取链立即存盘守卫（2026-09-17 同召唤判例 fix/summon-save-persist）──
+# 修复前 _claim_and_close 只 mark_save_dirty：60s 自动存盘窗口内杀进程读档回滚
+# （资产回退 + 邮件未读回来 = 可重复领取刷钻洞；竞技场每日排名奖励链真机三段式
+# 实测复现：领取 +550 钻/+10000 金 → 杀进程 → diamond/gold 回退、邮件 9001 回列表）。
+# 附件入账=资产变更链，判例要求 View 层成功分支显式 GameData.save()（立即落盘）。
+func test_claim_persists_via_explicit_save() -> void:
+	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	var claim_idx: int = text.find("claim_attach(")
+	var save_idx: int = text.find("GameData.save()")
+	assert_gt(claim_idx, -1, "claim_attach 调用存在")
+	assert_gt(save_idx, claim_idx, "claim_attach 之后有显式 GameData.save()（领取即落盘）")
+	assert_eq(text.count("mark_save_dirty"), 0, "面板内不再用 mark_save_dirty（防标脏回退）")

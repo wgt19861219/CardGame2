@@ -93,3 +93,65 @@ func test_to_from_dict_roundtrip() -> void:
 	var lm2 := LadderManager.new()
 	lm2.from_dict(d)
 	assert_eq(int(lm2.pvp["rank"]), 800, "rank 持久化往返")
+
+
+# ── 写命令标脏（2026-09-17 清偿经济优化遗留「_cmd_end_battle 资产未标脏」）──
+# T2 依赖倒置：save_hook 注入 spy 计数，断言写命令（发奖/扣次数/花钻/每日重置）
+# 均内聚标脏——调用方漏存时至少有 60s 自动存盘兜底（同 midas/vitality 模式）。
+
+func _spy_ladder() -> Array:
+	var counter := [0]
+	var lm := LadderManager.new()
+	lm.save_hook = func() -> void: counter[0] += 1
+	return [counter, lm]
+
+
+func test_end_battle_victory_marks_dirty() -> void:
+	var spy: Array = _spy_ladder()
+	var lm: LadderManager = spy[1]
+	lm.ensure_pvp()
+	lm.pvp["rank"] = 1001
+	lm.pvp["last_oppo_rank"] = 500
+	lm.handle({"_end_battle": {"result": "victory"}}, player, cm, BattleRng.new(10), 0)
+	assert_gt((spy[0] as Array)[0], 0, "victory 发奖（arenapoint/diamond）后标脏")
+
+
+func test_end_battle_defeat_marks_dirty() -> void:
+	var spy: Array = _spy_ladder()
+	var lm: LadderManager = spy[1]
+	lm.ensure_pvp()
+	lm.pvp["rank"] = 1001
+	lm.handle({"_end_battle": {"result": "defeat"}}, player, cm, BattleRng.new(11), 0)
+	assert_gt((spy[0] as Array)[0], 0, "defeat 后（records 变更）标脏")
+
+
+func test_start_battle_marks_dirty() -> void:
+	var spy: Array = _spy_ladder()
+	var lm: LadderManager = spy[1]
+	lm.ensure_pvp()
+	(lm.pvp["enemies"] as Array).append(LadderManager.generate_ai_player(900, 10, cm, BattleRng.new(12)))
+	var reply: Dictionary = lm.handle({"_start_battle": {"oppo_user_id": 10000 + 900}}, player, cm, BattleRng.new(12), 0)
+	assert_false((reply["_start_battle"] as Dictionary).is_empty(), "start_battle 成功")
+	assert_gt((spy[0] as Array)[0], 0, "扣 left_count 后标脏")
+
+
+func test_buy_and_clear_cd_mark_dirty() -> void:
+	var spy: Array = _spy_ladder()
+	var lm: LadderManager = spy[1]
+	lm.ensure_pvp()
+	player.add_diamond(1000)
+	assert_eq(str(lm.handle({"_buy_battle_chance": true}, player, cm, BattleRng.new(13), 0)["_buy_battle_chance"]["result"]), "success", "购买成功前置")
+	assert_gt((spy[0] as Array)[0], 0, "buy_battle_chance 花钻成功后标脏")
+	(spy[0] as Array)[0] = 0
+	lm.handle({"_clear_battle_cd": true}, player, cm, BattleRng.new(13), 0)
+	assert_gt((spy[0] as Array)[0], 0, "clear_battle_cd 花钻成功后标脏")
+
+
+func test_daily_reset_first_marks_dirty() -> void:
+	var spy: Array = _spy_ladder()
+	var lm: LadderManager = spy[1]
+	lm.ensure_pvp()
+	assert_eq(int(lm.pvp["last_reset_day"]), 0, "新号 last_reset_day=0")
+	# handle 首行 _check_daily_reset：today≠0 触发重置（last_day<=0 不发邮件但重置 left_count）
+	lm.handle({"_query_records": true}, player, cm, BattleRng.new(14), 1800000000)
+	assert_gt((spy[0] as Array)[0], 0, "首次每日重置（无邮件路径）也标脏")

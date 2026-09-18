@@ -242,7 +242,10 @@ func _claim_and_close() -> void:
 	rewards.setup_panel(_mail.get("attach_common", []), _mail.get("items", []), pd.cm)
 	rewards.show_window(get_parent())
 	pd.mailbox.claim_attach(_mail_id, pd)
-	GameData.mark_save_dirty()
+	# 附件入账=资产变更链，同召唤判例（fix/summon-save-persist）View 层成功分支显式存盘：
+	# 只标脏则 60s 窗口内进程被杀读档回滚（资产回退+邮件未读回来=可重复领取刷钻洞，
+	# 2026-09-17 竞技场每日排名奖励链实测复现）。
+	GameData.save()
 	_close()
 
 

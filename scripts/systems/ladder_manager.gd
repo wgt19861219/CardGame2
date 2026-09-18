@@ -59,6 +59,9 @@ var pvp: Dictionary = {}
 # T3 依赖倒置：战斗表现音效钩子（GameData 装配后注入 LadderBattle.assemble 用；缺省静默跳过）。
 var sfx_hook: Callable = Callable()
 # 存档标脏钩子（GameData 注入；每日奖励邮件落盘标脏，缺省 Callable 静默跳过，headless 可测）。
+# 2026-09-17 清偿经济优化遗留「_cmd_end_battle 资产未标脏」：写命令（end_battle 发奖/
+# start_battle 扣次数/buy/clear 花钻/daily 重置）统一内聚标脏（T2 依赖倒置，同 midas/vitality），
+# 调用方漏存时至少有 60s 自动存盘兜底；主保护仍是 View 结算链显式 GameData.save()。
 var save_hook: Callable = Callable()
 
 
@@ -140,9 +143,16 @@ func _check_daily_reset(now: int, player: PlayerData, cm: ConfigManager) -> void
 	pvp["last_reset_day"] = today
 	pvp["left_count"] = LEFT_COUNT_DEFAULT
 	pvp["buy_times"] = 0
+	_mark_dirty()   # 首次重置（last_day<=0）不发邮件也标脏
 	if last_day <= 0 or player == null or cm == null:
 		return
 	_issue_daily_reward(player, cm, now)
+
+
+## 写命令统一标脏（save_hook 缺省静默，headless 可测）。
+func _mark_dirty() -> void:
+	if save_hook.is_valid():
+		save_hook.call()
 
 
 ## 每日排名奖励邮件（LadderDailyReward 查表构造；表空静默跳过）。发放后标脏落盘。
@@ -152,8 +162,7 @@ func _issue_daily_reward(player: PlayerData, cm: ConfigManager, now: int) -> voi
 	if mail.is_empty():
 		return
 	player.mailbox.add_system_mail(mail)
-	if save_hook.is_valid():
-		save_hook.call()
+	_mark_dirty()
 
 
 const DAY_KEY_YEAR_WEIGHT: int = 10000
@@ -236,6 +245,7 @@ func _cmd_start_battle(cmd: Variant, player: PlayerData, cm: ConfigManager, rng:
 	pvp["left_count"] = maxi(0, int(pvp["left_count"]) - 1)
 	pvp["last_bt_time"] = now
 	pvp["last_oppo_rank"] = int(enemy["rank"])
+	_mark_dirty()
 	return {"heroes": enemy["heroes"], "self_heroes": _assemble_self_heroes(cmd_d.get("attack_lineup", []), player), "is_robot": int(enemy.get("is_robot", 1)), "rseed": rng.randi_range(1, RSEED_MAX)}
 
 
@@ -283,8 +293,10 @@ func _cmd_end_battle(cmd: Variant, player: PlayerData, now: int) -> Dictionary:
 		var best_rank_reward: int = BEST_RANK_DIAMOND if int(pvp["highest_rank"]) < old_highest else 0
 		if best_rank_reward > 0:
 			player.add_diamond(best_rank_reward)
+		_mark_dirty()
 		return {"result": "victory", "rank": pvp["rank"], "prev_rank": old_rank, "reward": reward,
 			"best_rank_reward": best_rank_reward, "best_rank": int(pvp["highest_rank"])}
+	_mark_dirty()
 	return {"result": "defeat", "rank": pvp["rank"], "prev_rank": pvp["rank"], "reward": 0,
 		"best_rank_reward": 0, "best_rank": int(pvp["highest_rank"])}
 
@@ -297,6 +309,7 @@ func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:
 	if player.spend_diamond(cost):
 		pvp["buy_times"] = int(pvp["buy_times"]) + 1
 		pvp["left_count"] = int(pvp["left_count"]) + 1
+		_mark_dirty()
 		return {"result": "success", "left_count": pvp["left_count"], "buy_times": pvp["buy_times"]}
 	return {"result": "fail"}
 
@@ -304,6 +317,7 @@ func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:
 func _cmd_clear_battle_cd(player: PlayerData) -> Dictionary:
 	if player.spend_diamond(CLEAR_CD_COST):
 		pvp["last_bt_time"] = 0
+		_mark_dirty()
 		return {"result": "success"}
 	return {"result": "fail"}
 
