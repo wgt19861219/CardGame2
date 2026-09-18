@@ -22,7 +22,7 @@ const PROTOCOL_VERSION := "1.0"
 # A2 (2026-09-16 反馈批): 脚本分发版本指纹 —— 与 package.json version 同步(由
 # scripts/version-sync.mjs 的 bridgeGd target 管理,勿手改)。ping 响应与 registry entry
 # 均回传,MCP server 侧与 bundled 版本比对,项目内旧版拷贝未同步一眼可辨(send_drag 五踩根因)。
-const BRIDGE_SCRIPT_VERSION := "0.33.6"
+const BRIDGE_SCRIPT_VERSION := "0.33.9"
 const INACTIVITY_TIMEOUT := 60.0
 
 # ─── Instance Registry (Phase 2b) ─────────────────────────────────────────
@@ -74,12 +74,11 @@ var _playtest_step_pending: Array = []  # [{peer: StreamPeerTCP, pid: int, id: V
 # owner_pid 记录当前持有者，_cleanup_peer_state 只在持有者断开时才还原全局状态，
 # 防多 peer 场景下 peer B 断开误清 peer A 的 physics 锁/snapshot。
 var _playtest_owner_pid: int = -1
-var _last_step_request_id: Variant = null  # step 请求的 id,供 _process_buffer_bytes 取用
 # G1 (2026-08-13) control-first satellite 层(附录 F.1):freeze/unfreeze/step_until
-# owner_pid 独占(仿 _playtest_owner_pid,防多 peer 误清);step_until 走延迟通道(同 __PLAYTEST_STEP__)
+# owner_pid 独占(仿 _playtest_owner_pid,防多 peer 误清);step_until 走延迟通道(同 playtest.step,O1 批5 统一 __deferred__)
 var _control_frozen: bool = false
 var _control_owner_pid: int = -1
-var _control_step_until_pending: Array = []  # [{peer_id,pid,id,frames_remaining,wall_deadline_ms,conditions,_added_this_frame}]
+var _control_step_until_pending: Array = []  # [{peer_id,pid,id,frames_remaining,max_frames,wall_deadline_ms,conditions,refreeze,report,profile,_added_this_frame}]
 # H1 (2026-08-20) 帧定时输入时间线:同款延迟通道。开窗后逐帧计数,at_frame 匹配帧注入事件
 # (注入复用 _cmd_send_*,零重复);完成/墙钟超时 push 响应 +(若原 frozen)refreeze。
 var _control_input_seq_pending: Array = []  # [{peer_id,pid,id,timeline,frames_budget,wall_deadline_ms,frame_counter,applied,refreeze,_added_this_frame}]
@@ -94,13 +93,15 @@ var _control_paused_saved: bool = false
 var _freeze_contested_count: int = 0
 var _freeze_started_ms: int = 0
 var _control_paused_saved_valid: bool = false
-var _pending_control_step_until_result: Dictionary = {}
-# P2-2 (2026-09-11): playtest.step 的 report 搭车参数(字符串哨兵装不下数组,同款临时变量模式)
-var _pending_playtest_step_report: Dictionary = {}  # 临时:_handle_message 存,_process_buffer_bytes 取
-var _pending_control_input_seq_result: Dictionary = {}  # H1 同款临时变量
-var _pending_call_method_result: Dictionary = {}  # 坑4(2026-08-21 反馈批)同款:call_method await_completion 延迟响应上下文
-# P3-2 (2026-09-11): click_button real_event 等帧验证延迟响应上下文(同款临时变量模式)
-var _pending_click_verify_result: Dictionary = {}
+# O1 哨兵收敛(2026-09-18 批5):五条延迟通道(call_method await 坑4/click real_event P3-2/
+# playtest.step P2-4/step_until G1/input_sequence H1)原为"handler 私有临时变量×5 + 五种
+# 哨兵字符串 + 消费端五段 elif"(每新增延迟命令要动 4 处,五变体行为不对称),收敛为单例槽:
+# handler 平铺返 {"__deferred__": kind, ...payload},_handle_message 识别单键、id 并入存槽,
+# _process_buffer_bytes 消费端按 kind 分派(各分支体沿用原逻辑,只改数据来源)。
+# 存→取在同一 _process_buffer_bytes tick 内完成(handle 一条→立即消费哨兵),单槽与原
+# 临时变量同语义,无并发窗口。kind 值:playtest_step/control_step_until/control_input_seq/
+# call_method_async/click_verify。
+var _deferred: Dictionary = {}  # {"kind": String, "id": Variant(请求 id,原 _last_step_request_id 并入), "payload": Dictionary}
 # P3-1 (2026-09-11): NetworkConditioner 弱网注入(masteryee network_conditioner.gd 移植,
 # MultiplayerPeerExtension 装饰器包装真实 peer,出向注入 latency/loss/jitter)
 var _net_conditioner: _NetworkConditioner = null
@@ -184,9 +185,26 @@ const EXTRA_METHODS_BLOCKLIST := [
 
 # ─── Lifecycle ─────────────────────────────────────────────────────────────
 
+# EXPORT-1: 任一 GODOT_MCP_BRIDGE_* 显式注入(与上游 buildSafeEnv 透传域一致)即视为
+# 调试意图——导出版守卫的豁免通道:玩家机不会碰巧设这些键,调试者可强制开启 bridge。
+func _no_bridge_env() -> bool:
+	for k in ["GODOT_MCP_BRIDGE_PORT", "GODOT_MCP_BRIDGE_PERSISTENT_SECRET", "GODOT_MCP_BRIDGE_ALLOWED_PROFILES"]:
+		if OS.get_environment(k) != "":
+			return false
+	return true
+
+
 func _ready() -> void:
 	# Godot 4.6+: extends 原生类(Node)的虚函数不可调 super()(4.6.2 Parse error "hasn't been defined"),移除 IMP-4 super()。该 convention 仅适用于 extends 自定义基类。
 	if Engine.is_editor_hint():
+		return
+	# EXPORT-1 (2026-09-18): 导出版攻击面剔除——autoload 注册使本脚本被导出器强制带进发布包,
+	# 此前仅挡 editor hint,玩家裸跑导出 exe 会监听 TCP+写 secret+_process 轮询(最小暴露违背)。
+	# 判据(实测矩阵,4.7.2):编辑器二进制的所有运行形态(-s/--path/F5/run_project spawn)均
+	# editor feature=true;导出 release 包 editor=false+release=true 唯一组合。--export-debug
+	# 包(editor=false+release=false)不在判定内——分发 debug 包的场景如需剔除再扩。
+	# 豁免:任一 GODOT_MCP_BRIDGE_* 显式注入(与 buildSafeEnv 透传域一致)=调试意图,强制开启。
+	if not OS.has_feature("editor") and OS.has_feature("release") and _no_bridge_env():
 		return
 	# CMP-2 (2026-08-08): 注册 runtime error 捕获(在 _start_server 前,确保任何启动错误也被捕)。
 	_error_capture = _ErrorCapture.new()
@@ -874,6 +892,7 @@ func _write_registry_entry() -> void:
 		"port": _port,
 		"pid": OS.get_process_id(),
 		"lastSeen": Time.get_datetime_string_from_system(),
+		"lastSeenMs": int(Time.get_unix_time_from_system() * 1000.0),
 		"godotVersion": Engine.get_version_info().get("string", "unknown"),
 		"bridgeVersion": BRIDGE_SCRIPT_VERSION,
 		"capabilities": ["registry-heartbeat"],
@@ -990,68 +1009,66 @@ func _process_buffer_bytes(peer: StreamPeerTCP, pid: int) -> bool:
 				_peer_buffers[key] = raw
 				return true
 		var response := _handle_message(line, pid)
-		# P2-4: playtest.step 返回特殊标记 —— 存 pending 延迟 push,不立即 put_data
-		# _process 末尾递减 frames_remaining(I-2:加入帧不递减),到 0 时 push 响应(计数器轮询,非 coroutine)
-		if response.begins_with("__PLAYTEST_STEP__"):
-			var frames := int(response.split("__")[2])
-			var _step_report: Array = _pending_playtest_step_report.get("report", [])
-			var _step_profile: String = str(_pending_playtest_step_report.get("profile", "debug"))
-			_pending_playtest_step_report = {}
-			_playtest_step_pending.append({
-				"peer_id": peer.get_instance_id(),
-				"pid": pid,
-				"id": _last_step_request_id,
-				"frames_remaining": frames,
-				"report": _step_report,  # P2-2: 结构化终态读数,完成响应时求值
-				"profile": _step_profile,  # B-1: report 求值按此档位投影
-				"_added_this_frame": true,  # I-2 修复:本帧不递减,下一帧才开始计帧
-			})
-		elif response.begins_with("__PLAYTEST_CONTROL_STEP_UNTIL__"):
-			# G1: 从临时变量取 step_until 完整 params 存 pending(_process 轮询 conditions)
-			var su_payload: Dictionary = _pending_control_step_until_result
-			_pending_control_step_until_result = {}
-			_control_step_until_pending.append({
-				"peer_id": peer.get_instance_id(),
-				"pid": pid,
-				"id": _last_step_request_id,
-				"frames_remaining": int(su_payload["max_frames"]),
-				"max_frames": int(su_payload["max_frames"]),
-				"wall_deadline_ms": Time.get_ticks_msec() + int(su_payload["wall_budget_ms"]),
-				"conditions": su_payload["conditions"],
-				"refreeze": bool(su_payload.get("refreeze", false)),
-				"report": su_payload.get("report", []),  # P2-2: 结构化终态读数
-				"profile": str(su_payload.get("profile", "debug")),  # B-1: report 求值档位
-				"_added_this_frame": true,
-			})
-		elif response.begins_with("__PLAYTEST_CONTROL_INPUT_SEQ__"):
-			# H1: input_sequence 同款登记(_process 逐帧计数注入)
-			var isq_payload: Dictionary = _pending_control_input_seq_result
-			_pending_control_input_seq_result = {}
-			_control_input_seq_pending.append({
-				"peer_id": peer.get_instance_id(),
-				"pid": pid,
-				"id": _last_step_request_id,
-				"timeline": isq_payload["timeline"],
-				"frames_budget": int(isq_payload["frames_budget"]),
-				"wall_deadline_ms": Time.get_ticks_msec() + int(isq_payload["wall_budget_ms"]),
-				"refreeze": bool(isq_payload.get("refreeze", false)),
-				"frame_counter": 0,
-				"applied": [],
-				"_added_this_frame": true,  # I-2 同款:登记帧不计数,下一帧起 at_frame=1
-			})
-		elif response.begins_with("__CALL_METHOD_ASYNC__"):
-			# 坑4(2026-08-21 反馈批): call_method await_completion —— fire-and-forget 启动协程,
-			# 完成后由协程自身推送响应(不阻塞本 packet 循环;peer 断开则丢响应,同 pending 推送模式)。
-			var cm_payload: Dictionary = _pending_call_method_result
-			_pending_call_method_result = {}
-			var cm_ctx: Dictionary = cm_payload["ctx"]
-			_await_call_method_and_respond(peer.get_instance_id(), cm_payload["id"], str(cm_ctx["path"]), cm_ctx["method"], cm_ctx["args"], bool(cm_ctx.get("player_mode", false)))
-		elif response.begins_with("__CLICK_VERIFY__"):
-			# P3-2 (2026-09-11): click_button real_event 同款 fire-and-forget 协程——
-			# press/release 注入 + 等 4 帧读信号计数 + 推送响应。
-			var cv_payload: Dictionary = _pending_click_verify_result
-			_pending_click_verify_result = {}
-			_await_click_verify_and_respond(peer.get_instance_id(), cv_payload["id"], str(cv_payload["path"]))
+		# O1 收敛(批5):五条延迟通道统一哨兵 "__DEFERRED__",kind 分派——各分支体沿用原
+		# 五段 elif 的逻辑(P2-4 playtest.step 计数器轮询/G1 step_until/H1 input_sequence
+		# 存 pending、坑4 call_method await/P3-2 click real_event 起协程),仅数据来源从
+		# handler 私有临时变量改为 _deferred 单例槽(存取同 tick,pop 语义)。
+		if response == "__DEFERRED__":
+			var d: Dictionary = _deferred
+			_deferred = {}
+			var d_kind: String = str(d["kind"])
+			var p: Dictionary = d["payload"]
+			if d_kind == "playtest_step":
+				# P2-4: 存 pending 延迟 push,_process 末尾递减 frames_remaining
+				# (I-2:加入帧不递减),到 0 时 push 响应(计数器轮询,非 coroutine)
+				_playtest_step_pending.append({
+					"peer_id": peer.get_instance_id(),
+					"pid": pid,
+					"id": d["id"],
+					"frames_remaining": int(p["frames"]),
+					"report": p.get("report", []),  # P2-2: 结构化终态读数,完成响应时求值
+					"profile": str(p.get("profile", "debug")),  # B-1: report 求值按此档位投影
+					"_added_this_frame": true,  # I-2 修复:本帧不递减,下一帧才开始计帧
+				})
+			elif d_kind == "control_step_until":
+				# G1: step_until 完整 params 存 pending(_process 轮询 conditions)
+				_control_step_until_pending.append({
+					"peer_id": peer.get_instance_id(),
+					"pid": pid,
+					"id": d["id"],
+					"frames_remaining": int(p["max_frames"]),
+					"max_frames": int(p["max_frames"]),
+					"wall_deadline_ms": Time.get_ticks_msec() + int(p["wall_budget_ms"]),
+					"conditions": p["conditions"],
+					"refreeze": bool(p.get("refreeze", false)),
+					"report": p.get("report", []),  # P2-2: 结构化终态读数
+					"profile": str(p.get("profile", "debug")),  # B-1: report 求值档位
+					"_added_this_frame": true,
+				})
+			elif d_kind == "control_input_seq":
+				# H1: input_sequence 同款登记(_process 逐帧计数注入)
+				_control_input_seq_pending.append({
+					"peer_id": peer.get_instance_id(),
+					"pid": pid,
+					"id": d["id"],
+					"timeline": p["timeline"],
+					"frames_budget": int(p["frames_budget"]),
+					"wall_deadline_ms": Time.get_ticks_msec() + int(p["wall_budget_ms"]),
+					"refreeze": bool(p.get("refreeze", false)),
+					"frame_counter": 0,
+					"applied": [],
+					"_added_this_frame": true,  # I-2 同款:登记帧不计数,下一帧起 at_frame=1
+				})
+			elif d_kind == "call_method_async":
+				# 坑4(2026-08-21 反馈批): call_method await_completion —— fire-and-forget 启动协程,
+				# 完成后由协程自身推送响应(不阻塞本 packet 循环;peer 断开则丢响应,同 pending 推送模式)。
+				_await_call_method_and_respond(peer.get_instance_id(), d["id"], str(p["path"]), p["method"], p["args"], bool(p.get("player_mode", false)))
+			elif d_kind == "click_verify":
+				# P3-2 (2026-09-11): click_button real_event 同款 fire-and-forget 协程——
+				# press/release 注入 + 等 4 帧读信号计数 + 推送响应。
+				_await_click_verify_and_respond(peer.get_instance_id(), d["id"], str(p["path"]))
+			else:
+				push_warning("bridge: unknown deferred kind: %s" % d_kind)
 		else:
 			peer.put_data((response + "\n").to_utf8_buffer())
 	_peer_buffers[key] = raw
@@ -1185,30 +1202,15 @@ func _handle_message(raw: String, pid: int) -> String:
 	if error.is_empty() and result is Dictionary and result.has("error"):
 		error = result["error"]
 		result = null
-	# P2-4: playtest.step 特殊处理 —— 返回哨兵字符串,让 _process_buffer_bytes 启动 coroutine
-	if error.is_empty() and result is Dictionary and result.has("__playtest_step__"):
-		_last_step_request_id = id
-		return "__PLAYTEST_STEP__%d__" % int(result["frames"])
-	# G1: step_until 同款哨兵(延迟通道)。完整 result 存临时变量,_process_buffer_bytes 取用存 pending。
-	if error.is_empty() and result is Dictionary and result.has("__playtest_control_step_until__"):
-		_last_step_request_id = id
-		_pending_control_step_until_result = result
-		return "__PLAYTEST_CONTROL_STEP_UNTIL__"
-	# H1: input_sequence 同款哨兵(延迟通道)。
-	if error.is_empty() and result is Dictionary and result.has("__playtest_control_input_seq__"):
-		_last_step_request_id = id
-		_pending_control_input_seq_result = result
-		return "__PLAYTEST_CONTROL_INPUT_SEQ__"
-	# 坑4(2026-08-21 反馈批): call_method await_completion 同款哨兵——协程方法等待完成
-	# 后才推送真值(await callv 三版本实证可行,见 _await_call_method_and_respond 注释)。
-	if error.is_empty() and result is Dictionary and result.has("__call_method_async__"):
-		_pending_call_method_result = {"id": id, "ctx": result["__call_method_async__"]}
-		return "__CALL_METHOD_ASYNC__"
-	# P3-2 (2026-09-11): click_button real_event 同款哨兵——注入真实鼠标事件后需等引擎
-	# 处理 2 帧(press/release 各 2)才能读信号计数,延迟推送(见 _await_click_verify_and_respond)。
-	if error.is_empty() and result is Dictionary and result.has("__click_verify__"):
-		_pending_click_verify_result = {"id": id, "path": result["__click_verify__"]}
-		return "__CLICK_VERIFY__"
+	# O1 收敛(批5):延迟通道单键识别——五条延迟命令的 handler 统一平铺返
+	# {"__deferred__": kind, ...payload}(原五种魔法键 __playtest_step__ 等收敛),
+	# 此处剥离哨兵键得 payload、id 并入,存单例槽;消费端 _process_buffer_bytes 按
+	# kind 分派(原五段识别 if 的各自存临时变量逻辑全部归一)。
+	if error.is_empty() and result is Dictionary and result.has("__deferred__"):
+		var _payload: Dictionary = result.duplicate()
+		_payload.erase("__deferred__")
+		_deferred = {"kind": str(result["__deferred__"]), "id": id, "payload": _payload}
+		return "__DEFERRED__"
 	if error.is_empty():
 		return JSON.stringify({"id": id, "result": result})
 	else:
@@ -1689,10 +1691,11 @@ func _get_property_type(obj: Object, key: String) -> int:
 
 
 # E-2 (2026-08-14): MCP JSON Array/Dict 输入 → Godot 数学类型真转换(DUPLICATE 三副本之一)。
-# ⚠️ 三副本同步关系(改任一处须同步另外两处):
-#   源(editor 侧):   addons/godot_mcp_server/commands/command_helpers.gd coerce_value_for_property
-#   副本(headless):  src/scripts/godot_operations.gd _coerce_math_value
-#   副本(bridge 侧): 本文件 _coerce_math_value
+# ⚠️ 三副本同步关系(改任一处须同步另外两处;editor 侧是异构形态:Array-only +
+#   typeof(current) 分派 + _comp_white 分量白名单,2026-09-17 fix round 1 已收口同款守卫):
+#   源(editor 侧):   addons/godot_mcp_server/commands/command_helpers.gd coerce_value_for_property(_comp_white)
+#   副本(headless):  src/scripts/godot_operations.gd _coerce_math_value(_math_comp)
+#   副本(bridge 侧): 本文件 _coerce_math_value(_math_comp)
 # 另:文件内第四份同族 _coerce_bridge_single(call_method args 侧,CMP-9-B)按 ClassDB 方法
 # 声明类型逐参数强转(Vector2/3 显式接受 String 构造),与本函数按属性声明类型的分派是
 # 不同输入面——同步维护属性 coerce 时勿混淆两份的 String 语义(属性 set 拒绝,args 接受)。
@@ -1751,6 +1754,8 @@ func _coerce_math_value(prop_type: int, value: Variant) -> Variant:
 
 
 # E-2: 数学分量读取——Array 按索引,Dict 按 key(x/y/z/w 或 r/g/b/a);越界/缺键/值为 null 返 null。
+# Keep in sync(三副本分量白名单): godot_operations.gd _math_comp(headless)+
+# command_helpers.gd _comp_white(editor,fix round 1 收口)。
 func _math_comp(value: Variant, index: int, key: String) -> Variant:
 	# H-1(2026-09-17 审查):分量取出后必须过类型白名单,容器分量进 float() 即 SCRIPT ERROR
 	# (同步分发无异常隔离→result:null)。对齐 _num 先例。
@@ -1852,7 +1857,7 @@ func _cmd_call_method(params: Dictionary) -> Variant:
 	if bool(params.get("await_completion", false)):
 		# 哨兵→_poll_peers fire-and-forget 启动 _await_call_method_and_respond,
 		# await callv 完成后推送真值(TS 侧 sendToBridge timeout 兜管,长协程注意调大)。
-		return {"__call_method_async__": {"path": path, "method": method, "args": _coerced, "player_mode": player_mode}}
+		return {"__deferred__": "call_method_async", "path": path, "method": method, "args": _coerced, "player_mode": player_mode}
 	var result: Variant = node.callv(method, _coerced)
 	if player_mode and method == "get" and args.size() > 0 and args[0] is String:
 		# B-1: player 档 get(prop) 返回值过字段投影(单键 wrapper 复用 dict 投影)
@@ -3318,7 +3323,7 @@ func _cmd_click_button(params: Dictionary) -> Variant:
 	# 状态类 bug(CheckBox/RadioButton 点击"成功"但没勾上)。需等引擎处理帧后读信号计数,
 	# 走哨兵延迟响应(同 call_method await_completion 模式)。
 	if params.get("real_event", false):
-		return {"__click_verify__": str(target.get_path())}
+		return {"__deferred__": "click_verify", "path": str(target.get_path())}
 
 	target.emit_signal("pressed")
 	return {
@@ -3550,7 +3555,8 @@ func _cmd_playtest_step(params: Dictionary, pid: int) -> Dictionary:
 	var frames: int = _int_guarded(params.get("frames"), 1)
 	if frames < 1 or frames > 60:
 		return {"error": {"code": -1, "message": "frames must be 1-60, got %d" % frames}}
-	# P2-2: report 参数校验(结构化终态读数);经临时变量随哨兵传 pending(数组走不了字符串编码)
+	# P2-2: report 参数校验(结构化终态读数);随 __deferred__ payload 传 pending(O1 批5:
+	# 原走模块级临时变量,收敛后平铺进哨兵 dict,不再受"字符串哨兵装不下数组"限制)
 	var vr: Array = _validate_report_spec(params)
 	if not bool(vr[0]):
 		return vr[1]
@@ -3559,8 +3565,7 @@ func _cmd_playtest_step(params: Dictionary, pid: int) -> Dictionary:
 	var profile_res := _resolve_observation_profile(params)
 	if profile_res.has("error"):
 		return profile_res
-	_pending_playtest_step_report = {"report": vr[1], "profile": str(profile_res["profile"])}
-	return {"__playtest_step__": true, "frames": frames}
+	return {"__deferred__": "playtest_step", "frames": frames, "report": vr[1], "profile": str(profile_res["profile"])}
 
 
 # ─── G1 (2026-08-13) control-first satellite 层(附录 F.1)─────────────────
@@ -3677,7 +3682,7 @@ func _cmd_control_step_until(params: Dictionary, pid: int) -> Dictionary:
 		_control_paused_saved_valid = true
 	_control_frozen = false  # 临时解:让 _process 不维持 paused,游戏跑
 	get_tree().paused = false  # 开窗
-	return {"__playtest_control_step_until__": true, "conditions": validated, "max_frames": max_frames, "wall_budget_ms": wall_budget_ms, "refreeze": refreeze, "report": su_vr[1], "profile": str(su_profile_res["profile"])}
+	return {"__deferred__": "control_step_until", "conditions": validated, "max_frames": max_frames, "wall_budget_ms": wall_budget_ms, "refreeze": refreeze, "report": su_vr[1], "profile": str(su_profile_res["profile"])}
 
 # ─── H1 (2026-08-20) 帧定时输入时间线(确定性完全体最后一块) ────────────────
 # at_frame=N = 开窗后第 N 个推进帧(登记帧不计数,I-2 同款);注入点=bridge _process
@@ -3749,7 +3754,7 @@ func _cmd_control_input_sequence(params: Dictionary, pid: int) -> Dictionary:
 		_control_paused_saved_valid = true
 	_control_frozen = false
 	get_tree().paused = false
-	return {"__playtest_control_input_seq__": true, "timeline": validated, "frames_budget": max_at + settle + 1, "wall_budget_ms": wall_budget_ms, "refreeze": refreeze}
+	return {"__deferred__": "control_input_seq", "timeline": validated, "frames_budget": max_at + settle + 1, "wall_budget_ms": wall_budget_ms, "refreeze": refreeze}
 
 func _inject_timeline_event(ev: Dictionary) -> Variant:
 	# 注入复用现有 _cmd_send_*(自带参数校验+注入),零重复;action 类型走 InputEventAction。
