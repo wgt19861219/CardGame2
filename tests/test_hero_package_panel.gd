@@ -604,3 +604,101 @@ func test_hero_click_passes_ordered_paging_list() -> void:
 		detail.queue_free()
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── 详情关闭列表刷新（2026-09-18：源 destroyHandler heropackage.lua:145-158 补译）──
+# 用户反馈：列表红点 → 进详情穿装备 → 返回列表红点不灭。根因 = 红点是 HeroPackageItem
+# 建卡一次性状态（_fill_equips → is_slot_ready_to_wear），旧实现详情关闭（tree_exiting）
+# 只恢复 container.visible 不重建列表，红点停留打开详情前的旧值。
+
+static func _first_deal_tag_visible(panel: HeroPackagePanel) -> bool:
+	for c in panel._grid.get_children():
+		if c is HeroPackageItem:
+			return (c as HeroPackageItem)._tip_host.visible
+	return false
+
+
+# 穿戴后关详情 → 列表重建红点灭（源 destroyHandler 全卡 refreshEquips）。
+func test_detail_close_refreshes_deal_tag() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	var pd := PlayerData.new(cm)
+	var inst_id: int = mgr.add_hero(1)
+	var hero: HeroInstance = mgr.get_hero(inst_id)
+	# 找首个有配方的槽（测试前提：tid=1 初始 rank 至少一槽有 Equip N ID）
+	var slot_idx: int = -1
+	var eid: int = 0
+	for i: int in range(6):
+		var cand: int = EquipdetailQuery.get_slot_expected_equip(hero, i + 1, cm)
+		if cand > 0:
+			slot_idx = i
+			eid = cand
+			break
+	assert_gt(slot_idx, -1, "存在配方槽（测试前提）")
+	if slot_idx < 0:
+		return
+	# 持有该装备 + 等级达标 → eti=wear 红点亮
+	var elv: int = int(cm.get_raw_table(&"Equip").get(str(eid), {}).get(&"Level Requirement", 0))
+	hero.level = maxi(hero.level, elv)
+	pd.items[eid] = 1
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm, pd)
+	panel.show_window(root)
+	assert_true(_first_deal_tag_visible(panel), "穿戴前持有可穿装备 → 卡片红点亮")
+	# 进详情 → 穿该槽 → 关详情（queue_free 帧末 free 触发 tree_exiting）
+	panel._on_hero_clicked(hero)
+	var detail: HeroDetailPanel = null
+	for ch in root.get_children():
+		if ch is HeroDetailPanel:
+			detail = ch
+			break
+	assert_not_null(detail, "HeroDetailPanel 弹出")
+	if detail == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	assert_true(mgr.wear_equip(inst_id, slot_idx), "详情内穿戴该槽")
+	# 穿戴件离包：wear_equip 不扣背包（合成时已耗料），但该件留在包内会被其他槽配方当
+	# 合成材料判"可合成可穿"（装备进阶链低阶喂高阶）→ 红点正确地亮。清零构造
+	# "穿戴后无可穿可合成"干净态，对应源 destroyHandler 场景。
+	pd.items[eid] = 0
+	detail.queue_free()
+	await wait_process_frames(3)   # 等帧末 free → tree_exiting 回调 + deferred 滚动恢复
+	assert_false(_first_deal_tag_visible(panel),
+		"穿完装备关详情 → 红点灭（源 destroyHandler refreshEquips；回归=旧实现不重建列表红点滞留）")
+	panel.remove_window()
+	root.queue_free()
+
+
+# 详情关闭滚动位置保持（源 destroyHandler getListPos/setListPos）。
+func test_detail_close_keeps_scroll_position() -> void:
+	var root := Node.new()
+	add_child(root)
+	var mgr := HeroManager.new(cm)
+	mgr.add_hero(1)
+	for tid: int in range(2, 13):   # 12 条 6 行 648px > 348 视口可滚（同 drag_helper 测试手法）
+		mgr.items[ReadheroHandbook.get_stone_id(tid, cm)] = 1
+	var panel := HeroPackagePanel.new("heropackage", {})
+	panel.setup_panel(mgr, cm)
+	panel.show_window(root)
+	await get_tree().process_frame   # 布局完成量程就绪，scroll_vertical 才设得进
+	panel._scroll.scroll_vertical = 120.0
+	var hero: HeroInstance = mgr.heroes.values()[0]
+	panel._on_hero_clicked(hero)
+	var detail: HeroDetailPanel = null
+	for ch in root.get_children():
+		if ch is HeroDetailPanel:
+			detail = ch
+			break
+	assert_not_null(detail, "HeroDetailPanel 弹出")
+	if detail == null:
+		panel.remove_window()
+		root.queue_free()
+		return
+	detail.queue_free()
+	await wait_process_frames(3)
+	assert_almost_eq(panel._scroll.scroll_vertical, 120.0, 1.0,
+		"详情关闭后滚动位置保持（源 getListPos/setListPos；重建不设回会归 0）")
+	panel.remove_window()
+	root.queue_free()

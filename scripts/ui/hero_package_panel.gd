@@ -273,8 +273,12 @@ func _on_hero_clicked(hero: HeroInstance) -> void:
 	#（旧 set_bars_visible 链已删，set_status_visible 系 8a8d9f8 退役符号）。
 	var host: Node = get_parent()
 	detail.show_window(host)
+	# 源 destroyHandler（heropackage.lua:145-158）：详情关闭 → getAllList + 全卡 refreshEquips
+	# （红点重算）+ createHeroList + draglist 滚动位置保持。红点是 HeroPackageItem 建卡一次性
+	# 状态（_fill_equips），漏重建致穿完装备回列表红点停留旧值（2026-09-18 用户反馈）。
 	detail.tree_exiting.connect(func() -> void:
-		container.visible = true)
+		container.visible = true
+		_refresh_from_detail_return())
 
 
 # 源 clickMissHero :163-172：碎片够 → showConfirmDialog「召唤英雄需要花费 N 金币」→ doSummon；
@@ -353,3 +357,14 @@ func _refresh_after_change() -> void:
 func _rebuild_after_change() -> void:
 	_classify_heroes()
 	_refresh_list()
+
+
+# 详情关闭刷新（源 destroyHandler 同名语义）：重分类 + 重建列表——红点/装备图标/名字后缀/
+# 头像全是建卡一次性 fill，进阶升星穿戴等都靠此处全量重算；并恢复滚动位置（源 getListPos/
+# setListPos）。deferred 恢复：free 重建后 ScrollContainer 量程要等布局 pass 更新，同步设会被 clamp。
+func _refresh_from_detail_return() -> void:
+	var saved_scroll: float = _scroll.scroll_vertical if _scroll != null else 0.0
+	_classify_heroes()
+	_refresh_list()
+	if _scroll != null:
+		_scroll.set_deferred("scroll_vertical", saved_scroll)

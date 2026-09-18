@@ -249,3 +249,42 @@ func test_first_button_not_overlapping_toggle() -> void:
 	assert_almost_eq(toggle_center_y, 40.0, 0.5, "toggle 中心 y=40（源 shortcut_pos_y 440 直译）")
 	assert_gt(first_center_y - toggle_center_y, 60.0, "首钮(118)与 toggle(40) 垂直间距 ≥60（实际 78，源同；旧等距 90 时仅 17 叠死）")
 	panel.queue_free()
+
+
+# ── identity 流转刷红点（2026-09-18 红点体系整体排查补的第二例）──
+# 源场景制 shortcut 随场景重建即重算（shortcut.lua:253 createButtons 末尾 refreshTags）
+# + 弹窗关闭回调刷（framework.lua:36 dailyTask / :645 task）；本项目 HudOverlay 常驻只建一次，
+# 旧实现 _apply_visibility 只切显隐不刷 tag——穿完装备回主城/领完任务关弹窗，heroPackage/task
+# 红点滞留旧值（与 hero_package 详情返回不灭同模式）。修=shortcut 重新可见时重算。
+
+# apply_identity 流转（回主城/弹窗关闭恢复都走 _apply_visibility）后 task tag 随数据重算。
+func test_apply_identity_flow_refreshes_shortcut_tags() -> void:
+	var prev_identity: String = HudOverlay.get_identity()
+	var tm: TaskManager = GameData.player.task_manager
+	# ① 完成未领 → identity 流转 → task tag 亮
+	tm.completed[FAKE_TASK_ID] = true
+	tm.claimed.erase(FAKE_TASK_ID)
+	HudOverlay.apply_identity("main")
+	var panel: ShortcutPanel = HudOverlay._shortcut
+	assert_true(panel._tags["task"].visible, "完成未领 + identity 流转 → task tag 亮")
+	# ② 领取 → 再流转（模拟弹窗关闭 apply_identity 恢复）→ tag 灭（回归=旧实现滞留亮）
+	tm.claimed[FAKE_TASK_ID] = true
+	HudOverlay.apply_identity("main")
+	assert_false(panel._tags["task"].visible, "领取后 identity 流转 → task tag 灭（旧实现只切显隐不重算）")
+	# 清理（全局 autoload 状态还原）
+	tm.completed.erase(FAKE_TASK_ID)
+	tm.claimed.erase(FAKE_TASK_ID)
+	HudOverlay.apply_identity("main")
+	HudOverlay.apply_identity(prev_identity)
+
+
+# 源码守卫：_apply_visibility 咽喉含 refresh_tags——它是常驻 shortcut 面板唯一的数据变化
+# 刷新点，删掉即穿装备/领任务回主城全量红点滞留（本守卫防无声回潮）。
+func test_hud_apply_visibility_refreshes_tags_guard() -> void:
+	var text: String = FileAccess.get_file_as_string("res://scripts/autoload/hud_overlay.gd")
+	var start: int = text.find("func _apply_visibility")
+	assert_gt(start, -1, "_apply_visibility 函数存在")
+	var body: String = text.substr(start)
+	body = body.substr(0, body.find("\nfunc "))
+	assert_true(body.find("refresh_tags()") != -1,
+		"_apply_visibility 含 refresh_tags() 调用（identity 流转/遮蔽解除重算快捷栏红点）")

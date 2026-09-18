@@ -196,7 +196,14 @@ func _apply_visibility() -> void:
 	_status_parent_sub.visible = not hide_all and not is_main
 	# Shortcut 显隐：用户决策（2026-07-27）只 main 显示，其他界面全隐藏（避各 panel 右上角抽屉叠加）。
 	# 源 framework.lua:989-992 非 main 强制展开规则不采纳（本项目 PopWindow 嵌套与源 pushScene 语义不同）。
-	_shortcut.visible = not hide_all and is_main
+	var shortcut_visible: bool = not hide_all and is_main
+	_shortcut.visible = shortcut_visible
+	# 红点重算（2026-09-18 红点体系排查）：源场景制 shortcut 随场景重建即重算（shortcut.lua:253
+	# createButtons 末尾 refreshTags）+ 弹窗关闭回调刷（framework.lua:36/:645 task·dailyTask 关闭）；
+	# 本项目 HudOverlay 常驻只建一次，identity 流转（回主城/弹窗关闭恢复）与遮蔽解除都过本咽喉——
+	# shortcut 重新可见时重算，穿装备/领任务/召唤/战斗计数变化后红点不滞留。
+	if shortcut_visible:
+		_shortcut.refresh_tags()
 
 
 func _refresh_status() -> void:
