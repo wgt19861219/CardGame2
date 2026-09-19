@@ -1,7 +1,8 @@
 extends GutTest
 # 暂停层音效开关接线（设计 2.2 定案 1，三审 MAJOR-R1）：
-# setup 第三参 dismiss 回调 + 内部自接三信号（sound_toggled→AudioPlayer.toggle_sound）；
-# 初始态由调用方传真值（AudioPlayer.sound_switch），治图标反相（二审 M-B）。
+# setup 第三参 dismiss 回调 + 内部自接三信号（sound_toggled→AudioPlayer.toggle_all）；
+# 初始态由调用方传真值（AudioPlayer.is_audio_on），治图标反相（二审 M-B）。
+# 五轮（2026-09-19）：单开关演进为双通道后，暂停层按钮=总开关（toggle_all 任一开→全关）。
 
 const PauseLayerScript = preload("res://scripts/view/battle/battle_pause_layer.gd")
 
@@ -22,15 +23,19 @@ func test_setup_takes_sound_on_and_dismiss() -> void:
 
 
 func test_sound_toggled_flips_audio_player_switch() -> void:
-	var before: bool = AudioPlayer.sound_switch
+	AudioPlayer.sfx_switch = true   # 显式「有开」起步（双关时 toggle_all 走全开分支）
+	AudioPlayer.bgm_switch = false
+	var before_sfx: bool = AudioPlayer.sfx_switch
+	var before_bgm: bool = AudioPlayer.bgm_switch
 	var layer := PauseLayerScript.new()
 	var ui := CanvasLayer.new()
 	add_child(ui)
-	layer.setup(ui, AudioPlayer.sound_switch)
-	layer.sound_toggled.emit()   # 信号直连 AudioPlayer.toggle_sound
-	assert_ne(AudioPlayer.sound_switch, before, "sound_toggled 翻转全局开关")
-	AudioPlayer.sound_switch = before   # 还原，避免污染其他测试
-	AudioPlayer._save_sound_cfg()
+	layer.setup(ui, AudioPlayer.is_audio_on())
+	layer.sound_toggled.emit()   # 信号直连 AudioPlayer.toggle_all
+	assert_false(AudioPlayer.sfx_switch or AudioPlayer.bgm_switch,
+		"sound_toggled → toggle_all（有开即全关，暂停层静音语义）")
+	AudioPlayer.sfx_switch = before_sfx   # 精确还原双通道，避免污染其他测试
+	AudioPlayer.bgm_switch = before_bgm
 	ui.queue_free()
 	layer.queue_free()
 

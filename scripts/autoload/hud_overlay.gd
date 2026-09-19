@@ -32,9 +32,6 @@ const MAIN_IDENTITY: String = "main"
 # "隐约可见"是在一切**之上**，同亮度不同层级观感完全不同→隐藏是恒顶层 HUD 语境下的正解
 # （打地鼠时代 5 面板隐藏视觉已被用户长期接受）。隐藏后 Control 不参与命中，无需禁点逻辑。
 const HUD_HIDDEN_IDENTITIES: Array[String] = ["battle", "battleprepare", "handbook", "ranklist", "equipstrengthen"]   # 整体隐藏 HUD（battle/battleprepare 战斗系场景源无 HUD；handbook extends basescene 非 framework 无 HUD，2026-08-18；ranklist 源 pushScene 全屏场景无 HUD，批 C C1 2026-08-27；equipstrengthen 源 extends basescene pushScene 无 HUD，2026-08-29。均为"场景无 HUD"语义保留——A 族；task/dailyTask 源 popup 挂 scene z=101 盖 HUD 属 B 族弹窗，2026-09-08 通用遮蔽治理退役，走 PopWindow 栈驱动的遮蔽态）
-# 通知轮询间隔（秒）：5 定时提醒到点检测（源 localnotify 手机推送 → 单机游戏内 Toast，
-# 30s 粒度足够——源时间点粒度为分钟；2026-08-21 SetupPanel 二轮）。
-const NOTIFY_TICK_SEC: float = 30.0
 
 var _status_parent_main: Panel = null   # main 版容器（含头像）
 var _status_parent_sub: Panel = null    # 子场景版（仅货币条）
@@ -59,11 +56,6 @@ var _last_vitality: int = -1
 
 func _ready() -> void:
 	layer = HUD_LAYER
-	var timer := Timer.new()
-	timer.wait_time = NOTIFY_TICK_SEC
-	timer.autostart = true
-	timer.timeout.connect(_on_notify_tick)
-	add_child(timer)
 
 
 func _process(_delta: float) -> void:
@@ -79,19 +71,8 @@ func _process(_delta: float) -> void:
 		_refresh_status()
 
 
-# 定时提醒轮询（源 localnotify data 1/2/4/5/7 定时项）：到点 + 开启 + 当天未推 → Toast。
-# GameData.config 未就绪（loading 阶段）静默跳过，下轮 tick 补。
-# 时间 + 日期两个 dict 合并（Time.get_time_dict_from_system 只含时分秒，
-# 年月日须 get_date_dict_from_system——2026-08-21 实测 fired 写出 "00000000" 抓出）。
-func _on_notify_tick() -> void:
-	var cm: ConfigManager = GameData.config
-	if cm == null:
-		return
-	var time_dict: Dictionary = Time.get_time_dict_from_system()
-	time_dict.merge(Time.get_date_dict_from_system())
-	for id: int in NotifySettings.check_time_due(time_dict):
-		NotifySettings.mark_fired(id, time_dict)
-		Toast.show_message(cm.get_lstr(NotifySettings.entry_fire_lstr(id)))
+# 定时提醒轮询（源 localnotify 手机推送 → 单机 Toast 模拟）已随 2026-09-18 四轮
+# 「消息提醒」整体裁剪退役（NotifySettings 删类，user://notify.cfg 遗留无人读）。
 
 
 

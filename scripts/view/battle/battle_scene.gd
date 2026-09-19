@@ -405,11 +405,11 @@ func create_pause_layer() -> void:
 	if pause_layer != null:
 		return
 	pause_locks["pauseButton"] = true; is_paused = pause_locks.values().has(true)
-	AudioPlayer.set_bgm_volume(0.25)
+	AudioPlayer.duck_bgm_volume(0.25)
 	var layer := BattlePauseLayer.new()
 	# 第 4 参 exit 回调=放弃战斗（源 :230-245 exit→:331-344 popScene；2026-08-22 巡检：
 	# 旧与 resume 同效致玩家无法中途放弃）。多行 lambda 避免新增成员函数（代码行贴线）。
-	layer.setup(ui_layer, AudioPlayer.sound_switch, _on_pause_dismissed, func() -> void:
+	layer.setup(ui_layer, AudioPlayer.is_audio_on(), _on_pause_dismissed, func() -> void:
 		_clear_pause_layer()
 		BattleSceneFinalizer.abort_battle(self))
 	pause_layer = layer
@@ -425,7 +425,7 @@ func _clear_pause_layer() -> void:
 	if pause_layer != null:
 		pause_layer.queue_free()
 		pause_layer = null
-	AudioPlayer.restore_bgm_volume()
+	AudioPlayer.unduck_bgm_volume()
 
 
 # reason：pauseButton/5v5skill·5v5ending（教学）/story（剧情）。单机化裁剪教学/剧情，仅 pauseButton 实接。

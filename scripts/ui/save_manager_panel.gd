@@ -215,8 +215,8 @@ func _add_frame() -> void:
 	frame.patch_margin_top = FRAME_CAP_TOP
 	frame.patch_margin_right = FRAME_CAP_RIGHT
 	frame.patch_margin_bottom = FRAME_CAP_BOTTOM
-	frame.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE_FIT
-	frame.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_TILE_FIT
+	# 拉伸模式用默认 STRETCH（2026-09-18 三轮：TILE_FIT 平铺有 tile 边界采样接缝；
+	# 中间区纯色，平铺与拉伸观感一致，STRETCH 无缝且对齐源 Scale9Sprite 默认）。
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(frame)
 

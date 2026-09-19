@@ -293,6 +293,157 @@ func test_players_assigned_to_buses() -> void:
 	player.queue_free()
 
 
+# ---- 五轮（2026-09-19）：双通道开关独立/总线音量/持久化四键/旧键迁移/toggle_all/duck 正交 ----
+
+# 双通道独立：bgm off 只静 BGM（记账照旧），sfx on 照播。
+func test_sfx_bgm_switch_independent() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sfx_switch = true
+	player.bgm_switch = false
+	player.play_sfx("common_click_feedback")
+	assert_gt(player.get_playing_sfx_count(), 0, "sfx on → 音效播")
+	player.play_bgm("chapter1")
+	assert_eq(player._bgm_key, "chapter1", "bgm off 仍记账")
+	assert_false(player.bgm_player.playing, "bgm off → BGM 不播")
+	player.bgm_switch = true
+	player.play_bgm("chapter2")
+	assert_true(player.bgm_player.playing, "bgm on → 换曲播")
+	player.queue_free()
+
+
+func test_toggle_sfx_stops_pool_only_sfx() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sfx_switch = true
+	player.bgm_switch = true
+	player.play_sfx("common_click_feedback")
+	assert_gt(player.get_playing_sfx_count(), 0)
+	player.toggle_sfx()   # off：停池
+	assert_eq(player.get_playing_sfx_count(), 0, "toggle_sfx off 停池中 SFX")
+	assert_false(player.sfx_switch, "sfx 翻转")
+	assert_true(player.bgm_switch, "toggle_sfx 不动 bgm_switch")
+	player.queue_free()
+
+
+func test_toggle_bgm_pause_resume() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sfx_switch = true
+	player.bgm_switch = true
+	player.play_bgm("chapter1")
+	player.toggle_bgm()   # off：pause 保流
+	assert_true(player.bgm_player.stream_paused, "off 后 paused（保流供 resume）")
+	player.toggle_bgm()   # on：resume
+	assert_false(player.bgm_player.stream_paused, "on 后恢复")
+	assert_true(player.bgm_player.playing, "playing")
+	player.queue_free()
+
+
+# 用户音量走总线（AudioServer 一处生效，含未来新播放器）；0 压 -80db 下限防 -inf。
+func test_user_volume_bus_applied() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.set_sfx_volume(0.5)
+	var sfx_idx := AudioServer.get_bus_index("Sfx")
+	assert_almost_eq(AudioServer.get_bus_volume_db(sfx_idx), linear_to_db(0.5), 0.01, "Sfx 总线 50%")
+	player.set_bgm_volume(0.25)
+	var music_idx := AudioServer.get_bus_index("Music")
+	assert_almost_eq(AudioServer.get_bus_volume_db(music_idx), linear_to_db(0.25), 0.01, "Music 总线 25%")
+	player.set_sfx_volume(0.0)
+	assert_almost_eq(AudioServer.get_bus_volume_db(sfx_idx), -80.0, 0.01, "0 音量压 -80db 下限（非 -inf）")
+	player.set_sfx_volume(1.0)   # 复位总线，防跨用例残留
+	player.set_bgm_volume(1.0)
+	player.queue_free()
+
+
+# duck（战斗暂停临时压低）走播放器侧，与总线用户音量两层相乘正交。
+func test_duck_orthogonal_user_volume() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.set_bgm_volume(0.5)
+	player.duck_bgm_volume(0.25)
+	assert_almost_eq(player.bgm_player.volume_db, linear_to_db(0.25), 0.01, "duck 走播放器侧")
+	var music_idx := AudioServer.get_bus_index("Music")
+	assert_almost_eq(AudioServer.get_bus_volume_db(music_idx), linear_to_db(0.5), 0.01,
+		"总线用户音量不受 duck 影响（两层相乘正交）")
+	player.unduck_bgm_volume()
+	assert_almost_eq(player.bgm_player.volume_db, 0.0, 0.01, "unduck 复位播放器 0db")
+	player.set_bgm_volume(1.0)   # 复位总线
+	player.queue_free()
+
+
+# cfg 四键往返（沙箱路径）。
+func test_volume_persist_roundtrip() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SANDBOX_DIR))
+	var cfg_path := ProjectSettings.globalize_path(SANDBOX_DIR + "audio.cfg")
+	DirAccess.remove_absolute(cfg_path)
+	var player = AudioPlayerScript.new()
+	player.sound_cfg_path = SANDBOX_DIR + "audio.cfg"
+	add_child(player)
+	player.set_sfx_volume(0.3)
+	player.set_bgm_volume(0.7)
+	player.sfx_switch = true
+	player.bgm_switch = false
+	player._save_sound_cfg()
+	player.queue_free()
+	var player2 = AudioPlayerScript.new()
+	player2.sound_cfg_path = SANDBOX_DIR + "audio.cfg"
+	add_child(player2)
+	player2._load_sound_cfg()
+	assert_almost_eq(player2.sfx_volume, 0.3, 0.001, "sfx_volume 往返")
+	assert_almost_eq(player2.bgm_volume, 0.7, 0.001, "bgm_volume 往返")
+	assert_true(player2.sfx_switch, "sfx_on 往返")
+	assert_false(player2.bgm_switch, "bgm_on 往返")
+	player2.queue_free()
+	DirAccess.remove_absolute(cfg_path)
+
+
+# 拆分前旧单键 sound_on 自动迁移（新键缺失才迁移，防覆盖用户新设置）。
+func test_legacy_sound_on_migration() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SANDBOX_DIR))
+	var cfg_path := ProjectSettings.globalize_path(SANDBOX_DIR + "audio.cfg")
+	DirAccess.remove_absolute(cfg_path)
+	var cfg := ConfigFile.new()
+	cfg.set_value("audio", "sound_on", true)   # 拆分前版本写入的旧单键
+	cfg.save(SANDBOX_DIR + "audio.cfg")
+	var player = AudioPlayerScript.new()
+	player.sound_cfg_path = SANDBOX_DIR + "audio.cfg"
+	add_child(player)   # _ready → _load_sound_cfg 迁移
+	assert_true(player.sfx_switch, "旧 sound_on=true 迁移到 sfx_switch")
+	assert_true(player.bgm_switch, "旧 sound_on=true 迁移到 bgm_switch")
+	player.queue_free()
+	DirAccess.remove_absolute(cfg_path)
+
+
+# 总开关（战斗暂停层单按钮）：任一开 → 全关；全关 → 全开。
+func test_toggle_all_mixed_state() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sfx_switch = true
+	player.bgm_switch = false
+	player.toggle_all()
+	assert_false(player.sfx_switch, "混合态 toggle_all 全关")
+	assert_false(player.bgm_switch, "混合态 toggle_all 全关")
+	player.toggle_all()
+	assert_true(player.sfx_switch, "全关态 toggle_all 全开")
+	assert_true(player.bgm_switch, "全关态 toggle_all 全开")
+	player.queue_free()
+
+
+# 兼容属性：set 双写 / get 双开才开（拆分前 18 处测试赋值零改动存活的契约）。
+func test_sound_switch_compat_property() -> void:
+	var player = AudioPlayerScript.new()
+	add_child(player)
+	player.sound_switch = true
+	assert_true(player.sfx_switch, "兼容 set 双写 sfx")
+	assert_true(player.bgm_switch, "兼容 set 双写 bgm")
+	assert_true(player.sound_switch, "兼容 get 双开才开")
+	player.sfx_switch = false
+	assert_false(player.sound_switch, "一关即 get false")
+	player.queue_free()
+
+
 # 兜底清理：toggle 类用例中途失败导致沙箱 cfg 残留时统一清除（真实 user://audio.cfg
 # 由 _is_test_env_with_default_cfg 守卫保护，门禁/编辑器内永不被测试读写）。
 func after_all() -> void:
