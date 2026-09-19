@@ -108,8 +108,8 @@ static func build_row(snapshot: Dictionary, row_idx: int, frame_res_caps: Array,
 	bg.patch_margin_top = int(frame_res_caps[1])
 	bg.patch_margin_right = int(frame_res_caps[2])
 	bg.patch_margin_bottom = int(frame_res_caps[3])
-	bg.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_TILE_FIT
-	bg.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_TILE_FIT
+	# 拉伸模式用默认 STRETCH（2026-09-18 三轮：TILE_FIT 平铺有 tile 边界采样接缝；
+	# 中间区纯色，平铺与拉伸观感一致，STRETCH 无缝且对齐源 Scale9Sprite 默认）。
 	if String(snapshot.get("type", "")) == "manual":
 		bg.self_modulate = MANUAL_TINT
 	row.add_child(bg)

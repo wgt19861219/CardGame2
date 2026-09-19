@@ -4,7 +4,7 @@ extends ColorRect
 ## 战斗暂停面板（View 层）— 照源 battle_scene.lua:178-330 createPauseLayer/doPauseLayerTouch。
 ## 黑半透全屏背景 + 三按钮（exit 退出 / sound 音效切换 / resume 恢复）+ 缩放进场/退场动画。
 ## 挂 ui_layer（scene 创建）。发 exit_requested/resume_requested/sound_toggled 信号。
-## 接线自持（setup 注入 dismiss 回调；sound_toggled→AudioPlayer.toggle_sound）。
+## 接线自持（setup 注入 dismiss 回调；sound_toggled→AudioPlayer.toggle_all）。
 ##
 ## 重构（2026-07-18，hero_detail 范式）：三按钮 + 三 Label 静态化进
 ## scenes/battle/battle_pause_layer_content.tscn（instantiate + add_child + get_node + fill）。
@@ -60,7 +60,7 @@ func _build_content() -> void:
 
 
 # 信号接线（自 battle_scene:395-396 下沉，三审 MAJOR-R1：battle_scene 代码行 399/400 净 ≤ +1）。
-# sound_toggled 直连 AudioPlayer.toggle_sound；resume→dismiss 回调、exit→exit 回调经 setup
+# sound_toggled 直连 AudioPlayer.toggle_all；resume→dismiss 回调、exit→exit 回调经 setup
 # 注入（2026-08-22 巡检：exit 旧接 dismiss 只清层解锁战斗继续=玩家无法中途放弃；源
 # battle_scene.lua:230-245 exit 按钮 = 放弃战斗 popScene。on_exit 缺省回落 dismiss 兼容）。
 func _wire_signals() -> void:
@@ -74,7 +74,7 @@ func _wire_signals() -> void:
 
 
 func _on_sound_toggled() -> void:
-	AudioPlayer.toggle_sound()
+	AudioPlayer.toggle_all()
 
 
 func _play_enter_tween() -> void:
