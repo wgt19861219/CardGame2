@@ -548,6 +548,14 @@ DialogLabel/constants/outline_size = 3
 DungeonVitNumberLabel/base_type = &"Label"
 DungeonVitNumberLabel/colors/font_color = Color(0.913725, 0.839216, 0.709804, 1)
 DungeonVitNumberLabel/font_sizes/font_size = 18
+; exercise_map 旧版地图（2026-09-19）：cavern 入口/子窗按钮名源 exercise.lua:1457-1492
+; CCLabelTTF 20 号 ccc3(200,150,255) 紫无影；子窗标题「时光之穴」20 号 ccc3(200,150,50)。
+CavernPurpleLabel/base_type = &"Label"
+CavernPurpleLabel/colors/font_color = Color(0.784314, 0.588235, 1, 1)
+CavernPurpleLabel/font_sizes/font_size = 20
+CavernTitleLabel/base_type = &"Label"
+CavernTitleLabel/colors/font_color = Color(0.784314, 0.588235, 0.196078, 1)
+CavernTitleLabel/font_sizes/font_size = 20
 ; eatexp 吃经验弹窗（批 1 Task 3，2026-08-15）：title 源 eatexplist.lua:57-72 size24 ccc3(250,205,16)
 ; + fontinfo ui_normal_button（17 号白+阴影(63,5,0)偏移(0,2)，size 被 24 覆盖）。
 EatexpTitleLabel/base_type = &"Label"
@@ -1803,3 +1811,21 @@ ExerciseDegreeSlotLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
 ExerciseDegreeSlotLabel/constants/shadow_offset_x = 0
 ExerciseDegreeSlotLabel/constants/shadow_offset_y = 2
 ExerciseDegreeSlotLabel/font_sizes/font_size = 16
+
+; ===== 公会一期（2026-09-19；源 guildconfig.lua 声明式表无逐元素色值，取邮件行同族暖棕自定） =====
+; 公会列表行名（mail 行名同规格 size20 深棕）
+GuildRowNameLabel/base_type = &"Label"
+GuildRowNameLabel/colors/font_color = Color(0.262745, 0.231373, 0.219608, 1)
+GuildRowNameLabel/font_sizes/font_size = 20
+; 行内宣言/等级限制/加入方式/成员描述（size16 棕灰，MailRowDate 同色族）
+GuildRowDescLabel/base_type = &"Label"
+GuildRowDescLabel/colors/font_color = Color(0.615686, 0.458824, 0.34902, 1)
+GuildRowDescLabel/font_sizes/font_size = 16
+; 主页公会名大字（size26 金棕，邮件详情标题同族）
+GuildNameLabel/base_type = &"Label"
+GuildNameLabel/colors/font_color = Color(0.67451, 0.294118, 0.117647, 1)
+GuildNameLabel/font_sizes/font_size = 26
+; 主页头部信息（ID/宣言/成员数/活跃，size16 深棕白底可读）
+GuildHeadInfoLabel/base_type = &"Label"
+GuildHeadInfoLabel/colors/font_color = Color(0.34902, 0.290196, 0.243137, 1)
+GuildHeadInfoLabel/font_sizes/font_size = 16

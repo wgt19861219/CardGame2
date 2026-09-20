@@ -120,14 +120,17 @@ func test_panel_no_static_construction() -> void:
 		"静态节点零 .new(，仅查询/跳转白名单")
 
 
-# ── ③ Logic 计次（StageDungeonLogic.check_enter_act_group）──
+# ── ③ Logic 计次（进战斗只校验 check_enter_act_group；胜利结算计次 record_act_win）──
 
 func test_act_group_counts_and_rejects() -> void:
-	# 20001 组 DailyLimit=2：两次放行并计次，第三次拒绝。
+	# 20001 组 DailyLimit=2：check 只查不扣（源胜利才 addActTimes，battle_engine.lua:1128），
+	# record_act_win 计 2 次后第 3 次 check 拒绝。
 	var mgr := StageManager.new(cm)
-	assert_eq(StageDungeonLogic.check_enter_act_group(mgr, 20001, cm), "", "第 1 次放行")
-	assert_eq(StageDungeonLogic.check_enter_act_group(mgr, 21001, cm), "", "第 2 次放行（难度 2 同组共享）")
-	assert_eq(int(mgr.act_times.get(20001, 0)), 2, "组键 20001 计 2 次（四难度同键）")
+	assert_eq(StageDungeonLogic.check_enter_act_group(mgr, 20001, cm), "", "第 1 次放行（不扣次）")
+	assert_eq(int(mgr.act_times.get(20001, 0)), 0, "进战斗不计次（失败不耗次数）")
+	StageDungeonLogic.record_act_win(mgr, cm, 20001)
+	StageDungeonLogic.record_act_win(mgr, cm, 21001)
+	assert_eq(int(mgr.act_times.get(20001, 0)), 2, "胜利计次 2（四难度同组键共享）")
 	assert_eq(StageDungeonLogic.check_enter_act_group(mgr, 23001, cm), "no_attempts", "第 3 次拒绝")
 
 func test_act_group_isolated_between_groups() -> void:
@@ -136,31 +139,54 @@ func test_act_group_isolated_between_groups() -> void:
 	mgr.act_times[20001] = 2
 	assert_eq(StageDungeonLogic.check_enter_act_group(mgr, 20003, cm), "", "跨组互不影响")
 
+func test_exit_stage_records_act_win() -> void:
+	# 胜利结算计次（源 battle_engine.lua:1124-1131 victory 分支 addActTimes；失败不扣）。
+	var mgr := StageManager.new(cm)
+	mgr.exit_stage(20001, 3, true)
+	assert_eq(int(mgr.act_times.get(20001, 0)), 1, "act 关胜利计次")
+	mgr.exit_stage(20001, 3, false)
+	assert_eq(int(mgr.act_times.get(20001, 0)), 1, "失败不重复计次")
+
 func test_assemble_stage_battle_counts_act_group() -> void:
-	# 端到端：assemble 进战斗即计次（View 战斗走本入口）。
+	# 端到端：assemble 只校验不扣次；组次数用满时装配拒绝（View 战斗走本入口）。
 	var pd := _make_player(100)
 	var tids: Array[int] = [1]
 	var rng := BattleRng.new(7)
 	var r1: Dictionary = pd.stage_manager.assemble_stage_battle(20001, pd, tids, rng)
 	assert_true(bool(r1.get("ok", false)), "首次装配成功")
-	assert_eq(int(pd.stage_manager.act_times.get(20001, 0)), 1, "装配计次 1")
+	assert_eq(int(pd.stage_manager.act_times.get(20001, 0)), 0, "装配不扣次（胜利才计）")
+	pd.stage_manager.exit_stage(20001, 3, true)
+	assert_eq(int(pd.stage_manager.act_times.get(20001, 0)), 1, "胜利结算计次 1")
 	pd.stage_manager.act_times[20001] = 2   # 直接用满（避免跑两次完整战斗）
 	var r2: Dictionary = pd.stage_manager.assemble_stage_battle(20001, pd, tids, rng)
 	assert_false(bool(r2.get("ok", false)), "组次数用尽装配拒绝")
 	assert_eq(str(r2.get("error", "")), "no_attempts", "拒绝错误码")
 
 
-# ── ④ 路由直连守卫（2026-09-12 二轮：占位弹窗退役，主城建筑照源直连 dungeon 地图）──
+# ── ④ 路由直连守卫（2026-09-19 经典样式复活：主城建筑走旧版经典地图，
+#    远征地图样式降为面板互切分支——源终版直转行为保留在 open_dungeon_groups）──
 
 func test_main_scene_routes_direct() -> void:
-	# 主城 defence（时光之穴建筑）/exercise（英雄试炼建筑）直连 dungeon 地图
-	# （照源 main.lua:1330/:1448 → exercise.create 终版直转 dungeon_map），无中间弹窗。
+	# 主城 defence（时光之穴建筑）/exercise（英雄试炼建筑）默认开经典地图
+	# （源旧版地图场景死代码复活，em/equip 双页）；远征样式经面板互切按钮往返，
+	# main_scene 不再直连 open_dungeon_groups（下沉 ExerciseMapPanel._on_switch_pressed）。
 	var text: String = FileAccess.get_file_as_string("res://scenes/main_menu/main_scene.gd")
-	assert_true(text.contains("\"defence\":") and text.contains("open_dungeon_groups(self, \"em\", [50005, 50006, 50007])"),
-		"defence（时光之穴）应直连 em 地图 50005-7")
-	assert_true(text.contains("\"exercise\":") and text.contains("open_dungeon_groups(self, \"equip\", [50001, 50002, 50003, 50004])"),
-		"exercise（英雄试炼）应直连 equip 地图 50001-4")
+	assert_true(text.contains("\"defence\":") and text.contains("open_exercise_map(self, \"em\")"),
+		"defence（时光之穴）默认开经典地图 em 页")
+	assert_true(text.contains("\"exercise\":") and text.contains("open_exercise_map(self, \"equip\")"),
+		"exercise（英雄试炼）默认开经典地图 equip 页")
+	assert_false(text.contains("open_dungeon_groups"), "主城不直连远征样式（互切按钮持有路由）")
 	assert_false(text.contains("MainSceneEntryRouter.open_exercise_panel"), "占位聚合弹窗应退役（无 router 调用）")
+	# FarmChapter 快跳 102/103 分流（2026-09-19 照源回归：源 task.lua:660-669 按 pid
+	# 102→em、103→equip；旧实现恒开 em 致 103 任务跳错地图）。
+	assert_true(text.contains("pids.has(103)"), "快跳按 progressid 分流 equip")
+	assert_true(text.contains("func _open_exercise_panel(pids: Array = []) -> void:"), "快跳入口签名带 pids")
+	# heroLimit 链路透传导通（2026-09-19 照源回归：源 createForExercise heroLimit →
+	# battleprepare 过滤；ExerciseDegreePanel→StageDetailPanel→BattlePreparePanel 三段）。
+	var edp: String = FileAccess.get_file_as_string("res://scripts/ui/exercise_degree_panel.gd")
+	assert_true(edp.contains("em2.get_hero_limit(key)"), "ExerciseDegreePanel 取组 heroLimit 传入详情")
+	var sdp: String = FileAccess.get_file_as_string("res://scripts/ui/stage_detail_panel.gd")
+	assert_true(sdp.contains("Callable(), _hero_limit)"), "StageDetailPanel 透传 BattlePreparePanel")
 	var router: String = FileAccess.get_file_as_string("res://scripts/ui/main_scene_entry_router.gd")
 	assert_false(router.contains("static func open_exercise_panel"), "router 不应再有占位弹窗入口")
 	assert_true(router.contains("static func open_exercise_degree"), "资源试炼弹窗入口 helper 保留")

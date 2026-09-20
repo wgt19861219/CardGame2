@@ -1,0 +1,221 @@
+; exercise_map 两件套 content 底板（2026-09-19，旧版试炼地图复活）。
+; 照源 ui/exercise.lua 旧版地图场景（git 5ea4ba7~1 死代码）+ ui/parameter/exerciseres.lua：
+;   em 时光之穴页（紫）= exp/money 资源本入口 + cavern 英雄副本聚合入口；
+;   equip 英雄试炼页（棕）= int/agi/str 资源本入口 + cavern。dg1-4 装备本名牌入口
+;   系源后补补丁非原版行为（2026-09-19 二轮用户指示去除，装备本入口留远征样式侧）。
+; 受控偏离（源资源失传，2026-09-19 用户拍板；四轮收敛到源 pristine 形态）：
+;   - 地图背景 act_map_bg_purple/brown 源库失传 → 初版卷轴 tint、三轮渐变纯色底
+;     均被否 → 四轮去中央区背景色块（只留 FrameworkBg 全屏底图 + 金色雕花外框）；
+;   - 页标题图 act_title_1/2 失传 → Label（TitleLabel，dungeon_map 同款先例）；
+;   - 资源本入口名牌（初版为可读性所加）四轮去除——源 pristine 版入口即纯角色
+;     立绘无常驻文字（标识靠失传的 act_popup_title_* 弹窗标题图）；
+;   - cavern 名牌入口（源后补 CCLabelTTF 补丁）四轮去除——英雄副本/装备本入口
+;     全留远征样式侧互切可达（cavern 子窗/矩阵组件保留待挂载）。
+; 坐标：源 exerciseres 场景空间（cocos 左下原点）→ to_godot(x, 480-y)；触摸中心
+; 照源 center 配置，触摸半径 85/55 → 方形 Button 等效区。equip 页 cavern 源
+; (830,85) 半出屏 → 移右上空区 (700,170)（源语义边缘弱化入口，全显可点）。
+; 入口角色 fca（NagaPriest 等 8 个 anim_frames 资源）为动态行，fill 挂 %FcaLayer。
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/stage-map-elite-frame.png" id="3_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_title_bg.png" id="4_tshadow"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/equip_detail_title_bg.png" id="5_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="6_vit"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="7_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="8_backp"]
+
+
+[node name="ExerciseMapContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; 项目适配（dungeon_map 范式）：源 pushScene 整场景 → PopWindow 弹窗化全屏底图
+[node name="FrameworkBg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_right = 800.0
+offset_bottom = 480.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 clipLayer 裁剪区 (44,20,712,370) → to_godot (44,90)-(756,460)；入口按钮组挂此层
+[node name="MapLayer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 44.0
+offset_top = 90.0
+offset_right = 756.0
+offset_bottom = 460.0
+clip_contents = true
+mouse_filter = 2
+
+; 地图背景（源 map 失传，三轮用户指示弃远征卷轴贴图 → 垂直渐变纯色底，
+; fill 按页改色标 em 紫/equip 棕；铺满裁剪区 712x370）
+; 入口角色 fca 宿主：fill 动态挂 parts:Node2D（fill 坐标已减 MapLayer 原点(44,90)）。
+; 四轮起中央区无背景色块/名牌，角色直接立于 FrameworkBg 底图上（源 pristine 形态）。
+[node name="FcaLayer" type="Control" parent="MapLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+mouse_filter = 2
+
+; ── em 时光之穴页入口组（fill 切 visible）──
+; 入口组 z_index=64：fca 散件每帧 sprite.z_index=draw_order(0~30+) 跨树序压盖
+; z=0 的 Control（2026-09-19 bridge 实机根修）——四轮起组内无视觉件仍保留防回潮
+[node name="EmGroup" type="Control" parent="MapLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+z_index = 64
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; exp 入口：源触摸 center(212,210) r85 → 方区 (127,185)-(297,355)
+[node name="ExpBtn" type="Button" parent="MapLayer/EmGroup"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 83.0
+offset_top = 95.0
+offset_right = 253.0
+offset_bottom = 265.0
+theme_type_variation = &"GhostButton"
+
+[node name="MoneyBtn" type="Button" parent="MapLayer/EmGroup"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 446.0
+offset_top = 120.0
+offset_right = 616.0
+offset_bottom = 290.0
+theme_type_variation = &"GhostButton"
+
+[node name="EquipGroup" type="Control" parent="MapLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+z_index = 64
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; int 入口：源 center(180,180) → (95,215)-(265,385)
+[node name="IntBtn" type="Button" parent="MapLayer/EquipGroup"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 51.0
+offset_top = 125.0
+offset_right = 221.0
+offset_bottom = 295.0
+theme_type_variation = &"GhostButton"
+
+[node name="AgiBtn" type="Button" parent="MapLayer/EquipGroup"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 261.0
+offset_top = 20.0
+offset_right = 431.0
+offset_bottom = 190.0
+theme_type_variation = &"GhostButton"
+
+[node name="StrBtn" type="Button" parent="MapLayer/EquipGroup"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 491.0
+offset_top = 120.0
+offset_right = 661.0
+offset_bottom = 290.0
+theme_type_variation = &"GhostButton"
+
+[node name="TitleShadow" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 38.5
+offset_top = 31.6
+offset_right = 761.4
+offset_bottom = 134.4
+texture = ExtResource("4_tshadow")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 frame stage-map-elite-frame 989x549px/CS=771.90x428.39 中心(400,205)→godot(400,275)
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 14.05
+offset_top = 60.8
+offset_right = 785.95
+offset_bottom = 489.2
+texture = ExtResource("3_frame")
+expand_mode = 1
+mouse_filter = 2
+
+; 源 titleBg equip_detail_title_bg 388x22px/CS=302.71x17.17 中心(400,355)→godot(400,125)
+[node name="TitleBg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 248.6
+offset_top = 116.4
+offset_right = 551.4
+offset_bottom = 133.6
+texture = ExtResource("5_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+; 页标题（源 act_title_1/2 失传 → Label；em=时光之穴/equip=英雄试炼，fill 按页切换）
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 280.0
+offset_top = 111.0
+offset_right = 520.0
+offset_bottom = 139.0
+theme_type_variation = &"TitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "时光之穴"
+
+; 样式互切（项目适配，2026-09-19 用户拍板「面板内互切按钮」）：切远征地图样式
+[node name="SwitchStyleBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 700.0
+offset_top = 20.0
+offset_right = 795.0
+offset_bottom = 56.0
+theme_type_variation = &"GhostButton"
+
+[node name="SwitchStylePlate" type="NinePatchRect" parent="SwitchStyleBtn"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+texture = ExtResource("6_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="SwitchStyleLabel" type="Label" parent="SwitchStyleBtn"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"WhiteLabel16"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "远征样式"
+
+; 关闭（dungeon_map 同款 backbtn 左上）
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.76
+offset_bottom = 73.54
+texture_normal = ExtResource("7_back")
+texture_pressed = ExtResource("8_backp")
+ignore_texture_size = true
+stretch_mode = 0
