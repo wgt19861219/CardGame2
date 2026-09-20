@@ -91,6 +91,8 @@ func _build_content() -> void:
 	title_label = _content.get_node("%TitleLabel") as Label
 	title_label.text = "英雄试炼" if mode == "em" else "装备副本"
 	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
+	# 样式互切（2026-09-19 双分支保留）：切回旧版经典地图（ExerciseMapPanel 反向路由）
+	(_content.get_node("%ClassicStyleBtn") as BaseButton).pressed.connect(_on_classic_style_pressed)
 	fog_rects.clear()
 	var scroll_content: Control = _content.get_node("%ScrollContent") as Control
 	for s in range(1, MAX_SECTIONS + 1):
@@ -311,3 +313,13 @@ func _on_degree_close() -> void:
 ## 资源安全加载（exists 预检，避 headless 未 import 时 push_error）。
 static func _load_tex(path: String) -> Variant:
 	return load(path) if ResourceLoader.exists(path) else null
+
+
+## 切回旧版经典地图（双分支互切；宿主经 get_parent() 取 show_window 传入方，
+## exercise_map._on_switch_pressed 反向同款）。
+func _on_classic_style_pressed() -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	var host: Node = get_parent()
+	remove_window()
+	if host != null:
+		MainSceneEntryRouter.open_exercise_map(host, mode)

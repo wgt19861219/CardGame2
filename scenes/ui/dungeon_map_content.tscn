@@ -7,7 +7,7 @@
 ; 贴图显示尺寸（crusade 系 TextureConfig 条目全 Prescaled=false → 条目 CS 不施加，
 ; 只算显式 scale 累乘）：bg=px/CS×2.0（layout scale）、fog=px/CS×4（setScale）、
 ; 其余无条目=px/CS。
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
@@ -23,6 +23,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_1.png" id="12_fog1"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_2.png" id="13_fog2"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_fog_3.png" id="14_fog3"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="16_vit"]
 
 [node name="DungeonMapContent" type="Control"]
 layout_mode = 3
@@ -247,3 +248,36 @@ texture_normal = ExtResource("2_back")
 texture_pressed = ExtResource("3_backp")
 ignore_texture_size = true
 stretch_mode = 0
+
+; 样式互切（项目适配 2026-09-19，用户拍板「面板内互切按钮」）：切回旧版经典地图
+; （ExerciseMapPanel）。Button Ghost 全区点击 + main_vit_tips 名牌底 95x36
+; （cap L8/T20/R27/B8 同 exercise_map 系，全尺寸通用口径）+ 文字 Label。
+[node name="ClassicStyleBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 700.0
+offset_top = 20.0
+offset_right = 795.0
+offset_bottom = 56.0
+theme_type_variation = &"GhostButton"
+
+[node name="ClassicStylePlate" type="NinePatchRect" parent="ClassicStyleBtn"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+texture = ExtResource("16_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="ClassicStyleLabel" type="Label" parent="ClassicStyleBtn"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"WhiteLabel16"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "经典样式"

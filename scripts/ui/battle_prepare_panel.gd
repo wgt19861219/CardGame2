@@ -80,6 +80,7 @@ var rng: Variant = null
 var cm: Variant = null
 var mode: String = "stage"
 var min_level: int = 0
+var hero_limit: Dictionary = {}   # 源 heroLimit {type,detail}（Gender=20005 女性英雄组限制）
 var _heroes_all: Array = []      # 全部可选英雄 [{inst_id, tid, pos_type, max_range}]
 var _heroes_filtered: Array = [] # 当前 tab 过滤后
 var _team: Array = []            # 已上阵 [{inst_id, tid, max_range}]（按 maxRange 降序）
@@ -102,9 +103,13 @@ var _prev_identity: String = ""     # 进入前 HUD identity（tree_exited 恢�
 # p_on_confirm 可选：确认回调（签名 (tids: Array[int])），副本/竞技场攻守/挖矿系 View 调用方
 # 注入装配/写防守逻辑（源 requestBattle :569-586 各模式分发；本项目单机化=回调注入解耦，
 # 面板不耦合 ladder/excavate）。回调模式不走 stage 装配与 _persist_team 写回。
-func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant, p_mode: String = "stage", p_min_level: int = 0, p_initial_tids: Array[int] = [], p_on_confirm: Callable = Callable()) -> void:
+# p_hero_limit 可选（源 info.heroLimit :1737，资源试炼 Gender=女 2026-09-19 照源回归补）：
+# {type,detail} 过滤可选英雄（源 getAllListWithLimit :867-883 Unit[tid][type]==detail），
+# 过滤作用于 _heroes_all → 列表/初始阵容（player.team 记忆含违规英雄自然装不上）双保险。
+func setup(p_stage_id: int, p_player: Variant, p_mgr: Variant, p_rng: Variant, p_cm: Variant, p_mode: String = "stage", p_min_level: int = 0, p_initial_tids: Array[int] = [], p_on_confirm: Callable = Callable(), p_hero_limit: Dictionary = {}) -> void:
 	stage_id = p_stage_id; player = p_player; mgr = p_mgr; rng = p_rng; cm = p_cm
 	mode = p_mode; min_level = p_min_level
+	hero_limit = p_hero_limit
 	_initial_tids = p_initial_tids; _on_confirm_cb = p_on_confirm
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# BattlePreparePanel 是 Control 非 PopWindow，经 PopWindow.push_external 入动态 z 栈
@@ -231,13 +236,19 @@ func _load_hero_list() -> void:
 	if player == null or player.hero_manager == null:
 		return
 	var owned: Array = []
+	# heroLimit 过滤（源 readhero.getAllListWithLimit :867-883：Unit[tid][type]==detail，
+	# type=level 时 detail<=等级走 min_level 通道不在此处）；crusade 等级限制同列表源 :1154。
+	var limit_type: String = String(hero_limit.get("type", ""))
+	var limit_detail: String = String(hero_limit.get("detail", ""))
+	var unit_table: Dictionary = cm.get_raw_table(&"Unit")
 	for inst_id in player.hero_manager.heroes:
 		var hero = player.hero_manager.heroes[inst_id]
 		if mode == "crusade" and int(hero.level) < min_level:
 			continue
+		if limit_type != "" and String(unit_table.get(str(int(hero.tid)), {}).get(limit_type, "")) != limit_detail:
+			continue
 		owned.append(hero)
 	owned = ReadheroHandbook.order_heroes(owned)
-	var unit_table: Dictionary = cm.get_raw_table(&"Unit")
 	var skill_table: Dictionary = cm.get_raw_table(&"Skill")
 	for hero in owned:
 		var tid: int = int(hero.tid)

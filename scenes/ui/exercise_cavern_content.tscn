@@ -1,0 +1,167 @@
+; exercise_cavern 两件套 content 底板（2026-09-19，英雄副本聚合子窗）。
+; 照源 exercise.lua degreeWindow.createCavern（git 5ea4ba7~1 旧版 :846-997）：
+; 蒙层 + main_vit_tips Scale9 500x280 中心场景(400,240)→godot(400,240) + close
+; @(645,370)→godot(645,110) + 标题「时光之穴」20 号 ccc3(200,150,50)（CavernTitleLabel）
+; + 3 英雄本按钮 380x50 @ccp(400,310-(i-1)*70)→godot y=170/240/310。
+; 受控偏离：按钮底统一 main_vit_tips 名牌（源 act_select_bg cap 语义存疑，
+; 与矩阵/地图入口视觉语言一致）。
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_vit"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="2_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="3_closep"]
+
+[node name="ExerciseCavernContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Bg" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.588)
+mouse_filter = 2
+
+[node name="FrameLayer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 100.0
+offset_right = 650.0
+offset_bottom = 380.0
+mouse_filter = 2
+
+[node name="Frame" type="NinePatchRect" parent="FrameLayer"]
+layout_mode = 3
+offset_right = 500.0
+offset_bottom = 280.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+; 标题（源 20 号 ccc3(200,150,50)；位 frame 顶内 (400,130)→局部 (250,30)）
+[node name="Title" type="Label" parent="FrameLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 170.0
+offset_top = 14.0
+offset_right = 330.0
+offset_bottom = 42.0
+theme_type_variation = &"CavernTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "时光之穴"
+
+; 3 英雄本按钮（dg5/6/7，fill 读 Group Name 中文；20 号紫 CavernPurpleLabel）
+[node name="Dg5Btn" type="Button" parent="FrameLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 60.0
+offset_top = 45.0
+offset_right = 440.0
+offset_bottom = 95.0
+theme_type_variation = &"GhostButton"
+
+[node name="Dg5Plate" type="NinePatchRect" parent="FrameLayer/Dg5Btn"]
+layout_mode = 3
+offset_right = 380.0
+offset_bottom = 50.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Dg5Label" type="Label" parent="FrameLayer/Dg5Btn"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 380.0
+offset_bottom = 50.0
+theme_type_variation = &"CavernPurpleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "纳克萨玛斯"
+
+[node name="Dg6Btn" type="Button" parent="FrameLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 60.0
+offset_top = 140.0
+offset_right = 440.0
+offset_bottom = 190.0
+theme_type_variation = &"GhostButton"
+
+[node name="Dg6Plate" type="NinePatchRect" parent="FrameLayer/Dg6Btn"]
+layout_mode = 3
+offset_right = 380.0
+offset_bottom = 50.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Dg6Label" type="Label" parent="FrameLayer/Dg6Btn"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 380.0
+offset_bottom = 50.0
+theme_type_variation = &"CavernPurpleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "黑翼之巢"
+
+[node name="Dg7Btn" type="Button" parent="FrameLayer"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 60.0
+offset_top = 210.0
+offset_right = 440.0
+offset_bottom = 260.0
+theme_type_variation = &"GhostButton"
+
+[node name="Dg7Plate" type="NinePatchRect" parent="FrameLayer/Dg7Btn"]
+layout_mode = 3
+offset_right = 380.0
+offset_bottom = 50.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Dg7Label" type="Label" parent="FrameLayer/Dg7Btn"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 380.0
+offset_bottom = 50.0
+theme_type_variation = &"CavernPurpleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "安其拉废墟"
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 619.6
+offset_top = 84.2
+offset_right = 670.4
+offset_bottom = 135.8
+texture_normal = ExtResource("2_close")
+texture_pressed = ExtResource("3_closep")
+ignore_texture_size = true
+stretch_mode = 0

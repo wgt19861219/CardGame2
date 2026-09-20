@@ -2,11 +2,9 @@ class_name PlayerData
 extends RefCounted
 
 ## 玩家数据（Data 层）：钻石/体力/战队等级 + 持有 HeroManager。
-## 存档序列化委托 PlayerDataSerde（控 ≤250）。
-## 入口统一 int 校验（from_dict 全字段 int()，治旧版 JSON float→int P0）。
+## 存档序列化委托 PlayerDataSerde（控 ≤250）；入口统一 int 校验（治 JSON float→int）。
 
 const PlayerDataSerde = preload("res://scripts/data/player_data_serde.gd")
-## 持久化用 SaveManager（var_to_str 类型保真）。金币归 HeroManager（2.1）。
 
 const MAX_TEAM_LEVEL: int = 99            # 战队等级上限（源 2026-06 解除绑定）
 const VITALITY_DEFAULT_MAX: int = 120     # 体力上限（源 DEFAULT_DATA vitality=120）
@@ -64,6 +62,7 @@ var handbook: HandbookManager
 var mailbox: MailData
 var excavate: ExcavateManager
 var ladder: LadderManager
+var guild_data: GuildData
 var shop_auto_refresh: Dictionary = {}
 var shop_expire_end: Dictionary = {}
 # 独立于 tutorial_manager 线性 steps 链 —— unlock step 是升级时并行触发 + 即时记录（id-based，源机制）。
@@ -95,6 +94,7 @@ func _init(p_cm: ConfigManager) -> void:
 	mailbox = MailData.new()
 	excavate = ExcavateManager.new(cm)
 	ladder = LadderManager.new()
+	guild_data = GuildData.new()
 
 
 ## 仅 GameData._load_or_new_player 无存档时调用（不在 _init 调，保 PlayerData.new 单测"空档"假设）。
@@ -358,20 +358,38 @@ func _exp_to_next() -> int:
 	return exp if exp > 0 else team_level * TEAM_EXP_PER_LEVEL
 
 
-## 关卡胜利发奖（照源 player.lua:1330-1369 takeStageReward）。
-## 金币+钻石+战队经验+英雄经验+掉落；setStageStars/recalcHeroGs 单机化标注（已存/标注）。
+## 关卡胜利发奖（照源 player.lua:1330-1369 takeStageReward）：金币+钻石+战队经验+英雄经验+掉落。
 func take_stage_reward(stage_id: int, _stars: int, hero_tids: Array[int], loots: Array = []) -> void:
 	var data := StageData.from_config(cm, stage_id)
 	hero_manager.add_money(data.money_reward * REWARD_MULTIPLIER)
 	add_diamond(StageAccount.diamond_reward(stage_id))
-	add_team_exp(data.exp_reward * REWARD_MULTIPLIER)
-	var hero_count: int = max(hero_tids.size(), 1)
-	var hero_exp: int = int(data.heroexp_reward / hero_count)
+	_grant_team_and_hero_exp(data.exp_reward * REWARD_MULTIPLIER, data.heroexp_reward, hero_tids)
+	_apply_loots(loots)
+
+
+## 副本关胜利奖励（照源 battle_engine.lua:1136-1156 dungeon 专属分支，不走 takeStageReward）：
+## 金币=难度分档入账（旧只展示不入账）/无钻石（旧多发 20）/英雄经验=Exp×10 均分（不读
+## Heroexp Reward 字段）；掉落走 generate_dungeon_loots，硬币/钥匙在 exit_dungeon。
+func take_dungeon_reward(stage_id: int, hero_tids: Array[int], loots: Array = []) -> void:
+	var data := StageData.from_config(cm, stage_id)
+	hero_manager.add_money(int(StageDungeonLogic.DUNGEON_GOLD_BY_DIFF.get(data.difficulty, StageDungeonLogic.DUNGEON_GOLD_FALLBACK)))
+	var exp: int = data.exp_reward * REWARD_MULTIPLIER
+	_grant_team_and_hero_exp(exp, exp, hero_tids)
+	_apply_loots(loots)
+
+
+## 队伍经验 + 英雄经验均分公共段（heroexp_base=英雄经验总量；team_exp_amount=0 无副作用）。
+func _grant_team_and_hero_exp(team_exp_amount: int, heroexp_base: int, hero_tids: Array[int]) -> void:
+	add_team_exp(team_exp_amount)
+	var hero_exp: int = int(heroexp_base / max(hero_tids.size(), 1))
 	for tid in hero_tids:
 		var inst_id: int = _find_hero_inst_by_tid(int(tid))
 		if inst_id > 0:
 			hero_manager.add_hero_exp(inst_id, hero_exp)
-	# 单机化：源 addEquip/addSkillbook 进独立容器（equip_qunty/skillbook_qunty），本项目合并进 PlayerData.items 通用背包。
+
+
+## 掉落入库（hero→add_hero+图鉴、equip/book→add_item；源独立容器单机化合并进通用背包）。
+func _apply_loots(loots: Array) -> void:
 	for loot in loots:
 		var ld: Dictionary = loot
 		var item_id: int = int(ld.get("id", 0))
@@ -389,16 +407,10 @@ func take_stage_reward(stage_id: int, _stars: int, hero_tids: Array[int], loots:
 ## （源 stageaccount.lua:63-66/71 展示口径同源，2026-09-13 PVP 结算补全）。排名/竞技场币走 LadderManager。
 func take_arena_reward(hero_tids: Array[int]) -> void:
 	var arena_exp: int = int(cm.get_raw_table(&"PlayerLevel").get(str(team_level), {}).get("Arena Hero Exp", 0))
-	var hero_count: int = max(hero_tids.size(), 1)
-	var hero_exp: int = int(arena_exp / hero_count)
-	for tid in hero_tids:
-		var inst_id: int = _find_hero_inst_by_tid(int(tid))
-		if inst_id > 0:
-			hero_manager.add_hero_exp(inst_id, hero_exp)
+	_grant_team_and_hero_exp(0, arena_exp, hero_tids)
 
 
-## 扫荡券持有数（照源 player.lua:760 getSweepTimes：equip_qunty[sweep_coin_id]）。
-## 单机化：扫荡券合并进 items 通用背包（源独立 equip_qunty）。
+## 扫荡券持有数（照源 player.lua:760 getSweepTimes；单机化合并进 items 通用背包）。
 func get_sweep_times() -> int:
 	return int(items.get(SWEEP_COIN_ID, 0))
 

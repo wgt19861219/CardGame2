@@ -74,14 +74,27 @@ func test_main_scene_routes_guild() -> void:
 	assert_true(script_text.find("MainSceneEntryRouter.open_guild(self)") != -1, "guild 分支调 open_guild")
 	assert_false(script_text.find("open_handbook") != -1, "无 open_handbook 残留调用")
 
-# open_guild 行为：点击 Toast「公会功能未开放」（公会联机裁剪无面板，对应源未解锁 showToast 语义）。
-func test_open_guild_shows_toast() -> void:
-	Toast._queue.clear()
-	Toast._free_current()
-	MainSceneEntryRouter.open_guild(null)
+# open_guild 行为（2026-09-19 公会一期翻转）：照源 open_pannel 分流——未入会开
+# GuildJoinPanel（公会列表三 tab）、已入会开 GuildPanel（主页）。
+# 隔离守卫（dungeon e2e 判例）：改共享 GameData.player.guild_data 的测试必须逐路径
+# 恢复，防 autosave 污染真实档。
+func test_open_guild_routes_by_membership() -> void:
+	var host: Control = add_child_autofree(Control.new())
+	GameData.player.guild_data.reset_to_no_guild()
+	MainSceneEntryRouter.open_guild(host)
 	await get_tree().process_frame
+	var join_found: bool = false
+	for c in host.get_children():
+		if c is GuildJoinPanel:
+			join_found = true
+	assert_true(join_found, "未入会打开 GuildJoinPanel（源 _list 公会列表）")
+	# 已入会 → GuildPanel 主页（BattleRng 成员随机需 config 表就绪，GameData.config 注入）。
+	GameData.player.guild_data.setup_guild(10001, "守卫测试公会", 1, "slogan")
+	MainSceneEntryRouter.open_guild(host)
 	await get_tree().process_frame
-	assert_not_null(Toast._current_label, "Toast 已显示")
-	if Toast._current_label != null:
-		assert_eq(Toast._current_label.text, "公会功能未开放", "Toast 文案「公会功能未开放」")
-	Toast._free_current()
+	var guild_found: bool = false
+	for c in host.get_children():
+		if c is GuildPanel:
+			guild_found = true
+	assert_true(guild_found, "已入会打开 GuildPanel（源 _query 主页）")
+	GameData.player.guild_data.reset_to_no_guild()   # 恢复共享档，防污染真实存档

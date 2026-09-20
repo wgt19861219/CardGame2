@@ -3,10 +3,12 @@ extends RefCounted
 
 ## 功能清单（盘点自源 local_server.lua 的 71 个 M.handlers.* 命令）。
 ## 作玩法模块的校验基准：每个非 SKIPPED handler 应对应一个实现，缺失即功能遗漏。
-## 源 71 = 非 SKIPPED 51（DOMAINS 登记）+ SKIPPED 20（单机裁剪：社交/付费/SDK/活动/上报）。
+## 源 71 = 非 SKIPPED 52（DOMAINS 登记）+ SKIPPED 19（单机裁剪：社交/付费/SDK/活动/上报）。
 ## 单机化是唯一允许的偏差（复刻铁律）：联机/付费/时效活动 handler 归 SKIPPED_HANDLERS。
 ## 注：ladder/top_arena/query_ranklist 源为单机 NPC 假榜（AI_NAMES 生成），归 DOMAINS 不裁剪。
 ## 注：cdkey_gift（源 :3984 恒 success 无校验）/ system_setting（源 :2202 空响应）/ get_svr_time（源 :612 返本地时间戳）——源本身就是空 stub 或本地数据，单机版天然等价，不单独实现。
+## 注：guild 2026-09-19 公会一期翻转入 DOMAINS（用户拍板核心闭环分期——NPC 公会/成员模拟+
+## 免审批即入大幅简化；公会聊天 chat 与公会日志 request_guild_log 永久裁剪留在 SKIPPED）。
 
 # 域 → handler 命令名（盘点自 local_server.lua，单机版需实现的 51 个）
 const DOMAINS: Dictionary = {
@@ -20,12 +22,13 @@ const DOMAINS: Dictionary = {
 	"task": ["trigger_task", "require_rewards", "trigger_job", "job_rewards"],
 	"tutorial": ["tutorial"],
 	"player": ["login", "get_svr_time", "set_name", "set_avatar", "system_setting", "query_ranklist", "gm_cmd", "ask_daily_login", "cdkey_gift", "chapter_star_reward", "query_replay"],
+	"guild": ["guild"],
 }
 
-# 单机版裁剪的 20 个 handler（联机社交/付费/SDK 登录/时效活动/暂停上报）
+# 单机版裁剪的 19 个 handler（联机社交/付费/SDK 登录/时效活动/暂停上报）
 const SKIPPED_HANDLERS: Array[String] = [
-	# 社交
-	"chat", "guild", "request_guild_log",
+	# 社交（guild 一期已翻转入 DOMAINS；chat/request_guild_log=公会聊天与日志，永久裁剪）
+	"chat", "request_guild_log",
 	# 付费
 	"charge", "recharge_rebate", "continue_pay",
 	# SDK 登录 / 切服（单机用 login）
@@ -74,6 +77,7 @@ const IMPLEMENTATIONS: Dictionary = {
 	"gm_cmd": "PlayerData", "ask_daily_login": "DailyLoginManager",
 	"cdkey_gift": "stub", "chapter_star_reward": "StageManager.claim_chapter_star_reward",
 	"query_replay": "stub",
+	"guild": "GuildManager",
 }
 
 func get_domains() -> Array:

@@ -62,11 +62,19 @@ static func open_daily_login(scene: Node) -> void:
 	panel.show_window(scene)
 
 
-# 公会入口（源该按钮联机打开公会界面，guild handler 在 SKIPPED_HANDLERS 单机裁剪清单）。
-# 2026-09-13 用户拍板②：恢复公会名义——图鉴有背包面板专属入口（PackagePanel %HandbookBtn），
-# 主城建筑不再兼任图鉴。单机无公会面板，点击 Toast 提示（对应源未解锁分支 showToast 语义）。
+# 公会入口（2026-09-19 公会一期集成）：源 guild.lua:573-590 open_pannel——无会回 _list
+# 进公会列表（joinLayer 三 tab），有会回 _query 进主页（mainLayer）。单机化 GuildManager
+# NPC 公会/成员模拟（feature_catalog guild 已移入 DOMAINS）。
 static func open_guild(scene: Node) -> void:
-	Toast.show_message("公会功能未开放")
+	var mgr := GuildManager.new(GameData.config)
+	if GameData.player.guild_data.is_in_guild():
+		var panel := GuildPanel.new("guild", {})
+		panel.setup_panel(GameData.player, mgr, BattleRng.new(randi()))
+		panel.show_window(scene)
+	else:
+		var join := GuildJoinPanel.new("guild_join", {})
+		join.setup_panel(GameData.player, mgr)
+		join.show_window(scene)
 
 
 # 日常任务入口。用 player 持久化 task_manager（2026-09-03 根修任务不显示：临时
@@ -132,12 +140,22 @@ static func open_star_shop(scene: Node) -> void:
 	panel.show_window(scene)
 
 
-# 资源副本难度弹窗入口（源 degreeWindow.create(key)）。2026-09-12 二轮：源终版
-# exercise.create 直转 dungeon_map 后资源试炼在源无入口（degreeWindow 死代码）；
-# 本项目保留已验收组件 + 此公共入口 helper，待入口挂载设计拍板（见任务看板）。
+# 资源副本难度弹窗入口（源 degreeWindow.create(key)）。2026-09-19 经典样式地图复活起
+# 有生产调用方：ExerciseMapPanel 资源本入口（exp/money/int/agi/str）经此挂载
+# （此前「入口挂载待拍板」闭环）。
 static func open_exercise_degree(scene: Node, key: String) -> void:
 	var panel := ExerciseDegreePanel.new("exerciseDegree", {})
 	panel.setup_panel(key, GameData.player, GameData.player.stage_manager)
+	panel.show_window(scene)
+
+
+# 旧版试炼地图入口（2026-09-19 经典样式复活，主城两建筑默认走此分支）：
+# em=时光之穴页（exp/money + 英雄副本聚合）/equip=英雄试炼页（int/agi/str + dg1-4 +
+# 英雄副本聚合）。与 open_dungeon_groups（远征地图样式，源终版直转行为）并列双分支，
+# 两面板内互切按钮随时往返（用户拍板「面板内互切」）。
+static func open_exercise_map(scene: Node, mode: String) -> void:
+	var panel := ExerciseMapPanel.new("exerciseMap", {})
+	panel.setup_panel(GameData.player, GameData.player.stage_manager, BattleRng.new(randi()), mode)
 	panel.show_window(scene)
 
 

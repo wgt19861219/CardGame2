@@ -1,0 +1,163 @@
+; dungeon_matrix boss 行模板（2026-09-19）。照源 createDungeonDegree(:595-656)：
+; 名右对齐 x≤230（源 15 号 ccc3(233,214,181)→DungeonVitNumberLabel 18 号受控近似），
+; 难度格 95x36 @ox=300 dx=110（源 95x32 微调容纳名牌边框）。
+; 行 root y=0 为行中心线（fill 按源 oy/dy 定位 ROW_Y）；格 = Plate+Btn+Txt 三层
+; （Btn Ghost 全区点击、锁定 fill 对 Cell 整格灰化 + disabled，源 setSpriteGray）。
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_vit"]
+
+[node name="DungeonMatrixRow" type="Control"]
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 30.0
+offset_top = -16.0
+offset_right = 230.0
+offset_bottom = 16.0
+theme_type_variation = &"DungeonVitNumberLabel"
+mouse_filter = 2
+horizontal_alignment = 2
+vertical_alignment = 1
+text = "Boss"
+
+[node name="Cell1" type="Control" parent="."]
+unique_name_in_owner = true
+offset_left = 300.0
+offset_top = -18.0
+offset_right = 395.0
+offset_bottom = 18.0
+mouse_filter = 2
+
+[node name="Plate" type="NinePatchRect" parent="Cell1"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Btn" type="Button" parent="Cell1"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"GhostButton"
+
+[node name="Txt" type="Label" parent="Cell1"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"WhiteLabel16"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Normal"
+
+[node name="Cell2" type="Control" parent="."]
+unique_name_in_owner = true
+offset_left = 410.0
+offset_top = -18.0
+offset_right = 505.0
+offset_bottom = 18.0
+mouse_filter = 2
+
+[node name="Plate" type="NinePatchRect" parent="Cell2"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Btn" type="Button" parent="Cell2"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"GhostButton"
+
+[node name="Txt" type="Label" parent="Cell2"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"WhiteLabel16"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Elite"
+
+[node name="Cell3" type="Control" parent="."]
+unique_name_in_owner = true
+offset_left = 520.0
+offset_top = -18.0
+offset_right = 615.0
+offset_bottom = 18.0
+mouse_filter = 2
+
+[node name="Plate" type="NinePatchRect" parent="Cell3"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Btn" type="Button" parent="Cell3"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"GhostButton"
+
+[node name="Txt" type="Label" parent="Cell3"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"WhiteLabel16"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Hero"
+
+[node name="Cell4" type="Control" parent="."]
+unique_name_in_owner = true
+offset_left = 630.0
+offset_top = -18.0
+offset_right = 725.0
+offset_bottom = 18.0
+mouse_filter = 2
+
+[node name="Plate" type="NinePatchRect" parent="Cell4"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+texture = ExtResource("1_vit")
+patch_margin_left = 8
+patch_margin_top = 20
+patch_margin_right = 27
+patch_margin_bottom = 8
+mouse_filter = 2
+
+[node name="Btn" type="Button" parent="Cell4"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"GhostButton"
+
+[node name="Txt" type="Label" parent="Cell4"]
+layout_mode = 3
+offset_right = 95.0
+offset_bottom = 36.0
+theme_type_variation = &"WhiteLabel16"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Nightmare"

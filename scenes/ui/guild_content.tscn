@@ -1,0 +1,225 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backd"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_frame.png" id="4_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_icon_bg.png" id="5_iconbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/money_guildactive_small.png" id="6_active"]
+
+; 公会主页（2026-09-19 公会一期两件套，已入会态）。无脚本；GuildPanel fill。
+; 照源 guild.lua mainLayer（:810-）骨架：头部图标/名/ID/宣言/成员数/活跃 + 成员列表
+; （memberLayer :1578-）+ 底部功能行。源四宫格按钮 guild_button_*_1.png 为 1x1 占位
+; 缺失→佣兵营/团队副本一期裁剪不显示，公会商店/膜拜用 DialogConfirmBtn 文字按钮
+; （受控偏离）；guild_frame 936x587px÷CS=730x458pt 主框同 join 面板。
+; 排序三键照源 rankByTime/rankByactive/rankByinstance（:654-675）简化小按钮。
+
+[node name="GuildContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="FrameworkBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 800.0
+offset_bottom = 480.0
+mouse_filter = 2
+texture = ExtResource("1_bg")
+expand_mode = 1
+
+[node name="MainFrame" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 12.0
+offset_right = 765.0
+offset_bottom = 470.0
+mouse_filter = 2
+texture = ExtResource("4_frame")
+expand_mode = 1
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.81
+offset_bottom = 73.59
+texture_normal = ExtResource("2_back")
+texture_pressed = ExtResource("3_backd")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 350.0
+offset_top = 20.0
+offset_right = 450.0
+offset_bottom = 46.0
+theme_type_variation = &"RanklistTitleLabel"
+text = "公会"
+
+[node name="IconBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 70.0
+offset_top = 72.0
+offset_right = 130.0
+offset_bottom = 132.0
+mouse_filter = 2
+texture = ExtResource("5_iconbg")
+expand_mode = 1
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 76.0
+offset_top = 78.0
+offset_right = 124.0
+offset_bottom = 126.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="GuildName" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 145.0
+offset_top = 68.0
+offset_right = 415.0
+offset_bottom = 100.0
+theme_type_variation = &"GuildNameLabel"
+text = "英雄殿堂"
+
+[node name="IdLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 145.0
+offset_top = 102.0
+offset_right = 355.0
+offset_bottom = 126.0
+theme_type_variation = &"GuildHeadInfoLabel"
+text = "公会ID:10001"
+
+[node name="SloganLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 145.0
+offset_top = 126.0
+offset_right = 415.0
+offset_bottom = 148.0
+theme_type_variation = &"GuildHeadInfoLabel"
+text = "共同战斗，共创辉煌！"
+
+[node name="MemberLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 430.0
+offset_top = 70.0
+offset_right = 570.0
+offset_bottom = 94.0
+theme_type_variation = &"GuildHeadInfoLabel"
+text = "成员:9/50"
+
+[node name="VitalityIcon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 430.0
+offset_top = 98.0
+offset_right = 461.0
+offset_bottom = 134.0
+mouse_filter = 2
+texture = ExtResource("6_active")
+expand_mode = 1
+
+[node name="VitalityLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 467.0
+offset_top = 104.0
+offset_right = 567.0
+offset_bottom = 128.0
+theme_type_variation = &"GuildHeadInfoLabel"
+text = "5000"
+
+[node name="LeaveBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 628.0
+offset_top = 72.0
+offset_right = 733.0
+offset_bottom = 108.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "解散公会"
+
+[node name="SortLoginBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 430.0
+offset_top = 122.0
+offset_right = 492.0
+offset_bottom = 150.0
+text = "登录"
+
+[node name="SortActiveBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 497.0
+offset_top = 122.0
+offset_right = 559.0
+offset_bottom = 150.0
+text = "活跃"
+
+[node name="SortInstanceBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 564.0
+offset_top = 122.0
+offset_right = 626.0
+offset_bottom = 150.0
+text = "挑战"
+
+[node name="MemberScroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 86.0
+offset_top = 172.0
+offset_right = 714.0
+offset_bottom = 400.0
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="MemberScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ShopBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 290.0
+offset_top = 416.0
+offset_right = 410.0
+offset_bottom = 456.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "公会商店"
+
+[node name="WorshipBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 450.0
+offset_top = 416.0
+offset_right = 570.0
+offset_bottom = 456.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "膜拜"
+
+[node name="WorshipTag" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 462.0
+offset_top = 390.0
+offset_right = 562.0
+offset_bottom = 414.0
+theme_type_variation = &"WarnLabel"
+text = "可领奖励"

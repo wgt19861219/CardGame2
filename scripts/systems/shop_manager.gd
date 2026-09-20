@@ -14,6 +14,7 @@ const PRICE_RAND_MAX: int = 500
 const REFRESH_COST_FALLBACK: int = 50    # GradientPrice 缺失 fallback
 const GOBLIN_SHOP_ID: int = 2
 const BLACK_MARKET_SHOP_ID: int = 3
+const GUILD_SHOP_ID: int = 7     # 公会商店（源 marketconfig [7]，刷新耗 guildpoint 而非钻石）
 const PRICE_MUL_GOBLIN: float = 0.6
 const PRICE_MUL_BLACK_MARKET: float = 2.0
 const FALLBACK_EQUIP_IDS: Array[int] = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
@@ -99,9 +100,15 @@ func open_shop(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
 
 func refresh(shop_id: int, pd: PlayerData, rng: BattleRng, p_cm: Variant) -> bool:
 	var cost: int = get_refresh_cost(shop_id, p_cm)
-	if pd.diamond < cost:
-		return false
-	pd.spend_diamond(cost)
+	# 公会商店刷新耗公会币（源 marketconfig.lua:175-181 canRefresh 查 guildpoint）。
+	if shop_id == GUILD_SHOP_ID:
+		if pd.get_point(PAY_GUILD) < cost:
+			return false
+		pd.add_point(PAY_GUILD, -cost)
+	else:
+		if pd.diamond < cost:
+			return false
+		pd.spend_diamond(cost)
 	refresh_times[shop_id] = int(refresh_times.get(shop_id, 0)) + 1
 	shop_data[shop_id] = generate_shop_goods(shop_id, rng, p_cm)
 	return true

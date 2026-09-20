@@ -163,7 +163,10 @@ func _on_fast(task: Dictionary) -> void:
 	if String(r.get("action", "")) == "call":
 		var main_scene: Node = get_tree().current_scene
 		if main_scene != null and main_scene.has_method(String(r["method"])):
-			main_scene.call(String(r["method"]))
+			# FarmChapter 按 progressid 分流（源 fast_handler 遍历 pid：102→em、103→equip，
+			# main_scene._open_exercise_panel 消费）；其余入口无参调用。
+			var args: Array = [task.get("progressid", [])] if str(task.get("type", "")) == "FarmChapter" else []
+			main_scene.callv(String(r["method"]), args)
 			remove_window()  # pushScene 切场景同时关闭当前 popup
 			return
 	Toast.show_message(String(r.get("msg", "前往任务目标")))
