@@ -1,0 +1,138 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_bg.png" id="1_dlg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_line.png" id="2_line"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_icon_bg.png" id="3_iconbg"]
+
+; 膜拜弹窗（2026-09-19 公会一期）。无脚本；GuildWorshipPanel fill。
+; 照源 worshihInfoLayer（对象/次数/领取）+ worshihTypeLayer（三档）两 layer 合一弹窗
+; （单机化简化：点成员膜拜直接弹本窗）。dialog_bg 447x283px÷CS=348.9x220.9pt 拉伸至
+; 420x264（圆角框 1.2 倍横拉观感可接受）。三档=GuildWorship 表驱动（1 免费/2 金币/3 钻石+VIP 锁）。
+; 文案 key：GUILDCONFIG.WORSHIP_BIG_SHOT/WORSHIP_TIMES_LEFT_TODAY_/YOU_ACCUMULATED_REWARDS_TO_CLAIM_/
+; CLAIM_REWARDS/SELECT_WORSHIP_MODE_；GUILD.GAIN_GOLD_/WORSHIPMENT_TIMES_HAVE_ALREADY_BEEN_USED_UP_FOR_TODAY。
+
+[node name="GuildWorshipContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Frame" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 190.0
+offset_top = 108.0
+offset_right = 610.0
+offset_bottom = 372.0
+mouse_filter = 2
+texture = ExtResource("1_dlg")
+expand_mode = 1
+
+[node name="Title" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 130.0
+offset_top = 12.0
+offset_right = 290.0
+offset_bottom = 40.0
+theme_type_variation = &"GuildNameLabel"
+text = "膜拜大神"
+
+[node name="CloseBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 370.0
+offset_top = 12.0
+offset_right = 410.0
+offset_bottom = 44.0
+text = "×"
+
+[node name="Line" type="TextureRect" parent="Frame"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 46.0
+offset_right = 400.0
+offset_bottom = 50.0
+mouse_filter = 2
+texture = ExtResource("2_line")
+expand_mode = 1
+
+[node name="HeadHost" type="Control" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 58.0
+offset_right = 70.0
+offset_bottom = 98.0
+mouse_filter = 2
+
+[node name="TargetLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.0
+offset_top = 62.0
+offset_right = 300.0
+offset_bottom = 88.0
+theme_type_variation = &"GuildRowNameLabel"
+text = "亚历山大 Lv.90"
+
+[node name="TimesLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 80.0
+offset_top = 88.0
+offset_right = 320.0
+offset_bottom = 112.0
+theme_type_variation = &"GuildRowDescLabel"
+text = "今日剩余膜拜次数:1"
+
+[node name="Opt1" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 70.0
+offset_top = 120.0
+offset_right = 350.0
+offset_bottom = 152.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "免费 · 得1000金币 15体力"
+
+[node name="Opt2" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 70.0
+offset_top = 156.0
+offset_right = 350.0
+offset_bottom = 188.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "30000金币 · 得5000金币 30体力"
+
+[node name="Opt3" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 70.0
+offset_top = 192.0
+offset_right = 350.0
+offset_bottom = 224.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "150钻石 · 得10000金币 100体力"
+
+[node name="PendingLabel" type="Label" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 150.0
+offset_top = 232.0
+offset_right = 400.0
+offset_bottom = 256.0
+theme_type_variation = &"GuildRowDescLabel"
+text = "可领:1000金币 15体力"
+
+[node name="ClaimBtn" type="Button" parent="Frame"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 228.0
+offset_right = 140.0
+offset_bottom = 264.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "领取奖励"

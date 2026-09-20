@@ -42,6 +42,7 @@ static func to_dict(pd: PlayerData) -> Dictionary:
 		"tutorial_records": pd.tutorial_records.duplicate(true), "tavern_record": pd.tavern_record.duplicate(true),
 		"excavate": pd.excavate.to_dict(),
 		"ladder": pd.ladder.to_dict(),
+		"guild_data": pd.guild_data.to_dict(),
 		"shop_auto_refresh": pd.shop_auto_refresh.duplicate(true),
 		"shop_expire_end": pd.shop_expire_end.duplicate(true),
 		"stage_limit": pd.stage_limit.duplicate(true),
@@ -121,6 +122,9 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 	# P2-2026-07-10：损坏存档守卫（ladder 非 Dictionary 时跳过 from_dict 避类型不匹配崩溃）
 	if ladder_raw is Dictionary:
 		pd.ladder.from_dict(ladder_raw)
+	var guild_raw: Variant = data.get("guild_data", {})
+	if guild_raw is Dictionary:
+		pd.guild_data = GuildData.from_dict(guild_raw)
 	var sar_data: Dictionary = data.get("shop_auto_refresh", {})
 	for k in sar_data: pd.shop_auto_refresh[int(k)] = int(sar_data[k])
 	var see_data: Dictionary = data.get("shop_expire_end", {})

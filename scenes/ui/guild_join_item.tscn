@@ -1,0 +1,95 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_guildlist_member_bg.png" id="1_rowbg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_icon_bg.png" id="2_iconbg"]
+
+; 公会列表行模板（2026-09-19 公会一期两件套）。无脚本；GuildJoinPanel fill。
+; 行底 guild_guildlist_member_bg 803x97px÷CS1.28125=627x75.7pt 按原比例显示（STRETCH
+; 口径合规：默认 axis_stretch=0）。图标 guild_icon_bg 97x97÷CS=75.7——行内缩至 56
+; （装饰缩放）；公会头像 GuildAvatar.Picture 走 ITEM 图（ranklist_rows._add_guild_head 范式）。
+; 文案 key：GUILDCONFIG.MINIMUM_TEAM_LEVEL / guildJoinType（joinLayer 列表五行字段直译）。
+
+[node name="GuildJoinItem" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 627.0
+offset_bottom = 76.0
+mouse_filter = 2
+
+[node name="RowBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 627.0
+offset_bottom = 76.0
+mouse_filter = 2
+texture = ExtResource("1_rowbg")
+expand_mode = 1
+
+[node name="IconBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 10.0
+offset_right = 64.0
+offset_bottom = 66.0
+mouse_filter = 2
+texture = ExtResource("2_iconbg")
+expand_mode = 1
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_top = 14.0
+offset_right = 60.0
+offset_bottom = 62.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 76.0
+offset_top = 10.0
+offset_right = 320.0
+offset_bottom = 34.0
+theme_type_variation = &"GuildRowNameLabel"
+text = "英雄殿堂"
+
+[node name="Slogan" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 76.0
+offset_top = 40.0
+offset_right = 400.0
+offset_bottom = 62.0
+theme_type_variation = &"GuildRowDescLabel"
+text = "共同战斗，共创辉煌！"
+
+[node name="LevelLimit" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 408.0
+offset_top = 10.0
+offset_right = 560.0
+offset_bottom = 34.0
+theme_type_variation = &"GuildRowDescLabel"
+text = "需要战队等级30"
+
+[node name="JoinType" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 408.0
+offset_top = 40.0
+offset_right = 560.0
+offset_bottom = 62.0
+theme_type_variation = &"GuildRowDescLabel"
+text = "立即加入"
+
+[node name="JoinBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 530.0
+offset_top = 20.0
+offset_right = 612.0
+offset_bottom = 56.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "加入"

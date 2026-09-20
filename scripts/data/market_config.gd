@@ -16,6 +16,7 @@ const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const SHOP_COMMON_ID: int = 1
 const SHOP_GOBLIN_ID: int = 2
 const SHOP_BLACK_MARKET_ID: int = 3
+const SHOP_GUILD_ID: int = 7          # 公会商店（源 marketconfig.lua [7]，payType guildpoint）
 const PRICE_MUL_GOBLIN: float = 0.6
 const PRICE_MUL_BLACK_MARKET: float = 2.0
 
@@ -28,6 +29,8 @@ static func get_type_config(shop_id: int) -> Dictionary:
 			return _goblin()
 		SHOP_BLACK_MARKET_ID:
 			return _black_market()
+		SHOP_GUILD_ID:
+			return _guild()
 		_:
 			return _common()
 
@@ -45,6 +48,14 @@ static func _goblin() -> Dictionary:
 static func _black_market() -> Dictionary:
 	return _make("shop_bg.png", "shop_product_bg_2.png", "shop_head_3.png", "shop_title_3.png",
 			PAY_DIAMOND, PRICE_MUL_BLACK_MARKET, true, false, "黑市商人")
+
+
+## 公会商店（源 marketconfig.lua [7]：shop_head_guild 专属皮；商品 payType=gold——源
+## generateShopGoods(7) 走 payTypeMap[7] or "gold"（map 键 6 是源残留），公会币只用于
+## 刷新（refresh_coin_type=guildpoint，ShopManager.refresh 扣 guildpoint）。
+static func _guild() -> Dictionary:
+	return _make("shop_bg.png", "shop_product_bg_2.png", "shop_head_guild.png", "shop_title_bg_guild.png",
+			PAY_GOLD, 1.0, true, false, "公会商店")
 
 
 static func _make(frame_res: String, product_res: String, head_res: String, title_res: String,

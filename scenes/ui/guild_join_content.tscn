@@ -1,0 +1,251 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backd"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_frame.png" id="4_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_tab_light.png" id="5_light"]
+
+; 公会加入面板（2026-09-19 公会一期两件套，未入会态）。无脚本；GuildJoinPanel fill。
+; 照源 guild.lua joinLayer 三 tab（加入/查找/创建）骨架；guild_frame 936x587px÷CS=730x458pt
+; 主框；tab 光条 guild_tab_light 252x76÷CS=196.7x59.3 缩至 150x45（装饰缩放）。
+; 单机化大幅简化：verify 型公会即入（join_confirm 审批流裁剪）；创建图标 GuildAvatar
+; 前 20 个网格（源 289 翻页全量，二期再补）；查找=精确 ID 命中 NPC 公会。
+; 文案 key：GUILDCONFIG.JOIN_GUILD/SEARCH_GUILD/CREATE_GUILD/SEARCH/CREATION_COST_。
+
+[node name="GuildJoinContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="FrameworkBg" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 800.0
+offset_bottom = 480.0
+mouse_filter = 2
+texture = ExtResource("1_bg")
+expand_mode = 1
+
+[node name="MainFrame" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 12.0
+offset_right = 765.0
+offset_bottom = 470.0
+mouse_filter = 2
+texture = ExtResource("4_frame")
+expand_mode = 1
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.81
+offset_bottom = 73.59
+texture_normal = ExtResource("2_back")
+texture_pressed = ExtResource("3_backd")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 350.0
+offset_top = 20.0
+offset_right = 450.0
+offset_bottom = 46.0
+theme_type_variation = &"RanklistTitleLabel"
+text = "公会"
+
+[node name="TabJoin" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 110.0
+offset_top = 66.0
+offset_right = 260.0
+offset_bottom = 106.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "加入公会"
+
+[node name="TabFind" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 290.0
+offset_top = 66.0
+offset_right = 440.0
+offset_bottom = 106.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "查找公会"
+
+[node name="TabCreate" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 470.0
+offset_top = 66.0
+offset_right = 620.0
+offset_bottom = 106.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "创建公会"
+
+[node name="TabLight" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 110.0
+offset_top = 108.0
+offset_right = 260.0
+offset_bottom = 113.0
+mouse_filter = 2
+texture = ExtResource("5_light")
+expand_mode = 1
+
+[node name="JoinView" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 124.0
+offset_right = 800.0
+offset_bottom = 466.0
+mouse_filter = 2
+
+[node name="RowsScroll" type="ScrollContainer" parent="JoinView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 86.0
+offset_top = 4.0
+offset_right = 714.0
+offset_bottom = 330.0
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="JoinView/RowsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="EmptyLabel" type="Label" parent="JoinView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 250.0
+offset_top = 150.0
+offset_right = 550.0
+offset_bottom = 180.0
+theme_type_variation = &"TaskEmptyLabel"
+text = "暂时没有可加入的公会"
+
+[node name="FindView" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_top = 124.0
+offset_right = 800.0
+offset_bottom = 466.0
+mouse_filter = 2
+
+[node name="IdLabel" type="Label" parent="FindView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 160.0
+offset_top = 60.0
+offset_right = 270.0
+offset_bottom = 92.0
+theme_type_variation = &"GuildRowNameLabel"
+text = "公会ID:"
+
+[node name="IdInput" type="LineEdit" parent="FindView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 270.0
+offset_top = 58.0
+offset_right = 470.0
+offset_bottom = 94.0
+max_length = 5
+
+[node name="SearchBtn" type="Button" parent="FindView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 490.0
+offset_top = 58.0
+offset_right = 590.0
+offset_bottom = 94.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "查找"
+
+[node name="ResultHost" type="Control" parent="FindView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 86.0
+offset_top = 130.0
+offset_right = 713.0
+offset_bottom = 206.0
+mouse_filter = 2
+
+[node name="CreateView" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_top = 124.0
+offset_right = 800.0
+offset_bottom = 466.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="CreateView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 110.0
+offset_top = 36.0
+offset_right = 230.0
+offset_bottom = 68.0
+theme_type_variation = &"GuildRowNameLabel"
+text = "公会名称:"
+
+[node name="NameInput" type="LineEdit" parent="CreateView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 230.0
+offset_top = 32.0
+offset_right = 470.0
+offset_bottom = 68.0
+max_length = 10
+
+[node name="IconTitle" type="Label" parent="CreateView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 110.0
+offset_top = 92.0
+offset_right = 230.0
+offset_bottom = 124.0
+theme_type_variation = &"GuildRowNameLabel"
+text = "公会图标:"
+
+[node name="IconGrid" type="GridContainer" parent="CreateView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 230.0
+offset_top = 86.0
+offset_right = 710.0
+offset_bottom = 246.0
+columns = 10
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+mouse_filter = 2
+
+[node name="CostLabel" type="Label" parent="CreateView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 230.0
+offset_top = 268.0
+offset_right = 430.0
+offset_bottom = 298.0
+theme_type_variation = &"GuildRowDescLabel"
+text = "创建花费: 500 钻石"
+
+[node name="CreateBtn" type="Button" parent="CreateView"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 490.0
+offset_top = 258.0
+offset_right = 640.0
+offset_bottom = 304.0
+theme_type_variation = &"DialogConfirmBtn"
+text = "创建公会"
