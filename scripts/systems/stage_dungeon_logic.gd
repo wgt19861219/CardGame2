@@ -19,6 +19,9 @@ const DUNGEON_MAX_BUY_DEFAULT: int = 3
 const DUNGEON_BUYCOST_DEFAULT: int = 50
 const DUNGEON_GOLD_FALLBACK: int = 2000
 const EXP_MULTIPLIER: int = 10
+# 副本掉落难度率（源 local_server.lua:508 dropRates）+ 缺省档。
+const DUNGEON_DROP_RATES: Dictionary = {1: 0.3, 2: 0.25, 3: 0.2, 4: 0.15}
+const DUNGEON_DROP_RATE_DEFAULT: float = 0.3
 # 英雄副本组 → 对应普通副本组（要求该普通组 Stages 所有 Boss 通关）。
 # 注：local_server.lua:476 同名映射用 4000x 是源 latent bug（4000x 在 5000x 数据表查不到→永远放行），不照。
 const HEROIC_PREREQ: Dictionary = {50005: 50001, 50006: 50002, 50007: 50003}
@@ -82,32 +85,85 @@ static func _local_day_key(ts: int, off_min: int) -> int:
 
 
 ## enter 统一分派（enter_act_stage / assemble_stage_battle 共用）：dungeon 段走
-## check_enter_dungeon（钥匙/前置/次数/买次），其余 act 段走 check_enter_act_group
-## （资源副本组计次；普通/精英关 Stage Group 指章节、不在 ActStageGroup 表 → no-op）。
+## check_enter_dungeon（钥匙/前置/次数/买次，进战斗即计次照源 :707），其余 act 段走
+## check_enter_act_group（资源副本组次数校验，只查不扣——源计次在胜利结算
+## battle_engine.lua:1128 addActTimes，失败不耗次数；写入端 record_act_win）。
+## 普通/精英关 Stage Group 指章节、不在 ActStageGroup 表 → no_op 放行。
 static func check_enter(mgr: StageManager, stage_id: int, stage_group: int, player: PlayerData, cm: ConfigManager) -> String:
 	if StageData.is_dungeon_stage(stage_id):
 		return check_enter_dungeon(mgr, stage_id, stage_group, player, cm)
 	return check_enter_act_group(mgr, stage_id, cm)
 
 
-## 资源副本（ActStageGroup 20001-20005：经验/金币/智力/敏捷/力量试炼）每日次数检查 + 计次。
-## 源客户端 degreeWindow.getLeftTimes 读 DailyLimit-getActTimes，计次在服务端 enterActStage
-## ——单机并入此处（进战斗即计次）。组键 sgid = Stage 表 "Stage Group" 字段（20001 组四难度
-## 同键共享次数，源 getsgid 语义）。CD 字段全表实测为 0（2026-09-12）不实现 CD 检查。
-## 返 "" 放行（已计次）；"no_attempts" 次数用尽。
+## 资源副本（ActStageGroup 20001-20005：经验/金币/智力/敏捷/力量试炼）每日次数校验（只查不扣）。
+## 源客户端 degreeWindow.getLeftTimes 读 DailyLimit-getActTimes，计次在胜利结算
+## battle_engine.lua:1124-1131（addActTimes+refreshActResetTime，失败不扣）→ 本项目
+## record_act_win 于 exit_stage 胜利分支接入。组键 sgid = Stage 表 "Stage Group" 字段
+##（20001 组四难度同键共享次数，源 getsgid 语义）。CD 字段全表实测为 0（2026-09-12）
+## 不实现 CD 检查。返 "" 放行；"no_attempts" 次数用尽。
 static func check_enter_act_group(mgr: StageManager, stage_id: int, cm: ConfigManager) -> String:
-	var sgid: int = int(cm.get_raw_table(&"Stage").get(str(stage_id), {}).get("Stage Group", 0))
+	var sgid: int = _act_group_key(cm, stage_id)
 	if sgid <= 0:
 		return ""
 	check_act_times_daily_reset(mgr, int(Time.get_unix_time_from_system()))
 	var limit: int = int(cm.get_raw_table(&"ActStageGroup").get(str(sgid), {}).get("DailyLimit", 0))
 	if limit <= 0:
 		return ""
-	var used: int = int(mgr.act_times.get(sgid, 0))
-	if used >= limit:
+	if int(mgr.act_times.get(sgid, 0)) >= limit:
 		return "no_attempts"
-	mgr.act_times[sgid] = used + 1
 	return ""
+
+
+## act 组胜利计次（源 battle_engine.lua:1128 addActTimes(sg)，随 victory 分支执行）。
+## stage_manager.exit_stage 胜利路径调用；与 check_enter_act_group 同键同限。
+static func record_act_win(mgr: StageManager, cm: ConfigManager, stage_id: int) -> void:
+	var sgid: int = _act_group_key(cm, stage_id)
+	if sgid <= 0:
+		return
+	check_act_times_daily_reset(mgr, int(Time.get_unix_time_from_system()))
+	var limit: int = int(cm.get_raw_table(&"ActStageGroup").get(str(sgid), {}).get("DailyLimit", 0))
+	if limit <= 0:
+		return
+	mgr.act_times[sgid] = int(mgr.act_times.get(sgid, 0)) + 1
+
+
+static func _act_group_key(cm: ConfigManager, stage_id: int) -> int:
+	return int(cm.get_raw_table(&"Stage").get(str(stage_id), {}).get("Stage Group", 0))
+
+
+## 副本关掉落（源 local_server.lua:504-550 generateDungeonLoots）：难度掉率
+## {1:0.3, 2:0.25, 3:0.2, 4:0.15} 对 7 槽各掷一次（每件 1 个，不翻倍、无扫荡券必掉——
+## 那是 act 分支 generateLoots 规则）；全空保底 1 件，优先玩家未拥有（player.items
+## 通用背包语义=源 equip 背包，dungeon 掉落实测全 equip 段），否则随机。
+## 注：源实际运行恒 diff1 掉率 0.3（客户端发 baseId、服务端读 base 行 Difficulty）——
+## 与钥匙/金币同属难度结算退化 latent bug，本项目按难度行 Difficulty 结算（设计意图版）。
+static func generate_dungeon_loots(cm: ConfigManager, sid: int, rng: BattleRng, player: PlayerData) -> Array[Dictionary]:
+	var cfg: Dictionary = cm.get_raw_table(&"StageDungeon").get(str(sid), {})
+	var diff: int = int(cfg.get("Difficulty", 1))
+	var rate: float = float(DUNGEON_DROP_RATES.get(diff, DUNGEON_DROP_RATE_DEFAULT))
+	var loots: Array[Dictionary] = []
+	var candidates: Array[int] = []
+	for i in range(1, StageData.DROP_SLOT_COUNT + 1):
+		var item_id: int = int(cfg.get("UI reward" + str(i), 0))
+		if item_id == 0:
+			continue
+		candidates.append(item_id)
+		if rng.randf() < rate:
+			loots.append({"id": item_id, "type": StageManager._item_type(item_id)})
+	if loots.is_empty() and not candidates.is_empty():
+		var chosen: int = _pick_guarantee(candidates, player, rng)
+		loots.append({"id": chosen, "type": StageManager._item_type(chosen)})
+	return loots
+
+
+## 保底选择（源 :527-543）：优先玩家未拥有（items 通用背包语义=源 equip 背包，
+## dungeon 掉落实测全 equip 段），全拥有则随机一件。
+static func _pick_guarantee(candidates: Array[int], player: PlayerData, rng: BattleRng) -> int:
+	if player != null:
+		for cid in candidates:
+			if not player.items.has(cid):
+				return cid
+	return candidates[rng.randi_range(0, candidates.size() - 1)]
 
 
 static func check_enter_dungeon(mgr: StageManager, stage_id: int, stage_group: int, player: PlayerData, cm: ConfigManager) -> String:

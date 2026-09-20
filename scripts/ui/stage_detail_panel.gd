@@ -54,6 +54,7 @@ var stage_id: int = 0
 var mgr: StageManager = null
 var player: PlayerData = null
 var rng: BattleRng = null
+var _hero_limit: Dictionary = {}   # 源 createForExercise heroLimit {type,detail}，透传 BattlePreparePanel
 var _stage_data: StageData = null
 var _enemies: Array[Dictionary] = []
 var _res_info: Dictionary = {}
@@ -67,12 +68,13 @@ var _power_number: Label = null
 var _sweep_ticket: Label = null
 
 
-func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng) -> void:
+func setup_panel(p_sid: int, p_mgr: StageManager, p_player: PlayerData, p_rng: BattleRng, p_hero_limit: Dictionary = {}) -> void:
 	transparent_shade = true   # T4：原 shade 透明 hack 上收基类
 	stage_id = p_sid
 	mgr = p_mgr
 	player = p_player
 	rng = p_rng
+	_hero_limit = p_hero_limit   # 源 createForExercise addition.heroLimit（20005 Gender=女），透传布阵过滤
 	# 每日次数跨日清零（源服务器日重置；2026-09-17 经济单机优化补，惰性判定——打开面板即结算）
 	player.check_stage_limit_daily_reset(int(Time.get_unix_time_from_system()))
 	_stage_data = StageData.from_config(player.cm, p_sid)
@@ -227,7 +229,8 @@ func _left_times() -> int:
 
 
 # act 段（资源试炼 20001-20005）组次数语义：limit 查 ActStageGroup.DailyLimit、
-# 已用查 mgr.act_times[Stage Group]（进战斗计次在 StageDungeonLogic.check_enter_act_group）；
+# 已用查 mgr.act_times[Stage Group]（计次在胜利结算 StageDungeonLogic.record_act_win，
+## 源 battle_engine.lua:1128 胜利才 addActTimes）；
 # 其余类型照旧查 Stage 单关 Daily Limit / player.stage_limit（源 getRepeatInformation 分支）。
 func _daily_limit() -> int:
 	if StageAccount.stage_type(stage_id) == "act":
@@ -303,7 +306,7 @@ func _on_go_pressed() -> void:
 	if mgr == null or player == null or rng == null:
 		return
 	var panel := BattlePreparePanel.new()
-	panel.setup(stage_id, player, mgr, rng, player.cm)
+	panel.setup(stage_id, player, mgr, rng, player.cm, "stage", 0, [], Callable(), _hero_limit)
 	var parent: Node = get_parent()
 	if parent != null:
 		parent.add_child(panel)

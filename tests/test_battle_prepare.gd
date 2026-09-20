@@ -64,6 +64,59 @@ func test_crusade_mode_filters_low_level_heroes() -> void:
 	panel.queue_free()
 
 
+# 2026-09-19 照源回归：资源试炼 20005 组 heroLimit Gender=ACTSTAGEGROUP.FEMALE
+#（源 readhero.getAllListWithLimit :867-883 Unit[tid]["Gender"]==detail 原键比较，
+# 经 ExerciseDegreePanel→StageDetailPanel→BattlePreparePanel hero_limit 传递）。
+func _make_gender_panel() -> BattlePreparePanel:
+	var pd := _make_player()
+	var panel := BattlePreparePanel.new()
+	panel.setup(20005, pd, null, BattleRng.new(1), cm, "stage", 0, [], Callable(),
+		{"type": "Gender", "detail": "ACTSTAGEGROUP.FEMALE"})
+	return panel
+
+
+func test_hero_limit_gender_filters_list() -> void:
+	var panel := _make_gender_panel()
+	var unit_table: Dictionary = cm.get_raw_table(&"Unit")
+	var tids: Array = []
+	for h in panel._heroes_all:
+		tids.append(int(h.tid))
+	assert_false(tids.has(1), "男性英雄 Unit 1（UNIT.MALE）被过滤")
+	assert_true(tids.has(2), "女性英雄 Unit 2（ACTSTAGEGROUP.FEMALE）保留")
+	for tid in tids:
+		assert_eq(String(unit_table.get(str(tid), {}).get("Gender", "")), "ACTSTAGEGROUP.FEMALE",
+			"Unit %d 列表内全为女性" % tid)
+	panel.queue_free()
+
+
+func test_hero_limit_gender_filters_team_memory() -> void:
+	# player.team 记忆含男性英雄时初始阵容装不上（过滤作用于 _heroes_all → _load_default_team
+	# 反查失败跳过，源 :962 上阵校验双保险等价）。
+	var pd := _make_player()
+	var male_inst: int = -1
+	for inst_id in pd.hero_manager.heroes:
+		if int(pd.hero_manager.heroes[inst_id].tid) == 1:
+			male_inst = int(inst_id)
+			break
+	assert_ne(male_inst, -1, "找到 Unit 1 实例")
+	pd.team = [male_inst]
+	var panel := BattlePreparePanel.new()
+	panel.setup(20005, pd, null, BattleRng.new(1), cm, "stage", 0, [], Callable(),
+		{"type": "Gender", "detail": "ACTSTAGEGROUP.FEMALE"})
+	var team_tids: Array = []
+	for t in panel._team:
+		team_tids.append(int(t.tid))
+	assert_false(team_tids.has(1), "违规英雄不进初始阵容")
+	panel.queue_free()
+
+
+func test_no_hero_limit_keeps_all() -> void:
+	# 无 hero_limit（默认）不过滤——其余入口行为不变。
+	var panel := _make_panel()
+	assert_true(panel._heroes_all.size() >= 6, "默认不过滤全量英雄")
+	panel.queue_free()
+
+
 func test_panel_assembles() -> void:
 	var panel := _make_panel()
 	assert_not_null(panel._list_grid, "列表 GridContainer 应装配")

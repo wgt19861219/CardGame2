@@ -46,9 +46,14 @@ func test_save_in_test_mode_is_noop() -> void:
 func test_real_save_writes_and_loads_auto_slot() -> void:
 	var old_mode := GameData._test_mode
 	var old_dir := GameData.save_dir
+	var old_slot := GameData.active_slot
 	var old_diamond := GameData.player.diamond
 	GameData._test_mode = false
 	GameData.save_dir = SANDBOX_DIR
+	# 2026-09-19 隔离补：GUT 进程无 GODOT_TEST_MODE 时 _read_active_slot 读真实
+	# user:// 档位记录——用户活跃档非 auto（多档位）则 save() 写别的槽、load 读 auto 槽
+	# 永远空（断言随用户档位状态漂移）。固定写/读同槽，测后恢复。
+	GameData.active_slot = GameData.AUTO_SLOT
 	GameData.player.diamond = 777
 	assert_eq(GameData.save(), OK, "真实模式 save() 返 OK")
 	var sm := SaveManagerScript.new(SANDBOX_DIR)
@@ -58,6 +63,7 @@ func test_real_save_writes_and_loads_auto_slot() -> void:
 	GameData.player.diamond = old_diamond
 	GameData._test_mode = old_mode
 	GameData.save_dir = old_dir
+	GameData.active_slot = old_slot
 
 
 # ── 多档位（2026-09-17）：switch_slot 往返/空档新号/拒绝未知槽/活跃槽持久化/slot_metas ──

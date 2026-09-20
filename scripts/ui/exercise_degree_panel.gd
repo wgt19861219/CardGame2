@@ -15,10 +15,12 @@ extends PopWindow
 ## - CD 倒计时板裁剪：ActStageGroup CD 字段全表实测 0，无倒计时语义；次数行保留。
 ## - 进战斗照源 doGotoStage(:126-149) 检查链（等级/次数/体力）→ stagedetail
 ##   （本项目 StageDetailPanel 子弹窗叠放，源 pushScene 保留 degree 层语义一致）。
-## - 计次在 Logic 层 StageDungeonLogic.check_enter_act_group（assemble 进战斗时），
+## - 计次在 Logic 层（源 battle_engine.lua:1128 胜利结算 addActTimes，本项目
+##   StageDungeonLogic.record_act_win 于 exit_stage 胜利分支；进战斗只校验），
 ##   本面板只读展示（源客户端同款：getLeftTimes 读、服务端记）。
-## - heroLimit（20005 Gender 必须女性英雄，源 createForExercise 传参）stagedetail
-##   选人过滤未迁移——已知缺口记验收记录，不阻塞其余入口。
+## - heroLimit（20005 Gender 必须女性英雄，源 createForExercise 传参）：2026-09-19
+##   照源回归补全——经 StageDetailPanel 透传 BattlePreparePanel.hero_limit 过滤
+##   可选英雄（Unit 表 Gender 字段原键比较，源 readhero.getAllListWithLimit）。
 ##
 ## 两件套范式：完整静态树进 exercise_degree_content.tscn（无脚本），本文件只做业务 +
 ## 信号 connect + fill。弹窗是短蒙层弹窗，不设 hud_identity（沿用父级，源为 exercise
@@ -151,5 +153,9 @@ func _on_slot_pressed(idx: int) -> void:
 		Toast.show_message("体力不足")
 		return
 	var detail := StageDetailPanel.new("stagedetail", {})
-	detail.setup_panel(sid, mgr, player, BattleRng.new(randi()))
+	# heroLimit（源 createForExercise :143-147 传 {heroLimit=组 Limit Type/Detail}；20005 组
+	# Gender=ACTSTAGEGROUP.FEMALE 限女性英雄，Unit 表 Gender 字段原键比较）透传布阵过滤。
+	var em2 := ExerciseManager.new()
+	em2.setup(player.cm)
+	detail.setup_panel(sid, mgr, player, BattleRng.new(randi()), em2.get_hero_limit(key))
 	detail.show_window(self)

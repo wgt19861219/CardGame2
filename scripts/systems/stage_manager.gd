@@ -69,7 +69,7 @@ func enter_act_stage(stage_id: int, stage_group: int, player: PlayerData, rng: B
 	if enter_err != "": return {"ok": false, "error": enter_err}
 	var vit_cost: int = maxi(int(cfg.get("Vitality Cost", 0)) - int(cfg.get("Vit Return", 0)), 0)
 	if vit_cost > 0 and not player.spend_vitality(vit_cost): return {"ok": false, "error": "no_vitality"}
-	return {"ok": true, "rseed": rng.get_seed(), "loots": generate_loot_list(stage_id, rng), "stage_id": stage_id}
+	return {"ok": true, "rseed": rng.get_seed(), "loots": generate_loot_list(stage_id, rng, player), "stage_id": stage_id}
 
 
 ## 端到端（测试/扫荡用）：enter 扣体力 + exit 胜利结算。返 {ok, stars, exp}。
@@ -106,13 +106,14 @@ func assemble_stage_battle(sid: int, player: PlayerData, player_tids: Array[int]
 		var table: StringName = &"StageDungeon" if StageData.is_dungeon_stage(sid) else &"Stage"
 		var cfg: Dictionary = config.get_raw_table(table).get(str(sid), {})
 		# 每日次数/钥匙/前置/等级统一分派（源 dungeon_map.lua:499-504 enterStage 即计次；
-		# 2026-08-22 巡检接线：旧只查体力致 DailyLimit 失效；act 组计次 2026-09-12 接入）。
+		# 2026-08-22 巡检接线：旧只查体力致 DailyLimit 失效；act 组只校验、计次在胜利
+		# 结算 record_act_win——源 battle_engine.lua:1124-1131 胜利才 addActTimes）。
 		var enter_err: String = StageDungeonLogic.check_enter(self, sid, StageDungeonLogic.DUNGEON_BOSS_BASE + sid % StageDungeonLogic.DUNGEON_BOSS_MOD, player, config)
 		if enter_err != "": return {"ok": false, "error": enter_err}
 		var vit_cost: int = maxi(int(cfg.get("Vitality Cost", 0)) - int(cfg.get("Vit Return", 0)), 0)
 		if vit_cost > 0 and not player.spend_vitality(vit_cost):
 			return {"ok": false, "error": "no_vitality"}
-	var loots: Array[Dictionary] = generate_loot_list(sid, rng)
+	var loots: Array[Dictionary] = generate_loot_list(sid, rng, player)
 	var eng := BattleEngine.new()
 	eng.rng = rng
 	eng.sfx_hook = sfx_hook; eng.skill_lib = skill_lib   # T3 注入（胜/败音效 + waves 建怪技能库）
@@ -129,7 +130,12 @@ func finalize_stage_battle(eng: BattleEngine, sid: int, player: PlayerData, play
 	var stars: int = int(eng.result_stars) if won else 0
 	var exit_r: Dictionary = exit_stage(sid, stars, won)
 	if won and player_tids.size() > 0:
-		player.take_stage_reward(sid, stars, player_tids, loots)
+		if StageData.is_dungeon_stage(sid):
+			# 副本关照源 battle_engine.lua:1136-1156 专属分支（不走 takeStageReward）：
+			# 金币按难度入账、无钻石、英雄经验=Exp×10 均分（源不读 Heroexp Reward 字段）。
+			player.take_dungeon_reward(sid, player_tids, loots)
+		else:
+			player.take_stage_reward(sid, stars, player_tids, loots)
 		_record_stage_limit(player, sid, 1)
 		_record_stage_dailyjob(player, sid)
 	return {"ok": true, "won": won, "stars": stars, "exp": int(exit_r["exp"]), "money": int(exit_r["money"]), "loots": loots, "hero_hp_mp": StageAccount.collect_hero_hp_mp(eng), "lose_type": "timeout" if int(eng.last_result) == BattleEngine.RESULT_TIMEOUT else "fail"}
@@ -230,6 +236,7 @@ func get_max_chapter(m: String) -> int: return StageAccount.get_max_chapter(m, p
 
 ## 结算：胜利取星数 max(历史,本次) + 发放奖励；失败不变。
 ## 副本关（is_dungeon_stage）照源 :787-829：难度金币 + 副本硬币 + dungeon_bosses_cleared 持久化。
+## act 关（资源试炼 2xxxx）胜利时组计次（源 battle_engine.lua:1128 addActTimes，失败不扣）。
 func exit_stage(sid: int, result_stars: int, won: bool, player: PlayerData = null) -> Dictionary:
 	var prev: int = stage_stars(sid)
 	if won:
@@ -238,6 +245,8 @@ func exit_stage(sid: int, result_stars: int, won: bool, player: PlayerData = nul
 		if sid < ELITE_THRESHOLD: max_normal = max(max_normal, sid)
 		if StageData.is_dungeon_stage(sid):
 			return StageDungeonLogic.exit_dungeon(self, config, sid, best, player)
+		if StageAccount.stage_type(sid) == StageAccount.STAGE_TYPE_ACT:
+			StageDungeonLogic.record_act_win(self, config, sid)
 		var d := StageData.from_config(config, sid)
 		return {"stars": best, "exp": d.exp_reward * EXP_MULTIPLIER, "money": d.money_reward * EXP_MULTIPLIER}
 	return {"stars": prev, "exp": 0, "money": 0}  # 失败不变
@@ -253,8 +262,12 @@ func generate_loots(sid: int, rng: BattleRng) -> Array[int]:
 
 
 ## 生成掉落列表（照源 local_server.lua:383 generateLoots + player.lua:1265 getStageLoots 解包合并）。
-## 概率判定（UI reward[i] / Pro）+ 翻倍（每个加 2 个）+ 必掉扫荡券 390。返 [{id,type}] 供 take_stage_reward 发放。
-func generate_loot_list(sid: int, rng: BattleRng) -> Array[Dictionary]:
+## act 关：概率判定（UI reward[i] / Pro）+ 翻倍（每个加 2 个）+ 必掉扫荡券 390；
+## 副本关走 StageDungeonLogic.generate_dungeon_loots（难度率+保底，源 :504-550 分支差异）。
+## 返 [{id,type}] 供 take_stage_reward/take_dungeon_reward 发放。
+func generate_loot_list(sid: int, rng: BattleRng, player: PlayerData = null) -> Array[Dictionary]:
+	if StageData.is_dungeon_stage(sid):
+		return StageDungeonLogic.generate_dungeon_loots(config, sid, rng, player)
 	var data := StageData.from_config(config, sid)
 	var loots: Array[Dictionary] = []
 	for drop in data.drops:
