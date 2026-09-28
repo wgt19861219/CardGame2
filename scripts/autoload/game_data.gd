@@ -75,8 +75,13 @@ func _start_autosave_timer() -> void:
 func _on_autosave_timeout() -> void:
 	_recover_vitality()
 	if _dirty:
-		save()
-		_dirty = false
+		var err: int = save()
+		if err == OK:
+			_dirty = false
+		else:
+			# 写失败保留脏标等下一轮 tick 重试（曾无条件清零致这批脏改动丢失且无日志，
+			# 2026-09-28 审查 P2-1）。
+			push_error("GameData: 自动存档失败（err=%d），保留脏标待重试" % err)
 
 
 ## 体力时间恢复接线（源 player.lua:622 refreshVitality 惰性补点；2026-09-17 经济单机优化）：

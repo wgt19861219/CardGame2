@@ -106,6 +106,7 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 	pd.midas = MidasManager.from_dict(data.get("midas", {}), cm)
 	pd.stage_manager = StageManager.from_dict(data.get("stage_manager", {}), cm)
 	pd.handbook = HandbookManager.from_dict(data.get("handbook", {}))
+	pd.hero_manager.handbook = pd.handbook   # 图鉴记录钩子重注入（_init 注入随 hero_manager 换实例失效）
 	pd.mailbox = MailData.from_dict(data.get("mailbox", {}))
 	var tr_data: Dictionary = data.get("tutorial_records", {}); pd.tutorial_records.clear()
 	for k in tr_data:

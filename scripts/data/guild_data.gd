@@ -32,9 +32,9 @@ func reset_to_no_guild() -> void:
 	slogan = ""
 	vitality = 0
 	self_vitality = 0
-	worship_use_times = 0
-	worship_day = 0
-	worship_pending.clear()
+	# worship_use_times/worship_day/worship_pending 不随退会清零：膜拜次数是玩家级日限
+	# （清零会被「退会→再入会」循环重置刷取货币；挂起奖励属玩家已获收益，退会不吞。
+	# 2026-09-28 审查 P0-3 根修；跨日清零由 _check_worship_daily_reset 惰性执行）。
 
 
 ## 入会/建会初始化（活跃取 NPC 基值，源服务器假值 5000 的可成长单机化）。

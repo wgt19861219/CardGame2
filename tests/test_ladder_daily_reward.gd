@@ -141,3 +141,22 @@ func test_mail_id_generation() -> void:
 		"_content": {"_plain_mail": {"_from": "f", "_title": "t", "_content": "c"}},
 		"_money": 0, "_diamonds": 0, "_skill_point": 0, "_points": {}, "_items": []})
 	assert_eq(md.next_mail_id(), first + 1, "追加后 id 递增")
+
+
+# P2-2（2026-09-28 审查）：系统时间回拨不重发奖励——重置/发奖只进不退（today < last_day 直接忽略）。
+func test_handle_clock_rollback_no_reward() -> void:
+	var player := make_player()
+	var lm := LadderManager.new()
+	lm.handle({"_open_panel": true}, player, cm, BattleRng.new(7), TS_DAY2_NOON)   # day2 落锚
+	var mails_before: int = player.mailbox.ordered_mails().size()
+	lm.handle({"_open_panel": true}, player, cm, BattleRng.new(8), TS_DAY1_NOON)  # 回拨到 day1
+	assert_eq(player.mailbox.ordered_mails().size(), mails_before, "回拨日不重置不重发")
+	var left_before: int = int(lm.pvp.get("left_count", 0))
+	var buys_before: int = int(lm.pvp.get("buy_times", 0))
+	lm.pvp["left_count"] = 0
+	lm.pvp["buy_times"] = 3
+	lm.handle({"_open_panel": true}, player, cm, BattleRng.new(9), TS_DAY1_NOON)  # 再次回拨
+	assert_eq(int(lm.pvp["left_count"]), 0, "回拨也不回满挑战次数（防回拨刷重置）")
+	assert_eq(int(lm.pvp["buy_times"]), 3, "购买次数同样不重置")
+	lm.pvp["left_count"] = left_before
+	lm.pvp["buy_times"] = buys_before

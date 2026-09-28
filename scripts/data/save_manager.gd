@@ -36,6 +36,8 @@ func list_slots() -> Array[String]:
 	return slots
 
 ## 保存数据到槽位，返回 Godot 错误码（OK=0 成功）。
+## 写入失败（磁盘满/只读/同步锁）必须弃 temp 不 rename——否则截断档覆盖完好目标档，
+## 与读侧坏档备份兜底不对称（2026-09-28 审查 P1-8：原子写只防"崩溃写一半"不防"写失败仍提交"）。
 func save_slot(slot: String, data: Dictionary) -> int:
 	var target := _path(slot)
 	var temp := target + TEMP_SUFFIX
@@ -44,7 +46,12 @@ func save_slot(slot: String, data: Dictionary) -> int:
 	if file == null:
 		return FileAccess.get_open_error()
 	file.store_string(var_to_str(data))
+	var write_err: int = file.get_error()
 	file.close()
+	if write_err != OK:
+		DirAccess.remove_absolute(temp)
+		push_error("SaveManager: 写入失败（err=%d），弃用临时档 %s 保住原档" % [write_err, temp])
+		return write_err
 	return DirAccess.rename_absolute(temp, target)
 
 ## 读取槽位数据，失败/不存在返回空字典。

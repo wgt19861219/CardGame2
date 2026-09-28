@@ -46,7 +46,7 @@ func test_titles_filled_from_lstr() -> void:
 
 func test_rows_created_per_camp() -> void:
 	# 每方 2 个单位 → 每2行（icon + count + bar_bg + bar_fill = 4 节点/行）
-	var units: Array = [_snap(1, 100.0), _snap(1, 50.0), _snap(2, 200.0), _snap(2, 80.0)]
+	var units: Array = [_snap(1, 100.0), _snap(1, 50.0), _snap(-1, 200.0), _snap(-1, 80.0)]
 	var panel := _make_panel(units)
 	# 静态子（HurtBg1/CExit/4标题=6）+ 动态行（2行×4 + 2行×4 = 16）= 22
 	var dynamic_children: int = panel._hurt_bg.get_child_count() - 6
@@ -60,7 +60,7 @@ func test_caps_at_five_per_camp() -> void:
 	for i in 7:
 		units.append(_snap(1, float(i) * 10.0, i + 1))
 	for i in 3:
-		units.append(_snap(2, float(i) * 20.0, i + 10))
+		units.append(_snap(-1, float(i) * 20.0, i + 10))
 	var panel := _make_panel(units)
 	# 5行×4 + 3行×4 = 32 动态
 	var dynamic_children: int = panel._hurt_bg.get_child_count() - 6

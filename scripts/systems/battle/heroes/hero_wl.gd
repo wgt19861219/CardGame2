@@ -82,7 +82,13 @@ func _infernal_buff_update(buff: Variant, dt: float) -> void:
 func _create_buff(skill: Variant, target: Variant) -> Variant:
 	var caster: Variant = skill.caster
 	if int(caster.camp) == int(target.camp):
-		return BattleBuff.new(skill.info.get("buff_info", {}), target, caster)
+		# 友军治疗：HPR 按 caster HEAL 加成。必须在局部副本上计算——skill.info 是
+		# SkillLibrary 共享缓存（get_skill_info 返共享引用），写回会跨单位/跨场次
+		# 指数累积（2026-09-28 审查 P0-2 根修，原 apply 写回方案废弃）。
+		var heal_info: Dictionary = skill.info.get("buff_info", {}).duplicate()
+		var heal: float = float(caster.attribs.get("HEAL", 0))
+		heal_info["HPR"] = float(heal_info.get("HPR", 0)) * (1.0 + heal / HEAL_DENOM)
+		return BattleBuff.new(heal_info, target, caster)
 	var bid: int = int(skill.info.get("Script Arg2", 0))
 	var binfo: Dictionary = caster.cm.lookup(&"Buff", "", bid).duplicate()  # duplicate 避免 HPR 改污染 cm 表
 	binfo["HPR"] = -float(skill.info.get("Script Arg1", 0))
@@ -105,9 +111,3 @@ func apply(hero: Variant) -> void:
 		skillult.hero_hooks["takeEffectAt"] = Callable(self, "_take_effect_at")
 	if skillatk2:
 		skillatk2.hero_hooks["createBuff"] = Callable(self, "_create_buff")
-		var heal: float = float(hero.attribs.get("HEAL", 0))
-		var origininfo: Dictionary = skillatk2.info.get("buff_info", {})
-		var hpr: float = float(origininfo.get("HPR", 0))
-		var wrapped: Dictionary = origininfo.duplicate()
-		wrapped["HPR"] = hpr * (1.0 + heal / HEAL_DENOM)
-		skillatk2.info["buff_info"] = wrapped

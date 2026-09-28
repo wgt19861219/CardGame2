@@ -277,3 +277,45 @@ func _count_scroll_in(node: Node) -> int:
 			n += 1
 		n += _count_scroll_in(c)
 	return n
+
+
+# ── P1-5（2026-09-28 审查）：日常任务显隐照源补全 + 今日已领防重 ──
+
+# 源 isShow = 时间窗 OR checkdbTrigger（Trigger 全 0 恒 true）——常规日常
+# （job 4 打副本×10 等，空 Display Time + 全 0 Trigger）曾因缺译永不显示。
+func test_regular_dailyjobs_visible_without_display_time() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	var visible: Array[int] = tm.get_visible_daily_jobs(cm, 780, pd)
+	assert_true(visible.has(4), "job 4（空 Display Time+全 0 Trigger）全天可见")
+
+
+# checkdbTrigger VIPLevelEqual 按特权档（满级 15）判：仅 VIPLevelEqual 15 的 job 可见。
+func test_vip_equal_trigger_uses_privilege_level() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	var visible: Array[int] = tm.get_visible_daily_jobs(cm, 780, pd)
+	assert_true(visible.has(32), "job 32（VIPLevelEqual 15 == 特权档）可见")
+	assert_false(visible.has(18), "job 18（VIPLevelEqual 1 != 特权档 15）不可见")
+
+
+# target=0 行（VIP 每日扫荡券）领取防重：源 isShow「今日已领隐藏」；
+# 旧实现 count(0)>=target(0) 恒真且不记已领 → 每日无限领。
+func test_target_zero_job_claim_once_per_day() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	var before_item: int = int(pd.items.get(_job32_reward_item(), 0))
+	assert_true(bool(tm.claim_job_reward(pd, 32, cm)["ok"]), "job 32 首次领取成功")
+	assert_false(bool(tm.claim_job_reward(pd, 32, cm)["ok"]), "同日再领被拒（dailyjob_claim_day）")
+	assert_gt(int(pd.items.get(_job32_reward_item(), 0)), before_item, "扫荡券到账")
+	var visible: Array[int] = tm.get_visible_daily_jobs(cm, 780, pd)
+	assert_false(visible.has(32), "今日已领 → 行隐藏（源 lastTime 同日 isShow=false）")
+	# 序列化往返保留领取日。
+	var d: Dictionary = tm.to_dict()
+	var tm2 := TaskManager.from_dict(d)
+	assert_true(tm2.dailyjob_claim_day.has(32), "claim_day 序列化往返")
+
+
+func _job32_reward_item() -> int:
+	var row: Dictionary = cm.get_raw_table("Todolist").get("32", {})
+	return int(row.get("Task Reward 1 ID", 0))

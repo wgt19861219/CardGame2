@@ -187,12 +187,18 @@ func _make_buy_confirm_handler(slot: int) -> Callable:
 func _on_refresh() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
-	if pd.diamond < cost:
+	# 公会商店（shop 7）刷新耗公会币而非钻石（shop_manager.refresh 扣 guildpoint，
+	# 预检/文案必须同货币——曾按钻石预检致公会币足却被拦，2026-09-28 审查 P1-6）。
+	var is_guild: bool = shop_id == ShopManager.GUILD_SHOP_ID
+	var coinname: String = "公会币" if is_guild else "钻石"
+	if is_guild:
+		if pd.get_point(ShopManager.PAY_GUILD) < cost:
+			Toast.show_message("公会币不足（需 %d）" % cost)
+			return
+	elif pd.diamond < cost:
 		Toast.show_message("钻石不足（需 %d）" % cost)
 		return
-	# coinname 源 config.getRefreshCoinName 返 i18n 货币名，本项目降级"钻石"字面量（无对应货币名 LSTR key）。
 	# refreshshoptimes 源 getRefreshShopTimes 返剩余次数，本项目 get_refresh_times 返已用次数（无刷新上限，语义差异）。
-	var coinname: String = "钻石"
 	var times: int = shop_mgr.get_refresh_times(shop_id)
 	var popup := ShopRefreshConfirm.new()
 	popup.set_message(String(cm.get_lstr("SHOP.SPEND_XXX_TO_REFRESH")) % [cost, coinname, times], cm)
@@ -201,11 +207,12 @@ func _on_refresh() -> void:
 
 
 func _on_refresh_confirmed() -> void:
+	var is_guild: bool = shop_id == ShopManager.GUILD_SHOP_ID
 	if shop_mgr.refresh(shop_id, pd, rng, cm):
 		Toast.show_message("刷新成功")
 		_show_talk("Refresh")
 	else:
-		Toast.show_message("钻石不足")
+		Toast.show_message("公会币不足" if is_guild else "钻石不足")
 	call_deferred("_rebuild")
 
 

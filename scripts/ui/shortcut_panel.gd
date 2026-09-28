@@ -259,9 +259,9 @@ func _has_unclaimed_task() -> bool:
 	return false
 
 
-# 源 playertools.lua:127-146 checkDailyjobCount：目标达成 && 今日未领（本项目领取后计数归零
-# 表达"未领"，与 claim_job_reward 判定对齐）。源 checkDailyjobTrigger（服务器触发窗口）单机化
-# 无对应物，以 get_visible_daily_jobs 显示窗口代位；target>0 防 Todolist 空目标行常亮。
+# 源 playertools.lua:127-146 checkDailyjobCount：目标达成 && 今日未领（领取日记 dailyjob_claim_day
+# 表达"今日未领"，与 claim_job_reward 判定对齐）。checkdbTrigger 已照源接入（2026-09-28 审查 P1-5）；
+# target>0 防 Todolist 空目标行（VIP 券类）常亮——它们达成语义为"每日一次"而非计数。
 func _has_claimable_dailyjob() -> bool:
 	var p: PlayerData = GameData.player
 	if p == null:
@@ -269,7 +269,7 @@ func _has_claimable_dailyjob() -> bool:
 	var cm: ConfigManager = GameData.config
 	var tm: TaskManager = p.task_manager
 	var now: int = TaskManager.current_now_minutes()
-	for job_id in tm.get_visible_daily_jobs(cm, now):
+	for job_id in tm.get_visible_daily_jobs(cm, now, p):
 		var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
 		var target: int = int(row.get("Task Target", 0))
 		if target > 0 and tm.get_dailyjob_count(job_id) >= target:

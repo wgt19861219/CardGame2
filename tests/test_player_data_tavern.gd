@@ -116,3 +116,23 @@ func test_draw_full_magic_soul_flow() -> void:
 		if int(loot["id"]) == soul_id:
 			expect_total += int(loot["amount"])
 	assert_eq(int(pd.items.get(soul_id, 0)), expect_total, "首位魂石入 items 账本（同 id 累计）")
+
+
+# P1-7（2026-09-28 审查）：获得新英雄图鉴记录统一下沉到 HeroManager.add_hero
+# （PlayerData 注入 handbook 钩子）——抽卡/碎片合成/碎片召唤三路径曾漏记。
+func test_add_hero_records_handbook_via_hook() -> void:
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()   # 初始英雄已记录图鉴（collected_heroes 非空）
+	assert_ne(pd.hero_manager.handbook, null, "PlayerData 注入 handbook 钩子")
+	var tid: int = _pick_tid_not_collected(pd)
+	assert_false(pd.handbook.has_hero(tid), "前置：该 tid 尚未收集（避免与初始英雄重叠）")
+	pd.hero_manager.add_hero(tid)
+	assert_true(pd.handbook.has_hero(tid), "add_hero 自动记录图鉴（下沉钩子）")
+
+
+func _pick_tid_not_collected(pd: PlayerData) -> int:
+	for tid_str in cm.get_raw_table("Unit"):
+		var tid: int = int(tid_str)
+		if not pd.handbook.has_hero(tid):
+			return tid
+	return 1

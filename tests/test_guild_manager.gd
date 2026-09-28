@@ -269,3 +269,32 @@ func test_shop7_refresh_spends_guildpoint_not_diamond() -> void:
 	assert_true(sm.refresh(MarketConfig.SHOP_GUILD_ID, pd, BattleRng.new(1), cm), "公会币刷新成功")
 	assert_eq(pd.diamond, diamond_before, "不扣钻石")
 	assert_true(pd.guildpoint < 10000, "扣公会币（GradientPrice 梯度）")
+
+
+# P0-3（2026-09-28 审查）：退会不清膜拜次数/日锚/挂起——原清零可被
+# 「入会→免费膜拜→退会」循环重置次数无限刷金/体力/公会币。
+func test_leave_keeps_worship_state() -> void:
+	var mgr := GuildManager.new(cm)
+	var pd := _make_pd(80)
+	mgr.join_guild(pd, 10001)
+	var now: int = _now()
+	assert_true(bool(mgr.worship(pd, 9001, 1, now)["ok"]), "免费档膜拜成功（挂起 pending）")
+	var used_before: int = pd.guild_data.worship_use_times
+	var pending_before: int = pd.guild_data.worship_pending.size()
+	assert_true(used_before >= 1 and pending_before >= 1, "次数与挂起已产生")
+	assert_true(bool(mgr.leave_guild(pd)["ok"]), "退会成功")
+	assert_eq(pd.guild_data.worship_use_times, used_before, "退会保留今日已膜拜次数")
+	assert_eq(pd.guild_data.worship_pending.size(), pending_before, "退会不吞挂起未领奖励")
+	assert_eq(pd.guild_data.worship_day, _day_key(now), "退会保留日锚（跨日才清）")
+	# 退会→再入会循环不能重置次数：VIP0 每日 1 次仍然生效。
+	mgr.join_guild(pd, 10002)
+	assert_false(bool(mgr.worship(pd, 9001, 1, now)["ok"]), "再入会后次数上限仍拦截")
+
+
+func _day_key(ts: int) -> int:
+	var bias: int = int(Time.get_time_zone_from_system().get("bias", 0))
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + bias * SECONDS_PER_MINUTE)
+	return int(dt["year"]) * 10000 + int(dt["month"]) * 100 + int(dt["day"])
+
+
+const SECONDS_PER_MINUTE: int = 60

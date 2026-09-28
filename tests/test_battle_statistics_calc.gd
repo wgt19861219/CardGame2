@@ -47,10 +47,11 @@ func test_get_number_speed() -> void:
 
 
 func test_split_by_camp() -> void:
-	# 源 showPlayBar/setCount：player/enemy 各取前5，保持顺序
+	# 源 showPlayBar/setCount：player/enemy 各取前5，保持顺序。
+	# 敌方 camp=-1（源 emCampEnemy；Mock 曾误用 2 与实现同错，2026-09-28 审查 P1-1 一并修）。
 	var units: Array = [
-		MockUnit.new(1, 100.0), MockUnit.new(2, 200.0),
-		MockUnit.new(1, 300.0), MockUnit.new(2, 400.0),
+		MockUnit.new(1, 100.0), MockUnit.new(-1, 200.0),
+		MockUnit.new(1, 300.0), MockUnit.new(-1, 400.0),
 	]
 	var r: Dictionary = BattleStatisticsCalc.split_by_camp(units)
 	assert_eq(r["player"].size(), 2, "player 2 个")
@@ -65,15 +66,16 @@ func test_split_by_camp_caps_at_five() -> void:
 	for i in 7:
 		units.append(MockUnit.new(1, float(i) * 10.0))
 	for i in 3:
-		units.append(MockUnit.new(2, float(i) * 20.0))
+		units.append(MockUnit.new(-1, float(i) * 20.0))
 	var r: Dictionary = BattleStatisticsCalc.split_by_camp(units)
 	assert_eq(r["player"].size(), 5, "player 截断到5")
 	assert_eq(r["enemy"].size(), 3, "enemy 3 个<5 不截断")
 
 
 func test_split_by_camp_ignores_other_camps() -> void:
-	# 非玩家/敌方 camp 不纳入（源 ed.emCampPlayer/emCampEnemy 判定）
-	var units: Array = [MockUnit.new(0, 100.0), MockUnit.new(1, 50.0), MockUnit.new(3, 999.0)]
+	# 非玩家/敌方 camp 不纳入（源 ed.emCampPlayer=1/emCampEnemy=-1 判定）。
+	# camp=2 曾被实现误当敌方常量，此处锁死 2 属"其他"不入任何营。
+	var units: Array = [MockUnit.new(0, 100.0), MockUnit.new(1, 50.0), MockUnit.new(2, 999.0)]
 	var r: Dictionary = BattleStatisticsCalc.split_by_camp(units)
 	assert_eq(r["player"].size(), 1, "camp=1 入 player")
-	assert_eq(r["enemy"].size(), 0, "camp=0/3 不入任何营")
+	assert_eq(r["enemy"].size(), 0, "camp=0/2 不入任何营")

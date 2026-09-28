@@ -101,7 +101,8 @@ static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
 	var ect: Dictionary = pd.cm.get_raw_table(&"Equipcraft")
 	var wear_slots: Array[int] = []    # 背包已可穿的槽
 	var craft_slots: Array[int] = []   # 需先合成的槽
-	var planned: Dictionary = {}       # item_id -> 跨槽计划消耗总数（craft_recurse 的 allocated 联动）
+	var planned: Dictionary = {}       # 预检总账（wear 占用 + 合成计划消耗；craft_recurse 会写入递归消耗）
+	var wear_planned: Dictionary = {} # 纯 wear 槽占用（执行段 synthesize allocated 用——合成计划消耗已真扣，不可重复计入）
 	var planned_cost: int = 0          # 跨槽合成金币预算
 	# 第一遍：逐槽定性 + 零消耗预检（任一槽不可就绪 → 整单拒绝，材料/金币/槽全不动）
 	for slot in range(HeroManager.EQUIP_SLOT_COUNT):
@@ -113,6 +114,7 @@ static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
 			if int(pd.items.get(eid, 0)) - int(planned.get(eid, 0)) < 1:
 				return -1   # 跨槽同 id 争用超量（预算联动）
 			planned[eid] = int(planned.get(eid, 0)) + 1
+			wear_planned[eid] = int(wear_planned.get(eid, 0)) + 1
 			wear_slots.append(slot)
 			continue
 		if ett == "canCraft":
@@ -125,10 +127,13 @@ static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
 			craft_slots.append(slot)
 			continue
 		return -1   # notHave/cannotwear/ignore
-	# 第二遍：全部可就绪才执行——先合成（真扣材料+金币，产出进背包），再统一穿戴
+	# 第二遍：全部可就绪才执行——先合成（真扣材料+金币，产出进背包），再统一穿戴。
+	# 合成 allocated 只传纯 wear 占用（wear_planned）：wear 槽的装备对合成不可见（与预检
+	# "wear 占用扣减可用量"一致）；合成计划消耗已在预检后真扣进背包，执行段从实账重算。
+	# 曾各算各的致跨槽争用时穿戴段扣成负库存（2026-09-28 审查 P2-3）。
 	for slot in craft_slots:
 		var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot + 1, pd.cm)
-		if not synthesize_equip(pd, eid):
+		if not synthesize_equip(pd, eid, wear_planned):
 			return -1   # 防御：预检过理论必成
 	var all_slots: Array[int] = craft_slots.duplicate()
 	all_slots.append_array(wear_slots)
@@ -142,12 +147,13 @@ static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
 # 装备合成（照源 local_server:1059-1115 equip_synthesis + collectCraftChain:1026-1057）。
 # 递归收集合成链（自动合成可合成前置材料）+ 扣金币+基础材料 + 产出进 items 背包（不绑英雄槽）。
 # 单机化：源 net 信任 UI computeCanCraft 预检，本项目 Logic 是唯一入口，craft_recurse 返 ok 对齐预检。
-static func synthesize_equip(pd: PlayerData, target_id: int) -> bool:
+# pre_allocated：外部已占用的 item 账本（如 autowear 第一遍 wear 槽计划），合成可用量同步扣减。
+static func synthesize_equip(pd: PlayerData, target_id: int, pre_allocated: Dictionary = {}) -> bool:
 	var ect: Dictionary = pd.cm.get_raw_table(&"Equipcraft")
 	if not ect.has(str(target_id)):
 		return false
 	var consume: Dictionary = {}
-	var allocated: Dictionary = {}
+	var allocated: Dictionary = pre_allocated.duplicate()
 	var rec: Dictionary = craft_recurse(pd, target_id, ect, consume, allocated)
 	if not bool(rec["ok"]):
 		return false   # 材料（含递归前置）不足

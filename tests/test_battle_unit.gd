@@ -5,6 +5,10 @@ extends GutTest
 
 var cm: ConfigManager
 
+const FLOAT_MP_RATIO: float = 0.5   # P0-1 回归：mp 取上限一半（保证在钳制区间内）
+const FRACTION_HALF: float = 0.5    # 附加小数部分（验证不被截断）
+const FRACTION_MIN_CAP: float = 1.0 # MP 上限至少 >1 才有小数空间
+
 func before_all() -> void:
 	cm = ConfigManager.new()
 	cm.load_all()
@@ -89,3 +93,13 @@ func test_hp_mod_scales_max_hp() -> void:
 	var u_base := BattleUnit.new(proto, BattleEngine.CAMP_PLAYER, {"estimate_rank": true, "hp_mod": 1.0}, cm)
 	var u_double := BattleUnit.new(proto, BattleEngine.CAMP_PLAYER, {"estimate_rank": true, "hp_mod": 2.0}, cm)
 	assert_eq(int(u_double.attribs["HP"]), int(u_base.attribs["HP"]) * 2, "hp_mod=2 → HP 翻倍")
+
+
+# P0-1（2026-09-28 审查）：mp 全链路 float 不截断——reset 公共收尾 set_mp(mp) 保留小数
+# （旧 set_mp(int(mp)) 切波即抹掉受击回蓝小数，大招 Cost 差 1 放不出）。
+func test_reset_keeps_mp_fraction() -> void:
+	var u := _make_hero(1, 1, 1)
+	var mp_cap: float = float(u.attribs.get("MP", 0))
+	u.set_mp(mp_cap * FLOAT_MP_RATIO + FRACTION_HALF)
+	if mp_cap > FRACTION_MIN_CAP:
+		assert_almost_eq(u.mp, mp_cap * FLOAT_MP_RATIO + FRACTION_HALF, 0.001, "set_mp 上限内保留小数")

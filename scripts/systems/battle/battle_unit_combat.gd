@@ -79,7 +79,7 @@ static func take_damage(u: Variant, params: Dictionary) -> float:
 			var mp_gain: float = lost * float(u.info.get("MP Gain Rate", 0.0)) / float(u.attribs.get("HP", 1.0))
 			u.set_mp(float(u.mp) + mp_gain * float(u.engine.mp_bonus))   # float 全程不截断（源语义）
 	elif field == "mp":
-		u.set_mp(int(float(u.mp) - lost))
+		u.set_mp(float(u.mp) - lost)   # float 全程不截断（源语义）
 	u.unfreeze_actor()
 	_show_damage_popup(u, lost, field, b_crit)
 	return lost
@@ -116,7 +116,7 @@ static func _show_damage_popup(u: Variant, lost: float, field: String, b_crit: b
 
 # engine.on_unit_die 调（battle_engine 超 300 行，提取至此控行数）。kill_mp_bonus 透传 engine 常量。
 static func on_hero_kill(killer: Variant, kill_mp_bonus: int) -> void:
-	killer.set_mp(int(killer.mp) + kill_mp_bonus)
+	killer.set_mp(float(killer.mp) + float(kill_mp_bonus))   # float 全程不截断（源语义）
 	killer.emit_popup("kill", "blue" if int(killer.camp) == BattleEngine.CAMP_PLAYER else "red", false, "text")
 
 
@@ -232,7 +232,7 @@ static func take_heal(u: Variant, amount: float, p_type: String, source: Variant
 		amount = amount * float(source.attribs.get("PDM", 1.0))
 	var is_add_point: bool = true
 	if p_type == "mp":
-		u.set_mp(int(float(u.mp) + amount))
+		u.set_mp(float(u.mp) + amount)   # float 全程不截断（源语义）
 	elif not bool(u.buff_effects.get(BattleEffectKeys.UNHEAL, false)):
 		u.set_hp(int(float(u.hp) + amount))
 	else:
