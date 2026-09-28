@@ -41,3 +41,10 @@ tools/refactor/
 
 # ZCode MCP 配置（含本机 node/项目绝对路径，环境专属不入库；从 .agents/mcp.json.example 复制后改）
 .agents/mcp.json
+
+# 开发过程文档不入库（2026-09-28 用户拍板不上传 GitHub；本地保留，正式记录走知识库 vault）
+# 根目录 *.md 全忽略，白名单只放工程配置两件；docs/ 整目录（superpowers 计划/报告 + 验收截图）
+/*.md
+!AGENTS.md
+!CLAUDE.md
+/docs/
