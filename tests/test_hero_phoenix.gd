@@ -95,3 +95,45 @@ func test_phoenix_ult_counter1_hp1_dies() -> void:
 	var h: Callable = ult.hero_hooks["onAttackFrame"]
 	h.call(ult)
 	assert_eq(owner.died, 1, "counter==1 + hp==1 照源 die")
+
+
+# P1-3（2026-09-28 审查）：lookup 返共享行时 HPR 改写不得污染 cm 表行
+# （原直接在共享行上写 -HP×ratio，跨场次污染所有取该行建的 buff）。
+class SharedRowCm:
+	extends RefCounted
+	var row: Dictionary = {"ID": 31, "Name": "phoenix_ult", "HPR": -0.05}
+	func lookup(_t: StringName, _c: String, _k: Variant) -> Variant:
+		return row
+
+
+func test_ult_hpr_write_does_not_pollute_shared_row() -> void:
+	var hero := MockHero.new()
+	var ult := MockSkill.new()
+	ult.attack_counter = 1
+	var owner := RecordingOwner.new()
+	owner.cm = SharedRowCm.new()
+	owner.hp = 100
+	owner.attribs = {"HP": 5000}
+	ult.caster = owner
+	hero.skills["Phoenix_ult"] = ult
+	BattleHeroScripts.apply("battle/heroes/Phoenix", hero)
+	var h: Callable = ult.hero_hooks["onAttackFrame"]
+	h.call(ult)
+	assert_almost_eq(float((owner.cm as SharedRowCm).row.get("HPR", 0.0)), -0.05, 0.0001, "共享表行 HPR 保持原值")
+	assert_eq(owner.added_buffs.size(), 1, "buff 已加")
+	var b: Variant = owner.added_buffs[0]
+	assert_almost_eq(float((b as BattleBuff).info.get("HPR", 0.0)), -750.0, 0.001, "buff 实例 HPR=-HP×0.15（局部副本）")
+
+
+class RecordingOwner:
+	extends RefCounted
+	var cm: Variant = null
+	var attribs: Dictionary = {"HP": 1000}
+	var hp: int = 1
+	var buff_list: Array = []
+	var died: int = 0
+	var added_buffs: Array = []
+	func add_buff(b: Variant, _c: Variant) -> void:
+		added_buffs.append(b)
+	func die(_src: Variant) -> void:
+		died += 1

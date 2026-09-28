@@ -91,6 +91,7 @@ func _init(p_cm: ConfigManager) -> void:
 	midas = MidasManager.new(cm)
 	stage_manager = StageManager.new(cm)
 	handbook = HandbookManager.new()
+	hero_manager.handbook = handbook   # 图鉴记录钩子（serde from_dict 换实例后重注入）
 	mailbox = MailData.new()
 	excavate = ExcavateManager.new(cm)
 	ladder = LadderManager.new()

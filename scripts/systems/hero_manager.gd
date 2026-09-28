@@ -22,6 +22,10 @@ const GS_ROUND: float = 0.5  # 战力取整（源 recalcHeroGs math.floor(gs+0.5
 func _init(cm: ConfigManager) -> void:
 	config = cm
 
+## 图鉴记录钩子（PlayerData 注入；null 时跳过）。获得新英雄的图鉴记录统一下沉到
+## add_hero——抽卡/碎片合成/碎片召唤三条路径曾漏记致图鉴进度永久偏低（2026-09-28 审查 P1-7）。
+var handbook: Variant = null
+
 ## 添加英雄（首次获得），返回实例 id。stars 取 Unit.Initial Stars。
 func add_hero(tid: int) -> int:
 	var data := HeroData.from_config(config, tid)
@@ -30,6 +34,8 @@ func add_hero(tid: int) -> int:
 	recalc_hero_gs(hero)
 	heroes[next_id] = hero
 	next_id += 1
+	if handbook != null:
+		handbook.record_hero(tid)
 	return hero.inst_id
 
 

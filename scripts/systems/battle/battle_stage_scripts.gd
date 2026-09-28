@@ -38,9 +38,9 @@ static func _scripts(cm: ConfigManager) -> Dictionary:
 		"20003": _pimu_wave(cm), "21003": _pimu_wave(cm), "22003": _pimu_wave(cm), "23003": _pimu_wave(cm),
 		"20004": _mimu_wave(cm), "21004": _mimu_wave(cm), "22004": _mimu_wave(cm), "23004": _mimu_wave(cm),
 		"20005": _female_wave(), "21005": _female_wave(), "22005": _female_wave(), "23005": _female_wave(),
-		"40021": {"3": monster_reset_pos_and_buff(RESET_40021["tid"], RESET_40021["x"], RESET_40021["y"])},
-		"40049": {"3": monster_reset_pos_and_buff(RESET_40049["tid"], RESET_40049["x"], RESET_40049["y"])},
-		"40055": {"3": monster_reset_pos_and_buff(RESET_40055["tid"], RESET_40055["x"], RESET_40055["y"])},
+		"40021": {"3": monster_reset_pos_and_buff(cm, RESET_40021["tid"], RESET_40021["x"], RESET_40021["y"])},
+		"40049": {"3": monster_reset_pos_and_buff(cm, RESET_40049["tid"], RESET_40049["x"], RESET_40049["y"])},
+		"40055": {"3": monster_reset_pos_and_buff(cm, RESET_40055["tid"], RESET_40055["x"], RESET_40055["y"])},
 	}
 
 
@@ -68,24 +68,23 @@ static func check_hero_gender(gender: String) -> Callable:
 				eng.exit_stage(BattleEngine.RESULT_WIN)
 
 
-static func monster_reset_pos_and_buff(monster_tid: Variant, pos_x: Variant, pos_y: Variant) -> Callable:
+static func monster_reset_pos_and_buff(cm: ConfigManager, monster_tid: Variant, pos_x: Variant, pos_y: Variant) -> Callable:
+	# cm 由 get_stage_script 形参直传（源 stage.lua:26-41 无条件加 unheal/Building_boss；
+	# 原 eng.get("cm") 无注入方恒 null 致 buff 永不施加，2026-09-28 审查 P1-2 根修）。
 	return func(eng: Variant) -> void:
-		var cm: Variant = eng.get("cm") if eng.get("cm") != null else null  # eng.cm 注入（Phase 2.1续模式入口）
 		var rect: Dictionary = eng.stage_rect
 		for monster in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
-			if cm != null:
-				monster.add_buff(_lookup_buff(cm, BattleEffectKeys.UNHEAL), monster)
+			monster.add_buff(_lookup_buff(cm, BattleEffectKeys.UNHEAL), monster)
 			if int(monster.tid) == int(monster_tid):
 				monster.position = Vector2(float(rect["maxX"]) - float(pos_x), float(pos_y))
-				if cm != null:
-					monster.add_buff(_lookup_buff(cm, "Building_boss"), monster)
+				monster.add_buff(_lookup_buff(cm, "Building_boss"), monster)
 
 
 static func _dr_add_mp_factory(amount: int) -> Callable:
 	return func(eng: Variant) -> void:
 		var dr: Variant = eng.find_hero("DR")
 		if dr != null:
-			dr.set_mp(int(dr.mp) + amount)
+			dr.set_mp(dr.mp + float(amount))   # float 全程不截断（源语义，2026-09-28 审查 P0-1）
 
 static func _boss_set_mp_factory(amount: int) -> Callable:
 	return func(eng: Variant) -> void:

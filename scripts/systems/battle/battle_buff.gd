@@ -154,7 +154,7 @@ func on_added_client() -> void:
 		owner.emit_shader_push(shader_id, shader)
 	# 飘字优先级链（AD→ARM→HAST→Popup Text，后者覆盖前者；源是 if/if 串行非 elseif）
 	var str_text: String = ""; var color: String = ""
-	var is_player: bool = int(owner.camp) == 0  # ed.emCampPlayer
+	var is_player: bool = int(owner.camp) == BattleEngine.CAMP_PLAYER  # 源 emCampPlayer=1（曾误写 0=CAMP_BOTH 致颜色恒颠倒，2026-09-28 审查 P1-4）
 	var ad: float = float(info.get("AD", 0)); var ad_a: float = float(info.get("AD.a", 0))
 	var arm: float = float(info.get("ARM", 0)); var arm_a: float = float(info.get("ARM.a", 0))
 	var hast: float = float(info.get("HAST", 0)); var hast_a: float = float(info.get("HAST.a", 0))
@@ -173,7 +173,7 @@ func on_added_client() -> void:
 	var popup_text: String = str(info.get("Popup Text", ""))
 	if popup_text != "":
 		str_text = popup_text
-		color = "blue" if (caster != null and int(caster.camp) == 0) else "red"
+		color = "blue" if (caster != null and int(caster.camp) == BattleEngine.CAMP_PLAYER) else "red"
 	if str_text != "" and color != "":
 		owner.emit_popup(str_text, color, false, "text")
 

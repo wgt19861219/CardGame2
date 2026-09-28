@@ -140,6 +140,10 @@ func _check_daily_reset(now: int, player: PlayerData, cm: ConfigManager) -> void
 	var last_day: int = int(pvp.get("last_reset_day", 0))
 	if last_day == today:
 		return
+	# 系统时间回拨（today < last_day）直接忽略：重置/发奖只进不退，防回拨刷每日排名
+	# 奖励邮件（2026-09-28 审查 P2-2；回正后自然恢复）。
+	if today < last_day:
+		return
 	pvp["last_reset_day"] = today
 	pvp["left_count"] = LEFT_COUNT_DEFAULT
 	pvp["buy_times"] = 0

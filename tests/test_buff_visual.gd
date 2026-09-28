@@ -4,7 +4,7 @@ const EmitStub = preload("res://tests/helpers/battle_emit_stub.gd")
 # Logic 不再持 actor；MockOwner 挂真 BattleEngine 收事件，drain 后按事件类型/字段断言。
 
 class MockOwner extends EmitStub:
-	var camp: int = 0
+	var camp: int = 1   # 玩家 camp=1（源 emCampPlayer；曾误用 0=CAMP_BOTH）
 	var buff_effects: Dictionary = {}
 	var attribs: Dictionary = {}
 	var config: Dictionary = {}

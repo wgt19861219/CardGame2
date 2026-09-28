@@ -35,3 +35,18 @@ func test_synthesize_fails_without_gold() -> void:
 	pd.add_item(104, 1)
 	pd.add_item(106, 1)
 	assert_eq(EquipCraftManager.synthesize_equip(pd, 118), false, "金币不足 → false")
+
+
+# P2-3（2026-09-28 审查）：synthesize_equip 的 pre_allocated 语义——外部已占用的
+# 材料（autowear 第一遍 wear 槽计划）对合成不可见，防预检/执行两本账致穿戴段负库存。
+# Equipcraft 118 需 114/104/106 各 1；114 无配方 → 占用后不可递归补足应拒单。
+func test_synthesize_respects_pre_allocated() -> void:
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.add_money(1000)
+	pd.add_item(114, 1)
+	pd.add_item(104, 1)
+	pd.add_item(106, 1)
+	assert_eq(EquipCraftManager.synthesize_equip(pd, 118, {114: 1}), false, "114 被 wear 槽占用 → 拒绝合成")
+	assert_eq(int(pd.items.get(114, 0)), 1, "拒单不动材料")
+	assert_eq(pd.hero_manager.gold, 1000, "拒单不扣金币")
+	assert_eq(EquipCraftManager.synthesize_equip(pd, 118), true, "不占用则正常合成")

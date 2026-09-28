@@ -12,11 +12,17 @@ const SPLITBITS_MASK: int = 0xFFFF  # splitbits 16 位掩码（源 tools.lua:88�
 const SPLITBITS_SHIFT: int = 16     # splitbits 位移（源 tools.lua:88，chain 低16/id 次16）
 const MINUTES_PER_HOUR: int = 60   # 每小时分钟数（Display Time 解析）
 const TIME_RANGE_PARTS: int = 2    # 时间格式 split 段数（"HH:MM-HH:MM"/"HH:MM" 各 2 段）
+const SECONDS_PER_MINUTE: int = 60      # DailyTime 触发器条件值是当天秒数（源 hms2Second）
+const DAY_KEY_YEAR_WEIGHT: int = 10000  # 本地日 key 权重（照 ladder_manager 范式）
+const DAY_KEY_MONTH_WEIGHT: int = 100
 
 var completed: Dictionary = {}  # task_id(int) -> bool
 var claimed: Dictionary = {}    # task_id(int) -> bool
 # 日常任务进度（job_id -> 今日完成次数）。源 player._dailyjob getDailyjobCount。
 var dailyjob_count: Dictionary = {}
+# 日常任务领奖日（job_id -> 本地日 key）。源 task.lastTime + isShow"今日已领隐藏"：
+# 领取当日不再显示/不可再领，跨日惰性清除（2026-09-28 审查 P1-5，兼防 target=0 行无限领）。
+var dailyjob_claim_day: Dictionary = {}
 # 主任务链（源 localdata.task）：Array[{chain:int, id:int, status:String, target:int}]
 var task: Array = []
 # 已完成链（源 localdata.task_finished）：Array[int]（存 chain，去重）
@@ -189,13 +195,22 @@ static func current_now_minutes() -> int:
 	return int(d["hour"]) * MINUTES_PER_HOUR + int(d["minute"])
 
 
-## 当前时段可见的日常 job_id 列表（源 task.lua:1489-1495 initTaskList 过滤）。
-func get_visible_daily_jobs(cm: ConfigManager, now_minutes: int) -> Array[int]:
+## 当前时段可见的日常 job_id 列表（源 task.lua:1487-1496 isShow：
+## 今日未领 && (checkDailyjobDisplay 时间窗 OR checkdbTrigger 触发器)）。
+## player 为 null 时 VIP/PlayerLevel 类触发器按特权档宽容判定（不拦截）。
+func get_visible_daily_jobs(cm: ConfigManager, now_minutes: int, player: PlayerData = null) -> Array[int]:
 	var raw: Dictionary = cm.get_raw_table("Todolist")
 	var result: Array[int] = []
+	var today: int = _today_key()
 	for job_id_str in raw:
-		if check_dailyjob_display(cm, int(job_id_str), now_minutes):
-			result.append(int(job_id_str))
+		var job_id: int = int(job_id_str)
+		var claim_day: int = int(dailyjob_claim_day.get(job_id, 0))
+		if claim_day == today:
+			continue   # 今日已领 → 隐藏（源 lastTime 同日）
+		if claim_day != 0 and claim_day < today:
+			dailyjob_claim_day.erase(job_id)   # 跨日惰性清（未来日期不前清，防回拨误清）
+		if check_dailyjob_display(cm, job_id, now_minutes) or check_db_trigger(cm, job_id, player, now_minutes):
+			result.append(job_id)
 	return result
 
 
@@ -222,6 +237,62 @@ static func _time_in_window(now_minutes: int, range_str: String) -> bool:
 	return now_minutes > _hhmm_to_minutes(parts[0]) and now_minutes < _hhmm_to_minutes(parts[1])
 
 
+## 触发器判定（源 task.lua:22-69 checkdbTrigger）：Trigger ID 全 0（或无正值）恒 true；
+## 逐条查 TodoTriggers 且多条为 AND（任一不满足即 false）。VIP 类按单机特权档
+## （privilege_vip_level 满级）判；DailyTimeAfter/Before 条件值为当天秒数（源 hms2Second）。
+## 2026-09-28 审查 P1-5：常规日常（job 4-15 空 Display Time）靠本函数显示，原缺译致永不显示。
+static func check_db_trigger(cm: ConfigManager, job_id: int, player: PlayerData, now_minutes: int) -> bool:
+	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
+	if row.is_empty():
+		return false
+	var tg_raw: Variant = row.get("Trigger ID", {})
+	if not tg_raw is Dictionary:
+		return true
+	var ids: Array[int] = []
+	for v in (tg_raw as Dictionary).values():
+		if (typeof(v) == TYPE_FLOAT or typeof(v) == TYPE_INT) and float(v) > 0.0:
+			ids.append(int(v))
+	if ids.is_empty():
+		return true   # 源 #tg<1 或正值集空 → 恒显示
+	var trigger_table: Dictionary = cm.get_raw_table("TodoTriggers")
+	var vip: int = VipData.get_max_level(cm) if player == null else player.privilege_vip_level()
+	var now_seconds: int = now_minutes * SECONDS_PER_MINUTE
+	for tid in ids:
+		var trow: Dictionary = trigger_table.get(str(tid), {})
+		var ttype: String = str(trow.get("Trigger Type", ""))
+		var cond: int = int(trow.get("Trigger Condition", 0))
+		match ttype:
+			"VIPLevel":
+				if cond > vip:
+					return false
+			"VIPLevelLessThan":
+				if cond <= vip:
+					return false
+			"VIPLevelEqual":
+				if vip != cond:
+					return false
+			"PlayerLevel":
+				if player == null or cond > player.team_level:
+					return false
+			"DailyTimeAfter":
+				if cond >= now_seconds:
+					return false
+			"DailyTimeBefore":
+				if cond <= now_seconds:
+					return false
+	return true
+
+
+## 本地日 key（照 ladder_manager._local_day_key 范式，YYYYMMDD int）。
+static func _local_day_key(ts: int, off_min: int) -> int:
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(ts + off_min * SECONDS_PER_MINUTE)
+	return int(dt["year"]) * DAY_KEY_YEAR_WEIGHT + int(dt["month"]) * DAY_KEY_MONTH_WEIGHT + int(dt["day"])
+
+
+static func _today_key() -> int:
+	return _local_day_key(int(Time.get_unix_time_from_system()), int(Time.get_time_zone_from_system().get("bias", 0)))
+
+
 ## "HH:MM" → 当天分钟数（照源 gfind "%d+:%d+" 解析 h/m；24:00=1440）。
 static func _hhmm_to_minutes(hhmm: String) -> int:
 	var hm: PackedStringArray = hhmm.split(":")
@@ -240,6 +311,7 @@ func to_dict() -> Dictionary:
 		"completed": completed.duplicate(true),
 		"claimed": claimed.duplicate(true),
 		"dailyjob_count": dailyjob_count.duplicate(true),
+		"dailyjob_claim_day": dailyjob_claim_day.duplicate(true),
 		"task": task.duplicate(true),
 		"task_finished": task_finished.duplicate(true),
 	}
@@ -250,15 +322,20 @@ static func from_dict(data: Dictionary) -> TaskManager:
 	mgr.completed = data.get("completed", {})
 	mgr.claimed = data.get("claimed", {})
 	mgr.dailyjob_count = data.get("dailyjob_count", {})
+	mgr.dailyjob_claim_day = data.get("dailyjob_claim_day", {})
 	mgr.task = data.get("task", [])
 	mgr.task_finished = data.get("task_finished", [])
 	return mgr
 
 
 ## 活动 act_ 分支单机裁剪（SKIPPED）。返 {ok}。
+## 今日已领防重（源 isShow 隐藏 + resetDailyjobTime；target=0 行曾可无限领，2026-09-28 审查 P1-5）。
 func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager) -> Dictionary:
 	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
 	if row.is_empty():
+		return {"ok": false}
+	var today: int = _today_key()
+	if int(dailyjob_claim_day.get(job_id, 0)) == today:
 		return {"ok": false}
 	if get_dailyjob_count(job_id) < int(row.get("Task Target", 0)):
 		return {"ok": false}
@@ -272,6 +349,7 @@ func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager) -> Dic
 			continue
 		_apply_reward(player, rtype, rid, ramount)
 	reset_dailyjob(job_id)
+	dailyjob_claim_day[job_id] = today
 	return {"ok": true}
 
 

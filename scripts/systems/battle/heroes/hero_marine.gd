@@ -103,7 +103,7 @@ func _atk_start(skill: Variant, target: Variant) -> void:
 	var phase: int = ATK_PHASE_BUFFED if bool(caster.custom_data.get("medBuff", false)) else ATK_PHASE_NORMAL
 	skill._start_phase(phase)
 	caster.global_cd = float(info.get("Global CD", 0.0))
-	caster.set_mp(int(float(caster.mp) - float(info.get("Cost MP", 0.0)) * (1.0 - float(caster.attribs.get("CDR", 0.0)) / CDR_DENOM)))
+	caster.set_mp(float(caster.mp) - float(info.get("Cost MP", 0.0)) * (1.0 - float(caster.attribs.get("CDR", 0.0)) / CDR_DENOM))   # float 不截断（源语义）
 
 
 func _atk_on_phase_finished(skill: Variant) -> void:

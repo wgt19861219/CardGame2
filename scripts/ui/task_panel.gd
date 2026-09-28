@@ -105,10 +105,10 @@ func _fill_main_list() -> void:
 		_list.add_child(TaskRowBuilder.make_task_row(r["task"], _on_claim_main.bind(r["chain"], r["id"]), reward_title_text, fast_btn_text, Callable(), _cm))
 
 
-# ed.ui.dailyTask:initTaskList + task.lua:1489-1495：只显示当前时段的日常任务
-# （checkDailyjobDisplay 时间窗；checkdbTrigger VIP 单机化不接）。
+# ed.ui.dailyTask:initTaskList + task.lua:1487-1496 isShow：今日未领 &&
+# （checkDailyjobDisplay 时间窗 OR checkdbTrigger 触发器，VIP/等级按特权档判）。
 func _fill_daily_list() -> void:
-	var jobs: Array[int] = _tm.get_visible_daily_jobs(_cm, _tm.current_now_minutes())
+	var jobs: Array[int] = _tm.get_visible_daily_jobs(_cm, _tm.current_now_minutes(), _player)
 	if jobs.is_empty():
 		_add_empty_prompt(_cm.get_lstr("TASK.YOU_HAVE_DONE_TODAYS_TASKS"))
 		return

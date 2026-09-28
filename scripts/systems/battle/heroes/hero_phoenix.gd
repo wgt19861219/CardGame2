@@ -83,7 +83,9 @@ func _ult_on_attack_frame(skill: Variant) -> void:
 	skill._on_attack_frame_default()
 	var owner: Variant = skill.caster
 	if int(skill.attack_counter) == 1:
-		var binfo: Variant = owner.cm.lookup(&"Buff", "", BUFF_ULT_HPR_ID)
+		# lookup 返 cm 原始行引用，必须 duplicate 再改 HPR——写共享行会跨场次污染
+		# Buff 表（后续任何单位取该行建 buff 都用残留值，2026-09-28 审查 P1-3）。
+		var binfo: Dictionary = owner.cm.lookup(&"Buff", "", BUFF_ULT_HPR_ID).duplicate()
 		var buff128: Variant = BattleBuff.new(binfo, owner, owner)
 		var stype: float = -float(owner.attribs.get("HP", 0)) * ULT_HPR_RATIO
 		buff128.info["HPR"] = stype

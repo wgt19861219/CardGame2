@@ -52,7 +52,7 @@ func _hero_update(unit: Variant, dt: float) -> void:
 		var total: float = float(unit.custom_data.get("totalDamage", 0))
 		if total >= threshold:
 			skillatk3.take_effect_at(unit.position, unit)
-			unit.set_mp(int(float(unit.mp) + float(skillatk3.info.get("Gain MP", 0)) * float(unit.engine.mp_bonus)))
+			unit.set_mp(float(unit.mp) + float(skillatk3.info.get("Gain MP", 0)) * float(unit.engine.mp_bonus))   # float 不截断（源语义）
 			unit.custom_data["totalDamage"] = total - threshold
 
 

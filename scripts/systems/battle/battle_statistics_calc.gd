@@ -9,7 +9,7 @@ const MAX_BAR_TIME: float = 0.8
 const MAX_HEROES_PER_CAMP: int = 5
 const COMMA_GROUP_SIZE: int = 3
 const CAMP_PLAYER: int = 1
-const CAMP_ENEMY: int = 2
+const CAMP_ENEMY: int = -1   # 照源 tools.lua emCampEnemy=-1 / BattleEngine.CAMP_ENEMY（曾误写 2 致敌方侧恒空，2026-09-28 审查 P1-1）
 
 
 # units: Array of {dmg_statistics: float, ...}（duck-type，照源 ipairs engineList）。

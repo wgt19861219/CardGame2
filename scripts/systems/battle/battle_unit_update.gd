@@ -121,7 +121,7 @@ static func update(u: Variant, dt: float) -> void:
 	for buff in u.buff_list:
 		buff.update(dt)
 	var mp_regen: float = float(attribs.get("MPR", 0.0))
-	u.set_mp(int(float(u.mp) + mp_regen * dt * float(u.engine.mp_bonus)))
+	u.set_mp(float(u.mp) + mp_regen * dt * float(u.engine.mp_bonus))   # float 全程不截断（源语义，2026-09-28 审查 P0-1）
 	if not bool(buff_effects.get(BattleEffectKeys.NO_HPR, false)):
 		var hp_regen: float = float(attribs.get("HPR", 0.0))
 		if hp_regen < 0.0 or not bool(buff_effects.get(BattleEffectKeys.UNHEAL, false)):
