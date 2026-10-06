@@ -113,10 +113,10 @@ func test_speed_state_quantize() -> void:
 	eng.add_unit(e)
 	var scene := BattleScene.new()
 	scene.setup(eng, cm)
-	scene.set_speed_state(4)
+	scene.set_speed_state(3)
 	scene.step(0.033)
-	# 源 :767-775 4x quantize：raw=0.033*4=0.132，num_ticks=round(0.132/0.033)=4 → 推进 4 tick
-	assert_gt(eng.ticks, 1, "4x 速度应推进多于 1 tick（quantize 对齐 tick 整数倍）")
+	# 源 :767-775 quantize：raw=0.033*3=0.099，num_ticks=round(0.099/0.033)=3 → 推进 3 tick
+	assert_gt(eng.ticks, 1, "3x 速度应推进多于 1 tick（quantize 对齐 tick 整数倍）")
 	scene.queue_free()
 
 
@@ -329,6 +329,11 @@ func test_actor_scale_action_grow() -> void:
 func test_speed_button_cycles_states() -> void:
 	var btn := BattleSpeedButton.new()
 	btn.cfg_path = "user://battle_test_cycle.cfg"
+	# 显式重置固定路径 cfg（上一轮失败运行会残留中间档位态；旧版 4 连按末态恰为 1
+	# 自净掩盖此缺陷，裁 3 档后暴露——固定路径持久化测试必须先重置再读）
+	var reset_cfg := ConfigFile.new()
+	reset_cfg.set_value("battle", "speed_state", 1)
+	reset_cfg.save(btn.cfg_path)
 	btn.setup(1)
 	assert_eq(btn.get_state(), 1, "初始档 1")
 	btn._on_pressed()   # 模拟点击（源 speedBtnHandler）
@@ -336,9 +341,7 @@ func test_speed_button_cycles_states() -> void:
 	btn._on_pressed()
 	assert_eq(btn.get_state(), 3, "→ 档 3")
 	btn._on_pressed()
-	assert_eq(btn.get_state(), 4, "→ 档 4")
-	btn._on_pressed()
-	assert_eq(btn.get_state(), 1, "档 4 → 1 循环（源 :1048）")
+	assert_eq(btn.get_state(), 1, "档 3 → 1 循环（2026-10-06 用户拍板 4 档裁 3；源 :1048 循环语义不变）")
 	btn.queue_free()
 
 
@@ -1000,8 +1003,8 @@ func test_offline_walk_speed_follows_speed_state() -> void:
 	scene.setup(eng, cm)
 	scene.step(0.033)
 	var actor: Variant = scene.actor_list[0]
-	# 4x：freeze 分支（切波走路）位置速度应为 1x 的 4 倍
-	scene.set_speed_state(4)
+	# 3x（最高档）：freeze 分支（切波走路）位置速度应为 1x 的 3 倍
+	scene.set_speed_state(3)
 	scene._walking_to_next = true
 	actor.goto_next_battle(100.0, 1050.0)
 	actor.update_view(0.0)   # 同步 position 到重置后的 _walk_pos（goto 不立即定位）
@@ -1017,11 +1020,11 @@ func test_offline_walk_speed_follows_speed_state() -> void:
 	scene._process(0.0167)
 	scene._process(0.0167)
 	var dx_1x: float = actor.position.x - x0_1x
-	assert_almost_eq(dx_4x, dx_1x * 4.0, 0.5, "4x 离线走路位移应为 1x 的 4 倍（档位贯穿 freeze 分支）")
+	assert_almost_eq(dx_4x, dx_1x * 3.0, 0.5, "3x 离线走路位移应为 1x 的 3 倍（档位贯穿 freeze 分支）")
 	scene.queue_free()
 
 
-# 战斗内动画速度 = base(speeder×2) × 档位倍率：4x 下 spd=8（base 2 × mult 4），
+# 战斗内动画速度 = base(speeder×2) × 档位倍率：3x 下 spd=6（base 2 × mult 3），
 # 切档 broadcast 只改 mult（base 不被覆盖——此前 set_speed(N) 全量覆盖回 2 是断层根因）。
 func test_combat_anim_speed_is_base_times_state_mult() -> void:
 	var eng := _make_engine()
@@ -1034,7 +1037,7 @@ func test_combat_anim_speed_is_base_times_state_mult() -> void:
 	BattleEngineWaves.setup_battle(eng, cm, w1)
 	var scene := BattleScene.new()
 	scene.setup(eng, cm, w1)
-	scene.set_speed_state(4)
+	scene.set_speed_state(3)
 	scene.step(0.033)
 	var fca: Variant = null
 	for a in scene.actor_list:
@@ -1043,7 +1046,7 @@ func test_combat_anim_speed_is_base_times_state_mult() -> void:
 			break
 	assert_not_null(fca, "应有 Move 单位")
 	if fca != null:
-		assert_almost_eq(float(fca.get("_speed")), 8.0, 0.01, "4x 战斗内动画速度 = base 2×speeder × mult 4（speeder=1 时 8.0）")
+		assert_almost_eq(float(fca.get("_speed")), 6.0, 0.01, "3x 战斗内动画速度 = base 2×speeder × mult 3（speeder=1 时 6.0）")
 		scene._on_speed_changed(2)
 		assert_almost_eq(float(fca.get("_speed")), 4.0, 0.01, "切 2x 后 = base 2 × mult 2 = 4.0（mult 不覆盖 base）")
 	scene.queue_free()
@@ -1061,7 +1064,7 @@ func test_next_pressed_freezes_engine_during_walk() -> void:
 	var scene := BattleScene.new()
 	scene.setup(eng, cm, BattleData.from_config(cm, 1, 1).battle_info)
 	scene._sync_actors()
-	scene.set_speed_state(4)
+	scene.set_speed_state(3)
 	add_child(scene)
 	scene._on_next_pressed()
 	# 同步段立即置位（协程 fire-and-forget，同步段在首个 await 前执行完毕；

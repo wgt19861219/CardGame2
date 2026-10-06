@@ -165,7 +165,13 @@ func can_upgrade_rank(inst_id: int) -> bool:
 		return false
 	if hero.rank >= MAX_EQUIP_RANK:
 		return false
+	# rank 12+ 配方槽位递减（12-16 五槽/17-19 四槽/20-23 三槽，源 bf5c0cc gen_hero_equip.py 设计）：
+	# 无配方槽（Equip{i} ID=0）不构成进阶条件——源服务端 main.lua:1561 仅校验 rank<上限，
+	# 6 槽全满是全槽时代遗留，照译致金红阶（金+1~红+5）永久卡死（2026-10-06 修）。
+	var rank_equip: Dictionary = config.get_raw_table(&"Hero_equip").get(str(hero.tid), {}).get(str(hero.rank), {})
 	for slot in range(EQUIP_SLOT_COUNT):
+		if int(rank_equip.get("Equip" + str(slot + 1) + " ID", 0)) <= 0:
+			continue
 		if int(hero.equip_slots[slot]) <= 0:
 			return false
 	return true

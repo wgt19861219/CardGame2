@@ -205,7 +205,7 @@ theme_type_variation = &"WhiteLabel16"
 mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "远征样式"
+text = "副本入口"
 
 ; 关闭（dungeon_map 同款 backbtn 左上）
 [node name="CloseBtn" type="TextureButton" parent="."]

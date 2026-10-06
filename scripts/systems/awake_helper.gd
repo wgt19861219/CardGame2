@@ -42,20 +42,26 @@ static func fragment_id_for_hero(cm: ConfigManager, hero_tid: int) -> int:
 
 ## 执行觉醒（单机化新增，源无此逻辑）：
 ## ① can_awake_with_count 校验 ② 扣专属碎片 AWAKE_FRAGMENT_COST ③ hero.awake=true。
-## 返 {ok:bool}（ok=true 触发弹窗 B）。不足/已觉醒/Can Awake=false 返 {ok:false}。
+## 返 {ok:bool, reason:String, have:int, need:int, frag_id:int}——reason 供 View 层 Toast：
+## no_fragment（碎片不足，have/need 带量）/ already_awake / cannot_awake / no_fragment_config。
+## 2026-10-06 修：此前失败一律裸 {ok:false}，UI 只播音效无文案（用户反馈"点觉醒无反应"）。
 static func awake_hero(player: PlayerData, hero: HeroInstance) -> Dictionary:
 	if player == null or hero == null:
-		return {"ok": false}
+		return {"ok": false, "reason": "invalid"}
 	var cm: ConfigManager = player.cm
 	var frag_id: int = fragment_id_for_hero(cm, int(hero.tid))
 	if frag_id <= 0:
-		return {"ok": false}
+		return {"ok": false, "reason": "no_fragment_config"}
 	var frag_count: int = player.hero_manager.fragment_count(frag_id)
-	if not can_awake_with_count(cm, hero, frag_count):
-		return {"ok": false}
+	if hero.awake:
+		return {"ok": false, "reason": "already_awake"}
+	if not cm.get_bool(&"Unit", int(hero.tid), &"Can Awake"):
+		return {"ok": false, "reason": "cannot_awake"}
+	if frag_count < AWAKE_FRAGMENT_COST:
+		return {"ok": false, "reason": "no_fragment", "have": frag_count, "need": AWAKE_FRAGMENT_COST, "frag_id": frag_id}
 	# 扣专属碎片（HeroManager.spend_fragment 不足返 false，再守卫一次防并发）
 	if not player.hero_manager.spend_fragment(frag_id, AWAKE_FRAGMENT_COST):
-		return {"ok": false}
+		return {"ok": false, "reason": "no_fragment", "have": player.hero_manager.fragment_count(frag_id), "need": AWAKE_FRAGMENT_COST, "frag_id": frag_id}
 	hero.awake = true
 	player.hero_manager.recalc_hero_gs(hero)   # 觉醒改变战斗装配（_awake）→ 重算战力
 	return {"ok": true}

@@ -16,6 +16,9 @@ extends PopWindow
 ##   互切可达；cavern 子窗/DungeonMatrixPopup 组件保留待挂载（ExerciseDegreePanel
 ##   「待入口挂载」同款先例）。四轮并去中央区背景色块与资源本名牌（源 pristine
 ##   版入口即纯角色立绘，标识靠失传的弹窗标题图）。
+##   2026-10-06 可达性修：互切按钮文案「远征样式」→「副本入口」（远征侧对称改
+##   「返回地图」）——副本主体唯一通路此前藏在"样式切换"语义下，用户实测反馈
+##   「时光之穴/英雄试炼玩不了」（按钮功能不变，纯文案纠偏）。
 ##
 ## 受控偏离：地图背景/标题图失传替身方案见 exercise_map_content.tscn 头注；
 ## equip 页 cavern 源半出屏位移右上空区；源 checkExerciseEnabled 终版恒 true

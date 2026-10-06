@@ -60,6 +60,25 @@ static func recover(pd: PlayerData, now_seconds: int) -> int:
 	return recovered
 
 
+## 使用体力药（2026-10-06 体力药使用链路，扣 1 个 + 体力 + Equip.Vitality 字段值，
+## 攒体硬上限 9999 与 buy 口径一致）。纯 Logic 可单测；存盘由 View 层调用方负责。
+## 返 {ok, gained, reason}：full=体力已满（**不消耗物品**，2026-10-06 用户实测边界——
+## GM 拉满 9999 后吃药 gained=0 且药被白扣）；no_item=持有不足；no_vitality=配置缺字段。
+static func use_tonic_pill(pd: PlayerData, item_id: int, cm: ConfigManager) -> Dictionary:
+	if pd.vitality >= BUY_HARD_CAP:
+		return {"ok": false, "reason": "full"}
+	if int(pd.items.get(item_id, 0)) <= 0:
+		return {"ok": false, "reason": "no_item"}
+	var vit: int = int(cm.get_raw_table(&"Equip").get(str(item_id), {}).get(&"Vitality", 0))
+	if vit <= 0:
+		return {"ok": false, "reason": "no_vitality"}
+	if pd.remove_item(item_id, 1) <= 0:
+		return {"ok": false, "reason": "no_item"}
+	var before: int = pd.vitality
+	pd.vitality = min(pd.vitality + vit, BUY_HARD_CAP)
+	return {"ok": true, "gained": pd.vitality - before}
+
+
 ## 跨日清零今日购买次数（pd.vitality_buy_day 本地日锚，照源服务器日重置语义）。
 static func _reset_today_buy_if_new_day(pd: PlayerData, now: int) -> void:
 	var day: int = _local_day_key(now)

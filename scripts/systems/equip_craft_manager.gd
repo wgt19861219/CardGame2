@@ -110,6 +110,8 @@ static func autowear_for_upgrade(pd: PlayerData, inst_id: int) -> int:
 		if ett == "isEquiped":
 			continue
 		var eid: int = EquipdetailQuery.get_slot_expected_equip(hero, slot + 1, pd.cm)
+		if eid <= 0:
+			continue   # 无配方槽（rank 12+ 递减槽位设计，源 bf5c0cc）：不构成进阶条件，跳过不整单中止
 		if ett == "canWear":
 			if int(pd.items.get(eid, 0)) - int(planned.get(eid, 0)) < 1:
 				return -1   # 跨槽同 id 争用超量（预算联动）

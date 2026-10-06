@@ -12,23 +12,24 @@ func before_all() -> void:
 func test_claim_job_reward_blocked_below_target() -> void:
 	var tm := TaskManager.new()
 	var pd := PlayerData.new(cm)
-	# Todolist 1 Task Target=1，未 record → count=0 < 1 → 失败
-	var r: Dictionary = tm.claim_job_reward(pd, 1, cm)
-	assert_false(bool(r["ok"]), "未达 target → 领取失败")
+	# Todolist 1 Task Target=1（Login 型），时段外注入 11:00 → 合成计数 0 < 1 → 失败
+	# （2026-10-06 起 Login 型走时段合成，claim 注入 now_minutes 与墙钟解耦）
+	var r: Dictionary = tm.claim_job_reward(pd, 1, cm, 660)
+	assert_false(bool(r["ok"]), "时段外未达 target → 领取失败")
 
 
 func test_claim_job_reward_success_and_reset() -> void:
 	var tm := TaskManager.new()
 	var pd := PlayerData.new(cm)
-	pd.vitality = 10  # 设低避 vitality_max 截断（Todolist 1 Reward=Vitality 600，min(610,120)=120）
-	tm.record_dailyjob_progress(1, 1)  # count 1 >= target 1
+	pd.vitality = 10  # 攒体口径：Vitality 600 硬上限 9999（2026-10-06 起不压 vitality_max）
+	# Login 型时段内（13:00）合成计数=target → 可领；record 行为计数对 Login 型不再参与判定
 	var before_vit: int = pd.vitality
-	var r: Dictionary = tm.claim_job_reward(pd, 1, cm)
-	assert_true(bool(r["ok"]), "达 target → 领取成功")
-	assert_gt(pd.vitality, before_vit, "Vitality 奖励加体力")
-	# reset 后 count=0 → 再领失败（防重，源 resetDailyjobTime）
-	var r2: Dictionary = tm.claim_job_reward(pd, 1, cm)
-	assert_false(bool(r2["ok"]), "reset 后 count=0 → 再领失败")
+	var r: Dictionary = tm.claim_job_reward(pd, 1, cm, 780)
+	assert_true(bool(r["ok"]), "时段内达 target → 领取成功")
+	assert_eq(pd.vitality, 610, "Vitality 奖励 +600 加体力")
+	# 领取记当日 → 同日再领失败（防重，源 resetDailyjobTime）
+	var r2: Dictionary = tm.claim_job_reward(pd, 1, cm, 790)
+	assert_false(bool(r2["ok"]), "当日已领 → 再领失败")
 
 
 func test_claim_job_reward_unknown_job() -> void:

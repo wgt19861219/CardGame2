@@ -133,7 +133,10 @@ func test_scene_entering_process_advances_skill_cd() -> void:
 	scene.set_speed_state(1)   # 速度档持久化（user:// ConfigFile）可能读到实机存的 4x，固定 1x 使断言确定
 	scene._entering = true
 	var before := float(minor.cd_remaining)
-	scene._process(1.0)
+	# 60 帧步进模拟 1s（真实帧节奏；单次 _process(1.0) 大 delta 已被 2026-10-06
+	# minf(delta,0.1) 钳制截断——防加载卡顿巨帧致离线走路越过目标=高速空场根修）
+	for i in range(60):
+		scene._process(1.0 / 60.0)
 	assert_between(float(minor.cd_remaining), before - 1.1, before - 0.9, "入场冻结 1s 小技能 CD 衰减 ≈1")
 	# 波清后走向屏外（_walking_to_next）不推——源 victory() running=false 暂停语义
 	scene._entering = false

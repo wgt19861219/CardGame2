@@ -206,6 +206,7 @@ func _on_cell_clicked(cell_data: Dictionary) -> void:
 	_equipboard.setup_panel(cell_data, cm, pd)
 	_equipboard.sold.connect(_on_sold)
 	_equipboard.composed.connect(_on_sold)   # 合成同理：碎片消耗后重 classify + 重填 grid + 刷货币条（源 downFragmentCompose consumeAmount :47-74）
+	_equipboard.used.connect(_on_sold)   # 体力药使用同理：持有量变化重 classify（2026-10-06 补使用链路）
 	_equipboard.show_window(self)   # 挂 package（照源 equipboard.mainLayer 挂 package.mainLayer），随 package remove_window / 退出场景销毁
 
 

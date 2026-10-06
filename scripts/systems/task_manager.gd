@@ -174,6 +174,19 @@ func get_dailyjob_count(job_id: int) -> int:
 	return int(dailyjob_count.get(job_id, 0))
 
 
+## Login 型日常任务进度合成（源 playertools.lua:93-126 getDailyjobCount）：当天未领且处于
+## 触发时段（豪华午餐/豪华晚餐 12:00-14:00 等）→ 计数直接=目标（时间到即完成，无需玩家行为，
+## 领取按钮自动出现）；时段外或已领 → 0。其余 type 走行为累加计数（dailyjob_count）。
+## 2026-10-06 修：此前缺译致进度恒 0/1、领取按钮永不出现（用户反馈豪华午餐无法领取）。
+func get_effective_dailyjob_count(cm: ConfigManager, job_id: int, player: PlayerData, now_minutes: int) -> int:
+	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
+	if String(row.get("Task Progress Type", "")) == "Login":
+		if int(dailyjob_claim_day.get(job_id, 0)) != _today_key() and check_db_trigger(cm, job_id, player, now_minutes):
+			return int(row.get("Task Target", 0))
+		return 0
+	return get_dailyjob_count(job_id)
+
+
 ## 行为事件触发进度（源 Task Progress Type 事件 → 计数）。调用方按行为调（持久化待接玩家行为事件）。
 func record_dailyjob_progress(job_id: int, amount: int = 1) -> void:
 	dailyjob_count[job_id] = get_dailyjob_count(job_id) + amount
@@ -330,14 +343,16 @@ static func from_dict(data: Dictionary) -> TaskManager:
 
 ## 活动 act_ 分支单机裁剪（SKIPPED）。返 {ok}。
 ## 今日已领防重（源 isShow 隐藏 + resetDailyjobTime；target=0 行曾可无限领，2026-09-28 审查 P1-5）。
-func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager) -> Dictionary:
+## now_minutes 可注入（默认 -1 取系统时间；Login 型时段合成判定用，测试注入固定时刻）。
+func claim_job_reward(player: PlayerData, job_id: int, cm: ConfigManager, now_minutes: int = -1) -> Dictionary:
 	var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
 	if row.is_empty():
 		return {"ok": false}
 	var today: int = _today_key()
 	if int(dailyjob_claim_day.get(job_id, 0)) == today:
 		return {"ok": false}
-	if get_dailyjob_count(job_id) < int(row.get("Task Target", 0)):
+	var now: int = current_now_minutes() if now_minutes < 0 else now_minutes
+	if get_effective_dailyjob_count(cm, job_id, player, now) < int(row.get("Task Target", 0)):
 		return {"ok": false}
 	for i in range(TASK_REWARD_FIRST, TASK_REWARD_LAST + 1):
 		var rtype: String = String(row.get("Task Reward %d Type" % i, ""))
@@ -360,7 +375,9 @@ func _apply_reward(player: PlayerData, rtype: String, rid: int, amount: int) -> 
 		"Diamond":
 			player.add_diamond(amount)
 		"Vitality":
-			player.vitality = min(player.vitality + amount, player.vitality_max)
+			# 攒体语义：硬上限 9999（源 player.lua:544 addVitality 任务分支无上限；与
+			# VitalityManager.buy 口径一致），不压 vitality_max（否则 600 配置值被截到 120）
+			player.vitality = min(player.vitality + amount, VitalityManager.BUY_HARD_CAP)
 		"PlayerEXP":
 			player.add_team_exp(amount)
 		"Item":

@@ -2,8 +2,9 @@ class_name BattleSpeedButton
 extends Control
 
 ## 战斗加速按钮（View 层）— 照源 battle_scene.lua:1032-1061（handler）/1235-1250（装配）。
-## 点击循环速度档 1→2→3→4→1；档 1 显 CombatAcceleration_1.png 无 label，
-## 档 2-4 显 _2.png + 黄色倍率 label（源 updateSpeedBtnLabel）。发 speed_changed(state) 给 scene。
+## 点击循环速度档 1→2→3→1（2026-10-06 用户拍板受控裁剪：源 4 档去 4x 保留 3 档）；
+## 档 1 显 CombatAcceleration_1.png 无 label，档 2-3 显 _2.png + 黄色倍率 label（源 updateSpeedBtnLabel）。
+## 发 speed_changed(state) 给 scene。
 ##
 ## 重构（2026-07-18，hero_detail 范式）：TextureButton + Label 静态化进
 ## scenes/battle/battle_speed_button_content.tscn（label pos/color 固化 theme_override），
@@ -20,8 +21,8 @@ const CONTENT_SCALE: float = 1.28125
 # 源 :1241 speedBtn:setPosition(ccp(735,120)) 是 MenuItemImage 锚点中心；显示 81.95×46.83 点。
 # Godot position=左上角 → 中心 to_godot(735,120)=(735,360) − 显示半尺寸。
 const GODOT_POS: Vector2 = Vector2(694.02, 336.59)  # (735,360) − (105/CS/2, 60/CS/2)
-const MAX_STATE: int = 4
-const SPEED_LABELS := ["1x", "2x", "3x", "4x"]
+const MAX_STATE: int = 3   # 2026-10-06 用户拍板：源 4 档裁为 3 档（去 4x）
+const SPEED_LABELS := ["1x", "2x", "3x"]
 # 倍速档持久化（源 battle_scene.lua:14/1050 CCUserDefault "battle_speed_state" 等价，
 # 照 AudioPlayer sound_cfg 应用级 ConfigFile 范式，不入玩家存档）。
 # cfg_path 可注入：测试换 user://battle_test.cfg 隔离玩家真实档（多测试共享 user:// 会互踩）。

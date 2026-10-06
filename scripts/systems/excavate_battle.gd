@@ -79,6 +79,7 @@ static func _hero_list_from_player(player: PlayerData, tids: Array[int] = []) ->
 			hero_list.append({
 				"_tid": h.tid, "_level": h.level, "_stars": h.stars,
 				"_rank": h.rank, "_items": StageManager._hero_items(h),
+				"_awake": h.awake, "_skill_levels": h.skill_levels_by_slot(),
 			})
 		return hero_list
 	for inst_id in player.team:
@@ -88,6 +89,7 @@ static func _hero_list_from_player(player: PlayerData, tids: Array[int] = []) ->
 		hero_list.append({
 			"_tid": hero.tid, "_level": hero.level, "_stars": hero.stars,
 			"_rank": hero.rank, "_items": StageManager._hero_items(hero),
+			"_awake": bool(hero.awake), "_skill_levels": hero.skill_levels_by_slot(),
 		})
 	return hero_list
 

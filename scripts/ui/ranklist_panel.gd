@@ -114,6 +114,36 @@ func _bind_tabs() -> void:
 			sbtn.pressed.connect(_on_tab_pressed.bind(child["mode"]))
 			(sbtn.get_child(0) as Label).text = _player.cm.get_lstr(child["key"])
 	_layout_tabs()
+	register_on_enter(_clamp_all_tab_labels)   # 入树后字体测量可靠（pre-tree 无主题链）
+
+
+# tab 文字超宽钳制（源 ranklist.lua:2088 createRankBtn setScale(math.min(1,150/w)) 漏译）：
+# 7 汉字 ≈126pt 超出 110pt label 框/135pt 按钮贴图 → 按字体实测宽缩至 150pt 内（2026-10-06
+# 修"排行榜文字超出图标范围"）。
+const TAB_LABEL_MAX_W: float = 150.0
+
+func _clamp_all_tab_labels() -> void:
+	if not is_inside_tree() or _content == null:
+		return
+	for group in TAB_TREE:
+		_clamp_tab_label(_tab("%%%s" % group["btn"]).get_child(0) as Label)
+		for child in group["children"]:
+			_clamp_tab_label(_tab("%%%s" % child["btn"]).get_child(0) as Label)
+
+
+func _clamp_tab_label(lbl: Label) -> void:
+	if lbl == null or lbl.text == "":
+		return
+	var font: Font = lbl.get_theme_font(&"font")
+	var font_size: int = lbl.get_theme_font_size(&"font_size")
+	if font == null or font_size <= 0:
+		return
+	var text_w: float = font.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if text_w <= TAB_LABEL_MAX_W:
+		return
+	var scale_x: float = TAB_LABEL_MAX_W / text_w
+	lbl.pivot_offset = Vector2(lbl.offset_right - lbl.offset_left, lbl.offset_bottom - lbl.offset_top) * 0.5
+	lbl.scale = Vector2(scale_x, 1.0)
 
 
 # 重排静态 tab 按钮（源 reCalculateRankBtnPos :1898-1925 精确直译）：
@@ -160,6 +190,7 @@ func _set_tab_state(btn: TextureButton, is_group: bool, is_sel: bool) -> void:
 func _on_group_pressed(gi: int) -> void:
 	_collapsed[gi] = not bool(_collapsed.get(gi, true))
 	_layout_tabs()
+	_clamp_all_tab_labels()
 
 
 func _on_tab_pressed(mode: String) -> void:

@@ -821,8 +821,8 @@ func test_map_frame_source_fidelity() -> void:
 		return
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
 		"frame 贴图归源 excavate_main_frame")
-	assert_almost_eq(frame.size.x, 572.88, 0.02, "frame w=733.59（fix_wh 直译，A 债 #6）")
-	assert_almost_eq(frame.size.y, 355.12, 0.02, "frame h=454.69")
+	assert_almost_eq(frame.size.x, 733.59, 0.02, "frame w=733.59（fix_wh 直译，A 债 #6 已清偿 2026-10-06）")
+	assert_almost_eq(frame.size.y, 454.69, 0.02, "frame h=454.69")
 	var tex: Texture2D = frame.texture
 	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
 	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))
@@ -831,8 +831,8 @@ func test_map_frame_source_fidelity() -> void:
 	if frame_bg != null:
 		assert_eq(frame_bg.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_bg.png",
 			"frame_bg 贴图归源 excavate_main_bg")
-		assert_almost_eq(frame_bg.size.x, 572.88, 0.02, "frame_bg w=733.59（fix_wh 直译）")
-		assert_almost_eq(frame_bg.size.y, 355.12, 0.02, "frame_bg h=454.69")
+		assert_almost_eq(frame_bg.size.x, 733.59, 0.02, "frame_bg w=733.59（fix_wh 直译）")
+		assert_almost_eq(frame_bg.size.y, 454.69, 0.02, "frame_bg h=454.69")
 	var title: TextureRect = content.get_node_or_null("FrameContainer/Title") as TextureRect
 	assert_not_null(title, "Title 存在且为 TextureRect")
 	if title == null:
@@ -982,7 +982,7 @@ func test_map_content_static_rects() -> void:
 	assert_true((content.get_node("%RightButton") as TextureButton).flip_h, "right_button flip_h（源 flip=x）")
 	var fog: Control = content.get_node("%SearchFog") as Control
 	assert_almost_eq(fog.position.x + fog.size.x * 0.5, 396.88, 0.02, "search_fog 中心 x=476.88（to_godot(396.88)）")
-	assert_almost_eq(fog.size.x, 547.90, 0.02, "search_fog w=702.34（fix_wh 直译）")
+	assert_almost_eq(fog.size.x, 702.34, 0.02, "search_fog w=702.34（fix_wh 直译，2026-10-06 清偿）")
 	assert_almost_eq(fog.modulate.a, 0.0, 0.005, "search_fog opacity=0（源 config.opacity=0，fill 淡入）")
 	# 绘制序守卫（防反盖）：源 z bg=0 < frame_container=5（内：frame_bg=1 < 动态矿点
 	# clipNode=2 < info_layer=15 < frame=20 < title=24 < page_tag/back=30）< 根级
@@ -1239,8 +1239,8 @@ func test_search_frame_source_fidelity() -> void:
 		return
 	assert_eq(frame.texture.resource_path, "res://assets/ui/alpha/HVGA/excavate/excavate_main_frame.png",
 		"frame 贴图归源 excavate_main_frame")
-	assert_almost_eq(frame.size.x, 572.88, 0.02, "frame w=733.59（fix_wh 直译，A 债 #1）")
-	assert_almost_eq(frame.size.y, 355.13, 0.02, "frame h=454.69")
+	assert_almost_eq(frame.size.x, 733.59, 0.02, "frame w=733.59（fix_wh 直译，A 债 #1 已清偿 2026-10-06）")
+	assert_almost_eq(frame.size.y, 454.69, 0.02, "frame h=454.69")
 	var tex: Texture2D = frame.texture
 	var ratio_dev: float = abs(frame.size.x / frame.size.y - float(tex.get_width()) / float(tex.get_height())) / (float(tex.get_width()) / float(tex.get_height()))
 	assert_lt(ratio_dev, 0.08, "frame 显示比例 vs 纹理比例偏差 ≤8%%（实测 %.1f%%）" % (ratio_dev * 100.0))

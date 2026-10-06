@@ -29,7 +29,9 @@ const BattleHudAssembler = preload("res://scripts/view/battle/battle_hud_assembl
 const ProjectileSync = preload("res://scripts/view/battle/projectile_sync.gd")
 const HUD_SCENE: PackedScene = preload("res://scenes/battle/battle_hud.tscn")
 
-const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3, 4]
+# 2026-10-06 用户拍板受控裁剪：去 4x 档保留 1/2/3（源 battle_scene.lua 为 4 档）；
+# 旧档 speed_state 存 4 的由 set_speed_state clampi 自动钳到 3。
+const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3]
 const STAGE_DONE_PATH: String = "res://scenes/battle/stage_done_scene.tscn"      # 胜利结算场景
 const STAGE_FAILED_PATH: String = "res://scenes/battle/stage_failed_scene.tscn"  # 失败结算场景
 const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"         # 主菜单（excavate 战斗结束回）
@@ -239,12 +241,15 @@ func _process(delta: float) -> void:
 		# 入场/切波走路期间冻结 engine（不 step），仅驱动 actor 离线走路推进。
 		# dt × 档位倍率：离线走路位置速度随战斗加速档（源 scene 加速 dt 集中推进整链），
 		# 不放大则 4x 下走路 1.45px/帧 vs 战斗 3.96px/帧 断层（2026-09-05 探针实证）。
+		# dt 钳制 0.1（与 step() 一致，2026-10-06）：加载卡顿巨帧 ×4 倍率 = 巨步长，
+		# 离线走路一次性越过目标曾致全员出屏、engine 永久冻结（高速空场）。
+		var clamped_delta: float = minf(delta, 0.1)
 		if _entering:
 			# 入场窗口技能 CD 照源持续衰减（源切波/进场后 running=true 持续 tick；只推 CD 不推
 			# AI/伤害保入场表现，2026-09-15 小技能不触发根修）。_walking_to_next 不推=源 victory 暂停。
 			for unit in engine.unit_list:
-				BattleUnitUpdate.tick_skill_cd_only(unit, delta * current_speed())
-		_advance_actor_list(delta * current_speed())
+				BattleUnitUpdate.tick_skill_cd_only(unit, clamped_delta * current_speed())
+		_advance_actor_list(clamped_delta * current_speed())
 		return
 	step(delta)
 	_ticks_left -= 1

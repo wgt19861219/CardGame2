@@ -39,6 +39,10 @@ static func assemble_crusade_battle(mgr: CrusadeManager, p_stage_id: int, player
 			proto["_stars"] = hero.stars
 			proto["_rank"] = hero.rank
 			proto["_items"] = StageManager._hero_items(hero)
+			# 漏传致只装 Basic Skill 无大招（同 stage_manager 2026-08-18 修；源 battleprepare.lua:201-211
+			# getBattleHeros 直取 ed.player.heroes 整对象，_skill_levels/_awake 均在）
+			proto["_awake"] = hero.awake
+			proto["_skill_levels"] = hero.skill_levels_by_slot()
 		else:
 			proto["_level"] = 1
 			proto["_stars"] = 1

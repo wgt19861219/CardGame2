@@ -21,6 +21,11 @@ const PROPTYPE_FRAGMENT: String = "fragment"
 const CAT_FRAGMENT: String = "EQUIP.FRAGMENT"
 const CAT_CONSUMABLES: String = "EQUIP.CONSUMABLES"
 const CONSUME_EXPERIENCE_PILL: String = "EQUIP.EXPERIENCE_PILL"
+# 体力药（章鱼丸子 60/奥尔良烤翅 30/孜然羊肉串 12，Equip.Vitality 字段）。源客户端同样未接
+# 使用链路（ofpackage.lua:233-253 只认 EXPERIENCE_PILL，死配置）；本项目按道具描述补齐
+# （2026-10-06 用户实测反馈无法使用）。
+const CONSUME_TONIC_PILLS: String = "EQUIP.TONIC_PILLS"
+const LSTR_VIT_GAINED: String = "GUILDCONFIG.ENERGY_GAINED_"   # 使用体力药 toast（"获得体力:"）
 
 # ── frame 内子节点坐标（源 cocos 值经 _gl 转 Frame Control 内左上 y-down）──
 # ICON_POS = 源 board.lua:320 ccp(50,328)。icon 未显式 setAnchorPoint → Cocos 默认 anchor(0.5,0.5)
@@ -65,6 +70,7 @@ const LSTR_SYNTHESIS_REQ: String = "EQUIPINFO.SYNTHESIS_REQUIRES_FRAGMENT_"  # b
 
 signal sold(item_id: int)           # 卖出后通知调用方刷新（PackagePanel 重 classify）
 signal composed(item_id: int)       # 碎片合成后通知调用方刷新（PackagePanel 重 classify，源 downFragmentCompose）
+signal used(item_id: int)           # 消耗品使用后通知调用方刷新（PackagePanel 重 classify）
 
 var cm: Variant = null
 var pd: PlayerData = null
@@ -135,16 +141,24 @@ func refresh(p_cell_data: Dictionary) -> void:
 
 # 单账本（2026-09-09 根修）：fragment cell 来自 items 中 Fragment 表命中的碎片域
 #（**魂石** Category=SOUL_STONE，映射召唤英雄），故用 cell_data.type==2 判 fragment
-#（适配本项目数据模型，魂石有配方 makeId!=id → 可合成）。items 的 EXPERIENCE_PILL → consume；其他 → prop。
+#（适配本项目数据模型，魂石有配方 makeId!=id → 可合成）。items 的 EXPERIENCE_PILL/TONIC_PILLS → consume；其他 → prop。
 func _judge_prop_type() -> String:
 	var cell_type: int = int(_cell_data.get("type", 1))
 	if cell_type == 2:   # fragments 容器（魂石）
 		return PROPTYPE_FRAGMENT if _make_id != _item_id else PROPTYPE_PROP
 	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(_item_id), {})
 	if String(equip_row.get(&"Category", "")) == CAT_CONSUMABLES:
-		if String(equip_row.get(&"Consume Type", "")) == CONSUME_EXPERIENCE_PILL:
+		var consume_type: String = String(equip_row.get(&"Consume Type", ""))
+		if consume_type == CONSUME_EXPERIENCE_PILL or consume_type == CONSUME_TONIC_PILLS:
 			return PROPTYPE_CONSUME
 	return PROPTYPE_PROP
+
+
+## 是否体力药（Consume Type=TONIC_PILLS）：右按钮"使用"直吃恢复体力，不走经验药选英雄界面。
+func _is_tonic_pill() -> bool:
+	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(_item_id), {})
+	return String(equip_row.get(&"Category", "")) == CAT_CONSUMABLES \
+			and String(equip_row.get(&"Consume Type", "")) == CONSUME_TONIC_PILLS
 
 
 # 位置/size/样式 .tscn + theme variation 已固化（编辑器可视化调），fill 只填 texture/text/visible。
@@ -324,9 +338,28 @@ func _on_right_pressed() -> void:
 		PROPTYPE_FRAGMENT:
 			_open_compose()
 		PROPTYPE_CONSUME:
-			_open_eatexp()   # consume → EatexpPanel（第 27 段）
+			if _is_tonic_pill():
+				_use_tonic_pill()   # 体力药直吃（无目标选择，区别经验药选英雄）
+			else:
+				_open_eatexp()   # consume → EatexpPanel（第 27 段）
 		_:
 			_open_detail()   # prop → EquipdetailPanel（第 26 段）
+
+
+## 使用体力药：VitalityManager.use_tonic_pill（扣 1 个 + 体力+Equip.Vitality，攒体硬上限 9999）。
+## 源客户端此 Consume Type 无使用链路（死配置），按道具描述补齐（2026-10-06）。
+## 满体力不消耗物品直接提示（2026-10-06 二轮：GM 拉满 9999 后吃药白扣且 Toast"获得体力:0"）。
+func _use_tonic_pill() -> void:
+	var r: Dictionary = VitalityManager.use_tonic_pill(pd, _item_id, cm)
+	if not bool(r.get("ok", false)):
+		AudioPlayer.play_sfx("common_alert")
+		if String(r.get("reason", "")) == "full":
+			Toast.show_message("体力已满，无需使用")
+		return   # full/no_item：不关窗不刷新（药未消耗）
+	GameData.save()   # 同 eatexp 喂药范式（扣物品即时落盘）
+	_show_toast("%s%d" % [cm.get_lstr(LSTR_VIT_GAINED), int(r.get("gained", 0))])
+	used.emit(_item_id)
+	remove_window()
 
 
 # 合成（源 param.doCompose → package.getComposeHandler :113-129 → fragmentcompose.create(id)）。
