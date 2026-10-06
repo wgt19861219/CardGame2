@@ -29,7 +29,9 @@ const BattleHudAssembler = preload("res://scripts/view/battle/battle_hud_assembl
 const ProjectileSync = preload("res://scripts/view/battle/projectile_sync.gd")
 const HUD_SCENE: PackedScene = preload("res://scenes/battle/battle_hud.tscn")
 
-const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3, 4]
+# 2026-10-06 用户拍板受控裁剪：去 4x 档保留 1/2/3（源 battle_scene.lua 为 4 档）；
+# 旧档 speed_state 存 4 的由 set_speed_state clampi 自动钳到 3。
+const SPEED_MULTIPLIERS: Array[int] = [1, 2, 3]
 const STAGE_DONE_PATH: String = "res://scenes/battle/stage_done_scene.tscn"      # 胜利结算场景
 const STAGE_FAILED_PATH: String = "res://scenes/battle/stage_failed_scene.tscn"  # 失败结算场景
 const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"         # 主菜单（excavate 战斗结束回）

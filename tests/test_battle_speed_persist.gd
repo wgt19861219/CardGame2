@@ -45,19 +45,27 @@ func test_out_of_range_resets_to_one() -> void:
 	assert_eq(btn.get_state(), 1, "cfg 越界值 9 应回 1（源 :15 非 clamp）")
 
 
-# 4→1 循环也落盘（源 :1049-1050 切换即写回）。
+# 3→1 循环也落盘（源 :1049-1050 切换即写回；2026-10-06 用户拍板 4 档裁 3 档，
+# 循环边界从 4→1 改 3→1，越界档 4 与 9 同样回 1——_load_speed_state >MAX_STATE 归 1）。
 func test_cycle_back_to_one_saved() -> void:
 	var cfg := ConfigFile.new()
-	cfg.set_value("battle", "speed_state", 4)
+	cfg.set_value("battle", "speed_state", 3)
 	cfg.save(TEST_CFG_PATH)
 	var btn: BattleSpeedButton = _make_button()
 	add_child_autofree(btn)
 	btn.setup(1)
-	assert_eq(btn.get_state(), 4, "读回 4 档")
-	btn._on_pressed()   # 4→1 循环
+	assert_eq(btn.get_state(), 3, "读回 3 档")
+	btn._on_pressed()   # 3→1 循环
 	var cfg2 := ConfigFile.new()
 	cfg2.load(TEST_CFG_PATH)
-	assert_eq(int(cfg2.get_value("battle", "speed_state", -1)), 1, "4→1 循环写盘")
+	assert_eq(int(cfg2.get_value("battle", "speed_state", -1)), 1, "3→1 循环写盘")
+	# 裁档后遗留的旧 4 档 cfg 值 → 归 1（同源越界语义）
+	cfg.set_value("battle", "speed_state", 4)
+	cfg.save(TEST_CFG_PATH)
+	var btn2: BattleSpeedButton = _make_button()
+	add_child_autofree(btn2)
+	btn2.setup(1)
+	assert_eq(btn2.get_state(), 1, "旧 4 档遗留值回 1（>MAX_STATE 归 1）")
 
 
 # assembler 回写同步（源静态类变量共享；本项目 scene 实例变量须显式 set_speed_state，engine 倍速才生效）。

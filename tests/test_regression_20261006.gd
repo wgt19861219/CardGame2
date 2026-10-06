@@ -243,14 +243,14 @@ func _assemble_stage1() -> Dictionary:
 	return mgr.assemble_stage_battle(1, player, [1, 2, 3, 4, 5], BattleRng.new(12345))
 
 
-func test_enter_walk_completes_at_4x_speed() -> void:
+func test_enter_walk_completes_at_3x_speed() -> void:
 	var asm := _assemble_stage1()
 	assert_true(bool(asm.get("ok", false)), "装配应成功")
 	var scene := BattleScene.new()
 	add_child(scene)
 	scene.process_mode = Node.PROCESS_MODE_DISABLED   # 手动帧驱动
 	scene.setup(asm["engine"], cm, asm["battle_info"])
-	scene.set_speed_state(4)   # 4x（最高速档）
+	scene.set_speed_state(3)   # 3x（最高速档，2026-10-06 用户拍板 4 档裁 3）
 	scene._start_enter_walk()
 	assert_true(scene._entering, "入场态生效")
 	# 60fps 帧推进，到位即停（理论 300/(210×4)≈0.36s≈22 帧；不推进战斗避免结算切场景）
@@ -258,7 +258,7 @@ func test_enter_walk_completes_at_4x_speed() -> void:
 	while scene._entering and frames < 300:
 		scene._process(1.0 / 60.0)
 		frames += 1
-	assert_false(scene._entering, "4x 下全员到位解冻（不冻结=不空场）")
+	assert_false(scene._entering, "3x 下全员到位解冻（不冻结=不空场）")
 	assert_lt(frames, 60, "远小于 1s 到位（闭环不越冲）")
 	assert_false(scene.is_paused, "engine 恢复运行")
 	# 全员已退出离线走路态、接回 engine interp（空场症状=永远离线走出屏外）
