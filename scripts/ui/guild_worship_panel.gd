@@ -45,6 +45,9 @@ func _fill() -> void:
 		for c in host.get_children():
 			c.queue_free()
 		host.add_child(head)
+		# 中心锚定位（同 guild_panel 行头像修法）：Host 40x40 → head.position=(20,20)
+		head.position = Vector2(host.offset_right - host.offset_left,
+				host.offset_bottom - host.offset_top) * 0.5
 	_refresh_times()
 	_refresh_options()
 	_refresh_pending()

@@ -124,6 +124,7 @@ offset_top = 21.0
 offset_right = 138.0
 offset_bottom = 45.0
 theme_type_variation = &"RanklistGroupTabSelLabel"
+horizontal_alignment = 1
 text = "竞技场"
 
 [node name="SubPvp" type="TextureButton" parent="TabClip/TabHost" unique_id=1374248100]
@@ -145,6 +146,7 @@ offset_top = 21.0
 offset_right = 138.0
 offset_bottom = 45.0
 theme_type_variation = &"RanklistSubTabSelLabel"
+horizontal_alignment = 1
 text = "竞技场每日排名"
 
 [node name="GroupFightvalue" type="TextureButton" parent="TabClip/TabHost" unique_id=1498054303]
@@ -166,6 +168,7 @@ offset_top = 21.0
 offset_right = 138.0
 offset_bottom = 45.0
 theme_type_variation = &"RanklistGroupTabLabel"
+horizontal_alignment = 1
 text = "战力"
 
 [node name="SubFullHeroGs" type="TextureButton" parent="TabClip/TabHost" unique_id=1121488021]
@@ -188,6 +191,7 @@ offset_top = 21.0
 offset_right = 138.0
 offset_bottom = 45.0
 theme_type_variation = &"RanklistSubTabLabel"
+horizontal_alignment = 1
 text = "总战力排名"
 
 [node name="SubHeroTeamGs" type="TextureButton" parent="TabClip/TabHost" unique_id=1570828185]
@@ -210,6 +214,7 @@ offset_top = 21.0
 offset_right = 138.0
 offset_bottom = 45.0
 theme_type_variation = &"RanklistSubTabLabel"
+horizontal_alignment = 1
 text = "小队战力排名"
 
 [node name="SubHeroEvoStar" type="TextureButton" parent="TabClip/TabHost" unique_id=337945188]
@@ -232,6 +237,7 @@ offset_top = 21.0
 offset_right = 138.0
 offset_bottom = 45.0
 theme_type_variation = &"RanklistSubTabLabel"
+horizontal_alignment = 1
 text = "英雄进化排名"
 
 [node name="GroupGuild" type="TextureButton" parent="TabClip/TabHost" unique_id=1631968096]

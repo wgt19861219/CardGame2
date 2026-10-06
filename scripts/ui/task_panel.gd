@@ -118,7 +118,8 @@ func _fill_daily_list() -> void:
 	for job_id in jobs:
 		var row: Dictionary = raw.get(str(job_id), {})
 		var target: int = int(row.get("Task Target", 0))
-		var count: int = _tm.get_dailyjob_count(job_id)
+		# Login 型（豪华午餐等）走时段合成计数：时段内即达标（源 playertools.lua:93-126）
+		var count: int = _tm.get_effective_dailyjob_count(_cm, job_id, _player, _tm.current_now_minutes())
 		var task: Dictionary = {
 			"kind": "dailyjob",
 			# initTaskData@1514 type = row["Task Progress Type"]（fast_handler 路由 key）

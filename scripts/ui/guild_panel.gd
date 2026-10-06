@@ -106,7 +106,13 @@ func _make_member_row(m: Dictionary) -> Control:
 	var row := MEMBER_ITEM_SCENE.instantiate() as Control
 	var head := TeamHeadIcon.build(_cm, int(m["avatar"]))
 	if head != null:
-		(row.get_node("%HeadHost") as Control).add_child(head)
+		var head_host := row.get_node("%HeadHost") as Control
+		head_host.add_child(head)
+		# TeamHeadIcon 内容绕宿主原点居中画（ranklist_rows 范式：head.position=中心点），
+		# 不设则头像中心落在 Host 左上角 → 半出框（2026-10-06 修公会头像溢出）。
+		# pre-tree size 尚为 0，中心点从 offset 推导（Host 40x40 → (20,20)）。
+		head.position = Vector2(head_host.offset_right - head_host.offset_left,
+				head_host.offset_bottom - head_host.offset_top) * 0.5
 	(row.get_node("%Name") as Label).text = String(m["name"])
 	(row.get_node("%Level") as Label).text = "Lv.%d" % int(m["level"])
 	(row.get_node("%Desc") as Label).text = _member_desc(m)

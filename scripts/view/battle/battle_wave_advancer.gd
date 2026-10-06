@@ -64,6 +64,7 @@ static func _enter_wave_units(scene, player_actors: Array) -> void:
 	scene._entering = true
 	scene.is_paused = true
 	scene._pending_enter_count = 0
+	var max_wait: float = 0.0
 	# 玩家：重绑保留的旧 actor 到新 unit（顺序一致：reset_battle 保序 + actor_list 入场序）+ 从左屏外走回站位。
 	var alive_players: Array = scene.engine.foreach_alive_unit(BattleEngine.CAMP_PLAYER)
 	var pi: int = 0
@@ -81,6 +82,9 @@ static func _enter_wave_units(scene, player_actors: Array) -> void:
 		actor.enter_walk_finished.connect(scene._on_actor_enter_done)
 		scene._pending_enter_count += 1
 		actor.start_enter_walk(target, BattleEnterWalk.PLAYER_OFFSET)
+		var ws: float = float(unit.info.get("Walk Speed", 0.0))
+		if ws > 0.0:
+			max_wait = maxf(max_wait, absf(BattleEnterWalk.PLAYER_OFFSET) / (ws * BattleActor.ENTER_WALK_SPEEDER))
 		pi += 1
 	# 新敌人：预创建 actor 从右屏外走到站位。
 	for unit in scene.engine.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
@@ -94,12 +98,18 @@ static func _enter_wave_units(scene, player_actors: Array) -> void:
 		actor.enter_walk_finished.connect(scene._on_actor_enter_done)
 		scene._pending_enter_count += 1
 		actor.start_enter_walk(target, BattleEnterWalk.ENEMY_OFFSET)
+		var ws: float = float(unit.info.get("Walk Speed", 0.0))
+		if ws > 0.0:
+			max_wait = maxf(max_wait, absf(BattleEnterWalk.ENEMY_OFFSET) / (ws * BattleActor.ENTER_WALK_SPEEDER))
 	# 无单位直接解冻
 	if scene._pending_enter_count == 0:
 		scene._entering = false
 		scene.is_paused = false
 		scene.engine.running = true
 		scene.engine.enabled = true
+		return
+	# 超时兜底（2026-10-06 高速空场治理，同 BattleEnterWalk.start）
+	BattleEnterWalk._arm_enter_timeout(scene, max_wait)
 
 
 static func _current_lookup_id(scene) -> int:

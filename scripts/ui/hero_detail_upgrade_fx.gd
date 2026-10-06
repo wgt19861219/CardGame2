@@ -433,8 +433,10 @@ static func calculate_skl_bonus(hero: HeroInstance, cm: Variant) -> int:
 
 # 觉醒按钮设置（从 hero_detail_panel._setup_awake_button 抽出）。
 # on_awake: Callable（觉醒按钮点击回调）。awake_lstr/awake_fallback: 文案。
+# pd 可选：传入时按钮文案带专属碎片进度「觉醒 N/50」（2026-10-06 门槛可视化，
+# 治"点了才知道要碎片"——50 碎片要求此前 UI 完全不可见）。
 static func setup_awake_button(base_layer: Control, hero: HeroInstance, cm: Variant,
-		awake_lstr: StringName, awake_fallback: String, on_awake: Callable) -> void:
+		awake_lstr: StringName, awake_fallback: String, on_awake: Callable, pd: PlayerData = null) -> void:
 	var awake_btn: BaseButton = base_layer.get_node_or_null("%AwakeBtn") as BaseButton
 	if awake_btn == null:
 		return
@@ -449,6 +451,27 @@ static func setup_awake_button(base_layer: Control, hero: HeroInstance, cm: Vari
 			lbl.text = String(cm.get_lstr(awake_lstr)) if cm != null and cm.has_method("get_lstr") else awake_fallback
 			if lbl.text == String(awake_lstr):
 				lbl.text = awake_fallback
+			if pd != null:
+				var frag_id: int = AwakeHelper.fragment_id_for_hero(pd.cm, int(hero.tid))
+				if frag_id > 0:
+					lbl.text = "%s %d/%d" % [lbl.text, pd.hero_manager.fragment_count(frag_id), AwakeHelper.AWAKE_FRAGMENT_COST]
 	awake_btn.pressed.connect(func() -> void:
 		AudioPlayer.play_sfx("common_click_feedback")
 		on_awake.call())
+
+
+# 觉醒失败文案（reason 来自 AwakeHelper.awake_hero；碎片不足带名称与数量）。
+# 2026-10-06 自 hero_detail_panel 下沉（panel 逼近 510 行守卫）。
+static func awake_fail_text(result: Dictionary, cm: Variant) -> String:
+	match String(result.get("reason", "")):
+		"no_fragment":
+			var frag_id: int = int(result.get("frag_id", 0))
+			var name_key: String = String(cm.get_raw_table(&"Equip").get(str(frag_id), {}).get(&"Name", ""))
+			var frag_name: String = String(cm.get_lstr(name_key)) if name_key != "" else "灵魂石"
+			return "%s不足：%d/%d" % [frag_name, int(result.get("have", 0)), int(result.get("need", 0))]
+		"already_awake":
+			return "该英雄已觉醒"
+		"cannot_awake":
+			return "该英雄无法觉醒"
+		_:
+			return "觉醒失败"

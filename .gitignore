@@ -49,3 +49,6 @@ tools/refactor/
 !CLAUDE.md
 !README.md
 /docs/
+
+# Android 导出产物（APK/AAB 不入库，走本地 build/ 目录）
+/build/

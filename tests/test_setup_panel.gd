@@ -115,8 +115,8 @@ func test_notify_system_retired() -> void:
 	assert_false(src.contains("_add_notice_bar"), "通知栏构建函数退役")
 	assert_false(src.contains("_add_switch_grid"), "开关网格构建函数退役")
 	assert_false(src.contains("_add_delimiters"), "分隔线构建函数退役")
-	assert_almost_eq(SetupPanel.FRAME_RECT.size.y, 190.0, 0.01, "弹窗高 190（title+双通道行，五轮）")
-	assert_almost_eq(SetupPanel.FRAME_RECT.position.y, 145.0, 0.01, "垂直居中 (480-190)/2")
+	assert_almost_eq(SetupPanel.FRAME_RECT.size.y, 244.0, 0.01, "弹窗高 244（title+双通道行+GM 行，2026-10-06）")
+	assert_almost_eq(SetupPanel.FRAME_RECT.position.y, 118.0, 0.01, "垂直居中 (480-244)/2")
 	# 五轮实机修正守卫：x 须水平居中=(800-544.53)/2（四轮 208.13 为源 128.13 手误偏右 80 点，
 	# 2026-09-19 实机截图量化检测抓出）。
 	assert_almost_eq(SetupPanel.FRAME_RECT.position.x, 127.74, 0.01, "水平居中 (800-544.53)/2")

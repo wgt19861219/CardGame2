@@ -61,6 +61,15 @@ var _subhead_pre: Label = null
 var _subhead_num: Label = null
 var _subhead_suf: Label = null
 var _subhead_bounce_tween: Tween = null   # refreshSubhead 弹跳 tween（kill 复用）
+var _scroll_layer: ScrollContainer = null  # %GridScroll（拖拽滚动宿主）
+var _drag_state: Dictionary = {}           # DragScrollHelper 跨帧基准
+
+
+# 拖拽滚动（源 dailylogin.lua:634-652 draglist.create 按住拖动即滚）：桌面滚轮原生可用，
+# 按住拖拽/触屏走 DragScrollHelper（2026-10-06 补接线——此前漏接致"签到列表无法下滑"）。
+func _input(event: InputEvent) -> void:
+	if _scroll_layer != null:
+		DragScrollHelper.handle_input(_scroll_layer, event, _drag_state)
 
 
 func setup_panel(p_player: PlayerData) -> void:
@@ -89,6 +98,7 @@ func _build_content() -> void:
 	_subhead_suf = _content.get_node("%SubheadSufLabel") as Label
 	_grid_content = _content.get_node("%GridContent") as Control
 	_reward_bg = _grid_content.get_node("%RewardBg") as NinePatchRect
+	_scroll_layer = _content.get_node("%GridScroll") as ScrollContainer
 	_refresh_view()
 
 

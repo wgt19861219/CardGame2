@@ -261,7 +261,13 @@ func _assemble_self_heroes(attack_lineup: Variant, player: PlayerData) -> Array:
 		var inst_id: int = _find_hero_inst_by_tid(hm, int(tid))
 		if inst_id > 0:
 			var h: Variant = hm.heroes[inst_id]
-			result.append({"_tid": int(h.tid), "_level": int(h.level), "_rank": int(h.rank), "_stars": int(h.stars), "_items": StageManager._hero_items(h)})
+			# _skill_levels/_awake 必传（源 local_server.lua:3233-3242 回包含 _skill_levels；
+			# 漏传致只装 Basic Skill 无大招，同 stage_manager 2026-08-18 修）
+			result.append({
+				"_tid": int(h.tid), "_level": int(h.level), "_rank": int(h.rank),
+				"_stars": int(h.stars), "_items": StageManager._hero_items(h),
+				"_awake": bool(h.awake), "_skill_levels": h.skill_levels_by_slot(),
+			})
 		else:
 			result.append({"_tid": int(tid), "_level": 1})
 	return result

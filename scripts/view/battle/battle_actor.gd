@@ -110,11 +110,15 @@ func update_view(dt: float) -> void:
 			var abs_s: float = absf(scale.x) if scale.x != 0.0 else 1.0
 			var sign_x: float = 1.0 if _velocity.x > 0.0 else -1.0
 			scale = Vector2(sign_x * abs_s, abs_s)
-			_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
-			# 入场到位判定：_walk_pos 接近 _enter_target 时发信号。
+			# 入场/切波到位判定（2026-10-06 根修高速空场）：旧"开环定速位移 + 一次性 5 单位阈值"
+			# 在 3x/4x 下帧步长（10.5/14 logic 单位）> 阈值，越过站位后方向永不重算 → 全员走出
+			# 屏外、enter_walk_finished 永不发射、engine 永久冻结 = 空场只能重开。
+			# 改闭环步长钳制（源 ai.lua walkTo 每帧到达判定思想）：距目标 ≤ max(本帧步长, 阈值)
+			# 即吸附到位；步长永不越过目标。
 			if _enter_target != null:
 				var tgt: Vector2 = Vector2(_enter_target)
-				if _walk_pos.distance_to(tgt) < ENTER_ARRIVE_THRESHOLD:
+				var step: float = _velocity.length() * dt
+				if (_walk_pos - tgt).length() <= maxf(step, ENTER_ARRIVE_THRESHOLD):
 					_walk_pos = tgt
 					_enter_target = null
 					_velocity = Vector2.ZERO
@@ -122,16 +126,11 @@ func update_view(dt: float) -> void:
 						# goto_next_battle 到位：保持离线静止在屏外等切波（不 emit、不切 interp，防被拉回站位）。
 						_hold_offline = false
 					else:
-						# start_enter_walk 到位：清离线态重接 engine interp + emit（_on_actor_enter_done 解冻）。
-						# 锁定到位朝向：engine 解冻首 tick 的 direction 会瞬变（实测 +1 持续 3 帧再回 -1），
-						# 直接映射到 actor scale = 整体翻转 3 帧 = 猛抖。记录到位朝向，interp 首帧用它防翻转。
-						_enter_arrive_dir = 1 if scale.x > 0.0 else -1
-						_offline = false
-						_tick = -1
-						_has_interp = false
-						if puppet != null and puppet.has_method("play_action"):
-							puppet.play_action("Idle", true)
-						enter_walk_finished.emit()
+						_arrive_enter_target()
+				else:
+					_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
+			else:
+				_walk_pos += Vector2(_velocity.x * dt, _velocity.y * dt)
 		position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
 		z_index = -int(_walk_pos.y)
 		if bar_group != null:
@@ -433,6 +432,34 @@ func start_enter_walk(target_logic_pos: Vector2, from_offset: float) -> void:
 	_height = 0.0
 	# 立即定位到场外起点（不等下一帧 update_view）。
 	position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
+
+
+# 入场到位收尾（update_view 闭环判定 + force_arrive 超时兜底共用）：
+# 清离线态重接 engine interp + emit（_on_actor_enter_done 解冻）。
+# 锁定到位朝向：engine 解冻首 tick 的 direction 会瞬变（实测 +1 持续 3 帧再回 -1），
+# 直接映射到 actor scale = 整体翻转 3 帧 = 猛抖。记录到位朝向，interp 首帧用它防翻转。
+func _arrive_enter_target() -> void:
+	_enter_arrive_dir = 1 if scale.x > 0.0 else -1
+	_offline = false
+	_tick = -1
+	_has_interp = false
+	if puppet != null and puppet.has_method("play_action"):
+		puppet.play_action("Idle", true)
+	enter_walk_finished.emit()
+
+
+## 强制到位（超时兜底）：仍在入场态（_enter_target!=null 且非 hold_offline）时吸附到目标
+## 并走正常到位收尾。2026-10-06 高速空场治理：任何原因（如未来再引入的位移 bug）导致
+## enter_walk_finished 不发射时，编排层超时强收，防 engine 永久冻结。
+func force_arrive() -> void:
+	if not _offline or _enter_target == null or _hold_offline:
+		return
+	_walk_pos = Vector2(_enter_target)
+	_enter_target = null
+	_velocity = Vector2.ZERO
+	position = BattleViewCoords.to_view_position(_walk_pos.x, _walk_pos.y, 0.0)
+	z_index = -int(_walk_pos.y)
+	_arrive_enter_target()
 
 
 # 切波走路：玩家走到屏外（target_x）等 advance_wave 切波。puppet Move + velocity 朝右 + offline。

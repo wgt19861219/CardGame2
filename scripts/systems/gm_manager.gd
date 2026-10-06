@@ -22,6 +22,61 @@ const BITS_ID_COUNT: int = 10
 const BITS_AMOUNT_LOW: int = 10
 const BITS_AMOUNT_COUNT: int = 11
 
+# ── 一键测试物资包（2026-10-06 新增，View 层设置弹窗 GM 按钮入口）──
+# 用途：模拟器/真机测试包缺资源没法复测玩法（觉醒要 50 灵魂石、进阶要材料、吃药要有药）。
+const TEST_GOLD: int = 9999999
+const TEST_DIAMOND: int = 999999
+const TEST_VITALITY_ADD: int = 9999
+# 练度：level 90（rank23 套装 LvReq 上限 89 可穿）/ stars 5 / rank 12（金装起点，
+# 穿齐后可一路进阶复测金1~金+5、红~红+4 全链）
+const TEST_HERO_LEVEL: int = 90
+const TEST_HERO_STARS: int = 5
+const TEST_HERO_RANK: int = 12
+const TEST_FRAG_COUNT: int = 99
+# 消耗品：336 章鱼丸子(体60)/289 奥尔良烤翅(体30)/217 孜然羊肉串(体12)——体力药使用链路；
+# 169/218/290/440 经验药四档；390 扫荡券
+const TEST_ITEMS: Dictionary = {
+	336: 99, 289: 99, 217: 99,
+	169: 99, 218: 99, 290: 99, 440: 99,
+	390: 99,
+}
+
+
+## 一键测试物资包：满资源 + 全关卡解锁 + 全英雄（练度拉到金装起点并穿齐装备）+
+## 全英雄专属灵魂石×99 + 消耗品套餐。幂等（重复点只升不降，max 语义）。
+## 返回摘要（View 层 Toast 用）。不落盘——存盘由调用方 GameData.save()。
+static func grant_test_kit(player: PlayerData, cm: ConfigManager) -> Dictionary:
+	player.hero_manager.gold = maxi(player.hero_manager.gold, TEST_GOLD)
+	player.diamond = maxi(player.diamond, TEST_DIAMOND)
+	player.vitality = min(player.vitality + TEST_VITALITY_ADD, VitalityManager.BUY_HARD_CAP)
+	player.team_level = maxi(player.team_level, MAX_UNLOCK_LEVEL)
+	_unlock_all_stages(cm, player.stage_manager)
+	_get_all_heroes(player, cm)
+	for inst_id in player.hero_manager.heroes:
+		var h: HeroInstance = player.hero_manager.heroes[inst_id]
+		h.level = maxi(h.level, TEST_HERO_LEVEL)
+		h.stars = maxi(h.stars, TEST_HERO_STARS)
+		h.rank = maxi(h.rank, TEST_HERO_RANK)
+		# 穿齐当前 rank 配方装备（wear_equip 按 Hero_equip 表穿，不查背包；rank12+ 0 槽自动跳过）
+		for slot in range(HeroManager.EQUIP_SLOT_COUNT):
+			player.hero_manager.wear_equip(int(inst_id), slot)
+		player.hero_manager.recalc_hero_gs(h)
+	var frag_table: Dictionary = cm.get_raw_table("Fragment")
+	var frag_count: int = 0
+	for tid_key in frag_table:
+		var frag_id: int = int(frag_table[tid_key].get("Fragment ID", 0))
+		if frag_id > 0:
+			player.add_item(frag_id, TEST_FRAG_COUNT)
+			frag_count += 1
+	for item_id in TEST_ITEMS:
+		player.add_item(int(item_id), int(TEST_ITEMS[item_id]))
+	_cleanup_non_hero(player, cm)
+	return {
+		"gold": player.hero_manager.gold, "diamond": player.diamond,
+		"heroes": player.hero_manager.heroes.size(),
+		"frag_kinds": frag_count,
+	}
+
 
 static func execute(
 	player: PlayerData, cm: ConfigManager, cmd: Dictionary, stage_mgr: Variant = null

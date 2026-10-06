@@ -239,12 +239,15 @@ func _process(delta: float) -> void:
 		# 入场/切波走路期间冻结 engine（不 step），仅驱动 actor 离线走路推进。
 		# dt × 档位倍率：离线走路位置速度随战斗加速档（源 scene 加速 dt 集中推进整链），
 		# 不放大则 4x 下走路 1.45px/帧 vs 战斗 3.96px/帧 断层（2026-09-05 探针实证）。
+		# dt 钳制 0.1（与 step() 一致，2026-10-06）：加载卡顿巨帧 ×4 倍率 = 巨步长，
+		# 离线走路一次性越过目标曾致全员出屏、engine 永久冻结（高速空场）。
+		var clamped_delta: float = minf(delta, 0.1)
 		if _entering:
 			# 入场窗口技能 CD 照源持续衰减（源切波/进场后 running=true 持续 tick；只推 CD 不推
 			# AI/伤害保入场表现，2026-09-15 小技能不触发根修）。_walking_to_next 不推=源 victory 暂停。
 			for unit in engine.unit_list:
-				BattleUnitUpdate.tick_skill_cd_only(unit, delta * current_speed())
-		_advance_actor_list(delta * current_speed())
+				BattleUnitUpdate.tick_skill_cd_only(unit, clamped_delta * current_speed())
+		_advance_actor_list(clamped_delta * current_speed())
 		return
 	step(delta)
 	_ticks_left -= 1

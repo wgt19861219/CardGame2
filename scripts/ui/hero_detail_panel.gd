@@ -188,7 +188,7 @@ func _bind_signals() -> void:
 	(_base_layer.get_parent().get_node("%CloseBtn") as BaseButton).pressed.connect(_close_panel)
 	_wire_action_button("%GetStoneBtn", evolve_requested, "common_click_feedback")   # +号按钮执行升星（简化偏离源，源 evolve 文字按钮已删）
 	_wire_action_button("%UpgradeRankBtn", upgrade_rank_requested, "common_click_feedback")
-	HeroDetailUpgradeFx.setup_awake_button(_base_layer, hero, cm, AWAKE_LSTR_KEY, AWAKE_FALLBACK_TEXT, func() -> void: awake_requested.emit())
+	HeroDetailUpgradeFx.setup_awake_button(_base_layer, hero, cm, AWAKE_LSTR_KEY, AWAKE_FALLBACK_TEXT, func() -> void: awake_requested.emit(), pd)
 	for key in _tab_buttons:
 		(_tab_buttons[key] as BaseButton).pressed.connect(_on_tab_pressed.bind(key))
 	# 装备进阶入口（左上浮动按钮，非底栏第 4 tab；源 window.lua:902-911 equip_button → doClickEvolveEquip）。
@@ -491,7 +491,8 @@ func perform_awake() -> bool:
 		return false
 	var result: Dictionary = AwakeHelper.awake_hero(pd, hero)
 	if not bool(result.get("ok", false)):
-		AudioPlayer.play_sfx("common_alert")   # 碎片不足或其他校验失败
+		AudioPlayer.play_sfx("common_alert")
+		Toast.show_message(HeroDetailUpgradeFx.awake_fail_text(result, cm))   # 失败给原因（2026-10-06，此前零反馈）
 		return false
 	AudioPlayer.play_sfx("common_hero_upgrade")   # 觉醒成功音效（复用升星音）
 	GameData.save()   # 觉醒即时存（扣50专属碎片+awake=true；本项目碎片觉醒方案，源 protoAwake 死代码）
@@ -499,7 +500,6 @@ func perform_awake() -> bool:
 	return true
 
 
-# 弹觉醒展示弹窗（B），关闭后刷新本面板（按钮隐藏 + stars/gs 等更新）。
 func _show_awake_popup() -> void:
 	if not is_inside_tree():
 		return

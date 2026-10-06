@@ -13,6 +13,7 @@ layout_mode = 3
 anchors_preset = 0
 offset_right = 680.0
 offset_bottom = 56.0
+custom_minimum_size = Vector2(680, 56)
 mouse_filter = 2
 
 [node name="RowBg" type="TextureRect" parent="."]

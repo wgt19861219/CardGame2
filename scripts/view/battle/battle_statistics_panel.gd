@@ -72,10 +72,11 @@ func _build_static(cm: ConfigManager) -> void:
 
 
 # 填英雄行（照源 showPlayBar + setCount）。player/enemy: Array of unit Dictionary。
+# 源 mCNum<=5：单阵营最多 5 行（防 ROWS_Y 越界）。
 func _fill_rows(player: Array, enemy: Array, max_dmg: float, cm: ConfigManager) -> void:
-	for i in player.size():
+	for i in mini(player.size(), ROWS_Y.size()):
 		_create_row(true, i, player[i], max_dmg, cm)
-	for i in enemy.size():
+	for i in mini(enemy.size(), ROWS_Y.size()):
 		_create_row(false, i, enemy[i], max_dmg, cm)
 
 
@@ -95,7 +96,11 @@ func _create_row(is_player: bool, idx: int, unit: Dictionary, max_dmg: float, cm
 		"level": int(unit.get("level", 1)),
 	}, cm)
 	icon.scale = Vector2(ICON_SCALE, ICON_SCALE)
-	icon.position = _local(sprite_x, row_y)
+	# 源 getIcon container anchor(0.5,0.5)=中心定位（readhero.lua:307 未改锚点），_local(sprite_x,row_y)
+	# 是中心点 → Control 左上须再减半缩放盒（45×45 的一半 22.5）。旧值直用中心点致头像中心
+	# 落 (62.5,122.5) 偏右下 22.5pt，数字/伤害条悬在头像上部 = "伤害条整体上移"（2026-10-06 修）。
+	var icon_half: Vector2 = Vector2(ICON_SCALE, ICON_SCALE) * ReadheroIcon.CONTAINER_SIZE * 0.5
+	icon.position = _local(sprite_x, row_y) - icon_half
 	icon.modulate.a = 0.0
 	_hurt_bg.add_child(icon)
 	# mCount Label（源 anchor 0.5,1 底部中心）

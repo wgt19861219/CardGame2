@@ -36,7 +36,8 @@ const SFX_LABEL_TEXT: String = "音效"
 # 双通道加高 150→190（title 14~48 + 背景音乐行 58~113 + 音效行 123~178 + 底距 12），
 # y 垂直居中 (480-190)/2；x 修正 208.13→127.74=(800-544.53)/2（四轮遗留手误：源 128.13
 # 误写 208.13 偏右 80 点，2026-09-19 实机截图量化检测抓出）。
-const FRAME_RECT: Rect2 = Rect2(127.74, 145.0, 544.53, 190.0)
+# 2026-10-06 再加高 190→244：底部 GM 测试物资按钮行（186~228），y=(480-244)/2=118。
+const FRAME_RECT: Rect2 = Rect2(127.74, 118.0, 544.53, 244.0)
 # cap 照 setup.lua：capInsets(11.72,11.72,54.69,23.44)（点单位）＝ 纹理px L15/T15/w70/h30，
 # R=103-15-70=18 / B=61-15-30=16（2026-08-21 修正源引用；2026-08-22 patch ÷CS 观感专项）。
 # patch_margin 须显示点值 = 纹理px÷CS(1.28125) 取整 → L12/T12/R14/B12（2026-09-18 修正：
@@ -60,6 +61,10 @@ const BGM_ROW_Y: float = 58.0
 const SFX_ROW_Y: float = 123.0
 const ROW_HEIGHT: float = 55.0
 const ROW_SEP: int = 12
+# GM 测试物资按钮（DialogConfirmBtn variation 100x42 档，同公会膜拜/觉醒按钮）
+const GM_BTN_TEXT: String = "测试物资"
+const GM_BTN_SIZE: Vector2 = Vector2(100.0, 42.0)
+const GM_BTN_Y: float = 186.0
 const SOUND_ICON_SIZE: Vector2 = Vector2(55.0, 55.0)
 const LABEL_W: float = 86.0
 const PCT_W: float = 48.0
@@ -102,6 +107,33 @@ func _build_content() -> void:
 	_add_title_bar()
 	_add_close_btn()
 	_add_sound_rows()
+	_add_gm_button()
+
+
+# GM 测试物资按钮（2026-10-06 新增，单机测试包配套）：一键发满资源+全英雄满练度+
+# 灵魂石/消耗品（GmManager.grant_test_kit，Logic 幂等 max 语义）。放设置弹窗底部——
+# 单机游戏自用测试入口，普通玩家误点仅影响自身存档无经济风险。
+func _add_gm_button() -> void:
+	var btn := Button.new()
+	btn.text = GM_BTN_TEXT
+	btn.theme_type_variation = &"DialogConfirmBtn"
+	btn.position = Vector2((FRAME_RECT.size.x - GM_BTN_SIZE.x) * 0.5, GM_BTN_Y)
+	btn.size = GM_BTN_SIZE
+	btn.pressed.connect(_on_gm_pressed)
+	_content.add_child(btn)
+
+
+func _on_gm_pressed() -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	var player: PlayerData = GameData.player
+	if player == null:
+		return
+	var r: Dictionary = GmManager.grant_test_kit(player, _cm)
+	GameData.save()   # 资产变更即时落盘（判例：GM/资产类操作必须显式 save）
+	Toast.show_message("测试物资已发放：金币 %s / 钻石 %s / %d 英雄 / %d 种灵魂石" % [
+		String(r.get("gold", 0)), String(r.get("diamond", 0)),
+		int(r.get("heroes", 0)), int(r.get("frag_kinds", 0))])
+	remove_window()
 
 
 func _add_frame() -> void:
