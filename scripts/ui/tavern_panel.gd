@@ -57,10 +57,14 @@ const FALLBACK_TITLE: Dictionary = {
 	"gold": "黄金宝箱",
 	"magic": "魔幻魂匣",
 }
+# 百抽三选一按钮文案（2026-10-07 自创功能，语言包无 key 直接中文，同 FALLBACK_TITLE 口径；
+# 千抽→百抽同日用户再拍板，入口文案随之改）
+const FALLBACK_THOUSAND_LABEL: String = "百抽三选一"
 
 var _cm: Variant = null
 var _player: PlayerData = null
 var _rng: BattleRng = null
+var _thousand_groups: Array = []   # 百抽当前候选组（重选时更新；chosen 结算读此，防重选后 bind 旧数组）
 var _current_pool: String = "Bronze"
 var _boards: Dictionary = {}   # key -> board 节点 Dictionary（tscn 静态节点引用）
 var _content: Control = null
@@ -91,8 +95,20 @@ func _build_content() -> void:
 	_preview_label = _content.get_node("%PreviewLabel") as Label
 	var close_btn: TextureButton = _content.get_node("%CloseBtn") as TextureButton
 	close_btn.pressed.connect(remove_window)
+	_bind_thousand_button()
 	_bind_boards()
 	_refresh_countdown_labels()
+
+
+# 百抽三选一入口（面板顶部常驻，2026-10-07 自创功能；初版千抽同位置）：按钮在 tavern_content.tscn 根级
+# （TitleBg 右侧空区）——魔幻魂匣展开区（Scroll 局部 320-640）被源布局排满到 604，
+# 放 board 内会被 Clip 裁剪不可见（运行时实测 ThousandBuyBtn global y=446 > Clip 底 435）。
+# 百抽免费（用户拍板赠送不耗钻；千抽版免费语义沿袭），无费用行。
+func _bind_thousand_button() -> void:
+	var thousand_btn: TextureButton = _content.get_node_or_null("%ThousandBuyBtn") as TextureButton
+	if thousand_btn != null:
+		(thousand_btn.get_node("ThousandBuyLabel") as Label).text = FALLBACK_THOUSAND_LABEL
+		thousand_btn.pressed.connect(_on_thousand_pressed.bind("MagicSoul"))
 
 
 # 源 createItemLayer:1371：3 board 装配 + 末尾 playLightAnim（源 :1397 gold/magic light 旋转）。
@@ -145,7 +161,8 @@ func _bind_board(key: String, cost_info: Dictionary, texts: Dictionary) -> Dicti
 		once_btn.pressed.connect(_on_once_pressed.bind(key))
 		once_cost_lbl = scroll.get_node("OneCostLabel") as Label
 		once_cost_lbl.text = str(int(cost_info.get("once_cost", 0)))
-	# magic drop_bg 标题（源 drop_day_title :1113 / drop_month_title :1139）
+	# magic drop_bg 标题（源 drop_day_title :1113 / drop_month_title :1139）。
+	# 百抽三选一入口在面板顶部根级（_bind_thousand_button），非 board 内。
 	if key == "MagicSoul":
 		(scroll.get_node("DayTitle") as Label).text = String(texts["day_title"])
 		(scroll.get_node("MonthTitle") as Label).text = String(texts["month_title"])
@@ -398,15 +415,8 @@ func _make_hero_preview_icon(tid: int) -> Control:
 func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten: bool) -> void:
 	# 项目单机化用 Toast（源 toRecharge dialog 的 explaination 文案）。
 	# 单机去 VIP 限制：门禁按特权档（满级）判 → 恒通过，保留结构备 module_switch 类手动关。
-	if tavern_type == "MagicSoul":
-		var ulv: int = VipData.get_area_unlock_vip(MAGIC_VIP_KEY, _cm)
-		if ulv > p_player.privilege_vip_level():
-			var tpl: String = String(_cm.get_lstr("TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE"))
-			if tpl == "TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE":
-				tpl = "VIP等级达到%d级解锁该功能"   # 死分支 fallback 文案（2026-09-17 去充值引导）
-			_result_label.text = tpl % ulv
-			Toast.show_message(tpl % ulv)
-			return
+	if tavern_type == "MagicSoul" and _magic_vip_blocked():
+		return
 	var now: int = int(Time.get_unix_time_from_system())
 	var is_free: bool = TavernData.is_show_free(p_player, tavern_type, now) and (tavern_type == "MagicSoul" or not is_ten)
 	var r: Dictionary = p_player.draw_tavern_full(tavern_type, is_ten, is_free, 0, rng)
@@ -436,6 +446,59 @@ func _on_draw(p_player: PlayerData, rng: BattleRng, tavern_type: String, is_ten:
 	loot_popup.draw_again.connect(func() -> void: _on_draw(p_player, rng, tavern_type, is_ten))
 	loot_popup.show_window(get_parent())
 	drawn.emit()
+	_refresh_countdown_labels()
+
+
+# magic VIP 门禁（单机满级恒过）：拦截时已反馈（label + Toast），返 true。
+# 从 _on_draw 原内联块提取（2026-10-07 百抽入口复用；文案/死分支 fallback 原样保留）。
+func _magic_vip_blocked() -> bool:
+	var ulv: int = VipData.get_area_unlock_vip(MAGIC_VIP_KEY, _cm)
+	if ulv <= _player.privilege_vip_level():
+		return false
+	var tpl: String = String(_cm.get_lstr("TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE"))
+	if tpl == "TAVERN.VIP_LEVEL_TO_D_LEVELS_TO_UNLOCK_THIS_FEATURE_NEED_CHARGE":
+		tpl = "VIP等级达到%d级解锁该功能"   # 死分支 fallback 文案（2026-09-17 去充值引导）
+	_result_label.text = tpl % ulv
+	Toast.show_message(tpl % ulv)
+	return true
+
+
+# 百抽三选一（2026-10-07 自创功能，免费赠送；千抽→百抽同日用户再拍板——千抽 102 格
+# 连弹+循环光效真机过载卡顿）：roll 3 组独立 100 抽结果 →
+# PopTavernThousand 三选一 → 选定组结算入包（chosen 回调），其余作废。
+# 用户拍板「送 1000 抽，不消耗钻石」→ 再拍板「换成一百抽」——无扣费环节，
+# 任务进度按 COMBO_GROUPS 组十连计。
+func _on_thousand_pressed(key: String) -> void:
+	AudioPlayer.play_sfx("common_click_feedback")
+	if key != "MagicSoul" or _magic_vip_blocked():
+		return
+	TavernThousandData.record_thousand_use(_player, _cm)
+	_thousand_groups = TavernThousandData.roll_thousand_groups(_rng, _cm)
+	TavernData.refresh_first_tavern(_player, "MagicSoul", true)
+	GameData.mark_save_dirty()
+	var pick := PopTavernThousand.new("poptaverntousand", {})
+	pick.setup_pick(_thousand_groups, _cm)
+	pick.chosen.connect(_on_thousand_chosen)
+	pick.reroll_requested.connect(_on_thousand_reroll.bind(pick))
+	pick.show_window(get_parent())
+	drawn.emit()
+	_refresh_countdown_labels()
+
+
+# 百抽重选（弹窗"重选"回调，2026-10-07 用户需求：不满意免费重选）：重 roll 3 组回填弹窗，
+# 不关窗。不记任务进度/不动首抽标记（百抽使用只记一次）；候选未选定不入包、不动存档。
+func _on_thousand_reroll(pick: PopTavernThousand) -> void:
+	_thousand_groups = TavernThousandData.roll_thousand_groups(_rng, _cm)
+	pick.update_groups(_thousand_groups)
+
+
+# 选定组结算（弹窗"选定本组"回调）：仅选中组入包（英雄分流/魂石进包见 TavernThousandData）。
+# 读 _thousand_groups 成员——重选后弹窗 chosen 不再携带旧 bind 数组。
+func _on_thousand_chosen(index: int) -> void:
+	TavernThousandData.settle_thousand_group(_player, _thousand_groups[index], _cm)
+	GameData.mark_save_dirty()
+	_result_label.text = "百抽奖励已入包"
+	Toast.show_message("百抽奖励已入包")
 	_refresh_countdown_labels()
 
 

@@ -1,29 +1,29 @@
-[gd_scene format=3 load_steps=4]
+[gd_scene format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_co2ju"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_bg.png" id="2_nvrf0"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_v0wp8"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_jsfww"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_1.png" id="5_xuf1f"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_1.png" id="6_ucvsd"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_bg.png" id="7_wjoon"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="8_rouew"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="9_snvtp"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_up.png" id="10_c88lk"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_frame.png" id="11_xxomj"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="12_e3cr5"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="13_78c8r"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="14_bqemu"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_discount.png" id="15_kev8h"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_3.png" id="16_x1hhd"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_3.png" id="17_dqsuc"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_3.png" id="18_riyse"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="19_ywlmm"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_2.png" id="20_icg6t"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_2.png" id="21_erv2h"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_mark1.png" id="22_v2fam"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_4.png" id="23_olycs"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_hero_bg.png" id="24_cmjlx"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_kj60a"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_title_bg.png" id="2_ejf7n"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="3_l7lks"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="4_fihg6"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_1.png" id="5_bl5xh"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_1.png" id="6_6fpbs"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_bg.png" id="7_08kqv"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_1.png" id="8_crukl"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_2.png" id="9_k6607"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_up.png" id="10_fx3cj"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_cost_frame.png" id="11_qyx7y"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_gold_icon_2.png" id="12_4fgq5"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_1.png" id="13_mteq8"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_button_normal_2.png" id="14_8xqsa"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_ad_discount.png" id="15_5odsc"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_3.png" id="16_8mt0j"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_3.png" id="17_q8s7l"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_3.png" id="18_eg7gc"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_rmb_icon_2.png" id="19_jljvq"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_2.png" id="20_fbi7v"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_light_rotate_2.png" id="21_7681f"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_mark1.png" id="22_ic2da"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_bg_chest_4.png" id="23_myvn6"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_magicsoul_hero_bg.png" id="24_7wi5c"]
 
 [node name="TavernContent" type="Control" unique_id=1366431303]
 layout_mode = 3
@@ -40,7 +40,7 @@ layout_mode = 0
 offset_right = 800.0
 offset_bottom = 480.0
 mouse_filter = 2
-texture = ExtResource("1_co2ju")
+texture = ExtResource("1_kj60a")
 expand_mode = 1
 
 [node name="TitleBg" type="TextureRect" parent="." unique_id=714406429]
@@ -51,7 +51,7 @@ offset_top = 100.0
 offset_right = 329.0
 offset_bottom = 178.0
 mouse_filter = 2
-texture = ExtResource("2_nvrf0")
+texture = ExtResource("2_ejf7n")
 expand_mode = 1
 
 [node name="CloseBtn" type="TextureButton" parent="." unique_id=380668413]
@@ -61,8 +61,8 @@ offset_left = 20.0
 offset_top = 15.0
 offset_right = 78.0
 offset_bottom = 74.0
-texture_normal = ExtResource("3_v0wp8")
-texture_pressed = ExtResource("4_jsfww")
+texture_normal = ExtResource("3_l7lks")
+texture_pressed = ExtResource("4_fihg6")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -119,7 +119,7 @@ offset_top = -45.66
 offset_right = 213.83
 offset_bottom = 365.66
 mouse_filter = 2
-texture = ExtResource("5_xuf1f")
+texture = ExtResource("5_bl5xh")
 expand_mode = 1
 
 [node name="TitleImage" type="TextureRect" parent="BoardHost/BronzeBoard" unique_id=1007077491]
@@ -129,7 +129,7 @@ offset_top = -14.03
 offset_right = 227.49
 offset_bottom = 64.03
 mouse_filter = 2
-texture = ExtResource("2_nvrf0")
+texture = ExtResource("2_ejf7n")
 expand_mode = 1
 
 [node name="Clip" type="Control" parent="BoardHost/BronzeBoard" unique_id=900495070]
@@ -150,7 +150,7 @@ offset_top = 36.0
 offset_right = 163.8
 offset_bottom = 137.2
 mouse_filter = 2
-texture = ExtResource("6_ucvsd")
+texture = ExtResource("6_6fpbs")
 expand_mode = 1
 
 [node name="CostBg" type="TextureRect" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=718141278]
@@ -160,7 +160,7 @@ offset_top = 199.78
 offset_right = 213.58
 offset_bottom = 230.22
 mouse_filter = 2
-texture = ExtResource("7_wjoon")
+texture = ExtResource("7_08kqv")
 expand_mode = 1
 
 [node name="CheckBtn" type="TextureButton" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=894421738]
@@ -169,8 +169,8 @@ offset_left = 44.22
 offset_top = 235.42
 offset_right = 173.78
 offset_bottom = 284.58
-texture_normal = ExtResource("8_rouew")
-texture_pressed = ExtResource("9_snvtp")
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -189,8 +189,8 @@ offset_left = 93.0
 offset_top = 307.9
 offset_right = 125.0
 offset_bottom = 332.1
-texture_normal = ExtResource("10_c88lk")
-texture_pressed = ExtResource("10_c88lk")
+texture_normal = ExtResource("10_fx3cj")
+texture_pressed = ExtResource("10_fx3cj")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -200,7 +200,7 @@ offset_left = 59.0
 offset_top = 391.0
 offset_right = 159.0
 offset_bottom = 423.0
-texture = ExtResource("11_xxomj")
+texture = ExtResource("11_qyx7y")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
@@ -212,7 +212,7 @@ offset_top = 392.56
 offset_right = 80.0
 offset_bottom = 421.44
 mouse_filter = 2
-texture = ExtResource("12_e3cr5")
+texture = ExtResource("12_4fgq5")
 expand_mode = 1
 
 [node name="OneCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1373424684]
@@ -231,8 +231,8 @@ offset_left = 44.22
 offset_top = 425.42
 offset_right = 173.78
 offset_bottom = 474.58
-texture_normal = ExtResource("13_78c8r")
-texture_pressed = ExtResource("14_bqemu")
+texture_normal = ExtResource("13_mteq8")
+texture_pressed = ExtResource("14_8xqsa")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -251,7 +251,7 @@ offset_left = 59.0
 offset_top = 516.0
 offset_right = 159.0
 offset_bottom = 548.0
-texture = ExtResource("11_xxomj")
+texture = ExtResource("11_qyx7y")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
@@ -263,7 +263,7 @@ offset_top = 518.56
 offset_right = 80.0
 offset_bottom = 547.44
 mouse_filter = 2
-texture = ExtResource("12_e3cr5")
+texture = ExtResource("12_4fgq5")
 expand_mode = 1
 
 [node name="TenCostLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1507580542]
@@ -291,8 +291,8 @@ offset_left = 44.22
 offset_top = 555.42
 offset_right = 173.78
 offset_bottom = 604.58
-texture_normal = ExtResource("8_rouew")
-texture_pressed = ExtResource("9_snvtp")
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -312,7 +312,7 @@ offset_top = -2.79
 offset_right = 50.17
 offset_bottom = 47.16
 mouse_filter = 2
-texture = ExtResource("15_kev8h")
+texture = ExtResource("15_5odsc")
 expand_mode = 1
 
 [node name="AdLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1376952347]
@@ -325,8 +325,7 @@ theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-
-[node name="CountLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll"]
+[node name="CountLabel" type="Label" parent="BoardHost/BronzeBoard/Clip/Scroll" unique_id=1286201571]
 layout_mode = 0
 offset_left = 12.0
 offset_top = 203.0
@@ -335,7 +334,6 @@ offset_bottom = 227.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
 
 [node name="TitleLabel" type="Label" parent="BoardHost/BronzeBoard" unique_id=1289199094]
 layout_mode = 0
@@ -363,7 +361,7 @@ offset_top = -45.66
 offset_right = 213.83
 offset_bottom = 365.66
 mouse_filter = 2
-texture = ExtResource("16_x1hhd")
+texture = ExtResource("16_8mt0j")
 expand_mode = 1
 
 [node name="TitleImage" type="TextureRect" parent="BoardHost/GoldBoard" unique_id=1760138209]
@@ -373,7 +371,7 @@ offset_top = -14.03
 offset_right = 227.49
 offset_bottom = 64.03
 mouse_filter = 2
-texture = ExtResource("2_nvrf0")
+texture = ExtResource("2_ejf7n")
 expand_mode = 1
 
 [node name="Clip" type="Control" parent="BoardHost/GoldBoard" unique_id=287758110]
@@ -394,7 +392,7 @@ offset_top = -99.86
 offset_right = 258.47
 offset_bottom = 199.86
 mouse_filter = 2
-texture = ExtResource("17_dqsuc")
+texture = ExtResource("17_q8s7l")
 expand_mode = 1
 
 [node name="Box" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=997184363]
@@ -404,7 +402,7 @@ offset_top = 36.0
 offset_right = 163.8
 offset_bottom = 137.2
 mouse_filter = 2
-texture = ExtResource("18_riyse")
+texture = ExtResource("18_eg7gc")
 expand_mode = 1
 
 [node name="CostBg" type="TextureRect" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=789391611]
@@ -414,7 +412,7 @@ offset_top = 199.78
 offset_right = 213.58
 offset_bottom = 230.22
 mouse_filter = 2
-texture = ExtResource("7_wjoon")
+texture = ExtResource("7_08kqv")
 expand_mode = 1
 
 [node name="CheckBtn" type="TextureButton" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=251012909]
@@ -423,8 +421,8 @@ offset_left = 44.22
 offset_top = 235.42
 offset_right = 173.78
 offset_bottom = 284.58
-texture_normal = ExtResource("8_rouew")
-texture_pressed = ExtResource("9_snvtp")
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -443,8 +441,8 @@ offset_left = 93.0
 offset_top = 307.9
 offset_right = 125.0
 offset_bottom = 332.1
-texture_normal = ExtResource("10_c88lk")
-texture_pressed = ExtResource("10_c88lk")
+texture_normal = ExtResource("10_fx3cj")
+texture_pressed = ExtResource("10_fx3cj")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -454,7 +452,7 @@ offset_left = 59.0
 offset_top = 391.0
 offset_right = 159.0
 offset_bottom = 423.0
-texture = ExtResource("11_xxomj")
+texture = ExtResource("11_qyx7y")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
@@ -466,7 +464,7 @@ offset_top = 391.55
 offset_right = 80.39
 offset_bottom = 422.45
 mouse_filter = 2
-texture = ExtResource("19_ywlmm")
+texture = ExtResource("19_jljvq")
 expand_mode = 1
 
 [node name="OneCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=287382776]
@@ -485,8 +483,8 @@ offset_left = 44.22
 offset_top = 425.42
 offset_right = 173.78
 offset_bottom = 474.58
-texture_normal = ExtResource("13_78c8r")
-texture_pressed = ExtResource("14_bqemu")
+texture_normal = ExtResource("13_mteq8")
+texture_pressed = ExtResource("14_8xqsa")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -505,7 +503,7 @@ offset_left = 59.0
 offset_top = 516.0
 offset_right = 159.0
 offset_bottom = 548.0
-texture = ExtResource("11_xxomj")
+texture = ExtResource("11_qyx7y")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
@@ -517,7 +515,7 @@ offset_top = 517.55
 offset_right = 80.39
 offset_bottom = 548.45
 mouse_filter = 2
-texture = ExtResource("19_ywlmm")
+texture = ExtResource("19_jljvq")
 expand_mode = 1
 
 [node name="TenCostLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=358934272]
@@ -545,8 +543,8 @@ offset_left = 44.22
 offset_top = 555.42
 offset_right = 173.78
 offset_bottom = 604.58
-texture_normal = ExtResource("8_rouew")
-texture_pressed = ExtResource("9_snvtp")
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -566,7 +564,7 @@ offset_top = -2.79
 offset_right = 50.17
 offset_bottom = 47.16
 mouse_filter = 2
-texture = ExtResource("15_kev8h")
+texture = ExtResource("15_5odsc")
 expand_mode = 1
 
 [node name="AdLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=1461616965]
@@ -579,8 +577,7 @@ theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-
-[node name="CountLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll"]
+[node name="CountLabel" type="Label" parent="BoardHost/GoldBoard/Clip/Scroll" unique_id=637252874]
 layout_mode = 0
 offset_left = 12.0
 offset_top = 203.0
@@ -589,7 +586,7 @@ offset_bottom = 227.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
+
 [node name="TitleLabel" type="Label" parent="BoardHost/GoldBoard" unique_id=312689771]
 layout_mode = 0
 offset_left = -18.76
@@ -616,7 +613,7 @@ offset_top = -45.66
 offset_right = 213.83
 offset_bottom = 365.66
 mouse_filter = 2
-texture = ExtResource("20_icg6t")
+texture = ExtResource("20_fbi7v")
 expand_mode = 1
 
 [node name="TitleImage" type="TextureRect" parent="BoardHost/MagicBoard" unique_id=221989622]
@@ -626,7 +623,7 @@ offset_top = -14.03
 offset_right = 227.49
 offset_bottom = 64.03
 mouse_filter = 2
-texture = ExtResource("2_nvrf0")
+texture = ExtResource("2_ejf7n")
 expand_mode = 1
 
 [node name="Clip" type="Control" parent="BoardHost/MagicBoard" unique_id=370540872]
@@ -647,7 +644,7 @@ offset_top = -79.86
 offset_right = 259.47
 offset_bottom = 219.86
 mouse_filter = 2
-texture = ExtResource("21_erv2h")
+texture = ExtResource("21_7681f")
 expand_mode = 1
 
 [node name="BoxBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1432372900]
@@ -657,7 +654,7 @@ offset_top = -16.64
 offset_right = 212.64
 offset_bottom = 188.64
 mouse_filter = 2
-texture = ExtResource("22_v2fam")
+texture = ExtResource("22_ic2da")
 expand_mode = 1
 
 [node name="Box" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1407587223]
@@ -667,7 +664,7 @@ offset_top = 36.0
 offset_right = 163.8
 offset_bottom = 137.2
 mouse_filter = 2
-texture = ExtResource("23_olycs")
+texture = ExtResource("23_myvn6")
 expand_mode = 1
 
 [node name="CostBg" type="TextureRect" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=986323506]
@@ -677,7 +674,7 @@ offset_top = 199.78
 offset_right = 214.58
 offset_bottom = 230.22
 mouse_filter = 2
-texture = ExtResource("7_wjoon")
+texture = ExtResource("7_08kqv")
 expand_mode = 1
 
 [node name="CheckBtn" type="TextureButton" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=1299396009]
@@ -686,8 +683,8 @@ offset_left = 45.22
 offset_top = 235.42
 offset_right = 174.78
 offset_bottom = 284.58
-texture_normal = ExtResource("8_rouew")
-texture_pressed = ExtResource("9_snvtp")
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -706,8 +703,8 @@ offset_left = 94.0
 offset_top = 307.9
 offset_right = 126.0
 offset_bottom = 332.1
-texture_normal = ExtResource("10_c88lk")
-texture_pressed = ExtResource("10_c88lk")
+texture_normal = ExtResource("10_fx3cj")
+texture_pressed = ExtResource("10_fx3cj")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -717,7 +714,7 @@ offset_left = 17.0
 offset_top = 105.0
 offset_right = 147.0
 offset_bottom = 155.0
-texture = ExtResource("24_cmjlx")
+texture = ExtResource("24_7wi5c")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
@@ -729,7 +726,7 @@ offset_left = 150.0
 offset_top = 105.0
 offset_right = 200.0
 offset_bottom = 155.0
-texture = ExtResource("24_cmjlx")
+texture = ExtResource("24_7wi5c")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
@@ -741,7 +738,7 @@ offset_left = 32.0
 offset_top = 412.5
 offset_right = 182.0
 offset_bottom = 487.5
-texture = ExtResource("24_cmjlx")
+texture = ExtResource("24_7wi5c")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
@@ -763,7 +760,7 @@ offset_left = 32.0
 offset_top = 334.5
 offset_right = 182.0
 offset_bottom = 409.5
-texture = ExtResource("24_cmjlx")
+texture = ExtResource("24_7wi5c")
 patch_margin_left = 8
 patch_margin_top = 27
 patch_margin_right = 27
@@ -785,7 +782,7 @@ offset_left = 60.0
 offset_top = 516.0
 offset_right = 160.0
 offset_bottom = 548.0
-texture = ExtResource("11_xxomj")
+texture = ExtResource("11_qyx7y")
 patch_margin_left = 40
 patch_margin_top = 10
 patch_margin_right = 82
@@ -797,7 +794,7 @@ offset_top = 517.55
 offset_right = 80.39
 offset_bottom = 548.45
 mouse_filter = 2
-texture = ExtResource("19_ywlmm")
+texture = ExtResource("19_jljvq")
 expand_mode = 1
 
 [node name="TenCostLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=977201076]
@@ -825,8 +822,8 @@ offset_left = 45.22
 offset_top = 555.42
 offset_right = 174.78
 offset_bottom = 604.58
-texture_normal = ExtResource("8_rouew")
-texture_pressed = ExtResource("9_snvtp")
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
 ignore_texture_size = true
 stretch_mode = 0
 
@@ -849,8 +846,7 @@ theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-
-[node name="CountLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll"]
+[node name="CountLabel" type="Label" parent="BoardHost/MagicBoard/Clip/Scroll" unique_id=161371176]
 layout_mode = 0
 offset_left = 13.0
 offset_top = 203.0
@@ -859,7 +855,7 @@ offset_bottom = 227.0
 theme_type_variation = &"BodyLabelThin"
 horizontal_alignment = 1
 vertical_alignment = 1
-mouse_filter = 2
+
 [node name="TitleLabel" type="Label" parent="BoardHost/MagicBoard" unique_id=1636461306]
 layout_mode = 0
 offset_left = -18.76
@@ -867,5 +863,26 @@ offset_top = -31.37
 offset_right = 224.76
 offset_bottom = 51.37
 theme_type_variation = &"TavernBoardTitleLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ThousandBuyBtn" type="TextureButton" parent="." unique_id=1816783606]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 650.0
+offset_top = 14.0
+offset_right = 779.56
+offset_bottom = 63.17
+texture_normal = ExtResource("8_crukl")
+texture_pressed = ExtResource("9_k6607")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="ThousandBuyLabel" type="Label" parent="ThousandBuyBtn" unique_id=1800983026]
+layout_mode = 0
+offset_right = 129.56
+offset_bottom = 49.17
+theme_type_variation = &"BodyLabel"
+text = "千抽三选一"
 horizontal_alignment = 1
 vertical_alignment = 1
