@@ -74,6 +74,25 @@ func apply(hero: Variant) -> void:
 	if skillskyfire:
 		skillskyfire.hero_hooks["takeEffectAt"] = Callable(self, "_skillskyfire_take_effect_at")
 		skillskyfire.hero_hooks["power"] = Callable(self, "_skillskyfire_power")
+	# 球组合校验（源 energyball.lua:174 canCastSkill 在源中定义完备但调用点丢失——AI 不查球
+	# 时 P10 旋风 CD=0 独占施法队列饿死普攻/其他技能，能量球系统空转；2026-10-07 实机
+	# "只会吹风"根修：球不匹配 → can_cast 返 false → AI fall through 普攻投球，闭环恢复）。
+	# skill_condition 由 hero_kael.gd apply 先行赋值（键=球技能组 ID 530-539）。
+	for sid in hero.skill_condition:
+		var balls_skill: Variant = hero.skills.get(sid)
+		if balls_skill:
+			balls_skill.hero_hooks["canCastWithTarget"] = Callable(self, "_ballskill_can_cast_with_target")
+
+
+## 球技能施法判定：default（MP/CD/距离等）通过后再查球组合（源 canCastSkill 语义，
+## cond 为空的非球技能不经此 hook）。球不匹配返 {ok:false} → AI 轮到下一技能（普攻）。
+func _ballskill_can_cast_with_target(skill: Variant, p_target: Variant) -> Dictionary:
+	var r: Dictionary = skill._can_cast_with_target_default(p_target)
+	if not bool(r.get("ok", false)):
+		return r
+	if not bool(skill.caster.energy_ball_manager.can_cast_skill(skill)):
+		return {"ok": false, "reason": "balls"}
+	return r
 
 
 # ===== 投放球辅助（源 Kael.lua local 函数）=====
@@ -130,10 +149,10 @@ static func _auto_tap_ball(kael: Variant) -> void:
 			if s != null:
 				s.occupied = true
 				ball["tapped"] = true
-				if bool(kael.ai_mode):
-					_tap_ball(kael, [int(ball.get("idx", 0)), int(pair[1])])
-				elif bool(kael.auto_combat):
-					BattleEngineBall.manual_tap_ball(kael.engine, ball.get("deliverer"), int(ball.get("idx", 0)), int(pair[1]), true)
+				# auto_combat 分支同走 _tap_ball 实时拾球（源 auto_combat 调 engine:manualTapBall
+				# 只记 operation_list 回放流、实时拾球本就靠 tapBall 路径；本项目回放未实装，
+				# 旧接 manual_tap_ball 空桩致 auto_combat 拾球不生效，2026-10-07 一并接通）
+				_tap_ball(kael, [int(ball.get("idx", 0)), int(pair[1])])
 
 
 # ===== 技能 hook =====
