@@ -1,6 +1,7 @@
 extends GutTest
 # GmManager.grant_test_kit 一键测试物资包测试（2026-10-06，设置弹窗 GM 按钮配套）。
-# 用途：模拟器测试包新号缺资源没法复测玩法（觉醒 50 碎片/进阶材料/体力药）。
+# 2026-10-07 瘦身：仅金币/钻石/体力 999/消耗品，去掉等级/关卡/全英雄/灵魂石——
+# 断言覆盖"给了什么"与"不再给什么"两侧。
 
 var cm: ConfigManager
 
@@ -14,49 +15,46 @@ func _new_player() -> PlayerData:
 	return PlayerData.new(cm)
 
 
-func test_grant_test_kit_full_package() -> void:
+func test_grant_test_kit_package() -> void:
 	var pd := _new_player()
-	var r: Dictionary = GmManager.grant_test_kit(pd, cm)
-	# 资源
+	var heroes_before: int = pd.hero_manager.heroes.size()
+	var progress_before: int = pd.stage_manager.progress.size()
+	var max_normal_before: int = pd.stage_manager.max_normal
+	var items_before: int = pd.items.size()
+	var r: Dictionary = GmManager.grant_test_kit(pd)
+	# 给了：金币/钻石/体力 999
 	assert_eq(pd.hero_manager.gold, GmManager.TEST_GOLD, "金币拉满")
 	assert_eq(pd.diamond, GmManager.TEST_DIAMOND, "钻石拉满")
-	assert_eq(pd.vitality, 9999, "体力攒体 9999 硬上限")
-	assert_eq(pd.team_level, GmManager.MAX_UNLOCK_LEVEL, "战队等级 80")
-	# 全英雄 + 练度（54 英雄，Unit 表 Hero+Portrait 口径）
-	assert_eq(pd.hero_manager.heroes.size(), 54, "全英雄 54")
-	var coco: HeroInstance = null
-	for inst_id in pd.hero_manager.heroes:
-		var h: HeroInstance = pd.hero_manager.heroes[inst_id]
-		if h.tid == 1:
-			coco = h
-		assert_eq(h.level, 90, "tid=%d level 90" % h.tid)
-		assert_eq(h.stars, 5, "tid=%d stars 5" % h.tid)
-		assert_eq(h.rank, 12, "tid=%d rank 12（金装起点）" % h.tid)
-	assert_not_null(coco, "船长（tid=1）在列")
-	if coco != null:
-		var worn: int = 0
-		for slot in coco.equip_slots:
-			if int(slot) > 0:
-				worn += 1
-		assert_eq(worn, 5, "rank12 穿 5 配方槽（槽1 无配方跳过）")
-	# 测试道具：专属灵魂石（tid1→124）+ 体力药 + 扫荡券
-	assert_eq(int(pd.items.get(124, 0)), 99, "船长灵魂石 124×99（觉醒 50 够）")
+	assert_eq(pd.vitality, 999, "体力保底 999")
+	# 给了：消耗品 8 种 ×99（体力药 3 + 经验药 4 + 扫荡券 1）
+	assert_eq(pd.items.size(), items_before + 8, "消耗品新增 8 种（新号默认 8 种初始物品）")
 	assert_eq(int(pd.items.get(336, 0)), 99, "章鱼丸子×99")
+	assert_eq(int(pd.items.get(289, 0)), 99, "奥尔良烤翅×99")
+	assert_eq(int(pd.items.get(217, 0)), 99, "孜然羊肉串×99")
+	assert_eq(int(pd.items.get(169, 0)), 99, "经验药水×99")
+	assert_eq(int(pd.items.get(218, 0)), 99, "经验奶油×99")
+	assert_eq(int(pd.items.get(290, 0)), 99, "芝士经验×99")
+	assert_eq(int(pd.items.get(440, 0)), 99, "顶级经验药×99")
 	assert_eq(int(pd.items.get(390, 0)), 99, "扫荡券×99")
-	# 关卡解锁（stage_manager 由 PlayerData 构造自带）
-	assert_true(pd.stage_manager.progress.size() > 0, "普通+精英关全 3 星解锁")
-	assert_eq(pd.stage_manager.max_normal, GmManager.MAX_NORMAL_STAGES, "max_normal 解锁")
+	# 不再给：战队等级/关卡/英雄/灵魂石（对照 2026-10-06 旧版行为）
+	assert_eq(pd.team_level, 1, "战队等级不动（新号仍 1）")
+	assert_eq(pd.hero_manager.heroes.size(), heroes_before, "英雄数不变")
+	assert_eq(pd.stage_manager.progress.size(), progress_before, "关卡进度不变")
+	assert_eq(pd.stage_manager.max_normal, max_normal_before, "max_normal 不变")
+	assert_eq(int(pd.items.get(124, 0)), 0, "不发灵魂石（船长 124）")
 	# 返回摘要
-	assert_eq(int(r.get("heroes", 0)), 54, "摘要含英雄数")
+	assert_eq(int(r.get("vitality", 0)), 999, "摘要含体力")
 
 
 func test_grant_test_kit_idempotent_max_semantics() -> void:
-	# 幂等（max 只升不降）：已有更高资源不回退；重复点击安全
+	# 幂等（max 只升不降）：已有更高资源不回退；重复点击安全（物品叠加可再点）
 	var pd := _new_player()
 	pd.hero_manager.gold = 99999999   # 高于 TEST_GOLD
-	GmManager.grant_test_kit(pd, cm)
+	pd.vitality = 5000                # 高于 TEST_VITALITY
+	GmManager.grant_test_kit(pd)
 	assert_eq(pd.hero_manager.gold, 99999999, "已有更高金币不回退（max 语义）")
-	var before: int = pd.hero_manager.heroes.size()
-	GmManager.grant_test_kit(pd, cm)
-	assert_eq(pd.hero_manager.heroes.size(), before, "重复发放英雄数不变")
-	assert_eq(int(pd.items.get(124, 0)), 99 + 99, "碎片累加（add_item 叠加，可再点）")
+	assert_eq(pd.vitality, 5000, "已有更高体力不回退（max 语义）")
+	var heroes_before: int = pd.hero_manager.heroes.size()
+	GmManager.grant_test_kit(pd)
+	assert_eq(pd.hero_manager.heroes.size(), heroes_before, "重复发放英雄数不变")
+	assert_eq(int(pd.items.get(336, 0)), 99 + 99, "消耗品累加（add_item 叠加，可再点）")

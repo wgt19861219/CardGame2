@@ -14,6 +14,21 @@ const COMBO_GROUPS: int = 10               # 百抽 = 10 组十连（10×10 = 10
 const CHOICE_COUNT: int = 3                # 候选结果组数（三选一）
 const HERO_ID_MAX: int = 100               # 英雄 id 上限（对齐 player_data._settle_tavern_loot 口径）
 const STONE_AMOUNT_MAX: int = 3            # 每抽魂石数量上限（对齐热点版每位 rand(1,3) 量级）
+# 百抽已用标记 key（2026-10-07 用户需求：选定后入口按钮消失，防免费无限重复领）。
+# 借宿 pd.tavern_record 嵌套 dict：player_data.gd 代码行已顶 300/300 上限不可加字段；
+# 值必须是 dict——serde from_dict 对非 Dictionary 值有损坏守卫会跳过，平铺 bool 存档往返即丢。
+# "ThousandPick" 不与 box 键（Bronze/Gold/MagicSoul）冲突。
+const USED_FLAG_KEY: String = "ThousandPick"
+
+
+## 百抽是否已选定（一次性赠送语义：选定一组结算后入口按钮隐藏，终身一次）。
+static func is_thousand_used(pd: PlayerData) -> bool:
+	return int(pd.tavern_record.get(USED_FLAG_KEY, {}).get("used", 0)) == 1
+
+
+## 选定结算后置位。重选不置位——候选未选定不入包，不消耗这一次性资格。
+static func mark_thousand_used(pd: PlayerData) -> void:
+	pd.tavern_record[USED_FLAG_KEY] = {"used": 1}
 
 
 ## 百抽任务进度（TavernGroupUse 按 COMBO_GROUPS 组十连计，对齐逐次十连口径；抽卡行为发生了）。
