@@ -4,7 +4,7 @@ extends GutTest
 
 var cm: ConfigManager
 
-const ELITE_SID: int = 10001      # Stage 表精英关（Daily Limit=3，Vitality Cost=12）
+const ELITE_SID: int = 10001      # Stage 表精英关（Daily Limit=30，Vitality Cost=12）
 const NORMAL_SID: int = 1         # 普通关（Daily Limit=0 不计）
 const TS_DAY1_NOON: int = 1800000000
 const TS_DAY2_NOON: int = TS_DAY1_NOON + 86400
@@ -31,7 +31,7 @@ func test_record_accumulates() -> void:
 	var pd := PlayerData.new(cm)
 	StageManager._record_stage_limit(pd, ELITE_SID, 1)
 	StageManager._record_stage_limit(pd, ELITE_SID, 2)   # 扫荡 2 次合并计
-	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 3, "累加到 3（= Daily Limit 封顶线）")
+	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 3, "累加 1+2=3（累加器不封顶，放行由 UI 比对 Daily Limit）")
 
 
 # ---- sweep 路径（真实调用链：扫荡 N 次 → stage_limit +N）----
