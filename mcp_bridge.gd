@@ -22,8 +22,27 @@ const PROTOCOL_VERSION := "1.0"
 # A2 (2026-09-16 反馈批): 脚本分发版本指纹 —— 与 package.json version 同步(由
 # scripts/version-sync.mjs 的 bridgeGd target 管理,勿手改)。ping 响应与 registry entry
 # 均回传,MCP server 侧与 bundled 版本比对,项目内旧版拷贝未同步一眼可辨(send_drag 五踩根因)。
-const BRIDGE_SCRIPT_VERSION := "0.33.9"
+const BRIDGE_SCRIPT_VERSION := "0.34.1"
 const INACTIVITY_TIMEOUT := 60.0
+# 批次2(2026-10-04 幂等层,对齐 unity-mcp-server queue-transport):requestId 去重表 ——
+# 客户端超时后按原 requestId 重试(而非按命令重试),命中缓存直接回首次响应,杜绝
+# "lost acknowledgement → 写操作重复执行"(Godot 卡主线程:编译/场景切换造成超时歧义)。
+# 覆盖面 = 同步响应命令(set_node_property/call_method 同步/custom.*);__DEFERRED__ 五条
+# 延迟通道(playtest.step/step_until/input_seq/await call_method/click real_event)响应
+# 推送点分散不缓存——⚠️ B-1(审查修复):call_method await_completion 承载任意业务副作用
+# 且超时概率最高,TS 侧对其**不发幂等键**(game-bridge.ts isAwaitCallMethod),超时指引走
+# "必须先核实"降级文案,防"承诺去重而实际重复执行"的假承诺。
+const IDEMPOTENCY_CACHE_MAX := 256
+const IDEMPOTENCY_TTL_MS := 120000
+# 桥能力声明 —— auth 成功响应与 ping 响应均回传,TS 侧零往返能力协商
+# (旧版 bridge 无此字段 → TS 视为不支持,自动退回现行为,滚动兼容零破坏)。
+const BRIDGE_CAPABILITIES: Array[String] = ["registry-heartbeat", "idempotent-v1"]
+
+# 批次3(2026-10-04): 自身文件内容 SHA-256 指纹(字节级,读 res:// 原始字节)——
+# 版本号指纹检测不到"项目内 mcp_bridge.gd 被手改"造成的漂移,内容指纹补位。
+var _script_fingerprint := ""
+# 批次2: requestId -> {"result": Variant, "error": Dictionary, "at_ms": int}
+var _idempotency_cache: Dictionary = {}
 
 # ─── Instance Registry (Phase 2b) ─────────────────────────────────────────
 const REGISTRY_HEARTBEAT_INTERVAL := 30.0
@@ -39,6 +58,9 @@ var _peer_buffers: Dictionary = {}
 var _authenticated_peers: Dictionary = {}
 var _auth_fail_count: Dictionary = {}
 var _auth_locked_until: Dictionary = {}
+# 3A (2026-09-19 安全加固批3): challenge-response 握手的 per-peer 待验证 challenge
+# (peer_id -> String)。auth_begin 生成,auth_proof 消费(成功/断开即清)。
+var _auth_challenges: Dictionary = {}
 var _secret: String = ""
 var _secret_file: String = ""
 var _crypto: Crypto = null
@@ -206,6 +228,21 @@ func _ready() -> void:
 	# 豁免:任一 GODOT_MCP_BRIDGE_* 显式注入(与 buildSafeEnv 透传域一致)=调试意图,强制开启。
 	if not OS.has_feature("editor") and OS.has_feature("release") and _no_bridge_env():
 		return
+	# 批次3(2026-10-04): 自身文件字节级 SHA-256(读 res:// 原始字节,与 TS 侧对 bundled
+	# 文件的 createHash('sha256') 同源比对;install 是字节级 copyFileSync,两边字节一致)。
+	# 读失败(打包形态异常等)留空串 —— ping 响应回传空指纹,TS 侧跳过比对不误报。
+	# API 注(2026-10-04 探针实测):PackedByteArray 无 sha256() 方法(Parse Error),
+	# 用 HashingContext(与 _crypto.hmac_digest 同族枚举);get_script().resource_path
+	# 需显式 String 标注(推断失败同为 Parse Error)——check:gdscript 的 --import 对
+	# 未被场景/autoload 引用的脚本不触发 load 期 parse,此类错误只有真跑探针能抓。
+	var script_path: String = get_script().resource_path
+	if script_path != "" and FileAccess.file_exists(script_path):
+		var script_bytes := FileAccess.get_file_as_bytes(script_path)
+		if script_bytes.size() > 0:
+			var hctx := HashingContext.new()
+			hctx.start(HashingContext.HASH_SHA256)
+			hctx.update(script_bytes)
+			_script_fingerprint = hctx.finish().hex_encode()
 	# CMP-2 (2026-08-08): 注册 runtime error 捕获(在 _start_server 前,确保任何启动错误也被捕)。
 	_error_capture = _ErrorCapture.new()
 	OS.add_logger(_error_capture)
@@ -322,6 +359,7 @@ func _process(delta: float) -> void:
 		# 断开即清零是 per-peer 的预期行为(peer id 每连接不同), LOCKOUT 仅减速带, 非主防线。
 		_auth_fail_count.erase(pid)
 		_auth_locked_until.erase(pid)
+		_auth_challenges.erase(pid)  # 3A: 断开即弃 challenge(单连接单次有效)
 		_peers.remove_at(i)
 
 	# ─── P2-4 playtest.step pending:每帧递减 frames_remaining,到 0 时 push 响应 ──
@@ -728,6 +766,17 @@ func _constant_time_compare(a: String, b: String) -> bool:
 		result = result | (ord(a[i]) ^ ord(b[i]))
 	return result == 0
 
+# 3A (2026-09-19 批3 真机实测修复): challenge-response proof 专用恒时比较——HMAC hex
+# 恒 64 字符,_constant_time_compare 的 SECRET_LEN=32 硬编码(bridge secret 专用)会把
+# 合法 proof 长度不等直接判 false(editor 侧真机首测兑现,TS mock 同构测不出)。
+func _constant_time_compare_varlen(a: String, b: String) -> bool:
+	if a.length() != b.length():
+		return false
+	var result := 0
+	for i in range(a.length()):
+		result = result | (ord(a[i]) ^ ord(b[i]))
+	return result == 0
+
 # DUPLICATE: Keep in sync with addons/godot_mcp_server/websocket_server.gd:_generate_secret
 # Cannot share because editor plugin and game autoload have separate script contexts.
 func _generate_secret() -> String:
@@ -993,10 +1042,45 @@ func _process_buffer_bytes(peer: StreamPeerTCP, pid: int) -> bool:
 			var incoming_secret: String = ""
 			if parsed is Dictionary and parsed.get("params") is Dictionary:
 				incoming_secret = str(parsed["params"].get("secret", ""))
+			# 3A (2026-09-19 安全加固批3): challenge-response 握手——secret 不上线路。
+			# auth_begin: 发随机 challenge(per-peer 单次,不断连);auth_proof: HMAC-SHA256
+			# (secret, challenge) 恒时比较。旧 method=auth 明文通道保留(下分支,旧 TS 兼容)。
+			# 假监听者先占端口只能收到 HMAC(对单次 challenge 有效),拿不到 secret 本身。
+			if parsed is Dictionary and parsed.get("method") == "auth_begin":
+				var cr_challenge: String = _crypto.generate_random_bytes(16).hex_encode()
+				_auth_challenges[pid] = cr_challenge
+				peer.put_data((JSON.stringify({"id": parsed.get("id"), "result": {"challenge": cr_challenge}}) + "\n").to_utf8_buffer())
+				continue
+			if parsed is Dictionary and parsed.get("method") == "auth_proof":
+				if not _auth_challenges.has(pid):
+					peer.put_data((JSON.stringify({"id": null, "error": {"code": -32001, "message": "No pending challenge; send auth_begin first"}}) + "\n").to_utf8_buffer())
+					peer.disconnect_from_host()
+					_peer_buffers[key] = raw
+					return true
+				# HMAC-SHA256(secret, challenge) hex —— key/msg 均 UTF-8 bytes,输出小写 hex(与 TS 侧 createHmac 对齐)
+				var cr_expected: String = _crypto.hmac_digest(HashingContext.HASH_SHA256, _secret.to_utf8_buffer(), String(_auth_challenges[pid]).to_utf8_buffer()).hex_encode()
+				var cr_provided: String = str(parsed.get("params", {}).get("proof", ""))
+				if _constant_time_compare_varlen(cr_provided, cr_expected):
+					_authenticated_peers[pid] = true
+					_auth_challenges.erase(pid)
+					_auth_fail_count.erase(pid)
+					peer.put_data((JSON.stringify({"id": parsed.get("id"), "result": _auth_ok_result()}) + "\n").to_utf8_buffer())
+					continue
+				else:
+					var cr_fails: int = int(_auth_fail_count.get(pid, 0)) + 1
+					_auth_fail_count[pid] = cr_fails
+					if cr_fails >= MAX_AUTH_FAILS:
+						var cr_lockout: float = minf(LOCKOUT_BASE_SECONDS * pow(2.0, (float(cr_fails) / MAX_AUTH_FAILS) - 1.0), LOCKOUT_MAX_SECONDS)
+						_auth_locked_until[pid] = Time.get_ticks_msec() / 1000.0 + cr_lockout
+					peer.put_data((JSON.stringify({"id": null, "error": {"code": -32001, "message": "Authentication failed"}}) + "\n").to_utf8_buffer())
+					peer.disconnect_from_host()
+					_peer_buffers[key] = raw
+					return true
 			if parsed is Dictionary and parsed.get("method") == "auth" and _constant_time_compare(incoming_secret, _secret):
 				_authenticated_peers[pid] = true
+				_auth_challenges.erase(pid)
 				_auth_fail_count.erase(pid)
-				peer.put_data((JSON.stringify({"id": parsed.get("id"), "result": {"authenticated": true}}) + "\n").to_utf8_buffer())
+				peer.put_data((JSON.stringify({"id": parsed.get("id"), "result": _auth_ok_result()}) + "\n").to_utf8_buffer())
 				continue
 			else:
 				var fails: int = int(_auth_fail_count.get(pid, 0)) + 1
@@ -1087,6 +1171,27 @@ func _handle_message(raw: String, pid: int) -> String:
 	if msg.get("params") is Dictionary:
 		params = msg["params"]
 
+	# 批次2(2026-10-04 幂等层): requestId 去重 —— 客户端超时后按原身份重试(而非按命令
+	# 重试),命中缓存直接回首次响应(用当前请求的 id 组装,JSON-RPC id 每次重试会变),
+	# 杜绝写命令重复执行。命中响应标记 idempotentHit=true 供客户端区分。
+	var request_id := str(msg.get("requestId", ""))
+	if request_id != "" and _idempotency_cache.has(request_id):
+		var cached: Dictionary = _idempotency_cache[request_id]
+		if Time.get_ticks_msec() - int(cached["at_ms"]) <= IDEMPOTENCY_TTL_MS:
+			if cached["error"].is_empty():
+				var hit_result: Variant = cached["result"]
+				if hit_result is Dictionary:
+					hit_result = (hit_result as Dictionary).duplicate()
+					hit_result["idempotentHit"] = true
+				return JSON.stringify({"id": id, "result": hit_result})
+			else:
+				# N-5(审查): error 命中同样标记 idempotentHit(与 result 命中对称——TS 当前不消费,信息级)
+				var hit_error: Dictionary = (cached["error"] as Dictionary).duplicate()
+				hit_error["idempotentHit"] = true
+				return JSON.stringify({"id": id, "error": hit_error})
+		else:
+			_idempotency_cache.erase(request_id)  # 过期即弃,不回陈旧响应
+
 	var result: Variant = null
 	var error: Dictionary = {}
 
@@ -1103,6 +1208,10 @@ func _handle_message(raw: String, pid: int) -> String:
 			result = _cmd_get_node_properties(params)
 		"get_node_layout":
 			result = _cmd_get_node_layout(params)
+		"dump_layout_tree":
+			result = _cmd_dump_layout_tree(params)
+		"get_font_report":
+			result = _cmd_get_font_report(params)
 		"set_node_property":
 			result = _cmd_set_node_property(params)
 		"call_method":
@@ -1210,11 +1319,37 @@ func _handle_message(raw: String, pid: int) -> String:
 		var _payload: Dictionary = result.duplicate()
 		_payload.erase("__deferred__")
 		_deferred = {"kind": str(result["__deferred__"]), "id": id, "payload": _payload}
+		# 延迟通道不入幂等缓存(响应推送点分散在 _process/协程;见常量区批次2注释)
 		return "__DEFERRED__"
+	if request_id != "":
+		_cache_idempotent_response(request_id, result, error)
 	if error.is_empty():
 		return JSON.stringify({"id": id, "result": result})
 	else:
 		return JSON.stringify({"id": id, "error": error})
+
+
+## 批次2: 写入幂等缓存(含 LRU/TTL 维护)——Dictionary 保持插入序,超上限时先清过期、
+## 仍超则按插入序逐条删最旧(最近命中不续期:保持"首次响应"语义简单可预测)。
+func _cache_idempotent_response(request_id: String, result: Variant, error: Dictionary) -> void:
+	if _idempotency_cache.size() >= IDEMPOTENCY_CACHE_MAX:
+		var now_ms := Time.get_ticks_msec()
+		for k in _idempotency_cache.keys():
+			if now_ms - int(_idempotency_cache[k]["at_ms"]) > IDEMPOTENCY_TTL_MS:
+				_idempotency_cache.erase(k)
+		while _idempotency_cache.size() >= IDEMPOTENCY_CACHE_MAX:
+			_idempotency_cache.erase(_idempotency_cache.keys()[0])
+	_idempotency_cache[request_id] = {"result": result, "error": error, "at_ms": Time.get_ticks_msec()}
+
+
+# 批次2(2026-10-04): auth 成功响应统一组装 —— 附带桥能力声明,TS 侧零往返能力协商
+# (旧 TS 只检查 result.authenticated,新字段向后兼容;旧 GD 无此字段,新 TS 视为无能力)。
+func _auth_ok_result() -> Dictionary:
+	return {
+		"authenticated": true,
+		"bridgeVersion": BRIDGE_SCRIPT_VERSION,
+		"capabilities": BRIDGE_CAPABILITIES.duplicate(),
+	}
 
 
 # ─── Command implementations ────────────────────────────────────────────────
@@ -1229,6 +1364,8 @@ func _cmd_ping() -> Dictionary:
 		"pong": true,
 		"version": PROTOCOL_VERSION,
 		"bridgeVersion": BRIDGE_SCRIPT_VERSION,
+		"capabilities": BRIDGE_CAPABILITIES.duplicate(),
+		"scriptFingerprint": _script_fingerprint,
 		"scene": scene_path,
 		"fps": Engine.get_frames_per_second(),
 		"pid": OS.get_process_id(),
@@ -1619,6 +1756,161 @@ func _cmd_get_node_layout(params: Dictionary) -> Variant:
 	if player_mode:
 		_project_dict(node, data)  # P7: layout 键(position/global_position/...)过字段规则
 	return {"layout": data, "node": path}
+
+
+# ── 布局审计能力 A (2026-09-21)：整树控件坐标表导出 ──────────────────────────
+# 参考 TMXYH5 client/_probe.gd _collect()（三期 152+ 例视觉巡检验证：坐标级数值
+# 审计零假阳性 vs 整图视觉判读高误报）。设计态 .tscn 文本 rect 不含 anchors
+# 解算结果，比对无意义——导出走运行态 global 坐标。命名避开 get_node_layout
+# （已有：单节点布局快照）；本 method 是整树批量导出，配合 analysis.layout_compare。
+# 隐藏层单独分组（"内容态隐藏"与"真缺失"两类性质，混判必误报）；重名 _2 后缀
+# 平铺（比对最小单元是 名字→rect）；相对化（global→皮肤根）交给比对工具 rebase。
+
+func _cmd_dump_layout_tree(params: Dictionary) -> Variant:
+	var path: String = str(params.get("path", "/root"))
+	var max_depth: int = _int_guarded(params.get("max_depth"), 32)
+	var visible_only: bool = bool(params.get("visible_only", false))
+	var node := get_node_or_null(path)
+	if not is_instance_valid(node):
+		return {"error": {"code": -1, "message": "Node not found: %s" % path}}
+	var controls: Dictionary = {}
+	var hidden: Dictionary = {}
+	if node is Control:
+		_collect_layout(node, controls, hidden, 0, max_depth, visible_only)
+	else:
+		for ch in node.get_children():
+			if ch is Control:
+				_collect_layout(ch, controls, hidden, 1, max_depth, visible_only)
+	return {
+		"controls": controls,
+		"hidden": hidden,
+		"meta": {
+			"root": path, "visible_count": controls.size(), "hidden_count": hidden.size(),
+			"visible_only": visible_only, "max_depth": max_depth,
+		},
+	}
+
+
+func _collect_layout(c: Control, out: Dictionary, hid: Dictionary,
+		depth: int, max_depth: int, visible_only: bool) -> void:
+	if depth > max_depth:
+		return
+	# 分组口径 = 自身 visible（参考 _probe.gd："内容态隐藏"指自身标志——皮肤数据态
+	# 如售罄章 imgSellOut.visible=false）；visible_only 口径 = 视觉（父隐藏整棵剪枝，
+	# is_visible_in_tree 等价）。两口径有意不同：父隐藏但自身 visible=true 的子控件
+	# 进 controls（数据态正常），在 visible_only 下被剪（视觉不可见）——见
+	# test/layout-audit-e2e.test.ts E2E-1。
+	if not c.visible and visible_only:
+		return
+	if not c.is_queued_for_deletion():
+		var target := out if c.visible else hid
+		# 重名后缀循环消解（审查 N-1）：加 _2 后仍可能撞原生同名控件（树里本就
+		# 有 Foo_2 时一次性改名会静默覆盖原生条目），故 while 直至空位。
+		var nm: String = c.name
+		var base_nm := nm
+		var n := 1
+		while target.has(nm):
+			n += 1
+			nm = "%s_%d" % [base_nm, n]
+		var gp: Vector2 = c.global_position
+		# roundi 而非 int() 截断（TMXYH5 交叉验证两者差 1px，round 更准）
+		target[nm] = [roundi(gp.x), roundi(gp.y), roundi(c.size.x), roundi(c.size.y)]
+	for ch in c.get_children():
+		if ch is Control:
+			_collect_layout(ch, out, hid, depth + 1, max_depth, visible_only)
+
+
+# ── 布局审计能力 C (2026-09-21)：子树 Label 字体度量报表 ─────────────────────
+# 跨引擎迁移「字体不居中」第一步诊断：Egret 按字形 ink 高度居中 vs Godot 按行盒
+# (ascent+descent) 居中，中文字形 ink 集中行盒上部 → 垂直偏上。ink 度量走
+# TextServer.font_get_glyph_index / font_get_glyph_size / font_get_glyph_offset
+# （2026-09-22 审查实测 Godot 4.6.3：Font 类无 get_glyph_size/get_glyph_index，
+# 方案原稿 API 名有误；正确路径在 TextServer 上，font_rid 从 Font.get_rids() 取，
+# get_primary_server 在 4.6 已更名 get_primary_interface，glyph 度量的 size 参数
+# 是 Vector2i(font_size, outline_size) 而非 int——三处签名均经探针实测）。
+# 字段口径：ink_gap_top = (line_height-ink_height)/2 理论留白（假设 ink 行盒内
+# 对称，跨引擎粗对齐口径）；ink_center_shift = ink 中心-行盒中心（负=偏上，union
+# 盒口径：ink 范围=min/max 聚合全部字形的 offset.y~offset.y+size.y，混排字形下
+# 仍为真实 ink 范围），后者即"文字实际偏上量"直接可读。
+
+func _cmd_get_font_report(params: Dictionary) -> Variant:
+	var path: String = str(params.get("path", "/root"))
+	var max_depth: int = _int_guarded(params.get("max_depth"), 32)
+	var node := get_node_or_null(path)
+	if not is_instance_valid(node):
+		return {"error": {"code": -1, "message": "Node not found: %s" % path}}
+	var ts: TextServer = TextServerManager.get_primary_interface()
+	var reports: Array = []
+	_collect_font_report(node, ts, reports, 0, max_depth)
+	return {"labels": reports, "meta": {"root": path, "count": reports.size()}}
+
+
+func _collect_font_report(node: Node, ts: TextServer, reports: Array, depth: int, max_depth: int) -> void:
+	if depth > max_depth:
+		return
+	if node is Label and not node.is_queued_for_deletion():
+		reports.append(_label_font_metrics(node, ts))
+	for ch in node.get_children():
+		_collect_font_report(ch, ts, reports, depth + 1, max_depth)
+
+
+func _label_font_metrics(label: Label, ts: TextServer) -> Dictionary:
+	var font := label.get_theme_font("font")
+	# Label 的字号主题项键是 "font_size"（font 键对应 Font 资源；写错键会静默拿默认 16）
+	var font_size: int = label.get_theme_font_size("font_size")
+	var entry: Dictionary = {
+		"name": label.name,
+		"text": label.text.substr(0, 32),
+		"font_size": font_size,
+		"h_align": label.horizontal_alignment,
+		"v_align": label.vertical_alignment,
+	}
+	if font == null:
+		entry["font_source"] = "none"
+		return entry
+	# override → theme → 引擎默认的生效顺序由 get_theme_font 内部处理；fallback 链
+	# （SystemFont 内部多字体/FontFile fallbacks）引擎归因不可见，统一标 "theme"
+	entry["font_source"] = "override" if label.has_theme_font_override("font") else "theme"
+	if font is SystemFont:
+		entry["font_names"] = font.font_names
+	elif font is FontFile:
+		entry["font_names"] = ["(font_file)"]
+	else:
+		entry["font_names"] = [font.get_font_name()]
+	var line_height: float = font.get_height(font_size)
+	entry["line_height"] = snappedf(line_height, 0.1)
+	var rids: Array = font.get_rids()
+	if ts == null or rids.is_empty() or label.text.is_empty():
+		entry["ink_height"] = null
+		entry["ink_gap_top"] = null
+		entry["ink_center_shift"] = null
+		return entry
+	var font_rid: RID = rids[0]
+	var fsize := Vector2i(font_size, 0)  # glyph 度量 API 的 size 参数是 (font_size, outline_size) 对
+	# union 盒口径（审查 N-2）：ink 顶取 min(offset.y)、ink 底取 max(offset.y+size.y)——
+	# 混排字形（含下伸部 g/p、全半角）时各字形 offset/size 不一致，"最高顶"与"最高
+	# 字形高度"混用会产生数 px 偏差；union 盒才是整段文字的真实 ink 范围。
+	var ink_top: float = 1e9   # ink 顶相对 baseline（y 向上为负）
+	var ink_bottom: float = -1e9  # ink 底相对 baseline
+	for i in mini(label.text.length(), 16):
+		var code: int = label.text.unicode_at(i)
+		var glyph: int = ts.font_get_glyph_index(font_rid, font_size, code, 0)
+		var gsize: Vector2 = ts.font_get_glyph_size(font_rid, fsize, glyph)
+		var goffset: Vector2 = ts.font_get_glyph_offset(font_rid, fsize, glyph)
+		ink_top = minf(ink_top, goffset.y)
+		ink_bottom = maxf(ink_bottom, goffset.y + gsize.y)
+	var ink_h: float = ink_bottom - ink_top
+	if ink_h <= 0.0:
+		entry["ink_height"] = null
+		entry["ink_gap_top"] = null
+		entry["ink_center_shift"] = null
+		return entry
+	var ascent: float = font.get_ascent(font_size)
+	entry["ink_height"] = snappedf(ink_h, 0.1)
+	entry["ink_gap_top"] = snappedf((line_height - ink_h) / 2.0, 0.1)
+	var ink_top_in_line: float = ascent + ink_top
+	entry["ink_center_shift"] = snappedf((ink_top_in_line + ink_h / 2.0) - line_height / 2.0, 0.1)
+	return entry
 
 
 func _cmd_set_node_property(params: Dictionary) -> Variant:

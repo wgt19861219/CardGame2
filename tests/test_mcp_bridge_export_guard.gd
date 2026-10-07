@@ -43,6 +43,17 @@ func test_exempt_env_keys_covered() -> void:
 
 
 func test_guard_version_bumped() -> void:
+	# 2026-10-06：bridge 随插件升级（game_bridge_install force 同步 bundled 0.34.1），
+	# 守卫由精确锁 0.33.9 改为 >= 0.33.9（EXPORT-1 防静默回退的原始意图不变）。
 	var src := _bridge_source()
-	assert_true(src.find("BRIDGE_SCRIPT_VERSION := \"0.33.9\"") != -1,
-		"bridge 版本 0.33.9（EXPORT-1 随版引入，防旧版静默回退）")
+	var marker := "BRIDGE_SCRIPT_VERSION := \""
+	var ver_pos := src.find(marker)
+	assert_true(ver_pos != -1, "BRIDGE_SCRIPT_VERSION 指纹存在")
+	if ver_pos == -1:
+		return
+	var ver_start := ver_pos + marker.length()
+	var ver_end := src.find("\"", ver_start)
+	var ver := src.substr(ver_start, ver_end - ver_start)
+	var parts := ver.split(".")
+	var ok := parts.size() == 3 and int(parts[0]) * 10000 + int(parts[1]) * 100 + int(parts[2]) >= 3309
+	assert_true(ok, "bridge 版本 >= 0.33.9（EXPORT-1 随版引入，当前 %s，防旧版静默回退）" % ver)

@@ -19,6 +19,10 @@ const REWARD_ITEM := "Item"
 const CRUSADE_POINT_MULTIPLIER: int = 10
 const CHEST_BOX_COIN_DEFAULT: int = 50
 const CHEST_BOX_COIN_MAP: Dictionary = {1: 50, 2: 100, 3: 200, 4: 100, 5: 200, 6: 400}
+# 通关钻石（2026-10-06 用户指示受控增强，五轮提额 ×10：通关第 N 关发 N×100 钻〔100~1500，
+# 整趟 12000 钻/日〕，随重置重复发放——源无此产出〔源通关奖励全在宝箱〕，单机化钻石产出
+# 补强；发放挂宝箱领取链 take_clear_diamond 与宝箱奖励同弹窗展示）。
+const CLEAR_DIAMOND_PER_STAGE: int = 100
 const AI_NAMES: Array[String] = [
 	"暗影猎手", "龙骑士", "风暴法师", "圣光骑士", "血魔领主",
 	"冰霜女王", "烈焰术士", "大地守卫", "幽灵刺客", "雷霆战神",
@@ -40,6 +44,20 @@ var sfx_hook: Callable = Callable()
 
 func _init(cm: ConfigManager = null) -> void:
 	config = cm
+
+
+## 通关钻石数额（第 N 关 N×CLEAR_DIAMOND_PER_STAGE，用户指示递增档；发放见 finalizer）。
+static func clear_diamond_amount(stage: int) -> int:
+	return stage * CLEAR_DIAMOND_PER_STAGE
+
+
+## 领取通关钻石（2026-10-06 五轮改版：用户指示「不要 Toast，直接放奖励弹窗里」——发放
+## 时机从 finalizer 通关瞬间挪到宝箱领取链〔面板层调用〕，与宝箱奖励同弹窗展示；每关一次
+## 由 rewarded_stages 领取标记天然保证，重置后再通关再领再发）。
+func take_clear_diamond(stage: int, player: PlayerData) -> int:
+	var diamonds := clear_diamond_amount(stage)
+	player.diamond += diamonds
+	return diamonds
 
 ## 战斗结算：保存 HP/MP 百分比，胜利推进下一层。
 func fight(won: bool, hp_perc_map: Dictionary, mp_perc_map: Dictionary, stage: int = -1) -> bool:
