@@ -62,6 +62,8 @@ static func finalize_crusade(scene) -> void:
 	var r: Dictionary = CrusadeBattle.finalize_crusade_battle(mgr, scene.engine)
 	var won: bool = bool(r.get("won", false))
 	if won:
+		# 通关钻石（2026-10-06 用户指示受控增强：第 N 关 N×10 钻）已随五轮改版挪至宝箱
+		# 领取链发放展示（CrusadeManager.take_clear_diamond，宝箱弹窗同窗显示）——此处不再发。
 		GameData.pending_crusade = {"won": true}
 	else:
 		var hero_tids: Array[int] = []

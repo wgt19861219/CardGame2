@@ -114,3 +114,33 @@ func test_finalize_win_advances_and_persists() -> void:
 	if bool(r["won"]):
 		assert_eq(mgr.cur_stage, 2, "胜利推进下一层")
 		assert_true(mgr.is_stage_cleared(1), "stage 1 标记通关")
+
+
+# 通关钻石（2026-10-06 用户指示受控增强，五轮改版）：第 N 关 N×10 钻递增；
+# 发放挂宝箱领取链（take_clear_diamond），随重置重复发放。
+func test_clear_diamond_amount_incremental() -> void:
+	assert_eq(CrusadeManager.clear_diamond_amount(1), 100, "第 1 关 100 钻（五轮提额 ×10）")
+	assert_eq(CrusadeManager.clear_diamond_amount(15), 1500, "第 15 关 1500 钻")
+	assert_eq(CrusadeManager.CLEAR_DIAMOND_PER_STAGE, 100, "每关基数 100 钻（用户拍板递增档×10 提额）")
+
+
+func test_take_clear_diamond_grants() -> void:
+	var mgr := CrusadeManager.new(cm)
+	var pd := PlayerData.new(cm)
+	var before: int = pd.diamond
+	var granted: int = mgr.take_clear_diamond(3, pd)
+	assert_eq(granted, 300, "第 3 关返发放数额 300")
+	assert_eq(pd.diamond, before + 300, "钻石入账 +300")
+
+
+# finalizer 防双发守卫（源码级）：通关瞬间不再发钻石（五轮改版挪至宝箱领取链），
+# finalizer 若回潮加发放将与领取链双发。
+func test_finalizer_no_clear_diamond_grant_guard() -> void:
+	var f := FileAccess.open("res://scripts/view/battle/battle_scene_finalizer.gd", FileAccess.READ)
+	assert_not_null(f, "finalizer 源码可读")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+	assert_false(src.contains("diamond += "), "finalizer 不发放钻石（发放唯一入口=take_clear_diamond 领取链）")
+	assert_false(src.contains("Toast.show_message"), "finalizer 无 Toast 反馈（用户指示钻石入弹窗展示）")

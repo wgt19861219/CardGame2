@@ -265,6 +265,26 @@ static func _lstr(cm: Variant, key: String, fallback: String) -> String:
 	return fallback
 
 
+# 奖励槽反馈文案：ChestBox/CrusadePoint 按源 local_server getCrusadeReward 折算口径
+# 显示远征币（与 BattleRewardPopup 弹窗、apply_rewards 入账三方一致；2026-10-06 弹窗
+# 修复配套，panel LINT005 400 行下沉）。
+static func slot_text(s: Dictionary) -> String:
+	var stype: String = String(s.get("type", ""))
+	var amount: int = int(s.get("amount", 0))
+	if stype == "diamond":
+		return "钻石×" + str(amount)
+	if stype == "ChestBox":
+		var coins: int = int(CrusadeManager.CHEST_BOX_COIN_MAP.get(int(s.get("id", 0)), CrusadeManager.CHEST_BOX_COIN_DEFAULT))
+		return "远征币×" + str(coins * CrusadeManager.CRUSADE_POINT_MULTIPLIER)
+	if stype == "CrusadePoint":
+		return "远征币×" + str(amount * CrusadeManager.CRUSADE_POINT_MULTIPLIER)
+	if stype == "gold":
+		return "金币×" + str(amount)
+	if stype == "Item":
+		return "道具×" + str(amount)
+	return stype + "×" + str(amount)
+
+
 # ── 未通关宝箱悬停预览浮层（源 initRewardUI crusade.lua:247-297 + 声明 crusadeconfig.lua:1101-1198）──
 # 2026-08-22 巡检重做：旧 result_label 文本降级。Scale9 main_vit_tips 底中
 # (400,280)（源 ccp(400,200) anchor(0.5,0)），行 y：金币 h-20 / 随机宝箱 h-55 /
@@ -286,12 +306,15 @@ static func build_reward_preview(host: Control, slots: Array, cm: Variant) -> Co
 	var item_id: int = 0
 	var item_amt: int = 0
 	for s in slots:
+		# 2026-10-06 修复：Type 键为 CrusadeRewards 表原始口径（"ChestBox"/"Item"/"gold"，
+		# 实测表内仅 ChestBox/CrusadePoint；旧小写 "chestbox"/"item" 恒不匹配致浮窗内容全空。
+		# CrusadePoint 源预览不显示（initRewardUI 仅 gold/chestbox/item 三行），保持。
 		match String(s.get("type", "")):
 			"gold":
 				gold = int(s["amount"])
-			"chestbox":
+			"ChestBox":
 				has_box = true
-			"item":
+			"Item":
 				item_id = int(s.get("id", 0))
 				item_amt = int(s["amount"])
 	var has_item: bool = item_id > 0
@@ -306,7 +329,7 @@ static func build_reward_preview(host: Control, slots: Array, cm: Variant) -> Co
 	_add_label(layer, str(gold), Vector2(115.0, h - 20.0))
 	if has_box:
 		_add_sprite_row(layer, REWARD_RANDOM_ICON_RES, Vector2(40.0, h - 55.0), 0.5)
-		_add_label(layer, _lstr(cm, LSTR_RANDOM_REWARD, "神秘的奖励"), Vector2(115.0, h - 55.0))
+		_add_label(layer, _lstr(cm, LSTR_RANDOM_REWARD, "神秘奖励"), Vector2(115.0, h - 55.0))
 	if has_item:
 		_add_label(layer, _lstr(cm, LSTR_ITEM_REWARD, "本关奖励"), Vector2(85.0, h - 90.0))
 		var stone_host := Control.new()

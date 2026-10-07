@@ -245,13 +245,19 @@ func _apply_box_reward(stage: int) -> void:
 		result_label.text = "第 " + str(stage) + " 关 不可领"
 		return
 	player.crusade_manager.apply_rewards(slots, player, rng)
+	# 通关钻石（2026-10-06 用户指示：并入宝箱弹窗展示，钻石行置首；发放挂领取链，
+	# 每关一次由 rewarded 标记保证）。
+	var diamonds: int = player.crusade_manager.take_clear_diamond(stage, player)
+	var show_slots: Array = [{"type": "diamond", "amount": diamonds}]
+	show_slots.append_array(slots)
 	_bounce_box_at(stage - 1, REWARD_SCALE_PEAK, REWARD_DURATION)
 	var reward_text: String = ""
-	for s in slots:
-		reward_text += String(s["type"]) + "×" + str(s["amount"]) + " "
+	for s in show_slots:
+		# 2026-10-06：反馈文案与弹窗/入账折算口径一致（旧裸 type "ChestBox×1" 直出）。
+		reward_text += CrusadeFills.slot_text(s) + " "
 	result_label.text = "第 " + str(stage) + " 关 奖励：" + reward_text
 	var reward_popup := BattleRewardPopup.new("crusadeReward", {})
-	reward_popup.setup_rewards(slots, player.cm)
+	reward_popup.setup_rewards(show_slots, player.cm)
 	reward_popup.show_window(get_parent())
 	_refresh_stage_states()
 

@@ -477,8 +477,50 @@ func test_box_pressed_passed_claim_reward() -> void:
 	panel.player.crusade_manager.cleared_stages[1] = true
 	panel._on_box_pressed(1)
 	assert_true(panel.result_label.text.contains("第 1 关"), "点 passed 状态 box 触发领奖流程（源 hintBox :399-405）")
+	# 2026-10-06 修复回归守卫：领奖必须弹 BattleRewardPopup（旧只断文案不断弹窗，
+	# 弹窗视觉残缺漏网，用户报"点击宝箱没有奖励弹窗"）。
+	var popup_count: int = 0
+	var popup: BattleRewardPopup = null
+	for c in root.get_children():
+		if c is BattleRewardPopup:
+			popup_count += 1
+			popup = c as BattleRewardPopup
+	assert_eq(popup_count, 1, "领奖弹出 BattleRewardPopup（源 showRewardResult）")
+	# 五轮改版守卫：通关钻石并入弹窗展示（钻石行置首，不再 Toast）。
+	if popup != null:
+		var texts: Array = []
+		_collect_labels(popup._reward_host, texts)
+		assert_true(texts.has("x100"), "通关钻石行显示（第 1 关 100 钻）")
+		assert_true(texts.has("x1000"), "ChestBox 折算远征币行显示（id1 → 50×10）")
+		assert_true(panel.result_label.text.contains("钻石×100"), "反馈文案含钻石")
+	assert_eq(panel.player.diamond, 100, "通关钻石随领取入账")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 未通关宝箱预览浮窗（源 initRewardUI :247-297 三行：gold/神秘奖励/物品）。
+# 2026-10-06 修复回归守卫：Type 键表口径为 "ChestBox"/"Item"（旧小写 "chestbox"/"item"
+# 恒不匹配，浮窗内容全空只剩背景+"0"）。
+func test_box_preview_shows_mystery_row() -> void:
+	var root := Node.new()
+	add_child(root)
+	var panel := _make_panel(root, 1)
+	panel.player.crusade_manager.cur_stage = 1
+	panel._on_box_pressed(1)
+	assert_not_null(panel._reward_preview, "视野内未通关宝箱点击弹预览浮层（源 hintBoxDown）")
+	if panel._reward_preview != null:
+		var texts: Array = []
+		_collect_labels(panel._reward_preview, texts)
+		assert_true(texts.has("神秘奖励"), "ChestBox 槽位显示神秘奖励行（源 MYSTERIOUS_REWARD）")
+	panel.remove_window()
+	root.queue_free()
+
+
+func _collect_labels(node: Node, out: Array) -> void:
+	if node is Label:
+		out.append((node as Label).text)
+	for c in node.get_children():
+		_collect_labels(c, out)
 
 
 func test_box_pressed_rewarded_blocked() -> void:
