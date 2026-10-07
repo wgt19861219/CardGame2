@@ -26,6 +26,40 @@ KEY_TABLES = [
 # 已知差异白名单（差异路径前缀 → 原因）——渐进建立，初版为空
 _WHITELIST: dict[str, str] = {}
 
+# 字段级白名单（(表, 字段) → (原因, 预期 lua 值, 预期 json 值)）：批量有意偏离源且涉及
+# id 众多（逐条列前缀不现实）时用。值对不匹配仍报差异，防未来源/JSON 意外漂移被掩盖。
+_FIELD_WHITELIST: dict[tuple[str, str], tuple[str, object, object]] = {
+    # 2026-10-07 用户指示：精英关（ID≥10000，源值全为 3）每日进入次数 3→30（151 关），
+    # 有意偏离源。注意：重跑 tools/build_data.py 再生成 Stage.json 会覆盖回 3，需重施。
+    ("Stage", "Daily Limit"): ("精英关每日次数 3→30（用户指示，151 关有意偏离源）", 3, 30),
+}
+
+# 2026-10-07 方案 B（用户拍板）：Hero_equip rank 12-23 空槽（源 lua 原生 0）填 2.0 基件
+# 8 件轮转（其余 16 件属性全 0 系合成材料不进表，见审查报告-装备进阶图标梳理-2026-10-07）。
+# 条件白名单：lua 值为 0 且 json 值在基件集合内才算有意填充；其他值差异仍报漂移。
+_HERO_EQUIP_FILL_IDS = frozenset({442, 445, 448, 451, 454, 457, 460, 463})
+_HERO_EQUIP_FILL_NAMES = frozenset({
+    "equip.2.0.0.113", "equip.2.0.0.118", "equip.2.0.0.123", "equip.2.0.0.128",
+    "equip.2.0.0.133", "equip.2.0.0.138", "equip.2.0.0.143", "equip.2.0.0.148",
+})
+
+
+def _is_hero_equip_fill(table: str, path: str, lv: object, jv: object) -> bool:
+    """Hero_equip rank≥12 空槽的方案 B 填充判定（tid.rank.field 三段路径）。"""
+    if table != "Hero_equip":
+        return False
+    parts = path.split(".")
+    if len(parts) != 3:
+        return False
+    _tid, rank_s, field = parts
+    if not rank_s.isdigit() or int(rank_s) < 12:
+        return False
+    if field.endswith(" ID"):
+        return _scalar_eq(lv, 0) and isinstance(jv, int) and jv in _HERO_EQUIP_FILL_IDS
+    if field.startswith("Equip"):
+        return lv == "0" and isinstance(jv, str) and jv in _HERO_EQUIP_FILL_NAMES
+    return False
+
 # 程序生成段（JSON 由独立工具生成，Lua 源是代码生成非字面 return，parse_file 静态
 # 解析不出）——对比前从 JSON 顶层排除匹配 key，避免误报「JSON 有 Lua 无」。
 # 这些段的数值正确性由生成工具自身 + build_data --check（段齐全）守，非本工具职责。
@@ -129,6 +163,14 @@ def main(argv: list[str]) -> int:
         wl_count = 0
         new_diffs: list[tuple[str, object, object]] = []
         for path, lv, jv in diffs:
+            if _is_hero_equip_fill(table, path, lv, jv):
+                wl_count += 1
+                continue
+            field = path.rsplit(".", 1)[-1].split("[", 1)[0]
+            fw = _FIELD_WHITELIST.get((table, field))
+            if fw is not None and _scalar_eq(lv, fw[1]) and _scalar_eq(jv, fw[2]):
+                wl_count += 1
+                continue
             reason = _is_whitelisted(path)
             if reason:
                 wl_count += 1

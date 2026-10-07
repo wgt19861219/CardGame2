@@ -381,15 +381,38 @@ func test_sweep_count_limit_semantics() -> void:
 	assert_eq(normal_panel._sweep_count_limit(), 999, "Daily Limit=0 → 999（源 countLimit==0 分支）")
 	normal_panel.remove_window()
 	var elite_panel := _make_3star_panel(10001)
-	assert_eq(elite_panel._sweep_count_limit(), 3, "Daily Limit=3 → 剩余次数 3-0=3")
+	assert_eq(elite_panel._sweep_count_limit(), 30, "Daily Limit=30 → 剩余次数 30-0=30")
 	elite_panel.remove_window()
 
 
 func test_sweep_some_times_elite_stage_not_regressed() -> void:
-	# 精英关 10001 Daily Limit=3：N=min(剩余 3,3)=3，修复不回归有上限关卡
+	# 精英关 10001 Daily Limit=30：N=min(剩余 30, cap 10)=10（批量按钮上限用户拍板 10，2026-10-07）
 	var panel := _make_3star_panel(10001)
-	assert_eq(panel._daily_limit(), 3, "精英关 Daily Limit=3")
-	assert_eq(panel._sweep_some_times("elite"), 3, "精英关 N=min(3,3)=3")
+	assert_eq(panel._daily_limit(), 30, "精英关 Daily Limit=30")
+	assert_eq(panel._sweep_some_times("elite"), 10, "精英关 N=min(30,10)=10（cap=SWEEP_DEFAULT_ELITE）")
+	panel.remove_window()
+
+
+# 剩余次数刷新回归守卫（2026-10-07 修）：实显数字在 CountTitle 拼接文本
+# （CountNumber tscn 默认隐藏），_check_enabled 必须刷新 CountTitle——
+# 旧版只写隐藏的 CountNumber，扫荡后"今日剩余次数"冻结不动（用户实机复现）。
+func test_count_title_refreshes_after_used_times_change() -> void:
+	var panel := _make_3star_panel(10001)
+	assert_true(panel._count_title.text.ends_with("30"), "初始剩余 30")
+	panel.player.stage_limit[10001] = 3
+	panel._check_enabled()
+	assert_true(panel._count_title.text.ends_with("27"), "已用 3 次后刷新为 27（扫荡后联动）")
+	panel.remove_window()
+
+
+# 批量扫荡按钮随剩余次数刷新（2026-10-07 cap 联动补）：精英关当日扫光后 disabled。
+func test_sweep_some_btn_disabled_when_elite_exhausted() -> void:
+	var panel := _make_3star_panel(10001)
+	panel.player.stage_limit[10001] = 30
+	panel._check_enabled()
+	var cluster: Control = _content_of(panel).get_node("%SweepCluster") as Control
+	var some_btn: Button = cluster.get_node("%SweepSomeBtn") as Button
+	assert_true(some_btn.disabled, "当日 30 次用尽后批量扫荡按钮 disabled")
 	panel.remove_window()
 
 

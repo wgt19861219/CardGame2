@@ -12,9 +12,10 @@ extends PopWindow
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/stage_detail_content.tscn")
 const TEAM_MAX: int = 5
-# 扫荡次数上限（源 parameter.lua:20-21 default_normal/elite_sweep_times）。
+# 扫荡次数上限（源 parameter.lua:20-21，源 elite=3 与源每日 3 次同值）。精英每日 30 次
+# （2026-10-07 用户指示）；批量按钮上限同日用户拍板 10（N=min(剩余 30, 10)）。
 const SWEEP_DEFAULT_NORMAL: int = 10
-const SWEEP_DEFAULT_ELITE: int = 3
+const SWEEP_DEFAULT_ELITE: int = 10
 # 无限制扫荡上限（源 getRepeatInformation:237-238：countLimit==0 → cLimit=999）。
 const SWEEP_UNLIMITED: int = 999
 
@@ -23,7 +24,6 @@ const OFFSET_X: float = 0.0
 const BASE_Y: float = 480.0
 # 次数数字色（源 checkEnabled:785-794 toccc3(16114110)/toccc3(16737841)）。
 const C_NUM: Color = Color(245.0 / 255.0, 225.0 / 255.0, 190.0 / 255.0)
-const C_DISABLE: Color = Color(1.0, 102.0 / 255.0, 49.0 / 255.0)
 
 const UI_DIR: String = "res://assets/ui/alpha/HVGA/"
 const BOSS_TAG_RES: String = UI_DIR + "stagedetail_boss_tag.png"
@@ -63,7 +63,8 @@ var _is_count_enabled: bool = false
 var _go_button: TextureButton = null
 var _go_shade: TextureRect = null
 var _reset_btn: TextureButton = null
-var _count_number: Label = null
+var _count_title: Label = null     # 剩余次数实显载体（拼接文案"今日剩余次数:N"；CountNumber tscn 默认隐藏已清理）
+var _some_btn: Button = null       # 批量扫荡按钮（文案/disabled 随剩余次数刷新）
 var _power_number: Label = null
 var _sweep_ticket: Label = null
 
@@ -135,8 +136,7 @@ func _fill_content(content: Control, info: Dictionary) -> void:
 	detail_lbl.visible = bool(info.get("is_key_stage", false)) or String(info.get("detail", "")) != ""
 	_power_number = content.get_node("%PowerNumber") as Label
 	_power_number.text = str(info.get("power", 0))
-	_count_number = content.get_node("%CountNumber") as Label
-	_count_number.text = str(left)
+	_count_title = content.get_node("%CountTitle") as Label
 	(content.get_node("%TotalNumber") as Label).text = "/ " + str(info.get("count_limit", "??"))
 	(content.get_node("%PowerTitle") as Label).text = String(cm.get_lstr("STAGEDETAIL.PHYSICAL_EXERTION"))
 	(content.get_node("%CountTitle") as Label).text = String(cm.get_lstr("EXERCISE.REMAINING_TIMES_FOR_TODAY_")) + str(left)
@@ -150,10 +150,9 @@ func _fill_content(content: Control, info: Dictionary) -> void:
 	_reset_btn = content.get_node("%Reset") as TextureButton
 	_reset_btn.pressed.connect(_on_reset_pressed)
 	(content.get_node("%CloseBtn") as BaseButton).pressed.connect(remove_window)
-	# 源 :1906-1910 normal 型（isNormalMode）隐藏次数三件。
+	# 源 :1906-1910 normal 型（isNormalMode）隐藏次数三件（CountNumber tscn 恒隐藏已随死代码清理移除）。
 	if stage_type == "normal":
 		(content.get_node("%CountTitle") as Label).visible = false
-		_count_number.visible = false
 		(content.get_node("%TotalNumber") as Label).visible = false
 	_setup_sweep_cluster(content, int(info.get("star", 0)), stage_type)
 
@@ -206,9 +205,10 @@ static func _set_texture(rect: TextureRect, res_path: String) -> void:
 
 func _check_enabled() -> void:
 	var left: int = _left_times()
-	if _count_number != null:
-		_count_number.text = str(left)
-		_count_number.add_theme_color_override("font_color", C_DISABLE if left < 1 else C_NUM)
+	# 剩余次数实显在 CountTitle 拼接文本，扫荡/重置后必须刷新（旧版只写隐藏的
+	# CountNumber 致扫荡后显示冻结，2026-10-07 连死代码一并清理）。
+	if _count_title != null:
+		_count_title.text = String(player.cm.get_lstr("EXERCISE.REMAINING_TIMES_FOR_TODAY_")) + str(left)
 	var power: int = _stage_data.vitality_cost if _stage_data != null else 0
 	_is_vitality_enabled = player.vitality >= power
 	var count_limit: int = _daily_limit()
@@ -222,6 +222,11 @@ func _check_enabled() -> void:
 	# 扫荡集群券计数刷新（扫荡后 player.get_sweep_times 变化）。
 	if _sweep_ticket != null:
 		_sweep_ticket.text = str(player.get_sweep_times())
+	# 批量扫荡按钮随剩余次数刷新（扫光当日次数后 disabled；旧版仅 setup 算一次）。
+	if _some_btn != null:
+		var n: int = _sweep_some_times(StageAccount.stage_type(stage_id))
+		(_some_btn.get_node("SweepSomeLabel") as Label).text = _sweep_some_label(n)
+		_some_btn.disabled = n < 1
 
 
 func _left_times() -> int:
@@ -269,13 +274,10 @@ func _setup_sweep_cluster(content: Control, star: int, stage_type: String) -> vo
 	(once_btn.get_node("SweepOnceLabel") as Label).text = String(cm.get_lstr("PRIVILEGE.FARM"))
 	once_btn.pressed.connect(_on_sweep_once_pressed)
 	var some_btn: Button = cluster.get_node("%SweepSomeBtn") as Button
+	_some_btn = some_btn
 	var n: int = _sweep_some_times(stage_type)
-	var raid_fmt: String = String(cm.get_lstr("STAGEDETAIL.RAID__D_TIMES"))
-	if raid_fmt == "STAGEDETAIL.RAID__D_TIMES":
-		raid_fmt = "扫荡%d次"
-	(some_btn.get_node("SweepSomeLabel") as Label).text = raid_fmt % n
+	(some_btn.get_node("SweepSomeLabel") as Label).text = _sweep_some_label(n)
 	if n < 1:
-		(some_btn.get_node("SweepSomeLabel") as Label).text = String(cm.get_lstr("STAGEDETAIL.RAID_FAILED"))
 		some_btn.disabled = true
 	else:
 		some_btn.pressed.connect(_on_sweep_some_pressed.bind(stage_type))
@@ -297,6 +299,14 @@ func _sweep_count_limit() -> int:
 func _sweep_some_times(stage_type: String) -> int:
 	var cap: int = SWEEP_DEFAULT_ELITE if stage_type == "elite" else SWEEP_DEFAULT_NORMAL
 	return maxi(0, mini(_sweep_count_limit(), cap))
+
+
+# 批量扫荡按钮文案（"扫荡%d次"；次数用尽 RAID_FAILED），setup 与扫荡后刷新共用。
+func _sweep_some_label(n: int) -> String:
+	if n < 1:
+		return String(player.cm.get_lstr("STAGEDETAIL.RAID_FAILED"))
+	var raid_fmt: String = String(player.cm.get_lstr("STAGEDETAIL.RAID__D_TIMES"))
+	return ("扫荡%d次" if raid_fmt == "STAGEDETAIL.RAID__D_TIMES" else raid_fmt) % n
 
 
 func _on_go_pressed() -> void:
