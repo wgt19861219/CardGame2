@@ -110,9 +110,10 @@ func _build_content() -> void:
 	_add_gm_button()
 
 
-# GM 测试物资按钮（2026-10-06 新增，单机测试包配套）：一键发满资源+全英雄满练度+
-# 灵魂石/消耗品（GmManager.grant_test_kit，Logic 幂等 max 语义）。放设置弹窗底部——
+# GM 测试物资按钮（2026-10-06 新增，单机测试包配套）：一键发金币/钻石/体力 999/
+# 消耗品（GmManager.grant_test_kit，Logic 幂等 max 语义）。放设置弹窗底部——
 # 单机游戏自用测试入口，普通玩家误点仅影响自身存档无经济风险。
+# 2026-10-07 瘦身：去掉等级/关卡/全英雄/灵魂石（干扰关卡进度复测）。
 func _add_gm_button() -> void:
 	var btn := Button.new()
 	btn.text = GM_BTN_TEXT
@@ -128,11 +129,11 @@ func _on_gm_pressed() -> void:
 	var player: PlayerData = GameData.player
 	if player == null:
 		return
-	var r: Dictionary = GmManager.grant_test_kit(player, _cm)
+	var r: Dictionary = GmManager.grant_test_kit(player)
 	GameData.save()   # 资产变更即时落盘（判例：GM/资产类操作必须显式 save）
-	Toast.show_message("测试物资已发放：金币 %s / 钻石 %s / %d 英雄 / %d 种灵魂石" % [
+	Toast.show_message("测试物资已发放：金币 %s / 钻石 %s / 体力 %d / 消耗品×99" % [
 		String(r.get("gold", 0)), String(r.get("diamond", 0)),
-		int(r.get("heroes", 0)), int(r.get("frag_kinds", 0))])
+		int(r.get("vitality", 0))])
 	remove_window()
 
 
