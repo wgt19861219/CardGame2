@@ -65,6 +65,7 @@ var _cm: Variant = null
 var _player: PlayerData = null
 var _rng: BattleRng = null
 var _thousand_groups: Array = []   # 百抽当前候选组（重选时更新；chosen 结算读此，防重选后 bind 旧数组）
+var _thousand_btn: TextureButton = null   # 百抽入口（选定结算后隐藏，2026-10-07 用户需求）
 var _current_pool: String = "Bronze"
 var _boards: Dictionary = {}   # key -> board 节点 Dictionary（tscn 静态节点引用）
 var _content: Control = null
@@ -103,11 +104,13 @@ func _build_content() -> void:
 # 百抽三选一入口（面板顶部常驻，2026-10-07 自创功能；初版千抽同位置）：按钮在 tavern_content.tscn 根级
 # （TitleBg 右侧空区）——魔幻魂匣展开区（Scroll 局部 320-640）被源布局排满到 604，
 # 放 board 内会被 Clip 裁剪不可见（运行时实测 ThousandBuyBtn global y=446 > Clip 底 435）。
-# 百抽免费（用户拍板赠送不耗钻；千抽版免费语义沿袭），无费用行。
+# 百抽免费（用户拍板赠送不耗钻；千抽版免费语义沿袭），无费用行。一次性赠送：选定后按钮消失。
 func _bind_thousand_button() -> void:
 	var thousand_btn: TextureButton = _content.get_node_or_null("%ThousandBuyBtn") as TextureButton
 	if thousand_btn != null:
+		_thousand_btn = thousand_btn
 		(thousand_btn.get_node("ThousandBuyLabel") as Label).text = FALLBACK_THOUSAND_LABEL
+		thousand_btn.visible = not TavernThousandData.is_thousand_used(_player)
 		thousand_btn.pressed.connect(_on_thousand_pressed.bind("MagicSoul"))
 
 
@@ -492,10 +495,12 @@ func _on_thousand_reroll(pick: PopTavernThousand) -> void:
 	pick.update_groups(_thousand_groups)
 
 
-# 选定组结算（弹窗"选定本组"回调）：仅选中组入包（英雄分流/魂石进包见 TavernThousandData）。
-# 读 _thousand_groups 成员——重选后弹窗 chosen 不再携带旧 bind 数组。
+# 选定组结算：仅选中组入包（读 _thousand_groups 当前成员）；置一次性标记+隐藏入口按钮（防免费重复领）。
 func _on_thousand_chosen(index: int) -> void:
 	TavernThousandData.settle_thousand_group(_player, _thousand_groups[index], _cm)
+	TavernThousandData.mark_thousand_used(_player)
+	if _thousand_btn != null:
+		_thousand_btn.visible = false
 	GameData.mark_save_dirty()
 	_result_label.text = "百抽奖励已入包"
 	Toast.show_message("百抽奖励已入包")

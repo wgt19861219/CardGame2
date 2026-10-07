@@ -330,3 +330,40 @@ func test_panel_thousand_chosen_settles_current_groups() -> void:
 	panel._on_thousand_chosen(0)
 	assert_eq(int(pd.items.get(9999, 0)), 7, "chosen 结算 _thousand_groups 当前组（重选后不 bind 旧数组）")
 	panel.queue_free()
+
+
+# ---- 一次性标记：选定后入口按钮消失（2026-10-07 用户需求「选定之后按钮要消失」）----
+
+func test_thousand_used_flag_serde_roundtrip() -> void:
+	var pd := PlayerData.new(cm)
+	assert_false(TavernThousandData.is_thousand_used(pd), "新档未用")
+	TavernThousandData.mark_thousand_used(pd)
+	assert_true(TavernThousandData.is_thousand_used(pd), "选定置位")
+	# 标记借宿 tavern_record 嵌套 dict——serde 非 dict 值会被损坏守卫跳过，须往返验证不丢
+	var pd2 := PlayerDataSerde.from_dict(PlayerDataSerde.to_dict(pd), cm)
+	assert_true(TavernThousandData.is_thousand_used(pd2), "存档往返标记保留（嵌套 dict 过损坏守卫）")
+
+
+func test_reroll_does_not_mark_used() -> void:
+	var pd := PlayerData.new(cm)
+	TavernThousandData.record_thousand_use(pd, cm)
+	# 重选语义：候选未选定不入包，不消耗一次性资格
+	assert_false(TavernThousandData.is_thousand_used(pd), "仅开窗/重选不置位")
+
+
+func test_panel_thousand_button_hidden_after_chosen() -> void:
+	var pd := PlayerData.new(cm)
+	var panel := TavernPanel.new("tavern", {})
+	panel.setup_panel(pd, BattleRng.new(12345))
+	var btn: TextureButton = panel._content.get_node_or_null("%ThousandBuyBtn") as TextureButton
+	assert_true(btn.visible, "未用时入口按钮可见")
+	panel._thousand_groups = [[{"id": 9999, "amount": 7}], [], []]
+	panel._on_thousand_chosen(0)
+	assert_false(btn.visible, "选定结算后入口按钮消失")
+	panel.queue_free()
+	# 重开面板（新实例，读持久化标记）按钮仍隐藏——防"重开酒馆按钮复活"回归
+	var panel2 := TavernPanel.new("tavern", {})
+	panel2.setup_panel(pd, BattleRng.new(12345))
+	var btn2: TextureButton = panel2._content.get_node_or_null("%ThousandBuyBtn") as TextureButton
+	assert_false(btn2.visible, "已用档重开面板入口按钮不回（标记持久化生效）")
+	panel2.queue_free()
