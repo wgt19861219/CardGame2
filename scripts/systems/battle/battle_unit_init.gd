@@ -30,7 +30,11 @@ static func get_max_rank_level(unit: Variant, cm: ConfigManager) -> int:
 	return result
 
 
-static func init_hp_mp(unit: Variant) -> void:
+## 源 unit.lua:54-73 双段注入语义：构造期初注入（无光环 HP，不置 hpmpInited）→
+## 首次 reset（单位已入 engine 列表，光环生效）final=true 重注入并置位 → 后续切波
+## reset 守卫返回保留玩家 hp/mp。Godot 曾构造期即置位，跨关注入永远基于无光环
+## HP（觉醒 HP 光环生效后 hp 偏低，2026-10-07 召唤师 0 伤害根修连带发现）。
+static func init_hp_mp(unit: Variant, p_final: bool = false) -> void:
 	# 源 unit.lua:55-57 hpmpInited 守卫——已初始化过的单位直接返回（切波 reset 不清
 	# 玩家 hp/mp，能量跨波保留；怪每波新建无此标记正常走 init）。
 	if unit.hpmp_inited:
@@ -44,7 +48,8 @@ static func init_hp_mp(unit: Variant) -> void:
 	unit.hp = int(unit.attribs.get("HP", 0) * hp_perc)
 	if unit.monster_idx == 0:
 		unit.mp = int(unit.attribs.get("MP", 0) * mp_perc)
-	unit.hpmp_inited = true
+	if p_final:
+		unit.hpmp_inited = true
 
 
 static func normalize_config(cfg: Dictionary) -> Dictionary:

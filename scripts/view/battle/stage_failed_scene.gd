@@ -22,6 +22,7 @@ const CONTENT_SCENE: PackedScene = preload("res://scenes/battle/stage_failed_con
 const PROMPT_Y: float = 315.0
 const PROMPT_POS: Array[Vector2] = [Vector2(205.0, PROMPT_Y), Vector2(445.0, PROMPT_Y)]
 const ROTATE_DURATION: float = 5.0
+const SKILL_UPGRADE_SLOT_COUNT: int = 4  # 技能升级 UI 槽位数（源 skillstren 只显示 4 格）
 const TITLE_FAIL_TEXT: String = "失败"
 const TITLE_TIMEOUT_TEXT: String = "超时"
 const PROMPT_LABELS: Dictionary = {
@@ -151,9 +152,10 @@ func _can_upgrade_hero(hm: HeroManager) -> bool:
 
 
 func _can_skill_upgrade(hm: HeroManager) -> bool:
+	# 只查 slot 1-4（技能升级 UI 只有 4 格；多槽英雄补齐槽位玩家升不了，不参与提示）
 	for hero in hm.heroes.values():
 		var h: HeroInstance = hero
-		for i in h.skill_levels.size():
+		for i in range(mini(SKILL_UPGRADE_SLOT_COUNT, h.skill_levels.size())):
 			if h.skill_levels[i] < h.level:
 				return true
 	return false

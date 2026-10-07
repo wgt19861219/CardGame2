@@ -133,7 +133,9 @@ static func _pack_balls(ice: int, fire: int, lightning: int) -> int:
 
 
 func can_cast_skill(skill: Variant) -> bool:
-	var cond: Variant = unit.skill_condition.get(skill.info.get("Skill Group ID"))
+	# info["Skill Group ID"] 来自 JSON 解析恒为 float；skill_condition 键为 int（const 表）——
+	# GDScript 字典 int/float 键不互通（Lua number 无此区分），缺 int() 时 cond 恒 null 恒放行
+	var cond: Variant = unit.skill_condition.get(int(skill.info.get("Skill Group ID", 0)))
 	if cond == null:
 		return true
 	var m: int = _pack_balls(int(cond[0]), int(cond[1]), int(cond[LIGHTNING_IDX]))

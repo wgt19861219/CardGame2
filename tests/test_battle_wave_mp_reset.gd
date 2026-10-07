@@ -35,15 +35,19 @@ func test_wave_reset_preserves_player_mp() -> void:
 
 
 func test_new_unit_first_init_still_runs() -> void:
-	# 新 unit（跨关新战斗/每波新怪）首次 init 不受守卫拦截
+	# 新 unit（跨关新战斗/每波新怪）首次 init 不受守卫拦截。
+	# 源 unit.lua:54-73 双段语义（2026-10-07 核对修正）：构造期初注入不置位，
+	# 首次 reset（单位入列光环生效）final 重注入才置位——跨关注入按光环后 HP 计算。
 	var cm := ConfigManager.new()
 	cm.load_all()
 	var eng := BattleEngine.new()
 	eng.rng = BattleRng.new(1)
 	var u := BattleUnit.new({"_tid": 1, "_level": 1, "_stars": 1}, BattleEngine.CAMP_PLAYER, {"estimate_rank": true}, cm, eng, {}, null)
-	assert_true(u.hpmp_inited, "首次 init 后守卫置位")
+	assert_false(u.hpmp_inited, "构造期初注入不置位（等首次 reset 终注入）")
 	assert_eq(int(u.mp), 0, "新英雄 dyna 空 → 初始 mp=0（首关能量从零开始）")
 	assert_gt(int(u.hp), 0, "新英雄 hp 按 attribs 正常初始化")
+	u.reset()
+	assert_true(u.hpmp_inited, "首次 reset 终注入后守卫置位")
 
 
 # 2026-08-18 二轮：能量满超框（变长）+ 大招不放。
@@ -60,8 +64,10 @@ func test_reset_reclamps_mp_to_rebuilt_cap() -> void:
 	assert_lte(int(u.mp), int(u.attribs.get("MP", mp_max)), "reset 后 mp 重钳 ≤ 当前上限（条不超框）")
 
 
-func test_stage_player_auto_casts_manual_skill() -> void:
-	# 源 PVE 默认 will_cast_manual_skill=true（旧错译 false 致大招永不放）
+func test_stage_player_manual_cast_mode() -> void:
+	# 源 battle_engine.lua:344 will_cast_manual_skill = isbot；battleprepare.lua:243 普通 PVE 不传
+	# isbot（nil→falsy）→ 玩家方 false = 大招手动释放。2026-08-18 曾反向断言 true（AI 自动放），
+	# 2026-10-07 源码复核纠正（bot.lua:43 是唯一传 true 的调用方）。
 	var cm := ConfigManager.new()
 	cm.load_all()
 	var mgr := StageManager.new(cm)
@@ -71,7 +77,7 @@ func test_stage_player_auto_casts_manual_skill() -> void:
 		fail_test("stage1 装配失败")
 		return
 	for u in r["engine"].foreach_alive_unit(BattleEngine.CAMP_PLAYER):
-		assert_true(bool(u.ai.will_cast_manual_skill), "战役玩家 AI 自动放 manual 大招（源 :455-459 默认）")
+		assert_false(bool(u.ai.will_cast_manual_skill), "战役玩家大招手动释放（源 :344 isbot=nil 路径）")
 
 
 func test_stage_player_has_manual_skill_equipped() -> void:

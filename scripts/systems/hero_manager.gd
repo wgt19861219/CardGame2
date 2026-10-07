@@ -18,6 +18,7 @@ var hero_cache: Dictionary = {}  # tid(int) -> {pre_exp,pre_level,exp_increment}
 const MAX_EQUIP_RANK: int = 22  # 玩家装备 rank 进阶上限（源 player.lua:2066 canUpgrade `_rank < 22`；Hero_equip 表 23 档是数据，rank 23 玩家不可达，照源）
 const EQUIP_SLOT_COUNT: int = 6  # 装备槽数（源 player._items 1-6，本项目 equip_slots 0-5）
 const GS_ROUND: float = 0.5  # 战力取整（源 recalcHeroGs math.floor(gs+0.5) 四舍五入）
+const SKILL_SLOT_MIN: int = 4  # 技能等级槽下限（源 addHero {1,1,1,1}；技能升级 UI 固定 4 格）
 
 func _init(cm: ConfigManager) -> void:
 	config = cm
@@ -39,14 +40,30 @@ func add_hero(tid: int) -> int:
 	return hero.inst_id
 
 
-## 技能等级初始化（照源 player.lua:1502-1506：skill_levels[i] = SkillGroup[tid][i]["Init Level"]）。
+## 技能等级初始化（源 player.lua:1502-1506：skill_levels[i] = SkillGroup[tid][i]["Init Level"]；
+## 源 addHero 只填 slot 1-4 是单机化数据截断——Kael/TitanHead/SilverDragon 等多槽英雄
+## slot 5+ 拿不到等级不装配，玩家 Kael 只剩冰墙/冰冻两控制技无限循环 → 0 伤害，
+## 2026-10-07 根修为按 SkillGroup 全槽初始化）。
 ## Coco slot 1-4 InitLevel = 1/1/21/41；显示等级 = skill_levels-InitLevel+1（统一初始 lv.1）。
 ## 高阶技能 InitLevel 高，等级上限检查 skill_levels[idx]>=hero.level 自然拦住低级英雄升高级技能。
 func _init_skill_levels(hero: HeroInstance) -> void:
 	var sg: Dictionary = config.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
-	for i in hero.skill_levels.size():
+	var slot_count: int = maxi(SKILL_SLOT_MIN, sg.size())
+	hero.skill_levels.resize(slot_count)
+	for i in slot_count:
 		var slot_info: Dictionary = sg.get(str(i + 1), {})
 		hero.skill_levels[i] = int(slot_info.get("Init Level", 1))
+
+
+## 旧档技能等级补齐（存量档 skill_levels 只有 4 元素，源单机化截断同上）：按 SkillGroup
+## 槽数 append 缺槽的 Init Level，已有槽位（含玩家升过的等级）不动。
+## static + cm 传参：from_dict（static）需调用，GDScript 静态上下文禁调实例方法/实例变量。
+static func _ensure_skill_slots(hero: HeroInstance, cm: ConfigManager) -> void:
+	var sg: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(hero.tid), {})
+	while hero.skill_levels.size() < sg.size():
+		var i: int = hero.skill_levels.size()
+		var slot_info: Dictionary = sg.get(str(i + 1), {})
+		hero.skill_levels.append(int(slot_info.get("Init Level", 1)))
 
 func get_hero(inst_id: int) -> HeroInstance:
 	return heroes.get(inst_id) as HeroInstance
@@ -364,7 +381,11 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> HeroManager:
 		hero.rank = int(hd.get("rank", 1))
 		hero.level = int(hd.get("level", 1))
 		hero.exp = int(hd.get("exp", 0))
-		hero.skill_levels = hd.get("skill_levels", [1, 1, 1, 1])
+		var sl: Array = hd.get("skill_levels", [1, 1, 1, 1])
+		hero.skill_levels = []
+		for j in range(sl.size()):
+			hero.skill_levels.append(int(sl[j]))   # 入口 int 校验（治存档 float→int）
+		_ensure_skill_slots(hero, cm)   # 旧档 4 元素补齐多槽英雄缺槽（2026-10-07 召唤师 0 伤害根修）
 		var es: Array = hd.get("equip_slots", [0, 0, 0, 0, 0, 0])
 		for j in range(hero.equip_slots.size()):
 			if j < es.size():

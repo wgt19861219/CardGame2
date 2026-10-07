@@ -14,23 +14,36 @@ const CAMP_PLAYER: int = 1
 const CAMP_ENEMY: int = -1
 const ULT_TIME_DEFAULT: float = 2.0
 
+# HeroKaelSkill 实例保活：本文件实例由 BattleHeroScripts._cache 持有（每 script_path 一份，
+# 玩家/敌方两个 Kael 复用同一本文件实例），技能 hook Callable 的宿主必须随数组累积保活——
+# 曾因 new().apply() 用后即弃致 RefCounted 释放、全部技能 hook（含普攻投球）自迁移起静默
+# 失效（Callable.is_valid()=false 走 default 无报错），能量球系统从未运转（2026-10-07 实测破获）。
+var _skill_hook_hosts: Array = []
+
 
 func apply(hero: Variant) -> void:
-	HeroKaelSkill.new().apply(hero)  # class_name 全局（避 preload 循环：hero_kael_skill.gd preload 本文件会环）
+	# skill_condition 先行赋值（HeroKaelSkill.apply 据此给球技能挂 canCastWithTarget 球组合校验）
+	hero.skill_condition = KAEL_SKILL_ELEMENT
+	var skill_hooks := HeroKaelSkill.new()  # class_name 全局（避 preload 循环：本文件 preload 其会环）
+	_skill_hook_hosts.append(skill_hooks)
+	skill_hooks.apply(hero)
 	hero.hero_hooks["update"] = Callable(self, "_update")
 	hero.hero_hooks["castSkill"] = Callable(self, "_cast_skill")
 	hero.hero_hooks["reset"] = Callable(self, "_reset")
 	hero.hero_hooks["die"] = Callable(self, "_die")
 	hero.hero_hooks["specialCheckEnableAi"] = Callable(self, "_special_check_enable_ai")
 	hero.energy_ball_manager = BattleEnergyBallManager.new(hero)
-	hero.skill_condition = KAEL_SKILL_ELEMENT
 	hero.delivered_balls = {}
 	hero.ordered_idx = []
 	hero.is_kael = true
 	hero.show_ball = Callable(HeroKaelSkill, "_show_ball")
 	hero.display_ball = false
 	hero.ai_mode = bool(hero.engine.arena_mode) or (int(hero.camp) == CAMP_ENEMY and not bool(hero.engine.replay_mode))
-	hero.auto_combat = false
+	# 玩家侧自动拾球兜底：源靠 ballBar UI 玩家手点（tapBall），本项目球条 View 未实装
+	# （Phase 4 债）无点球途径——不拾球则球技能（canCastSkill 球组合校验）恒不可放，
+	# 玩家卡尔退化成仅普攻。auto_combat 单位级只驱动拾球（放大招走场景级 auto_combat，
+	# 互不相干），球条 UI 实装后还原为 false 交还手动（受控偏离，2026-10-07）。
+	hero.auto_combat = int(hero.camp) == CAMP_PLAYER
 	hero.ult_time = ULT_TIME_DEFAULT
 	hero.start_ult_time = false
 	if int(hero.camp) == CAMP_PLAYER:
@@ -56,7 +69,11 @@ func _update(hero: Variant, dt: float) -> void:
 			if float(ball.get("autoGet", 0.0)) < BattleEnergyBallManager.EPSILON:
 				hero.engine.used_delivered_ball_slots[int(ball.get("deliveredSlotIdx", 0))] = false
 				_add_energy_ball(hero, int(idx), str(ball.get("balltype", "")), int(ball.get("myslotidx", 0)))
-	hero.energy_ball_manager.update(dt)
+		hero.energy_ball_manager.update(dt)
+	# 自动拾球接线（源 autoTapBall 定义完备但无调用方——源靠 ballBar View 玩家手点拾球，
+	# 本项目球条 UI 未实装（Phase 4 债），ai_mode/auto_combat 时由 update 链驱动自动拾取，
+	# 球系统闭环：普攻投球→拾球进槽→满 3 球必命中 10 组合之一→canCastWithTarget 放行→清球）
+	HeroKaelSkill._auto_tap_ball(hero)
 	hero._update_default(dt)  # basefunc（源 basefunc(kael, dt)）
 
 

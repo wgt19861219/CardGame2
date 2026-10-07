@@ -156,8 +156,8 @@ func _init(unit_proto: Dictionary, unit_camp: int, unit_config: Dictionary, cm: 
 	puppet_stack = [String(info.get("Puppet", ""))]
 
 
-func _init_hp_mp() -> void:
-	BattleUnitInit.init_hp_mp(self)
+func _init_hp_mp(p_final: bool = false) -> void:
+	BattleUnitInit.init_hp_mp(self, p_final)
 
 
 func rebuild() -> void:
