@@ -104,6 +104,31 @@ func test_icon_grid_positions() -> void:
 		icon_idx += 1
 
 
+# 注入式 lock 分支覆盖：2026-10-07 方案 B 填满空槽后真实表无 eid=0，注入构造 lock
+# 占位场景守住卫（lock 容器 72 + lock 贴图子节点 + LOCK_Y_OFFSET 偏移，源 getUnknownIcon）。
+func test_lock_placeholder_when_eid_zero_injected() -> void:
+	var view: Control = _make_view()
+	add_child_autofree(view)
+	var tid: int = _first_hero_tid()
+	var row: Dictionary = cm.get_raw_table(&"Hero_equip").get(str(tid), {}).get("1", {})
+	var origin: int = int(row.get("Equip1 ID", 0))
+	row["Equip1 ID"] = 0
+	var hero := HeroInstance.new(tid)
+	EvolveEquipFills.fill_equip_list(view, hero, cm, func(_eid: int) -> void: pass)
+	row["Equip1 ID"] = origin
+	var row_box: VBoxContainer = view.get_node("%RowContainer") as VBoxContainer
+	var first: NinePatchRect = row_box.get_child(0) as NinePatchRect
+	var icons: Array = first.get_children().filter(func(c: Node) -> bool: return not (c is Label))
+	var lock_icon: Control = icons[0] as Control
+	assert_eq(lock_icon.size, Vector2(ReadequipIcon.ICON_SIZE, ReadequipIcon.ICON_SIZE),
+		"lock 容器还原 72（撑容器 94×95 须复位防偏右下错位）")
+	assert_eq(lock_icon.position,
+		EvolveEquipFills.ICON_POSITIONS[0] + Vector2(0, EvolveEquipFills.LOCK_Y_OFFSET),
+		"lock 位置 = 槽 1 网格 + LOCK_Y_OFFSET（源 :93 y=123）")
+	var lock_child: TextureRect = lock_icon.get_child(lock_icon.get_child_count() - 1) as TextureRect
+	assert_not_null(lock_child, "lock 贴图子节点存在（白框+gocha+lock）")
+
+
 # 重复 fill（_rebuild_content 恢复 equip tab）先清旧行不叠加。
 func test_fill_equip_list_clears_old_rows() -> void:
 	var view: Control = _make_view()

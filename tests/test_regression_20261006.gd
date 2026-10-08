@@ -1,7 +1,8 @@
 extends GutTest
 # 2026-10-06 用户实测九组问题回归测试（batch）：
 #   ① 竞技场/远征/挖掘玩家英雄 proto 漏 _skill_levels → 只装普攻无大招（同 stage 2026-08-18 修）
-#   ④ 装备进阶止步金装：rank 12+ 配方槽位递减（5/4/3），can_upgrade_rank/autowear 须跳过 0 配方槽
+#   ④ 装备进阶止步金装：can_upgrade_rank/autowear 跳过 0 配方槽（2026-10-07 方案 B 填表后
+#      rank 12-23 满槽，0 槽场景改注入式构造守卫）
 #   ⑤ 豪华午餐（Login 型日常）时段进度合成 + 领取 + 体力攒体入账（硬上限 9999）
 #   ⑧ 觉醒失败返回 reason（View 层 Toast 用）
 #   ① 体力药 TONIC_PILLS 判定（章鱼丸子 336/孜然羊肉串 217/奥尔良烤翅 289）
@@ -60,7 +61,11 @@ func test_excavate_hero_list_carries_skill_levels() -> void:
 	assert_true(proto.has("_awake"), "挖掘玩家 proto 带 _awake")
 
 
-# ── ④ 装备进阶：rank 12+ 递减槽位（rank 12-16 五槽：槽 1 无配方）──
+# ── ④ 装备进阶：rank 12-23 全档配方（2026-10-07 方案 B 填 2.0 基件后满槽）──
+# 2026-10-06 原语义：rank 12-16/17-19/20-23 槽位递减 5/4/3（源 gen_hero_equip.py 设计），
+# can_upgrade_rank/autowear 须跳过 0 配方槽；2026-10-07 方案 B 把 8 件 2.0 基件
+# （442/445/448/451/454/457/460/463）轮转填满 23 空槽 → 全档 6 槽配方，「0 槽跳过」
+# 逻辑保留在代码（数据防御），守卫改注入式构造（_inject_no_recipe_slot）。
 
 func _wear_all_recipe_slots(mgr: HeroManager, inst_id: int) -> int:
 	var hero := mgr.get_hero(inst_id)
@@ -71,20 +76,44 @@ func _wear_all_recipe_slots(mgr: HeroManager, inst_id: int) -> int:
 	return worn
 
 
-func test_rank12_five_slot_recipe_can_upgrade() -> void:
+# 内存表注入：把 Hero_equip[tid][rank] 某槽临时置 0（无配方槽），返回恢复闭包。
+func _inject_no_recipe_slot(tid: int, rank: int, slot: int) -> Callable:
+	var row: Dictionary = cm.get_raw_table(&"Hero_equip").get(str(tid), {}).get(str(rank), {})
+	var field := "Equip" + str(slot) + " ID"
+	var origin: int = int(row.get(field, 0))
+	row[field] = 0
+	return func() -> void: row[field] = origin
+
+
+func test_rank12_six_slot_recipe_can_upgrade() -> void:
 	var mgr := HeroManager.new(cm)
 	var inst_id := mgr.add_hero(1)
 	var hero := mgr.get_hero(inst_id)
-	hero.rank = 12   # 金装：Hero_equip[1][12] = [0,417,419,398,399,422]（槽 1 无配方）
+	hero.rank = 12   # 金装：Hero_equip[1][12] = [442,417,419,398,399,422]（方案 B 填 442 后满 6 槽）
 	var worn: int = _wear_all_recipe_slots(mgr, inst_id)
-	assert_eq(worn, 5, "rank 12 可穿 5 槽（槽 1 无配方不可穿）")
-	assert_eq(int(hero.equip_slots[0]), 0, "槽 1 保持空（无配方）")
-	assert_true(mgr.can_upgrade_rank(inst_id), "5 配方槽穿齐 + 无配方槽跳过 → 可进阶（金+1）")
+	assert_eq(worn, 6, "rank 12 可穿 6 槽（方案 B 填 2.0 基件 442 后槽 1 有配方）")
+	assert_eq(int(hero.equip_slots[0]), 442, "槽 1 穿 442（z1 图标新装备）")
+	assert_true(mgr.can_upgrade_rank(inst_id), "6 配方槽穿齐 → 可进阶（金+1）")
 	assert_true(mgr.upgrade_rank(inst_id), "rank 12→13 进阶成功")
 	assert_eq(hero.rank, 13, "rank 13")
 
 
+func test_no_recipe_slot_still_skipped_when_injected() -> void:
+	# 注入式守卫：数据层满槽后真实表无 0 配方槽，注入还原 2026-10-06 修复场景。
+	var restore := _inject_no_recipe_slot(1, 12, 1)
+	var mgr := HeroManager.new(cm)
+	var inst_id := mgr.add_hero(1)
+	var hero := mgr.get_hero(inst_id)
+	hero.rank = 12
+	var worn: int = _wear_all_recipe_slots(mgr, inst_id)
+	assert_eq(worn, 5, "注入 0 配方槽后可穿 5 槽（槽 1 不可穿）")
+	assert_eq(int(hero.equip_slots[0]), 0, "槽 1 保持空（无配方）")
+	assert_true(mgr.can_upgrade_rank(inst_id), "5 配方槽穿齐 + 无配方槽跳过 → 可进阶")
+	restore.call()
+
+
 func test_rank12_autowear_skips_no_recipe_slot() -> void:
+	var restore := _inject_no_recipe_slot(1, 12, 1)
 	var pd := PlayerData.new(cm)
 	var inst_id := pd.hero_manager.add_hero(1)
 	var hero := pd.hero_manager.get_hero(inst_id)
@@ -92,6 +121,7 @@ func test_rank12_autowear_skips_no_recipe_slot() -> void:
 	_wear_all_recipe_slots(pd.hero_manager, inst_id)
 	# 5 配方槽全 isEquiped + 槽 1 ignore：旧实现 ignore → return -1（整单中止）；修后跳过返 0
 	assert_eq(EquipCraftManager.autowear_for_upgrade(pd, inst_id), 0, "无配方槽跳过不中止（返 0=无槽可穿）")
+	restore.call()
 
 
 func test_rank11_full_six_slot_still_works() -> void:
