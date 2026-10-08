@@ -66,35 +66,21 @@ static func create_next_button(scene) -> void:
 	scene.next_btn = btn
 
 
-# 自动战斗按钮装配（源 :1207-1257）。可见性照源 :1208-1231 分模式判定，toggled 连 _on_auto_toggled。
+# 自动战斗按钮装配（源 :1207-1257）。toggled 连 _on_auto_toggled。
 # 2026-10-08 受控增强（用户需求）：初始态读偏好档（user://battle.cfg auto_combat，跨战斗记忆，
-# 照 create_speed_button 读档回写范式）——源每场重置 off；未解锁（3 星门槛未达）不读档恒 off，
-# 防越权开启自动战斗。源 replay 隐藏/attack 真人锁/teach(autoBattle) 教学无本项目对应入口（单机化裁剪）。
-const AUTO_UNLOCK_STARS: int = 3   # 源 :1224 pve stars < 3 隐藏
+# 照 create_speed_button 读档回写范式）——源每场重置 off。同日用户指示取消源 :1208-1231 的
+# 通关门槛（pve stars>=3 才显示）：全模式恒显示恒读档，大招自动释放不再受通关进度限制（受控
+# 偏离源行为）。源 replay 隐藏/attack 真人锁/teach(autoBattle) 教学无本项目对应入口（单机化裁剪）。
 static func create_auto_button(scene) -> void:
 	if scene.auto_btn != null:
 		scene.auto_btn.queue_free()
 	var btn := BattleAutoButton.new()
-	var unlocked: bool = _auto_button_visible(scene)
-	var initial_on: bool = btn.read_persisted_on(false) if unlocked else false
-	btn.setup(initial_on, unlocked)
+	var initial_on: bool = btn.read_persisted_on(false)
+	btn.setup(initial_on, true)
 	scene.auto_combat = btn.is_on()   # 读出档同步引擎（不触发 _on_auto_toggled 音效）
 	btn.toggled.connect(scene._on_auto_toggled)
 	scene.hud.add_to_bottom_right(btn)
 	scene.auto_btn = btn
-
-
-# auto 按钮可见性（源 :1208-1231）：pve(stage) 按通关星数门槛（getStageStar 对应 mgr.stage_stars），
-# 非 pve 分支（pvp 离线天梯/excavate）照源无门槛显示；无 mgr/stage_id 上下文按未解锁保底隐藏。
-static func _auto_button_visible(scene) -> bool:
-	var ctx: Dictionary = scene._battle_context
-	if String(ctx.get("mode", "stage")) != "stage":
-		return true
-	var mgr: Variant = ctx.get("mgr")
-	if mgr == null or not mgr.has_method("stage_stars"):
-		return false
-	var stars: int = int(mgr.stage_stars(int(ctx.get("stage_id", 0))))
-	return stars >= AUTO_UNLOCK_STARS
 
 
 # Boss 多血段大血条装配（源 addBigBloodPanel :541-546）。挂 hud 固定 BIG_HP_POS，入 ui_list。
@@ -116,6 +102,9 @@ static func create_heroes_panel(scene) -> void:
 
 
 # 单英雄头像面板加入左下集群（HBox 自动横向排列，杜绝历史重叠）。
+# 排列方向照源 addHeroPanel :521-529：x=width*(N/2-idx+3)+10，先加入（idx 小）x 大
+# 排最右、后加入往左——即前排英雄（unit_list 靠前）显示在最右。HBox 默认 add_child
+# 先加在左恰与源相反（2026-10-08 用户实测反馈反了），故每块新面板插到最左（move_child 0）。
 static func add_hero_panel(scene, unit: Variant) -> void:
 	if scene.heroes_panel == null:
 		return
@@ -123,5 +112,6 @@ static func add_hero_panel(scene, unit: Variant) -> void:
 	panel.setup(unit, scene.cm, scene)
 	panel.custom_minimum_size = HERO_PANEL_MIN_SIZE
 	scene.heroes_panel.add_child(panel)
+	scene.heroes_panel.move_child(panel, 0)
 	scene.ui_list.append(panel)
 	scene._hero_panels[unit] = panel

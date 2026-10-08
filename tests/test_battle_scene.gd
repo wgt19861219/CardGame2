@@ -651,30 +651,39 @@ func test_auto_button_position_aligns_speed_button() -> void:
 
 
 # 源 auto_btn pressed → scene.auto_combat。
-# 2026-10-08 auto 偏好持久化后 _on_pressed 写盘：装配（未解锁不读档）后注入测试档再按，
-# 不触玩家真实 user://battle.cfg。
+# 2026-10-08 auto 偏好持久化 + 取消通关门槛后装配恒读真实 cfg（assembler 内 new 不可注入）：
+# 前置备份+写固定 off，后置恢复玩家原值（照 test_scene_speed_button_sets_state 判例）。
 func test_scene_auto_button_toggles_combat() -> void:
+	var backup := ConfigFile.new()
+	var had: bool = backup.load("user://battle.cfg") == OK
+	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
+	var pre := ConfigFile.new()
+	pre.set_value("battle", "auto_combat", false)
+	pre.save("user://battle.cfg")
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
 	var scene := BattleScene.new()
 	scene.setup(eng, cm)
-	assert_eq(scene.auto_combat, false, "初始 auto_combat=false（单机化默认，源 :118 localMode）")
+	assert_eq(scene.auto_combat, false, "初始 auto_combat=档 off（单机化默认，源 :118 localMode）")
 	assert_not_null(scene.auto_btn, "scene 装配 auto_btn（源 resetUI :1252）")
-	scene.auto_btn.cfg_path = "user://battle_test_scene_auto.cfg"
 	scene.auto_btn._on_pressed()
 	assert_eq(scene.auto_combat, true, "auto_btn pressed → auto_combat=true（源 :1021）")
+	var rb := ConfigFile.new()
+	rb.set_value("battle", "auto_combat", orig)
+	rb.save("user://battle.cfg")
 	scene.queue_free()
 
 
-# 源 :1224-1226 pve stars<3 → auto_btn 隐藏（单机默认隐藏）。
-func test_scene_auto_button_default_hidden() -> void:
+# 2026-10-08 取消通关门槛（源 :1224-1226 pve stars<3 隐藏 → 用户指示全模式恒显示）：
+# 无上下文装配也显示，不再按星数 gating。
+func test_scene_auto_button_always_visible() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
 	var scene := BattleScene.new()
 	scene.setup(eng, cm)
-	assert_eq(scene.auto_btn.visible, false, "pve stars<3 → auto_btn 默认隐藏（源 :1225）")
+	assert_eq(scene.auto_btn.visible, true, "无通关门槛 → auto_btn 恒显示")
 	scene.queue_free()
 
 
@@ -685,10 +694,9 @@ class StarMgrStub extends RefCounted:
 		return stars
 
 
-# 源 :1227-1229 pve stars>=3 → auto_btn 显示（3 星解锁自动战斗）。
-# 2026-10-08 auto 偏好持久化后解锁路径装配读真实 cfg（assembler 内 new 不可注入）：
-# 前置备份+写固定 off，后置恢复玩家原值（照 test_scene_speed_button_sets_state 判例）。
-func test_scene_auto_button_visible_at_3_stars() -> void:
+# 装配读档 off → 引擎同步 off（2026-10-08 取消门槛后不再依赖 stars=3 上下文）。
+# 真实 cfg 不可注入（assembler 内 new），前置备份+写固定 off，后置恢复（照 speed 判例）。
+func test_scene_auto_button_reads_persisted_off() -> void:
 	var backup := ConfigFile.new()
 	var had: bool = backup.load("user://battle.cfg") == OK
 	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
@@ -699,21 +707,21 @@ func test_scene_auto_button_visible_at_3_stars() -> void:
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
 	var mgr := StarMgrStub.new()
-	mgr.stars = 3
+	mgr.stars = 0
 	var scene := BattleScene.new()
 	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
 	scene.setup(eng, cm)
-	assert_eq(scene.auto_btn.visible, true, "pve stars=3 → auto_btn 显示（源 :1224 stars>=3）")
-	assert_eq(scene.auto_combat, false, "解锁+档 off → auto_combat=false（读档同步）")
+	assert_eq(scene.auto_btn.visible, true, "低星（0 星）→ auto_btn 仍显示（门槛已取消）")
+	assert_eq(scene.auto_combat, false, "档 off → auto_combat=false（读档同步）")
 	var rb := ConfigFile.new()
 	rb.set_value("battle", "auto_combat", orig)
 	rb.save("user://battle.cfg")
 	scene.queue_free()
 
 
-# 2026-10-08 auto 偏好持久化正向链路 — 解锁场景装配读档 on → 引擎同步 on（跨战斗记忆）。
+# 2026-10-08 auto 偏好持久化正向链路 — 装配读档 on → 引擎同步 on（跨战斗记忆，无门槛）。
 # 真实 cfg 不可注入（assembler 内 new），前置备份+写固定 on，后置恢复（照上例判例）。
-func test_scene_auto_button_reads_persisted_on_at_3_stars() -> void:
+func test_scene_auto_button_reads_persisted_on() -> void:
 	var backup := ConfigFile.new()
 	var had: bool = backup.load("user://battle.cfg") == OK
 	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
@@ -723,12 +731,9 @@ func test_scene_auto_button_reads_persisted_on_at_3_stars() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
-	var mgr := StarMgrStub.new()
-	mgr.stars = 3
 	var scene := BattleScene.new()
-	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
 	scene.setup(eng, cm)
-	assert_eq(scene.auto_combat, true, "解锁+档 on → 新战斗 auto_combat=true（跨战斗记忆）")
+	assert_eq(scene.auto_combat, true, "档 on → 新战斗 auto_combat=true（跨战斗记忆）")
 	assert_eq(scene.auto_btn.is_on(), true, "按钮初始态显示 on（读档）")
 	var rb := ConfigFile.new()
 	rb.set_value("battle", "auto_combat", orig)
@@ -736,8 +741,9 @@ func test_scene_auto_button_reads_persisted_on_at_3_stars() -> void:
 	scene.queue_free()
 
 
-# 源 :1224-1226 pve stars<3 → 隐藏（显式低星 mgr 用例，补空上下文版 default_hidden）。
-func test_scene_auto_button_hidden_below_3_stars() -> void:
+# 门槛不回归守卫（2026-10-08 用户指示取消）：源 :1224 pve stars<3 隐藏已废弃，
+# 显式低星 mgr（stars=2）上下文也必须显示。
+func test_scene_auto_button_visible_below_3_stars() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -746,11 +752,35 @@ func test_scene_auto_button_hidden_below_3_stars() -> void:
 	var scene := BattleScene.new()
 	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
 	scene.setup(eng, cm)
-	assert_eq(scene.auto_btn.visible, false, "pve stars=2 < 3 → auto_btn 隐藏（源 :1224）")
+	assert_eq(scene.auto_btn.visible, true, "pve stars=2 < 3 → auto_btn 仍显示（门槛已取消）")
 	scene.queue_free()
 
 
-# 源 :1208-1231 非 pve 分支（pvp=离线天梯/excavate）照源无门槛显示（本项目无 replay/act/attack 入口）。
+# 出击阵容排列方向（源 addHeroPanel battle_scene.lua:521-529）：x=width*(N/2-idx+3)+10，
+# 先加入（idx 小）x 大排最右、后加入往左——配合两侧同款 sortHeroList（普攻射程升序，
+# 近战前排先入 unit_list）即「前排最右」。HBox 默认 add_child 先加在左恰相反
+# （2026-10-08 用户 MuMu 实测反馈反了，修=add_hero_panel 后入插最左）。
+# 守卫：先加入者的面板 index 大于后加入者（更靠右）。tid 1=Coco 前排/2=DR 后排
+#（Unit.json Position Type），add_unit 顺序即 unit_list 顺序（重排在 stage_manager 侧）。
+func test_hero_panels_first_unit_rightmost() -> void:
+	var eng := _make_engine()
+	var p1 := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	var p2 := _make_unit(2, BattleEngine.CAMP_PLAYER, eng, Vector2(200, 0))
+	eng.add_unit(p1)
+	eng.add_unit(p2)
+	var scene := BattleScene.new()
+	# heroes_panel 复用 hud.bottom_left（_ready 进树才赋值），须先 add_child 再 setup
+	# 装配循环才挂得上面板（camera_shake 测试同款入树先例）。
+	add_child_autofree(scene)
+	scene.setup(eng, cm)
+	assert_eq(scene.heroes_panel.get_child_count(), 2, "两英雄各装配一块面板")
+	var idx_first: int = scene.heroes_panel.get_children().find(scene._hero_panels[p1])
+	var idx_second: int = scene.heroes_panel.get_children().find(scene._hero_panels[p2])
+	assert_gt(idx_first, idx_second, "先加入（前排）在最右：child index 大于后加入者")
+	scene.queue_free()
+
+
+# 非 pve 分支照旧显示（门槛取消前后行为一致，全模式恒显示）。
 func test_scene_auto_button_visible_in_non_stage_modes() -> void:
 	for m in ["pvp", "excavate"]:
 		var eng := _make_engine()
