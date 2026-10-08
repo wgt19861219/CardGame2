@@ -106,6 +106,40 @@ func test_get_count_item_quantity_missing() -> void:
 	var pd := PlayerData.new(cm)
 	assert_eq(TaskQuery.get_count("ItemQuantity", [999], 99, pd), 0)
 
+
+# ── is_task_ready / entry_progress（源 ui/task.lua:1052-1063 isTaskCompleted；
+#    shortcut 任务红点判定，2026-10-08 前读恒空的 tm.completed 永不亮）──
+
+# 事件累计型（FarmStage 战利品1）：entry.target 达标且 working 才就绪；finished（已领）不亮。
+func test_is_task_ready_event_type() -> void:
+	var pd := PlayerData.new(cm)
+	var row20: Dictionary = cm.get_raw_table("Task").get("20", {}).get("1", {})
+	assert_false(TaskQuery.is_task_ready({"chain": 20, "id": 1, "status": "working", "target": 0}, row20, pd),
+			"FarmStage 0/1 → 未就绪")
+	assert_true(TaskQuery.is_task_ready({"chain": 20, "id": 1, "status": "working", "target": 1}, row20, pd),
+			"FarmStage 1/1 → 就绪（红点亮）")
+	assert_false(TaskQuery.is_task_ready({"chain": 20, "id": 1, "status": "finished", "target": 1}, row20, pd),
+			"已领取（finished）→ 不亮")
+
+# 状态型（PlayerLevel）：entry.target 被忽略，走实时查询（team_level）。
+func test_is_task_ready_state_type() -> void:
+	var pd := PlayerData.new(cm)
+	var row50: Dictionary = cm.get_raw_table("Task").get("50", {}).get("1", {})
+	assert_false(TaskQuery.is_task_ready({"chain": 50, "id": 1, "status": "working", "target": 99}, row50, pd),
+			"等级 1 < target 5 → 未就绪（entry.target 不参与状态型）")
+	pd.team_level = 80
+	assert_true(TaskQuery.is_task_ready({"chain": 50, "id": 1, "status": "working", "target": 0}, row50, pd),
+			"等级 80 >= 5 → 就绪")
+
+# entry_progress：事件型取 entry.target，状态型取实时查询（build_main_task 同源共用）。
+func test_entry_progress_event_vs_state() -> void:
+	var pd := PlayerData.new(cm)
+	pd.team_level = 80
+	var row20: Dictionary = cm.get_raw_table("Task").get("20", {}).get("1", {})
+	var row50: Dictionary = cm.get_raw_table("Task").get("50", {}).get("1", {})
+	assert_eq(TaskQuery.entry_progress({"target": 1}, row20, pd), 1, "事件型 → entry.target")
+	assert_eq(TaskQuery.entry_progress({"target": 0}, row50, pd), 80, "状态型 → 实时查询（team_level）")
+
 # HeroRank：默认英雄 tid 1-5（apply_default_data），rank=1 默认初始
 func test_get_count_hero_rank_default_hero() -> void:
 	var pd := PlayerData.new(cm)

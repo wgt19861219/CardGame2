@@ -137,6 +137,29 @@ func sync_current_tasks(player: PlayerData, cm: ConfigManager) -> void:
 			trigger_task([chain | (1 << SPLITBITS_SHIFT)])
 
 
+## 主任务链事件累计（源 player.lua:1693-1721 increaseTaskCount）：行为事件按
+## type + Progress ID 匹配 status=="working" 的链任务 → entry.target 累加（cap 到
+## Task Target）。FarmStage 战斗胜利/扫荡经此累计（战利品/进化之路链 25 任务），
+## 2026-10-08 补——此前主链无累计端，FarmStage 任务进度恒 0 永不可领。
+func increase_task_count(cm: ConfigManager, ptype: String, kid: int, add: int = 1) -> void:
+	var task_table: Dictionary = cm.get_raw_table("Task")
+	for entry in task:
+		if str(entry.get("status", "working")) != "working":
+			continue
+		var chain: int = int(entry.get("chain", 0))
+		var tid: int = int(entry.get("id", 0))
+		var row: Dictionary = task_table.get(str(chain), {}).get(str(tid), {})
+		if row.is_empty() or String(row.get("Task Progress Type", "")) != ptype:
+			continue
+		# Progress ID 为 lua table {v1,v2} → JSON Dictionary（零值槽跳过，照源 #tid 遍历）
+		var pid_raw: Variant = row.get("Task Progress ID", {})
+		if not pid_raw is Dictionary:
+			continue
+		for v in (pid_raw as Dictionary).values():
+			if int(v) == kid:
+				entry["target"] = mini(int(entry.get("target", 0)) + add, int(row.get("Task Target", 1)))
+
+
 ## 源 require_rewards :1508-1581：查 Task[chain][id] 单槽发奖 + Consume 扣资源 + status→finished + 链尾 task_finished。
 ## 返 {ok:bool}。
 func claim_task_reward(player: PlayerData, chain: int, id: int, cm: ConfigManager) -> Dictionary:
