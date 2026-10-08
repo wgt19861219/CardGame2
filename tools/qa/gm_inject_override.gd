@@ -2,27 +2,28 @@ extends Node
 
 ## GM 测试数据注入 override（2026-10-07 用户指示：打不过精英关，刷测试数据）。
 ## 经 runtime install_override 注册为 MCPOVERRIDE autoload，重启游戏 _ready 跑一次：
-## 存当前进度 → 解锁全关卡+等级 80 → 全英雄 → 练度 rank5/level80/stars5 → 测试物资 → 落盘。
-## 用完 uninstall_override 清注册；重玩原始进度恢复 save_save_1.pre_gm_inject_20261007.json 备份。
+## 存当前进度 → 解锁全关卡+等级 80 → 全英雄 → 练度 → 测试物资 → 落盘。
+## 2026-10-08 二次注入（装备进阶方案 B 实测）：rank 5→12（方案 B 填 rank12-23 槽，
+## rank12 起步可测 12→23 进阶全链+金1→红4），注入前手动备份 save_save_1.pre_equipb_20261008.json。
+## 2026-10-08 v4（用户指示：删除所有测试装备，实测「点来源→能否扫荡」获取链路）：
+## 清空背包装备类条目（Category ∈ EQUIP.SYNTHETICS 成品 / EQUIP.PARTS 散件），
+## 保留消耗品（含扫荡券 390）/卷轴（REEL）/灵魂石（SOUL_STONE），不动英雄穿戴与练度。
+## 注入前备份 save_save_1.pre_gm_clear_20261008.json。用完 uninstall_override 清注册。
 
 
 func _ready() -> void:
 	var pd: Variant = GameData.player
 	var cm: Variant = GameData.config
 	if pd == null or cm == null:
-		print("[GM_INJECT] FAIL: GameData not ready")
+		print("[GM_CLEAR] FAIL: GameData not ready")
 		return
-	GameData.save()   # 先保当前进度（精英 30 次验证会话内的进度）再注入
-	GmManager.execute(pd, cm, {"_unlock_all_stages": 1}, pd.stage_manager)
-	GmManager.execute(pd, cm, {"_get_all_heroes": 1})
-	var hero_list: Array = []
-	for inst_id in pd.hero_manager.heroes:
-		var h: Variant = pd.hero_manager.heroes[inst_id]
-		hero_list.append({"_tid": h.tid, "_rank": 5, "_level": 80, "_stars": 5})
-	GmManager.execute(pd, cm, {"_set_hero_info": hero_list})
-	var kit: Dictionary = GmManager.grant_test_kit(pd)
+	var equip_table: Dictionary = cm.get_raw_table("Equip")
+	var clear_cats: Dictionary = {"EQUIP.SYNTHETICS": true, "EQUIP.PARTS": true}
+	var removed: Array = []
+	for item_id in pd.items.keys().duplicate():
+		var row: Dictionary = equip_table.get(str(item_id), {})
+		if clear_cats.has(String(row.get("Category", ""))):
+			removed.append(int(item_id))
+			pd.items.erase(item_id)
 	GameData.save()
-	print("[GM_INJECT] done level=", pd.team_level,
-		" heroes=", pd.hero_manager.heroes.size(),
-		" gold=", kit.get("gold"), " diamond=", kit.get("diamond"),
-		" vitality=", kit.get("vitality"))
+	print("[GM_CLEAR v4] removed_kinds=", removed.size(), " ids=", removed)
