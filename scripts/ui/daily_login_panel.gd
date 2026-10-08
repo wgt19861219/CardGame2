@@ -3,11 +3,12 @@ extends PopWindow
 
 ## 每日登录月签到面板（View 层）— 照源 ui/popwindow/dailylogin.lua 翻译。
 ## 批 2 两件套改造（2026-08-16）：静态 chrome + 网格底板常驻 scenes/ui/daily_login_content.tscn；
-## 签到格 daily_login_cell.tscn 模板 fill（board 三态贴图/checked 勾/VIP 角标/Hero 光效/数量），
+## 签到格 daily_login_cell.tscn 模板 fill（board 三态贴图/checked 勾/Hero 光效/数量），
 ## 原 builder 层已退役（其 capInsets 互换错误与静态建节点随删除消亡）。
 ## 交互：点当日格(common)→领奖；点过去/未来格→奖励详情(Toast 降级，源 :422-460 弹卡)；
 ## close→关；奖励说明→说明(Toast 降级，源 :967-1028 弹窗)。
-## Logic 走 DailyLoginManager.claim_reward（单机化：领后 status→received，源 part/all 双步合并）。
+## Logic 走 DailyLoginManager.claim_reward（单机化：领后 status→received，源 part/all 双步合并；
+## 恒走 all 档 → 有双倍门槛的签到日特权档恒达标领双倍，2026-10-08 用户拍板恢复）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/daily_login_content.tscn")
 const CELL_SCENE: PackedScene = preload("res://scenes/ui/daily_login_cell.tscn")
@@ -27,10 +28,9 @@ const CONTENT_SCALE: float = 1.28125
 const ICON_CENTER_LOCAL: Vector2 = Vector2(51.0, 49.5)
 # ReadequipIcon frame 纹理像素尺寸（Sprite2D 原尺寸渲染口径，hero_detail 装备槽同款；
 # 源 :317-334 createIcon(id) 无 length → 显示原点尺寸 = 94×95÷CS = 73.37×74.13 →
-# scale=1/CS 补偿 + 中心定位，task-11 修：旧版未补偿致 icon 偏大溢出 board/盖 VIP 角标）
+# scale=1/CS 补偿 + 中心定位，task-11 修：旧版未补偿致 icon 偏大溢出 board）
 const FRAME_TEX_SIZE: Vector2 = Vector2(94.0, 95.0)
 const AMOUNT_RIGHT_LOCAL: Vector2 = Vector2(92.0, 79.5)
-const VIP_TAG_LOCAL: Vector2 = Vector2(24.0, 21.5)
 # 光效旋转（源 :313-315 CCRotateBy 5s/360 循环）
 const LIGHT_SPIN_SEC: float = 5.0
 # subhead 链式布局与弹跳（源 createSubhead :662-712 offset=5 / refreshSubhead :721-732）
@@ -40,7 +40,7 @@ const SUBHEAD_BOUNCE_SEC: float = 0.2
 # 查表兜底年份（当年月缺表时回落，源 getMonthDayAmount :96-108）
 const FALLBACK_YEAR: int = 2018
 # board 三态贴图（源 :245-253：当日 common=yellow、past/future=matrix；
-# purple 为源 VIP 双倍态，单机化裁剪——VIP 角标保留装饰）
+# purple 为源 VIP 双倍态，单机化裁剪——VIP 角标亦同步裁剪，2026-10-08 反馈清理）
 const MATRIX_RES: String = "res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix.png"
 const MATRIX_YELLOW_RES: String = "res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix_yellow.png"
 # 静态类型奖励 icon（源 getRewardData :148-152 icon_res 表；PlayerEXP 条目资产未随迁 → 降级）
@@ -159,22 +159,13 @@ func _fill_grid() -> void:
 		_cells.append(cell)
 
 
-# 单格 fill：数量/VIP 角标/Hero 光效（源 createRewardItem :222-378）。
+# 单格 fill：数量/Hero 光效（源 createRewardItem :222-378；VIP 角标已裁剪）。
 # checked 勾排模板最后绘制（源 z=10 置顶）；三态贴图在 _fill_grid 已切。
 func _fill_cell(cell: TextureButton, data: Dictionary, status: String) -> void:
 	var amount_lbl := cell.get_node("%AmountLabel") as Label
 	amount_lbl.text = "x%d" % int(data.get("amount", 1))
 	amount_lbl.size = amount_lbl.get_minimum_size()
 	amount_lbl.position = AMOUNT_RIGHT_LOCAL - Vector2(amount_lbl.size.x, amount_lbl.size.y * 0.5)
-	var vip: int = int(data.get("vip", 0))
-	(cell.get_node("%VipBg") as TextureRect).visible = vip > 0
-	var vip_num := cell.get_node("%VipNum") as Label
-	vip_num.visible = vip > 0
-	if vip > 0:
-		vip_num.text = "VIP%d" % vip
-		vip_num.size = vip_num.get_minimum_size()
-		vip_num.pivot_offset = vip_num.size * 0.5
-		vip_num.position = VIP_TAG_LOCAL - vip_num.size * 0.5
 	var light := cell.get_node("%Light") as TextureRect
 	var want_light: bool = String(data.get("type", "")) == "Hero" and (status == "future" or status == "common")
 	light.visible = want_light
@@ -257,7 +248,9 @@ func _on_cell_pressed(day: int) -> void:
 
 func _claim(day: int) -> void:
 	var now: int = int(Time.get_unix_time_from_system())
-	var r: Dictionary = _mgr.claim_reward(_player, _cm, now)
+	# STATUS_ALL=含双倍档：单机化特权档恒满级 → 有 vip_req 的签到日恒双倍
+	# （2026-10-08 用户拍板恢复；此前恒默认单倍，09-08「恒双倍」决策从未接通）。
+	var r: Dictionary = _mgr.claim_reward(_player, _cm, now, DailyLoginManager.STATUS_ALL)
 	if bool(r.get("ok", false)):
 		Toast.show_message("领取成功：%s ×%d" % [String(r.get("type", "")), int(r.get("amount", 0))])
 		_refresh_view(true)   # 领奖后 refreshSubhead 弹跳（源 :721-732）
@@ -274,7 +267,7 @@ func _show_detail(day: int) -> void:
 
 
 func _on_explain() -> void:
-	Toast.show_message("每日5:00重置，过期不可补领。达VIP等级当日可领双倍。")
+	Toast.show_message("每日5:00重置，过期不可补领。部分签到日奖励双倍。")
 
 
 # ── 数据查表（源 getRewardData :147-181 / getMonthDayAmount :96-108，原 builder 吸收）──
@@ -302,7 +295,6 @@ static func build_reward_data(cm: Variant) -> Array:
 			"type": String(row.get("Reward Type", "")),
 			"id": int(row.get("Reward ID", 0)),
 			"amount": int(row.get("Reward Amount", 0)),
-			"vip": int(row.get("Double Reward VIP Level", 0)),
 			"day": i,
 		})
 	return out

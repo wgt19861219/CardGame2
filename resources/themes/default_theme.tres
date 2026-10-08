@@ -526,11 +526,6 @@ DailyLoginAmountLabel/colors/font_color = Color(1, 1, 1, 1)
 DailyLoginAmountLabel/colors/font_outline_color = Color(0.372549, 0.25098, 0.168627, 1)
 DailyLoginAmountLabel/constants/outline_size = 2
 DailyLoginAmountLabel/font_sizes/font_size = 24
-DailyLoginVipNum/base_type = &"Label"
-DailyLoginVipNum/colors/font_color = Color(0.905882, 0.807843, 0.07451, 1)
-DailyLoginVipNum/colors/font_outline_color = Color(0, 0, 0, 1)
-DailyLoginVipNum/constants/outline_size = 1
-DailyLoginVipNum/font_sizes/font_size = 14
 ; 奖励说明按钮三态（源 :827-857 explain + explain_press down 层 → SB_dl_explain_n/p）
 DailyLoginExplainBtn/base_type = &"Button"
 DailyLoginExplainBtn/styles/normal = SubResource("SB_dl_explain_n")
