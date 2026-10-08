@@ -18,7 +18,7 @@ func test_build_reward_data_returns_month_days() -> void:
 	var data: Array = DailyLoginPanel.build_reward_data(cm)
 	assert_gt(data.size(), 0, "查表返当月>=1天")
 	var first: Dictionary = data[0]
-	for key in ["type", "id", "amount", "vip", "day"]:
+	for key in ["type", "id", "amount", "day"]:
 		assert_true(first.has(key), "每条含 " + key)
 	assert_eq(int(first["day"]), 1, "首条 day=1")
 
@@ -182,6 +182,18 @@ func test_builder_retired() -> void:
 	assert_false(text.contains("daily_login_builder"), "panel 无 builder 残留引用")
 
 
+# 双倍接线守卫（2026-10-08 用户拍板恢复「部分签到日奖励双倍」）：
+# panel._claim 必须传 STATUS_ALL——单机化特权档恒满级 → 表中带 Double Reward VIP Level
+# 的签到日（当月实测 19 天全 Item 型）恒双倍；若退回默认 STATUS_COMMON 则恒单倍
+# （09-08 决策「恒双倍」从未接通即此调用点漏传）。双倍语义行为级由
+# test_daily_login.gd test_claim_reward_status_1_double_when_vip_met 覆盖，此处锁调用参数。
+func test_panel_claim_passes_status_all() -> void:
+	var text: String = FileAccess.get_file_as_string(PANEL_PATH)
+	assert_true(text.contains("claim_reward(_player, _cm, now, DailyLoginManager.STATUS_ALL)"),
+		"_claim 传 STATUS_ALL（双倍档）")
+	assert_true(text.contains("部分签到日奖励双倍"), "奖励说明 Toast 含双倍句")
+
+
 # 静态树（chrome 常驻 tscn）：rect 照源换算。
 # 源 create :734-887：frame 中心 ccp(400,240) scaleSize 578x420 cap(50,50,478,50)（752x202 纹理）；
 # title_bg 中心 (400,441)（445x79÷CS）；close 中心 (675,440)（65x66÷CS）；
@@ -256,9 +268,9 @@ func test_content_static_tree() -> void:
 	assert_eq(reward_bg.patch_margin_bottom, 12, "RewardBg cap bottom=源 cap.y=15")
 
 
-# cell 模板静态树（照源 createRewardItem :222-378）：
+# cell 模板静态树（照源 createRewardItem :222-378；VIP 角标已随单机化裁剪 2026-10-08）：
 # board matrix 133x130 ÷CS=103.80x101.46；checked 132x130÷CS 中心=board 中心 z=10；
-# vip_bg 77x80÷CS anchor(0,1) 局部 (0,102)→top=-0.5；light 230x231÷CS 中心局部 (51,51.5)；
+# light 230x231÷CS 中心局部 (51,51.5)；
 # amount size24 anchor(1,0.5) 局部 (92,22)→(92,79.5)；三态贴图 fill 切换故默认全隐。
 func test_cell_template_static_tree() -> void:
 	var inst: TextureButton = (load(CELL_PATH) as PackedScene).instantiate() as TextureButton
@@ -272,13 +284,6 @@ func test_cell_template_static_tree() -> void:
 	assert_almost_eq(checked.size.x, 103.02, 0.01, "checked 宽 = 132/CS")
 	assert_almost_eq(checked.position.x + checked.size.x * 0.5, inst.size.x * 0.5, 0.01, "checked 中心=board 中心")
 	assert_false(checked.visible, "checked 默认隐藏（fill 按 past 切换）")
-	var vip_bg: TextureRect = inst.get_node("%VipBg") as TextureRect
-	assert_almost_eq(vip_bg.size.x, 60.10, 0.01, "vip_bg 宽 = 77/CS")
-	assert_almost_eq(vip_bg.position.y, -0.5, 0.01, "vip_bg 顶 = 101.5-102（anchor(0,1) 局部 (0,102)）")
-	assert_false(vip_bg.visible, "vip_bg 默认隐藏")
-	var vip_num: Label = inst.get_node("%VipNum") as Label
-	assert_almost_eq(vip_num.rotation, -PI / 4.0, 0.001, "vip num 旋转 -45°（源 :218）")
-	assert_false(vip_num.visible, "vip num 默认隐藏")
 	var light: TextureRect = inst.get_node("%Light") as TextureRect
 	assert_almost_eq(light.size.x, 179.51, 0.01, "light 宽 = 230/CS")
 	assert_almost_eq(light.pivot_offset.x, light.size.x * 0.5, 0.01, "light pivot 居中（旋转绕中心）")
@@ -320,22 +325,19 @@ func test_theme_variations_wired() -> void:
 	assert_true(t.contains("DailyLoginAmountLabel/font_sizes/font_size = 24"), "Amount 字号 24")
 	assert_true(t.contains("DailyLoginAmountLabel/colors/font_outline_color = Color(0.372549, 0.25098, 0.168627, 1)"),
 		"Amount 描边=ccc3(95,64,43)")
-	assert_true(t.contains("DailyLoginVipNum/font_sizes/font_size = 14"), "VipNum 字号 14")
 	assert_true(t.contains("DailyLoginSubheadPreLabel/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)"),
 		"SubheadPre 色=ccc3(238,204,119)")
 	assert_true(t.contains("DailyLoginSubheadSufLabel/colors/font_color = Color(1, 0.8, 0.356863, 1)"),
 		"SubheadSuf 色=ccc3(255,204,91)")
 
 
-# fill 语义：三态贴图/勾/VIP 角标/Hero 光效/静态类型 icon（8 月表 day1=Item vip1、
+# fill 语义：三态贴图/勾/Hero 光效/静态类型 icon（8 月表 day1=Item、
 # day2=Diamond、day7=Hero；首登 freq=1 common → day1 common 其余 future）。
 func test_grid_fill_semantics() -> void:
 	var panel: DailyLoginPanel = _make_panel()
 	var day1: TextureButton = panel._cells[0]
 	assert_eq((day1.texture_normal as Texture2D).resource_path,
 		"res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix_yellow.png", "当日格(common)=yellow")
-	assert_true((day1.get_node("%VipBg") as TextureRect).visible, "day1 vip=1 → 角标显示")
-	assert_eq((day1.get_node("%VipNum") as Label).text, "VIP1", "VipNum 文案 VIP1")
 	assert_false((day1.get_node("%CheckedIcon") as TextureRect).visible, "当日未领无勾")
 	var day2: TextureButton = panel._cells[1]
 	assert_eq((day2.texture_normal as Texture2D).resource_path,
@@ -363,7 +365,7 @@ func test_cell_global_position() -> void:
 # Item/Hero icon 居中定位（task-11 守卫）：源 :317-334 createIcon(id) 无 length → 显示原点
 # 尺寸 = frame 纹理 94×95 ÷CS ≈ 73.37×74.13，icon 中心 board 局部 (51,52)（y-up → godot 49.5）。
 # 曾因 ReadequipIcon Sprite2D 按纹理原尺寸渲染且未补偿：icon 视觉 94×95 从 (15,13.5) 起 →
-# 中心 (57,61) 偏右下、溢出 board(103.8x101.46)、盖住 VipBg（验收三症状同源）。
+# 中心 (57,61) 偏右下、溢出 board(103.8x101.46)（验收三症状同源）。
 func test_item_icon_centered_in_board() -> void:
 	var panel: DailyLoginPanel = _make_panel()
 	var target_day: int = -1
@@ -387,30 +389,27 @@ func test_item_icon_centered_in_board() -> void:
 
 
 # cell 内层序（task-11 守卫 → 复审 F1-daily 方案 b 返工 2026-08-16）：
-# 源添加序 light→icon→vip_bg→amount、checked z=10 置顶（dailylogin.lua :297-375/:277-294）。
+# 源添加序 light→icon→amount（vip_bg 已随单机化裁剪 2026-10-08）、checked z=10 置顶
+# （dailylogin.lua :297-375/:277-294）。
 # 方案 b：全节点不设 z/z_as_relative，同 z=0 下 Godot 按声明序绘制——声明序即层序。
-# 曾因 IconHost 排 VipBg 后声明且无 z：icon 盖 vip（vip 须反过来盖 icon）；
-# 又曾用 z_index=1/2 + Cell 根 absolute 下移：RewardBg（同宿主保持 relative，eff=100）
-# 反盖 eff=0 的全部签到格（复审 PIL 实测格子区与底板纹理色一致），两版均已返工弃用。
-func test_cell_z_order_icon_below_vip_below_checked() -> void:
+# 曾因 IconHost 排后声明且无 z：icon 盖序错位；又曾用 z_index=1/2 + Cell 根 absolute
+# 下移：RewardBg（同宿主保持 relative，eff=100）反盖 eff=0 的全部签到格
+# （复审 PIL 实测格子区与底板纹理色一致），两版均已返工弃用。
+func test_cell_z_order_icon_below_amount_below_checked() -> void:
 	var inst: TextureButton = (load(CELL_PATH) as PackedScene).instantiate() as TextureButton
 	add_child_autofree(inst)
 	var light: TextureRect = inst.get_node("%Light") as TextureRect
 	var icon_host: TextureRect = inst.get_node("%IconHost") as TextureRect
-	var vip_bg: TextureRect = inst.get_node("%VipBg") as TextureRect
-	var vip_num: Label = inst.get_node("%VipNum") as Label
 	var amount: Label = inst.get_node("%AmountLabel") as Label
 	var checked: TextureRect = inst.get_node("%CheckedIcon") as TextureRect
-	# 声明序照源添加序（同 z 下声明序即绘制序）：light→icon→vip_bg→vip_num→amount→checked
+	# 声明序照源添加序（同 z 下声明序即绘制序）：light→icon→amount→checked
 	assert_true(light.get_index() < icon_host.get_index(), "Light 先声明（icon 盖 light，源 :297-334）")
-	assert_true(icon_host.get_index() < vip_bg.get_index(), "IconHost 先于 VipBg（vip 盖 icon，源 :317-355）")
-	assert_true(vip_bg.get_index() < vip_num.get_index(), "VipBg 先于 VipNum（角标数字贴角标底）")
-	assert_true(vip_num.get_index() < amount.get_index(), "VipNum 先于 AmountLabel（amount 源 :356-375 在 vip 后添加）")
+	assert_true(icon_host.get_index() < amount.get_index(), "IconHost 先于 AmountLabel（amount 源 :356-375 后添加）")
 	assert_true(amount.get_index() < checked.get_index(), "CheckedIcon 最后声明=最上层（源 z=10 置顶）")
 	# 方案 b：Cell 根与子节点全部不设绝对 z（全 relative 基线，与弹窗兜底同层防逃逸/反盖）
 	assert_true(inst.z_as_relative, "Cell 根 z 保持 relative 默认（方案 b：无 z_as_relative=false）")
 	assert_eq(int(inst.z_index), 0, "Cell 根 z_index=0")
-	for n: CanvasItem in [light, icon_host, vip_bg, vip_num, amount, checked]:
+	for n: CanvasItem in [light, icon_host, amount, checked]:
 		assert_eq(int(n.z_index), 0, "%s z_index=0（纯声明序排层，无 z 逃逸面）" % n.name)
 		assert_true(n.z_as_relative, "%s z 保持 relative 默认" % n.name)
 

@@ -1,9 +1,4 @@
-[gd_scene load_steps=5 format=3]
-
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix.png" id="1_matrix"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_checked.png" id="2_checked"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_vip_bg.png" id="3_vipbg"]
-[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_get_item_bg_light_orange.png" id="4_light"]
+[gd_scene format=3]
 
 ; 签到单格模板（批 2 Task 3）：照源 createRewardItem :222-378。
 ; board 133x130 ÷CS=103.80x101.46，stretch=SCALE（修正 KEEP 原尺寸溢出 1.28x）；
@@ -12,81 +7,64 @@
 ; effective = 父基线（PopWindow 100）与弹窗兜底同层 → 后开弹窗按树序盖住、无逃逸。
 ; 曾用 Cell 根 z_as_relative=false 下移基线 0，但同挂 GridContent 的 RewardBg 保持
 ; relative(effective 100) 反盖全部签到格（复审 PIL 实测格子区与底板纹理色一致）。
-; 声明序照源添加序 light→icon→vip_bg→amount，checked 最后声明盖顶（源 :277-294 z=10）。
-; 同 z=0 下 Godot 按声明序绘制：icon 盖 light ✓、vip 盖 icon ✓、checked 盖全部 ✓。
-[node name="Cell" type="TextureButton"]
+; 声明序照源添加序 light→icon→amount，checked 最后声明盖顶（源 :277-294 z=10）。
+; 同 z=0 下 Godot 按声明序绘制：icon 盖 light ✓、checked 盖全部 ✓。
+; VIP 角标 vip_bg/vip_num（源 :202-221/:337-355）随单机化裁剪（2026-10-08 反馈清理：
+; 单机无 VIP 概念且面板领奖恒单倍，角标属误导性残留）。
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_matrix.png" id="1_ji1kf"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/tavern_get_item_bg_light_orange.png" id="2_prhjf"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dailylogin/dailylogin_checked.png" id="3_1lft8"]
+
+[node name="Cell" type="TextureButton" unique_id=669094806]
 offset_right = 103.8
 offset_bottom = 101.46
-texture_normal = ExtResource("1_matrix")
+texture_normal = ExtResource("1_ji1kf")
 ignore_texture_size = true
 stretch_mode = 0
 
 ; light 源 :297-316：230x231 ÷CS=179.51x180.29，中心局部 (51,51.5)，绕中心 5s/360° 循环（fill 起 tween）
-[node name="Light" type="TextureRect" parent="."]
+[node name="Light" type="TextureRect" parent="." unique_id=272669934]
 unique_name_in_owner = true
+visible = false
+layout_mode = 0
 offset_left = -38.76
 offset_top = -38.65
 offset_right = 140.75
 offset_bottom = 141.64
-texture = ExtResource("4_light")
-expand_mode = 1
 pivot_offset = Vector2(89.76, 90.15)
 mouse_filter = 2
-visible = false
+texture = ExtResource("2_prhjf")
+expand_mode = 1
 
 ; icon 宿主 源 :317-334：中心局部 (51,52)→(51,49.5)；Item/Hero 挂 readequip icon，静态类型填 texture
-[node name="IconHost" type="TextureRect" parent="."]
+[node name="IconHost" type="TextureRect" parent="." unique_id=1438451085]
 unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
 expand_mode = 1
-mouse_filter = 2
-
-; vip_bg 源 :337-351：77x80 ÷CS=60.10x62.45，anchor(0,1) 局部 (0,102)→顶=-0.5；
-; 源序 light→icon→vip_bg 后加盖上 → vip 后声明盖 icon（方案 b 纯声明序）
-[node name="VipBg" type="TextureRect" parent="."]
-unique_name_in_owner = true
-offset_left = 0.0
-offset_top = -0.5
-offset_right = 60.1
-offset_bottom = 61.94
-texture = ExtResource("3_vipbg")
-expand_mode = 1
-mouse_filter = 2
-visible = false
-
-; vip num 源 :202-221/335-355：VIP%d size14 ccc3(231,206,19) 黑描边，pos (24,80)→(24,21.5) 旋转 -45°
-[node name="VipNum" type="Label" parent="."]
-unique_name_in_owner = true
-offset_left = 4.0
-offset_top = 11.5
-offset_right = 44.0
-offset_bottom = 31.5
-theme_type_variation = &"DailyLoginVipNum"
-rotation = -0.785398
-mouse_filter = 2
-text = "VIP0"
-visible = false
 
 ; amount 源 :356-375：size24 白 stroke ccc3(95,64,43) 2，anchor(1,0.5) 局部 (92,22)→(92,79.5)
-; （fill 按 minimum_size 右对齐重定位）；源在 vip_bg 之后添加 → 照源声明序排 vip 后
-[node name="AmountLabel" type="Label" parent="."]
+; （fill 按 minimum_size 右对齐重定位）
+[node name="AmountLabel" type="Label" parent="." unique_id=1418491011]
 unique_name_in_owner = true
+layout_mode = 0
 offset_left = 52.0
 offset_top = 69.5
 offset_right = 92.0
 offset_bottom = 89.5
 theme_type_variation = &"DailyLoginAmountLabel"
-mouse_filter = 2
 text = "x0"
 
 ; checked 源 :277-294：132x130 ÷CS=103.02x101.46 中心=board 中心；源 z=10 显式置顶 →
 ; 最后声明=最上层盖全部（方案 b 纯声明序，无 z_index）
-[node name="CheckedIcon" type="TextureRect" parent="."]
+[node name="CheckedIcon" type="TextureRect" parent="." unique_id=84529111]
 unique_name_in_owner = true
+visible = false
+layout_mode = 0
 offset_left = 0.39
-offset_top = 0.0
 offset_right = 103.41
 offset_bottom = 101.46
-texture = ExtResource("2_checked")
-expand_mode = 1
 mouse_filter = 2
-visible = false
+texture = ExtResource("3_1lft8")
+expand_mode = 1
