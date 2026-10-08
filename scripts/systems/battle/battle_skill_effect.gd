@@ -71,9 +71,6 @@ static func get_damage(p_target: Variant, p_power: float, dt: String, field: Str
 		"crit_mod": crit_mod,
 	}))
 
-static func create_buff(skill: BattleSkill, p_target: Variant) -> BattleBuff:
-	return BattleBuff.new(skill.info.get("buff_info", {}), p_target, skill.caster)
-
 ## 返 [succ, dmg]（源末尾 return true, dmg；早返 false → [false, 0.0]）— 英雄 hook（Sil/OD）succ = basefunc[0]，DP buff.update 累计 dmg 依赖。
 static func take_effect_on(skill: BattleSkill, p_target: Variant, src: Variant = null) -> Array:
 	var info: Dictionary = skill.info
@@ -91,12 +88,13 @@ static func take_effect_on(skill: BattleSkill, p_target: Variant, src: Variant =
 	var dt: String = str(info.get("Damage Type", ""))
 	var affect_field: String = "mp" if bool(info.get("Affect MP", false)) else "hp"
 	var dmg: float = 0.0
+	# dt==""（无 Damage Type 的纯 buff 命中技，如 DP_ult/Sil_ult 等 57 个）：照源
+	# damage_type=nil 跳过 Heal/伤害分支 fall-through 到 buff 命中（2026-10-07 先知大招
+	# 无效果根修；旧版此处 return [false,0] 早退致 buff 永不挂、大招全灭）。
 	if dt == "Heal":
 		var heal: float = float(caster.attribs.get("HEAL", 0.0)) if affect_field == "hp" else 0.0
 		p_target.take_heal(p_power * (1.0 + heal / HEAL_DENOM), affect_field, caster)
-	elif dt == "":
-		return [false, 0.0]  # 无 damage_type（保留既有行为；源 damage_type=nil 实际 fall-through buff 命中，此偏差 P0-1 范围外）
-	else:
+	elif dt != "":
 		if dt == "AD" and not bool(info.get("No Dodge", false)):
 			var dodg: float = max(0.0, float(p_target.attribs.get("DODG", 0.0)) - float(caster.attribs.get("HIT", 0.0)))
 			if dodg / (DODGE_DENOM + dodg) > caster.engine.rng.randf():
@@ -124,7 +122,10 @@ static func take_effect_on(skill: BattleSkill, p_target: Variant, src: Variant =
 	if bool(p_target.is_alive()) and int(info.get("Buff ID", 0)) > 0:
 		var buff_res: Array = BattleBuff.check_add_buff(info.get("buff_info", {}), skill.level, int(p_target.level), p_target.attribs, caster.engine.rng)
 		if bool(buff_res[0]):
-			p_target.add_buff(create_buff(skill, p_target), caster)
+			# 走 skill.create_buff（createBuff hook 分发，源 takeEffectOn self:createBuff）：
+			# DP 怨灵/TB 变身/TA 折射等 20+ 英雄 buff hook 在此接通（旧版静态直调绕过 hook，
+			# buff 挂上但周期/护盾逻辑全灭，2026-10-07 先知大招无效果第二层根因）。
+			p_target.add_buff(skill.create_buff(p_target), caster)
 		else:
 			_show_buff_resist_popup(p_target, str(buff_res[1]))
 			buff_miss = true
