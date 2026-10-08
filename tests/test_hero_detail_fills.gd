@@ -51,3 +51,43 @@ func test_fill_stone_bar_texture_region_follows_ratio() -> void:
 		assert_almost_eq(at.region.size.x, 204.0 * ratio, 0.01, "region 宽=源纹理宽×sa/sn")
 		assert_eq(at.region.position.x, 0.0, "region 从纹理左端截取")
 	assert_almost_eq(bar.offset_right - 256.5, 180.0 * ratio, 0.01, "rect 宽=框宽×sa/sn")
+
+
+# 2026-10-08 红阶红框受控增强守卫：用户定案"橙色后面是红色"（源定制版 bf5c0cc 红阶只有红字
+# 无红框资产，本项目自制 frame_13/card_bg_red）。橙阶 12-17 → 11、红阶 18-23 → 13；
+# 名条源 name_frame_12 银白系（用户实测"进阶到顶名条变白"）退役不映射。
+func test_red_rank_frames_18_to_23() -> void:
+	for rank in range(18, 24):
+		assert_eq(HeroDetailFills._name_frame_no(rank), 13, "名条 rank %d → frame_13 红款" % rank)
+	assert_eq(HeroDetailFills._name_frame_no(17), 11, "名条 rank17 → frame_11 金（橙阶末档）")
+	assert_eq(HeroDetailFills._name_frame_no(23), 13, "名条 rank23 满阶红（旧表 22 项缺末位致越界，2026-10-08 修）")
+	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/herodetail_name_frame_13.png"), "名条红款资产存在")
+	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/hero_icon_frame_13.png"), "头像框红款资产存在")
+	assert_true(HeroDetailTabs._card_frame_res(18).contains("card_bg_red"), "卡片框 rank18 → red")
+	assert_true(HeroDetailTabs._card_frame_res(17).contains("card_bg_orange"), "卡片框 rank17 → orange")
+	assert_true(HeroDetailTabs._card_frame_res(23).contains("card_bg_red"), "卡片框 rank23 → red")
+	assert_true(ResourceLoader.exists("res://assets/ui/alpha/HVGA/card/card_bg_red.png"), "卡片红款资产存在")
+
+
+# 2026-10-08 详情页"+N"后缀补译守卫（源 readhero.lua:939 createHeroNameByInfo heroStar 段）：
+# 此前详情页只有纯名字；rank 23 满阶"红+5"用户实机找不到的根因之一（另一为 HERO_STAR 表 22 档）。
+func test_name_suffix_filled_by_rank() -> void:
+	var base: Control = load("res://scenes/ui/hero_detail_content.tscn").instantiate() as Control
+	add_child_autofree(base)
+	var cm: ConfigManager = ConfigManager.new()
+	cm.load_all()
+	var suffix: Label = base.get_node_or_null("%NameSuffix") as Label
+	assert_not_null(suffix, "%NameSuffix 节点存在（tscn 静态）")
+	if suffix == null:
+		return
+	# rank 23（Red+5 满阶）→ "+5" 红字；rank 1（White）→ 隐藏
+	var hero_max := HeroInstance.new(1)
+	hero_max.rank = 23
+	HeroDetailFills.fill_name_board(base.get_node("%TypeIcon") as TextureRect, base.get_node("%NameLabel") as Label, base.get_node_or_null("%NameFrame") as TextureRect, hero_max, cm, suffix)
+	assert_true(suffix.visible, "rank 23 后缀可见")
+	assert_eq(suffix.text, "+5", "rank 23 → '+5'")
+	assert_eq(suffix.get_theme_color("font_color"), ReadheroHandbook.NAME_COLOR_RED, "rank 23 后缀红字")
+	var hero_min := HeroInstance.new(1)
+	hero_min.rank = 1
+	HeroDetailFills.fill_name_board(base.get_node("%TypeIcon") as TextureRect, base.get_node("%NameLabel") as Label, base.get_node_or_null("%NameFrame") as TextureRect, hero_min, cm, suffix)
+	assert_false(suffix.visible, "rank 1 无后缀隐藏")

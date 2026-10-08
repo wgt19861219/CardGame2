@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 load_steps=2]
 
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-bg.png" id="1_arm7d"]
 [ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail_name_bg.png" id="2_rpxrd"]
@@ -555,6 +555,15 @@ text = "技能升级"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+
+[node name="NameSuffix" type="Label" parent="BaseLayer"]
+mouse_filter = 2
+offset_bottom = 273.25
+offset_left = 495
+offset_right = 535
+offset_top = 245.25
+unique_name_in_owner = true
+vertical_alignment = 1
 [node name="CloseBtn" type="TextureButton" parent="." unique_id=2058700208]
 unique_name_in_owner = true
 z_index = 2

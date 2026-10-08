@@ -62,7 +62,10 @@ const CONTENT_SCALE: float = 1.28125
 # 源 levelBg anchor(0,0) 下边距 container 底 15（cocos）——上边 y 随显示高（÷CS）变。
 const LEVEL_BG_BOTTOM: float = 15.0
 
-const RANK_FRAME_IDS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12]
+# 源 player.lua frames 表 23 项（1-11 照源）；红阶受控增强（2026-10-08 用户定案"橙色后面是红色"）：
+# 橙阶 rank 12-17 → frame_11（金橙）、红阶 rank 18-23 → frame_13（本项目自制红款，源定制版
+# bf5c0cc 红阶只有红字无红框资产，frame_12 金橙/源银白名条退役不映射）。
+const RANK_FRAME_IDS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 13, 13, 13, 13, 13, 13]
 
 var icon: Node2D = null
 var ori_icon: Node2D = null
