@@ -9,9 +9,10 @@ const OFFSET_X: float = 0.0    # Cocos 800×480 左下原点 → Godot 800×480 
 const BASE_Y: float = 480.0
 
 # ---- name_frame 名条品质边框（源 player.lua:2121 name_frames 表 + getIconNameFrameByRank:2149）----
-# rank 1-22 → 帧编号（含重复条目保源语义：rank 10/11 同图、12-19 同图、20-22 同图）。
+# rank 1-11 照源（10/11 同图）；红阶受控增强（2026-10-08 用户定案）：橙阶 12-17 → 11（金）、
+# 红阶 18-23 → 13（本项目自制红款；源 name_frame_12 银白系退役——用户实测"进阶到顶名条变白"即它）。
 const NAME_FRAME_DIR: String = "res://assets/ui/alpha/HVGA/herodetail_name_frame_"
-const NAME_FRAME_BY_RANK: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 12, 12, 12]
+const NAME_FRAME_BY_RANK: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 11, 11, 11, 11, 13, 13, 13, 13, 13, 13]
 
 # ---- portrait FCA（源 createHeroFca window.lua:11-18）----
 const HERO_FCA_COCOS: Vector2 = Vector2(400.0, 265.0)
@@ -33,7 +34,7 @@ static func to_godot(cx: float, cy: float) -> Vector2:
 # 返 {gs_label, tab_buttons}（panel 持有：gs_label 供 refresh_gs_after_wear，tab_buttons 供 tab 切换）。
 static func setup_base(base: Control, hero: HeroInstance, cm: Variant) -> Dictionary:
 	fill_portrait(base.get_node("%PortraitHost"), hero, cm)
-	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), base.get_node_or_null("%NameFrame"), hero, cm)
+	fill_name_board(base.get_node("%TypeIcon"), base.get_node("%NameLabel"), base.get_node_or_null("%NameFrame"), hero, cm, base.get_node_or_null("%NameSuffix") as Label)
 	fill_stars(_collect_yellow_stars(base), hero.stars)
 	var gs_label: Label = fill_info_board(base, hero, cm)
 	fill_action_labels(base, hero, cm)
@@ -104,18 +105,52 @@ static func _add_portrait_fallback(parent: Control, hero: HeroInstance, cm: Vari
 
 
 # fill %TypeIcon texture（源 hero_mark_res STR/AGI/INT，item.lua:1-5）+ %NameLabel text（Display Name）
-# + %NameFrame texture（源 getIconNameFrameByRank，rank 1-22 → 12 张品质边框）。
-static func fill_name_board(type_icon: TextureRect, name_label: Label, name_frame: TextureRect, hero: HeroInstance, cm: Variant) -> void:
+# + %NameSuffix "+N" 后缀（源 readhero.lua:939 createHeroNameByInfo heroStar 段：star>0 加后缀+
+# getHeroNameColorByRank 分色；2026-10-08 补译，此前详情页只有纯名字）+ %NameFrame texture。
+static func fill_name_board(type_icon: TextureRect, name_label: Label, name_frame: TextureRect, hero: HeroInstance, cm: Variant, suffix_label: Label = null) -> void:
 	var attrib: String = String(cm.lookup("Unit", "Main Attrib", int(hero.tid))) if cm != null else ""
 	var type_res: String = _type_icon_res(attrib)
 	if not type_res.is_empty() and ResourceLoader.exists(type_res):
 		type_icon.texture = load(type_res) as Texture2D
 	name_label.text = get_display_name(hero, cm)
+	if suffix_label != null:
+		var star: int = ReadheroHandbook.get_hero_star_by_rank(int(hero.rank))
+		suffix_label.visible = star > 0
+		if star > 0:
+			suffix_label.text = "+" + str(star)
+			suffix_label.add_theme_font_size_override("font_size", NAME_SUFFIX_FONT_SIZE)
+			suffix_label.add_theme_color_override("font_color", ReadheroHandbook.get_hero_name_color_by_rank(int(hero.rank)))
 	if name_frame != null:
 		var frame_no: int = _name_frame_no(int(hero.rank))
 		var frame_res: String = NAME_FRAME_DIR + str(frame_no) + ".png"
 		if ResourceLoader.exists(frame_res):
 			name_frame.texture = load(frame_res) as Texture2D
+
+
+# 后缀贴名字右侧（源 createHeroNameByInfo name+suffix 拼接；名字按 NameLabel 140 框居中，
+# 后缀 = 框中心 + 名宽/2 + 间隙）。fill 时未挂树 theme 断链测量不准，panel 侧 deferred 调
+#（hero_package_item._relayout_name 同范式判例）。
+const NAME_SUFFIX_FONT_SIZE: int = 20
+const NAME_SUFFIX_GAP: float = 2.0
+
+static func relayout_name_suffix(name_label: Label, suffix_label: Label) -> void:
+	if suffix_label == null or not suffix_label.visible:
+		return
+	var host_w: float = name_label.offset_right - name_label.offset_left
+	var center_x: float = name_label.offset_left + host_w * 0.5
+	var name_w: float = name_label.get_minimum_size().x
+	var suffix_w: float = suffix_label.get_minimum_size().x
+	suffix_label.offset_left = center_x + name_w * 0.5 + NAME_SUFFIX_GAP
+	suffix_label.offset_right = suffix_label.offset_left + suffix_w
+
+
+# panel 单行入口：立即对齐（NameLabel 字号是节点 override 不依赖 theme 链，fill 时测量即准；
+# 曾用 lambda call_deferred 二次对齐——面板销毁后捕获已 freed 每关一次灌 2 条引擎 ERROR，2026-10-08 删）。
+static func layout_name_suffix_deferred(base: Control) -> void:
+	var suffix: Label = base.get_node_or_null("%NameSuffix") as Label
+	if suffix == null:
+		return
+	relayout_name_suffix(base.get_node("%NameLabel") as Label, suffix)
 
 
 # rank → name_frame 帧编号（源 player.lua:2149 getIconNameFrameByRank = name_frames[rank]）。

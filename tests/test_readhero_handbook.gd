@@ -168,13 +168,23 @@ func test_get_hero_star_by_rank_rank11_four() -> void:
 	assert_eq(ReadheroHandbook.get_hero_star_by_rank(11), 4, "rank 11 → star 4（+4 后缀）")
 
 
-func test_get_hero_star_by_rank_rank22_five() -> void:
-	assert_eq(ReadheroHandbook.get_hero_star_by_rank(22), 5, "rank 22 → star 5（+5 后缀，表末）")
+# 源 hero_star 表 22 档且 rank17 起与 equip_rank_info 命名错位一档（源定制版 bf5c0cc 漏扩）；
+# 2026-10-08 对齐 RANK_INFO 补全 23 档（12-17=Orange~Orange+5、18-23=Red~Red+5）。
+func test_get_hero_star_by_rank_rank17_five() -> void:
+	assert_eq(ReadheroHandbook.get_hero_star_by_rank(17), 5, "rank 17 → star 5（Orange+5 橙阶末档）")
+
+
+func test_get_hero_star_by_rank_rank18_zero() -> void:
+	assert_eq(ReadheroHandbook.get_hero_star_by_rank(18), 0, "rank 18 → star 0（Red 无后缀，红阶起档）")
+
+
+func test_get_hero_star_by_rank_rank23_five() -> void:
+	assert_eq(ReadheroHandbook.get_hero_star_by_rank(23), 5, "rank 23 → star 5（Red+5 满阶『+5』后缀；旧表 22 档缺此档，2026-10-08 修）")
 
 
 func test_get_hero_star_by_rank_out_of_range_zero() -> void:
 	assert_eq(ReadheroHandbook.get_hero_star_by_rank(0), 0, "rank 0 越界 → 0")
-	assert_eq(ReadheroHandbook.get_hero_star_by_rank(23), 0, "rank 23 越界 → 0（源 Lua nil or 0 兜底）")
+	assert_eq(ReadheroHandbook.get_hero_star_by_rank(24), 0, "rank 24 越界 → 0（源 Lua nil or 0 兜底）")
 
 
 # 源 player.lua:2179-2202 hero_max_star 表（保留接口）。
@@ -201,5 +211,6 @@ func test_get_hero_name_color_by_rank_segments() -> void:
 	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(11), ReadheroHandbook.NAME_COLOR_PURPLE, "rank 11 → 紫")
 	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(12), ReadheroHandbook.NAME_COLOR_ORANGE, "rank 12 → 橙")
 	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(16), ReadheroHandbook.NAME_COLOR_ORANGE, "rank 16 → 橙")
-	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(17), ReadheroHandbook.NAME_COLOR_RED, "rank 17 → 红")
+	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(17), ReadheroHandbook.NAME_COLOR_ORANGE, "rank 17 → 橙（Orange+5 橙阶末档，2026-10-08 对齐 RANK_INFO）")
+	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(18), ReadheroHandbook.NAME_COLOR_RED, "rank 18 → 红（Red 红阶起档）")
 	assert_eq(ReadheroHandbook.get_hero_name_color_by_rank(0), ReadheroHandbook.NAME_COLOR_DEFAULT, "rank 0 兜底 → 默认白")

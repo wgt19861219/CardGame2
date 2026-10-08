@@ -79,7 +79,6 @@ func setup_panel(p_hero: HeroInstance, p_cm: Variant, p_mgr: HeroManager = null,
 	setup()   # PopWindow.setup（shade + container）
 	_build_content()
 
-
 # 建 UI 内容（base + tab view instantiate + fill；createWindow window.lua:2384-2396）。
 func _build_content(tab: String = DEFAULT_TAB) -> void:
 	var content := CONTENT_SCENE.instantiate()
@@ -88,6 +87,7 @@ func _build_content(tab: String = DEFAULT_TAB) -> void:
 	var result: Dictionary = HeroDetailFills.setup_base(_base_layer, hero, cm)
 	_gs_label = result["gs_label"] as Label
 	_tab_buttons = result["tab_buttons"] as Dictionary
+	HeroDetailFills.layout_name_suffix_deferred(_base_layer)
 	if hero_manager != null:
 		HeroDetailFills.fill_stone_bar(_base_layer, hero, cm, hero_manager)
 	_pre_gs = hero.gs if hero != null else -1

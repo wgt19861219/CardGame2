@@ -7,7 +7,7 @@ extends RefCounted
 ## 静态结构在 evolve_equip_content.tscn（底板/标题/ScrollContainer）；行与图标数据驱动动态建
 ## （照源 draglist createEquipInfo 行；源表断档 `if not rankEquip then break`）。
 
-# 源 parameter.lua:43 unit_max_rank=23（列表路线全档；玩家进阶上限 22 见 HeroManager.MAX_EQUIP_RANK）。
+# 源 parameter.lua:43 unit_max_rank=23（列表路线全档 = 玩家进阶上限，见 HeroManager.MAX_EQUIP_RANK）。
 const RANK_LIST_MAX: int = 23
 const SLOT_COUNT: int = 6
 # 源 itemHeight=200 + createEquipList 行距 (itemHeight+8)（VBox separation 补 8）。

@@ -135,10 +135,14 @@ static func _measure_label_text_width(label: Label, text_str: String) -> float:
 	return font.get_string_size(text_str, HORIZONTAL_ALIGNMENT_LEFT, -1.0, max(size, 1)).x
 
 
-# rank → card_bg_{color}.png（源 card_frame 索引）。red 缺图 → orange 降级。
+# rank → card_bg_{color}.png（源 card_frame 索引 12 项封顶 orange，13+ 源越界 nil；本项目分段兜底）。
+# 红阶受控增强（2026-10-08 用户定案）：rank 18-23 → card_bg_red（本项目自制红款，card_bg_red.png）。
+const CARD_FRAME_RED_MIN_RANK: int = 18
 static func _card_frame_res(rank: int) -> String:
 	var color: String = "white"
-	if rank >= 12:
+	if rank >= CARD_FRAME_RED_MIN_RANK:
+		color = "red"
+	elif rank >= 12:
 		color = "orange"
 	elif rank >= 7:
 		color = "purple"

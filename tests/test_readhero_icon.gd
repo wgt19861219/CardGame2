@@ -47,9 +47,10 @@ func test_frame_id_by_rank() -> void:
 	assert_eq(ReadheroIcon._frame_id_by_rank(5), 5, "rank5 → frame_5")
 	assert_eq(ReadheroIcon._frame_id_by_rank(10), 10, "rank10 → frame_10")
 	assert_eq(ReadheroIcon._frame_id_by_rank(11), 10, "rank11 → frame_10（源 frames 重复）")
-	assert_eq(ReadheroIcon._frame_id_by_rank(12), 11, "rank12 → frame_11")
-	assert_eq(ReadheroIcon._frame_id_by_rank(20), 11, "rank20 → frame_11")
-	assert_eq(ReadheroIcon._frame_id_by_rank(21), 12, "rank21 → frame_12")
+	assert_eq(ReadheroIcon._frame_id_by_rank(12), 11, "rank12 → frame_11（橙阶金）")
+	assert_eq(ReadheroIcon._frame_id_by_rank(17), 11, "rank17 → frame_11（橙阶末档）")
+	assert_eq(ReadheroIcon._frame_id_by_rank(18), 13, "rank18 → frame_13（红阶起档，红款受控增强 2026-10-08）")
+	assert_eq(ReadheroIcon._frame_id_by_rank(23), 13, "rank23 → frame_13（方案 B 满阶红；旧表 22 项漏末位致越界回落 frame_1 白框，2026-10-08 修）")
 	assert_eq(ReadheroIcon._frame_id_by_rank(25), 1, "越界 → frame_1 默认")
 
 

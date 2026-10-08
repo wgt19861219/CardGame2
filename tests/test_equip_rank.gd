@@ -59,14 +59,17 @@ func test_upgrade_rank_fails_without_full_gear() -> void:
 	var inst_id := mgr.add_hero(1)
 	assert_false(mgr.upgrade_rank(inst_id), "未穿齐进阶失败")
 
-func test_upgrade_rank_caps_at_22() -> void:
-	# 源 player.lua:2066 canUpgrade `return self._rank < 22`（玩家装备 rank 进阶上限 22；
-	# Hero_equip 表 23 档是数据，rank 23 玩家不可达，照源）。
+func test_upgrade_rank_caps_at_23() -> void:
+	# 上限 23（源服务端 main.lua:1563 maxRank=parameter.unit_max_rank=23，bf5c0cc 扩 Red+5 时改；
+	# player.lua:2066 canUpgrade `<22` 是死代码断言，2026-10-08 前误照译致 22→23 卡死）。
 	var mgr := HeroManager.new(cm)
 	var inst_id := mgr.add_hero(1)
 	var hero := mgr.get_hero(inst_id)
-	hero.rank = 22  # 上限（源 _rank < 22）
-	assert_false(mgr.upgrade_rank(inst_id), "rank 22 为上限，不可再进阶（源 _rank<22）")
+	hero.rank = 22
+	_wear_full_gear(mgr, inst_id)   # 穿齐 rank22 配方
+	assert_true(mgr.upgrade_rank(inst_id), "rank 22 穿齐后可进 23（Red+4→Red+5 满阶最后一跃）")
+	assert_eq(hero.rank, 23, "进阶后 rank 23")
+	assert_false(mgr.upgrade_rank(inst_id), "rank 23 为上限，不可再进阶（源 unit_max_rank=23）")
 
 
 # 战斗力 GS（单一事实来源，2026-09-08 定稿）：hero.gs = 战斗单位全属性加权 gs

@@ -13,24 +13,26 @@ const HERO_TYPE_ID_MAX: int = 100
 const POS_FRONT: String = "UNIT.FRONT_ROW"
 const POS_MIDDLE: String = "UNIT.MIDDLE_ROW"
 const POS_REAR: String = "UNIT.REAR_ROW"
-# 索引 0 占位，索引 = rank（Lua 1-based → GDScript 0-based 加占位对齐；表本身 22 元素 + 1 占位 = 23）。
+# 索引 0 占位，索引 = rank。源 readhero.lua/player.lua hero_star 表 22 档且 rank17 起与
+# equip_rank_info 命名错位一档（源定制版 bf5c0cc 扩 23 档时漏扩此表，rank23 无"+5"后缀）；
+# 2026-10-08 对齐 RANK_INFO 命名（12-17=Orange~Orange+5、18-23=Red~Red+5）补全 23 档。
 const HERO_STAR: Array[int] = [
-	0, 0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5
+	0, 0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5
 ]
 const HERO_MAX_STAR: Array[int] = [
-	0, 0, 1, 1, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5
+	0, 0, 1, 1, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5
 ]
 const NAME_COLOR_WHITE: Color = Color(254.0 / 255.0, 251.0 / 255.0, 241.0 / 255.0)       # rank 1
 const NAME_COLOR_YELLOW: Color = Color(248.0 / 255.0, 255.0 / 255.0, 62.0 / 255.0)       # rank 2-3
 const NAME_COLOR_BLUE: Color = Color(96.0 / 255.0, 172.0 / 255.0, 243.0 / 255.0)         # rank 4-6
 const NAME_COLOR_PURPLE: Color = Color(1.0, 128.0 / 255.0, 1.0)                          # rank 7-11
-const NAME_COLOR_ORANGE: Color = Color(1.0, 152.0 / 255.0, 72.0 / 255.0)                 # rank 12-16
-const NAME_COLOR_RED: Color = Color(1.0, 60.0 / 255.0, 60.0 / 255.0)                     # rank >= 17
-const NAME_COLOR_DEFAULT: Color = Color(1.0, 1.0, 1.0)                                   # rank<1 兜底
+const NAME_COLOR_ORANGE: Color = Color(1.0, 152.0 / 255.0, 72.0 / 255.0)        # rank 12-17（Orange~Orange+5，2026-10-08 对齐 RANK_INFO 命名）
+const NAME_COLOR_RED: Color = Color(1.0, 60.0 / 255.0, 60.0 / 255.0)           # rank >= 18（Red~Red+5）
+const NAME_COLOR_DEFAULT: Color = Color(1.0, 1.0, 1.0)                         # rank<1 兜底
 const RANK_YELLOW_MAX: int = 3
 const RANK_BLUE_MAX: int = 6
 const RANK_PURPLE_MAX: int = 11
-const RANK_ORANGE_MAX: int = 16
+const RANK_ORANGE_MAX: int = 17
 
 
 static func get_stone_id(tid: int, cm: Variant) -> int:

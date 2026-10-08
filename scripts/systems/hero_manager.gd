@@ -15,7 +15,9 @@ var gold: int = 0
 var next_id: int = 1
 var hero_cache: Dictionary = {}  # tid(int) -> {pre_exp,pre_level,exp_increment}（源 ed.player.heroCache，结算升级动画用，player.lua:1977-1982）
 
-const MAX_EQUIP_RANK: int = 22  # 玩家装备 rank 进阶上限（源 player.lua:2066 canUpgrade `_rank < 22`；Hero_equip 表 23 档是数据，rank 23 玩家不可达，照源）
+const MAX_EQUIP_RANK: int = 23  # 玩家装备 rank 进阶上限（源服务端 main.lua:1563 maxRank=parameter.unit_max_rank=23，
+                                # bf5c0cc 扩 Red+5 时由 22 改 23；player.lua:2066 canUpgrade 的 `<22` 是从未被调用的
+                                # 死代码断言，2026-10-08 前误照译致 rank22→23 卡死、满阶"+5"不可达）
 const EQUIP_SLOT_COUNT: int = 6  # 装备槽数（源 player._items 1-6，本项目 equip_slots 0-5）
 const GS_ROUND: float = 0.5  # 战力取整（源 recalcHeroGs math.floor(gs+0.5) 四舍五入）
 const SKILL_SLOT_MIN: int = 4  # 技能等级槽下限（源 addHero {1,1,1,1}；技能升级 UI 固定 4 格）
