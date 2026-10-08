@@ -600,3 +600,37 @@ func test_release_outside_row_does_not_eat() -> void:
 	assert_eq(int(pd.items.get(pill_id, 0)), 3, "release 滑出行外不吃（位移 6px<8px）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# 群反馈 #6（2026-10-08）：列表按住拖动滚动——ScrollHost 此前只接滚轮，触屏/鼠标
+# 按住拖零响应"不能往下拉选其他角色"。8 英雄 4 行溢出视口，press/motion 直调 _input。
+func test_drag_scrolls_list() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var pill_id: int = _find_exp_pill()
+	pd.add_item(pill_id, 10)
+	for i in range(8):
+		pd.hero_manager.add_hero(1)
+	var panel := EatexpPanel.new("eatexp", {})
+	panel.setup_panel(pill_id, cm, pd)
+	panel.show_window(root)
+	await get_tree().process_frame
+	await get_tree().process_frame   # 两帧：register_on_enter 建行 + ScrollHost rect 布局就绪
+	var sc: ScrollContainer = panel._scroll
+	assert_not_null(sc, "ScrollHost 已接线（#6）")
+	var rc: Rect2 = sc.get_global_rect()
+	assert_gt(rc.size.y, 0.0, "ScrollHost rect 已布局")
+	var c: Vector2 = rc.get_center()
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.global_position = c
+	panel._input(press)
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.global_position = c - Vector2(0.0, 60.0)
+	panel._input(motion)
+	assert_gt(sc.scroll_vertical, 0.0, "向上拖 60px → scroll_vertical 增（源 draglist 手势）")
+	panel.remove_window()
+	root.queue_free()

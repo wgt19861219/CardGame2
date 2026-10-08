@@ -139,6 +139,9 @@ func test_buy_skill_stren_point_gradient() -> void:
 	# 连续买 3 次，确认每次扣费递增
 	var costs: Array[int] = []
 	for i in 3:
+		# 每轮清点避 VIP 上限拒买（2026-10-08 满点拒买入 Logic——单机化受控偏离，
+		# 顶格后购买白扣钻石；pd.vip_level 字段单机化后不被 privilege_vip_level 读取）
+		pd.skill_points = 0
 		var before: int = pd.diamond
 		assert_true(SkillPointManager.buy_stren_point(pd), "第 %d 次购买" % (i + 1))
 		costs.append(before - pd.diamond)
@@ -146,6 +149,17 @@ func test_buy_skill_stren_point_gradient() -> void:
 	# 梯度：GradientPrice[1] <= [2] <= [3]
 	if costs[0] > 0 and costs[1] > 0:
 		assert_true(costs[1] >= costs[0], "第2笔>=第1笔（梯度递增）")
+
+
+func test_buy_skill_stren_point_full_reject() -> void:
+	# 2026-10-08 实机复验发现：顶格后 UI 长按连买白扣钻石 → 满点拒买入 Logic（单机化受控偏离）
+	var pd := PlayerData.new(cm)
+	pd.diamond = 100000
+	pd.skill_points = 20   # privilege_vip_level 恒满档（单机去 VIP），Max Skill Points=20
+	var d0: int = pd.diamond
+	assert_false(SkillPointManager.buy_stren_point(pd), "点数已满 → 拒买")
+	assert_eq(pd.diamond, d0, "钻石不扣")
+	assert_eq(pd.skill_reset_times, 0, "reset_times 不变")
 
 
 func test_buy_skill_stren_point_no_diamond() -> void:

@@ -16,6 +16,9 @@ const BOARD_PAD: float = 28.0   # 底板四周留白
 const TITLE_KEY: String = "EQUIPSTRENGTHEN.PLEASE_SELECT_HERO"
 
 var _on_pick: Callable = Callable()
+var _list: ScrollContainer = null   # 选英雄滚动列表（2026-10-08 #9 拖动滚动宿主）
+var _drag_state: Dictionary = {}    # DragScrollHelper 拖拽滚动跨帧基准
+var _cell_press: Variant = null     # 格 press 基准（release is_tap 判定，2026-10-08 #9）
 
 
 ## heroes: 待选英雄（全部拥有英雄）；current_inst_id 当前英雄（高亮；-1 未选态全亮）。
@@ -56,6 +59,7 @@ func _build_row(heroes: Array, current_inst_id: int, p_cm: Variant) -> void:
 	list.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(list)
 	list.add_child(row)
+	_list = list
 	# 手动居中（container 非 Container 不驱动 anchor 布局）：底板包 box，整体落屏幕中心
 	var box_min: Vector2 = box.get_combined_minimum_size()
 	var board := NinePatchRect.new()
@@ -92,10 +96,34 @@ func _make_cell(h: HeroInstance, is_current: bool, p_cm: Variant) -> Control:
 	cell.add_child(name_lbl)
 	cell.modulate.a = 1.0 if is_current else DIM_ALPHA
 	var picked: HeroInstance = h
-	cell.gui_input.connect(func(ev: InputEvent) -> void:
-		if ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed:
-			AudioPlayer.play_sfx("common_close_popup_window")
-			remove_window()
-			if _on_pick.is_valid():
-				_on_pick.call(picked))
+	cell.gui_input.connect(func(ev: InputEvent) -> void: _on_cell_input(ev, picked))
 	return cell
+
+
+# 列表按住拖动滚动（DragScrollHelper.handle_input，daily_login 2026-10-06 同款接线；
+# 群反馈 #9「装备附魔不能上下拖动选择角色」——ScrollContainer 只有滚轮无拖拽，
+# 触屏/鼠标按住拖动零响应，英雄 3 行+ 时下半列表选不到）。
+func _input(event: InputEvent) -> void:
+	DragScrollHelper.handle_input(_list, event, _drag_state)
+
+
+# 格输入：press 记基准 → release 位移 <8px 才选中（DragScrollHelper.is_tap）。
+# 旧版按下即选——接拖动滚动后按住拖动会误触选中关窗，2026-10-08 与 #9 一并根修
+# （package_panel/hero_package_panel 同范式；格 gui_input 收不到格外的 release，天然安全）。
+func _on_cell_input(event: InputEvent, picked: HeroInstance) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mb: InputEventMouseButton = event
+	if mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if mb.pressed:
+		_cell_press = mb.global_position
+		return
+	var tap_pick: bool = DragScrollHelper.is_tap(_cell_press, mb.global_position)
+	_cell_press = null
+	if not tap_pick:
+		return
+	AudioPlayer.play_sfx("common_close_popup_window")
+	remove_window()
+	if _on_pick.is_valid():
+		_on_pick.call(picked)

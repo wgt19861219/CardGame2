@@ -410,3 +410,17 @@ func test_magic_ten_guarantees_week_hero() -> void:
 				soul_count += 1
 		assert_true(has_week, "magic 十连必得本周英雄 %d（seed %d）" % [week_hero, i])
 		assert_eq(soul_count, 10, "十连主位 10 个全为魂石（seed %d）" % i)
+
+
+# 群反馈 #8（2026-10-08）：魂匣（MagicSoul）免费 CD 432000s(120h)→3600s(1h)。
+# 源 CD 120h 卡死成"5 天 1 次免费"，改 1h 后每日 1 次（FREE_TIMES 跨日重置）真正生效。
+func test_magic_soul_free_cd_one_hour() -> void:
+	var pd := PlayerData.new(cm)
+	var now: int = 1000000
+	assert_eq(TavernData.is_show_free(pd, "MagicSoul", now), true, "新档魂匣免费可用")
+	TavernData.use_free_tavern(pd, "MagicSoul", now)
+	assert_eq(TavernData.get_countdown(pd, "MagicSoul", now + 10), 3590, "CD 中剩 3590s（1h 档）")
+	assert_eq(TavernData.get_countdown(pd, "MagicSoul", now + 1800), 1800, "半程剩 1800s")
+	assert_eq(TavernData.get_countdown(pd, "MagicSoul", now + 3600), 0, "过 1h CD 归 0")
+	assert_eq(TavernData.is_show_free(pd, "MagicSoul", now + 3600), false, "同日免费次数已用仍非 free")
+	assert_eq(TavernData.is_show_free(pd, "MagicSoul", now + 86400), true, "跨日重置恢复免费")
