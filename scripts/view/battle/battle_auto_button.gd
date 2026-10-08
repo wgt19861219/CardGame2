@@ -59,7 +59,7 @@ func _on_pressed() -> void:
 	toggled.emit(_on)
 
 
-# 读偏好档（供装配层决定初始态；未解锁场景装配层不调用，防越权开自动）。
+# 读偏好档（供装配层决定初始态；2026-10-08 取消通关门槛后全模式恒读档）。
 func read_persisted_on(fallback: bool) -> bool:
 	var cfg := ConfigFile.new()
 	if cfg.load(cfg_path) != OK:
