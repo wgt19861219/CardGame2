@@ -68,8 +68,11 @@ func _load_speed_state(fallback: int) -> int:
 
 
 # 切档写回（源 :1050 setIntegerForKey 持久化，跨战斗/跨启动保留）。
+# 先 load 再 set：保留同档 auto_combat key（2026-10-08 auto 持久化入驻同档；
+# ConfigFile save 写全文件，不 load 会把 auto 偏好覆盖丢档）。
 func _save_speed_state() -> void:
 	var cfg := ConfigFile.new()
+	cfg.load(cfg_path)
 	cfg.set_value("battle", "speed_state", _state)
 	cfg.save(cfg_path)
 

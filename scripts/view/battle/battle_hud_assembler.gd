@@ -66,14 +66,19 @@ static func create_next_button(scene) -> void:
 	scene.next_btn = btn
 
 
-# 自动战斗按钮装配（源 :1207-1257）。默认 off，可见性照源 :1208-1231 分模式判定，toggled 连 _on_auto_toggled。
-# 源 replay 隐藏/attack 真人锁/teach(autoBattle) 教学无本项目对应入口（单机化裁剪，见验收记录）。
+# 自动战斗按钮装配（源 :1207-1257）。可见性照源 :1208-1231 分模式判定，toggled 连 _on_auto_toggled。
+# 2026-10-08 受控增强（用户需求）：初始态读偏好档（user://battle.cfg auto_combat，跨战斗记忆，
+# 照 create_speed_button 读档回写范式）——源每场重置 off；未解锁（3 星门槛未达）不读档恒 off，
+# 防越权开启自动战斗。源 replay 隐藏/attack 真人锁/teach(autoBattle) 教学无本项目对应入口（单机化裁剪）。
 const AUTO_UNLOCK_STARS: int = 3   # 源 :1224 pve stars < 3 隐藏
 static func create_auto_button(scene) -> void:
 	if scene.auto_btn != null:
 		scene.auto_btn.queue_free()
 	var btn := BattleAutoButton.new()
-	btn.setup(false, _auto_button_visible(scene))
+	var unlocked: bool = _auto_button_visible(scene)
+	var initial_on: bool = btn.read_persisted_on(false) if unlocked else false
+	btn.setup(initial_on, unlocked)
+	scene.auto_combat = btn.is_on()   # 读出档同步引擎（不触发 _on_auto_toggled 音效）
 	btn.toggled.connect(scene._on_auto_toggled)
 	scene.hud.add_to_bottom_right(btn)
 	scene.auto_btn = btn
