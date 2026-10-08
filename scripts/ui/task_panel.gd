@@ -88,7 +88,7 @@ func _fill_main_list() -> void:
 			continue
 		if str(entry.get("status", "working")) == "finished":
 			continue
-		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, false, _cm, _player)
+		var task: Dictionary = TaskQuery.build_main_task(chain, tid, row, false, _cm, _player, entry)
 		rows.append({"chain": chain, "id": tid, "task": task})
 	if rows.is_empty():
 		_add_empty_prompt(_cm.get_lstr("TASK.NO_CURRENT_TASK_CAN_BE_ACCESSED"))

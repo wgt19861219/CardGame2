@@ -320,3 +320,104 @@ func test_target_zero_job_claim_once_per_day() -> void:
 func _job32_reward_item() -> int:
 	var row: Dictionary = cm.get_raw_table("Todolist").get("32", {})
 	return int(row.get("Task Reward 1 ID", 0))
+
+
+# ── FarmStage 主任务链累计（源 record.lua:143-149 successFarmStage → player.lua:1693-1721
+#    increaseTaskCount；2026-10-08 补——此前主链无累计端，战利品链 20/进化之路链 26 共
+#    25 个 FarmStage 任务进度恒 0、领取按钮永不出现）──
+
+func _find_chain_entry(tm: TaskManager, chain: int) -> Dictionary:
+	for e in tm.task:
+		if int(e.get("chain", -1)) == chain:
+			return e
+	return {}
+
+
+# 战利品1（Task[20][1]：FarmStage pid=18 target=1，门槛 Trigger 6=CompleteStage 18）：
+# 通关 18 后 sync 登记 working，胜利 18 → entry.target 0→1 达标且 cap。
+func test_increase_task_count_farm_stage_chain20() -> void:
+	var tm := TaskManager.new()
+	var pd := PlayerData.new(cm)
+	pd.stage_manager.progress[18] = 3   # 门槛：已通关关卡 18
+	tm.sync_current_tasks(pd, cm)
+	var e: Dictionary = _find_chain_entry(tm, 20)
+	assert_false(e.is_empty(), "通关 18 后战利品链登记 working")
+	tm.increase_task_count(cm, "FarmStage", 18, 1)
+	assert_eq(int(e["target"]), 1, "胜利关卡 18 → target 0→1（达 Task Target）")
+	tm.increase_task_count(cm, "FarmStage", 18, 1)
+	assert_eq(int(e["target"]), 1, "超出 Task Target 不再累（cap，源 math.min）")
+
+
+# 匹配规则隔离验证：pid 不匹配 / type 不匹配 / 非 working 均不计（源 :1696-1706）。
+func test_increase_task_count_mismatch_ignored() -> void:
+	var tm := TaskManager.new()
+	tm.task.append({"chain": 20, "id": 1, "status": "working", "target": 0})
+	tm.increase_task_count(cm, "FarmStage", 19, 1)
+	assert_eq(int(tm.task[0]["target"]), 0, "非 Progress ID 关卡不计")
+	tm.increase_task_count(cm, "PlayerLevel", 18, 1)
+	assert_eq(int(tm.task[0]["target"]), 0, "Progress Type 不匹配不计")
+	tm.task[0]["status"] = "finished"
+	tm.increase_task_count(cm, "FarmStage", 18, 1)
+	assert_eq(int(tm.task[0]["target"]), 0, "finished 任务不计（源仅 working）")
+
+
+# 战利品3（Task[20][3]：pid=23 target=2）：扫荡 times=2 一次 add 到位。
+func test_increase_task_count_multi_add() -> void:
+	var tm := TaskManager.new()
+	tm.task.append({"chain": 20, "id": 3, "status": "working", "target": 0})
+	tm.increase_task_count(cm, "FarmStage", 23, 2)
+	assert_eq(int(tm.task[0]["target"]), 2, "add=2（扫荡合并）一次到位 cap target=2")
+
+
+# 显示层：build_main_task 事件累计型（FarmStage）进度取 entry.target
+# （源 ui/task.lua:1056 count=task._task_target；修复前 get_count 恒 0 → 永不可领）。
+func test_build_main_task_farm_stage_uses_entry_target() -> void:
+	var pd := PlayerData.new(cm)
+	var row: Dictionary = cm.get_raw_table("Task").get("20", {}).get("1", {})
+	var t0: Dictionary = TaskQuery.build_main_task(20, 1, row, false, cm, pd,
+			{"chain": 20, "id": 1, "status": "working", "target": 0})
+	assert_eq(int(t0["progress"]), 0, "entry target=0 → progress 0/1")
+	var t1: Dictionary = TaskQuery.build_main_task(20, 1, row, false, cm, pd,
+			{"chain": 20, "id": 1, "status": "working", "target": 1})
+	assert_eq(int(t1["progress"]), 1, "entry target=1 → progress 1/1（is_completed，领取按钮出现）")
+
+
+# 真实调用链（扫荡路径，源 network.lua:1218 sweep_reply successFarmStage(stage, times)）：
+# 扫荡关卡 18 → 战利品1 进度 1/1 + FarmPVEStage 日常同步 +times（2026-10-08 补扫荡上报）。
+func test_sweep_increases_farm_stage_task() -> void:
+	var mgr := StageManager.new(cm)
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.vitality = 200
+	pd.add_item(PlayerData.SWEEP_COIN_ID, 10)
+	pd.stage_manager.progress[18] = 3   # 战利品1 门槛（星级前置由 UI 管）
+	pd.task_manager.sync_current_tasks(pd, cm)
+	var r: Dictionary = mgr.sweep(18, 1, BattleRng.new(1), pd)
+	assert_true(bool(r.get("ok", false)), "前置：扫荡成功")
+	var e: Dictionary = _find_chain_entry(pd.task_manager, 20)
+	assert_eq(int(e.get("target", -1)), 1, "扫荡关卡 18 ×1 → 战利品1 进度 1/1")
+	assert_eq(pd.task_manager.get_dailyjob_count(4), 1, "扫荡同步累计 FarmPVEStage 日常 job 4")
+
+
+# 真实调用链（胜利路径，源 network.lua:858 exitStageReply 胜利分支）：
+# assemble → 构造敌方全灭终态（die 走引擎默认死亡链，等效战斗跑完）→ finalize 上报。
+# 不跑完整战斗循环：默认号打 stage 18 数值上 timeout（lose_type 实测），full 循环会
+# 让断言依赖队伍强度而非上报逻辑本身（胜利/扫荡共用 _record_stage_dailyjob，行为
+# 已由扫荡集成 + 单元用例覆盖）。
+func test_battle_win_increases_farm_stage_task() -> void:
+	var mgr := StageManager.new(cm)
+	var pd := PlayerData.new(cm)
+	pd.apply_default_data()
+	pd.stage_manager.progress[18] = 3
+	pd.task_manager.sync_current_tasks(pd, cm)
+	var asm: Dictionary = mgr.assemble_stage_battle(18, pd, [1], BattleRng.new(42))
+	assert_true(bool(asm.get("ok", false)), "前置：装配成功")
+	var eng: BattleEngine = asm["engine"]
+	for u in eng.foreach_alive_unit(BattleEngine.CAMP_ENEMY):
+		u.die(null)
+	eng.result_stars = 3
+	var r: Dictionary = mgr.finalize_stage_battle(eng, 18, pd, [1], asm["loots"])
+	assert_true(bool(r.get("won", false)), "前置：敌方全灭 → 胜利判定")
+	var e: Dictionary = _find_chain_entry(pd.task_manager, 20)
+	assert_eq(int(e.get("target", -1)), 1, "胜利关卡 18 → 战利品1 进度 1/1")
+	assert_eq(pd.task_manager.get_dailyjob_count(4), 1, "胜利同步累计 FarmPVEStage 日常 job 4")

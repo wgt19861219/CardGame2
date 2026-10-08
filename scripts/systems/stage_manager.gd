@@ -341,6 +341,7 @@ func sweep(sid: int, times: int, rng: Variant = null, player: PlayerData = null,
 		player.add_team_exp(single_exp * times)
 		player.hero_manager.add_money(single_money * times)
 		_record_stage_limit(player, sid, times)
+		_record_stage_dailyjob(player, sid, times)
 		for loot_id in loots:
 			if _item_type(int(loot_id)) == "hero":
 				player.hero_manager.add_hero(int(loot_id))
@@ -353,17 +354,21 @@ func sweep(sid: int, times: int, rng: Variant = null, player: PlayerData = null,
 	return {"ok": true, "exp": single_exp * times, "money": single_money * times, "loots": loots, "raid_bonus": raid_bonus, "waves": waves}
 
 
-func _record_stage_dailyjob(player: PlayerData, sid: int) -> void:
+## 胜利/扫荡行为上报（源 record.lua:143-169 successFarmStage，两路径共用）：
+## 主任务链 FarmStage 累计（increaseTaskCount 等价，add=times）+ 日常 Todolist
+## FarmChapter/FarmPVEStage/FarmElitePVEStage 累计。2026-10-08 补主链端与扫荡路径
+## （此前仅普通胜利报日常、主链 FarmStage 恒 0；源扫荡 sweep_reply:1218 同报）。
+func _record_stage_dailyjob(player: PlayerData, sid: int, times: int = 1) -> void:
 	if player == null or player.task_manager == null:
 		return
-	var stage_row: Dictionary = config.get_raw_table("Stage").get(str(sid), {})
-	var chapter: int = int(stage_row.get("Chapter ID", 0))
+	var tm: TaskManager = player.task_manager
 	var s_type: String = StageAccount.stage_type(sid)
-	player.task_manager.record_by_type(config, "FarmChapter")
+	tm.increase_task_count(config, "FarmStage", sid, times)
+	tm.record_by_type(config, "FarmChapter", times)
 	if s_type == "normal" or s_type == "elite":
-		player.task_manager.record_by_type(config, "FarmPVEStage")
+		tm.record_by_type(config, "FarmPVEStage", times)
 	if s_type == "elite":
-		player.task_manager.record_by_type(config, "FarmElitePVEStage")
+		tm.record_by_type(config, "FarmElitePVEStage", times)
 
 
 ## 精英关每日已打次数累加（源服务器 exit 记数；2026-09-17 经济单机优化补写入端——

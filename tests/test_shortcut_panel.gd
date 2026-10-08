@@ -118,7 +118,6 @@ func test_board_is_ninepatch_with_source_margins() -> void:
 
 # tag 显示尺寸 = 纹理 21×22 ÷ CS(1.28125)（无 TextureConfig 条目，批4 口径）= 16.39×17.17。
 const TAG_SIZE: Vector2 = Vector2(16.39, 17.17)
-const FAKE_TASK_ID: int = 987654   # 注入用假任务 id（远超真实 id 域，避污染）
 
 
 func test_tag_nodes_present_and_sized() -> void:
@@ -174,17 +173,18 @@ func test_main_tag_beside_toggle_upper_right() -> void:
 
 
 # 源 refreshTags :126-144：任务完成未领 → task tag 亮 + 收起态主 tag 亮；package/fragment 恒 false（源 :685-699）。
+# 2026-10-08 随红点根修改造：注入改为任务链 entry（FarmStage 达标未领），completed 标记路径已退役。
 func test_refresh_tags_task_unclaimed_shows_tags() -> void:
 	var panel := _make_panel()
 	var tm: TaskManager = GameData.player.task_manager
-	tm.completed[FAKE_TASK_ID] = true
-	tm.claimed.erase(FAKE_TASK_ID)
+	var saved_task: Array = tm.task.duplicate(true)
+	tm.task = [{"chain": 20, "id": 1, "status": "working", "target": 1}]
 	panel.refresh_tags()
-	assert_true(panel._tags["task"].visible, "完成未领任务 → task tag 亮")
+	assert_true(panel._tags["task"].visible, "任务链达标未领 → task tag 亮")
 	assert_false(panel._tags["package"].visible, "package tag 恒灭（源 checkPackageTag 死代码恒 false）")
 	assert_false(panel._tags["fragment"].visible, "fragment tag 恒灭（源 checkFragmentPackageTag 恒 false）")
 	assert_true(panel._main_tag.visible, "收起态任一 tag 亮 → 主 tag 亮（源 :139-143）")
-	tm.completed.erase(FAKE_TASK_ID)
+	tm.task = saved_task
 	panel.queue_free()
 
 
@@ -192,24 +192,24 @@ func test_refresh_tags_task_unclaimed_shows_tags() -> void:
 func test_refresh_tags_open_hides_main_tag() -> void:
 	var panel := _make_panel()
 	var tm: TaskManager = GameData.player.task_manager
-	tm.completed[FAKE_TASK_ID] = true
+	var saved_task: Array = tm.task.duplicate(true)
+	tm.task = [{"chain": 20, "id": 1, "status": "working", "target": 1}]
 	panel._toggle_open()
 	assert_false(panel._main_tag.visible, "展开态主 tag 恒隐藏")
 	assert_true(panel._tags["task"].visible, "展开态 task tag 仍按数据亮")
-	tm.completed.erase(FAKE_TASK_ID)
+	tm.task = saved_task
 	panel.queue_free()
 
 
-# 已领取任务不亮 tag（源 isTaskCompleted 语义：completed 且未 claimed）。
+# 已领取任务不亮 tag（源 isTaskCompleted 语义：status=finished 不在 {working} 列表）。
 func test_refresh_tags_claimed_task_hides() -> void:
 	var panel := _make_panel()
 	var tm: TaskManager = GameData.player.task_manager
-	tm.completed[FAKE_TASK_ID] = true
-	tm.claimed[FAKE_TASK_ID] = true
+	var saved_task: Array = tm.task.duplicate(true)
+	tm.task = [{"chain": 20, "id": 1, "status": "finished", "target": 1}]
 	panel.refresh_tags()
-	assert_false(panel._tags["task"].visible, "已领取任务不亮 tag")
-	tm.completed.erase(FAKE_TASK_ID)
-	tm.claimed.erase(FAKE_TASK_ID)
+	assert_false(panel._tags["task"].visible, "已领取（finished）不亮 tag")
+	tm.task = saved_task
 	panel.queue_free()
 
 
@@ -258,22 +258,29 @@ func test_first_button_not_overlapping_toggle() -> void:
 # 红点滞留旧值（与 hero_package 详情返回不灭同模式）。修=shortcut 重新可见时重算。
 
 # apply_identity 流转（回主城/弹窗关闭恢复都走 _apply_visibility）后 task tag 随数据重算。
+# 2026-10-08 随根修改造：红点判定照源走任务链 entry（framework.lua:701 遍历 _task +
+# ui/task.lua:1052 isTaskCompleted「达标未领取」），旧版 completed 标记路径已退役。
 func test_apply_identity_flow_refreshes_shortcut_tags() -> void:
 	var prev_identity: String = HudOverlay.get_identity()
 	var tm: TaskManager = GameData.player.task_manager
-	# ① 完成未领 → identity 流转 → task tag 亮
-	tm.completed[FAKE_TASK_ID] = true
-	tm.claimed.erase(FAKE_TASK_ID)
+	var saved_task: Array = tm.task.duplicate(true)
+	tm.task.clear()
+	# ① 任务链存在「进度达标未领取」（FarmStage 战利品1 entry target=1）→ 流转后 tag 亮
+	tm.task.append({"chain": 20, "id": 1, "status": "working", "target": 1})
 	HudOverlay.apply_identity("main")
 	var panel: ShortcutPanel = HudOverlay._shortcut
-	assert_true(panel._tags["task"].visible, "完成未领 + identity 流转 → task tag 亮")
-	# ② 领取 → 再流转（模拟弹窗关闭 apply_identity 恢复）→ tag 灭（回归=旧实现滞留亮）
-	tm.claimed[FAKE_TASK_ID] = true
+	assert_true(panel._tags["task"].visible, "任务链达标未领 + identity 流转 → task tag 亮")
+	# ② 领取（status→finished）→ 再流转 → tag 灭
+	tm.task[0]["status"] = "finished"
 	HudOverlay.apply_identity("main")
-	assert_false(panel._tags["task"].visible, "领取后 identity 流转 → task tag 灭（旧实现只切显隐不重算）")
+	assert_false(panel._tags["task"].visible, "领取（finished）+ 流转 → task tag 灭")
+	# ③ 进度未达标的链任务（FarmStage 0/1）不点亮
+	tm.task[0]["status"] = "working"
+	tm.task[0]["target"] = 0
+	HudOverlay.apply_identity("main")
+	assert_false(panel._tags["task"].visible, "FarmStage 0/1 未达标 → task tag 灭")
 	# 清理（全局 autoload 状态还原）
-	tm.completed.erase(FAKE_TASK_ID)
-	tm.claimed.erase(FAKE_TASK_ID)
+	tm.task = saved_task
 	HudOverlay.apply_identity("main")
 	HudOverlay.apply_identity(prev_identity)
 

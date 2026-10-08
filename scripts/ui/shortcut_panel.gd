@@ -247,14 +247,18 @@ func _check_button_tag(key: String) -> bool:
 	return false
 
 
-# 源 framework.lua:701-709 checkCompletedTask：任一任务完成未领（可领取）即亮。
+# 源 framework.lua:701-709 checkCompletedTask + ui/task.lua:1052-1063 isTaskCompleted：
+# 任务链任一「进度达标未领取」（status=working 且 progress>=target）即亮。
+# 2026-10-08 根修：旧版读 tm.completed（通用任务标记，主链从不写）恒 false 永不亮。
 func _has_unclaimed_task() -> bool:
 	var p: PlayerData = GameData.player
 	if p == null:
 		return false
-	var tm: TaskManager = p.task_manager
-	for id in tm.completed:
-		if tm.is_completed(id) and not tm.is_claimed(id):
+	var task_table: Dictionary = GameData.config.get_raw_table("Task")
+	for entry in p.task_manager.task:
+		var row: Dictionary = task_table.get(str(int(entry.get("chain", 0)))).get(
+				str(int(entry.get("id", 0))), {})
+		if not row.is_empty() and TaskQuery.is_task_ready(entry, row, p):
 			return true
 	return false
 
@@ -272,7 +276,7 @@ func _has_claimable_dailyjob() -> bool:
 	for job_id in tm.get_visible_daily_jobs(cm, now, p):
 		var row: Dictionary = cm.get_raw_table("Todolist").get(str(job_id), {})
 		var target: int = int(row.get("Task Target", 0))
-		if target > 0 and tm.get_dailyjob_count(job_id) >= target:
+		if target > 0 and tm.get_effective_dailyjob_count(cm, job_id, p, now) >= target:
 			return true
 	return false
 

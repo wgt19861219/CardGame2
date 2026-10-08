@@ -37,12 +37,21 @@ static func resolve_fast_target(ttype: String) -> Dictionary:
 	return {"action": "toast", "msg": FAST_UNSUPPORTED.get(ttype, "前往任务目标")}
 
 
+# 事件累计型进度：不走实时状态查询，取 TaskManager.task entry 的累计 target
+# （源 ui/task.lua:1056 count = task._task_target，player.lua increaseTaskCount 胜利事件累加；
+# 2026-10-08 前缺累计端致 FarmStage 恒 0 永不可领）。KillMonster Task 表未用不列。
+const EVENT_COUNT_TYPES := {
+	"FarmStage": true,
+}
+
+
 # 主任务行装配（链 chain/tid + Task 表 row + 完成态）→ 渲染所需 Dictionary。
 # is_finished 来自 TaskManager.task[entry].status == "finished"（由 panel 判定后传入）。
+# entry 为 TaskManager.task 数组中的进度 entry（事件累计型读 target，状态型忽略）。
 static func build_main_task(chain: int, tid: int, row: Dictionary, is_finished: bool,
-		cm: ConfigManager, player: PlayerData) -> Dictionary:
+		cm: ConfigManager, player: PlayerData, entry: Dictionary = {}) -> Dictionary:
 	var target: int = int(row.get("Task Target", 1))
-	var progress: int = get_main_progress(row, player)
+	var progress: int = entry_progress(entry, row, player)
 	return {
 		"kind": "task",
 		"name": cm.get_lstr(str(row.get("Task Name", str(chain)))),
@@ -53,6 +62,23 @@ static func build_main_task(chain: int, tid: int, row: Dictionary, is_finished: 
 		"icon": str(row.get("Icon", "")),
 		"reward": parse_rewards(row, false),
 	}
+
+
+# entry 进度取值：事件累计型（FarmStage）取 entry.target（源 count=task._task_target），
+# 状态型走实时查询。build_main_task（行装配）与 is_task_ready（红点）共用。
+static func entry_progress(entry: Dictionary, row: Dictionary, player: PlayerData) -> int:
+	var ptype: String = String(row.get("Task Progress Type", ""))
+	if EVENT_COUNT_TYPES.get(ptype, false):
+		return int(entry.get("target", 0))
+	return get_main_progress(row, player)
+
+
+# 任务链 entry 是否「进度达标未领取」（源 ui/task.lua:1052-1063 isTaskCompleted：
+# progress>=target 且 status=working；shortcut 任务红点 _has_unclaimed_task 用）。
+static func is_task_ready(entry: Dictionary, row: Dictionary, player: PlayerData) -> bool:
+	if str(entry.get("status", "working")) != "working":
+		return false
+	return entry_progress(entry, row, player) >= int(row.get("Task Target", 1))
 
 
 # 主任务实时进度：按 Task Progress Type 查 player 状态（事件累计型降级 0，由 TaskManager 接）。
@@ -104,6 +130,8 @@ static func get_count(ptype: String, pids: Array, target: int, player: PlayerDat
 					return int(player.items.get(int(v), 0))
 			return 0
 		"KillMonster", "FarmStage":
+			# 事件累计型：显示不走实时查询（build_main_task 已按 entry.target 分流，
+			# 2026-10-08），此处恒 0 仅为 get_count 完整性兜底。
 			return 0
 		_:
 			return 0
