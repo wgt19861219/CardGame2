@@ -68,8 +68,12 @@ static func check_cross_day_reset(pd: PlayerData, now_seconds: int) -> void:
 ## 买技能强化点（照源 local_server:2184-2193 + skillstren.lua:187-202/463-468）。
 ## 梯度计费 GradientPrice[min(reset_times+1,30)]["Skill Upgrade Reset"] 钻石；
 ## 买前先跨日重置 skill_reset_times（源 player.lua:727 内部 resetSkillData）。返是否成功（钻石不足 false）。
+## 点数已满（VIP 上限）拒买——2026-10-08 实机复验发现 UI 长按连买顶格后仍在扣钻石。
 static func buy_stren_point(pd: PlayerData) -> bool:
 	check_cross_day_reset(pd, Time.get_unix_time_from_system())
+	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Max Skill Points", pd.cm))
+	if limit > 0 and pd.skill_points >= limit:
+		return false
 	var cost: int = _buy_cost(pd)
 	if pd.diamond < cost:
 		return false

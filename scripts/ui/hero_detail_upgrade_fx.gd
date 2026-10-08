@@ -336,6 +336,69 @@ static func fill_skill_point_bar(label: Label, buy_btn: TextureButton, pd: Playe
 	return recovered
 
 
+# ── 购买键长按连买（群反馈 #7「买技能点能不能一次多买点」，2026-10-08）──
+# 交互：按下 0.5s 后每 0.3s 买一组（梯度计费，钻石不足停），松手停；快速点击仍买
+# 1 组（长按后的 pressed 被判重吃掉，eatexp _did_keepeat 同构）。全交互收口 fx：
+# panel 有行数防线（test_panel_line_count ≤510），pressed/down 信号与状态全在此
+# 管理；panel 鸭子传入（pd / _refresh_skill_point_bar），避免 class_name 交叉引用。
+# 实机验收实证（2026-10-08）：买首组后点数>0 隐藏按钮，引擎 visibility 变化自动
+# unpress 发假 button_up——停循环不能用 button_up 信号（否则长按恒只买 1 组），
+# 改轮询全局鼠标按下态（触屏经 emulate_mouse_from_touch 同映鼠标态）。
+const BUY_HOLD_DELAY: float = 0.5      # 连买启动延迟（对齐吃经验长按 0.5s 档）
+const BUY_HOLD_INTERVAL: float = 0.3   # 连买间隔（梯度计费逐档涨价，慢于喂药 0.08）
+
+
+static func bind_buy_skill_point(btn: BaseButton, panel: Variant) -> void:
+	for sig in [btn.pressed, btn.button_down]:
+		for c in sig.get_connections():
+			sig.disconnect(c.callable)
+	# 复用已有 meta 里的 st：连买成功会经 panel._refresh_skill_point_bar 回调 rebind，
+	# 若每次换新字典，跑中循环（持旧 st）的代际更新会失联——旧循环停不下来。
+	var st: Dictionary = btn.get_meta(&"hold_state", {"token": 0, "fired": false})
+	btn.set_meta(&"hold_state", st)
+	btn.pressed.connect(_on_buy_pressed.bind(btn, panel))
+	btn.button_down.connect(_on_hold_down.bind(btn, panel, st))
+
+
+# 单击路径：长按连买触发过则吃掉本次（读后清，eatexp _did_keepeat 同构）；否则买 1 组。
+static func _on_buy_pressed(btn: BaseButton, panel: Variant) -> void:
+	var st: Dictionary = btn.get_meta(&"hold_state", {})
+	if bool(st.get("fired", false)):
+		st["fired"] = false
+		return
+	buy_skill_point_once(panel)
+
+
+static func _on_hold_down(btn: BaseButton, panel: Variant, st: Dictionary) -> void:
+	st["token"] = int(st["token"]) + 1
+	var tk: int = int(st["token"])
+	st["fired"] = false
+	await btn.get_tree().create_timer(BUY_HOLD_DELAY).timeout
+	while int(st["token"]) == tk and btn.is_inside_tree() \
+			and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		st["fired"] = true
+		if not buy_skill_point_once(panel):
+			break   # 购买失败（钻石不足），停连买（Toast 已给）
+		await btn.get_tree().create_timer(BUY_HOLD_INTERVAL).timeout
+
+
+# 买一组（SkillPointManager.BUY_AMOUNT=10 点，梯度计费）；返是否成功（false=钻石不足/点数已满，
+# 满点拒买在 Logic 层 buy_stren_point——实机复验发现顶格后长按白扣钻石）。
+static func buy_skill_point_once(panel: Variant) -> bool:
+	var pd: PlayerData = (panel).pd
+	if pd == null:
+		return false
+	AudioPlayer.play_sfx("common_click_feedback")
+	var ok: bool = SkillPointManager.buy_stren_point(pd)
+	if ok:
+		GameData.mark_save_dirty()
+		Toast.show_message("技能点 +%d" % SkillPointManager.BUY_AMOUNT)
+		(panel)._refresh_skill_point_bar()
+	else:
+		Toast.show_message("钻石不足或技能点已满")   # 源无显式 Toast（lua 弹窗），本项目单机化兜底
+	return ok
+
+
 # 技能升级失败反馈（源 skillstren.lua:144-179 doClickLvupButton 失败分支，2026-08-30 补齐 port 静默缺失）。
 # 源三分支顺序：①skl >= hlv → Toast 已达当前等级上限（:155-156）；②cost > money → useMidas 充值弹窗
 # （:157-159，单机化降级 Toast，受控偏离）；③point < 1 → Toast 技能点已用完（:164-165）。

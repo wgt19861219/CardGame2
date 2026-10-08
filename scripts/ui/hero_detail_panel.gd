@@ -464,25 +464,8 @@ func _refresh_skill_point_bar() -> void:
 	var buy_btn: TextureButton = skill_view.get_node_or_null("%BuySkillPointBtn") as TextureButton
 	HeroDetailUpgradeFx.fill_skill_point_bar(label, buy_btn, pd)
 	if buy_btn != null:
-		# 重连避免 _rebuild_content 后重复 connect（fill_skill_point_bar 控 visible，pressed 此处接）。
-		for c in buy_btn.pressed.get_connections():
-			buy_btn.pressed.disconnect(c.callable)
-		buy_btn.pressed.connect(_on_buy_skill_point)
-
-
-# 购买技能点（源 skillstren.lua:463-468 getResetCost + local_server:2184-2193 buySkillStrenPoint）。
-# 钻石梯度计费，每次买 10 点。失败（钻石不足 / VIP 上限）Toast 提示。
-func _on_buy_skill_point() -> void:
-	if pd == null:
-		return
-	AudioPlayer.play_sfx("common_click_feedback")
-	var ok: bool = SkillPointManager.buy_stren_point(pd)
-	if ok:
-		GameData.mark_save_dirty()
-		Toast.show_message("技能点 +%d" % SkillPointManager.BUY_AMOUNT)
-		_refresh_skill_point_bar()
-	else:
-		Toast.show_message("钻石不足")   # 源无显式 Toast（lua 弹窗），本项目单机化用 Toast 兜底
+		# 购买键交互全口 fx（单击 + 长按连买，群反馈 #7；重 bind 幂等——fx 先断三信号旧连）。
+		HeroDetailUpgradeFx.bind_buy_skill_point(buy_btn, self)
 
 
 # 觉醒（单机化）：AwakeHelper.awake_hero 扣碎片 + 弹 HeroAwakePanel 展示 + 关闭后 refresh。

@@ -1025,3 +1025,43 @@ func test_attribs_fill_hero_without_narrative() -> void:
 	add_child_autofree(box)
 	HeroDetailAttribs.fill_attributes(box, hero, cm)
 	assert_gt(box.get_child_count(), 2, "无 Narrative 英雄属性区应正常渲染（简介标题+描述+属性标题起）")
+
+
+# 群反馈 #7（2026-10-08）：购买键长按连买——按下 0.5s 后每 0.3s 一组（梯度计费），
+# 松手停；长按后的 pressed 被判重吃掉不补买。实机验收抓出 visibility unpress 假
+# button_up 坑（买首组按钮隐藏→引擎自动 unpress→信号停循环→恒只买 1 组）后，停循环
+# 改轮询 Input.is_mouse_button_pressed——测试同步注入全局鼠标态（无坐标不触 GUI 命中，
+# 按钮信号仍 emit），断言加严到至少 2 组防弱断言漏网。
+func test_buy_skill_point_hold_repeat() -> void:
+	var root := Node.new()
+	add_child(root)
+	var hero := HeroInstance.new(1, 1, 1)
+	var pd := PlayerData.new(cm)
+	pd.diamond = 2000
+	var panel := HeroDetailPanel.new("herodetail", {})
+	panel.setup_panel(hero, cm, null, pd)
+	panel.show_window(root)
+	panel._on_tab_pressed("skill")   # 真链路：进 skill tab 才 fill 信息栏 → bind 购买键
+	var btn: TextureButton = (panel._tab_views["skill"] as Node).get_node("%BuySkillPointBtn") as TextureButton
+	assert_true(btn.has_meta(&"hold_state"), "长按已绑（hold_state meta 已挂）")
+	var press_ev := InputEventMouseButton.new()
+	press_ev.button_index = MOUSE_BUTTON_LEFT
+	press_ev.pressed = true
+	Input.parse_input_event(press_ev)   # 全局按下态（循环轮询判据；无坐标不命中任何按钮）
+	var t0: int = pd.skill_reset_times
+	btn.button_down.emit()
+	await get_tree().create_timer(0.5 + 0.3 + 0.3 + 0.05).timeout   # 起手 0.5s + 两轮 0.3s
+	assert_gte(pd.skill_reset_times, t0 + 2, "长按 1.15s 至少连买 2 组（假 button_up 不停循环）")
+	var mid: int = pd.skill_reset_times
+	var rel_ev := InputEventMouseButton.new()
+	rel_ev.button_index = MOUSE_BUTTON_LEFT
+	rel_ev.pressed = false
+	Input.parse_input_event(rel_ev)   # 真实松手：全局按下态清除 → 循环退出
+	await get_tree().create_timer(0.6).timeout
+	assert_eq(pd.skill_reset_times, mid, "松手后停止连买")
+	btn.pressed.emit()
+	assert_eq(pd.skill_reset_times, mid, "长按后的 pressed 不补买（判重吃掉）")
+	btn.pressed.emit()   # 判重已清，走真实单击路径 → 点数已满（VIP 上限 20）拒买
+	assert_eq(pd.skill_reset_times, mid, "点数已满拒买（防长按顶格后白扣钻石，实机复验发现）")
+	panel.remove_window()
+	root.queue_free()

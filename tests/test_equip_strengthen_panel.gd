@@ -1388,3 +1388,74 @@ func test_unselected_btn_lists_all_heroes() -> void:
 		sel.remove_window()
 	panel.remove_window()
 	root.queue_free()
+
+
+# 群反馈 #9（2026-10-08）：换英雄浮层列表接 DragScrollHelper 拖动滚动——此前只接滚轮，
+# 触屏/鼠标按住拖零响应"不能上下拖动选择角色"。11 英雄 3 行 > MAX_LIST_H(308) 溢出。
+func test_hero_select_drag_scrolls() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var heroes: Array = []
+	for i in range(11):   # 5 列×3 行，列表限高 2 行 → 滚动余量 160px
+		var iid: int = pd.hero_manager.add_hero(1 + i % 5)
+		heroes.append(pd.hero_manager.get_hero(iid))
+	var sel := EquipStrengthenHeroSelect.new("equip_strengthen_hero_select", {})
+	sel.setup_panel(heroes, -1, cm, func(_h: HeroInstance) -> void: pass)
+	sel.show_window(root)
+	await get_tree().process_frame
+	await get_tree().process_frame   # 两帧：格子树 + 列表 rect 布局就绪
+	var sc: ScrollContainer = sel._list
+	assert_not_null(sc, "列表 ScrollContainer 已接线（#9）")
+	var rc: Rect2 = sc.get_global_rect()
+	assert_gt(rc.size.y, 0.0, "列表 rect 已布局")
+	var c: Vector2 = rc.get_center()
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.global_position = c
+	sel._input(press)
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.global_position = c - Vector2(0.0, 50.0)
+	sel._input(motion)
+	assert_gt(sc.scroll_vertical, 0.0, "向上拖 50px → scroll_vertical 增（源 draglist 手势）")
+	sel.remove_window()
+	root.queue_free()
+
+
+# 格点击 is_tap 判定（与 #9 一并根修）：原位 release 才选中；拖 30px release 不选中
+# ——旧版按下即选，接拖动滚动后按住拖动会误触选中关窗。
+func test_hero_select_cell_tap_vs_drag() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var ia: int = pd.hero_manager.add_hero(1)
+	var ib: int = pd.hero_manager.add_hero(2)
+	var sel := EquipStrengthenHeroSelect.new("equip_strengthen_hero_select", {})
+	var picked_tid: Array = []
+	sel.setup_panel([pd.hero_manager.get_hero(ia), pd.hero_manager.get_hero(ib)], -1, cm,
+		func(h: HeroInstance) -> void: picked_tid.append(int(h.tid)))
+	sel.show_window(root)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.global_position = Vector2(400.0, 300.0)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.global_position = Vector2(400.0, 300.0)
+	# 拖 30px release：不选中（is_tap 拦截，位移 ≥8px）
+	sel._on_cell_input(press, pd.hero_manager.get_hero(ia))
+	var drag := release.duplicate() as InputEventMouseButton
+	drag.global_position = Vector2(400.0, 330.0)
+	sel._on_cell_input(drag, pd.hero_manager.get_hero(ia))
+	assert_eq(picked_tid.size(), 0, "拖动 release 不选中")
+	# 原位 release：选中回调触发
+	sel._on_cell_input(press, pd.hero_manager.get_hero(ib))
+	sel._on_cell_input(release, pd.hero_manager.get_hero(ib))
+	assert_eq(picked_tid, [2], "原位 release 选中英雄 B")
+	await get_tree().process_frame
+	if is_instance_valid(sel):
+		sel.remove_window()   # tap 路径 remove_window 可能已销毁自身，防 freed 再调
+	root.queue_free()

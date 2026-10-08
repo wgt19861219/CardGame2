@@ -33,7 +33,8 @@ const MAGIC_DAY_SOUL_COUNT: int = 3                       # 今日热点魂石�
 # 免费抽 CD（源 parameterTable bronze_cd=600/gold_cd=165600/magic_cd=432000）。
 # Gold 单机化 165600s(46h)→86400s(24h)：2026-09-17 经济单机优化用户拍板（适度爽快档）——
 # 源 CD 46h 使"每日 1 次免费"名义实际两天一次，网游拉日活设计在单机下只拖节奏。
-const BOX_CD: Dictionary = {"Bronze": 600, "Gold": 86400, "MagicSoul": 432000}
+# MagicSoul 2026-10-08 再缩 1h（群反馈 #8：源 120h 单机拉太长，与 Gold 缩档同理）。
+const BOX_CD: Dictionary = {"Bronze": 600, "Gold": 86400, "MagicSoul": 3600}
 const FREE_TIMES: Dictionary = {"Bronze": 5, "Gold": 1, "MagicSoul": 1}
 const SECONDS_PER_MINUTE: int = 60          # 分钟→秒换算（_local_day_key 时区偏移）
 const SECONDS_PER_HOUR: int = 3600           # 小时→秒换算（_hms_string 倒计时格式）

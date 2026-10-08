@@ -65,6 +65,8 @@ var _keepeat_inst: int = -1    # 长按目标 inst_id（-1=空闲）
 var _press_pos: Vector2 = Vector2.ZERO    # 行按下基准（tap 位移判别用）
 var _press_dragged: bool = false          # 按下期间拖动超阈值（拖动浏览列表，非点击）
 var _did_keepeat: bool = false            # 长按已开始连吃（release 不再补吃单击颗）
+var _scroll: ScrollContainer = null       # %ScrollHost 拖动滚动宿主（2026-10-08 #6 接线）
+var _drag_state: Dictionary = {}          # DragScrollHelper 拖拽滚动跨帧基准
 
 
 # LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失返空串避免 null 解引用）。
@@ -103,6 +105,7 @@ func _build_content() -> void:
 	(_content.get_node("%CloseBtn") as BaseButton).pressed.connect(_on_close_pressed)
 	_grid = _content.get_node("%Grid") as GridContainer
 	_list_host = _content.get_node("%ListHost") as Control
+	_scroll = _content.get_node("%ScrollHost") as ScrollContainer
 
 
 # 英雄行列表（源 createList :171-201）：行模板 instantiate + fill 挂 Grid 两列；
@@ -295,6 +298,13 @@ func _show_eat_amount(inst_id: int) -> void:
 	tw.tween_interval(EAT_LIFETIME)
 	tw.tween_property(lbl, "modulate:a", 0.0, EAT_FADE)
 	tw.tween_callback(lbl.queue_free)
+
+
+# 列表按住拖动滚动（DragScrollHelper.handle_input，daily_login 2026-10-06 同款接线；
+# 群反馈 #6「吃经验不能往下拉选其他角色」——ScrollHost 只有滚轮无拖拽，触屏/鼠标
+# 按住拖动零响应。与行手势（_on_cell_gui_input）正交：拖动超阈值禁点击、不禁滚动）。
+func _input(event: InputEvent) -> void:
+	DragScrollHelper.handle_input(_scroll, event, _drag_state)
 
 
 # 行输入（照源 draglist tap 语义，2026-09-15 根修；package_panel 同款范式）：
