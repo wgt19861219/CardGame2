@@ -66,7 +66,10 @@ func _take_damage(unit: Variant, params: Dictionary) -> float:
 	var ult_buff: Variant = unit.custom_data.get("ultBuff", false)
 	if bool(ult_buff):
 		var source: Variant = params.get("source", null)
-		var direct: int = int(source.direction) if source != null and source != "" else 0
+		# 源 :54 直取 source.direction 无判空；GDScript 防御只判 null——全部调用方
+		# source 均传单位对象（grep 实测），旧译 `source != ""` 是 Object 与 String
+		# 比较，运行时爆 Invalid operands（怨灵 buff tick 打开大 BB 时每 0.375s 一条）。
+		var direct: int = int(source.direction) if source != null else 0
 		if direct == int(unit.direction):
 			var temp: float = float(unit.attribs.get("PIMU", 0))
 			var temp2: float = float(unit.attribs.get("MIMU", 0))

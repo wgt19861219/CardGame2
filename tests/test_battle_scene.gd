@@ -597,8 +597,10 @@ func test_loot_view_fly_calls_add_loot_marker() -> void:
 
 
 # 源 autoCombatHandler :1021 — auto_btn toggle on/off。
+# 2026-10-08 auto 偏好持久化后 _on_pressed 写盘：注入测试档隔离玩家真实 user://battle.cfg。
 func test_auto_button_toggle() -> void:
 	var btn := BattleAutoButton.new()
+	btn.cfg_path = "user://battle_test_auto_toggle.cfg"
 	btn.setup(false, true)
 	assert_eq(btn.is_on(), false, "初始 off")
 	btn._on_pressed()
@@ -609,8 +611,10 @@ func test_auto_button_toggle() -> void:
 
 
 # 2026-09-06 贴图升级守卫 — autocombat_on/off.png 入库（源 Content/res 直录），撤文本降级。
+# 2026-10-08 auto 偏好持久化后 _on_pressed 写盘：注入测试档隔离玩家真实档。
 func test_auto_button_texture_states() -> void:
 	var btn := BattleAutoButton.new()
+	btn.cfg_path = "user://battle_test_auto_tex.cfg"
 	btn.setup(false, true)
 	assert_not_null(btn._button.texture_normal, "off 态贴图 autocombat_off.png 已加载（撤文本降级）")
 	var off_tex: Texture2D = btn._button.texture_normal
@@ -647,6 +651,8 @@ func test_auto_button_position_aligns_speed_button() -> void:
 
 
 # 源 auto_btn pressed → scene.auto_combat。
+# 2026-10-08 auto 偏好持久化后 _on_pressed 写盘：装配（未解锁不读档）后注入测试档再按，
+# 不触玩家真实 user://battle.cfg。
 func test_scene_auto_button_toggles_combat() -> void:
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
@@ -655,6 +661,7 @@ func test_scene_auto_button_toggles_combat() -> void:
 	scene.setup(eng, cm)
 	assert_eq(scene.auto_combat, false, "初始 auto_combat=false（单机化默认，源 :118 localMode）")
 	assert_not_null(scene.auto_btn, "scene 装配 auto_btn（源 resetUI :1252）")
+	scene.auto_btn.cfg_path = "user://battle_test_scene_auto.cfg"
 	scene.auto_btn._on_pressed()
 	assert_eq(scene.auto_combat, true, "auto_btn pressed → auto_combat=true（源 :1021）")
 	scene.queue_free()
@@ -679,7 +686,15 @@ class StarMgrStub extends RefCounted:
 
 
 # 源 :1227-1229 pve stars>=3 → auto_btn 显示（3 星解锁自动战斗）。
+# 2026-10-08 auto 偏好持久化后解锁路径装配读真实 cfg（assembler 内 new 不可注入）：
+# 前置备份+写固定 off，后置恢复玩家原值（照 test_scene_speed_button_sets_state 判例）。
 func test_scene_auto_button_visible_at_3_stars() -> void:
+	var backup := ConfigFile.new()
+	var had: bool = backup.load("user://battle.cfg") == OK
+	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
+	var pre := ConfigFile.new()
+	pre.set_value("battle", "auto_combat", false)
+	pre.save("user://battle.cfg")
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -689,6 +704,35 @@ func test_scene_auto_button_visible_at_3_stars() -> void:
 	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
 	scene.setup(eng, cm)
 	assert_eq(scene.auto_btn.visible, true, "pve stars=3 → auto_btn 显示（源 :1224 stars>=3）")
+	assert_eq(scene.auto_combat, false, "解锁+档 off → auto_combat=false（读档同步）")
+	var rb := ConfigFile.new()
+	rb.set_value("battle", "auto_combat", orig)
+	rb.save("user://battle.cfg")
+	scene.queue_free()
+
+
+# 2026-10-08 auto 偏好持久化正向链路 — 解锁场景装配读档 on → 引擎同步 on（跨战斗记忆）。
+# 真实 cfg 不可注入（assembler 内 new），前置备份+写固定 on，后置恢复（照上例判例）。
+func test_scene_auto_button_reads_persisted_on_at_3_stars() -> void:
+	var backup := ConfigFile.new()
+	var had: bool = backup.load("user://battle.cfg") == OK
+	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
+	var pre := ConfigFile.new()
+	pre.set_value("battle", "auto_combat", true)
+	pre.save("user://battle.cfg")
+	var eng := _make_engine()
+	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
+	eng.add_unit(p)
+	var mgr := StarMgrStub.new()
+	mgr.stars = 3
+	var scene := BattleScene.new()
+	scene._battle_context = {"mode": "stage", "stage_id": 1, "mgr": mgr}
+	scene.setup(eng, cm)
+	assert_eq(scene.auto_combat, true, "解锁+档 on → 新战斗 auto_combat=true（跨战斗记忆）")
+	assert_eq(scene.auto_btn.is_on(), true, "按钮初始态显示 on（读档）")
+	var rb := ConfigFile.new()
+	rb.set_value("battle", "auto_combat", orig)
+	rb.save("user://battle.cfg")
 	scene.queue_free()
 
 

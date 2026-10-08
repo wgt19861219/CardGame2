@@ -16,6 +16,11 @@ const CONTENT_SCALE: float = 1.28125
 # 源 :1254 auto_btn:setPosition(ccp(734,60)) 是 MenuItem 锚点中心；显示 82.73×46.83 点。
 # Godot position=左上角 → 中心 to_godot(734,60)=(734,420) − 显示半尺寸。
 const GODOT_POS: Vector2 = Vector2(692.63, 396.59)  # (734,420) − (106/CS/2, 60/CS/2)
+# 自动战斗偏好持久化（2026-10-08 用户需求：每场重置 off → 跨战斗记忆）。照倍速按钮
+# speed_state 应用级 ConfigFile 范式（不入玩家存档），与 speed_state 同档同 section 共存
+# （save 前先 load 互不覆盖）。cfg_path 可注入：测试换独立档隔离玩家真实档。
+const AUTO_CFG_PATH: String = "user://battle.cfg"
+var cfg_path: String = AUTO_CFG_PATH
 
 signal toggled(on: bool)
 
@@ -50,7 +55,25 @@ func _load_texture(on: bool) -> Texture2D:
 func _on_pressed() -> void:
 	_on = not _on
 	_apply_texture()
+	_save_auto_state()
 	toggled.emit(_on)
+
+
+# 读偏好档（供装配层决定初始态；未解锁场景装配层不调用，防越权开自动）。
+func read_persisted_on(fallback: bool) -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(cfg_path) != OK:
+		return fallback
+	return bool(cfg.get_value("battle", "auto_combat", fallback))
+
+
+# 切换写回。先 load 再 set：保留同档 speed_state key（ConfigFile save 写全文件，
+# 不 load 会把倍速档覆盖丢档）。
+func _save_auto_state() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(cfg_path)
+	cfg.set_value("battle", "auto_combat", _on)
+	cfg.save(cfg_path)
 
 
 func set_on(on: bool) -> void:
