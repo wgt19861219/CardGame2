@@ -12,32 +12,36 @@ const TAP_THRESHOLD_PX: float = 8.0   # 行点击判定阈值（release 距 pres
 
 ## 宿主 _input(event) 转发；state 为宿主持有的 Dictionary（跨帧记 press 基准）。
 ## 拖动直接写 sc.scroll_vertical（同步滚动，无惯性——源 draglist 手松即停 + dragSpeed
-## 惯性本项目不译，披露）。
-static func handle_input(sc: ScrollContainer, event: InputEvent, state: Dictionary) -> void:
+## 惯性本项目不译，披露）。horizontal=true 写 scroll_horizontal（shop 商品列表横拖，2026-10-08）。
+static func handle_input(sc: ScrollContainer, event: InputEvent, state: Dictionary,
+		horizontal: bool = false) -> void:
 	if sc == null or not sc.visible:
 		return
 	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
 		var mb := event as InputEventMouseButton
 		if mb.pressed:
 			if sc.get_global_rect().has_point(mb.global_position):
-				state["press_y"] = mb.global_position.y
-				state["start_scroll"] = sc.scroll_vertical
-		elif state.has("press_y"):
-			state.erase("press_y")
+				state["press_axis"] = mb.global_position.x if horizontal else mb.global_position.y
+				state["start_scroll"] = sc.scroll_horizontal if horizontal else sc.scroll_vertical
+		elif state.has("press_axis"):
+			state.erase("press_axis")
 			state.erase("start_scroll")
-	elif event is InputEventMouseMotion and state.has("press_y") \
+	elif event is InputEventMouseMotion and state.has("press_axis") \
 			and (event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT:
 		var mm := event as InputEventMouseMotion
-		_apply_delta(sc, state, mm.global_position.y)
-	elif event is InputEventScreenDrag and state.has("press_y"):
+		_apply_delta(sc, state, mm.global_position.x if horizontal else mm.global_position.y, horizontal)
+	elif event is InputEventScreenDrag and state.has("press_axis"):
 		var sd := event as InputEventScreenDrag
-		_apply_delta(sc, state, sd.position.y)
+		_apply_delta(sc, state, sd.position.x if horizontal else sd.position.y, horizontal)
 
 
-static func _apply_delta(sc: ScrollContainer, state: Dictionary, cur_y: float) -> void:
-	var dy: float = cur_y - float(state["press_y"])
-	if absf(dy) >= DRAG_START_PX:
-		sc.scroll_vertical = float(state["start_scroll"]) - dy
+static func _apply_delta(sc: ScrollContainer, state: Dictionary, cur_axis: float, horizontal: bool) -> void:
+	var d: float = cur_axis - float(state["press_axis"])
+	if absf(d) >= DRAG_START_PX:
+		if horizontal:
+			sc.scroll_horizontal = float(state["start_scroll"]) - d
+		else:
+			sc.scroll_vertical = float(state["start_scroll"]) - d
 
 
 ## 行点击位移判别：press 时记 position（返 true=已记录）；release 时调 is_tap 判定。

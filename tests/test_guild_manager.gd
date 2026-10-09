@@ -247,16 +247,18 @@ func test_serde_legacy_save_without_guild() -> void:
 
 func test_shop7_market_config_guildpoint() -> void:
 	var cfg: Dictionary = MarketConfig.get_type_config(MarketConfig.SHOP_GUILD_ID)
-	# 商品 payType=gold（源 generateShopGoods(7) payTypeMap[7] or "gold"）；公会币只用于刷新。
-	assert_eq(String(cfg["payType"]), "gold", "shop7 商品 payType=gold（照源残留映射语义）")
 	assert_eq(String(cfg["titleText"]), "公会商店", "标题降级文本")
+	assert_eq(MarketConfig.get_refresh_coin_type(MarketConfig.SHOP_GUILD_ID), "guildpoint", "刷新币种=guildpoint")
 
 
-func test_shop7_goods_paytype_gold() -> void:
+# 商品币种/数量走 ItemGroups 表（组 137-139 guildpoint；2026-10-08 管道改造，
+# 源单机版 payTypeMap 缺 7 fallback gold 是降级实现，原版表配置即 guildpoint）
+func test_shop7_goods_paytype_guildpoint() -> void:
 	var sm := ShopManager.new(cm)
 	var goods: Array = sm.generate_shop_goods(MarketConfig.SHOP_GUILD_ID, BattleRng.new(12345), cm)
-	assert_eq(goods.size(), 6, "6 件商品（源 GOODS_COUNT）")
-	assert_eq(String(goods[0]["type"]), "gold", "商品 payType=gold（源 payTypeMap[7] 缺省 gold）")
+	assert_eq(goods.size(), 12, "12 件商品（十二槽全绑组）")
+	for g in goods:
+		assert_eq(String((g as Dictionary)["type"]), "guildpoint", "商品币种=guildpoint（组 137-139 表配置）")
 
 
 func test_shop7_refresh_spends_guildpoint_not_diamond() -> void:

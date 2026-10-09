@@ -1,30 +1,18 @@
 class_name ShopManager
 extends RefCounted
 
-## 商店 Logic（Logic 层）— 照源 local_server.lua:1159-1322（generateShopGoods/open_shop/
-## shop_refresh/shop_consume）+ shop.lua:138-154 buyReply（扣货币+加物品）。
-## 商品随机生成（Equip 抽 6 件 + priceMul + payType）+ 购买（扣货币+加物品+售罄）+ 手动刷新（扣钻）。
+## 商店 Logic（Logic 层）— 照原版数据管道：Shop.json 槽位绑 ItemGroups 商品组（12 槽，
+## 每槽组内随机抽一件，价格/币种/数量全用表配置）+ 购买（shop.lua:138-154 buyReply）
+## + 手动刷新（marketconfig type_config.refresh_coin_type：1/2/3 钻石、4 龙鳞、5 角斗士、7 兄弟会）。
 ## 单机化：源 net 消息 shop_* → 直调本 Logic；自动刷新时刻（Shop.Refresh Times）暂不实现。
+## 源单机破解版 local_server.lua:1135-1180 是降级实现（Equip 全表随机 6 件 + Price 字段
+## 不存在 fallback 随机 50-500），2026-10-08 改按原版 Shop.json+ItemGroups 表管道生成。
 
-const GOODS_COUNT: int = 6
-const MIN_PRICE: int = 10
-const DEFAULT_PRICE: int = 100
-const PRICE_RAND_MIN: int = 50
-const PRICE_RAND_MAX: int = 500
-const REFRESH_COST_FALLBACK: int = 50    # GradientPrice 缺失 fallback
+const GOODS_SLOT_COUNT: int = 12     # 源 Shop.json 每店 Goods 1-12 Group 十二槽
 const GOBLIN_SHOP_ID: int = 2
-const BLACK_MARKET_SHOP_ID: int = 3
-const GUILD_SHOP_ID: int = 7     # 公会商店（源 marketconfig [7]，刷新耗 guildpoint 而非钻石）
-const PRICE_MUL_GOBLIN: float = 0.6
-const PRICE_MUL_BLACK_MARKET: float = 2.0
-const FALLBACK_EQUIP_IDS: Array[int] = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+const GUILD_SHOP_ID: int = 7
+const REFRESH_COST_FALLBACK: int = 50    # GradientPrice 缺失 fallback
 
-const PAY_TYPE_MAP: Dictionary = {
-	3: "diamond",
-	4: "crusadepoint",
-	5: "arenapoint",
-	6: "guildpoint",
-}
 const PAY_GOLD: String = "gold"
 const PAY_DIAMOND: String = "diamond"
 const PAY_CRUSADE: String = "crusadepoint"
@@ -41,55 +29,38 @@ func _init(p_cm: Variant = null) -> void:
 
 
 # 返 Array[{id,type,price,amount,is_sale}]（照源 goods[i]={_id,_type,_price,_amount,_is_sale}）。
+# 每槽位从绑定的 ItemGroups 组内随机抽一件；type/price/amount 直读表项
+# （price type=币种、price=终价、amout=单格数量——原版口径，无 priceMul 系数）。
 func generate_shop_goods(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
-	var equip_table: Dictionary = p_cm.get_raw_table(&"Equip")
-	var equip_ids: Array[int] = _collect_equip_ids(equip_table)
-	if equip_ids.is_empty():
-		equip_ids = FALLBACK_EQUIP_IDS.duplicate()
-	var shuffled: Array[int] = _shuffle(equip_ids, rng)
-	var pay_type: String = String(PAY_TYPE_MAP.get(shop_id, PAY_GOLD))
-	var price_mul: float = _price_mul(shop_id)
+	var shop_row: Dictionary = p_cm.get_raw_table(&"Shop").get(str(shop_id), {})
+	var groups_table: Dictionary = p_cm.get_raw_table(&"ItemGroups")
 	var goods: Array = []
-	var count: int = min(GOODS_COUNT, shuffled.size())
-	for i in count:
-		var row: Dictionary = equip_table.get(str(shuffled[i]), {})
-		var price: int = int(row.get("Buy Price", rng.randi_range(PRICE_RAND_MIN, PRICE_RAND_MAX)))
-		price = max(int(price * price_mul), MIN_PRICE)
+	for slot in range(1, GOODS_SLOT_COUNT + 1):
+		# GDScript or 返 bool 非 Python 操作数（14.0 or 0 → true→1），不能用作 null 合并。
+		var group_id: int = int(shop_row.get("Goods %d Group" % slot, 0))
+		if group_id == 0:
+			continue   # 槽未绑组（源 Shop.json 配 0 = 空槽）
+		var item: Dictionary = _pick_group_item(groups_table.get(str(group_id), {}), rng)
+		if item.is_empty():
+			continue
 		goods.append({
-			"id": shuffled[i],
-			"type": pay_type,
-			"price": price,
-			"amount": 1,
+			"id": int(item.get("id", 0)),
+			"type": String(item.get("price type", PAY_GOLD)),
+			"price": int(item.get("price", 0)),
+			"amount": int(item.get("amout", 1)),
 			"is_sale": shop_id == GOBLIN_SHOP_ID,
 		})
 	return goods
 
 
-static func _price_mul(shop_id: int) -> float:
-	if shop_id == GOBLIN_SHOP_ID:
-		return PRICE_MUL_GOBLIN
-	if shop_id == BLACK_MARKET_SHOP_ID:
-		return PRICE_MUL_BLACK_MARKET
-	return 1.0
-
-
-static func _collect_equip_ids(equip_table: Dictionary) -> Array[int]:
-	var ids: Array[int] = []
-	for eid in equip_table.keys():
-		var s: String = str(eid)
-		if s.is_valid_int():
-			ids.append(int(s))
-	return ids
-
-
-static func _shuffle(ids: Array[int], rng: BattleRng) -> Array[int]:
-	var out: Array[int] = ids.duplicate()
-	for i in range(out.size() - 1, 0, -1):
-		var j: int = rng.randi_range(0, i)
-		var tmp: int = out[i]
-		out[i] = out[j]
-		out[j] = tmp
-	return out
+static func _pick_group_item(group: Dictionary, rng: BattleRng) -> Dictionary:
+	var keys: Array = []
+	for idx in group.keys():
+		if String(idx).is_valid_int():
+			keys.append(idx)
+	if keys.is_empty():
+		return {}
+	return group[keys[rng.randi_range(0, keys.size() - 1)]]
 
 
 func open_shop(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
@@ -100,15 +71,17 @@ func open_shop(shop_id: int, rng: BattleRng, p_cm: Variant) -> Array:
 
 func refresh(shop_id: int, pd: PlayerData, rng: BattleRng, p_cm: Variant) -> bool:
 	var cost: int = get_refresh_cost(shop_id, p_cm)
-	# 公会商店刷新耗公会币（源 marketconfig.lua:175-181 canRefresh 查 guildpoint）。
-	if shop_id == GUILD_SHOP_ID:
-		if pd.get_point(PAY_GUILD) < cost:
-			return false
-		pd.add_point(PAY_GUILD, -cost)
-	else:
+	# 刷新币种照源 marketconfig type_config.refresh_coin_type（canRefresh 各查对应余额）：
+	# shop 1/2/3 钻石、4 龙鳞（crusadepoint）、5 角斗士（arenapoint）、7 兄弟会（guildpoint）。
+	var coin: String = MarketConfig.get_refresh_coin_type(shop_id)
+	if coin == PAY_DIAMOND:
 		if pd.diamond < cost:
 			return false
 		pd.spend_diamond(cost)
+	else:
+		if pd.get_point(coin) < cost:
+			return false
+		pd.add_point(coin, -cost)
 	refresh_times[shop_id] = int(refresh_times.get(shop_id, 0)) + 1
 	shop_data[shop_id] = generate_shop_goods(shop_id, rng, p_cm)
 	return true

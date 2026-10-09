@@ -183,12 +183,25 @@ mouse_filter = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ItemLayer" type="Control" parent="."]
+; 商品列表横向滚动层（2026-10-08 照源 draglist）：12 件列表宽 1265 > 裁剪 670 →
+; ItemScroll(垂直禁用) 包 ItemLayer（offset 归零，clip 交由 ScrollContainer）。
+; mouse_filter=IGNORE：ScrollContainer 默认 STOP 会吞与 RefreshBtn（全局 y101~159）重叠区
+; （滚动层 y120 起，重叠 39px）的点击致刷新按钮失效（2026-10-08 二轮修复）；商品 item 子节点
+; 自带 STOP 可点，拖拽走 panel _input，滚轮由 panel _input 补横滚。
+[node name="ItemScroll" type="ScrollContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 offset_left = 65.0
 offset_top = 120.0
 offset_right = 735.0
 offset_bottom = 445.0
-clip_contents = true
+mouse_filter = 2
+vertical_scroll_mode = 0
+horizontal_scroll_mode = 1
+
+[node name="ItemLayer" type="Control" parent="ItemScroll"]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 670.0
+offset_bottom = 325.0
 mouse_filter = 2

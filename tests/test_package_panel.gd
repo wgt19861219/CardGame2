@@ -682,11 +682,11 @@ func test_input_drag_blocked_while_equipboard_open() -> void:
 	panel._on_cell_gui_input(_mb(false, Vector2(303, 202)), {"id": eid, "amount": 1, "type": 1})   # tap 弹出 equipboard
 	var c: Vector2 = panel._scroll.get_global_rect().get_center()
 	panel._input(_mb(true, c))
-	assert_false(panel._drag_state.has("press_y"), "equipboard 打开时拖拽基准不记录（背后列表不响应）")
+	assert_false(panel._drag_state.has("press_axis"), "equipboard 打开时拖拽基准不记录（背后列表不响应；2026-10-08 键名随 DragScrollHelper 横轴改造）")
 	# 关闭浮层后恢复转发（remove_window=queue_free 帧末生效，等一帧贴近运行时时序）
 	panel._equipboard.remove_window()
 	await get_tree().process_frame
 	panel._input(_mb(true, c))
-	assert_true(panel._drag_state.has("press_y"), "equipboard 关闭后拖拽转发恢复")
+	assert_true(panel._drag_state.has("press_axis"), "equipboard 关闭后拖拽转发恢复")
 	panel.remove_window()
 	root.queue_free()

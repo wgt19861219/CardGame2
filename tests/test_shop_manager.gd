@@ -16,74 +16,110 @@ func _make_pd() -> PlayerData:
 	return pd
 
 
-# generate_shop_goods：6 件 + 字段齐全 + payType=gold（源 GOODS_COUNT/payTypeMap）
+# generate_shop_goods：走 Shop.json 槽位组 → ItemGroups 抽取（2026-10-08 改造）。
+# shop1 槽位组 [1,4,7,7,7,8,141,142] 8 个非零槽 → 8 件；字段齐全。
 func test_generate_goods_count() -> void:
 	var sm := ShopManager.new(cm)
 	var rng := BattleRng.new(12345)
 	var goods: Array = sm.generate_shop_goods(1, rng, cm)
-	assert_eq(goods.size(), 6, "6 件商品（源 GOODS_COUNT）")
+	assert_eq(goods.size(), 8, "8 件商品（shop1 八个非零槽位组）")
 	for g in goods:
 		var gd: Dictionary = g
 		assert_true(gd.has("id") and gd.has("type") and gd.has("price") and gd.has("amount"), "字段齐全")
-		assert_eq(int(gd["amount"]), 1, "amount=1（源 :1199）")
-		assert_eq(String(gd["type"]), "gold", "id=1 payType=gold")
-		assert_true(int(gd["price"]) >= 10, "price>=MIN_PRICE（源 :1194）")
 
 
-# price 从 Equip."Buy Price" 读（非 random fallback；源 :1190 读 "Price"，本项目 Equip.json 转换后 "Buy Price"）。
-# priceMul=1.0 时 price = max(Buy Price, MIN_PRICE)（floor），验不走 random 50-500。
-func test_price_from_buy_price() -> void:
+# 商品价格/币种/数量直读 ItemGroups 组内配置（原版口径；商品 i 出自槽位 i 绑定的组）。
+func test_goods_match_itemgroups() -> void:
 	var sm := ShopManager.new(cm)
+	var shop_row: Dictionary = cm.get_raw_table(&"Shop").get("1", {})
+	var groups: Dictionary = cm.get_raw_table(&"ItemGroups")
+	var slot_groups: Array = []
+	for slot in range(1, ShopManager.GOODS_SLOT_COUNT + 1):
+		var gid: int = int(shop_row.get("Goods %d Group" % slot, 0))
+		if gid != 0:
+			slot_groups.append(gid)
 	var goods: Array = sm.generate_shop_goods(1, BattleRng.new(12345), cm)
-	var checked: int = 0
-	for g in goods:
-		var gd: Dictionary = g
-		var eid: int = int(gd["id"])
-		var buy_price: int = int(cm.get_raw_table(&"Equip").get(str(eid), {}).get("Buy Price", 0))
-		if buy_price > 0:
-			assert_eq(int(gd["price"]), maxi(buy_price, 10), "price = Buy Price（非 random fallback）")
-			checked += 1
-	assert_true(checked > 0, "至少 1 件验 Buy Price（防全 fallback random）")
+	assert_eq(goods.size(), slot_groups.size(), "商品数 = 非零槽位数")
+	for i in goods.size():
+		var gd: Dictionary = goods[i]
+		var group: Dictionary = groups.get(str(slot_groups[i]), {})
+		var found: bool = false
+		for it in group.values():
+			if int(it.get("id", 0)) == int(gd["id"]) and int(it.get("price", 0)) == int(gd["price"]) \
+					and String(it.get("price type", "")) == String(gd["type"]) \
+					and int(it.get("amout", 1)) == int(gd["amount"]):
+				found = true
+				break
+		assert_true(found, "商品 %d (id=%d price=%d type=%s) 出自槽位组 %d 表项" % [i, int(gd["id"]), int(gd["price"]), String(gd["type"]), slot_groups[i]])
 
 
-# priceMul：地精 id=2 打折（源 :1184 priceMul 0.6；同 seed 洗牌同商品，地精价 ≤ 普通价）
-func test_price_mul_goblin() -> void:
+# shop4 远征商店全槽 crusadepoint（ItemGroups 组 14-22 全 crusadepoint，2026-10-08 修复货币口径）
+func test_generate_crusade_shop_coin() -> void:
 	var sm := ShopManager.new(cm)
-	var goods1: Array = sm.generate_shop_goods(1, BattleRng.new(12345), cm)
+	var goods: Array = sm.generate_shop_goods(4, BattleRng.new(12345), cm)
+	assert_eq(goods.size(), 12, "12 件（shop4 十二槽全绑组）")
+	for g in goods:
+		assert_eq(String((g as Dictionary)["type"]), "crusadepoint", "远征商品币种=crusadepoint")
+		assert_true(int((g as Dictionary)["price"]) <= 8090, "价格在表配范围内（组 20/21 最高 8090，非金币口径 Buy Price）")
+
+
+# shop5 竞技场商店全槽 arenapoint（ItemGroups 组 40-48 全 arenapoint）
+func test_generate_arena_shop_coin() -> void:
+	var sm := ShopManager.new(cm)
+	var goods: Array = sm.generate_shop_goods(5, BattleRng.new(12345), cm)
+	assert_eq(goods.size(), 12, "12 件")
+	for g in goods:
+		assert_eq(String((g as Dictionary)["type"]), "arenapoint", "竞技场商品币种=arenapoint")
+
+
+# shop7 公会商店商品 guildpoint（原版表配置；源单机版 payTypeMap 缺 7 fallback gold 是降级实现）
+func test_generate_guild_shop_coin() -> void:
+	var sm := ShopManager.new(cm)
+	var goods: Array = sm.generate_shop_goods(7, BattleRng.new(12345), cm)
+	assert_eq(goods.size(), 12, "12 件")
+	for g in goods:
+		assert_eq(String((g as Dictionary)["type"]), "guildpoint", "公会商品币种=guildpoint（组 137-139 表配置）")
+
+
+# is_sale：地精 id=2 全 SALE 标（源 :1200），普通店 false
+func test_goblin_sale_badge() -> void:
+	var sm := ShopManager.new(cm)
 	var goods2: Array = sm.generate_shop_goods(2, BattleRng.new(12345), cm)
-	var p1: int = int(goods1[0]["price"])
-	var p2: int = int(goods2[0]["price"])
-	assert_true(p2 <= p1, "地精 0.6 折 ≤ 普通价")
-	assert_true(bool(goods2[0]["is_sale"]), "地精 is_sale=true（源 :1200）")
-	assert_false(bool(goods1[0]["is_sale"]), "普通 is_sale=false")
+	var goods1: Array = sm.generate_shop_goods(1, BattleRng.new(12345), cm)
+	for g in goods2:
+		assert_true(bool((g as Dictionary)["is_sale"]), "地精 is_sale=true")
+	for g in goods1:
+		assert_false(bool((g as Dictionary)["is_sale"]), "普通 is_sale=false")
 
 
-# payType：黑市 id=3 → diamond（源 payTypeMap[3]）
+# payType：黑市 id=3 槽 1 绑组 3（单项 diamond）
 func test_pay_type_black_market() -> void:
 	var sm := ShopManager.new(cm)
 	var goods: Array = sm.generate_shop_goods(3, BattleRng.new(999), cm)
-	assert_eq(String(goods[0]["type"]), "diamond", "黑市 payType=diamond")
+	assert_eq(String(goods[0]["type"]), "diamond", "黑市槽1（组3）=diamond")
 
 
 # open_shop：生成 + 存 shop_data
 func test_open_shop_stores() -> void:
 	var sm := ShopManager.new(cm)
 	var goods: Array = sm.open_shop(1, BattleRng.new(12345), cm)
-	assert_eq(sm.get_goods(1).size(), 6, "open_shop 存 shop_data")
+	assert_eq(sm.get_goods(1).size(), 8, "open_shop 存 shop_data")
 	assert_eq(sm.get_goods(1), goods, "get_goods 返存储列表")
 
 
-# buy：扣金币 + 加物品 + 标记售罄（源 buyReply addEquip + :1272 amount=0）
+# buy：扣金币 + 加物品（组配数量）+ 标记售罄（源 buyReply addEquip + :1272 amount=0）
 func test_buy_gold_success() -> void:
 	var sm := ShopManager.new(cm)
 	sm.open_shop(1, BattleRng.new(12345), cm)
 	var pd := _make_pd()
 	var gold_before: int = pd.hero_manager.gold
-	var price: int = int(sm.get_goods(1)[0]["price"])
-	var item_id: int = int(sm.get_goods(1)[0]["id"])
+	var g0: Dictionary = sm.get_goods(1)[0]
+	var price: int = int(g0["price"])
+	var amount: int = int(g0["amount"])
+	var item_id: int = int(g0["id"])
 	assert_true(sm.buy(1, 0, pd, cm), "购买成功")
-	assert_eq(pd.hero_manager.gold, gold_before - price, "扣金币 = 商品价")
-	assert_eq(int(pd.items.get(item_id, 0)), 1, "加物品进背包")
+	assert_eq(pd.hero_manager.gold, gold_before - price, "扣金币 = 商品单价")
+	assert_eq(int(pd.items.get(item_id, 0)), amount, "加组配数量进背包")
 
 
 # 售罄不可再买（源 :1272 amount=0 → shop_consume fail）
@@ -122,7 +158,7 @@ func test_spend_guildpoint() -> void:
 	assert_false(ShopManager._spend(ShopManager.PAY_GUILD, 500, pd), "guildpoint 余额不足 → 失败")
 
 
-# refresh：扣钻 + 重新生成 + refresh_times+1（源 doClickRefresh + GradientPrice）
+# refresh：普通店扣钻 + 重新生成 + refresh_times+1（源 doClickRefresh + GradientPrice）
 func test_refresh() -> void:
 	var sm := ShopManager.new(cm)
 	sm.open_shop(1, BattleRng.new(12345), cm)
@@ -130,9 +166,44 @@ func test_refresh() -> void:
 	var dia_before: int = pd.diamond
 	var cost: int = sm.get_refresh_cost(1, cm)
 	assert_true(sm.refresh(1, pd, BattleRng.new(999), cm), "刷新成功")
-	assert_eq(pd.diamond, dia_before - cost, "扣刷新钻")
+	assert_eq(pd.diamond, dia_before - cost, "扣刷新钻（shop1 刷新币种=diamond）")
 	assert_eq(sm.get_refresh_times(1), 1, "刷新次数+1")
-	assert_eq(sm.get_goods(1).size(), 6, "刷新后仍 6 件")
+	assert_eq(sm.get_goods(1).size(), 8, "刷新后仍 8 件")
+
+
+# refresh：shop4 远征店扣 crusadepoint（源 marketconfig [4] refresh_coin_type；2026-10-08 修复）
+func test_refresh_crusade_coin() -> void:
+	var sm := ShopManager.new(cm)
+	sm.open_shop(4, BattleRng.new(12345), cm)
+	var pd := _make_pd()
+	pd.crusade_point = 10000
+	var dia_before: int = pd.diamond
+	var cost: int = sm.get_refresh_cost(4, cm)
+	assert_true(cost > 0 and cost <= 10000, "刷新费用在龙鳞余额内")
+	assert_true(sm.refresh(4, pd, BattleRng.new(999), cm), "刷新成功")
+	assert_eq(pd.crusade_point, 10000 - cost, "扣龙鳞（非钻石）")
+	assert_eq(pd.diamond, dia_before, "钻石不动")
+	assert_eq(sm.get_goods(4).size(), 12, "刷新后仍 12 件")
+
+
+# refresh：shop5 竞技场店扣 arenapoint（源 marketconfig [5] refresh_coin_type）
+func test_refresh_arena_coin() -> void:
+	var sm := ShopManager.new(cm)
+	sm.open_shop(5, BattleRng.new(12345), cm)
+	var pd := _make_pd()
+	pd.arena_point = 10000
+	var cost: int = sm.get_refresh_cost(5, cm)
+	assert_true(sm.refresh(5, pd, BattleRng.new(999), cm), "刷新成功")
+	assert_eq(pd.arena_point, 10000 - cost, "扣角斗士币（非钻石）")
+
+
+# refresh：shop4 龙鳞不足 → 失败且不扣任何币
+func test_refresh_crusade_no_coin() -> void:
+	var sm := ShopManager.new(cm)
+	sm.open_shop(4, BattleRng.new(12345), cm)
+	var pd := _make_pd()   # crusade_point=0, diamond=10000
+	assert_false(sm.refresh(4, pd, BattleRng.new(1), cm), "龙鳞不足刷新失败")
+	assert_eq(pd.diamond, 10000, "失败不扣钻石（曾误扣）")
 
 
 # refresh：钻石不足失败
@@ -262,7 +333,7 @@ func test_check_auto_refresh_trigger() -> void:
 	pd.shop_auto_refresh[1] = last_ts
 	assert_true(sm.check_auto_refresh(1, pd, now_ts, BattleRng.new(999)), "到 9:00 点触发刷新")
 	assert_eq(int(pd.shop_auto_refresh.get(1, 0)), now_ts, "ts 更新为 now")
-	assert_eq(sm.get_goods(1).size(), 6, "刷新后仍 6 件")
+	assert_eq(sm.get_goods(1).size(), 8, "刷新后仍 8 件")
 
 
 # check_auto_refresh：未到下个点不触发
@@ -386,6 +457,37 @@ func test_time_type_expire_priority() -> void:
 	assert_eq(sm.get_time_type(2, pd, _ts(10, 0)), "expire", "停留中 expire 优先")
 	pd.shop_expire_end.erase(2)
 	assert_eq(sm.get_time_type(2, pd, _ts(10, 0)), "refresh", "无 expire 则 refresh")
+
+
+# ---- MarketConfig 货币图标/刷新币种（2026-10-08 修复：源 marketconfig.lua getCoinRes 5 键漏译）----
+
+# get_coin_res：5 键全映射（crusadepoint=龙鳞/arenapoint=角斗士/guildpoint=兄弟会专用贴图，非钻石贴图）
+func test_coin_res_five_types() -> void:
+	assert_eq(MarketConfig.get_coin_res("gold"), "shop_gold_icon.png", "gold=金币贴图")
+	assert_eq(MarketConfig.get_coin_res("diamond"), "shop_token_icon.png", "diamond=钻石贴图")
+	assert_eq(MarketConfig.get_coin_res("crusadepoint"), "money_dragonscale_small.png", "crusadepoint=龙鳞贴图（源 :282）")
+	assert_eq(MarketConfig.get_coin_res("arenapoint"), "money_arenatoken_small.png", "arenapoint=角斗士贴图（源 :283）")
+	assert_eq(MarketConfig.get_coin_res("guildpoint"), "money_guildtoken_small.png", "guildpoint=兄弟会贴图（源 :284）")
+	for pay in ["gold", "diamond", "crusadepoint", "arenapoint", "guildpoint"]:
+		var path: String = "res://assets/ui/alpha/HVGA/" + MarketConfig.get_coin_res(pay)
+		assert_true(ResourceLoader.exists(path), "贴图存在: " + path)
+
+
+# get_refresh_coin_type：1/2/3 钻石、4 龙鳞、5 角斗士、7 兄弟会（源 refresh_coin_type）
+func test_refresh_coin_type_map() -> void:
+	assert_eq(MarketConfig.get_refresh_coin_type(1), "diamond", "shop1 刷=钻石")
+	assert_eq(MarketConfig.get_refresh_coin_type(2), "diamond", "shop2 刷=钻石")
+	assert_eq(MarketConfig.get_refresh_coin_type(3), "diamond", "shop3 刷=钻石")
+	assert_eq(MarketConfig.get_refresh_coin_type(4), "crusadepoint", "shop4 刷=龙鳞")
+	assert_eq(MarketConfig.get_refresh_coin_type(5), "arenapoint", "shop5 刷=角斗士")
+	assert_eq(MarketConfig.get_refresh_coin_type(7), "guildpoint", "shop7 刷=兄弟会")
+
+
+# get_refresh_coin_name_key：刷新确认弹窗币种名 LSTR key
+func test_refresh_coin_name_key() -> void:
+	assert_eq(MarketConfig.get_refresh_coin_name_key(4), "SHOP.INTERFAX_COINS", "shop4 名=枚龙鳞硬币")
+	assert_eq(MarketConfig.get_refresh_coin_name_key(5), "SHOP.GLADIATOR_COINS", "shop5 名=枚角斗士硬币")
+	assert_eq(MarketConfig.get_refresh_coin_name_key(7), "marketconfig.1.10.1.002", "shop7 名=枚兄弟会硬币")
 
 
 # 持久化：to_dict/from_dict 保留 shop_expire_end
