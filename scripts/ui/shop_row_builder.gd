@@ -44,7 +44,17 @@ static func build_goods(item_layer: Control, goods: Array, config: Dictionary, p
 		item.set_meta(&"shop_slot", i)
 		item_layer.add_child(item)
 		items.append(item)
+	# 内容层宽照源 getListWidth（shop.lua:393 lineCount*205+35）：12 件 1265 > 裁剪宽 670 →
+	# 外层 ScrollContainer 横滚；6 件 650 < 670 不滚。ScrollContainer 是容器会接管子 rect，
+	# 走 custom_minimum_size 驱动滚动范围（直接设 size 会被容器打回 viewport 宽）。
+	var content_size: Vector2 = Vector2(float(line_count) * LIST_DX + LIST_WIDTH_TAIL, LIST_CLIP_HEIGHT)
+	item_layer.custom_minimum_size = content_size
+	item_layer.size = content_size
 	return items
+
+
+const LIST_WIDTH_TAIL: float = 35.0
+const LIST_CLIP_HEIGHT: float = 325.0
 
 
 # x = ox + (col-1)*dx；上排 col=index，下排 col=index-lineCount（源 getItemPos）。

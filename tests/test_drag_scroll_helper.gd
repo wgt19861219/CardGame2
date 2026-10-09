@@ -18,7 +18,7 @@ func test_helper_drag_scrolls() -> void:
 	press.position = Vector2(50, 90)
 	press.global_position = Vector2(50, 90)
 	DragScrollHelper.handle_input(sc, press, st)
-	assert_true(st.has("press_y"), "press 记录基准")
+	assert_true(st.has("press_axis"), "press 记录基准（2026-10-08 键名 press_y→press_axis 适配横轴）")
 	var motion := InputEventMouseMotion.new()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
 	motion.position = Vector2(50, 10)

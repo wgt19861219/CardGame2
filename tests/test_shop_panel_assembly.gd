@@ -176,7 +176,7 @@ func test_panel_layer_rect_static() -> void:
 	assert_almost_eq(pl.size.x, 702.0, 1.0, "宽 702")
 	assert_almost_eq(pl.size.y, 424.0, 1.0, "高 424")
 	var item_layer: Control = panel.get("_item_layer") as Control
-	assert_true(item_layer.clip_contents, "ItemLayer 裁剪层（源 draglist cliprect）")
+	assert_false(item_layer.clip_contents, "ItemLayer 不自裁剪（2026-10-08 起由父 ItemScroll 统一裁剪）")
 	assert_almost_eq(item_layer.global_position.x, 65.0, 0.5, "裁剪区 x=145（源 clip 65+80）")
 	assert_almost_eq(item_layer.global_position.y, 120.0, 0.5, "裁剪区 y=200（源 560-360）")
 	panel.free()
@@ -233,7 +233,7 @@ func test_on_expire_refreshes_not_closes() -> void:
 	assert_true(panel.is_inside_tree(), "到期不关面板（面板仍在树）")
 	assert_true(int(pd.shop_expire_end.get(2, 0)) > now, "停留期重计 expire_end>now（不残留过期）")
 	var item_layer: Control = panel.get("_item_layer") as Control
-	assert_eq(item_layer.get_child_count(), 6, "商品 rebuild 后 6 件")
+	assert_eq(item_layer.get_child_count(), 12, "商品 rebuild 后 12 件（shop2 十二槽全绑组）")
 	panel.free()
 
 
@@ -247,3 +247,75 @@ func test_on_expire_source_no_close() -> void:
 	var body: String = text.substr(start, end - start)
 	assert_true(body.find("remove_window") == -1, "_on_expire 不调 remove_window（到期刷新不关面板）")
 	assert_true(body.find("open_shop") >= 0, "_on_expire 走 open_shop 重新生成商品")
+
+
+# ── 2026-10-08 商品管道改造守卫：12 件表配商品 + ItemScroll 横滚层 ──
+
+# 场景结构守卫：ItemScroll(ScrollContainer, 垂直禁用) 包住 ItemLayer（源 draglist 横滚等价物）。
+func test_scene_item_scroll_structure() -> void:
+	var packed: PackedScene = load("res://scenes/ui/shop_content.tscn")
+	var root: Control = packed.instantiate() as Control
+	var scroll: ScrollContainer = root.get_node("%ItemScroll") as ScrollContainer
+	var layer: Control = root.get_node("%ItemLayer") as Control
+	assert_not_null(scroll, "%ItemScroll 存在")
+	assert_not_null(layer, "%ItemLayer 存在")
+	assert_eq(layer.get_parent(), scroll, "ItemLayer 是 ItemScroll 子节点")
+	assert_eq(scroll.vertical_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "垂直滚动禁用（纯横向）")
+	assert_true(scroll.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED, "横向滚动启用")
+	# 2026-10-08 二轮：ScrollContainer 默认 STOP 吞与 RefreshBtn（全局 y101~159，滚动层 y120 起
+	# 重叠 39px）的点击致刷新按钮失效——命中层守卫：滚动层必须 IGNORE（商品 item 子节点自点）。
+	assert_eq(scroll.mouse_filter, Control.MOUSE_FILTER_IGNORE, "ItemScroll IGNORE（防吞刷新按钮点击）")
+	root.free()
+
+
+# 装配守卫：panel setup 后 _item_scroll 挂接 + 商品 fill 走新管道（12 件表配、远征店全龙鳞币）。
+func test_panel_scroll_and_goods_pipeline() -> void:
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.gold = 10000
+	pd.crusade_point = 10000
+	var panel := ShopPanel.new("shop", {})
+	add_child(panel)
+	panel.setup_panel(4, ShopManager.new(cm), pd, BattleRng.new(1))
+	await get_tree().process_frame   # ScrollContainer 布局 deferred，等一帧再断言滚动范围
+	var scroll: ScrollContainer = panel.get("_item_scroll") as ScrollContainer
+	assert_not_null(scroll, "_item_scroll 已挂接")
+	var layer: Control = panel.get("_item_layer") as Control
+	assert_eq(layer.get_parent(), scroll, "_item_layer 在 _item_scroll 下")
+	assert_eq(layer.get_child_count(), 12, "远征店 12 件表配商品")
+	assert_almost_eq(layer.custom_minimum_size.x, 6.0 * 205.0 + 35.0, 0.5, "内容 min 宽 1265（驱动横滚范围）")
+	assert_true(scroll.get_h_scroll_bar().max_value > scroll.size.x, "横向滚动条 max>视口宽（可滚）")
+	panel.free()
+
+
+# 滚轮横滚（2026-10-08 二轮）：ItemScroll IGNORE 后容器内建滚轮失效，panel _input 补分流——
+# 列表矩形内 WHEEL_DOWN → scroll_horizontal 增、WHEEL_UP → 减（clamp 边界）。
+func test_wheel_scrolls_list() -> void:
+	var pd := PlayerData.new(cm)
+	pd.hero_manager.gold = 10000
+	pd.crusade_point = 10000
+	var panel := ShopPanel.new("shop", {})
+	add_child(panel)
+	panel.setup_panel(4, ShopManager.new(cm), pd, BattleRng.new(1))
+	await get_tree().process_frame
+	var scroll: ScrollContainer = panel.get("_item_scroll") as ScrollContainer
+	var center: Vector2 = scroll.get_global_rect().get_center()
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	down.pressed = true
+	down.global_position = center
+	panel._input(down)
+	assert_almost_eq(scroll.scroll_horizontal, ShopPanel.WHEEL_STEP, 0.5, "WHEEL_DOWN → 横滚 +64")
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_WHEEL_UP
+	up.pressed = true
+	up.global_position = center
+	panel._input(up)
+	assert_almost_eq(scroll.scroll_horizontal, 0.0, 0.5, "WHEEL_UP → 回滚 0（clamp 下界）")
+	# 列表矩形外的滚轮不分流（不劫持面板其他区域/背后 UI）
+	var outside := InputEventMouseButton.new()
+	outside.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	outside.pressed = true
+	outside.global_position = Vector2(20, 20)
+	panel._input(outside)
+	assert_almost_eq(scroll.scroll_horizontal, 0.0, 0.5, "矩形外滚轮不动列表")
+	panel.free()

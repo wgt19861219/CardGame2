@@ -50,9 +50,8 @@ static func _black_market() -> Dictionary:
 			PAY_DIAMOND, PRICE_MUL_BLACK_MARKET, true, false, "黑市商人")
 
 
-## 公会商店（源 marketconfig.lua [7]：shop_head_guild 专属皮；商品 payType=gold——源
-## generateShopGoods(7) 走 payTypeMap[7] or "gold"（map 键 6 是源残留），公会币只用于
-## 刷新（refresh_coin_type=guildpoint，ShopManager.refresh 扣 guildpoint）。
+## 公会商店（源 marketconfig.lua [7]：shop_head_guild 专属皮；商品/刷新币种均 guildpoint——
+## ItemGroups 组 137-139 表配置 + refresh_coin_type=guildpoint；商品币种由 ShopManager 走表管道）。
 static func _guild() -> Dictionary:
 	return _make("shop_bg.png", "shop_product_bg_2.png", "shop_head_guild.png", "shop_title_bg_guild.png",
 			PAY_GOLD, 1.0, true, false, "公会商店")
@@ -75,7 +74,45 @@ static func _make(frame_res: String, product_res: String, head_res: String, titl
 	}
 
 
+# 刷新币种照源 marketconfig.lua type_config[].refresh_coin_type：
+# shop 1/2/3 钻石、4 龙鳞、5 角斗士、7 兄弟会（shop 6 starshop 无刷新）。
+const REFRESH_COIN_TYPE: Dictionary = {
+	1: PAY_DIAMOND,
+	2: PAY_DIAMOND,
+	3: PAY_DIAMOND,
+	4: PAY_CRUSADE,
+	5: PAY_ARENA,
+	7: PAY_GUILD,
+}
+# 刷新币种名 LSTR key 照源 refresh_coin_name。
+const REFRESH_COIN_NAME_KEY: Dictionary = {
+	1: "RECHARGE.DIAMOND",
+	2: "RECHARGE.DIAMOND",
+	3: "RECHARGE.DIAMOND",
+	4: "SHOP.INTERFAX_COINS",
+	5: "SHOP.GLADIATOR_COINS",
+	7: "marketconfig.1.10.1.002",
+}
+
+
+static func get_refresh_coin_type(shop_id: int) -> String:
+	return String(REFRESH_COIN_TYPE.get(shop_id, PAY_DIAMOND))
+
+
+static func get_refresh_coin_name_key(shop_id: int) -> String:
+	return String(REFRESH_COIN_NAME_KEY.get(shop_id, "RECHARGE.DIAMOND"))
+
+
+# 照源 marketconfig.lua:278-287 getCoinRes 5 键映射（dragon=钻石贴图，龙鳞/角斗士/兄弟会各有专用贴图）。
 static func get_coin_res(pay: String) -> String:
 	if pay == PAY_GOLD:
 		return "shop_gold_icon.png"
+	if pay == PAY_DIAMOND:
+		return "shop_token_icon.png"
+	if pay == PAY_CRUSADE:
+		return "money_dragonscale_small.png"
+	if pay == PAY_ARENA:
+		return "money_arenatoken_small.png"
+	if pay == PAY_GUILD:
+		return "money_guildtoken_small.png"
 	return "shop_token_icon.png"

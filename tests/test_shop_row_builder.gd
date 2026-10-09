@@ -126,4 +126,20 @@ func test_goods_two_rows_layout() -> void:
 	assert_almost_eq((items[1] as Control).position.x - (items[0] as Control).position.x, 205.0, 0.5, "上排相邻列 dx=205（源 getItemPos）")
 	assert_almost_eq((items[2] as Control).position.y - (items[0] as Control).position.y, 150.0, 0.5, "上排比下排高 dy=150（Godot y-down 上排 y 小，简报原断言符号反）")
 	assert_eq(int((items[0] as Control).get_meta(&"shop_slot", -1)), 0, "shop_slot meta 标记（panel 连信号用）")
+	assert_almost_eq(layer.size.x, 2.0 * 205.0 + 35.0, 0.5, "4 件（lineCount=2）内容宽 445（源 getListWidth lineCount*205+35）")
+	layer.free()
+
+
+# 12 件（远征/竞技场/公会店满槽）→ 内容宽 1265 超裁剪 670，外层 ItemScroll 横滚（2026-10-08）
+func test_goods_twelve_content_width() -> void:
+	var layer := Control.new()
+	add_child(layer)
+	var goods: Array = []
+	for i in 12:
+		goods.append({"id": 371, "type": "crusadepoint", "price": 100, "amount": 1})
+	var items: Array = ShopRowBuilder.build_goods(layer, goods, MarketConfig.get_type_config(1), cm)
+	assert_eq(items.size(), 12, "12 商品 12 行")
+	assert_almost_eq(layer.size.x, 6.0 * 205.0 + 35.0, 0.5, "12 件内容宽 1265（源 getListWidth）> 裁剪 670 → 横滚")
+	assert_almost_eq((items[5] as Control).position.x - (items[0] as Control).position.x, 5.0 * 205.0, 0.5, "上排第 6 列 dx×5")
+	assert_almost_eq((items[6] as Control).position.y - (items[0] as Control).position.y, 150.0, 0.5, "下排首列 y 大 150（y-down）")
 	layer.free()

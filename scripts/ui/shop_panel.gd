@@ -28,6 +28,9 @@ var rng: BattleRng
 var _config: Dictionary = {}
 var _panel_layer: Control
 var _item_layer: Control
+var _item_scroll: ScrollContainer   # 12 件商品横向滚动（源 draglist，2026-10-08）
+var _drag_state: Dictionary = {}    # DragScrollHelper 横拖跨帧基准
+var _press_pos: Variant = null      # 商品点击 press 基准（拖动超阈值不触发购买）
 var _talk_label: Label             # NPC 对话气泡（照源 shop.lua:19 showTalk）
 var _next_refresh_label: Label     # 下次自动刷新时刻（照源 getShopNextAutoRefreshPointDesc）
 var _head_touch: Control           # NPC 头像触摸层（点头像→Touch，源 shop.lua:940 head_button）
@@ -83,7 +86,8 @@ func _build_content() -> void:
 	_talk_label.modulate.a = 0.0   # 初始隐藏（淡入时设 a=1）
 	_talk_bg = _panel_layer.get_node("%TalkBg") as NinePatchRect   # TalkBg 已静态化进 .tscn
 	_next_refresh_label = _panel_layer.get_node("%TimeLabel") as Label
-	_item_layer = _panel_layer.get_node("%ItemLayer") as Control
+	_item_scroll = content.get_node("%ItemScroll") as ScrollContainer
+	_item_layer = content.get_node("%ItemLayer") as Control
 	_build_goods()
 	_update_next_refresh_label()
 	# HudOverlay 切 identity=shop。
@@ -105,6 +109,8 @@ func _build_goods() -> void:
 func _make_buy_handler(slot: int) -> Callable:
 	# 源 shop.lua:198 product panel 按下 setScale(0.95)：press→缩到 0.95，release→回弹 1.0。
 	# gui_input 在 press/release 都触发（不像 button.pressed 只在 release）；按状态切 Tween。
+	# 横向拖列表时 release 落在商品上——位移超 TAP_THRESHOLD 视为拖动不触发购买
+	# （判别复用 DragScrollHelper.is_tap，同 ranklist_panel 行点击惯例）。
 	var items: Array = _item_layer.get_children()
 	return func(ev: InputEvent) -> void:
 		if not (ev is InputEventMouseButton):
@@ -116,11 +122,13 @@ func _make_buy_handler(slot: int) -> Callable:
 		if not is_instance_valid(item):
 			return
 		if mb.pressed:
+			_press_pos = mb.global_position
 			_tween_item_scale(item, ITEM_PRESS_SCALE)
 		else:
 			_tween_item_scale(item, Vector2.ONE)
-			if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.button_index == MOUSE_BUTTON_LEFT and DragScrollHelper.is_tap(_press_pos, mb.global_position):
 				_on_buy(slot)
+			_press_pos = null
 
 
 # 商品按下/松开 scale Tween（源 shop.lua:198 setScale 0.95 视觉反馈）。
@@ -187,32 +195,30 @@ func _make_buy_confirm_handler(slot: int) -> Callable:
 func _on_refresh() -> void:
 	AudioPlayer.play_sfx("common_click_feedback")
 	var cost: int = shop_mgr.get_refresh_cost(shop_id, cm)
-	# 公会商店（shop 7）刷新耗公会币而非钻石（shop_manager.refresh 扣 guildpoint，
-	# 预检/文案必须同货币——曾按钻石预检致公会币足却被拦，2026-09-28 审查 P1-6）。
-	var is_guild: bool = shop_id == ShopManager.GUILD_SHOP_ID
-	var coinname: String = "公会币" if is_guild else "钻石"
-	if is_guild:
-		if pd.get_point(ShopManager.PAY_GUILD) < cost:
-			Toast.show_message("公会币不足（需 %d）" % cost)
-			return
-	elif pd.diamond < cost:
-		Toast.show_message("钻石不足（需 %d）" % cost)
+	# 刷新币种照源 marketconfig refresh_coin_type（1/2/3 钻石、4 龙鳞、5 角斗士、7 兄弟会），
+	# 预检/文案必须同货币（曾按钻石预检致公会币足却被拦，2026-09-28 审查 P1-6 同族）。
+	var coin_type: String = MarketConfig.get_refresh_coin_type(shop_id)
+	var coin_name: String = String(cm.get_lstr(MarketConfig.get_refresh_coin_name_key(shop_id)))
+	var enough: bool = pd.diamond >= cost if coin_type == ShopManager.PAY_DIAMOND \
+		else pd.get_point(coin_type) >= cost
+	if not enough:
+		Toast.show_message("%s不足（需 %d）" % [coin_name, cost])
 		return
 	# refreshshoptimes 源 getRefreshShopTimes 返剩余次数，本项目 get_refresh_times 返已用次数（无刷新上限，语义差异）。
 	var times: int = shop_mgr.get_refresh_times(shop_id)
 	var popup := ShopRefreshConfirm.new()
-	popup.set_message(String(cm.get_lstr("SHOP.SPEND_XXX_TO_REFRESH")) % [cost, coinname, times], cm)
+	popup.set_message(String(cm.get_lstr("SHOP.SPEND_XXX_TO_REFRESH")) % [cost, coin_name, times], cm)
 	popup.confirmed.connect(_on_refresh_confirmed)
 	container.add_child(popup)
 
 
 func _on_refresh_confirmed() -> void:
-	var is_guild: bool = shop_id == ShopManager.GUILD_SHOP_ID
+	var coin_name: String = String(cm.get_lstr(MarketConfig.get_refresh_coin_name_key(shop_id)))
 	if shop_mgr.refresh(shop_id, pd, rng, cm):
 		Toast.show_message("刷新成功")
 		_show_talk("Refresh")
 	else:
-		Toast.show_message("公会币不足" if is_guild else "钻石不足")
+		Toast.show_message("%s不足" % coin_name)
 	call_deferred("_rebuild")
 
 
@@ -233,6 +239,27 @@ func _update_next_refresh_label() -> void:
 
 func _now() -> int:
 	return int(Time.get_unix_time_from_system())
+
+
+# 商品列表横向拖拽 + 滚轮（源 draglist drag/moved 手势语义，Desktop ScrollContainer 无拖拽，
+# 复用 DragScrollHelper 横轴——2026-10-08 十二槽商品列表宽超屏后启用）。
+# ItemScroll mouse_filter=IGNORE（防吞与刷新按钮重叠区的点击，2026-10-08 二轮修复），
+# 故容器内建滚轮也失效——滚轮在此分流：鼠标在列表矩形内 WHEEL_UP/DOWN → 横滚。
+const WHEEL_STEP: float = 64.0   # 单格滚轮横滚步距（对齐 ScrollContainer 默认 custom_step 语义）
+
+func _input(event: InputEvent) -> void:
+	if _item_scroll == null or not _item_scroll.visible:
+		return
+	DragScrollHelper.handle_input(_item_scroll, event, _drag_state, true)
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.pressed and (mb.button_index == MOUSE_BUTTON_WHEEL_UP \
+				or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN) \
+				and _item_scroll.get_global_rect().has_point(mb.global_position):
+			var dir: float = -1.0 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
+			_item_scroll.scroll_horizontal = clampf(
+				_item_scroll.scroll_horizontal + dir * WHEEL_STEP * maxi(int(mb.factor), 1),
+				0.0, _item_scroll.get_h_scroll_bar().max_value)
 
 
 func _show_talk(key: String) -> void:
