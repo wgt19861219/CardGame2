@@ -1768,6 +1768,13 @@ LadderChangeBtnLabel17/colors/font_shadow_color = Color(0.247059, 0.019608, 0, 1
 LadderChangeBtnLabel17/constants/shadow_offset_x = 0
 LadderChangeBtnLabel17/constants/shadow_offset_y = 2
 LadderChangeBtnLabel17/font_sizes/font_size = 17
+; 购买次数价格数字 20（源 changeEnemyCost size20 ccc3(251,206,16) + setLabelShadow(ccc3(0,0,0), ccp(0,2)) :3133-3134）
+LadderPriceLabel20/base_type = &"Label"
+LadderPriceLabel20/colors/font_color = Color(0.984314, 0.807843, 0.062745, 1)
+LadderPriceLabel20/colors/font_shadow_color = Color(0, 0, 0, 1)
+LadderPriceLabel20/constants/shadow_offset_x = 0
+LadderPriceLabel20/constants/shadow_offset_y = 2
+LadderPriceLabel20/font_sizes/font_size = 20
 ; 卡名/记录名 20 白+黑影（源 enemyId setLabelShadow(ccc3(0,0,0), ccp(0,2)) :3094）
 LadderWhiteShadowLabel20/base_type = &"Label"
 LadderWhiteShadowLabel20/colors/font_color = Color(1, 1, 1, 1)

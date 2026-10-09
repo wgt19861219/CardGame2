@@ -111,7 +111,9 @@ func _maybe_resume_crusade() -> void:
 
 
 # pvp 战斗结束改切结算场景（stageDone/stageFailed，2026-09-13 PVP 结算补全，行为对齐源
-# stageaccount 调度）；旧 _maybe_resume_pvp（回主菜单 Toast+重开 LadderPanel）退役，pending_pvp 字段已删。
+# stageaccount 调度）；旧 _maybe_resume_pvp 退役。2026-10-09 修正：结算页按钮按源 popScene 语义
+# 回 pvp 发起面板（走 pending_stage_result target=ladder，见 _maybe_resume_stage_result；
+# 2026-09-13 把 next 修成空目标回主城系对源 popScene 的误读，用户报「战斗完大退主界面」）。
 
 
 # stage 结算页重试/下一关按钮跨场景重弹（源 doClickReplay/doClickBack → stagedetail、doClickNext →
@@ -121,12 +123,15 @@ func _maybe_resume_stage_result() -> void:
 		return
 	var pr: Dictionary = GameData.pending_stage_result.duplicate()   # 同 excavate/pvp：先拷贝再清
 	GameData.pending_stage_result.clear()
-	if String(pr.get("target", "")) == "stagedetail":
-		var detail := StageDetailPanel.new("stagedetail", {})
-		detail.setup_panel(int(pr.get("stage_id", 0)), GameData.player.stage_manager, GameData.player, BattleRng.new(randi()))
-		detail.show_window(self)
-	else:
-		MainSceneEntryRouter.open_stage_select(self)
+	match String(pr.get("target", "")):
+		"stagedetail":
+			var detail := StageDetailPanel.new("stagedetail", {})
+			detail.setup_panel(int(pr.get("stage_id", 0)), GameData.player.stage_manager, GameData.player, BattleRng.new(randi()))
+			detail.show_window(self)
+		"ladder":
+			MainSceneEntryRouter.open_ladder(self)   # PVP 结算返回（源 popScene 回 pvp 场景，2026-10-09）
+		_:
+			MainSceneEntryRouter.open_stage_select(self)
 
 
 # 薄包装：保 task_query.FAST_ROUTE 反射链（task_panel.has_method + call）不断。

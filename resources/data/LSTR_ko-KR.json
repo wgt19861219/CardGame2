@@ -2590,7 +2590,7 @@
   "PVP._D_SECONDS_AGO": "%d초전",
   "PVP.ARMORY": "챔피언랭킹",
   "PVP.COMBAT_RECORD": "대전기록",
-  "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES": "이것은 오늘  %d번째로 구매하시는 티켓입니다\n다이아몬드 %d개를 소비하여 도전기회를 5번 증가하시겠습니까?",
+  "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES": "이것은 오늘  %d번째로 구매하시는 티켓입니다\n다이아몬드 %d개를 소비하여 도전기회를 10번 증가하시겠습니까?",
   "PVP.DO_YOU_NEED_TO_PAY_50_DIAMONDS_TO_RESET_THE_COMBAT_COOL_DOWN_TIME_SO_THAT_YOU_CAN_FIGHT_INSTANTLY": "다이아몬드 50개를 지불하여 전투CD를 초기화하여 팀원들을 바로 전투에 투입시키겠습니까?",
   "PVP.CHANGE_ANOTHER_LIST": "상품 교체",
   "PVP.REST_NOW": "바로 초기화",

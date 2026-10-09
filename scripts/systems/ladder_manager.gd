@@ -18,7 +18,9 @@ const AI_NAMES: Array[String] = [
 	"月光游侠","黑暗领主","星辰法师","铁甲战士","毒蛇猎手",
 ]
 const RANK_INIT: int = 1001
-const LEFT_COUNT_DEFAULT: int = 5
+# 每日基础挑战次数（源 5：pvp.lua:3153 分母硬编码 5 / LEFT_COUNT_DEFAULT；2026-10-09
+# 用户拍板改 10，受控偏离——购买回满/每日重置/显示分母同源走本常量）。
+const LEFT_COUNT_DEFAULT: int = 10
 const OPPONENT_COUNT: int = 3
 const OPPONENT_RANK_BASE: int = 50
 const BOARD_SIZE: int = 20
@@ -311,14 +313,31 @@ func _cmd_end_battle(cmd: Variant, player: PlayerData, now: int) -> Dictionary:
 		"best_rank_reward": 0, "best_rank": int(pvp["highest_rank"])}
 
 
-func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:
-	var cost: int = BUY_COST_DEFAULT
+## 下一次购买价格（源 pvp.lua:1869 GradientPrice[buyTime+1]["PVP Buy"]，缺行 fallback 50）。
+func buy_cost(player: PlayerData) -> int:
 	var price_row: Dictionary = player.cm.get_raw_table(&"GradientPrice").get(str(int(pvp["buy_times"]) + 1), {})
 	if price_row.has("PVP Buy"):
-		cost = int(price_row["PVP Buy"])
+		return int(price_row["PVP Buy"])
+	return BUY_COST_DEFAULT
+
+
+## 今日是否还可购买（源 :3144 leftBuyTime = VIP[vip]["PVP Buy"] - buyTime > 0；
+## 单机特权 VIP 满档（player_data.privilege_vip_level，2026-09-08 去 VIP 限制口径））。
+func can_buy_more(player: PlayerData) -> bool:
+	return int(pvp["buy_times"]) < int(VipData.get_vip_field(player.privilege_vip_level(), "PVP Buy", player.cm))
+
+
+func _cmd_buy_battle_chance(player: PlayerData) -> Dictionary:
+	if not can_buy_more(player):
+		return {"result": "fail"}
+	var cost: int = buy_cost(player)
 	if player.spend_diamond(cost):
 		pvp["buy_times"] = int(pvp["buy_times"]) + 1
-		pvp["left_count"] = int(pvp["left_count"]) + 1
+		# 回满基础次数（2026-10-09 用户拍板照源 UI 语义：pvp.lua buyPvpTimesRsp leftTime=5
+		# 显示 5/5 + 文案「增加N次挑战机会」；local_server.lua:3321 的 +1 与源 UI 自相矛盾，
+		# 以玩家实际体验口径为准；源购买入口仅 left_count==0 可达，+N 与回满等价。
+		# 同日二拍板：基础次数 5→10，回满=10）。
+		pvp["left_count"] = LEFT_COUNT_DEFAULT
 		_mark_dirty()
 		return {"result": "success", "left_count": pvp["left_count"], "buy_times": pvp["buy_times"]}
 	return {"result": "fail"}

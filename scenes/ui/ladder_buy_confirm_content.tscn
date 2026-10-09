@@ -1,0 +1,74 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_bg.png" id="1_by3w8"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/dialog_line.png" id="2_jvpcd"]
+
+; 竞技场购买次数确认框 — 源 pvp.lua:1867-1887 buyPvpTime → dialog.lua confirmDialog
+; 家族 createWithSprite 分支（info.sprite 空 CCSprite 存在，同 crusade_reset_confirm 口径），
+; 布局坐标同源 dialog 家族直译（bg 中心屏 / line / 双钮 cap(20,20,40,29) 120x49 / msg 300x125 @(172,135)）。
+[node name="LadderBuyConfirmContent" type="Control" unique_id=397256435]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Shade" type="ColorRect" parent="." unique_id=499097286]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+; 遮罩（源 :37 CCLayerColor ccc4(0,0,0,150) 全屏；模态拦截在 panel 根 STOP）
+color = Color(0, 0, 0, 0.588235)
+
+[node name="Bg" type="TextureRect" parent="." unique_id=86790780]
+layout_mode = 0
+offset_left = 225.56
+offset_top = 129.56
+offset_right = 574.44
+offset_bottom = 350.44
+mouse_filter = 2
+texture = ExtResource("1_by3w8")
+expand_mode = 1
+
+[node name="Line" type="TextureRect" parent="Bg" unique_id=307029962]
+layout_mode = 0
+offset_left = 14.73
+offset_top = 144.32
+offset_right = 329.27
+offset_bottom = 147.44
+mouse_filter = 2
+texture = ExtResource("2_jvpcd")
+expand_mode = 1
+
+[node name="CancelBtn" type="Button" parent="Bg" unique_id=1154897513]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 40.0
+offset_top = 152.38
+offset_right = 160.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "取消"
+
+[node name="OkBtn" type="Button" parent="Bg" unique_id=2119998561]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 190.0
+offset_top = 152.38
+offset_right = 310.0
+offset_bottom = 201.38
+theme_type_variation = &"DialogConfirmBtn"
+text = "确定"
+
+[node name="Msg" type="Label" parent="Bg" unique_id=357400256]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 22.0
+offset_top = 23.38
+offset_right = 322.0
+offset_bottom = 148.38
+theme_type_variation = &"DialogMsgLabel"
+text = "购买确认"
+vertical_alignment = 1
+autowrap_mode = 3

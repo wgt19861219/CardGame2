@@ -2590,7 +2590,7 @@
   "PVP._D_SECONDS_AGO": "%d seconds ago",
   "PVP.ARMORY": "Leaderboard",
   "PVP.COMBAT_RECORD": "Replays",
-  "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES": "This is your %d attempt(s) today to reset challenge chances.  Do you want to pay %d gems to add five challenge chances?",
+  "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES": "This is your %d attempt(s) today to reset challenge chances.  Do you want to pay %d gems to add ten challenge chances?",
   "PVP.DO_YOU_NEED_TO_PAY_50_DIAMONDS_TO_RESET_THE_COMBAT_COOL_DOWN_TIME_SO_THAT_YOU_CAN_FIGHT_INSTANTLY": "Do you want to pay 50 gems to clear the Cooldown?",
   "PVP.CHANGE_ANOTHER_LIST": "Refresh",
   "PVP.REST_NOW": "Clear CD",

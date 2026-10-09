@@ -33,7 +33,7 @@ func test_handle_open_panel() -> void:
 	var lm := LadderManager.new()
 	var reply: Dictionary = lm.handle({"_open_panel": true}, player, cm, BattleRng.new(3), 0)
 	assert_true(reply.has("_open_panel"), "返 _open_panel")
-	assert_eq(int(reply["_open_panel"]["left_count"]), 5, "left_count=5（每次开面板恢复）")
+	assert_eq(int(reply["_open_panel"]["left_count"]), 10, "left_count=10（基础次数，2026-10-09 拍板 5→10）")
 	assert_eq((reply["_open_panel"]["oppos"] as Array).size(), 3, "3 opponents")
 
 
@@ -62,13 +62,18 @@ func test_handle_end_battle_defeat_no_swap() -> void:
 
 
 func test_handle_buy_battle_chance() -> void:
+	# 2026-10-09 用户拍板照源 UI 语义：购买后回满 5 次（buyPvpTimesRsp leftTime=5 +
+	# 文案「增加5次挑战机会」；local_server +1 系源内部矛盾不仿）。
 	var lm := LadderManager.new()
 	lm.ensure_pvp()
+	lm.handle({"_query_records": true}, player, cm, BattleRng.new(5), 0)  # 消化首开每日重置
+	lm.pvp["left_count"] = 0   # 源购买入口仅 0 次可达（:3129），从打空态买
 	var diamond_before: int = player.diamond
 	var reply: Dictionary = lm.handle({"_buy_battle_chance": true}, player, cm, BattleRng.new(5), 0)
 	assert_eq(str(reply["_buy_battle_chance"]["result"]), "success", "购买成功")
 	assert_eq(player.diamond, diamond_before - 50, "扣 50 钻（GradientPrice PVP Buy row1）")
-	assert_eq(int(lm.pvp["left_count"]), 6, "left_count 5→6")
+	assert_eq(int(reply["_buy_battle_chance"]["left_count"]), 10, "left_count 回满 10（基础次数改 10 后回满口径）")
+	assert_eq(int(lm.pvp["buy_times"]), 1, "buy_times 0→1")
 
 
 func test_handle_query_rankboard_npc() -> void:
@@ -155,3 +160,34 @@ func test_daily_reset_first_marks_dirty() -> void:
 	# handle 首行 _check_daily_reset：today≠0 触发重置（last_day<=0 不发邮件但重置 left_count）
 	lm.handle({"_query_records": true}, player, cm, BattleRng.new(14), 1800000000)
 	assert_gt((spy[0] as Array)[0], 0, "首次每日重置（无邮件路径）也标脏")
+
+
+# ── 购买次数：价格梯度 + 单机特权 VIP 上限（2026-10-09 接通购买态）──
+
+func test_buy_cost_gradient() -> void:
+	# 源 pvp.lua:1869 GradientPrice[buyTime+1]["PVP Buy"]：50/100/200 递增。
+	var lm := LadderManager.new()
+	lm.ensure_pvp()
+	assert_eq(lm.buy_cost(player), 50, "第 1 次购买 50 钻（GradientPrice[1]）")
+	lm.pvp["buy_times"] = 1
+	assert_eq(lm.buy_cost(player), 100, "第 2 次 100 钻（GradientPrice[2]）")
+	lm.pvp["buy_times"] = 2
+	assert_eq(lm.buy_cost(player), 200, "第 3 次 200 钻（GradientPrice[3]）")
+
+
+func test_buy_battle_chance_vip_cap() -> void:
+	# 单机特权 VIP 满档（VIP15 PVP Buy=13，player_data.privilege_vip_level 口径）：
+	# buy_times 达上限后 fail 且不扣钻不加次（2026-10-09 Logic 内聚上限校验）。
+	var lm := LadderManager.new()
+	lm.ensure_pvp()
+	# 先消化首开每日重置（now=0 → last_reset_day=19700101），防后续 handle 洗掉 buy_times。
+	lm.handle({"_query_records": true}, player, cm, BattleRng.new(15), 0)
+	lm.pvp["buy_times"] = 12
+	assert_true(lm.can_buy_more(player), "12 次时仍可买（上限 13）")
+	lm.pvp["buy_times"] = 13
+	assert_false(lm.can_buy_more(player), "13 次=单机特权档上限")
+	var diamond_before: int = player.diamond
+	var reply: Dictionary = lm.handle({"_buy_battle_chance": true}, player, cm, BattleRng.new(15), 0)
+	assert_eq(str(reply["_buy_battle_chance"]["result"]), "fail", "超上限拒绝")
+	assert_eq(player.diamond, diamond_before, "不扣钻")
+	assert_eq(int(lm.pvp["left_count"]), 10, "不加次数")

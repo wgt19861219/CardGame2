@@ -62,12 +62,22 @@ static func replay_target(stage_id: int) -> Dictionary:
 
 
 # 下一关跳转目标（源 stagedone.lua:111 doClickNext → popScene + WinBackToSelect → 选关）。
-# PVP（sid=-1）源 next 恒可见（stagedone.lua:577），点击 popScene 回主城（WinBackToSelect 监听在
-# stageselect 未开时 no-op）→ 空 target 回主界面，不跳选关（旧逻辑会误跳 stageselect，2026-09-13 修正）。
+# PVP（sid=-1）源 next 恒可见（stagedone.lua:577），点击 popScene 回**发起场景**=pvp 面板
+# （WinBackToSelect 监听在 stageselect 未开时 no-op；2026-10-09 修正：旧注释把 popScene 理解为
+# 回主城致「战斗完大退主界面」用户报修，2026-09-13 修正时误把 PVP 修成空目标）。
 static func next_target(stage_id: int) -> Dictionary:
-	if StageAccount.is_dungeon_stage(stage_id) or stage_id == StageAccount.ARENA_STAGE_ID:
+	if StageAccount.is_dungeon_stage(stage_id):
 		return {}
+	if stage_id == StageAccount.ARENA_STAGE_ID:
+		return {"target": "ladder"}
 	return {"target": "stageselect"}
+
+
+# PVP 失败页 menu 按钮（源 stagefailed.lua:34-38 doClickMenu → popScene 回发起场景=pvp 面板；
+# 2026-10-09 补：旧实现恒回主城，同属 popScene 语义误读）。
+static func pvp_menu_back() -> void:
+	GameData.pending_stage_result = {"target": "ladder"}
+	goto_main_scene()
 
 
 # 结算页按钮统一跳转：存 pending（main_scene._maybe_resume_stage_result 消费重弹面板）+ 回主界面。

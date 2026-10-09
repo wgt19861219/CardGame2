@@ -347,13 +347,29 @@ func test_speed_button_cycles_states() -> void:
 
 # 源 resetUI（:1235-1250）+ speedBtnHandler（:1052-1053）— scene 装配 speedBtn + 点击接 set_speed_state。
 # scene 装配走 assembler 读真实 cfg（不可注入）：前置备份+写 1 固定初始档，后置恢复玩家原值。
-func test_scene_speed_button_sets_state() -> void:
-	var backup := ConfigFile.new()
-	var had: bool = backup.load("user://battle.cfg") == OK
-	var orig: int = int(backup.get_value("battle", "speed_state", 1)) if had else 1
+# 真实档三段式 helper（本文件 scene 装配测试共用）：整档备份 → load 保兄弟键后预置 →
+# 测试体 → 整档恢复（原本无档则删除测试产物）。防 CI 抹玩家 user://battle.cfg。
+var _cfg_backup: ConfigFile = null
+var _cfg_had: bool = false
+
+func _backup_and_prepare_real_cfg(key: String, value: Variant) -> void:
+	_cfg_backup = ConfigFile.new()
+	_cfg_had = _cfg_backup.load(REAL_BATTLE_CFG) == OK
 	var pre := ConfigFile.new()
-	pre.set_value("battle", "speed_state", 1)
-	pre.save("user://battle.cfg")
+	pre.load(REAL_BATTLE_CFG)   # 保留兄弟键（auto_combat/speed_state 互不抹）
+	pre.set_value("battle", key, value)
+	pre.save(REAL_BATTLE_CFG)
+
+func _restore_real_cfg() -> void:
+	if _cfg_had:
+		_cfg_backup.save(REAL_BATTLE_CFG)
+	else:
+		DirAccess.open("user://").remove("battle.cfg")
+
+const REAL_BATTLE_CFG: String = "user://battle.cfg"
+
+func test_scene_speed_button_sets_state() -> void:
+	_backup_and_prepare_real_cfg("speed_state", 1)
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -362,9 +378,7 @@ func test_scene_speed_button_sets_state() -> void:
 	assert_not_null(scene.speed_btn, "scene 装配 speed_btn（源 resetUI）")
 	scene.speed_btn._on_pressed()   # 1→2
 	assert_eq(scene.speed_state, 2, "speed_changed → set_speed_state(2)")
-	var rb := ConfigFile.new()
-	rb.set_value("battle", "speed_state", orig)
-	rb.save("user://battle.cfg")
+	_restore_real_cfg()
 	scene.queue_free()
 
 
@@ -654,12 +668,7 @@ func test_auto_button_position_aligns_speed_button() -> void:
 # 2026-10-08 auto 偏好持久化 + 取消通关门槛后装配恒读真实 cfg（assembler 内 new 不可注入）：
 # 前置备份+写固定 off，后置恢复玩家原值（照 test_scene_speed_button_sets_state 判例）。
 func test_scene_auto_button_toggles_combat() -> void:
-	var backup := ConfigFile.new()
-	var had: bool = backup.load("user://battle.cfg") == OK
-	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
-	var pre := ConfigFile.new()
-	pre.set_value("battle", "auto_combat", false)
-	pre.save("user://battle.cfg")
+	_backup_and_prepare_real_cfg("auto_combat", false)
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -669,9 +678,7 @@ func test_scene_auto_button_toggles_combat() -> void:
 	assert_not_null(scene.auto_btn, "scene 装配 auto_btn（源 resetUI :1252）")
 	scene.auto_btn._on_pressed()
 	assert_eq(scene.auto_combat, true, "auto_btn pressed → auto_combat=true（源 :1021）")
-	var rb := ConfigFile.new()
-	rb.set_value("battle", "auto_combat", orig)
-	rb.save("user://battle.cfg")
+	_restore_real_cfg()
 	scene.queue_free()
 
 
@@ -695,14 +702,9 @@ class StarMgrStub extends RefCounted:
 
 
 # 装配读档 off → 引擎同步 off（2026-10-08 取消门槛后不再依赖 stars=3 上下文）。
-# 真实 cfg 不可注入（assembler 内 new），前置备份+写固定 off，后置恢复（照 speed 判例）。
+# 真实 cfg 不可注入（assembler 内 new）：走 _backup_and_prepare/_restore 三段式（2026-10-09 修互抹）。
 func test_scene_auto_button_reads_persisted_off() -> void:
-	var backup := ConfigFile.new()
-	var had: bool = backup.load("user://battle.cfg") == OK
-	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
-	var pre := ConfigFile.new()
-	pre.set_value("battle", "auto_combat", false)
-	pre.save("user://battle.cfg")
+	_backup_and_prepare_real_cfg("auto_combat", false)
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -713,21 +715,14 @@ func test_scene_auto_button_reads_persisted_off() -> void:
 	scene.setup(eng, cm)
 	assert_eq(scene.auto_btn.visible, true, "低星（0 星）→ auto_btn 仍显示（门槛已取消）")
 	assert_eq(scene.auto_combat, false, "档 off → auto_combat=false（读档同步）")
-	var rb := ConfigFile.new()
-	rb.set_value("battle", "auto_combat", orig)
-	rb.save("user://battle.cfg")
+	_restore_real_cfg()
 	scene.queue_free()
 
 
 # 2026-10-08 auto 偏好持久化正向链路 — 装配读档 on → 引擎同步 on（跨战斗记忆，无门槛）。
-# 真实 cfg 不可注入（assembler 内 new），前置备份+写固定 on，后置恢复（照上例判例）。
+# 真实 cfg 不可注入（assembler 内 new）：走 _backup_and_prepare/_restore 三段式（2026-10-09 修互抹）。
 func test_scene_auto_button_reads_persisted_on() -> void:
-	var backup := ConfigFile.new()
-	var had: bool = backup.load("user://battle.cfg") == OK
-	var orig: bool = bool(backup.get_value("battle", "auto_combat", false)) if had else false
-	var pre := ConfigFile.new()
-	pre.set_value("battle", "auto_combat", true)
-	pre.save("user://battle.cfg")
+	_backup_and_prepare_real_cfg("auto_combat", true)
 	var eng := _make_engine()
 	var p := _make_unit(1, BattleEngine.CAMP_PLAYER, eng, Vector2(100, 0))
 	eng.add_unit(p)
@@ -735,9 +730,7 @@ func test_scene_auto_button_reads_persisted_on() -> void:
 	scene.setup(eng, cm)
 	assert_eq(scene.auto_combat, true, "档 on → 新战斗 auto_combat=true（跨战斗记忆）")
 	assert_eq(scene.auto_btn.is_on(), true, "按钮初始态显示 on（读档）")
-	var rb := ConfigFile.new()
-	rb.set_value("battle", "auto_combat", orig)
-	rb.save("user://battle.cfg")
+	_restore_real_cfg()
 	scene.queue_free()
 
 

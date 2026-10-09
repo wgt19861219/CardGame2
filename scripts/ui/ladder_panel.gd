@@ -12,8 +12,10 @@ extends PopWindow
 ## - 兑换奖励 → shop(5)（源 :1864-1866 pvpShop pushScene ed.ui.shop.create(5)，本项目
 ##   ShopManager shop_id=5 arenapoint 支付已就绪）；
 ## - 规则说明 → LadderRulesPopup（源 rewardInfoPanelLayer :375-461 本批迁移）；
-## - D4：旧独立「购买次数」钮删除——源 changeEnemy 三态中购买/CD 态不可达（pvpCD 恒 0
-##   :23 无赋值 + VIP 表 PVP Buy 全 0 → leftBuyTime=0），恒「换一批」态（:1911-1922）。
+## - D4：旧独立「购买次数」钮删除——源无独立钮，购买/CD 态挂在 changeEnemy 三态上
+##   （:1911-1922 按文字分发）。CD 态（REST_NOW）源 pvpCD 恒 0 :23 无赋值不可达，不接；
+##   购买态 2026-10-09 照源接通：left_count==0 且今日可买（单机特权 VIP 满档 PVP Buy=13，
+##   player_data.privilege_vip_level 口径）→ 按钮变「购买次数」+ 价格条，确认后回满。
 ## 行渲染下沉 LadderRows（排行/记录行，口径不变）。LineupTitleLbl 文案源 :2980-2994
 ## 「防守阵容:」(100,344)。myRank 贴图数字照源 createNumbers big_pvp1 规则（tools.lua:358-365）：
 ## <4 名裸版徽章图 / 4-10 big_pvp / >=11 small_pvp（:3148 padding=-2 anchor(0,0.5) @(150,277)）。
@@ -28,7 +30,11 @@ const RANK_NUM_PADDING: float = -2.0
 # myRank host 左中锚（源 anchor(0,0.5) @(150,277)cocos → Godot (150,203)；host tscn (150,180)
 # 占位，fill 精排 y=203−h/2）。
 const MY_RANK_ANCHOR: Vector2 = Vector2(150.0, 203.0)
-const LEFT_COUNT_MAX: int = 5
+const LEFT_COUNT_MAX: int = 10   # 显示分母（随 Logic LEFT_COUNT_DEFAULT，2026-10-09 用户拍板 5→10）
+# 购买确认文案（源 :1874 两个 %d = 第 buy_times+1 次 / 本次价格；键含字面 \N）。
+const LSTR_BUY_MSG_KEY: String = "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES"
+const BUY_MSG_FALLBACK: String = "这是你今天第 %d 次购买门票\n是否要支付 %d 钻石增加挑战机会？"
+const TEXT_DIAMOND_SHORT: String = "钻石不足"   # 单机化 fallback（源 toRecharge 弹窗省略）
 
 var _ladder: LadderManager
 var _player: PlayerData
@@ -40,6 +46,8 @@ var _rankboard_host: Control = null  # .tscn %RankboardHost（榜单行 fill）
 var _records_host: Control = null    # .tscn %RecordsHost（记录行 fill）
 var _lineup_slots: Array = []      # 5 槽 Control（fill ReadheroIcon）
 var _rank_views: Dictionary = {}   # 0/1/2 → Control（主屏/两覆盖层 visible 切换）
+var _change_btn_lbl: Label = null   # %RefreshBtn 子 BtnLbl（三态换文本）
+var _buy_mode: bool = false   # true=「购买次数」态（源 :1913 按钮文字分发，Godot 记状态）
 
 
 func setup_panel(p_player: PlayerData, p_cm: ConfigManager, p_rng: BattleRng) -> void:
@@ -73,7 +81,8 @@ func _build_content() -> void:
 	var view: Control = _rank_views[0] as Control
 	for i in 3:
 		_opponent_cards.append(view.get_node("%EnemyCard" + str(i + 1)) as Control)
-	_wire_btn(view.get_node("%RefreshBtn") as Button, "PVP.CHANGE_ANOTHER_LIST", _on_refresh)
+	_wire_btn(view.get_node("%RefreshBtn") as Button, "PVP.CHANGE_ANOTHER_LIST", _on_change_btn)
+	_change_btn_lbl = view.get_node("%RefreshBtn/BtnLbl") as Label
 	# 中排四钮（源 :1984-2179 规则说明/排行榜/对战记录/兑换奖励）。
 	_wire_btn(view.get_node("%RuleBtn") as Button, "PVP.RULE_DESCRIPTION", _on_show_rules)
 	_wire_btn(view.get_node("%RankboardBtn") as Button, "PVP.RANKING_", _show_overlay.bind(1))
@@ -128,6 +137,21 @@ func _fill_challenge_tab() -> void:
 	for i in range(oppos.size(), 3):
 		(_opponent_cards[i] as CanvasItem).visible = false
 	_fill_lineup(info["lineup"] as Array)
+	_refresh_change_state(view, info)
+
+
+# 换一批按钮三态（源 updateLastTime :3126-3137）：left_count==0 且今日还可买 → 「购买次数」
+# + 价格条（底图+钻icon+价格，源 moneyInfo 三件套）；否则「换一批」。CD 态不可达不接（D4）。
+func _refresh_change_state(view: Control, info: Dictionary) -> void:
+	_buy_mode = int(info["left_count"]) == 0 and _ladder.can_buy_more(_player)
+	var price_bar: CanvasItem = view.get_node("%PriceBar") as CanvasItem
+	if _buy_mode:
+		_change_btn_lbl.text = _cm.get_lstr("PVP.THE_NUMBER_OF_PURCHASES")
+		price_bar.visible = true
+		(price_bar.get_node("CostLbl") as Label).text = str(_ladder.buy_cost(_player))
+	else:
+		_change_btn_lbl.text = _cm.get_lstr("PVP.CHANGE_ANOTHER_LIST")
+		price_bar.visible = false
 
 
 # 我的排名贴图数字（源 :3148 createNumbers big_pvp1：<4 徽章图 / 4-10 big_pvp / >=11 small_pvp）。
@@ -307,6 +331,40 @@ func _on_show_rules() -> void:
 	popup.show_window(get_parent())
 
 
-func _on_refresh() -> void:
+# 换一批/购买次数按钮分发（源 :1912-1923 changeEnemy 按按钮文字分发：换一批 →
+# _apply_opponent；购买次数 → buyPvpTime；CD 态不可达）。Godot 按 _buy_mode 状态分发。
+func _on_change_btn() -> void:
+	if _buy_mode:
+		_do_buy()
+		return
 	_ladder.handle({"_apply_opponent": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
 	_fill_challenge_tab()
+
+
+# 购买挑战次数（源 buyPvpTime :1867-1887：GradientPrice[buy_times+1] 查价 → 钻石
+# 预检（源 toRecharge → Toast「钻石不足」，2026-09-17 去充值引导口径）→ 确认框
+# → 确认发 _buy_battle_chance；成功回满并刷新面板（2026-10-09 用户拍板照源 UI
+# buyPvpTimesRsp leftTime=5 + 文案「增加N次挑战机会」；local_server +1 系源内部矛盾不仿）。
+func _do_buy() -> void:
+	var cost: int = _ladder.buy_cost(_player)
+	if _player.diamond < cost:
+		Toast.show_message(TEXT_DIAMOND_SHORT)
+		return
+	var msg: String = _cm.get_lstr(LSTR_BUY_MSG_KEY)
+	if msg == LSTR_BUY_MSG_KEY:
+		msg = BUY_MSG_FALLBACK
+	msg = msg % [int(_ladder.pvp["buy_times"]) + 1, cost]
+	var confirm := LadderBuyConfirm.new()
+	confirm.setup_msg(msg, _cm)
+	confirm.confirmed.connect(_on_buy_confirmed)
+	var parent: Node = get_parent()
+	if parent != null:
+		parent.add_child(confirm)
+
+
+func _on_buy_confirmed() -> void:
+	var reply: Dictionary = _ladder.handle({"_buy_battle_chance": true}, _player, _cm, _rng, int(Time.get_unix_time_from_system()))
+	if str((reply["_buy_battle_chance"] as Dictionary).get("result", "")) == "success":
+		_fill_challenge_tab()
+	else:
+		Toast.show_message(TEXT_DIAMOND_SHORT)   # 上限/钻石不足兜底（预检后仍失败的竞态）

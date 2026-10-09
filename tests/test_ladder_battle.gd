@@ -22,7 +22,7 @@ func test_assemble_pvp_battle() -> void:
 	assert_eq(int(r["oppo_user_id"]), oppo_id, "oppo_user_id 保留")
 	assert_true((r["hero_list"] as Array).size() > 0, "玩家英雄列表非空")
 	assert_true((r["enemy_list"] as Array).size() >= 3, "敌方 AI 英雄列表（fallback 3-5）")
-	assert_eq(int(lm.pvp["left_count"]), 4, "_start_battle 扣 left_count 5→4")
+	assert_eq(int(lm.pvp["left_count"]), 9, "_start_battle 扣 left_count 10→9")
 
 
 func test_run_pvp_battle_endtoend() -> void:
@@ -42,9 +42,9 @@ func test_run_pvp_battle_endtoend() -> void:
 func test_finalize_left_count_consumed() -> void:
 	var lm := LadderManager.new()
 	lm.handle({"_open_panel": true}, player, cm, BattleRng.new(5), 0)
-	assert_eq(int(lm.pvp["left_count"]), 5, "open_panel 恢复 left_count=5")
+	assert_eq(int(lm.pvp["left_count"]), 10, "首开重置 left_count=10")
 	var oppo_id: int = int(lm.pvp["enemies"][0]["user_id"])
 	var asm: Dictionary = LadderBattle.assemble_pvp_battle(lm, oppo_id, player, cm, BattleRng.new(6), 0)
-	assert_eq(int(lm.pvp["left_count"]), 4, "start_battle 扣 1")
+	assert_eq(int(lm.pvp["left_count"]), 9, "start_battle 扣 1")
 	# last_oppo_rank 已设（start_battle 记对手 rank，finalize 排名互换用；对手 rank ~900 远大于英雄 rank 5-22）
 	assert_true(int(lm.pvp["last_oppo_rank"]) > 0, "last_oppo_rank 已记（对手 rank）")

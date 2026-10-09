@@ -96,7 +96,11 @@ func _on_back_pressed() -> void:
 
 
 # 音效：源 stagefailedlsr clickMenu → stageFailed.nextStage = common_click_feedback（soundres:181）。
+# PVP（sid=-1）源 doClickMenu popScene 回 pvp 发起面板（2026-10-09 补，恒回主城系 popScene 语义误读）。
 func _on_menu_pressed() -> void:
+	if stage_id == StageAccount.ARENA_STAGE_ID:
+		StageSettlementCommon.pvp_menu_back()
+		return
 	StageSettlementCommon.goto_main_scene()
 
 
