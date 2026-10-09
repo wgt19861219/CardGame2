@@ -59,10 +59,12 @@ func test_take_arena_reward_grants_hero_exp() -> void:
 	assert_gt(gained + arena_exp, 0, "经验有增加（含升级折算）")
 
 
-# 结算跳转 arena 分支：sid=-1 的 replay/next 目标为空（回主城，不误跳选关/详情）。
+# 结算跳转 arena 分支：replay 无目标（源胜利页 isKeyStage=false 隐藏 / 失败页 arena_mode 隐藏）；
+# next → ladder（源 stagedone.lua:127 doClickNext popScene 回 pvp 发起面板——2026-10-09 修正，
+# 旧断言「空目标回主城」系对源 popScene 的误读，用户报「战斗完大退主界面」）。
 func test_settlement_targets_arena_no_jump() -> void:
 	assert_eq(StageSettlementCommon.replay_target(StageAccount.ARENA_STAGE_ID), {}, "PVP replay 无目标")
-	assert_eq(StageSettlementCommon.next_target(StageAccount.ARENA_STAGE_ID), {}, "PVP next 无目标（旧逻辑误跳 stageselect）")
+	assert_eq(StageSettlementCommon.next_target(StageAccount.ARENA_STAGE_ID), {"target": "ladder"}, "PVP next 回 ladder（源 popScene 回 pvp）")
 
 
 # 失败结算页 arena 模式隐藏重打按钮（源 stagefailed.lua:212 visible=arena_mode==false）。
@@ -109,6 +111,12 @@ func test_best_rank_popup_structure() -> void:
 	assert_true("20" in texts, "奖励数字 20 在")
 	assert_true(texts.has("可获奖励:"), "可获奖励文案（LSTR STAGEDONE.RECEIVE_AWARDS_）")
 	assert_true(texts.has("确定"), "确定钮文案（CHATCONFIG.CONFIRM）")
+	# 2026-10-09 层级修复守卫：root 全屏 rect + shade 全屏（遮罩塌 0×0 会让结算页元素裸露穿透）。
+	assert_eq(popup.size, Vector2(800.0, 480.0), "root 800×480（shade 展开基准）")
+	assert_eq(popup.z_index, 200, "z=200 压结算页三星（z=100-102，防星星/标签浮在弹窗上）")
+	var shade_rect: ColorRect = popup.get_child(0) as ColorRect
+	assert_almost_eq(shade_rect.size.x, 800.0, 0.5, "shade 全屏宽")
+	assert_almost_eq(shade_rect.size.y, 480.0, 0.5, "shade 全屏高")
 
 
 func _collect_labels(node: Node) -> Array:

@@ -16,10 +16,12 @@ func test_replay_target_dungeon_stage() -> void:
 	assert_true(StageSettlementCommon.replay_target(50001).is_empty(), "dungeon 关重试空目标")
 
 
-# 下一关 → 选关（源 doClickNext → popScene + WinBackToSelect）。
+# 下一关 → 选关（源 doClickNext → popScene + WinBackToSelect）；PVP → ladder
+# （源 popScene 回 pvp 发起面板，2026-10-09 修正「战斗完大退主界面」）。
 func test_next_target() -> void:
 	assert_eq(StageSettlementCommon.next_target(1).get("target", ""), "stageselect", "下一关目标 = stageselect")
 	assert_true(StageSettlementCommon.next_target(50001).is_empty(), "dungeon 关下一关空目标")
+	assert_eq(StageSettlementCommon.next_target(-1).get("target", ""), "ladder", "PVP 下一关目标 = ladder（源 popScene 回 pvp）")
 
 
 # 胜利页两按钮接 helper（防回退成裸 goto_main_scene）。
@@ -35,13 +37,19 @@ func test_done_scene_buttons_wired() -> void:
 	assert_true(b2.contains("next_stage("), "Next 应调 next_stage（源 doClickNext→选关）")
 
 
-# 失败页 Back 接 helper（Menu 保持回主界面=源 doClickMenu popScene 回地图，不改）。
+# 失败页 Back 接 helper；Menu 普通关回主界面，PVP（sid=-1）走 pvp_menu_back 重弹 ladder
+# （源 doClickMenu popScene 回发起场景=pvp 面板，2026-10-09 补）。
 func test_failed_scene_back_wired() -> void:
 	var src: String = FileAccess.get_file_as_string("res://scripts/view/battle/stage_failed_scene.gd")
 	var s1: int = src.find("func _on_back_pressed()")
 	var e1: int = src.find("\nfunc ", s1 + 10)
 	var b1: String = src.substr(s1, (e1 if e1 > 0 else src.length()) - s1)
 	assert_true(b1.contains("replay_stage("), "Back 应调 replay_stage（源 doClickBack→stagedetail）")
+	var s2: int = src.find("func _on_menu_pressed()")
+	var e2: int = src.find("
+func ", s2 + 10)
+	var b2: String = src.substr(s2, (e2 if e2 > 0 else src.length()) - s2)
+	assert_true(b2.contains("ARENA_STAGE_ID") and b2.contains("pvp_menu_back"), "PVP 失败 Menu 走 pvp_menu_back（回 ladder）")
 
 
 # main_scene 消费 pending_stage_result（跨场景重弹面板链闭合）。
@@ -54,3 +62,4 @@ func test_main_scene_consumes_pending() -> void:
 	assert_true(src.contains("_maybe_resume_stage_result()\n") or src.contains("_maybe_resume_stage_result()"), "_ready 调用消费")
 	assert_true(src.contains("pending_stage_result"), "读 pending_stage_result")
 	assert_eq(src.count(".duplicate()   #"), 2, "两处 pending 消费均先 duplicate 再 clear（excavate/stage_result）")
+	assert_true(src.contains('"ladder"'), "ladder 分支存在（PVP 结算返回重弹竞技场，2026-10-09）")
