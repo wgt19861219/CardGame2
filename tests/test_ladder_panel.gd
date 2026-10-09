@@ -244,16 +244,53 @@ func test_fill_records_relative_time() -> void:
 
 # ==================== 批 D 主屏重构守卫（2026-08-27 走查）====================
 
-func test_d4_no_buy_button_change_enemy_fixed() -> void:
-	# D4：源 changeEnemy 三态中购买/CD 态不可达（pvpCD 恒 0 :23 + VIP PVP Buy 全 0）→
-	# 恒「换一批」态；独立购买钮删除。
+func test_d4_no_standalone_buy_button() -> void:
+	# D4（2026-10-09 修订）：源无独立购买钮——购买态挂 changeEnemy 三态（:1911-1922）；
+	# CD 态 pvpCD 恒 0 :23 不可达不接；购买态已接通（单机特权 VIP 满档 PVP Buy=13，
+	# 见 test_buy_state_button_switch）。
 	var c := _content()
-	assert_null(c.get_node_or_null("%BuyBtn"), "独立购买钮已删（D4）")
-	var script_text: String = FileAccess.get_file_as_string(PANEL_PATH)
-	assert_eq(script_text.count("_on_buy"), 0, "panel 无购买 handler（购买态源不可达）")
+	assert_null(c.get_node_or_null("%BuyBtn"), "独立购买钮不存在（源结构，购买走三态）")
 	var panel := _panel()
 	var refresh: Button = _panel_content(panel).get_node("%RefreshBtn") as Button
-	assert_eq((refresh.get_node("BtnLbl") as Label).text, "换一批", "换一批恒态文案（源 :2242 LSTR fill）")
+	assert_eq((refresh.get_node("BtnLbl") as Label).text, "换一批", "满次数态默认文案（源 :2242 LSTR fill）")
+
+
+func test_buy_state_button_switch() -> void:
+	# 2026-10-09 购买态：left_count==0 且今日可买 → 「购买次数」+ 价格条（源 :3126-3137
+	# moneyInfo 三件套）；有剩余 → 「换一批」隐藏价格条。left/buy_times 测后恢复。
+	var panel := _panel()
+	var view: Control = _panel_content(panel).get_node("%TabChallengeView") as Control
+	var refresh: Button = view.get_node("%RefreshBtn") as Button
+	var price_bar: CanvasItem = view.get_node("%PriceBar") as CanvasItem
+	var left_backup: int = int(_player.ladder.pvp["left_count"])
+	var times_backup: int = int(_player.ladder.pvp["buy_times"])
+	_player.ladder.pvp["left_count"] = 0
+	_player.ladder.pvp["buy_times"] = 0
+	panel._fill_challenge_tab()
+	assert_eq((refresh.get_node("BtnLbl") as Label).text, "购买次数", "0 次剩余 → 购买态文案")
+	assert_true(price_bar.visible, "价格条显示")
+	assert_eq((price_bar.get_node("CostLbl") as Label).text, "50", "价格=GradientPrice[1] PVP Buy 50")
+	_player.ladder.pvp["left_count"] = 1
+	panel._fill_challenge_tab()
+	assert_eq((refresh.get_node("BtnLbl") as Label).text, "换一批", "有剩余 → 换一批态")
+	assert_false(price_bar.visible, "价格条隐藏")
+	_player.ladder.pvp["left_count"] = left_backup
+	_player.ladder.pvp["buy_times"] = times_backup
+
+
+func test_price_bar_static_layout() -> void:
+	# 价格条静态布局守卫（源 moneyInfo 子元素点值直译：bg 123x33 中心(126,374)；
+	# 钻 icon 26x25；价格字 LadderPriceLabel20）。
+	var c := _content()
+	var view: Control = c.get_node("%TabChallengeView") as Control
+	var price_bar: Control = view.get_node("%PriceBar") as Control
+	assert_almost_eq(price_bar.offset_left, 64.5, 0.1, "bg 左缘 64.5（中心 126-123/2）")
+	assert_almost_eq(price_bar.offset_top, 357.5, 0.1, "bg 顶 357.5（按钮顶 403.4 上方）")
+	assert_almost_eq(price_bar.size.x, 123.0, 0.5, "bg 宽 123（158px÷1.28125）")
+	var icon: TextureRect = price_bar.get_node("DiamondIcon") as TextureRect
+	assert_almost_eq(icon.size.x, 26.0, 0.6, "钻 icon 宽 26（47÷1.28125×0.7）")
+	var cost_lbl: Label = price_bar.get_node("CostLbl") as Label
+	assert_eq(cost_lbl.theme_type_variation, &"LadderPriceLabel20", "价格字 variation")
 
 
 func test_d3_overlay_switch_semantics() -> void:

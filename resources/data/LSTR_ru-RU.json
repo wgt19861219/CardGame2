@@ -2590,7 +2590,7 @@
   "PVP._D_SECONDS_AGO": "%d секунд назад",
   "PVP.ARMORY": "Список Лидеров",
   "PVP.COMBAT_RECORD": "Повтор",
-  "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES": "Это ваша %d попытка сегодня для сброса шансов вызова. Вы хотите заплатить %d гемов, чтобы добавить 5 попыток вызова?",
+  "PVP.THIS_IS_YOUR__D_TIME_TODAY_TO_BUY_TICKETS\\N_NEED_TO_PAY__D_DIAMONDS_TO_ADD_FIVE_CHALLENGE_TIMES": "Это ваша %d попытка сегодня для сброса шансов вызова. Вы хотите заплатить %d гемов, чтобы добавить 10 попыток вызова?",
   "PVP.DO_YOU_NEED_TO_PAY_50_DIAMONDS_TO_RESET_THE_COMBAT_COOL_DOWN_TIME_SO_THAT_YOU_CAN_FIGHT_INSTANTLY": "Вы хотите заплатить 50 гемов для очистки охлаждения?",
   "PVP.CHANGE_ANOTHER_LIST": "Обновить",
   "PVP.REST_NOW": "Очистить охлаждение",
