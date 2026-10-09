@@ -14,6 +14,8 @@ extends PopWindow
 ## 受控偏离（用户裁决 2026-09-14）：源时序尾标在末组前（createLootAnim :2257-2272
 ## index==#lootList 先 createEndTag），改为显示完末组（额外奖励）再尾标收尾——尾标
 ## 垫底+最后出场，滚动链仍单调（组 lh_end 递增 → 尾标底）。
+## 受控偏离（用户反馈 2026-10-09 扫荡列表太慢）：①交错动画时值压至源 1/3（见常量区）；
+## ②动画期点击弹窗任意处跳到完成态（源动画期吞全部触摸无跳过）。
 
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/sweep_reward_popup_content.tscn")
 
@@ -62,15 +64,17 @@ const LABEL_H_ROW: float = 26.0
 const C_GOLD_TEXT: Color = Color(241.0 / 255.0, 193.0 / 255.0, 113.0 / 255.0)
 const C_EXP_TEXT: Color = Color(210.0 / 255.0, 192.0 / 255.0, 162.0 / 255.0)
 const TITLE_W: float = 200.0
-# 动画（源 playTitleAnim/playNodeAnim/playLootAnim 时值）
+# 动画（源 playTitleAnim/playNodeAnim/playLootAnim 时值）。受控偏离 2026-10-09：用户反馈
+# 扫荡列表太慢，源 od=0.5/delay=0.1/tail=0.2（stagedetail.lua:2202-2214）压缩至约 1/3 节奏，
+# 并补动画中点击跳过（源动画期 doMainLayerTouch 吞全部触摸，无跳过）。
 const TITLE_SCALE_FROM: float = 2.0
 const NODE_SCALE_FROM: float = 1.5
 const ANIM_DUR: float = 0.2
-const FIRST_DELAY: float = 0.5
-const NODE_DELAY: float = 0.1
-const TAIL_DELAY: float = 0.2
+const FIRST_DELAY: float = 0.15
+const NODE_DELAY: float = 0.04
+const TAIL_DELAY: float = 0.06
 const LIGHT_ROT_DUR: float = 5.0      # 源 CCRotateBy(5, 360) 循环
-const SCROLL_DUR: float = 0.2          # 源 playListLayerAnim CCMoveTo(0.2)+EaseBackOut
+const SCROLL_DUR: float = 0.15         # 源 playListLayerAnim CCMoveTo(0.2)+EaseBackOut 略提速
 const SCROLL_SETTLE_SEC: float = 0.05  # skip 触底前等 ScrollContainer 布局就绪（滚动 max 更新）
 
 var cm: Variant = null
@@ -86,6 +90,9 @@ var _host: ScrollContainer = null
 var _end_light: Sprite2D = null
 var _end_tag_end_y: float = 0.0
 var _groups: Array[Dictionary] = []   # 每组 {header: Array（即时可见）, reveal: Array（交错动画）, lh_end: float（组后累计高，源 playListLayerAnim 滚动目标）}
+var _skip_requested: bool = false     # 动画中点击跳过（受控增强 2026-10-09，源无）
+var _anims: Array[Tween] = []         # 跳过时待 kill 的活跃 tween（光效旋转 loop 不入列）
+var _light_spinning: bool = false     # 光效旋转防重（跳过与尾标正常链可能叠加双转）
 
 
 func setup_popup(loot_list: Array, p_cm: Variant, p_skip_anim: bool = false) -> void:
@@ -246,23 +253,34 @@ func _play() -> void:
 		await _finish_all()
 		return
 	_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 动画期 content 根捕获点击=跳过（受控增强；tscn 默认 IGNORE 穿透，动画完还原）。
+	_content.mouse_filter = Control.MOUSE_FILTER_STOP
+	_content.gui_input.connect(_on_anim_skip_input)
 	_title_label.visible = true
 	_title_label.pivot_offset = _title_label.size * 0.5
 	_title_label.scale = Vector2(TITLE_SCALE_FROM, TITLE_SCALE_FROM)
 	var tw: Tween = create_tween()
+	_anims.append(tw)
 	tw.set_trans(Tween.TRANS_BACK)
 	tw.set_ease(Tween.EASE_OUT)
 	tw.tween_property(_title_label, "scale", Vector2.ONE, ANIM_DUR)
 	await tw.finished
+	if _skip_requested:
+		return
 	var total: int = _loot_list.size()
 	for k in range(1, total + 1):
 		_scroll_to(float(_groups[k - 1].get("lh_end", 0.0)))
 		_show_header(k)
 		await _reveal_nodes(k)
+		if _skip_requested:
+			return
 	await _reveal_end_tag()
+	if _skip_requested:
+		return
 	_anim_done = true
 	_close_btn.visible = true
 	_host.mouse_filter = Control.MOUSE_FILTER_STOP
+	_teardown_skip_input()
 
 
 func _finish_all() -> void:
@@ -287,7 +305,7 @@ func _show_header(k: int) -> void:
 		(n as Control).visible = true
 
 
-# 逐节点交错闪现（源 playLootAnim/playNodeAnim：首延 0.5s + 0.1s/节点，delay 到点才可见再 1.5→1 BackOut）。
+# 逐节点交错闪现（源 playLootAnim/playNodeAnim：首延+节点间隔，delay 到点才可见再 1.5→1 BackOut）。
 func _reveal_nodes(k: int) -> void:
 	var nodes: Array = _groups[k - 1].get("reveal", [])
 	for i in nodes.size():
@@ -295,10 +313,13 @@ func _reveal_nodes(k: int) -> void:
 		node.pivot_offset = node.size * 0.5
 		node.scale = Vector2(NODE_SCALE_FROM, NODE_SCALE_FROM)
 		var tw: Tween = create_tween()
+		_anims.append(tw)
 		tw.tween_interval(FIRST_DELAY + NODE_DELAY * float(i))
 		tw.tween_callback(func() -> void: node.visible = true)
 		tw.tween_property(node, "scale", Vector2.ONE, ANIM_DUR).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	var total: float = FIRST_DELAY + NODE_DELAY * float(maxi(nodes.size() - 1, 0)) + ANIM_DUR + TAIL_DELAY
+	# 源组间推进=末节点闪现时刻+组尾 0.2（:2213-2214 末节点 handler 内 CCDelayTime(0.2)
+	# 即进下一组，不等其 0.2s 缩放完成）；旧直译多等一个 ANIM_DUR，随提速一并对齐。
+	var total: float = FIRST_DELAY + NODE_DELAY * float(maxi(nodes.size() - 1, 0)) + TAIL_DELAY
 	await get_tree().create_timer(total).timeout
 
 
@@ -308,6 +329,7 @@ func _reveal_end_tag() -> void:
 	_scroll_to(_end_tag_end_y - LIGHT_VIEW_HALF)
 	_end_light.scale = Vector2(LIGHT_SCALE * NODE_SCALE_FROM, LIGHT_SCALE * NODE_SCALE_FROM)
 	var tw: Tween = create_tween()
+	_anims.append(tw)
 	tw.tween_interval(FIRST_DELAY)
 	tw.tween_callback(func() -> void: _end_light.visible = true)
 	tw.tween_property(_end_light, "scale", Vector2(LIGHT_SCALE, LIGHT_SCALE), ANIM_DUR).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -316,10 +338,57 @@ func _reveal_end_tag() -> void:
 
 
 func _start_light_rotation() -> void:
-	if _end_light == null:
+	if _end_light == null or _light_spinning:
 		return
-	var tw: Tween = create_tween().set_loops()
+	_light_spinning = true
+	var tw := create_tween().set_loops()
 	tw.tween_property(_end_light, "rotation", TAU, LIGHT_ROT_DUR).from(0.0)
+
+
+# ---- 动画中点击跳过（受控增强 2026-10-09：源动画期 doMainLayerTouch 吞全部触摸，无跳过）----
+
+func _on_anim_skip_input(event: InputEvent) -> void:
+	if _anim_done or _skip_requested:
+		return
+	var emb := event as InputEventMouseButton
+	if emb != null and emb.pressed:
+		_skip_to_end()
+
+
+# 一次终态化：kill 活跃 tween → 全组全显+scale 复位 → 尾标收尾 → 恢复交互+触底滚动。
+# _play 挂起的 SceneTreeTimer 不可取消，到点醒来经 _skip_requested 守卫直接退出（无副作用；
+# 标题 tween 被 kill 后 finished 不再发射，协程静默终止，同无副作用）。
+func _skip_to_end() -> void:
+	_skip_requested = true
+	_teardown_skip_input()
+	for tw in _anims:
+		tw.kill()
+	_anims.clear()
+	for g in _groups:
+		for n in g.get("header", []) as Array:
+			(n as Control).visible = true
+		for n in g.get("reveal", []) as Array:
+			var c := n as Control
+			c.visible = true
+			c.scale = Vector2.ONE
+	_title_label.visible = true
+	_title_label.scale = Vector2.ONE
+	_end_light.visible = true
+	_end_light.scale = Vector2(LIGHT_SCALE, LIGHT_SCALE)
+	_start_light_rotation()
+	_anim_done = true
+	_close_btn.visible = true
+	if is_instance_valid(_host):
+		_host.mouse_filter = Control.MOUSE_FILTER_STOP
+		_host.scroll_vertical = maxi(int(_end_tag_end_y - LIGHT_VIEW_HALF - _host.size.y), 0)
+
+
+func _teardown_skip_input() -> void:
+	if _content == null or not is_instance_valid(_content):
+		return
+	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _content.gui_input.is_connected(_on_anim_skip_input):
+		_content.gui_input.disconnect(_on_anim_skip_input)
 
 
 # 自动跟滚（源 playListLayerAnim:1961-1981：ey=max(lh-oh,0) 平移列表层 0.2s BackOut）。
@@ -331,6 +400,7 @@ func _scroll_to(target_lh: float) -> void:
 	if target == _host.scroll_vertical:
 		return
 	var tw := create_tween()
+	_anims.append(tw)
 	tw.tween_property(_host, "scroll_vertical", target, SCROLL_DUR)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 

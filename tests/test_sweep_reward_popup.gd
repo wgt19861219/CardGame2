@@ -1,7 +1,7 @@
 extends GutTest
 # SweepRewardPopup 扫荡战利品弹窗测试（照源 stagedetail.lua repeatRewardWindow
-# :1946-2521，2026-09-04 补全原单机化 Toast 简化）。skip_anim 分支同步完成，
-# 动画分支时序不进 GUT（时值常量照源直译，实机目验）。
+# :1946-2521，2026-09-04 补全原单机化 Toast 简化）。skip_anim 分支同步完成；
+# 动画分支时序常量 2026-10-09 受控偏离（用户反馈列表太慢，压至源 1/3 + 点击跳过）。
 
 
 const CONTENT_PATH: String = "res://scenes/ui/sweep_reward_popup_content.tscn"
@@ -161,8 +161,8 @@ func test_last_group_head_gap() -> void:
 		"末组 lh_end < 尾标底（自动滚动链全程单调）")
 
 
-# 动画分支端到端（真跑 async 链 标题→组→尾标→末组→close，~1.6s）：
-# 源 createLootAnim 链时序常量直译，此处只验证链完整走通不卡死（时序观感留实机目验）。
+# 动画分支端到端（真跑 async 链 标题→组→尾标→close，提速后 ~0.9s）：
+# 链时序常量受控偏离（2026-10-09），此处验证链完整走通不卡死+提速生效（时序观感留实机目验）。
 func test_popup_anim_branch_completes() -> void:
 	var loot_list: Array = [
 		{"exp": 12, "money": 34, "loots": [{"id": 390, "amount": 1}]},
@@ -174,12 +174,13 @@ func test_popup_anim_branch_completes() -> void:
 	popup.setup_popup(loot_list, cm, false)
 	popup.show_window(root)
 	var frames: int = 0
-	while not popup._anim_done and frames < 480:
+	while not popup._anim_done and frames < 150:
 		await get_tree().process_frame
 		frames += 1
-	assert_true(popup._anim_done, "动画分支完整走完（%d 帧内）" % frames)
+	assert_true(popup._anim_done, "动画分支完整走完（%d 帧内，提速后 2 组 ~0.9s）" % frames)
 	assert_true(popup._close_btn.visible, "动画完 close 显示（源 setAnimEnd 后）")
 	assert_true(popup._title_label.visible, "标题动画后可见")
+	assert_eq(popup._content.mouse_filter, Control.MOUSE_FILTER_IGNORE, "动画完还原 content 穿透（跳过入口拆除）")
 	popup.remove_window()
 
 
@@ -198,7 +199,7 @@ func _assert_header_in_view(host: ScrollContainer, header: TextureRect, msg: Str
 	assert_between(cy, host.scroll_vertical - 1.0, host.scroll_vertical + host.size.y + 1.0, msg)
 
 
-# 动画分支：4 战+末组总高远超视口 374，链走完后终态滚动 >0 且末组标题在视口内（~6s）。
+# 动画分支：4 战+末组总高远超视口 374，链走完后终态滚动 >0 且末组标题在视口内（提速后 ~1.6s）。
 func test_auto_scroll_follows_groups_after_anim() -> void:
 	var loot_list: Array = []
 	for i in range(4):
@@ -214,7 +215,7 @@ func test_auto_scroll_follows_groups_after_anim() -> void:
 	var node_seen: int = -1
 	var light_seen: int = -1
 	var frames: int = 0
-	while not popup._anim_done and frames < 3600:
+	while not popup._anim_done and frames < 300:
 		await get_tree().process_frame
 		frames += 1
 		if node_seen < 0 and last_node.visible:
@@ -256,4 +257,52 @@ func test_no_scroll_when_target_below_view() -> void:
 	host.scroll_vertical = 0
 	popup._scroll_to(300.0)
 	assert_eq(host.scroll_vertical, 0, "目标 lh(300)<视口高时 target=0 不滚动")
+	popup.remove_window()
+
+
+# ---- 动画中点击跳过（受控增强 2026-10-09：源动画期吞触摸；kill 活跃 tween 一次终态化）----
+
+# 中途触发跳过 → 全组终态可见+scale 复位+尾标收尾+close 即显+触底滚动+用户滚动恢复；
+# 跳过后挂起协程（SceneTreeTimer 不可取消）醒完无副作用（守卫退出不改状态）。
+func test_click_skip_to_end_midway() -> void:
+	var loot_list: Array = []
+	for i in range(4):
+		loot_list.append({"exp": 12, "money": 34, "loots": [{"id": 390, "amount": 1}]})
+	loot_list.append({"loots": []})
+	var root := Node.new()
+	add_child(root)
+	var popup := SweepRewardPopup.new("sweepReward", {})
+	popup.setup_popup(loot_list, cm, false)
+	popup.show_window(root)
+	assert_false(popup._anim_done, "跳过前动画进行中")
+	assert_eq(popup._content.mouse_filter, Control.MOUSE_FILTER_STOP, "动画期 content 捕获点击（跳过入口）")
+	await get_tree().create_timer(0.3).timeout   # 中途（第 2 组交错闪现中）
+	popup._skip_to_end()
+	assert_true(popup._anim_done, "跳过即动画完成态")
+	assert_true(popup._close_btn.visible, "跳过后 close 即显")
+	assert_eq(popup._content.mouse_filter, Control.MOUSE_FILTER_IGNORE, "跳过后还原 content 穿透")
+	assert_eq(popup._host.mouse_filter, Control.MOUSE_FILTER_STOP, "跳过后恢复用户滚动")
+	assert_eq(popup._title_label.scale, Vector2.ONE, "标题 scale 复位（kill 中途 tween）")
+	for g in popup._groups:
+		for n in g.get("reveal", []) as Array:
+			assert_true((n as Control).visible and (n as Control).scale == Vector2.ONE,
+				"reveal 节点全显且 scale 复位")
+	assert_true(popup._end_light.visible, "尾标光效收尾显示")
+	var host: ScrollContainer = _host_of(popup)
+	assert_true(host.scroll_vertical > 0, "跳过触底滚动")
+	_assert_header_in_view(host, popup._groups[4]["header"][0] as TextureRect,
+		"触底后末组标题在视口")
+	await get_tree().create_timer(0.5).timeout   # 组间/尾标挂起 timer 醒完（最长 0.35s）
+	assert_true(popup._anim_done and popup._close_btn.visible, "挂起协程退出无副作用（状态不被翻回）")
+	popup.remove_window()
+
+
+# 跳过入口接线：_on_anim_skip_input 只认按下事件，且动画完成后不再触发（幂等）。
+func test_skip_input_handler_press_only() -> void:
+	var popup := _make_popup([{"exp": 1, "money": 2, "loots": []}, {"loots": []}])
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = false
+	popup._on_anim_skip_input(press)   # 抬起事件：已完成态下应静默无副作用
+	assert_true(popup._anim_done, "skip 分支已完成态不受影响")
 	popup.remove_window()
