@@ -131,7 +131,7 @@ func _awake_update(hero: Variant, dt: float) -> void:
 				skill.take_effect_at(hero.position)
 				BattleEngineBall.deliver_ball(hero.engine, hero, skill, 1)
 	else:
-		hero.custom_data["dyingTimer"] = null
+		hero.custom_data.erase("dyingTimer")   # 源 nil=删键；存 null 会让下方 has() 走 true 后 float(null) 崩
 	hero._update_default(dt)  # basefunc
 
 

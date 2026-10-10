@@ -14,6 +14,10 @@
        - Battle：静态段 + dungeon 段 50001-53021（源 :80954-81124 dungeonBosses
          × diffScale；dungeonBosses 是 local 变量字面量不进 data 表，expand 独立持有）
          → expand_battle_dungeon.py（注入 21 base × 4 diff = 84 stage × 3 wave）
+     ③ 项目新增段（源无对应，2026-10-08 ch203 冰封王座三部曲）：
+       - StageDungeon 9 base + Battle 9 关（50022-50030）分别并入上两个 expand 工具；
+       - ActStageGroupDungeon 3 组 + LSTR zh-CN 22 键 + Equip Drop 指向 25 条
+         → expand_lich_data.py（静态表注入，同 expand 范式防 lua_to_json 重转覆盖）
 
 这是数据层的固有模式（源用 Lua for 循环生成，静态解析器无法等价），非债。
 
@@ -29,8 +33,8 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS_DIR = os.path.join(PROJECT_ROOT, "tools")
 DATA_DIR = os.path.join(PROJECT_ROOT, "resources", "data")
-DUNGEON_RANGE = (50001, 53021)
-EXPECTED_DUNGEON_STAGES = 84  # 21 base × 4 diff
+DUNGEON_RANGE = (50001, 53030)
+EXPECTED_DUNGEON_STAGES = 120  # 30 base × 4 diff（源 21 + ch203 项目新增 9）
 
 
 def _run(script: str) -> int:
@@ -59,6 +63,9 @@ def main() -> int:
     if rc:
         return rc
     rc = _run("expand_battle_dungeon.py")
+    if rc:
+        return rc
+    rc = _run("expand_lich_data.py")
     if rc:
         return rc
     return check_dungeon_segment()

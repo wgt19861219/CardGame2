@@ -50,6 +50,25 @@ DUNGEON_BOSSES = [
     {"id": 50019, "bg": "battle_bg/bbg_sand_bone.jpg",      "boss": 53, "m": [13, 14, 15]},
     {"id": 50020, "bg": "battle_bg/bbg_sand_bone.jpg",      "boss": 13, "m": [13, 14, 15]},
     {"id": 50021, "bg": "battle_bg/bbg_sand_bone.jpg",      "boss": 7,  "m": [13, 14, 15]},
+    # 项目新增 ch203 冰封王座三部曲（2026-10-08 设计方案；Boss 形象复用英雄 Unit，
+    # 照源先例——50021 克苏恩即用痛苦女王 7）
+    # 毒蛇神殿（海洋主题，小怪：小娜迦13/美杜莎16/潮汐15；Boss：大鱼人14=深水领主
+    #   卡拉瑟雷斯/潮汐15=踏潮者/小娜迦13=瓦丝琪）
+    {"id": 50022, "bg": "battle_bg/bbg_spring_lair.jpg",   "boss": 90002, "m": [13, 16, 15], "size": 160},
+    {"id": 50023, "bg": "battle_bg/bbg_spring_lair.jpg",   "boss": 90003, "m": [13, 16, 14], "size": 160},
+    {"id": 50024, "bg": "battle_bg/bbg_spring_lair.jpg",   "boss": 90004, "m": [14, 16, 15], "size": 200},  # 卷尾瓦丝琪
+    # 海加尔山（军团战场主题，小怪：骷髅王19/死灵法师20/骨法18=天灾军团（照斯坦索姆
+    #   先例）/影魔25/术士43/暗牧22=恶魔系；Boss：巫妖35=雷基·冬寒/恶魔巫师6=安纳塞隆
+    #   /灵魂守卫47=阿克蒙德）
+    {"id": 50025, "bg": "battle_bg/bbg_corridor_ruin.jpg", "boss": 90005, "m": [19, 20, 18], "size": 160},
+    {"id": 50026, "bg": "battle_bg/bbg_corridor_ruin.jpg", "boss": 90006, "m": [25, 43, 22], "size": 160},
+    {"id": 50027, "bg": "battle_bg/bbg_corridor_ruin.jpg", "boss": 90007, "m": [25, 6, 43], "size": 200},  # 卷尾阿克蒙德
+    # 冰冠堡垒（冰霜亡灵主题，小怪：冰女12/巫妖35/死亡先知40（照通灵学院先例）/沉默26/
+    #   黑鸟21/骷髅王19/骨法18/骨弓17；Boss：亚龙37=辛达苟萨/痛苦女王7=血腥女王兰娜瑟尔
+    #   /死骑42=巫妖王阿尔萨斯）
+    {"id": 50028, "bg": "battle_bg/bbg_snow_castle.jpg",   "boss": 90008, "m": [12, 35, 40], "size": 180},
+    {"id": 50029, "bg": "battle_bg/bbg_snow_castle.jpg",   "boss": 90009, "m": [26, 21, 40], "size": 180},
+    {"id": 50030, "bg": "battle_bg/bbg_snow_castle.jpg",   "boss": 90001, "m": [19, 18, 17], "size": 220},  # 90001=巫妖王换皮新角色(LichKing)，终弄最大
 ]
 
 # 源 Battle.lua:81088-81091 diffScale
@@ -131,7 +150,8 @@ def gen_wave3(b: dict) -> dict:
     """源 Battle.lua:81048-81085 wave3：boss（Monster 4）+ 3 小怪，HP% 2000，DPS% 120，Boss HP% 200。"""
     w = {
         "Background Pic": b["bg"],
-        "Boss DPS%": 150, "Boss HP%": 200, "Boss Position": 4, "BOSS SIZE%": 0,
+        # size 键（ch203 起 Boss 体型分档；缺省 0 = 引擎 BOSS_SIZE_DEFAULT 120%）
+        "Boss DPS%": 150, "Boss HP%": 200, "Boss Position": 4, "BOSS SIZE%": b.get("size", 0),
     }
     w.update(_chest(10288, 50))
     w.update(_fd_bonus())
@@ -141,7 +161,8 @@ def gen_wave3(b: dict) -> dict:
     w.update({"Monster 1 ID": b["m"][0], "Monster 2 ID": b["m"][1], "Monster 3 ID": b["m"][2],
               "Monster 4 ID": b["boss"], "Monster 5 ID": 0})
     w.update({"Monster DPS%": 120, "Monster HP%": 2000})
-    w.update(_mp([0, 0, 0, 400, 0]))
+    # Boss 槽 MP 1000（大招 Cost 1000；2026-10-10 修：旧 400 起步攒不满，AI 自动大招永放不出）
+    w.update(_mp([0, 0, 0, 1000, 0]))
     w.update({"Raid Wave Weight": 2, "Stage Difficulty": 1, "Stage ID": b["id"],
               "Stage Name": "Dungeon Boss", "Stage Type": "dungeon"})
     w.update({"Stars 1": 1, "Stars 2": 1, "Stars 3": 1, "Stars 4": 1, "Stars 5": 0})
@@ -194,7 +215,7 @@ def main() -> None:
             added += 1
     with open(BATTLE_JSON, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    print("扩展完成：新增 %d 个 dungeon stage（50001-53021，21 base × 4 diff）" % added)
+    print("扩展完成：新增 %d 个 dungeon stage（50001-53030，30 base × 4 diff = 源 21 + ch203 新增 9）" % added)
 
 
 if __name__ == "__main__":

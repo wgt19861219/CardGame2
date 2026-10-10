@@ -45,4 +45,9 @@ const ENTRIES: Array = [
 	{"id": "starshop", "title": "mainres.StarShop", "pos": [82, 240], "scale": 0.8, "res": "eff_UI_Main_Shop_Star", "gap": [1.4583, 1.4583, 2.04167, 3, 10], "touch": [0, 35], "radius": 60, "light": [-6, 30, 150, 180]},
 	{"id": "excavate", "title": "mainres.Excavate", "pos": [1450, 290], "unlock": "Excavate", "res": "eff_UI_Main_Treasure", "touch": [0, -50], "radius": 100, "light": [0, 75, 600, 400]},
 	{"id": "ranklist", "title": "mainres.Rank", "pos": [860, 330], "res": "eff_UI_Main_Rank", "touch": [0, 30], "radius": 50, "light": [0, 30, 150, 250]},
+	# ch203 冰封王座（2026-10-08 设计方案）：第 16 入口，Comfy 生成静态图（无 Spine/FCA
+	# 资产走 icon 字段），unlock=Icecrown（PlayerLevel lv80，expand_lich_data.py 注入）。
+	# pos [1450,165] 右段上部初值——bridge 实机排位三验（视差/遮挡/屏外）后终定。
+	{"id": "icecrown", "title": "mainres.Icecrown", "pos": [1450, 165], "unlock": "Icecrown",
+	 "icon": "res://assets/ui/lich/main_icon.png", "touch": [0, 0], "radius": 70, "light": [0, 40, 300, 300]},
 ]

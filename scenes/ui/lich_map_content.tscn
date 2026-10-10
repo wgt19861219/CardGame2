@@ -1,0 +1,122 @@
+; lich_map 两件套 content 底板 v6（2026-10-09 八轮：背景铺满框雕花内沿(42,81)-(758,448)、
+; 标题框=远征原版 crusade_title_bg 且横幅文字随切换动态显示当前分卷名（地图内分卷名
+; 标签已删）、BossRow 全屏自由定位层由 panel 按每图错落坐标摆据点+MapBg 子层自绘圆点路径）。
+; 箭头两侧垂直居中+运行时呼吸动画；边界隐藏与据点/路径布局均由 panel 控制。
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/bg.jpg" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn.png" id="2_back"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/backbtn-disabled.png" id="3_backp"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/prevchap.png" id="4_prev"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/nextchap.png" id="5_next"]
+[ext_resource type="Texture2D" path="res://assets/ui/lich/bg_serpent.png" id="6_map"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_title_bg.png" id="10_title"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/crusade/crusade_map_frame.png" id="9_frame"]
+
+[node name="LichMapContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; 弹窗化全屏底图（PackagePanel 范式）
+[node name="FrameworkBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 800.0
+offset_bottom = 480.0
+texture = ExtResource("1_bg")
+expand_mode = 1
+mouse_filter = 2
+
+; 当前本地图（铺满背景框，panel 切换时换贴图）
+[node name="MapBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 42.0
+offset_top = 81.0
+offset_right = 758.0
+offset_bottom = 448.0
+texture = ExtResource("6_map")
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
+
+; 左右切换箭头（照战役关卡 prevchap/nextchap，垂直居中地图，panel 加呼吸动画+边界隐藏）
+[node name="PrevArrow" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 24.0
+offset_top = 206.0
+offset_right = 67.0
+offset_bottom = 265.0
+texture_normal = ExtResource("4_prev")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="NextArrow" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 733.0
+offset_top = 206.0
+offset_right = 776.0
+offset_bottom = 265.0
+texture_normal = ExtResource("5_next")
+ignore_texture_size = true
+stretch_mode = 0
+
+; 当前本 Boss 据点自由定位层（全屏坐标=视口坐标，panel 按每图错落坐标摆据点）
+[node name="BossRow" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_right = 800.0
+offset_bottom = 480.0
+mouse_filter = 2
+
+; 背景框（crusade_map_frame 同款雕花大框，恢复 v1 观感——盖地图与据点边沿）
+[node name="Frame" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = -1.56
+offset_top = 49.13
+offset_right = 801.56
+offset_bottom = 490.88
+texture = ExtResource("9_frame")
+expand_mode = 1
+mouse_filter = 2
+
+; 静态层：标题 + 关闭（标题框=远征原版 crusade_title_bg，坐标照 dungeon_map_content 同款）
+[node name="TitleBg" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 202.98
+offset_top = 38.65
+offset_right = 601.02
+offset_bottom = 130.75
+texture = ExtResource("10_title")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 282.0
+offset_top = 70.7
+offset_right = 522.0
+offset_bottom = 98.7
+theme_type_variation = &"TitleLabel"
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 77.76
+offset_bottom = 73.54
+texture_normal = ExtResource("2_back")
+texture_pressed = ExtResource("3_backp")
+ignore_texture_size = true
+stretch_mode = 0

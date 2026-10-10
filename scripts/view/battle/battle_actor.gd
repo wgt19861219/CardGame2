@@ -27,6 +27,7 @@ const WAVE_WALK_OFFSCREEN_X: float = 1050.0
 # 入场走路完成（BattleScene 计数归零后解冻 engine）。
 signal enter_walk_finished
 const BattleEffect = preload("res://scripts/view/battle/battle_effect.gd")
+const BossAuraScript = preload("res://scripts/view/battle/boss_aura.gd")
 
 var model: Variant = null     # BattleUnit（Logic 层单位）
 var puppet: Variant = null    # UnitSprite（FCA 动画；源 puppet 不带血条）
@@ -69,6 +70,16 @@ func setup(p_model: Variant, p_cm: Variant, p_ui_layer: Node = null) -> void:
 	add_child(puppet)
 	puppet.setup(model, p_cm)
 	_create_floating_bars()
+	# ch203 Boss 元素光环粒子（StageDungeon.Boss Aura → config 透传；垂直主导运动，
+	# 不受朝向翻转影响；发射区随 size_mod 粗略放大）。preload 直引（规范：跨脚本
+	# 引用不用 class_name，防 GUT/headless 解析时序）
+	var aura_type: String = String(model.config.get(&"boss_aura", ""))
+	if aura_type != "":
+		var size_mod: float = float(model.config.get(&"size_mod", 1.0))
+		var aura: CPUParticles2D = BossAuraScript.make(aura_type, 110.0 * size_mod)
+		if aura != null:
+			aura.position.y *= size_mod
+			add_child(aura)
 	update_view(0.0)
 
 
@@ -83,7 +94,9 @@ func update_view(dt: float) -> void:
 		_interp_from = Vector2(float(model.previous_position.x), float(model.previous_position.y))
 		_interp_to = Vector2(float(model.position.x), float(model.position.y))
 		_interp_alpha = 0.0
-		var rt_scale: float = _get_runtime_scale()
+		# 本体体型放大：size_mod（ch203 Boss BOSS SIZE% 160/200/220，engine_waves 透传）
+		# 乘入 scale——首版只给 aura 用了 size_mod 本体未放大（2026-10-09 用户实测根因）。
+		var rt_scale: float = _get_runtime_scale() * float(model.config.get(&"size_mod", 1.0))
 		# 入场到位锁定：到位后 interp 首帧用锁定朝向（防 engine 解冻首 tick direction 瞬变致翻转），
 		# 只锁第一帧（_enter_arrive_dir 清零），之后交给 model.direction 正常接管。
 		var dir_for_scale: int = _enter_arrive_dir if _enter_arrive_dir != 0 else int(model.direction)

@@ -170,6 +170,15 @@ static func open_dungeon_groups(scene: Node, mode: String, groups: Array) -> voi
 	panel.show_window(scene)
 
 
+# ch203 冰封王座入口（2026-10-08 设计方案：专属面板+主城独立建筑，用户拍板不进
+# DungeonMapPanel 统一面板——该面板系远征美术）。组 50008-10 内建在 LichMapPanel。
+# focus_stage_id>0 = 从装备获取途径跳入，面板定位到该关所在分卷（ch203 lich 关段）。
+static func open_lich_map(scene: Node, focus_stage_id: int = 0) -> void:
+	var panel := LichMapPanel.new("lichMap", {})
+	panel.setup_panel(GameData.player, GameData.player.stage_manager, BattleRng.new(randi()), focus_stage_id)
+	panel.show_window(scene)
+
+
 # 信箱入口。
 static func open_mailbox(scene: Node) -> void:
 	var panel := MailPanel.new("mailbox", {})

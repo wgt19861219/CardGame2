@@ -43,6 +43,16 @@ static func summon(u: Variant, born_action_name: String = "") -> void:
 static func cast_skill(u: Variant, skill: Variant, target: Variant) -> void:
 	if not bool(u.is_alive()):
 		return
+	# phase_list 空 = 施法者 puppet 无该技能动画时序（AnimAtkFrame/AnimDuration 缺条目）：
+	# start 后无动作无完成回调，单位会钉死 ATTACK 态。进 CD 放弃本次施法回 idle，
+	# AI 继续走位/普攻（ch203 换皮 Boss 借技能组曾踩，数据根修见 expand_lich_data）。
+	if skill.phase_list.is_empty():
+		push_warning("cast aborted: skill '%s' has empty phase_list on '%s'" % [
+			String(skill.info.get("Skill Name", "?")), String(u.name)])
+		skill.cd_remaining = float(skill.info.get("CD", 0.0))
+		skill.casting = false
+		u.idle()
+		return
 	u.state = BattleUnit.State.ATTACK
 	u.walk_v = Vector2.ZERO
 	skill.start(target)

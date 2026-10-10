@@ -14,6 +14,7 @@ func _make_hero(tid: int = 1, level: int = 1) -> BattleUnit:
 class MockSkill:
 	extends RefCounted
 	var started: Array = []
+	var phase_list: Array = [{"action_name": "atk"}]   # 非空（cast_skill 空 phase 守卫，2026-10-10）
 	func start(t: Variant) -> void:
 		started.append(t)
 
@@ -93,6 +94,29 @@ func test_cast_skill() -> void:
 	assert_eq(u.walk_v, Vector2.ZERO, "walk_v 清零")
 	assert_eq(s.started.size(), 1, "skill.start 被调")
 	assert_eq(s.started[0], target, "start(target)")
+
+
+# 空 phase_list 守卫（2026-10-10 Boss 卡死根修）：施法者 puppet 无该技能动画时序时
+# 放弃施法——不 start、不进 ATTACK、技能进 CD、单位回 idle（AI 继续走位/普攻）。
+class MockEmptyPhaseSkill:
+	extends MockSkill
+	var info: Dictionary = {"Skill Name": "mock", "CD": 3.0}
+	var cd_remaining: float = 0.0
+	var casting: bool = false
+
+	func _init() -> void:
+		phase_list = []
+
+
+func test_cast_skill_empty_phase_aborted() -> void:
+	var u := _make_hero()
+	u.state = BattleUnit.State.WALK
+	var s := MockEmptyPhaseSkill.new()
+	u.cast_skill(s, _make_hero())
+	assert_eq(u.state, BattleUnit.State.IDLE, "回 idle（不进 ATTACK）")
+	assert_null(u.current_skill, "current_skill 不挂空技能")
+	assert_eq(s.started.size(), 0, "skill.start 未被调")
+	assert_eq(s.cd_remaining, 3.0, "技能进 CD（防每 tick 重试）")
 
 # 源 setAction 实例转发（补续A：skill._start_phase 调 caster.set_action）
 func test_set_action_instance() -> void:

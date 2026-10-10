@@ -138,12 +138,12 @@ func _atk4_update(skill: Variant, dt_action: float, dt_cd: float) -> void:
 	if s4d > 0 and s4d > maxd:
 		skill.finish()
 		caster.hurt()
-		caster.custom_data["skill4damage"] = null
+		caster.custom_data.erase("skill4damage")   # 源 nil=删键；存 null 残留键值致 float(get(...,0)) 拿到 null
 
 
 func _skill4_finish(skill: Variant) -> void:
 	skill._finish_default()
-	skill.caster.custom_data["skill4damage"] = null
+	skill.caster.custom_data.erase("skill4damage")   # 同上：nil=删键
 
 
 func _atk5_create_buff(skill: Variant, target: Variant) -> Variant:

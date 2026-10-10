@@ -300,3 +300,36 @@ func test_get_hero_equip_state_all_materials_green_plus() -> void:
 	var state: Dictionary = EquipdetailQuery.get_hero_equip_state(_make_fawn_rank2(), 3, cm, pd)
 	assert_eq(String(state["ett"]), "canCraft", "材料齐 → canCraft")
 	assert_eq(String(state["eti"]), "wear", "材料齐 + 等级够 → 绿+")
+
+
+# === 2026-10-09 ch203 lich 副本关获取途径显示守卫（用户反馈"第0章精英"根修）===
+# 23 阶装备 Drop 指向 StageDungeon 关（50022+），旧实现三处（equipdetail_query /
+# stone_detail / equip_craft_tree）只查 Stage 表：查空 → Chapter ID=0 恒过 MaxChapter
+# 过滤 + craft 树 ≥10000 一律标精英 → 显示"第0章 精英 [空名]"。
+# 守卫：dungeon 关进 get_way 且不被精英标注、name=Stage Name（Boss 名 LSTR key）。
+
+const LICH_BASE_EQUIP := 442   # 23 阶基件正义风衣，Drop 1-3 = 50024/50022/50023
+
+func test_query_stage_row_fallback() -> void:
+	var q: Dictionary = StageData.query_stage_row(50022, cm)
+	assert_true(bool(q["dungeon"]), "50022 命中 StageDungeon 回落")
+	assert_eq(int(q["row"].get("Chapter ID", 0)), 203, "回落行 Chapter ID=203")
+	var stage_first: String = cm.get_raw_table(&"Stage").keys()[0]
+	var qn: Dictionary = StageData.query_stage_row(int(stage_first), cm)
+	assert_false(bool(qn["dungeon"]), "Stage 表已有 id 不触发回落")
+
+func test_dungeon_get_way_not_chapter0_elite() -> void:
+	var pd := PlayerData.new(cm)
+	var result: Dictionary = EquipdetailQuery.query(LICH_BASE_EQUIP, cm, pd)
+	var get_way: Array = result["get_way"]
+	assert_eq(get_way.size(), 3, "442 三条 Drop 全放行（dungeon 关不过 MaxChapter 过滤）")
+	for way in get_way:
+		var w: Dictionary = way
+		var drop_id: int = int(w["id"])
+		assert_between(drop_id, 50022, 50030, "drop id 在 lich 关段")
+		assert_false(bool(w["elite"]), "dungeon 关不标精英（修 craft 树 ≥10000 一律精英误标）")
+		assert_true(String(w["name"]).begins_with("DUNGEON."), "name=Stage Name LSTR key（Boss 名，非第0章空名）")
+
+func test_dungeon_group_name() -> void:
+	assert_eq(StageData.get_dungeon_group_name(50022, cm), "DUNGEON.SERPENTSHRINE", "50022 → 毒蛇神殿组名")
+	assert_eq(StageData.get_dungeon_group_name(50028, cm), "DUNGEON.ICECROWN_CITADEL", "50028 → 冰冠堡垒组名")

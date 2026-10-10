@@ -258,6 +258,12 @@ func _stage_stars(sid: int) -> int:
 # 本项目优于源——选关面板关闭时刷新拥有量+合成树（扫荡拿到卷轴/装备回来即见）。
 func _on_get_way_clicked(stage_id: int) -> void:
 	var st: String = StageAccount.stage_type(stage_id)
+	if st == "dungeon":
+		# 副本关（ch203 lich 等）无战役星数体系：直接开冰封王座面板定位分卷；
+		# 本面板不关闭（同 normal/elite 语义：打完回来回落到合成树）
+		AudioPlayer.play_sfx("common_click_feedback")
+		MainSceneEntryRouter.open_lich_map(get_tree().current_scene, stage_id)
+		return
 	if st != "normal" and st != "elite":
 		return
 	var star: int = _stage_stars(stage_id)

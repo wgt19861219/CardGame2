@@ -20,6 +20,26 @@ static func is_dungeon_stage(sid: int) -> bool:
 			return true
 	return false
 
+
+## 统一关卡行查询（获取途径显示用）：普通/精英/活动关查 Stage 表，查空回落 StageDungeon
+## 表（副本关 50001+ 如 ch203 lich 关）。返回 {row: Dictionary, dungeon: bool}——dungeon
+## 标记调用方用于区分显示（组名替代"第X章"、不标"精英"、不做 MaxChapter 过滤）。
+static func query_stage_row(sid: int, cm: Variant) -> Dictionary:
+	var table: Dictionary = cm.get_raw_table(&"Stage")
+	if table.has(str(sid)):
+		return {"row": table[str(sid)], "dungeon": false}
+	var dtable: Dictionary = cm.get_raw_table(&"StageDungeon")
+	if dtable.has(str(sid)):
+		return {"row": dtable[str(sid)], "dungeon": true}
+	return {"row": {}, "dungeon": false}
+
+
+## 副本关所属组名（LSTR key，如 DUNGEON.SERPENTSHRINE）→ 获取途径 title 用；空串=非副本/缺组。
+static func get_dungeon_group_name(sid: int, cm: Variant) -> String:
+	var gid: int = int(query_stage_row(sid, cm)["row"].get("Stage Group", 0))
+	var group_row: Dictionary = cm.get_raw_table(&"ActStageGroupDungeon").get(str(gid), {})
+	return String(group_row.get("Group Name", ""))
+
 var stage_id: int = 0
 var chapter_id: int = 0
 var vitality_cost: int = 0

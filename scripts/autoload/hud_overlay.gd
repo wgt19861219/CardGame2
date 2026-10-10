@@ -235,3 +235,37 @@ func _on_shortcut_open(key: String) -> void:
 	if scene == null:
 		return
 	ShortcutRouter.route(scene, key)
+
+
+## ── 退出确认（2026-10-09 受控增强：Android 返回键/窗口关闭防误退）─────────────
+## project.godot quit_on_go_back=false 后返回键只发通知不退出；本层收
+## GO_BACK/CLOSE_REQUEST 弹确认框。挂本 CanvasLayer(150) → 恒高于全部 PopWindow(z=100)，
+## 任何界面按下都可见（identity 隐藏只作用于三容器，不影响本层新子节点）。
+## 确认路径先 GameData.save() 再 quit()——quit() 不再发 WM 通知，game_data 的
+## 通知存档（game_data.gd _notification）在"弹窗期间继续玩再确认"场景覆盖不到最新进度。
+
+const QuitConfirmScript = preload("res://scripts/ui/quit_confirm.gd")
+
+var _quit_confirm: Control = null
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		show_quit_confirm()
+
+
+func show_quit_confirm() -> void:
+	if _quit_confirm != null and is_instance_valid(_quit_confirm):
+		return   # 已打开（连按返回键不叠加）
+	_quit_confirm = QuitConfirmScript.new()
+	_quit_confirm.setup(GameData.config)
+	_quit_confirm.confirmed.connect(_execute_quit)
+	# call_deferred：游戏树初始化期（loading_scene 场景 setup 中）收到通知时直接
+	# add_child 会报 "Parent node is busy setting up children" 失败，孤儿节点挂起
+	# _quit_confirm 后防重条件永久阻断后续弹窗（bridge 实测抓出，2026-10-09）。
+	add_child.call_deferred(_quit_confirm)
+
+
+func _execute_quit() -> void:
+	GameData.save()
+	get_tree().quit()

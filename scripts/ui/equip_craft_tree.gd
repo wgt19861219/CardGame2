@@ -315,27 +315,31 @@ static func _build_getway_branch(panel, tree: Control, id: int) -> void:
 	# 源 :1141-1145 setAnchorPoint(0,0.5) 左中锚 → x 取左缘、y 居中补偿（2026-09-07 修）
 	label.position = _gl(GETWAY_LABEL_POS) - Vector2(0.0, label.get_combined_minimum_size().y * 0.5)
 	var equip_info: Dictionary = panel.cm.get_raw_table("Equip").get(str(id), {})
-	var stage_table: Dictionary = panel.cm.get_raw_table("Stage")
 	var max_chapter: int = int(panel.cm.get_raw_table("GameConfig").get("MaxChapter", 13))
 	var getway: Array = []
 	for i in range(1, 4):
 		var s: int = int(equip_info.get("Drop " + str(i), 0))
 		if s > 0:
-			var st_row: Dictionary = stage_table.get(str(s), {})
-			if int(st_row.get("Chapter ID", 0)) <= max_chapter:
+			var q: Dictionary = StageData.query_stage_row(s, panel.cm)
+			# 副本关（ch203 lich 等 StageDungeon 表）Chapter ID=203 恒超 MaxChapter，直接放行
+			if bool(q["dungeon"]) or int(q["row"].get("Chapter ID", 0)) <= max_chapter:
 				getway.append(s)
 	panel._get_way_ids = getway
 	for i in range(getway.size()):
-		_build_one_getway(panel, tree, stage_table, getway[i], i)
+		_build_one_getway(panel, tree, getway[i], i)
 
 
-static func _build_one_getway(panel, tree: Control, stage_table: Dictionary, raw_sid: int, idx: int) -> void:
+static func _build_one_getway(panel, tree: Control, raw_sid: int, idx: int) -> void:
+	var q: Dictionary = StageData.query_stage_row(raw_sid, panel.cm)
+	var stage_row: Dictionary = q["row"]
+	var is_dungeon: bool = bool(q["dungeon"])
 	var is_elite: bool = false
 	var sid: int = raw_sid
-	if raw_sid >= 10000:
-		sid = int(stage_table.get(str(raw_sid), {}).get("Stage Group", raw_sid))
+	if is_dungeon:
+		sid = raw_sid   # 副本关直接用本行（title 显示组名，非"第X章"）
+	elif raw_sid >= 10000:
+		sid = int(panel.cm.get_raw_table("Stage").get(str(raw_sid), {}).get("Stage Group", raw_sid))
 		is_elite = true
-	var stage_row: Dictionary = stage_table.get(str(sid), {})
 	var board := TextureRect.new()
 	board.texture = load(GETWAY_BOARD_PATH)
 	board.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -351,12 +355,17 @@ static func _build_one_getway(panel, tree: Control, stage_table: Dictionary, raw
 		var icon := TextureRect.new()
 		icon.texture = load(icon_path)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		# KEEP_ASPECT_CENTERED 等比（副本 Boss 地标图非正方形，SCALE 会压扁）
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.custom_minimum_size = Vector2(STAGE_ICON_SIZE, STAGE_ICON_SIZE)
 		icon.size = Vector2(STAGE_ICON_SIZE, STAGE_ICON_SIZE)
 		icon.position = BOARD_ICON_POS
 		board.add_child(icon)
 	var title := Label.new()
-	title.text = panel.cm.get_lstr(LSTR_CHAPTER_D) % int(stage_row.get("Chapter ID", 0))
+	if is_dungeon:
+		title.text = panel.cm.get_lstr(StageData.get_dungeon_group_name(raw_sid, panel.cm))
+	else:
+		title.text = panel.cm.get_lstr(LSTR_CHAPTER_D) % int(stage_row.get("Chapter ID", 0))
 	title.theme_type_variation = &"EquipCraftBoardLabel"
 	title.position = BOARD_TITLE_POS
 	board.add_child(title)

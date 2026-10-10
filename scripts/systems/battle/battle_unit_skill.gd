@@ -41,6 +41,16 @@ static func init_skill(u: Variant, cm: ConfigManager, lib: Variant) -> void:
 	var skill_levels: Dictionary = u.proto.get("_skill_levels", {})
 	var basic_skill_id: int = int(info.get("Basic Skill", 0))
 	var skill_groups: Dictionary = cm.get_raw_table(&"SkillGroup").get(str(uid), {})
+	# Boss 技能 override（ch203 StageDungeon Boss Skills）：替换默认槽位装载——借用的
+	# 现成技能组（动画/特效/Buff 原生），首组应为该单位 Basic Skill（普攻）保持走原判定
+	var boss_skills: Array = u.config.get(&"boss_skills", [])
+	if is_monster and not boss_skills.is_empty():
+		skill_groups = {}
+		for slot_idx in range(boss_skills.size()):
+			skill_groups[str(slot_idx + 1)] = {
+				"Skill Group ID": int(boss_skills[slot_idx]),
+				"Unlock For Monster": 1,
+			}
 	for slot in skill_groups:
 		var group: Dictionary = skill_groups[slot]
 		var unlock: int = int(group.get("Unlock For Monster", 0)) if is_monster else int(group.get("Unlock", 0))

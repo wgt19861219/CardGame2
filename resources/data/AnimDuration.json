@@ -4689,5 +4689,463 @@
       "Action": "atk2",
       "Cha": "Footman.cha"
     }
+  },
+  "LichKing.cha": {
+    "Move": {
+      "Duration": 0.666667,
+      "Action": "Move",
+      "Cha": "LOA.cha"
+    },
+    "Cheer": {
+      "Duration": 1.791667,
+      "Action": "Cheer",
+      "Cha": "LOA.cha"
+    },
+    "atk3": {
+      "Duration": 1.708333,
+      "Action": "atk3",
+      "Cha": "LOA.cha"
+    },
+    "Damaged": {
+      "Duration": 0.75,
+      "Action": "Damaged",
+      "Cha": "LOA.cha"
+    },
+    "Death": {
+      "Duration": 1.333333,
+      "Action": "Death",
+      "Cha": "LOA.cha"
+    },
+    "ult": {
+      "Duration": 2,
+      "Action": "ult",
+      "Cha": "LOA.cha"
+    },
+    "Idle": {
+      "Duration": 1.833333,
+      "Action": "Idle",
+      "Cha": "LOA.cha"
+    },
+    "atk": {
+      "Duration": 1.083333,
+      "Action": "atk",
+      "Cha": "LOA.cha"
+    },
+    "atk2": {
+      "Duration": 1.375,
+      "Action": "atk2",
+      "Cha": "LOA.cha"
+    }
+  },
+  "Karathress.cha": {
+    "Idle": {
+      "Duration": 1.666667,
+      "Action": "Idle",
+      "Cha": "SG.cha"
+    },
+    "Cheer": {
+      "Duration": 1.625,
+      "Action": "Cheer",
+      "Cha": "SG.cha"
+    },
+    "atk3": {
+      "Duration": 1.541667,
+      "Action": "atk3",
+      "Cha": "SG.cha"
+    },
+    "Damaged": {
+      "Duration": 0.583333,
+      "Action": "Damaged",
+      "Cha": "SG.cha"
+    },
+    "atk": {
+      "Duration": 0.833333,
+      "Action": "atk",
+      "Cha": "SG.cha"
+    },
+    "Death": {
+      "Duration": 1.583333,
+      "Action": "Death",
+      "Cha": "SG.cha"
+    },
+    "Switch": {
+      "Duration": 1.666667,
+      "Action": "Switch",
+      "Cha": "SG.cha"
+    },
+    "Move": {
+      "Duration": 0.875,
+      "Action": "Move",
+      "Cha": "SG.cha"
+    },
+    "atk2": {
+      "Duration": 1.166667,
+      "Action": "atk2",
+      "Cha": "SG.cha"
+    },
+    "ult": {
+      "Duration": 2.083333,
+      "Action": "ult",
+      "Cha": "SG.cha"
+    }
+  },
+  "Tidewalker.cha": {
+    "Idle": {
+      "Duration": 1.166667,
+      "Action": "Idle",
+      "Cha": "TH.cha"
+    },
+    "Cheer": {
+      "Duration": 1.208333,
+      "Action": "Cheer",
+      "Cha": "TH.cha"
+    },
+    "atk3": {
+      "Duration": 1.083333,
+      "Action": "atk3",
+      "Cha": "TH.cha"
+    },
+    "Damaged": {
+      "Duration": 0.583333,
+      "Action": "Damaged",
+      "Cha": "TH.cha"
+    },
+    "Move": {
+      "Duration": 0.666667,
+      "Action": "Move",
+      "Cha": "TH.cha"
+    },
+    "Death": {
+      "Duration": 1.583333,
+      "Action": "Death",
+      "Cha": "TH.cha"
+    },
+    "Switch": {
+      "Duration": 1.166667,
+      "Action": "Switch",
+      "Cha": "TH.cha"
+    },
+    "atk": {
+      "Duration": 0.875,
+      "Action": "atk",
+      "Cha": "TH.cha"
+    },
+    "atk2": {
+      "Duration": 1.166667,
+      "Action": "atk2",
+      "Cha": "TH.cha"
+    },
+    "ult": {
+      "Duration": 2.125,
+      "Action": "ult",
+      "Cha": "TH.cha"
+    }
+  },
+  "LadyVashj.cha": {
+    "Move": {
+      "Duration": 0.916667,
+      "Action": "Move",
+      "Cha": "Naga.cha"
+    },
+    "Cheer": {
+      "Duration": 1.875,
+      "Action": "Cheer",
+      "Cha": "Naga.cha"
+    },
+    "atk3": {
+      "Duration": 1.125,
+      "Action": "atk3",
+      "Cha": "Naga.cha"
+    },
+    "Damaged": {
+      "Duration": 0.708333,
+      "Action": "Damaged",
+      "Cha": "Naga.cha"
+    },
+    "atk2": {
+      "Duration": 0.833333,
+      "Action": "atk2",
+      "Cha": "Naga.cha"
+    },
+    "Idle": {
+      "Duration": 1.375,
+      "Action": "Idle",
+      "Cha": "Naga.cha"
+    },
+    "Birth": {
+      "Duration": 1.041667,
+      "Action": "Birth",
+      "Cha": "Naga.cha"
+    },
+    "Switch": {
+      "Duration": 1.375,
+      "Action": "Switch",
+      "Cha": "Naga.cha"
+    },
+    "atk": {
+      "Duration": 0.875,
+      "Action": "atk",
+      "Cha": "Naga.cha"
+    },
+    "ult": {
+      "Duration": 3.583333,
+      "Action": "ult",
+      "Cha": "Naga.cha"
+    },
+    "Death": {
+      "Duration": 1.333333,
+      "Action": "Death",
+      "Cha": "Naga.cha"
+    }
+  },
+  "RageWinter.cha": {
+    "Idle": {
+      "Duration": 1.708333,
+      "Action": "Idle",
+      "Cha": "Lich.cha"
+    },
+    "Cheer": {
+      "Duration": 4,
+      "Action": "Cheer",
+      "Cha": "Lich.cha"
+    },
+    "atk3": {
+      "Duration": 1.291667,
+      "Action": "atk3",
+      "Cha": "Lich.cha"
+    },
+    "Damaged": {
+      "Duration": 0.625,
+      "Action": "Damaged",
+      "Cha": "Lich.cha"
+    },
+    "Death": {
+      "Duration": 1.583333,
+      "Action": "Death",
+      "Cha": "Lich.cha"
+    },
+    "ult": {
+      "Duration": 1.583333,
+      "Action": "ult",
+      "Cha": "Lich.cha"
+    },
+    "Move": {
+      "Duration": 0.833333,
+      "Action": "Move",
+      "Cha": "Lich.cha"
+    },
+    "atk": {
+      "Duration": 0.833333,
+      "Action": "atk",
+      "Cha": "Lich.cha"
+    },
+    "atk2": {
+      "Duration": 1.416667,
+      "Action": "atk2",
+      "Cha": "Lich.cha"
+    }
+  },
+  "Anetheron.cha": {
+    "Move": {
+      "Duration": 0.666667,
+      "Action": "Move",
+      "Cha": "Lion.cha"
+    },
+    "Cheer": {
+      "Duration": 0.791667,
+      "Action": "Cheer",
+      "Cha": "Lion.cha"
+    },
+    "atk3": {
+      "Duration": 1.791667,
+      "Action": "atk3",
+      "Cha": "Lion.cha"
+    },
+    "Damaged": {
+      "Duration": 0.791667,
+      "Action": "Damaged",
+      "Cha": "Lion.cha"
+    },
+    "Idle": {
+      "Duration": 1.625,
+      "Action": "Idle",
+      "Cha": "Lion.cha"
+    },
+    "Death": {
+      "Duration": 0.791667,
+      "Action": "Death",
+      "Cha": "Lion.cha"
+    },
+    "Switch": {
+      "Duration": 1.625,
+      "Action": "Switch",
+      "Cha": "Lion.cha"
+    },
+    "atk": {
+      "Duration": 1.208333,
+      "Action": "atk",
+      "Cha": "Lion.cha"
+    },
+    "atk2": {
+      "Duration": 1.541667,
+      "Action": "atk2",
+      "Cha": "Lion.cha"
+    },
+    "ult": {
+      "Duration": 1.708333,
+      "Action": "ult",
+      "Cha": "Lion.cha"
+    }
+  },
+  "Archimonde.cha": {
+    "atk": {
+      "Duration": 0.958333,
+      "Action": "atk",
+      "Cha": "TB.cha"
+    },
+    "Cheer": {
+      "Duration": 2.125,
+      "Action": "Cheer",
+      "Cha": "TB.cha"
+    },
+    "atk3": {
+      "Duration": 2.75,
+      "Action": "atk3",
+      "Cha": "TB.cha"
+    },
+    "Damaged": {
+      "Duration": 0.708333,
+      "Action": "Damaged",
+      "Cha": "TB.cha"
+    },
+    "Idle": {
+      "Duration": 1.791667,
+      "Action": "Idle",
+      "Cha": "TB.cha"
+    },
+    "Death": {
+      "Duration": 2.041667,
+      "Action": "Death",
+      "Cha": "TB.cha"
+    },
+    "ult": {
+      "Duration": 2.083333,
+      "Action": "ult",
+      "Cha": "TB.cha"
+    },
+    "atk2": {
+      "Duration": 1.166667,
+      "Action": "atk2",
+      "Cha": "TB.cha"
+    },
+    "Birth": {
+      "Duration": 1.208333,
+      "Action": "Birth",
+      "Cha": "TB.cha"
+    },
+    "Move": {
+      "Duration": 0.625,
+      "Action": "Move",
+      "Cha": "TB.cha"
+    }
+  },
+  "Sindragosa.cha": {
+    "atk": {
+      "Duration": 1.291667,
+      "Action": "atk",
+      "Cha": "Viper.cha"
+    },
+    "Cheer": {
+      "Duration": 0.833333,
+      "Action": "Cheer",
+      "Cha": "Viper.cha"
+    },
+    "Damaged": {
+      "Duration": 0.666667,
+      "Action": "Damaged",
+      "Cha": "Viper.cha"
+    },
+    "Idle": {
+      "Duration": 0.833333,
+      "Action": "Idle",
+      "Cha": "Viper.cha"
+    },
+    "Death": {
+      "Duration": 0.958333,
+      "Action": "Death",
+      "Cha": "Viper.cha"
+    },
+    "ult": {
+      "Duration": 1.541667,
+      "Action": "ult",
+      "Cha": "Viper.cha"
+    },
+    "atk2": {
+      "Duration": 1.291667,
+      "Action": "atk2",
+      "Cha": "Viper.cha"
+    },
+    "null": {
+      "Duration": 0.041667,
+      "Action": "null",
+      "Cha": "Viper.cha"
+    },
+    "Move": {
+      "Duration": 0.833333,
+      "Action": "Move",
+      "Cha": "Viper.cha"
+    }
+  },
+  "BloodQueen.cha": {
+    "Move": {
+      "Duration": 0.833333,
+      "Action": "Move",
+      "Cha": "QOP.cha"
+    },
+    "Cheer": {
+      "Duration": 0.333333,
+      "Action": "Cheer",
+      "Cha": "QOP.cha"
+    },
+    "atk3": {
+      "Duration": 1.541667,
+      "Action": "atk3",
+      "Cha": "QOP.cha"
+    },
+    "Damaged": {
+      "Duration": 0.583333,
+      "Action": "Damaged",
+      "Cha": "QOP.cha"
+    },
+    "atk": {
+      "Duration": 1.083333,
+      "Action": "atk",
+      "Cha": "QOP.cha"
+    },
+    "atk2": {
+      "Duration": 1.5,
+      "Action": "atk2",
+      "Cha": "QOP.cha"
+    },
+    "Switch": {
+      "Duration": 1,
+      "Action": "Switch",
+      "Cha": "QOP.cha"
+    },
+    "Idle": {
+      "Duration": 1,
+      "Action": "Idle",
+      "Cha": "QOP.cha"
+    },
+    "Death": {
+      "Duration": 1.625,
+      "Action": "Death",
+      "Cha": "QOP.cha"
+    },
+    "ult": {
+      "Duration": 1.916667,
+      "Action": "ult",
+      "Cha": "QOP.cha"
+    }
   }
 }

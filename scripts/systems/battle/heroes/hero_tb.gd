@@ -62,7 +62,7 @@ func _ult_buff_on_removed(buff: Variant) -> void:
 		skillatk.max_range_sq = max_r * max_r
 		skillatk.cd_remaining = CD_RESTORE
 	owner.attack_range = float(owner.attack_range) - TB_RANGE_INTERVAL
-	owner.custom_data["ultBuff"] = null
+	owner.custom_data.erase("ultBuff")   # 源 nil=删键；GDScript 存 null 残留键值
 	buff._on_removed_default()
 	owner.hurt()
 	owner.set_action("Birth", false, true)

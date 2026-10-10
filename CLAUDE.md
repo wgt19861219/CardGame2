@@ -8,7 +8,7 @@
 
 - **引擎**：Godot 4.7（`D:\godot\Godot_v4.7-stable_win64_console.exe`）—— 由 4.6.3 升级（2026-06-24，GUT 9.6.0 兼容验证 185 单测全绿）
 - **渲染器**：gl_compatibility
-- **分辨率**：800×480 横屏（aspect=ignore 拉伸，复刻源实机 EXACT_FIT）
+- **分辨率**：800×480 横屏（aspect=keep 等比缩放，长屏两侧留清屏色边带；2026-10-09 由 ignore 改 keep：小米13 20:9 真机横向变形 33%，源 EXACT_FIT 复刻在此类长屏上无完好表现可复刻）
 - **语言**：GDScript（strict 类型）
 - **测试**：GUT v9.6.0
 - **Spine**：方案 C（JSON 解析器，复用旧版，无阻塞）
