@@ -91,6 +91,25 @@ static func _add_press(btn: Button, e: Dictionary) -> void:
 # Spine 动画图标（照源 ui/main.lua:413 createFcaNode aniType=1 + setAction Loop）。
 # load_skeleton 失败（starshop Shop_Star spine/ 无资源，源走 FCA）静默降级（返 null）。
 static func _add_spine(btn: Button, e: Dictionary) -> Node2D:
+	# 静态图入口（2026-10-08 ch203 冰封王座，Comfy 生成 PNG 无 Spine/FCA 资产）：
+	# e["icon"] = 贴图路径 → TextureRect 居中，z 同 SPINE_Z。建筑动画体系只认
+	# spine/FCA（res 字段），项目新增入口走 icon 字段静态图（受控增强）。
+	if e.has("icon"):
+		var tex: Texture2D = load(String(e["icon"])) as Texture2D
+		if tex != null:
+			var icon := TextureRect.new()
+			icon.texture = tex
+			icon.z_index = SPINE_Z
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			var icon_scale: float = float(e.get("scale", 1.0)) * FCA_SCALE
+			# 图标占满按钮区（radius×2）而非贴图原始尺寸（贴图 512² 直用会溢出
+			# 140² 按钮区；KEEP_ASPECT_CENTERED 保证不变形，短边贴合留边）。
+			var icon_sz: Vector2 = btn.size * icon_scale
+			icon.size = icon_sz
+			icon.position = (btn.size - icon_sz) * 0.5
+			btn.add_child(icon)
+			return null   # 静态图无待机循环动画（_add_gap_loop 需 Node2D 骨架，跳过）
 	if not e.has("res"):
 		return null
 	var sk_scale: float = float(e.get("scale", 1.0))

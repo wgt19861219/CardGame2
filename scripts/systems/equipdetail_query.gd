@@ -74,22 +74,24 @@ static func _hero_equip_list(equip_id: int, cm: Variant, pd: PlayerData) -> Arra
 static func _get_way_list(equip_id: int, cm: Variant) -> Array:
 	var result: Array = []
 	var equip_row: Dictionary = cm.get_raw_table(&"Equip").get(str(equip_id), {})
-	var stage: Dictionary = cm.get_raw_table(&"Stage")
 	var max_chapter: int = _max_chapter(cm)
 	for i in range(1, DROP_SLOTS + 1):
 		var drop_id: int = int(equip_row.get("Drop " + str(i), 0))
 		if drop_id <= 0:
 			continue
-		var stage_row: Dictionary = stage.get(str(drop_id), {})
-		var chapter: int = int(stage_row.get("Chapter ID", 0))
-		if chapter > max_chapter:
+		var q: Dictionary = StageData.query_stage_row(drop_id, cm)
+		var stage_row: Dictionary = q["row"]
+		var is_dungeon: bool = bool(q["dungeon"])
+		# 副本关（ch203 lich 等 StageDungeon 表）Chapter ID=203 恒超 MaxChapter，直接放行
+		if not is_dungeon and int(stage_row.get("Chapter ID", 0)) > max_chapter:
 			continue
 		var name: String = String(stage_row.get("Stage Name", str(drop_id)))
-		# P1-12：照源 :250-252 elite 加"精英"前缀 + :245 getStageIcon 关卡图标（StageRes 移植）
-		var is_elite: bool = StageAccount.stage_type(drop_id) == "elite"
+		# P1-12：照源 :250-252 elite 加"精英"前缀 + :245 getStageIcon 关卡图标（StageRes 移植）；
+		# 副本关非精英，name 即 Stage Name（LSTR key → Boss 名，渲染层 get_lstr）
+		var is_elite: bool = (not is_dungeon) and StageAccount.stage_type(drop_id) == "elite"
 		if is_elite:
 			name = "精英 " + name
-		result.append({"id": drop_id, "name": name, "chapter": chapter, "elite": is_elite, "res": StageRes.get_stage_icon(drop_id, cm)})
+		result.append({"id": drop_id, "name": name, "chapter": int(stage_row.get("Chapter ID", 0)), "elite": is_elite, "res": StageRes.get_stage_icon(drop_id, cm)})
 	return result
 
 

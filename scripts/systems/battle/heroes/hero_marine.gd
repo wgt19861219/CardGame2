@@ -36,7 +36,7 @@ func _skill2_buff_on_removed(buff: Variant) -> void:
 		var max_r: float = float(skillatk.info.get("Max Range", 0))
 		skillatk.max_range_sq = max_r * max_r
 	owner.attack_range = float(owner.attack_range) + RANGE_INTERVAL
-	owner.custom_data["medBuff"] = null
+	owner.custom_data.erase("medBuff")   # 源 nil=删键；GDScript 存 null 残留键值，bool(null) 运行时崩（Debugger Break 挂死）
 	buff._on_removed_default()
 
 

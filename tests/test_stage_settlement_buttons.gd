@@ -12,14 +12,27 @@ func test_replay_target_normal_stage() -> void:
 
 
 # dungeon 关（mode 走 stage 结算）无独立详情面板 → 空目标保持回主界面（受控简化）。
+# ch203 lich 段（50022-50030）除外——回 LichMapPanel 定位该关（2026-10-10 接通，
+# 用户反馈"结算点继续直回主城两眼一黑"）。
 func test_replay_target_dungeon_stage() -> void:
-	assert_true(StageSettlementCommon.replay_target(50001).is_empty(), "dungeon 关重试空目标")
+	assert_true(StageSettlementCommon.replay_target(50001).is_empty(), "非 lich dungeon 关重试空目标")
+
+
+# lich 段重试/下一关都回 LichMapPanel（面板即副本入口，可再开战/换难度/换 Boss）。
+func test_replay_next_target_lich_stage() -> void:
+	for sid in [50022, 50026, 50030]:
+		var tr: Dictionary = StageSettlementCommon.replay_target(sid)
+		assert_eq(String(tr.get("target", "")), "lichmap", "关 %d 重试目标 = lichmap" % sid)
+		assert_eq(int(tr.get("stage_id", 0)), sid, "重试携带 stage_id 定位关")
+		var tn: Dictionary = StageSettlementCommon.next_target(sid)
+		assert_eq(String(tn.get("target", "")), "lichmap", "关 %d 下一关目标 = lichmap" % sid)
+		assert_eq(int(tn.get("stage_id", 0)), sid, "下一关携带 stage_id 定位关")
 
 
 # 下一关 → 选关（源 doClickNext → popScene + WinBackToSelect）。
 func test_next_target() -> void:
 	assert_eq(StageSettlementCommon.next_target(1).get("target", ""), "stageselect", "下一关目标 = stageselect")
-	assert_true(StageSettlementCommon.next_target(50001).is_empty(), "dungeon 关下一关空目标")
+	assert_true(StageSettlementCommon.next_target(50001).is_empty(), "非 lich dungeon 关下一关空目标")
 
 
 # 胜利页两按钮接 helper（防回退成裸 goto_main_scene）。
@@ -54,3 +67,5 @@ func test_main_scene_consumes_pending() -> void:
 	assert_true(src.contains("_maybe_resume_stage_result()\n") or src.contains("_maybe_resume_stage_result()"), "_ready 调用消费")
 	assert_true(src.contains("pending_stage_result"), "读 pending_stage_result")
 	assert_eq(src.count(".duplicate()   #"), 2, "两处 pending 消费均先 duplicate 再 clear（excavate/stage_result）")
+	assert_true(src.contains('"lichmap"') and src.contains("open_lich_map"),
+		"lichmap target 分支接 open_lich_map（ch203 副本结算回面板，2026-10-10）")

@@ -119,6 +119,31 @@ _KNOWN_STRUCT_DIFF: dict[str, str] = {
     "GameConfig": "Lua 是脚本配置非纯数据表，JSON 空 {} 合理",
     # 语言包走 LSTR.json（4842 keys，Phase 1 已迁移），此表保持空 {}
     "LocalString": "语言包已迁移至 LSTR.json，此表空 {} 合理",
+    # ch203 冰封王座 Boss Skills（expand_lich_data.py 注入的关卡级技能 override，项目
+    # 新增字段，源 Lua 无）——数值正确性由 test_lich_boss_skills.gd 守卫，非转换丢失
+    "StageDungeon": "Boss Skills 为项目新增字段（ch203 Boss 技能魔兽化），非转换丢失",
+}
+
+# 键级白名单：表 → 允许 JSON 比 Lua 源多出的条目键（不影响该表其余字段的对照严格性）。
+# ch203 换皮 Boss 的 Puppet/动画时序条目（expand_lich_data.py 注入；Puppet=战斗形象解析，
+# Anim*=技能 phase 时序——2026-10-10 Boss 卡死根修补建，缺条目时技能 start 无动作无完成
+# 回调，单位钉死 ATTACK 态）——链路正确性由 test_lich_boss_skills.gd 守卫。
+_KNOWN_EXTRA_KEYS: dict[str, set[str]] = {
+    "Puppet": {
+        "LichKing.cha", "Karathress.cha", "Tidewalker.cha", "LadyVashj.cha",
+        "RageWinter.cha", "Anetheron.cha", "Archimonde.cha", "Sindragosa.cha",
+        "BloodQueen.cha",
+    },
+    "AnimAtkFrame": {
+        "LichKing.cha", "Karathress.cha", "Tidewalker.cha", "LadyVashj.cha",
+        "RageWinter.cha", "Anetheron.cha", "Archimonde.cha", "Sindragosa.cha",
+        "BloodQueen.cha",
+    },
+    "AnimDuration": {
+        "LichKing.cha", "Karathress.cha", "Tidewalker.cha", "LadyVashj.cha",
+        "RageWinter.cha", "Anetheron.cha", "Archimonde.cha", "Sindragosa.cha",
+        "BloodQueen.cha",
+    },
 }
 
 
@@ -149,7 +174,8 @@ def main(argv: list[str]) -> int:
         lua_fields = extract_lua_fields(lua_path)
         checked += 1
         only_lua = lua_fields - json_fields  # 转换丢失
-        only_json = json_fields - lua_fields  # 转换多加
+        # 转换多加（扣键级白名单：允许的项目新增条目不算差异）
+        only_json = json_fields - lua_fields - _KNOWN_EXTRA_KEYS.get(table, set())
         if only_lua or only_json:
             if table in _KNOWN_STRUCT_DIFF:
                 # 已知结构性差异：信息输出但不计入失败

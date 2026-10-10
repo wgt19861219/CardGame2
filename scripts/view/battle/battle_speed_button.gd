@@ -57,13 +57,18 @@ func _on_pressed() -> void:
 
 
 # 读持久化档（源 :14-15：UserDefault 读，<1 或 >4 越界回 1，非 clamp 边界）。
+# 2026-10-10 语义修正：MAX_STATE 裁 3 档后，旧 4x 时代的档值 4 若照源"越界回 1"，
+# 玩家每场都被扔回 1x（用户两轮反馈"倍速又重置"实锤）——高档越界改为回落最大档
+# （4→3 保住"最快"偏好）；<1 垃圾值仍回 1。
 func _load_speed_state(fallback: int) -> int:
 	var v: int = fallback
 	var cfg := ConfigFile.new()
 	if cfg.load(cfg_path) == OK:
 		v = int(cfg.get_value("battle", "speed_state", fallback))
-	if v < 1 or v > MAX_STATE:
+	if v < 1:
 		v = 1
+	elif v > MAX_STATE:
+		v = MAX_STATE
 	return v
 
 

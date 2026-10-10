@@ -32,6 +32,9 @@ _FIELD_WHITELIST: dict[tuple[str, str], tuple[str, object, object]] = {
     # 2026-10-07 用户指示：精英关（ID≥10000，源值全为 3）每日进入次数 3→30（151 关），
     # 有意偏离源。注意：重跑 tools/build_data.py 再生成 Stage.json 会覆盖回 3，需重施。
     ("Stage", "Daily Limit"): ("精英关每日次数 3→30（用户指示，151 关有意偏离源）", 3, 30),
+    # 2026-10-08 ch203 冰封王座：PlayerLevel lv80 Unlock 加 Icecrown 键（源缺），
+    # 主城入口 80 级门槛（expand_lich_data.py 注入，重跑可再生）。
+    ("PlayerLevel", "2"): ("ch203 冰封王座 lv80 Unlock+Icecrown 键（项目新增，仅 缺失→Icecrown 值对命中）", "<缺失>", "Icecrown"),
 }
 
 # 2026-10-07 方案 B（用户拍板）：Hero_equip rank 12-23 空槽（源 lua 原生 0）填 2.0 基件
@@ -66,6 +69,8 @@ def _is_hero_equip_fill(table: str, path: str, lv: object, jv: object) -> bool:
 _PROGRAM_GENERATED: dict[str, object] = {
     # Battle dungeon 段 stage id 50001+（expand_battle_dungeon.py 从 Battle.lua:80954+ 程序生成）
     "Battle": lambda k: k.isdigit() and int(k) >= 50000,
+    # Unit 换皮新角色段 tid 90000+（expand_lich_data.inject_boss_units，Angel 换皮管线产物）
+    "Unit": lambda k: k.isdigit() and int(k) >= 90000,
 }
 
 

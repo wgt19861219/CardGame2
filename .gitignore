@@ -52,3 +52,6 @@ tools/refactor/
 
 # Android 导出产物（APK/AAB 不入库，走本地 build/ 目录）
 /build/
+
+# ch203 生图原始产物（Comfy 直出大图，后处理进 assets/ui/lich/，不入库）
+.lich_art_raw/

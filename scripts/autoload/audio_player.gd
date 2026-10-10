@@ -31,7 +31,8 @@ var _sfx_pool: Array[AudioStreamPlayer] = []
 var _sfx_pool_cursor: int = 0
 var _last_sfx_frame: Dictionary = {}  # rel_path → Engine.get_process_frames()（同帧同名去重，源 sound.lua:30-42）
 var bgm_player: AudioStreamPlayer = null
-# 双通道默认静音（用户指示 2026-08-30；游戏内系统设置可开，持久化到 audio.cfg）。
+# 双通道默认静音（2026-08-30 首定，2026-10-09 用户二次确认维持；游戏内系统设置可开，
+# 持久化到 audio.cfg）。
 var sfx_switch: bool = false    # 音效开关
 var bgm_switch: bool = false    # 背景音乐开关
 var sfx_volume: float = 1.0     # 0~1 线性（Sfx 总线）

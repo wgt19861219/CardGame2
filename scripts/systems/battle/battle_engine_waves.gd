@@ -53,6 +53,15 @@ static func setup_battle(engine: Variant, cm: ConfigManager, battle: Dictionary,
 					config[&"hp_mod"] = _modify(float(config[&"hp_mod"]), float(battle.get(&"Boss HP%", 0)))
 					config[&"dps_mod"] = _modify(float(config[&"dps_mod"]), float(battle.get(&"Boss DPS%", 0)))
 					config[&"size_mod"] = _modify(float(config[&"size_mod"]), float(battle.get(&"BOSS SIZE%", 0)), BOSS_SIZE_DEFAULT)
+					# ch203 起 StageDungeon 行可配 Boss Skills（借现成技能组魔兽化），
+					# init_skill 用它 override 默认 SkillGroup 槽（该单位作玩家英雄不受影响）
+					var boss_skills: Array = engine.stage_info.get(&"Boss Skills", [])
+					if not boss_skills.is_empty():
+						config[&"boss_skills"] = boss_skills
+					# Boss Aura：元素光环粒子类型（mist/frost/flame/spark/blood）→ BattleActor
+					var boss_aura: String = String(engine.stage_info.get(&"Boss Aura", ""))
+					if boss_aura != "":
+						config[&"boss_aura"] = boss_aura
 				var proto: Dictionary = {&"_tid": id, &"_level": level, &"_stars": stars}
 				var monster_hp_info: Dictionary = hp_info.get(i, {}) if has_hp_info else {}
 				var monster: BattleUnit = BattleUnit.new(proto, BattleEngine.CAMP_ENEMY, config, cm, engine, monster_hp_info, engine.skill_lib)

@@ -1154,5 +1154,68 @@
     "Resource": "Zeus",
     "Scale": 0.8,
     "ScaleX Inverse": false
+  },
+  "LichKing.cha": {
+    "Change Components": {},
+    "ID": "LichKing.cha",
+    "Resource": "LichKing",
+    "Scale": 0.9,
+    "ScaleX Inverse": false
+  },
+  "Karathress.cha": {
+    "Change Components": {},
+    "ID": "Karathress.cha",
+    "Resource": "Karathress",
+    "Scale": 0.9,
+    "ScaleX Inverse": false
+  },
+  "Tidewalker.cha": {
+    "Change Components": {},
+    "ID": "Tidewalker.cha",
+    "Resource": "Tidewalker",
+    "Scale": 0.9,
+    "ScaleX Inverse": false
+  },
+  "LadyVashj.cha": {
+    "Change Components": {},
+    "ID": "LadyVashj.cha",
+    "Resource": "LadyVashj",
+    "Scale": 0.81,
+    "ScaleX Inverse": false
+  },
+  "RageWinter.cha": {
+    "Change Components": {},
+    "ID": "RageWinter.cha",
+    "Resource": "RageWinter",
+    "Scale": 0.9,
+    "ScaleX Inverse": false
+  },
+  "Anetheron.cha": {
+    "Change Components": {},
+    "ID": "Anetheron.cha",
+    "Resource": "Anetheron",
+    "Scale": 0.9,
+    "ScaleX Inverse": false
+  },
+  "Archimonde.cha": {
+    "Change Components": {},
+    "ID": "Archimonde.cha",
+    "Resource": "Archimonde",
+    "Scale": 0.85,
+    "ScaleX Inverse": false
+  },
+  "Sindragosa.cha": {
+    "Change Components": {},
+    "ID": "Sindragosa.cha",
+    "Resource": "Sindragosa",
+    "Scale": 0.9,
+    "ScaleX Inverse": false
+  },
+  "BloodQueen.cha": {
+    "Change Components": {},
+    "ID": "BloodQueen.cha",
+    "Resource": "BloodQueen",
+    "Scale": 0.83,
+    "ScaleX Inverse": false
   }
 }

@@ -125,6 +125,10 @@ func _maybe_resume_stage_result() -> void:
 		var detail := StageDetailPanel.new("stagedetail", {})
 		detail.setup_panel(int(pr.get("stage_id", 0)), GameData.player.stage_manager, GameData.player, BattleRng.new(randi()))
 		detail.show_window(self)
+	elif String(pr.get("target", "")) == "lichmap":
+		# ch203 副本结算"继续/重试"回 LichMapPanel 并定位该关（2026-10-10 接通：
+		# dungeon 打完回副本地图，旧空 target 直回主城）
+		MainSceneEntryRouter.open_lich_map(self, int(pr.get("stage_id", 0)))
 	else:
 		MainSceneEntryRouter.open_stage_select(self)
 
@@ -339,6 +343,9 @@ func _on_entry_pressed(entry_id: String) -> void:
 		"exercise":
 			# 英雄试炼建筑 → 旧版经典地图 equip 页（int/agi/str 资源本 + dg1-4 装备本）。
 			MainSceneEntryRouter.open_exercise_map(self, "equip")
+		"icecrown":
+			# ch203 冰封王座（2026-10-08）：专属面板（独立体系，不进 DungeonMapPanel）。
+			MainSceneEntryRouter.open_lich_map(self)
 		"estren":
 			MainSceneEntryRouter.open_equip_strengthen(self)
 		"mailbox":

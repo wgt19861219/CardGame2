@@ -44,8 +44,16 @@ class MockHero extends EmitStub:
 	var level: int = 1  # ExPhoenix apply 读（P1-10 max_shield by level）
 	var max_shield: int = 0  # ExPhoenix apply 设（P1-10）
 	var show_ball: Variant = null  # Kael apply 设 Callable（P1-5）
+	var attack_range: float = 100.0  # Marine/TB onRemoved 读改（medBuff/ultBuff 射程还原）
 	func set_disapear_when_die(b: bool) -> void:
 		is_disapear_when_die = b
+
+
+class MockBuff:
+	extends RefCounted
+	var owner: Variant = null  # buff.owner（Marine medBuff onRemoved 读）
+	func _on_removed_default() -> void:
+		pass
 
 
 class MockAi:
@@ -762,6 +770,23 @@ func test_marine_hooks_registered() -> void:
 	assert_true(hero.hero_hooks.has("castManualSkill"), "Marine 单位 castManualSkill hook 注册")
 	assert_true(hero.ai.hero_hooks.has("findSkillToCast"), "Marine ai findSkillToCast hook 注册")
 	assert_eq(int(hero.skills["Marine_atk2"].info.get("Cost HP", 0)), 20, "Marine atk2 Cost HP=20")
+
+
+# 2026-10-09 闪退根修守卫：medBuff onRemoved 必须删键（源 nil=删键语义）而非 null 赋值——
+# GDScript null 赋值残留键值，bool(get("medBuff", false)) 拿到 null 触发
+# Nonexistent 'bool' constructor → Debugger Break，游戏挂死（用户实测 ch203 闪退）。
+const MarineScript = preload("res://scripts/systems/battle/heroes/hero_marine.gd")
+
+
+func test_marine_medbuff_removed_erases_key() -> void:
+	var hero := MockHero.new()
+	hero.skills["Marine_atk"] = MockSkill.new()
+	hero.custom_data["medBuff"] = true
+	var buff := MockBuff.new()
+	buff.owner = hero
+	MarineScript.new()._skill2_buff_on_removed(buff)
+	assert_false(hero.custom_data.has("medBuff"), "medBuff 键已删（erase，非 null 残留）")
+	assert_eq(hero.attack_range, 250.0, "移除后射程还原 +150")
 
 
 # Phoenix：apply 后单位 die+getLostHPAfterImmunity + atk2(createBuff) + ult(onAttackFrame+getDamage+finish) + atk3(onAttackFrame+canCastWithTarget) 注册（蛋形态）。

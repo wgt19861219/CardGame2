@@ -1,7 +1,8 @@
 extends GutTest
 # 倍速档持久化守卫（2026-08-31 四轮）：源 battle_scene.lua:14/1050 CCUserDefault
 # "battle_speed_state"（启动读+切档写回，跨战斗/跨启动）；本项目此前 scene 实例变量每场归 1。
-# 守卫：切档落盘 + 新按钮（=新战斗）setup 读回 + 越界回 1（源 :15 语义，非 clamp 边界）+ assembler 回写同步。
+# 守卫：切档落盘 + 新按钮（=新战斗）setup 读回 + 越界语义（<1 回 1；>MAX_STATE 回落最大档，
+# 2026-10-10 修正：旧 4x 遗产档值每场被扔回 1x 即"倍速又重置"根因）+ assembler 回写同步。
 # 全部按钮注入 user://battle_test_speed.cfg（cfg_path 可注入），与玩家真实档 user://battle.cfg
 # 完全隔离——多测试共享 user:// 会互踩（曾致 test_battle_scene 读到取证残留档断言错位）。
 
@@ -34,19 +35,28 @@ func test_speed_state_persists_across_buttons() -> void:
 	assert_eq(btn_b.get_state(), 3, "新按钮（新战斗）读回 3 档")
 
 
-# 源 :15 越界语义：cfg 值 <1 或 >4 → 回 1（clampi 边界值 9→4 是错的，照源 9→1）。
+# 越界语义（2026-10-10 修正）：<1 垃圾值回 1；>MAX_STATE（旧 4x 时代档值 4 等）回落
+# 最大档——裁 3 档后照源"越界回 1"会让旧 4x 玩家每场被扔回 1x（用户两轮反馈
+# "倍速又重置"实锤：档值 4 → 每场 1x，点一下 2x 写档）。
 func test_out_of_range_resets_to_one() -> void:
 	var cfg := ConfigFile.new()
-	cfg.set_value("battle", "speed_state", 9)
+	cfg.set_value("battle", "speed_state", 0)
 	cfg.save(TEST_CFG_PATH)
 	var btn: BattleSpeedButton = _make_button()
 	add_child_autofree(btn)
 	btn.setup(1)
-	assert_eq(btn.get_state(), 1, "cfg 越界值 9 应回 1（源 :15 非 clamp）")
+	assert_eq(btn.get_state(), 1, "cfg 垃圾值 0 回 1")
+	var cfg9 := ConfigFile.new()
+	cfg9.set_value("battle", "speed_state", 9)
+	cfg9.save(TEST_CFG_PATH)
+	var btn9: BattleSpeedButton = _make_button()
+	add_child_autofree(btn9)
+	btn9.setup(1)
+	assert_eq(btn9.get_state(), 3, "cfg 越界值 9 回最大档 3（旧 4x 遗产映射）")
 
 
 # 3→1 循环也落盘（源 :1049-1050 切换即写回；2026-10-06 用户拍板 4 档裁 3 档，
-# 循环边界从 4→1 改 3→1，越界档 4 与 9 同样回 1——_load_speed_state >MAX_STATE 归 1）。
+# 循环边界从 4→1 改 3→1）。
 func test_cycle_back_to_one_saved() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("battle", "speed_state", 3)
@@ -59,13 +69,13 @@ func test_cycle_back_to_one_saved() -> void:
 	var cfg2 := ConfigFile.new()
 	cfg2.load(TEST_CFG_PATH)
 	assert_eq(int(cfg2.get_value("battle", "speed_state", -1)), 1, "3→1 循环写盘")
-	# 裁档后遗留的旧 4 档 cfg 值 → 归 1（同源越界语义）
+	# 裁档后遗留的旧 4 档 cfg 值 → 回落最大档 3（保住"最快"偏好，2026-10-10）
 	cfg.set_value("battle", "speed_state", 4)
 	cfg.save(TEST_CFG_PATH)
 	var btn2: BattleSpeedButton = _make_button()
 	add_child_autofree(btn2)
 	btn2.setup(1)
-	assert_eq(btn2.get_state(), 1, "旧 4 档遗留值回 1（>MAX_STATE 归 1）")
+	assert_eq(btn2.get_state(), 3, "旧 4 档遗留值回最大档 3（>MAX_STATE 回落）")
 
 
 # assembler 回写同步（源静态类变量共享；本项目 scene 实例变量须显式 set_speed_state，engine 倍速才生效）。

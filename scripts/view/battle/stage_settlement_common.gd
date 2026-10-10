@@ -52,19 +52,37 @@ static func goto_main_scene(sfx_name: String = "common_click_feedback") -> void:
 
 
 # 重试跳转目标（源 stagedone.lua:93 doClickReplay / stagefailed.lua:42 doClickBack →
-# replaceScene(stagedetail)：回关卡详情可再开战）。dungeon 关卡（mode 走 stage 结算）本项目无
-# 独立详情面板 → 空 target 保持回主界面（受控简化）；源 hasTriggerShop 弹商店分支无 trigger shop 系统不实现。
-# PVP（sid=-1）源 replay 按钮胜利页 isKeyStage=false 天然隐藏 / 失败页 arena_mode 隐藏，无跳转目标。
+# replaceScene(stagedetail)：回关卡详情可再开战）。
+# ch203 lich 段（50022-50030）→ 回 LichMapPanel 并定位该关（该面板即副本详情/入口，
+# 2026-10-10 用户反馈"结算点继续回主城两眼一黑"接通）；其余 dungeon 本项目无独立详情
+# 面板 → 空 target 保持回主界面（受控简化）；源 hasTriggerShop 弹商店分支无 trigger
+# shop 系统不实现。PVP（sid=-1）源 replay 按钮胜利页 isKeyStage=false 天然隐藏 /
+# 失败页 arena_mode 隐藏，无跳转目标。
+# 范围与 lich_map_panel.GROUP_IDS（50008-10 组 = 9 base 关）同源；StageDungeon 表实测
+# lich 段恰为 50022-50030（难度变体共用 base sid）。
+const LICH_SID_MIN: int = 50022
+const LICH_SID_MAX: int = 50030
+
+
+static func _is_lich_stage(stage_id: int) -> bool:
+	return stage_id >= LICH_SID_MIN and stage_id <= LICH_SID_MAX
+
+
 static func replay_target(stage_id: int) -> Dictionary:
+	if _is_lich_stage(stage_id):
+		return {"target": "lichmap", "stage_id": stage_id}
 	if StageAccount.is_dungeon_stage(stage_id) or stage_id == StageAccount.ARENA_STAGE_ID:
 		return {}
 	return {"target": "stagedetail", "stage_id": stage_id}
 
 
 # 下一关跳转目标（源 stagedone.lua:111 doClickNext → popScene + WinBackToSelect → 选关）。
+# ch203 lich 段 → 回 LichMapPanel（可再开战/换难度/换 Boss，源 dungeon 打完回副本地图等价）。
 # PVP（sid=-1）源 next 恒可见（stagedone.lua:577），点击 popScene 回主城（WinBackToSelect 监听在
 # stageselect 未开时 no-op）→ 空 target 回主界面，不跳选关（旧逻辑会误跳 stageselect，2026-09-13 修正）。
 static func next_target(stage_id: int) -> Dictionary:
+	if _is_lich_stage(stage_id):
+		return {"target": "lichmap", "stage_id": stage_id}
 	if StageAccount.is_dungeon_stage(stage_id) or stage_id == StageAccount.ARENA_STAGE_ID:
 		return {}
 	return {"target": "stageselect"}

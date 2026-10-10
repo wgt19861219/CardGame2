@@ -149,20 +149,20 @@ func _build_getway_list() -> void:
 	_getway_rows.clear()
 	_getway_ids.clear()
 	var equip_info: Dictionary = cm.get_raw_table(&"Equip").get(str(_stone_id), {})
-	var stage_table: Dictionary = cm.get_raw_table(&"Stage")
 	var max_chapter: int = int(cm.get_raw_table(&"GameConfig").get("MaxChapter", 13))
 	var drops: Array = []
 	for i in range(1, MAX_DROPS + 1):
 		var s: int = int(equip_info.get("Drop " + str(i), 0))
 		if s > 0:
-			var st_row: Dictionary = stage_table.get(str(s), {})
-			if int(st_row.get("Chapter ID", 0)) <= max_chapter:
+			var q: Dictionary = StageData.query_stage_row(s, cm)
+			# 副本关（ch203 lich 等 StageDungeon 表）Chapter ID=203 恒超 MaxChapter，直接放行
+			if bool(q["dungeon"]) or int(q["row"].get("Chapter ID", 0)) <= max_chapter:
 				drops.append(s)
 	if drops.is_empty():
 		_show_empty_prompt(equip_info)
 		return
 	for i in range(drops.size()):
-		_build_one_getway(stage_table, drops[i], i)
+		_build_one_getway(drops[i], i)
 		_getway_ids.append(drops[i])
 
 
@@ -175,12 +175,14 @@ func _show_empty_prompt(equip_info: Dictionary) -> void:
 
 # 单行获取途径（源 :273-366）：行模板 instantiate + fill；行中心 (142, 30+50*i)
 # 相对裁剪层（源 board at (ox, oy-50*(i-1)) 中心锚，换算见类头）。
-func _build_one_getway(stage_table: Dictionary, raw_sid: int, idx: int) -> void:
-	var is_elite: bool = StageAccount.stage_type(raw_sid) == "elite"
+func _build_one_getway(raw_sid: int, idx: int) -> void:
+	var q: Dictionary = StageData.query_stage_row(raw_sid, cm)
+	var stage_row: Dictionary = q["row"]
+	var is_dungeon: bool = bool(q["dungeon"])
+	var is_elite: bool = (not is_dungeon) and StageAccount.stage_type(raw_sid) == "elite"
 	var sid: int = raw_sid
 	if is_elite:
-		sid = int(stage_table.get(str(raw_sid), {}).get("Stage Group", raw_sid))
-	var stage_row: Dictionary = stage_table.get(str(sid), {})
+		sid = int(cm.get_raw_table(&"Stage").get(str(raw_sid), {}).get("Stage Group", raw_sid))
 	var row: Control = GETWAY_ITEM_SCENE.instantiate() as Control
 	var center: Vector2 = Vector2(GETWAY_OX, GETWAY_BASE_Y + GETWAY_DY * float(idx))
 	row.position = center - row.size * 0.5
@@ -192,9 +194,13 @@ func _build_one_getway(stage_table: Dictionary, raw_sid: int, idx: int) -> void:
 	if ResourceLoader.exists(icon_path):
 		icon.texture = load(icon_path) as Texture2D
 		_fill_stage_icon_size(icon)
-	# title（源 :309-324 "第X章" LSTR._CHAPTER__D，静态位 (50.7,中心25) 在模板）
+	# title（源 :309-324 "第X章" LSTR._CHAPTER__D，静态位 (50.7,中心25) 在模板；
+	# 副本关（ch203 lich）显示所属组名（如"毒蛇神殿"）替代章节号）
 	var title: Label = row.get_node("%TitleLabel") as Label
-	title.text = (cm.get_lstr(LSTR_CHAPTER_D) if cm != null else "第%d章") % int(stage_row.get("Chapter ID", 0))
+	if is_dungeon:
+		title.text = cm.get_lstr(StageData.get_dungeon_group_name(raw_sid, cm))
+	else:
+		title.text = (cm.get_lstr(LSTR_CHAPTER_D) if cm != null else "第%d章") % int(stage_row.get("Chapter ID", 0))
 	# elite（源 :325-344 "精英" right2 title offset=6，红字，visible=isElite）
 	var elite: Label = row.get_node("%EliteLabel") as Label
 	elite.text = cm.get_lstr(LSTR_ELITE) if cm != null else "精英"
@@ -235,6 +241,11 @@ func _place_right2(node: Label, refer: Label, gap: float) -> void:
 # （font_color override）；Daily Limit<=0 不建（源 ui=nil → 模板节点保持隐藏）。
 func _fill_limit(row: Control, raw_sid: int, title: Label, elite: Label, is_elite: bool) -> void:
 	var limit_lbl: Label = row.get_node("%LimitLabel") as Label
+	# 副本关（ch203 lich 等）次数走组级 dungeonpoint 体系，非 Stage Daily Limit，
+	# 星数探测会误显"未开放"——直接隐藏
+	if bool(StageData.query_stage_row(raw_sid, cm)["dungeon"]):
+		limit_lbl.visible = false
+		return
 	if not _is_stage_open(raw_sid):
 		limit_lbl.text = cm.get_lstr(LSTR_NOT_OPEN) if cm != null else LSTR_NOT_OPEN_FALLBACK
 		limit_lbl.add_theme_color_override("font_color", COLOR_AMOUNT_LOW)
@@ -260,8 +271,14 @@ func _is_stage_open(sid: int) -> bool:
 
 
 # 本项目 pushScene 降级为 jump_to_stage 信号（调用方可接 SceneManager；未接时面板内 toast 兜底）。
+# 副本关（ch203 lich 等）无战役星数体系：点击直接开冰封王座面板并定位目标关所在分卷。
 func _on_get_way_clicked(stage_id: int) -> void:
 	var st: String = StageAccount.stage_type(stage_id)
+	if st == "dungeon":
+		AudioPlayer.play_sfx("common_click_feedback")
+		MainSceneEntryRouter.open_lich_map(get_tree().current_scene, stage_id)
+		remove_window()
+		return
 	if st != "normal" and st != "elite":
 		return
 	if _is_stage_open(stage_id):
