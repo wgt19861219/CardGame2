@@ -6,6 +6,29 @@ extends GutTest
 
 const PauseLayerScript = preload("res://scripts/view/battle/battle_pause_layer.gd")
 
+# 整档备份恢复（2026-10-10）：本套件直改 AudioPlayer 单例并 emit toggle_all（落盘），
+# 守卫依赖 GODOT_TEST_MODE——手动裸跑 GUT（无 env）时写脏用户真实 audio.cfg
+# （用户"默认静音被去掉"实锤；照 battle.cfg CI 互抹三段式判例，与 test_setup_panel 同款）。
+const REAL_AUDIO_CFG := "user://audio.cfg"
+var _cfg_backup: String = ""
+var _cfg_existed: bool = false
+
+
+func before_all() -> void:
+	_cfg_existed = FileAccess.file_exists(REAL_AUDIO_CFG)
+	if _cfg_existed:
+		_cfg_backup = FileAccess.get_file_as_string(REAL_AUDIO_CFG)
+
+
+func after_all() -> void:
+	if _cfg_existed:
+		var f := FileAccess.open(REAL_AUDIO_CFG, FileAccess.WRITE)
+		if f:
+			f.store_string(_cfg_backup)
+			f.close()
+	elif FileAccess.file_exists(REAL_AUDIO_CFG):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_AUDIO_CFG))
+
 
 func test_setup_takes_sound_on_and_dismiss() -> void:
 	var layer := PauseLayerScript.new()

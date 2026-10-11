@@ -228,18 +228,28 @@ func test_player_actor_no_head_bar() -> void:
 	scene.queue_free()
 
 
-# 源 reset :159-162 + addBigBloodPanel :541-546 — Boss 单位（hpLayer!=0）装 BigHpBar 入 ui_list。
-func test_add_big_blood_panel_for_boss() -> void:
+# 大血条退役守卫（2026-10-10 用户拍板「放弃血条」）：hpLayer=3 的 Boss 单位不再装配
+# BigHpBar（两轮修复观感仍不合格整体移除）。2026-10-11 追：ShieldBoss 常显护盾条
+# （源 :1558-1562，auto_hide=false 无盾空条常驻 ui_layer）随 BigHpBar 一并退役，
+# Boss 不挂任何血条（头顶 HP/Shield 也不建）。
+func test_no_big_blood_panel_for_boss_after_retirement() -> void:
 	var eng := _make_engine()
 	var boss := _make_unit(1, BattleEngine.CAMP_ENEMY, eng, Vector2(300, 0))
-	boss.hp_layer = 3   # 模拟 Boss 多血段
+	boss.hp_layer = 3
 	eng.add_unit(boss)
 	var scene := BattleScene.new()
-	scene.setup(eng, cm)   # reset_state 内检测 hpLayer!=0 → add_big_blood_panel
-	assert_eq(scene.ui_list.size(), 1, "Boss hpLayer=3 → BigHpBar 入 ui_list")
-	var panel: Variant = scene.ui_list[0]
-	assert_not_null(panel, "BigHpBar 实例应就位")
-	assert_eq(panel.position, Vector2(375.0, 40.0), "Boss 血条固定 HUD 原生坐标(455,120)（原 to_godot(375,440)）")
+	scene.setup(eng, cm)
+	assert_eq(scene.ui_list.size(), 0, "Boss hpLayer=3 → 不再建 BigHpBar（退役）")
+	scene.step(0.033)
+	var actor: Variant = scene.actor_list[0]
+	assert_null(actor.bar_hp, "Boss 头顶不建 HP bar（血条整体退役）")
+	assert_null(actor.bar_shield, "Boss 不建 Shield/ShieldBoss bar（退役）")
+	assert_true(actor.bar_group.bars.is_empty(), "Boss bar_group 无任何条（退役）")
+	var ui_bars: int = 0
+	for child in scene.ui_layer.get_children():
+		if child is BattleFloatingBar:
+			ui_bars += 1
+	assert_eq(ui_bars, 0, "ui_layer 无 ShieldBoss 挂载（退役）")
 	scene.queue_free()
 
 
@@ -1139,4 +1149,76 @@ func test_next_pressed_freezes_engine_during_walk() -> void:
 	assert_true(scene._walking_to_next, "手动下一波走路期间应置 _walking_to_next（冻结 engine）")
 	await scene.next_wave_requested
 	assert_false(scene._walking_to_next, "切波请求发出后应复位")
+	scene.queue_free()
+
+
+# ─────────────────────────────────────────────────────────────────
+# auto 代点波次入场缓冲（2026-10-11，群反馈 #12）。
+# 源 auto 代点（hero_panel.lua:127-131，本项目 update 同构翻译）无入场门——满能量
+# 进下一波 0.5s 即代点大招（JUGG_ult 无敌斩 MaxRange=800 全场跳脸），玩家实测
+# 「满能量进入下一波的时候，进场就释放了」。受控偏离=切波后 AUTO_CAST_WAVE_GRACE_TICKS
+# 引擎 tick 内不代点；单测直驱 _within_wave_grace（update 接线为单点 if 门）。
+class FakeGraceEng:
+	var ticks: int = 0
+	var wave_id: int = 1
+
+
+func test_auto_grace_blocks_right_after_wave_change() -> void:
+	var panel := BattleHeroPanel.new()
+	add_child_autofree(panel)
+	var eng := FakeGraceEng.new()
+	eng.ticks = 100
+	eng.wave_id = 2   # panel 初值 _last_wave_id=-1 → 首次判波即建立缓冲
+	assert_true(panel._within_wave_grace(eng), "切波瞬间（tick 100）落在缓冲期内 → 不代点")
+	eng.ticks = 100 + BattleHeroPanel.AUTO_CAST_WAVE_GRACE_TICKS - 1
+	assert_true(panel._within_wave_grace(eng), "缓冲末 tick（截止-1）仍拦，边界含头")
+
+
+func test_auto_grace_expires_after_grace_ticks() -> void:
+	var panel := BattleHeroPanel.new()
+	add_child_autofree(panel)
+	var eng := FakeGraceEng.new()
+	eng.ticks = 100
+	eng.wave_id = 2
+	panel._within_wave_grace(eng)   # 建立缓冲
+	eng.ticks = 100 + BattleHeroPanel.AUTO_CAST_WAVE_GRACE_TICKS
+	assert_false(panel._within_wave_grace(eng), "达到缓冲截止 tick → 恢复代点（边界不含尾）")
+
+
+func test_auto_grace_restarts_on_next_wave_change() -> void:
+	var panel := BattleHeroPanel.new()
+	add_child_autofree(panel)
+	var eng := FakeGraceEng.new()
+	eng.ticks = 100
+	eng.wave_id = 2
+	panel._within_wave_grace(eng)   # 波 2 缓冲建立
+	eng.ticks = 100 + BattleHeroPanel.AUTO_CAST_WAVE_GRACE_TICKS
+	assert_false(panel._within_wave_grace(eng), "波 2 缓冲过期")
+	eng.ticks += 10
+	eng.wave_id = 3                  # 波 2→3 再切波
+	assert_true(panel._within_wave_grace(eng), "再切波 → 缓冲按新波重计")
+
+
+# 红阶英雄战斗内头像框（2026-10-11 用户反馈「红色品阶英雄进入战斗后框还是橙色的」根修）：
+# 战斗 rank 被 RANK_MAX=12 clamp（源 unit.lua:137 同款，属性表 12 档口径），框是纯视觉
+# 不应跟 clamp 走——battle_hero_panel 取框改用 proto._rank（存档进阶 rank），红阶 18-23
+# → readhero_icon 红款 hero_icon_frame_13。守卫：_rank 23 英雄的面板框贴图=frame_13 非
+# frame_11（rank 12 clamp 档金橙）。
+func test_red_rank_hero_panel_uses_red_frame() -> void:
+	var eng := _make_engine()
+	# 真实玩家英雄语义（estimate_rank=false 走 proto._rank；_make_unit 的 estimate 分支不读 _rank）
+	var p := BattleUnit.new({"_tid": 1, "_level": 80, "_stars": 5, "_rank": 23}, BattleEngine.CAMP_PLAYER, {"estimate_rank": false}, cm, eng, {}, lib)
+	p.position = Vector2(100, 0)
+	p.previous_position = p.position
+	eng.add_unit(p)
+	var scene := BattleScene.new()
+	add_child_autofree(scene)
+	scene.setup(eng, cm)
+	assert_eq(int(p.rank), 12, "战斗内 rank 仍被 RANK_MAX=12 clamp（属性口径不动）")
+	var panel: Variant = scene._hero_panels.get(p) if scene._hero_panels != null else null
+	assert_not_null(panel, "红阶英雄装配了头像面板")
+	var tex: Texture2D = panel.frame_btn.texture_normal
+	assert_not_null(tex, "框贴图已加载")
+	var path: String = str(tex.resource_path)
+	assert_true(path.ends_with("hero_icon_frame_13.png"), "红阶(rank 23)战斗框=红款 frame_13，实际 %s" % path)
 	scene.queue_free()

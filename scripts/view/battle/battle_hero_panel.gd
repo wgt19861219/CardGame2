@@ -24,6 +24,12 @@ const DEAD_COLOR: Color = Color(100.0 / 255.0, 100.0 / 255.0, 100.0 / 255.0)
 const AUTO_CAST_INTERVAL: float = 0.5
 const MP_CAST_THRESHOLD: int = 1000
 const TICK_INTERVAL: float = 0.033
+# 受控偏离（2026-10-11，群反馈 #12）：源 auto 代点无入场缓冲——满能量进下一波 0.5s
+# 即放大招（无敌斩类全场 800 码跳脸大招，JUGG_ult MaxRange=800），进场瞬间技能时机
+# 全废，玩家实测「进场就释放了」。切波后该引擎 tick 数内不代点；引擎时间随倍速走，
+# 快慢档缓冲观感一致。源 hero_panel.lua:127-131 无此门，属本项目体验修正。
+const AUTO_CAST_WAVE_GRACE_TICKS: int = 75
+const CAST_CLEANUP_DELAY: float = 1.0   # cast 光圈寿命（源 play_skill_cast_effect 1s 延迟回收）
 
 const STATE_NONE: String = ""
 const STATE_CAST: String = "cast"
@@ -47,6 +53,8 @@ var redmask: Sprite2D = null
 var _state: String = STATE_NONE
 var _ticks: int = -1
 var _skill_ready_timer: float = 0.0
+var _last_wave_id: int = -1
+var _wave_grace_until_tick: int = -1
 var _skill_ready_effect: Variant = null
 var _skill_ready_eff: Variant = null   # _skill_ready_effect 的 BattleEffect 包装（切速 set_speed 用）
 var _skill_cast_eff: Variant = null    # cast 光圈包装引用（防 RefCounted 析构秒删，见 _play_skill_cast_effect）
@@ -64,7 +72,13 @@ func setup(p_unit: Variant, p_cm: Variant, p_scene: Variant = null) -> void:
 	var portrait_host: Control = content.get_node("%PortraitHost") as Control
 	var hp_bar_host: Control = content.get_node("%HpBarHost") as Control
 	var mp_bar_host: Control = content.get_node("%MpBarHost") as Control
-	var rank: int = int(unit.rank)
+	# 头像框按原始进阶 rank 取档（2026-10-11 用户反馈红阶英雄战斗内框显橙根修）：
+	# 战斗 rank 被 RANK_MAX=12 clamp（源 unit.lua:137 同款，Unit/UnitRank 表 12 档口径，
+	# 属性层正确），框是纯视觉不应跟 clamp 走——源里红阶(18-23)战斗框恒金橙即此缺陷。
+	# 玩家英雄 proto._rank=存档进阶 rank（红阶 18-23 → readhero_icon 红款 frame_13）；
+	# get 安全访问兼容 duck unit（无 proto 的测试桩回落 unit.rank）。
+	var proto: Variant = unit.get("proto")
+	var rank: int = int((proto as Dictionary).get("_rank", unit.rank)) if proto is Dictionary else int(unit.rank)
 	var frame_id: int = ReadheroIcon._frame_id_by_rank(rank)
 	frame_btn.texture_normal = _load_tex(FRAME_PATH_FMT % frame_id)
 	frame_btn.pressed.connect(_on_frame_pressed)
@@ -138,11 +152,14 @@ func update(dt: float) -> void:
 			redmask.visible = false
 			_set_portrait_gray()
 		if (new_state == STATE_CAST or new_state == STATE_SWITCH) and _is_auto_combat():
-			_skill_ready_timer += TICK_INTERVAL
-			var ms: Variant = unit.manual_skill
-			if _skill_ready_timer > AUTO_CAST_INTERVAL and ms != null and bool(ms.will_cast()):
-				_on_frame_pressed()
-				_skill_ready_timer = 0.0
+			if not _within_wave_grace(eng):
+				_skill_ready_timer += TICK_INTERVAL
+				var ms: Variant = unit.manual_skill
+				if _skill_ready_timer > AUTO_CAST_INTERVAL and ms != null and bool(ms.will_cast()):
+					_on_frame_pressed()
+					_skill_ready_timer = 0.0
+			else:
+				_skill_ready_timer = 0.0   # 缓冲期内冻结代点计时，避免一出缓冲立即连放
 	hp_bar.update(dt)
 	mp_bar.update(dt)
 
@@ -196,11 +213,18 @@ func _play_skill_cast_effect() -> void:
 		var n: Node2D = eff.get_node()
 		frame_btn.add_child(n)
 		n.position = GLOW_CAST_POS
-		# cast 特效不持久，1s 后清（hero_panel 不在 effect_list，手动回收节点+释放包装引用）
+		# cast 特效不持久，1s 后清（hero_panel 不在 effect_list，手动回收节点+释放包装引用）。
+		# 用绑定 self 的 Tween 而非 SceneTreeTimer：panel 释放时 tween 自动 kill，回调不再触发
+		# （SceneTreeTimer 不随节点死，战斗清理后仍会打出 "Lambda capture was freed" 报错）；
+		# 回调捕获 eff（RefCounted，Variant 捕获持引用）而非 n（裸节点指针）——1s 内二次施法覆盖
+		# _skill_cast_eff 不再 PREDELETE 旧节点，每个 cast 光圈独立活满各自 1s。
 		if is_inside_tree():
-			get_tree().create_timer(1.0).timeout.connect(func():
-				if is_instance_valid(n):
-					n.queue_free()
+			var tw := create_tween()
+			tw.tween_interval(CAST_CLEANUP_DELAY)
+			tw.tween_callback(func() -> void:
+				var node: Node2D = eff.get_node()
+				if node != null and is_instance_valid(node):
+					node.queue_free()
 				_skill_cast_eff = null)
 
 
@@ -221,6 +245,17 @@ func _is_auto_combat() -> bool:
 	if scene != null and scene.get("auto_combat") != null:
 		return bool(scene.auto_combat)
 	return false
+
+
+# 波次入场缓冲（受控偏离，见 AUTO_CAST_WAVE_GRACE_TICKS 注释）：wave_id 变化时记
+# 缓冲截止 tick，期间 auto 不代点。engine.ticks 为引擎时间（随倍速加速），倍速下
+# 缓冲真实时长同步缩短，观感一致。
+func _within_wave_grace(eng: Variant) -> bool:
+	var wave_id: int = int(eng.wave_id)
+	if wave_id != _last_wave_id:
+		_last_wave_id = wave_id
+		_wave_grace_until_tick = int(eng.ticks) + AUTO_CAST_WAVE_GRACE_TICKS
+	return int(eng.ticks) < _wave_grace_until_tick
 
 
 func _load_tex(path: String) -> Texture2D:
