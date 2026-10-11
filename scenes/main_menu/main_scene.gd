@@ -110,14 +110,12 @@ func _maybe_resume_crusade() -> void:
 	MainSceneEntryRouter.open_crusade(self)
 
 
-# pvp 战斗结束改切结算场景（stageDone/stageFailed，2026-09-13 PVP 结算补全，行为对齐源
-# stageaccount 调度）；旧 _maybe_resume_pvp 退役。2026-10-09 修正：结算页按钮按源 popScene 语义
-# 回 pvp 发起面板（走 pending_stage_result target=ladder，见 _maybe_resume_stage_result；
-# 2026-09-13 把 next 修成空目标回主城系对源 popScene 的误读，用户报「战斗完大退主界面」）。
+# pvp 战斗结束改切结算场景（stageDone/stageFailed，2026-09-13 PVP 结算补全）；旧 _maybe_resume_pvp
+# 退役。2026-10-09 修正：结算页按钮按源 popScene 语义回 pvp 发起面板（pending target=ladder，
+# 见 _maybe_resume_stage_result；09-13 修成空目标回主城系误读，用户报「战斗完大退主界面」）。
 
 
-# stage 结算页重试/下一关按钮跨场景重弹（源 doClickReplay/doClickBack → stagedetail、doClickNext →
-# WinBackToSelect 选关；PopWindow 跨场景丢失，结算按钮经 settlement_common 存 pending_stage_result）。
+# stage 结算页重试/下一关跨场景重弹（源 → stagedetail/选关；PopWindow 跨场景丢失走 pending_stage_result）。
 func _maybe_resume_stage_result() -> void:
 	if GameData.pending_stage_result.is_empty():
 		return
@@ -131,9 +129,7 @@ func _maybe_resume_stage_result() -> void:
 		"ladder":
 			MainSceneEntryRouter.open_ladder(self)   # PVP 结算返回（源 popScene 回 pvp 场景，2026-10-09）
 		"lichmap":
-			# ch203 副本结算"继续/重试"回 LichMapPanel 并定位该关（2026-10-10 接通：
-			# dungeon 打完回副本地图，旧空 target 直回主城）
-			MainSceneEntryRouter.open_lich_map(self, int(pr.get("stage_id", 0)))
+			MainSceneEntryRouter.open_lich_map(self, int(pr.get("stage_id", 0)))   # ch203 副本结算回地图面板定位该关（2026-10-10）
 		_:
 			MainSceneEntryRouter.open_stage_select(self)
 

@@ -71,17 +71,32 @@ func setup_panel(p_player: PlayerData, p_stage_manager: StageManager, p_rng: Bat
 	stage_manager = p_stage_manager
 	rng = p_rng
 	_collect_bosses()
-	if p_focus_stage_id > 0:
-		# 获取途径跳转定位：按目标关 base_id 落到所在分卷（每卷 3 Boss）
+	# 手指目标：外部跳转定位关未通关时照源 forGetWay 指向它；否则（含结算返回传入的
+	# 刚通关关）指向下一个待通关关（2026-10-10 用户实测反馈原手指停在已通关关）。
+	var focus_id: int = p_focus_stage_id
+	if focus_id > 0 and ExerciseManager.is_boss_cleared(stage_manager.progress, focus_id):
+		focus_id = 0
+	if focus_id <= 0:
+		focus_id = _next_uncleared_boss_id()
+	if focus_id > 0:
 		for i in range(bosses.size()):
-			if int((bosses[i] as Dictionary)["base_id"]) == p_focus_stage_id:
+			if int((bosses[i] as Dictionary)["base_id"]) == focus_id:
 				_current = i / 3
-				_focus_stage_id = p_focus_stage_id
+				_focus_stage_id = focus_id
 				break
 	setup()
 	_build_content()
 	_refresh_current_map(false)
 	_start_arrow_bob()
+
+
+## 下一个待通关 Boss（难度递进序第一个未通关；全通关返 0 不高亮）。
+func _next_uncleared_boss_id() -> int:
+	for boss in bosses:
+		var base_id: int = int((boss as Dictionary)["base_id"])
+		if not ExerciseManager.is_boss_cleared(stage_manager.progress, base_id):
+			return base_id
+	return 0
 
 
 func _collect_bosses() -> void:
@@ -243,7 +258,9 @@ func _open_degree_popup(idx: int) -> void:
 	_close_degree_popup()
 	var boss: Dictionary = bosses[idx - 1]
 	var popup: DungeonDegreePopup = DegreePopup.new("dungeonDegree", {})
-	popup.setup_popup(idx, String(boss.get("name", "")), boss.get("difficulties", []), player.team_level)
+	# name 是 LSTR 键（StageDungeon Stage Name=DUNGEON.BOSS_*），走翻译显示（旧直传键
+	# 显"DUNGEON.BOSS_KARATHESS"原文，存量病 2026-10-10 随换色头像验收撞见顺手修）
+	popup.setup_popup(idx, player.cm.get_lstr(String(boss.get("name", ""))), boss.get("difficulties", []), player.team_level)
 	popup.degree_selected.connect(_on_degree_selected)
 	popup.close_requested.connect(_on_degree_close)
 	popup.show_window(self)

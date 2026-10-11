@@ -11,7 +11,6 @@ extends Node2D
 const BAR_SCALE: float = 0.6666666666666666
 const BAR_HP_Y: float = -114.5   # 源 Cocos y=114.5（向上），Godot 左上原点翻转为负（头顶）
 const BAR_SHIELD_Y: float = -110.0
-const BOSS_BAR_POS: Vector2 = Vector2(355.0, 54.0)  # to_godot(355,426)=(355,480-426)，Boss 护盾条 HUD 原生坐标（800×480 直译）
 const BAR_Z: int = 999
 const MANUALLY_CAST_SCALE: float = 1.35
 const GRAVITY: float = -1800.0
@@ -33,9 +32,8 @@ var model: Variant = null     # BattleUnit（Logic 层单位）
 var puppet: Variant = null    # UnitSprite（FCA 动画；源 puppet 不带血条）
 var bar_group: Variant = null # BattleFloatingBar.Group（源 :1545）
 var bar_hp: Node2D = null     # BattleFloatingBar HP（普通单位头顶）
-var bar_shield: Node2D = null # BattleFloatingBar Shield / ShieldBoss
-var _ui_layer: Node = null  # Boss ShieldBoss 挂载层（源 :1561 scene.ui_layer）
-var _boss_bar_external: bool = false  # bar_shield 在 ui_layer（actor free 需单独清）
+var bar_shield: Node2D = null # BattleFloatingBar Shield（普通敌方头顶护盾条）
+var _ui_layer: Node = null  # BattlePopup 弹字挂载层（源 scene.ui_layer）
 var in_scene: bool = false
 var _offline: bool = false
 var _velocity: Vector2 = Vector2.ZERO
@@ -529,22 +527,6 @@ func _create_floating_bars() -> void:
 		bar_shield.position = Vector2(0.0, BAR_SHIELD_Y)
 		bar_shield.scale = Vector2(BAR_SCALE, BAR_SCALE)
 		bar_group.add_bar("Shield", bar_shield)
-	else:
-		# Boss：ShieldBoss 挂 ui_layer 固定位置（源 :1558-1562）
-		bar_shield = BattleFloatingBar.create(model, "ShieldBoss")
-		bar_shield.position = BOSS_BAR_POS
-		bar_shield.scale.x = -1.0
-		if _ui_layer != null:
-			_ui_layer.add_child(bar_shield)
-			_boss_bar_external = true
-		else:
-			add_child(bar_shield)
-		bar_group.add_bar("ShieldBoss", bar_shield)
-
-
-# Boss ShieldBoss 挂 ui_layer，actor free 时需单独清（普通 bars 随 actor 自动 free）。
-func _exit_tree() -> void:
-	if _boss_bar_external and bar_shield != null and _ui_layer != null:
-		if bar_shield.get_parent() == _ui_layer:
-			_ui_layer.remove_child(bar_shield)
-		bar_shield.queue_free()
+	# Boss（hp_layer>0）血条整体退役（2026-10-11 随 BigHpBar 一并移除，用户拍板
+	#「放弃血条」）：源 :1558-1562 的 ShieldBoss 常显护盾条（auto_hide=false，无盾时
+	# 空条常驻 ui_layer 固定位置）观感不合格，Boss 不再挂任何血条。

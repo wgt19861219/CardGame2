@@ -3,8 +3,9 @@ extends Node2D
 
 ## 浮动血条（View 层）— 照源 hp_bar.lua FloatingBar(:381-514) + FloatingBarGroup(:515-541) + proto(:542-602)。
 ## 单位头顶小血条（HP 绿/红 + Shield 护盾），actor 用 Group 管理多 bar + 共享 hide_timer。
-## proto 抽象：HP = unit.hp/attribs.HP；Shield = sum(buff.shield)；ShieldBoss 同 Shield（guild 资源缺降级）。
+## proto 抽象：HP = unit.hp/attribs.HP；Shield = sum(buff.shield)。
 ## 平滑逻辑同 BattleHpBar（减血立即/回血渐增/mid 滞后）。HpBar（大血条 hero_panel 用）与 FloatingBar（小血条单位用）并存。
+## 源 ShieldBoss 条（guild 资源常显护盾条，源 :367-379）随 Boss 血条整体退役移除（2026-10-11）。
 
 const ALPHA_HVGA_DIR: String = "res://assets/ui/alpha/HVGA/"
 const CONTENT_SCALE: float = 1.28125   # 源 createSprite 显示=px÷CS（floating 条族无条目）
@@ -12,14 +13,13 @@ const EPSILON: float = 0.001
 const HIDE_DELAY: float = 1.5
 const DEATH_HIDE_CAP: float = 0.5
 
-# 源 floating_bar_settings（:340-380）。fg 按 camp（1 玩家绿 / -1,0 敌红）。ShieldBoss 用 guild 资源（:367-379）。
+# 源 floating_bar_settings（:340-380）。fg 按 camp（1 玩家绿 / -1,0 敌红）。ShieldBoss 条（源 :367-379）已随 Boss 血条退役删除。
 const SETTINGS: Dictionary = {
 	"HP": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "hp_green_small.png", "-1": "hp_red_small.png", "0": "hp_red_small.png"}, "inc_speed": 0.8, "auto_hide": true},
 	"Mana": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "mp_mana.png", "-1": "mp_mana.png", "0": "mp_mana.png"}, "inc_speed": 2.0, "auto_hide": true},
 	"Energy": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "mp_energy.png", "-1": "mp_energy.png", "0": "mp_energy.png"}, "inc_speed": 2.0, "auto_hide": true},
 	"Rage": {"bg": "hp_black_small.png", "mid": "hp_yellow_small.png", "fg": {"1": "mp_rage.png", "-1": "mp_rage.png", "0": "mp_rage.png"}, "inc_speed": 2.0, "auto_hide": true},
 	"Shield": {"bg": "hp_shield_bg.png", "mid": "hp_yellow_shield.png", "fg": {"1": "hp_shield.png", "-1": "hp_shield.png", "0": "hp_shield.png"}, "inc_speed": 1.0, "auto_hide": true},
-	"ShieldBoss": {"bg": "guild/guildraid_hpbar_boss_shield_bg.png", "mid": "guild/guildraid_hpbar_transition_shield.png", "fg": {"1": "guild/guildraid_hpbar_boss_shield.png", "-1": "guild/guildraid_hpbar_boss_shield.png", "0": "guild/guildraid_hpbar_boss_shield.png"}, "inc_speed": 0.5, "auto_hide": false},
 }
 
 var _unit: Variant = null
@@ -136,7 +136,7 @@ func _get_value() -> float:
 		return float(_unit.hp)
 	if _type == "Mana" or _type == "Energy" or _type == "Rage":
 		return float(_unit.mp)
-	var total: float = 0.0   # Shield/ShieldBoss：累加 buff.shield（源 :568-572）
+	var total: float = 0.0   # Shield：累加 buff.shield（源 :568-572）
 	for buff in _unit.buff_list:
 		var sv: Variant = buff.get("shield")
 		if sv != null:
@@ -149,11 +149,6 @@ func _get_value_max() -> float:
 		return float(_unit.attribs.get("HP", 1.0))
 	if _type == "Mana" or _type == "Energy" or _type == "Rage":
 		return float(_unit.attribs.get("MP", 1.0))
-	if _type == "ShieldBoss":
-		var ms: Variant = _unit.get("max_shield")
-		if ms != null:
-			return float(ms)
-		return float(_unit.attribs.get("HP", 1.0))
 	# Shield：value 涨则 max 跟涨，value==0 则 max=0（源 :575-582）
 	if _value > _value_max:
 		_value_max = _value

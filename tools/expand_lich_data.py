@@ -233,6 +233,7 @@ def main() -> None:
     inject_player_unlock()
     inject_boss_skills()
     inject_boss_units()
+    inject_boss_unit_ranks()
     inject_boss_puppets()
     inject_boss_anim_tables()
     inject_boss_auras()
@@ -268,18 +269,35 @@ def inject_boss_units() -> None:
         row["Display Name"] = f"Unit.hero.alias.{tid}"
         row["Puppet"] = puppet + ".cha"   # Puppet 表键格式带 .cha（unit_sprite: Unit.Puppet→Puppet 表→Resource）
         row["Unit Type"] = "Monster"   # Boss 专用：不进抽卡/GM 英雄池
+        row["Portrait"] = f"UI/HERO/{puppet}.jpg"   # 换色头像（recolor_lich_portraits.py 产物，2026-10-10）
+        # Boss Portrait（战斗大血条 icon，battle_big_hp_bar boss_icon_name 链；源公会 Boss
+        # 用 guild/boss/boss_avatar_*.png 同字段）同指换色头像
+        row["Boss Portrait"] = f"UI/HERO/{puppet}.jpg"
+        row["HP Layers"] = 3   # 多血段大血条（battle_scene hp_layer!=0 才建条+icon；模板英雄=0 无条）
         data[str(tid)] = row
-    # 存量校正：首版注入漏 .cha 后缀致战斗 puppet 解析失败回落占位图（2026-10-09）
-    fixed = [tid for tid, _t, puppet, _zh in _LICH_BOSS_UNITS
-             if str(tid) in data and data[str(tid)].get("Puppet") != puppet + ".cha"]
+    # 存量校正：首版注入漏 .cha 后缀致战斗 puppet 解析失败回落占位图（2026-10-09）；
+    # Portrait/Boss Portrait 原指模板原图，2026-10-10 换色头像落地后指向自有图
+    # （UI 头像与战斗形象一致；Boss Portrait 走战斗大血条 icon 链）
+    fixed_puppet = fixed_portrait = 0
     for tid, _t, puppet, _zh in _LICH_BOSS_UNITS:
-        if str(tid) in data:
+        if str(tid) not in data:
+            continue
+        if data[str(tid)].get("Puppet") != puppet + ".cha":
             data[str(tid)]["Puppet"] = puppet + ".cha"
-    if new_units or fixed:
+            fixed_puppet += 1
+        portrait = f"UI/HERO/{puppet}.jpg"
+        if (data[str(tid)].get("Portrait") != portrait or data[str(tid)].get("Boss Portrait") != portrait
+                or int(data[str(tid)].get("HP Layers", 0)) != 3):
+            data[str(tid)]["Portrait"] = portrait
+            data[str(tid)]["Boss Portrait"] = portrait
+            data[str(tid)]["HP Layers"] = 3
+            fixed_portrait += 1
+    if new_units or fixed_puppet or fixed_portrait:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.write("\n")
-    print(f"Unit.json: ch203 换皮新角色 {len(_LICH_BOSS_UNITS) - len(new_units)} 已在 / +{len(new_units)} 新增 / .cha 校正 {len(fixed)}")
+    print(f"Unit.json: ch203 换皮新角色 {len(_LICH_BOSS_UNITS) - len(new_units)} 已在 / +{len(new_units)} 新增"
+          f" / .cha 校正 {fixed_puppet} / Portrait 校正 {fixed_portrait}")
     # LSTR 名字键
     lp = os.path.join(DATA_DIR, "LSTR_zh-CN.json")
     with open(lp, encoding="utf-8") as f:
@@ -352,6 +370,29 @@ def inject_boss_anim_tables() -> None:
                 json.dump(data, f, ensure_ascii=False, indent=2)
                 f.write("\n")
         print(f"{table}.json: 换皮时序条目 {len(res_map) - added} 已在 / +{added} 新增（照模板复制）")
+
+
+def inject_boss_unit_ranks() -> None:
+    # UnitRank 表：换皮 Boss 照模板英雄整块深拷贝（12 rank 档 E.HP/E.AD 等战斗修正）。
+    # 缺条目时 rebuild 的 rankInfo 插值恒 0——Boss 只有 Unit 基础值+三维成长，
+    # 80 级实测 AD 仅为同波小怪 23%（2026-10-10「Boss 比小怪还弱」根修一）。
+    path = os.path.join(DATA_DIR, "UnitRank.json")
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    added = 0
+    for tid, tpl_tid, _p, _zh in _LICH_BOSS_UNITS:
+        if str(tid) in data:
+            continue
+        tpl_key = str(tpl_tid)
+        if tpl_key not in data:
+            raise SystemExit(f"UnitRank.json 缺模板条目 {tpl_key}，中止（防静默漏拷）")
+        data[str(tid)] = copy.deepcopy(data[tpl_key])
+        added += 1
+    if added:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+    print(f"UnitRank.json: 换皮 Boss rank 表 {len(_LICH_BOSS_UNITS) - added} 已在 / +{added} 新增（照模板复制）")
 
 
 if __name__ == "__main__":

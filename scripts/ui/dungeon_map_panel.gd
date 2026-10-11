@@ -275,7 +275,7 @@ func _open_degree_popup(idx: int) -> void:
 	_close_degree_popup()
 	var boss: Dictionary = bosses[idx - 1]
 	var popup: DungeonDegreePopup = DegreePopup.new("dungeonDegree", {})
-	popup.setup_popup(idx, String(boss.get("name", "")), boss.get("difficulties", []), player.team_level)
+	popup.setup_popup(idx, player.cm.get_lstr(String(boss.get("name", ""))), boss.get("difficulties", []), player.team_level)   # name 是 LSTR 键走翻译（2026-10-10）
 	popup.degree_selected.connect(_on_degree_selected)
 	popup.close_requested.connect(_on_degree_close)
 	popup.show_window(self)

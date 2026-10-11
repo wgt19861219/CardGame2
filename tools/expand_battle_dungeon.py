@@ -53,7 +53,9 @@ DUNGEON_BOSSES = [
     # 项目新增 ch203 冰封王座三部曲（2026-10-08 设计方案；Boss 形象复用英雄 Unit，
     # 照源先例——50021 克苏恩即用痛苦女王 7）
     # 毒蛇神殿（海洋主题，小怪：小娜迦13/美杜莎16/潮汐15；Boss：大鱼人14=深水领主
-    #   卡拉瑟雷斯/潮汐15=踏潮者/小娜迦13=瓦丝琪）
+    #   卡拉瑟雷斯/潮汐15=踏潮者/小娜迦13=瓦丝琪）。战斗等级照源 dungeon 族统一 80
+    #   （曾试 112-116=Monster Level——112 级小怪把用户百级队团灭在 wave1，2026-10-10
+    #   回滚；ch203 Boss 强化走 expand_lich_data inject_boss_unit_ranks 的 UnitRank 注入）
     {"id": 50022, "bg": "battle_bg/bbg_spring_lair.jpg",   "boss": 90002, "m": [13, 16, 15], "size": 160},
     {"id": 50023, "bg": "battle_bg/bbg_spring_lair.jpg",   "boss": 90003, "m": [13, 16, 14], "size": 160},
     {"id": 50024, "bg": "battle_bg/bbg_spring_lair.jpg",   "boss": 90004, "m": [14, 16, 15], "size": 200},  # 卷尾瓦丝琪

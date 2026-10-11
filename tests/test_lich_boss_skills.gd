@@ -156,6 +156,41 @@ func test_boss_puppet_chain_resolves() -> void:
 			"%s Resource=%s 目录存在" % [puppet_key, res])
 
 
+# 2026-10-10 换色头像守卫：Unit.Portrait 指向自有换色头像（recolor_lich_portraits.py
+# 产物，hue 分箱 LUT 照模板头像换色）且文件存在——旧值指模板原图，UI 头像与战斗内
+# 换色形象不一致（readhero_icon 链路 Unit.Portrait→assets/ui/HERO/<name>.jpg）。
+func test_boss_portrait_reclocked() -> void:
+	var unit: Dictionary = cm.get_raw_table(&"Unit")
+	for tid in range(90001, 90010):
+		var row: Dictionary = unit.get(str(tid), {})
+		var expected: String = "UI/HERO/" + String(row.get("Name", "")) + ".jpg"
+		var portrait: String = String(row.get("Portrait", ""))
+		assert_eq(portrait, expected, "单位 %d Portrait 指自有换色头像（实际 %s）" % [tid, portrait])
+		var res_path: String = "res://assets/ui/HERO/" + String(row.get("Name", "")) + ".jpg"
+		assert_true(FileAccess.file_exists(res_path), "头像文件存在 %s" % res_path)
+
+
+# 大血条 icon 链测试随组件退役删除（2026-10-10 用户拍板放弃血条）；Unit.Boss Portrait/
+# HP Layers 数据字段保留留档（无消费者，未来恢复血条直接恢复组件）。
+
+
+# 2026-10-10 次数配置脱节根修守卫：计次键=50000+sid%1000（每 Boss base 键）与组键
+# （ActStageGroupDungeon 50008-50010）不相交——旧数据组键恰=首关 sid 掩盖脱节，ch203
+# 组配置（DailyLimit/BuyCost）直查恒空全落默认值（用户实测"次数已用完"后发现）。
+# 修=_dungeon_group_cfg 键直查不到时反查 Stages 含该 Boss 的组。
+func test_dungeon_group_cfg_resolves_for_bosses() -> void:
+	# 旧数据键直查仍命中（50001 组首关 50001）
+	var legacy: Dictionary = StageDungeonLogic._dungeon_group_cfg(cm, 50001)
+	assert_eq(int(legacy.get("DailyLimit", -1)), 2, "旧组 50001 键直查命中（DailyLimit=2）")
+	# ch203 每 Boss 反查到所属组（50022→50008 毒蛇神殿 DailyLimit=1）
+	for pair in [[50022, 1], [50025, 1], [50028, 1]]:
+		var base_id: int = pair[0]
+		var cfg: Dictionary = StageDungeonLogic._dungeon_group_cfg(cm, base_id)
+		assert_eq(int(cfg.get("DailyLimit", -1)), pair[1], "Boss %d 反查到组配置 DailyLimit" % base_id)
+	# 无归属键落空（走默认限额兜底）
+	assert_true(StageDungeonLogic._dungeon_group_cfg(cm, 59999).is_empty(), "无归属键返回空（默认限额兜底）")
+
+
 # FcaAnimation 加载全部换皮角色（照 verify_angel_load.gd 范式：atlas+骨骼+动作表）。
 const LICH_PUPPETS := [
 	"LichKing", "Karathress", "Tidewalker", "LadyVashj", "RageWinter",
@@ -206,3 +241,49 @@ func test_boss_anim_tables_cover_skills() -> void:
 				var dur: float = float(res_dur.get(anim, {}).get("Duration", 0.0))
 				assert_gt(dur, 0.0,
 					"关 %d 组 %d 动画 %s Duration>0（0 会卡动作完成回调）" % [sid, int(gid), anim])
+
+
+# === 数值守卫（2026-10-10「Boss 比小怪还弱」根修）===
+# 根因：UnitRank 无 9000x 条目 → rebuild rank 修正恒 0，Boss 只有模板英雄基础值+三维
+# 成长（80 级实测 AD 仅为同波小怪 23%）。修=inject_boss_unit_ranks 照模板深拷贝；
+# 战斗等级保持源 dungeon 族统一 80（112-116 方案实机团灭用户百级队后回滚）。
+
+func test_boss_unit_rank_present() -> void:
+	var ur: Dictionary = cm.get_raw_table(&"UnitRank")
+	for tid in range(90001, 90010):
+		var row: Dictionary = ur.get(str(tid), {})
+		assert_false(row.is_empty(), "UnitRank 含 %d（rebuild rank 修正非 0 的前提）" % tid)
+		assert_gt(float(row.get("12", {}).get("E.HP", 0)), 0.0, "%d rank12 E.HP>0" % tid)
+		assert_gt(float(row.get("12", {}).get("E.AD", 0)), 0.0, "%d rank12 E.AD>0" % tid)
+
+
+# ch203 战斗等级守卫：全怪槽 Level=80——照源 dungeon 族（50001-50021）统一范式。
+# 曾按 Monster Level(112-116) 配——112 级小怪把用户百级队团灭在 wave1（2026-10-10
+# 实机团灭后回滚）；Boss 强化改由 UnitRank 注入承担（test_boss_stronger_than_wave_mob）。
+func test_battle_levels_source_parity() -> void:
+	var btl: Dictionary = cm.get_raw_table(&"Battle")
+	for sid in BOSS_UNIT_BY_STAGE:
+		for wk in ["1", "2", "3"]:
+			var w: Dictionary = btl.get(str(sid), {}).get(wk, {})
+			for i in range(1, 6):
+				if int(w.get("Monster %d ID" % i, 0)) > 0:
+					assert_eq(int(w.get("Level %d" % i, 0)), 80,
+						"关 %d wave%s 槽 %d 等级=80（源 dungeon 族统一）" % [sid, wk, i])
+
+
+# 引擎级强度对比：50022 wave3 真实配置——Boss 90002（80 级，hp_mod 40/dps_mod 1.8，
+# UnitRank 注入后 rank 修正就位）vs 同波小怪 13（80 级，hp_mod 20/dps_mod 1.2）。
+# 断言总血量与小号输出伤害稳超（80 级实测 HP 2.7×/输出 1.2×）。
+func test_boss_stronger_than_wave_mob() -> void:
+	var eng := BattleEngine.new()
+	var boss := BattleUnit.new({"_tid": 90002, "_level": 80, "_stars": 1}, BattleEngine.CAMP_ENEMY,
+		{"is_monster": true, "is_boss": true, "estimate_rank": true, "estimate_skill": true,
+		 "hp_mod": 40.0, "dps_mod": 1.8}, cm, eng, {}, lib)
+	var mob := BattleUnit.new({"_tid": 13, "_level": 80, "_stars": 1}, BattleEngine.CAMP_ENEMY,
+		{"is_monster": true, "estimate_rank": true, "estimate_skill": true,
+		 "hp_mod": 20.0, "dps_mod": 1.2}, cm, eng, {}, lib)
+	assert_gt(int(boss.attribs.HP), int(mob.attribs.HP) * 3 / 2,
+		"Boss 总血量(含 hp_mod 40) > 小怪(含 20)×1.5（实际 %d vs %d）" % [int(boss.attribs.HP), int(mob.attribs.HP)])
+	assert_gt(float(boss.attribs.AD) * 1.8, float(mob.attribs.AD) * 1.2,
+		"Boss 输出(AD×dps_mod 1.8) > 小怪(AD×1.2)（实际 %.0f vs %.0f）" % [
+			float(boss.attribs.AD) * 1.8, float(mob.attribs.AD) * 1.2])

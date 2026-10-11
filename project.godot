@@ -13,8 +13,8 @@ config_version=5
 config/name="CardGame2"
 config/description="Axmol/Lua 卡牌手游 Godot 全新重制（单机版）"
 run/main_scene="res://scenes/main_menu/loading_scene.tscn"
-config/features=PackedStringArray("4.7")
 config/quit_on_go_back=false
+config/features=PackedStringArray("4.7")
 
 [autoload]
 
@@ -34,7 +34,6 @@ window/size/viewport_height=480
 window/size/window_width_override=1600
 window/size/window_height_override=960
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
 [editor_plugins]
 
