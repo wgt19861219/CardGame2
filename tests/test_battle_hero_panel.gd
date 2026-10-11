@@ -271,3 +271,46 @@ func test_panel_geometry_source_translated() -> void:
 		var star: Sprite2D = panel.portrait.stars[0] as Sprite2D
 		assert_almost_eq(star.scale.x, 1.0 / 1.28125, 0.001, "HUD 星 ÷CS")
 	panel.queue_free()
+
+
+# ── cast 光圈清理生命周期（2026-10-11 "Lambda capture was freed" 修复）──
+# 旧实现：清理回调捕获裸节点指针 n + SceneTreeTimer（不随 panel 死）。1s 内二次施法覆盖
+# _skill_cast_eff → 旧 BattleEffect 引用归零 PREDELETE 旧节点 → timer 到期打出
+# "Lambda capture at index 0 was freed"；panel 释放后同理（self 也 freed）。
+# 新实现：绑定 panel 的 Tween（panel 死 tween 死，回调不触发）+ 回调捕获 eff（Variant 持
+# RefCounted 引用保活）→ 每个 cast 光圈独立活满各自 1s。
+
+func _cast_effect_nodes(panel: BattleHeroPanel) -> Array:
+	var nodes: Array = []
+	for child in panel.frame_btn.get_children():
+		if child.get_script() != null:
+			nodes.append(child)
+	return nodes
+
+
+# 二次施法不得闪删首个 cast 光圈（每个光圈独立 1s 寿命，非共享单引用）。
+# panel 须入树（is_inside_tree 才创建清理 tween；不入树则回调分支不可达，测不出回归）。
+func test_cast_effect_survives_recast_within_delay() -> void:
+	var u := MockUnit.new()
+	var panel := _make_panel(u)
+	add_child_autofree(panel)
+	panel._play_skill_cast_effect()
+	var first_nodes: Array = _cast_effect_nodes(panel)
+	assert_eq(first_nodes.size(), 1, "首次施法应有 1 个 cast 光圈")
+	var first: Node = first_nodes[0] as Node
+	panel._play_skill_cast_effect()   # 1s 内二次施法（覆盖 _skill_cast_eff）
+	assert_true(is_instance_valid(first) and not first.is_queued_for_deletion(),
+		"二次施法不应 PREDELETE 首个光圈（引用由清理回调持有到各自到期）")
+	assert_eq(_cast_effect_nodes(panel).size(), 2, "二次施法后应有 2 个独立光圈")
+
+
+# cast 光圈满 CAST_CLEANUP_DELAY 后由 tween 回收节点并清包装引用。
+func test_cast_effect_cleanup_after_delay() -> void:
+	var u := MockUnit.new()
+	var panel := _make_panel(u)
+	add_child_autofree(panel)
+	panel._play_skill_cast_effect()
+	var first: Node = _cast_effect_nodes(panel)[0] as Node
+	await wait_seconds(panel.CAST_CLEANUP_DELAY + 0.2)
+	assert_false(is_instance_valid(first), "光圈节点到期应已释放")
+	assert_null(panel.get("_skill_cast_eff"), "包装引用到期应清空")

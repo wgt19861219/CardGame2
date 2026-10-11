@@ -7,7 +7,6 @@ extends Node2D
 
 const BattleViewCoords = preload("res://scripts/ui/battle_view_coords.gd")
 const BattleFloatingBar = preload("res://scripts/view/battle/battle_floating_bar.gd")
-const BattleBigHpBar = preload("res://scripts/view/battle/battle_big_hp_bar.gd")
 const BattleSpeedButton = preload("res://scripts/view/battle/battle_speed_button.gd")
 const BattlePauseLayer = preload("res://scripts/view/battle/battle_pause_layer.gd")
 const BattleTimer = preload("res://scripts/view/battle/battle_timer.gd")
@@ -38,8 +37,6 @@ const MAIN_SCENE_PATH: String = "res://scenes/main_menu/main_scene.tscn"        
 const ExcavateBattle = preload("res://scripts/systems/excavate_battle.gd")
 const LadderBattle = preload("res://scripts/systems/ladder_battle.gd")
 const MAX_TICKS: int = 6000  # 防死循环（≥ time_limit 90s×fps 60=5400，覆盖 engine 自然 timeout）
-const BIG_HP_LENGTH: float = 397.0  # 大血条长度（源 _calculate_big_hp_length 常量内联）
-const BIG_HP_POS: Vector2 = Vector2(375.0, 40.0)  # to_godot(375,440)=(375,480-440)，Boss 血条 HUD 原生坐标（800×480 直译）
 # 暂停键源直译：createButtonWithMask÷CS 显示 54.6×53.9，中心(757,440)→Godot 左上；旧(710,20)偏位+未÷CS（2026-08-28 战斗域批次修）。
 const RETURN_BTN_POS: Vector2 = Vector2(729.7, 13.1)
 
@@ -155,8 +152,9 @@ func reset_state() -> void:
 	if engine != null:
 		_create_heroes_panel()
 		for unit in engine.unit_list:
-			if int(unit.hp_layer) != 0:
-				add_big_blood_panel(unit)
+			# Boss 多血段大血条已退役（2026-10-10 用户拍板「放弃血条，太难看了」）——
+			# 两轮修复（段降排空提速+填充条 bg 中心原点坐标换算）后观感仍不合格，整体移除；
+			# Boss 血量与普通单位一致走头顶 HpBar。组件/数据链（Unit.HP Layers/Boss Portrait）留档。
 			if int(unit.camp) == BattleEngine.CAMP_PLAYER and bool(unit.is_hero()):
 				add_hero_panel(unit)
 	_create_speed_button()
@@ -381,10 +379,6 @@ func _advance_ui_list(dt: float) -> void:
 			if ui is Node:
 				ui.queue_free()
 	ui_list.resize(n)
-
-
-func add_big_blood_panel(unit: Variant) -> void:
-	BattleHudAssembler.add_big_blood_panel(self, unit)
 
 
 # 初始档同步当前 speed_state（源从 CCUserDefault 持久化，单机化默认 1）。

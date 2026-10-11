@@ -7195,7 +7195,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.STRENGTH",
     "HP": 173,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_42.png",
     "ID": 90001,
@@ -7216,7 +7216,7 @@
     "Name": "LichKing",
     "Narrative": "UNIT.PALADINS_AND_DEATH_KNIGHTS_IN_FACT_MAKES_NO_DIFFERENCE",
     "Period Group": 0,
-    "Portrait": "UI/HERO/LOA.jpg",
+    "Portrait": "UI/HERO/LichKing.jpg",
     "Position Type": "UNIT.FRONT_ROW",
     "Puppet": "LichKing.cha",
     "Script": "battle/heroes/LOA",
@@ -7228,7 +7228,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_LOA_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_LOA_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_LOA_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/LichKing.jpg"
   },
   "90002": {
     "+AGI1": 1.9,
@@ -7274,7 +7275,7 @@
     },
     "Hero Type": "HERO_EQUIP.STRENGTH",
     "HP": 171,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_14.png",
     "ID": 90002,
@@ -7295,7 +7296,7 @@
     "Name": "Karathress",
     "Narrative": "UNIT.IN_FACT_IM_THE_SAME_SPECIES_WITH_MERMAID",
     "Period Group": 0,
-    "Portrait": "UI/HERO/SG.jpg",
+    "Portrait": "UI/HERO/Karathress.jpg",
     "Portrait Switch": "UI/HERO/SwitchSG.jpg",
     "Position Type": "UNIT.FRONT_ROW",
     "Puppet": "Karathress.cha",
@@ -7309,7 +7310,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_SG_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_SG_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_SG_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/Karathress.jpg"
   },
   "90003": {
     "+AGI1": 1.5,
@@ -7352,7 +7354,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.STRENGTH",
     "HP": 172,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_15.png",
     "ID": 90003,
@@ -7373,7 +7375,7 @@
     "Name": "Tidewalker",
     "Narrative": "UNIT.I_LIKE_TO_MAKE_ALL_ENEMIES_FLY",
     "Period Group": 0,
-    "Portrait": "UI/HERO/TH.jpg",
+    "Portrait": "UI/HERO/Tidewalker.jpg",
     "Position Type": "UNIT.FRONT_ROW",
     "Puppet": "Tidewalker.cha",
     "STR": 19,
@@ -7384,7 +7386,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_TH_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_TH_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_TH_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/Tidewalker.jpg"
   },
   "90004": {
     "+AGI1": 2.8,
@@ -7430,7 +7433,7 @@
     },
     "Hero Type": "HERO_EQUIP.AGILITY",
     "HP": 171,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_13.png",
     "ID": 90004,
@@ -7451,7 +7454,7 @@
     "Name": "LadyVashj",
     "Narrative": "UNIT.YOU_LISTEN_TO_MY_CONCERT",
     "Period Group": 0,
-    "Portrait": "UI/HERO/Naga.jpg",
+    "Portrait": "UI/HERO/LadyVashj.jpg",
     "Portrait Switch": "UI/HERO/SwitchNaga.jpg",
     "Position Type": "UNIT.FRONT_ROW",
     "Puppet": "LadyVashj.cha",
@@ -7466,7 +7469,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_Naga_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_Naga_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_Naga_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/LadyVashj.jpg"
   },
   "90005": {
     "+AGI1": 2,
@@ -7509,7 +7513,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.INTELLIGENCE",
     "HP": 168,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_35.png",
     "ID": 90005,
@@ -7530,7 +7534,7 @@
     "Name": "RageWinter",
     "Narrative": "UNIT.IN_THE_LONG_RIVER_OF_ETERNAL_LIFE_GENDER_IS_OBVIOUSLY_JUST_A_DECORATION__DO_NOT_CARE_ABOUT_THESE_DECORATIVE_DETAILS",
     "Period Group": 0,
-    "Portrait": "UI/HERO/Lich.jpg",
+    "Portrait": "UI/HERO/RageWinter.jpg",
     "Position Type": "UNIT.MIDDLE_ROW",
     "Puppet": "RageWinter.cha",
     "Script": "battle/heroes/Lich",
@@ -7542,7 +7546,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_Lich_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_Lich_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_Lich_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/RageWinter.jpg"
   },
   "90006": {
     "+AGI1": 1.5,
@@ -7585,7 +7590,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.INTELLIGENCE",
     "HP": 166,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_6.png",
     "ID": 90006,
@@ -7606,7 +7611,7 @@
     "Name": "Anetheron",
     "Narrative": "UNIT.YOU_LOOK_LIKE_GOOD_FOOD",
     "Period Group": 0,
-    "Portrait": "UI/HERO/Lion.jpg",
+    "Portrait": "UI/HERO/Anetheron.jpg",
     "Position Type": "UNIT.MIDDLE_ROW",
     "Puppet": "Anetheron.cha",
     "Script": "battle/heroes/Lion",
@@ -7619,7 +7624,8 @@
     "Voice Ready": "sound_menu/heroes_voice/voice_Lion_Ready.mp3",
     "Voice ult": "sound_menu/heroes_voice/voice_Lion_ult.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_Lion_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/Anetheron.jpg"
   },
   "90007": {
     "+AGI1": 3.2,
@@ -7662,7 +7668,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.AGILITY",
     "HP": 166,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_47.png",
     "ID": 90007,
@@ -7683,7 +7689,7 @@
     "Name": "Archimonde",
     "Narrative": "UNIT.I_WANT_TO_MAKE_FIVE",
     "Period Group": 0,
-    "Portrait": "UI/HERO/TB.jpg",
+    "Portrait": "UI/HERO/Archimonde.jpg",
     "Position Type": "UNIT.FRONT_ROW",
     "Puppet": "Archimonde.cha",
     "Script": "battle/heroes/TB",
@@ -7693,7 +7699,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_TB_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_TB_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_TB_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/Archimonde.jpg"
   },
   "90008": {
     "+AGI1": 2.5,
@@ -7736,7 +7743,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.AGILITY",
     "HP": 170,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_37.png",
     "ID": 90008,
@@ -7756,7 +7763,7 @@
     "MRI": 0,
     "Name": "Sindragosa",
     "Period Group": 0,
-    "Portrait": "UI/HERO/Viper.jpg",
+    "Portrait": "UI/HERO/Sindragosa.jpg",
     "Position Type": "UNIT.REAR_ROW",
     "Puppet": "Sindragosa.cha",
     "STR": 18.1,
@@ -7767,7 +7774,8 @@
     "Voice Move": "sound_menu/heroes_voice/voice_Viper_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_Viper_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_Viper_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/Sindragosa.jpg"
   },
   "90009": {
     "+AGI1": 2,
@@ -7810,7 +7818,7 @@
     "Hero Tags": {},
     "Hero Type": "HERO_EQUIP.INTELLIGENCE",
     "HP": 166,
-    "HP Layers": 0,
+    "HP Layers": 3,
     "HPS": 0,
     "Icon Name": "UI/portrait/dialogue_portrait_7.png",
     "ID": 90009,
@@ -7831,7 +7839,7 @@
     "Name": "BloodQueen",
     "Narrative": "UNIT.CALL_ME_QUEEN",
     "Period Group": 0,
-    "Portrait": "UI/HERO/QOP.jpg",
+    "Portrait": "UI/HERO/BloodQueen.jpg",
     "Position Type": "UNIT.MIDDLE_ROW",
     "Puppet": "BloodQueen.cha",
     "Script": "battle/heroes/QOP",
@@ -7843,6 +7851,7 @@
     "Voice Move": "sound_menu/heroes_voice/voice_QOP_Walk.mp3",
     "Voice Ready": "sound_menu/heroes_voice/voice_QOP_Ready.mp3",
     "Voice Upgrade": "sound_menu/heroes_voice/voice_QOP_Cheer.mp3",
-    "Walk Speed": 120
+    "Walk Speed": 120,
+    "Boss Portrait": "UI/HERO/BloodQueen.jpg"
   }
 }

@@ -1,16 +1,34 @@
 extends GutTest
 # 修复轮（2026-08-20）+ 五轮（2026-09-19 双通道声音设置）测试：
 # 装配/双通道开关独立接线/图标随动/音量滑条初值与回调/裁剪守卫（通知系退役）。
-# toggle 副作用：翻转对应通道 + 停播（headless 下 BGM 无流守卫安全）；cfg 写入被
-# 测试环境守卫拦截不落真实文件——测试先记原值，测完直接赋回（不污染其他测试，
-# 先例 test_battle_pause_layer_sound）。
+# toggle 副作用：翻转对应通道 + 停播（headless 下 BGM 无流守卫安全）；内存赋回不污染
+# 其他测试；**整档备份恢复**（before/after_all）：守卫依赖 GODOT_TEST_MODE，手动裸跑
+# GUT（无 env）时守卫失效、toggle 落盘写脏用户真实 audio.cfg——2026-10-10 用户
+# "默认静音被去掉"实锤（照 battle.cfg CI 互抹三段式判例，与 test_battle_pause 同款）。
+
+const REAL_AUDIO_CFG := "user://audio.cfg"
 
 var cm: ConfigManager
+var _cfg_backup: String = ""
+var _cfg_existed: bool = false
 
 
 func before_all() -> void:
 	cm = ConfigManager.new()
 	cm.load_all()
+	_cfg_existed = FileAccess.file_exists(REAL_AUDIO_CFG)
+	if _cfg_existed:
+		_cfg_backup = FileAccess.get_file_as_string(REAL_AUDIO_CFG)
+
+
+func after_all() -> void:
+	if _cfg_existed:
+		var f := FileAccess.open(REAL_AUDIO_CFG, FileAccess.WRITE)
+		if f:
+			f.store_string(_cfg_backup)
+			f.close()
+	elif FileAccess.file_exists(REAL_AUDIO_CFG):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_AUDIO_CFG))
 
 
 func _make_panel() -> SetupPanel:

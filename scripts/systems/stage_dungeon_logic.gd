@@ -176,7 +176,7 @@ static func check_enter_dungeon(mgr: StageManager, stage_id: int, stage_group: i
 	var key_cost: int = int(cm.get_raw_table(&"StageDungeon").get(str(stage_id), {}).get("Key Cost", 0))
 	if key_cost > 0 and player.dungeonpoint < key_cost:
 		return "not_enough_keys"
-	var grp_cfg: Dictionary = cm.get_raw_table(&"ActStageGroupDungeon").get(str(stage_group), {})
+	var grp_cfg: Dictionary = _dungeon_group_cfg(cm, stage_group)
 	var daily_limit: int = int(grp_cfg.get("DailyLimit", DUNGEON_DAILY_LIMIT_DEFAULT))
 	var max_buy: int = int(grp_cfg.get("MaxBuyPerDay", DUNGEON_MAX_BUY_DEFAULT))
 	var used: int = int(mgr.act_times.get(stage_group, 0))
@@ -190,6 +190,25 @@ static func check_enter_dungeon(mgr: StageManager, stage_id: int, stage_group: i
 		player.dungeonpoint -= buy_cost
 	mgr.act_times[stage_group] = used + 1
 	return ""
+
+
+## 副本组配置读取（2026-10-10 根修）：计次键 = 50000+sid%1000（每 Boss base 键，源
+## 语义每日次数按 Boss 计），但组配置挂在 ActStageGroupDungeon 组键上——旧数据组键
+## 恰=首关 sid（50001 组首关 50001）键直查命中掩盖了脱节；ch203 组键 50008-50010 与
+## 任何 Boss 推导键不相交，直查恒空 → DailyLimit/BuyCost 全落默认值（用户实测
+## "次数已用完"后发现）。修：键直查不到时反查 Stages 含该 Boss 的组，仍无落空
+## （走默认限额）。
+static func _dungeon_group_cfg(cm: ConfigManager, base_id: int) -> Dictionary:
+	var table: Dictionary = cm.get_raw_table(&"ActStageGroupDungeon")
+	var direct: Dictionary = table.get(str(base_id), {})
+	if not direct.is_empty():
+		return direct
+	for group_key in table:
+		var stages: Array = (table[group_key] as Dictionary).get(&"Stages", [])
+		for s in stages:   # JSON 数字元素为 float，显式 int 化比较（跨类型 in 不可靠）
+			if int(s) == base_id:
+				return table[group_key]
+	return {}
 
 
 ## 返 {stars, exp, money, coins}。

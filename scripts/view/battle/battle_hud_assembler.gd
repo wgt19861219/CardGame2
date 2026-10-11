@@ -11,7 +11,6 @@ const BattleSpeedButton = preload("res://scripts/view/battle/battle_speed_button
 const BattleTimer = preload("res://scripts/view/battle/battle_timer.gd")
 const BattleNextButton = preload("res://scripts/view/battle/battle_next_button.gd")
 const BattleAutoButton = preload("res://scripts/view/battle/battle_auto_button.gd")
-const BattleBigHpBar = preload("res://scripts/view/battle/battle_big_hp_bar.gd")
 const BattleHeroPanel = preload("res://scripts/view/battle/battle_hero_panel.gd")
 const RETURN_BTN_TEX: String = "res://assets/ui/alpha/HVGA/pausebtn.png"
 const HERO_PANEL_MIN_SIZE: Vector2 = Vector2(120.0, 126.0)  # 卡逻辑区（源 width=120/height≈144 取桶+条包络 126；HBox 中心距 120=源排布公式）
@@ -81,14 +80,6 @@ static func create_auto_button(scene) -> void:
 	btn.toggled.connect(scene._on_auto_toggled)
 	scene.hud.add_to_bottom_right(btn)
 	scene.auto_btn = btn
-
-
-# Boss 多血段大血条装配（源 addBigBloodPanel :541-546）。挂 hud 固定 BIG_HP_POS，入 ui_list。
-static func add_big_blood_panel(scene, unit: Variant) -> void:
-	var panel: BattleBigHpBar = BattleBigHpBar.create(unit, scene.BIG_HP_LENGTH)
-	scene.hud.add_to_top_bar(panel)
-	panel.position = scene.BIG_HP_POS
-	scene.ui_list.append(panel)
 
 
 # heroes_panel 容器复用 hud.bottom_left（HBoxContainer 横向排列，修历史重叠）。

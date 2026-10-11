@@ -345,6 +345,16 @@ bash tools/ci/check.sh
 2. **CODE**：按对齐后的方案，以 Godot 原生方式实现（Theme、容器布局、.tscn 可视化设计等）。
 3. **VERIFY**：按「完成前强制检查」跑 CI 门禁，必要时附截图/实测值。
 
+### BUG 反馈来源（NAS 优先，2026-10-11 立）
+
+**用户指示：获取 BUG 反馈一律优先从 NAS 取**，不要只看本地知识库/项目文档的历史记录（本地可能滞后）。
+
+- **来源**：QQ 群机器人（NAS 上 koishi + napcat，插件 `~/qqbot/koishi/plugins/bug-tracker.js`）收集的群反馈，存 SQLite 库 `wgt@192.168.1.249:~/qqbot/koishi/data/koishi.db` 的 `bug_report` 表。
+- **取数**：NAS 无 sqlite3，先 `scp wgt@192.168.1.249:~/qqbot/koishi/data/koishi.db /tmp/koishi.db` 再本地 python 读（注意 Git Bash 的 `/tmp` 传给原生 python 要用 `cygpath -w` 转 Windows 路径，否则 sqlite3.connect 会静默新建空库）。
+- **表字段**：`id / guildId / userId / userName / content / status(待处理|已处理) / note / createdAt`，按 id 升序即提交顺序。
+- **对账**：反馈编号（#N）与项目验收记录、任务看板里的「群反馈 BUG」编号同体系；查完先对照 `验收记录-*.md` 与任务看板过滤已修复项，再列真正待办。
+- **修复闭环**：修完后在 NAS 库把对应条目标已处理（写回需连 NAS 操作 sqlite，或经群内 authority≥3 账号发「处理 N 备注」）。
+
 ### 知识库三步硬检查点（本项目专属，防遗漏）
 
 触发：审查报告 / 验收记录 / 架构决策 / 调试结论 等产出可执行结论的操作。纯研究、闲聊、一次性问答不触发。
@@ -371,6 +381,8 @@ bash tools/ci/check.sh
 ## 变更日志
 
 | 日期 | 变更 |
+|------|------|
+| 2026-10-11 | 新增「BUG 反馈来源（NAS 优先）」节：用户指示获取 BUG 反馈一律优先从 NAS koishi.db `bug_report` 表取（QQ 群机器人收集），含取数方式与对账规则 |
 |------|------|
 | 2026-07-22 | 初版，基于通用模板 `C:\Users\wgt\ZCodeProject\templates\AGENTS-template.md` 重组；断开与 CLAUDE.md 的软链，AGENTS.md 独立自包含 |
 | 2026-07-24 | 迁移阶段结束，进入 Godot 原生适配/优化阶段：重写「项目阶段」（原「项目铁律」）解除源码强制对齐，解禁设计类 skill，开发协议改为 DESIGN → CODE → VERIFY；红线与工程规范保留不变 |

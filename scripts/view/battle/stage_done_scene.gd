@@ -105,14 +105,27 @@ func setup(p_param: Dictionary, p_cm: ConfigManager) -> void:
 
 # PVP 最高排名奖励弹窗调度（源 playEnterAnim :829-847：bestRankReward>0 时 Timer 3s 后弹出）。
 # 弹窗本体见 stage_done_best_rank_popup.gd（动态层 procedural，控场景脚本 400 行红线拆出）。
+# 源 :837-840 弹窗前 mainLayer:setTouchEnabled(false) 3s 后随弹窗恢复——漏译致玩家秒点
+# 继续离开结算页、错过奖励弹窗（钻石已入账但「没看到」=群反馈 #13 观感根因之一），
+# 2026-10-11 补锁：对齐源语义锁三个交互按钮，弹窗出现时解锁。
 func _schedule_best_rank_reward() -> void:
 	if int(_param.get("best_rank_reward", 0)) <= 0:
 		return
-	get_tree().create_timer(3.0).timeout.connect(func() -> void:
-		if is_inside_tree():
-			var popup: Control = BestRankPopup.new(_param)
-			add_child(popup)
-			popup.popup())
+	for btn in [_replay_btn, _next_btn, _battle_statist_btn]:
+		if btn != null:
+			btn.disabled = true
+	# 用绑定 self 的 Tween 而非 SceneTreeTimer：场景被切走/释放时 tween 自动 kill、回调
+	# 不再触发（SceneTreeTimer 不随节点死，3s 后打 "Lambda capture was freed"——同
+	# hero_panel cast 光圈判例，2026-10-11 并行会话曾将本行登记为残余风险）。
+	var tw := create_tween()
+	tw.tween_interval(3.0)
+	tw.tween_callback(func() -> void:
+		for btn in [_replay_btn, _next_btn, _battle_statist_btn]:
+			if btn != null:
+				btn.disabled = false
+		var popup: Control = BestRankPopup.new(_param)
+		add_child(popup)
+		popup.popup())
 
 
 # UI 节点已全部固化进 stage_done_scene.tscn（2026-08-05 合并 content.tscn）。
