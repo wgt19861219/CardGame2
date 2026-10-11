@@ -26,7 +26,13 @@ const OPPONENT_RANK_BASE: int = 50
 const BOARD_SIZE: int = 20
 const REWARD_MIN: int = 10
 const REWARD_BASE: int = 100
-const BEST_RANK_DIAMOND: int = 20  # 刷新最高排名奖励（源服务端算法不可考，对齐 PVE DIAMOND_NORMAL 量级）
+# 最高排名奖励（源 down.proto end_battle._best_rank_reward 服务端下发，算法无源码；源 UI
+# stagedone pvpLayer 用 rmbicon 计价=钻石；源 pvp 规则文案「根据进步幅度而不同,每次至少
+# 获得1钻石」）。2026-10-11 二次拍板（群反馈 #13）：固定 20 钻 → 按进步幅度 = 每提升
+# BEST_RANK_PER_DIAMOND 名 1 钻、至少 1 钻、上限 BEST_RANK_DIAMOND_MAX；仅刷新历史最高
+# 才发（源文案「升至自己的历史最高排名时」一次性），未刷新为 0。View 凭 >0 追弹奖励窗。
+const BEST_RANK_PER_DIAMOND: int = 10
+const BEST_RANK_DIAMOND_MAX: int = 100
 const CLEAR_CD_COST: int = 50
 const BUY_COST_DEFAULT: int = 50
 const RECORDS_MAX: int = 20
@@ -299,10 +305,10 @@ func _cmd_end_battle(cmd: Variant, player: PlayerData, now: int) -> Dictionary:
 			pvp["highest_rank"] = pvp["rank"]
 		var reward: int = maxi(REWARD_MIN, REWARD_BASE - int(pvp["rank"]))
 		player.add_point("arenapoint", reward)
-		# 最高排名奖励（源 down.proto end_battle._best_rank_reward 服务端下发，算法无源码；源 UI
-		# stagedone pvpLayer 用 rmbicon 计价=钻石）：单机化拍板 = 刷新最高排名发 20 钻石
-		# （对齐 PVE 普通关 DIAMOND_NORMAL 量级）；未刷新为 0。View 凭 >0 追弹"最高排名"奖励窗。
-		var best_rank_reward: int = BEST_RANK_DIAMOND if int(pvp["highest_rank"]) < old_highest else 0
+		# 最高排名奖励按进步幅度（见常量区拍板注释）：rise = 刷新前历史最高 − 刷新后
+		#（名次数值越小越好，rise>0 即本次刷新最高）；每提升 10 名 1 钻，至少 1 钻，上限 100。
+		var rise: int = old_highest - int(pvp["highest_rank"])
+		var best_rank_reward: int = maxi(1, mini(rise / BEST_RANK_PER_DIAMOND, BEST_RANK_DIAMOND_MAX)) if rise > 0 else 0
 		if best_rank_reward > 0:
 			player.add_diamond(best_rank_reward)
 		_mark_dirty()

@@ -105,6 +105,10 @@
 - 测试文件必须 `test_` 前缀（GUT 默认只发现此前缀）
 - 新增/改测试后 `check.sh` 会自动 import；手动单跑 gut 前必须先 `--import`
 
+## BUG 反馈来源（NAS 优先，2026-10-11 立）
+
+**用户指示：获取 BUG 反馈一律优先从 NAS 取**。QQ 群机器人（NAS koishi + napcat，插件 `~/qqbot/koishi/plugins/bug-tracker.js`）收集群反馈到 `wgt@192.168.1.249:~/qqbot/koishi/data/koishi.db` 的 `bug_report` 表（`id/userName/content/status/note/createdAt`）。NAS 无 sqlite3：先 scp 到本地再用 python 读（Git Bash `/tmp` 传原生 python 需 `cygpath -w` 转 Windows 路径，否则 connect 静默新建空库）。编号与验收记录/任务看板同体系，取数后先对账过滤已修复项。
+
 ## 知识库三步硬检查点（本项目专属，防遗漏）
 
 触发：审查报告 / 验收记录 / 架构决策 / 调试结论 等产出可执行结论的操作（全局 AGENTS.md「重要操作必须文档化 + 待办化」的本项目落地）。纯研究、闲聊、一次性问答不触发。

@@ -13,7 +13,8 @@ func before_all() -> void:
 	player.apply_default_data()
 
 
-# _cmd_end_battle：胜利且刷新最高排名 → best_rank_reward=20 钻石（BEST_RANK_DIAMOND）+best_rank/cur_rank；
+# _cmd_end_battle：胜利且刷新最高排名 → best_rank_reward 按进步幅度（2026-10-11 二次
+# 拍板：每提升 10 名 1 钻、至少 1、上限 100；50→10 提升 40 名 = 4 钻）+best_rank/cur_rank；
 # 未刷新最高排名 → 0。
 func test_end_battle_best_rank_reward() -> void:
 	var lm := LadderManager.new()
@@ -23,14 +24,33 @@ func test_end_battle_best_rank_reward() -> void:
 	lm.pvp["last_oppo_rank"] = 10
 	var diamond_before: int = player.diamond
 	var r: Dictionary = lm.handle({"_end_battle": {"result": "victory"}}, player, cm, BattleRng.new(2), 0)["_end_battle"]
-	assert_eq(int(r["best_rank_reward"]), 20, "刷新最高排名 → 20 钻石（拍板=DIAMOND_NORMAL 量级）")
-	assert_eq(player.diamond - diamond_before, 20, "钻石入库")
+	assert_eq(int(r["best_rank_reward"]), 4, "刷新最高排名（50→10 提升 40 名）→ 40/10=4 钻石（按幅度拍板）")
+	assert_eq(player.diamond - diamond_before, 4, "钻石入库")
 	assert_eq(int(r["best_rank"]), 10, "best_rank=新最高排名")
 	assert_eq(int(r["rank"]), 10, "cur_rank=排名互换后")
 	# 再胜一次但排名不刷新（对手排名更高）→ best_rank_reward=0
 	lm.pvp["last_oppo_rank"] = 30
 	var r2: Dictionary = lm.handle({"_end_battle": {"result": "victory"}}, player, cm, BattleRng.new(3), 0)["_end_battle"]
 	assert_eq(int(r2["best_rank_reward"]), 0, "未刷新最高排名 → 0（不弹窗不发钻）")
+
+
+# 幅度边界（源 pvp 规则文案「根据进步幅度而不同,每次至少获得1钻石」）：
+# 提升 <10 名 → 至少 1 钻；幅度超上限 → 封顶 100。
+func test_end_battle_best_rank_reward_bounds() -> void:
+	var lm := LadderManager.new()
+	lm.handle({"_open_panel": true}, player, cm, BattleRng.new(1), 0)
+	# 小幅：100→95 提升 5 名 → max(5/10,1)=1 钻
+	lm.pvp["rank"] = 100
+	lm.pvp["highest_rank"] = 100
+	lm.pvp["last_oppo_rank"] = 95
+	var r1: Dictionary = lm.handle({"_end_battle": {"result": "victory"}}, player, cm, BattleRng.new(2), 0)["_end_battle"]
+	assert_eq(int(r1["best_rank_reward"]), 1, "提升 5 名（不足 10）→ 至少 1 钻（源文案保底）")
+	# 大幅：1001→1 提升 1000 名 → 1000/10=100 恰等于上限
+	lm.pvp["rank"] = 1001
+	lm.pvp["highest_rank"] = 1001
+	lm.pvp["last_oppo_rank"] = 1
+	var r2: Dictionary = lm.handle({"_end_battle": {"result": "victory"}}, player, cm, BattleRng.new(3), 0)["_end_battle"]
+	assert_eq(int(r2["best_rank_reward"]), 100, "提升 1000 名 → 1000/10=100（达上限不越界）")
 
 
 # stage_account arena 分支：sid=-1 胜利英雄经验=PlayerLevel[team_level]["Arena Hero Exp"]
