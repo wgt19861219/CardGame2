@@ -5,7 +5,8 @@ extends GutTest
 var cm: ConfigManager
 
 const ELITE_SID: int = 10001      # Stage 表精英关（Daily Limit=30，Vitality Cost=12）
-const NORMAL_SID: int = 1         # 普通关（Daily Limit=0 不计）
+const ELITE_NID: int = 1          # 精英次数键（源 elite2NormalStage=SID-10000，2026-10-12 口径统一）
+const NORMAL_SID: int = 5         # 普通关（Daily Limit=0 不计；不取 1 防与 ELITE_NID 同键撞断言）
 const TS_DAY1_NOON: int = 1800000000
 const TS_DAY2_NOON: int = TS_DAY1_NOON + 86400
 
@@ -20,18 +21,18 @@ func before_all() -> void:
 func test_record_counts_elite_only() -> void:
 	var pd := PlayerData.new(cm)
 	StageManager._record_stage_limit(pd, ELITE_SID, 1)
-	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 1, "精英关胜利 → 计 1 次")
+	assert_eq(int(pd.stage_limit.get(ELITE_NID, 0)), 1, "精英关胜利 → 计 1 次（写 nid 键，源 elite2NormalStage 口径）")
 	StageManager._record_stage_limit(pd, NORMAL_SID, 1)
 	assert_false(pd.stage_limit.has(NORMAL_SID), "普通关不计（Daily Limit=0）")
 	StageManager._record_stage_limit(null, ELITE_SID, 1)   # null player 防御不崩
-	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 1, "null player 不影响既有计数")
+	assert_eq(int(pd.stage_limit.get(ELITE_NID, 0)), 1, "null player 不影响既有计数")
 
 
 func test_record_accumulates() -> void:
 	var pd := PlayerData.new(cm)
 	StageManager._record_stage_limit(pd, ELITE_SID, 1)
 	StageManager._record_stage_limit(pd, ELITE_SID, 2)   # 扫荡 2 次合并计
-	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 3, "累加 1+2=3（累加器不封顶，放行由 UI 比对 Daily Limit）")
+	assert_eq(int(pd.stage_limit.get(ELITE_NID, 0)), 3, "累加 1+2=3（累加器不封顶，放行由 UI 比对 Daily Limit）")
 
 
 # ---- sweep 路径（真实调用链：扫荡 N 次 → stage_limit +N）----
@@ -43,27 +44,27 @@ func test_sweep_accumulates_elite_stage_limit() -> void:
 	pd.add_item(PlayerData.SWEEP_COIN_ID, 10)
 	var r: Dictionary = mgr.sweep(ELITE_SID, 2, BattleRng.new(1), pd)
 	assert_true(bool(r.get("ok", false)), "前置：扫荡成功")
-	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 2, "扫荡 2 次 → 计 2")
+	assert_eq(int(pd.stage_limit.get(ELITE_NID, 0)), 2, "扫荡 2 次 → 计 2（nid 键）")
 
 
 # ---- 跨日清零（PlayerData.check_stage_limit_daily_reset，面板打开时惰性触发）----
 
 func test_daily_reset_clears_limit_and_reset_times() -> void:
 	var pd := PlayerData.new(cm)
-	pd.stage_limit = {ELITE_SID: 3}
-	pd.stage_reset_times = {ELITE_SID: 2}
+	pd.stage_limit = {ELITE_NID: 3}
+	pd.stage_reset_times = {ELITE_NID: 2}
 	pd.check_stage_limit_daily_reset(TS_DAY1_NOON)
 	assert_true(pd.stage_limit.is_empty(), "跨日清 stage_limit")
 	assert_true(pd.stage_reset_times.is_empty(), "跨日清 stage_reset_times（重置梯度同日重置）")
-	pd.stage_limit = {ELITE_SID: 1}
+	pd.stage_limit = {ELITE_NID: 1}
 	pd.check_stage_limit_daily_reset(TS_DAY1_NOON + 3600)   # 同日
-	assert_eq(int(pd.stage_limit.get(ELITE_SID, 0)), 1, "同日不清")
+	assert_eq(int(pd.stage_limit.get(ELITE_NID, 0)), 1, "同日不清")
 	pd.check_stage_limit_daily_reset(TS_DAY2_NOON)
 	assert_true(pd.stage_limit.is_empty(), "次日再清")
 
 
 func test_stage_limit_roundtrip_serde() -> void:
 	var pd := PlayerData.new(cm)
-	pd.stage_limit = {ELITE_SID: 2}
+	pd.stage_limit = {ELITE_NID: 2}
 	var restored := PlayerData.from_dict(pd.to_dict(), cm)
-	assert_eq(int(restored.stage_limit.get(ELITE_SID, 0)), 2, "stage_limit 落盘回读")
+	assert_eq(int(restored.stage_limit.get(ELITE_NID, 0)), 2, "stage_limit 落盘回读")

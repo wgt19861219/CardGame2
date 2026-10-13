@@ -340,6 +340,7 @@
   "EQUIP.REEL": "Reel",
   "EQUIP.INTELLIGENCE_PENDANT_REEL": "Pendant of Intelligence Reel",
   "EQUIP.CAN_BE_SYNTHESIZED_INTELLIGENCE_PENDANT": "Craft material of Pendant of Kenaris",
+  "EQUIP.CAN_BE_SYNTHESIZED_S": "Can be synthesized into %s",
   "EQUIP.AGILITY_LACING_REELS": "Torc of Agility Reel",
   "EQUIP.CAN_BE_SYNTHESIZED_AGILE_LACE": "Craft material of Torc of Agility",
   "EQUIP.STRENGTH_WRIST_REEL": "Wrist of Strength Reel",

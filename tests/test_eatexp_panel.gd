@@ -634,3 +634,136 @@ func test_drag_scrolls_list() -> void:
 	assert_gt(sc.scroll_vertical, 0.0, "向上拖 60px → scroll_vertical 增（源 draglist 手势）")
 	panel.remove_window()
 	root.queue_free()
+
+
+# ── consumed 刷新链路（群反馈：经验奶酪吃到提示"已吃完"但背包格子残留旧快照）──
+# 源 package.lua:104-106 heroList.consumeAmount 回调的单机等价物：关闭 eatexp 时通知
+# equipboard/package 刷新；此前单机化丢此链路，吃完背包不刷新。
+
+# 吃 ≥1 颗后关窗 → consumed 触发一次。
+func test_consumed_signal_after_eat() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := EatexpPanel.new("eatexp", {})
+	panel.setup_panel(pill_id, cm, pd)
+	panel.show_window(root)
+	watch_signals(panel)
+	panel.do_eat_hero(inst_id)
+	panel.remove_window()
+	assert_signal_emit_count(panel, "consumed", 1, "吃 1 颗关窗 → consumed 1 次")
+	if is_instance_valid(root):
+		root.queue_free()
+
+
+# 未吃直接关窗 → 不触发（避免无谓刷新）。
+func test_no_consumed_signal_without_eat() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := EatexpPanel.new("eatexp", {})
+	panel.setup_panel(pill_id, cm, pd)
+	panel.show_window(root)
+	watch_signals(panel)
+	panel.remove_window()
+	assert_signal_emit_count(panel, "consumed", 0, "未吃不触发 consumed")
+	if is_instance_valid(root):
+		root.queue_free()
+
+
+# equipboard 链路：吃到 0 → used emit + 浮层关闭（源 consumeAmount :55 popout）。
+func test_eatexp_consumed_zero_closes_board_and_emits_used() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 1)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var cell: Dictionary = {"id": pill_id, "makeId": pill_id, "amount": 1, "category": "EQUIP.CONSUMABLES", "type": 1}
+	var board := EquipboardPanel.new("equipboard", {})
+	board.setup_panel(cell, cm, pd)
+	board.show_window(root)
+	var used_args: Array = []   # 手动记录：GUT assert_signal_emitted_with_parameters 对
+	board.used.connect(func(item_id: int) -> void: used_args.append(item_id))   # typed 信号取参路径有兼容问题
+	board._open_eatexp()   # consume 右按钮路径
+	var eatexp: EatexpPanel = null
+	for c in root.get_children():
+		if c is EatexpPanel:
+			eatexp = c
+			break
+	assert_not_null(eatexp, "equipboard 弹出 eatexp")
+	eatexp.do_eat_hero(inst_id)   # 吃到 0
+	eatexp.remove_window()
+	assert_eq(used_args, [pill_id], "吃完 → used emit 携带 item_id（package 重 classify）")
+	await get_tree().process_frame
+	assert_false(is_instance_valid(board), "数量 0 → equipboard 浮层关闭（源 popout）")
+	if is_instance_valid(root):
+		root.queue_free()
+
+
+# equipboard 链路：吃剩 >0 → 浮层存活 + 数量 Label 刷新（源 consumeAmount refreshAmount）。
+func test_eatexp_consumed_partial_updates_board_amount() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 3)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var cell: Dictionary = {"id": pill_id, "makeId": pill_id, "amount": 3, "category": "EQUIP.CONSUMABLES", "type": 1}
+	var board := EquipboardPanel.new("equipboard", {})
+	board.setup_panel(cell, cm, pd)
+	board.show_window(root)
+	board._open_eatexp()
+	var eatexp: EatexpPanel = null
+	for c in root.get_children():
+		if c is EatexpPanel:
+			eatexp = c
+			break
+	eatexp.do_eat_hero(inst_id)   # 3 → 2
+	eatexp.remove_window()
+	await get_tree().process_frame
+	assert_true(is_instance_valid(board), "吃剩 2 → equipboard 浮层保留（源 refreshAmount）")
+	if is_instance_valid(board):
+		var amt_lbl: Label = (board._frame.get_node("%AmountLabel") as Label)
+		assert_true(" 2 " in amt_lbl.text, "数量 Label 刷新为剩余 2：%s" % amt_lbl.text)
+		board.remove_window()
+	if is_instance_valid(root):
+		root.queue_free()
+
+
+# 端到端（群反馈 BUG 修复实证）：package → equipboard → eatexp 吃到 0 → used.emit →
+# _on_sold 重 classify → package grid 该 cell 消失（修复前：关闭 eatexp 后背包仍显示旧快照，
+# 再喂提示"已吃完"但格子残留）。
+func test_eatexp_zero_consumes_package_cell_end_to_end() -> void:
+	var pill_id: int = _find_exp_pill()
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	pd.add_item(pill_id, 1)
+	var inst_id: int = pd.hero_manager.add_hero(1)
+	var panel := PackagePanel.new("package", {})
+	panel.setup_panel(cm, pd)
+	panel.show_window(root)
+	assert_eq(panel._grid.get_child_count(), 1, "初始背包 1 格（奶酪）")
+	panel._on_cell_clicked({"id": pill_id, "makeId": pill_id, "amount": 1, "category": "EQUIP.CONSUMABLES", "type": 1})
+	assert_not_null(panel._equipboard, "点奶酪格 → equipboard 浮层")
+	(panel._equipboard as EquipboardPanel)._open_eatexp()   # 右按钮"使用"路径
+	var eatexp: EatexpPanel = null
+	for c in panel.get_children():   # eatexp 挂 equipboard.parent（=package）下
+		if c is EatexpPanel:
+			eatexp = c
+			break
+	assert_not_null(eatexp, "equipboard 弹出 eatexp")
+	eatexp.do_eat_hero(inst_id)   # 1 → 0
+	eatexp.remove_window()   # consumed → used.emit → package._on_sold 重刷
+	assert_eq(panel._grid.get_child_count(), 0, "吃完关闭 → 背包格子消失（0 数量不残留）")
+	await get_tree().process_frame
+	assert_false(is_instance_valid(panel._equipboard), "equipboard 浮层关闭（数量 0）")
+	panel.remove_window()
+	root.queue_free()

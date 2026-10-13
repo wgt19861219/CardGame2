@@ -169,12 +169,12 @@ func test_login_job_claim_in_window_and_once_per_day() -> void:
 	assert_false(bool(r3.get("ok", false)), "时段外领取被拒（新 TaskManager 实例模拟跨日重置不适用，本例同日）")
 
 
-func test_vitality_reward_caps_at_9999() -> void:
+func test_vitality_reward_caps_at_999() -> void:
 	var tm := TaskManager.new()
 	var pd := PlayerData.new(cm)
-	pd.vitality = 9950
+	pd.vitality = 995
 	tm.claim_job_reward(pd, LUNCH_JOB_ID, cm, LUNCH_START_MIN + 30)
-	assert_eq(pd.vitality, 9999, "体力奖励硬上限 9999")
+	assert_eq(pd.vitality, 999, "体力奖励硬上限 999（2026-10-12 上限统一）")
 
 
 # ── ⑧ 觉醒失败 reason（View Toast 依据）──
@@ -237,11 +237,11 @@ func test_tonic_pill_blocked_at_hard_cap() -> void:
 func test_tonic_pill_grants_partial_at_near_cap() -> void:
 	var pd := PlayerData.new(cm)
 	pd.add_item(289, 1)   # 奥尔良烤翅 +30
-	pd.vitality = 9990    # 差 9 到顶
+	pd.vitality = 990     # 差 9 到顶（999 统一上限口径）
 	var r: Dictionary = VitalityManager.use_tonic_pill(pd, 289, cm)
 	assert_true(bool(r["ok"]), "未满可使用")
 	assert_eq(int(r["gained"]), 9, "顶格截断实际获得 9")
-	assert_eq(pd.vitality, 9999, "体力顶格 9999")
+	assert_eq(pd.vitality, 999, "体力顶格 999")
 	assert_eq(int(pd.items.get(289, 0)), 0, "药已扣")
 
 

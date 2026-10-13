@@ -5,9 +5,14 @@ extends GutTest
 const BUTTON_KEYS: Array[String] = ["heroPackage", "package", "fragment", "task", "todoList"]
 
 
-func _make_panel() -> ShortcutPanel:
+const TEST_CFG: String = "user://shortcut_test.cfg"   # 测试档隔离真实 user://ui.cfg（2026-10-12 记忆式）
+
+
+func _make_panel(open_initial: bool = false) -> ShortcutPanel:
 	var panel := ShortcutPanel.new()
-	panel.setup_panel()
+	panel.cfg_path = TEST_CFG
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_CFG))   # 清档保 fallback 语义
+	panel.setup_panel(open_initial)
 	add_child(panel)
 	return panel
 
@@ -295,3 +300,42 @@ func test_hud_apply_visibility_refreshes_tags_guard() -> void:
 	body = body.substr(0, body.find("\nfunc "))
 	assert_true(body.find("refresh_tags()") != -1,
 		"_apply_visibility 含 refresh_tags() 调用（identity 流转/遮蔽解除重算快捷栏红点）")
+
+
+# ── 展开态记忆（2026-10-12 用户需求「默认展开，除非手动收起」：首玩默认展开+跨启动记忆）──
+
+# 首玩无记录 + fallback=true（hud_overlay main 传参）→ 默认展开。
+func test_first_run_defaults_open() -> void:
+	var panel := _make_panel(true)
+	assert_true(panel._is_open, "无记录时按 fallback 展开（main 首玩默认展开）")
+	panel.queue_free()
+
+
+# 手动收起后重建面板（跨启动等价）→ 记住收起。
+func test_manual_close_persists_across_instances() -> void:
+	var panel := _make_panel(true)
+	assert_true(panel._is_open, "首玩展开")
+	panel._toggle_open()   # 切换 → 收起（写档）
+	assert_false(panel._is_open, "手动收起")
+	panel.queue_free()
+	var panel2 := ShortcutPanel.new()
+	panel2.cfg_path = TEST_CFG   # 不清档——验证记忆（跨实例=跨启动等价）
+	panel2.setup_panel(true)
+	add_child(panel2)
+	assert_false(panel2._is_open, "重启后记住收起（不再强制默认展开）")
+	panel2.queue_free()
+
+
+# 手动展开后重建 → 记住展开。
+func test_manual_open_persists_across_instances() -> void:
+	var panel := _make_panel(false)   # fallback=false 但无记录
+	assert_false(panel._is_open, "fallback=false 首玩收起")
+	panel._toggle_open()   # 展开（写档 true）
+	assert_true(panel._is_open)
+	panel.queue_free()
+	var panel2 := ShortcutPanel.new()
+	panel2.cfg_path = TEST_CFG
+	panel2.setup_panel(false)   # fallback 不同也以记录优先
+	add_child(panel2)
+	assert_true(panel2._is_open, "记录优先于 fallback，记住展开")
+	panel2.queue_free()

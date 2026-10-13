@@ -254,7 +254,9 @@ func _fill_limit(row: Control, raw_sid: int, title: Label, elite: Label, is_elit
 		var limit: int = int(stage_table.get(str(raw_sid), {}).get("Daily Limit", 0))
 		if limit <= 0:
 			return
-		var lookup_sid: int = int(stage_table.get(str(raw_sid), {}).get("Stage Group", raw_sid)) if is_elite else raw_sid
+		# 键照源归一化（stonedetail.lua:391 s=elite2NormalStage(id)，非 Stage Group 表字段
+		# ——旧 Stage Group 口径系错译：10002 组 4 ≠ nid 2 致剩余次数恒满显示错位）。
+		var lookup_sid: int = StageResetData.elite_to_normal_stage(raw_sid) if is_elite else raw_sid
 		var used: int = int(pd.stage_limit.get(lookup_sid, 0))
 		var count: int = maxi(0, limit - used)
 		limit_lbl.text = "(%d/%d)" % [count, limit]

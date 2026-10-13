@@ -37,7 +37,7 @@ func test_buy_vitality_persistence() -> void:
 
 
 func test_buy_vitality_stockpile() -> void:
-	# 源 :1798 买体力上限 9999（允许囤积），区别于自然恢复上限 120
+	# 2026-10-12 上限统一 999（旧源 :1798 攒体 9999 口径退役）
 	var pd := PlayerData.new(cm)
 	pd.diamond = 100
 	pd.vitality = 100
@@ -79,3 +79,42 @@ func test_buy_vitality_save_hook() -> void:
 	var pd_no_hook := PlayerData.new(cm)   # 缺省 Callable（headless 无注入）
 	pd_no_hook.diamond = 100
 	assert_true(VitalityManager.buy(pd_no_hook), "缺省 hook 不崩且成功")
+
+
+# ── 999 上限口径（2026-10-12 用户指示：自然恢复上限与买/吃药攒体硬上限统一 999）──
+
+# 满 999 再买：拦截不扣钻（上限统一后新增场景，防白扣）。
+func test_buy_vitality_blocked_at_999() -> void:
+	var pd := PlayerData.new(cm)
+	pd.diamond = 100
+	pd.vitality = 999
+	assert_false(VitalityManager.buy(pd), "满 999 拦截购买")
+	assert_eq(pd.diamond, 100, "不扣钻")
+	assert_eq(pd.vitality, 999, "体力不变")
+
+
+# 买体力攒到 999 封顶（旧 9999 攒体口径退役）。
+func test_buy_vitality_clamps_to_999() -> void:
+	var pd := PlayerData.new(cm)
+	pd.diamond = 1000
+	pd.vitality = 950
+	assert_true(VitalityManager.buy(pd), "购买成功")
+	assert_eq(pd.vitality, 999, "950+120 clamp 到 999（旧口径 1070）")
+
+
+# 吃体力药同样 clamp 999（use_tonic_pill 复用 BUY_HARD_CAP）。
+func test_tonic_pill_clamps_to_999() -> void:
+	var pd := PlayerData.new(cm)
+	var tonic_id: int = 0
+	var raw: Dictionary = cm.get_raw_table("Equip")
+	for tid_str in raw:
+		if String(raw[tid_str].get("Category", "")) == "EQUIP.CONSUMABLES" \
+				and String(raw[tid_str].get("Consume Type", "")) == "EQUIP.TONIC_PILLS":
+			tonic_id = int(tid_str)
+			break
+	assert_gt(tonic_id, 0, "前置：存在体力药")
+	pd.add_item(tonic_id, 1)
+	pd.vitality = 990
+	var r: Dictionary = VitalityManager.use_tonic_pill(pd, tonic_id, cm)
+	assert_true(bool(r.get("ok", false)), "吃药成功")
+	assert_eq(pd.vitality, 999, "990+回复 clamp 到 999")

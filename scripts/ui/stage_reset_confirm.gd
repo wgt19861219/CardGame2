@@ -23,7 +23,10 @@ var _content: Control = null
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# set_anchors_and_offsets_preset（2026-10-12 根修）：_ready 时已入树，旧 set_anchors_preset
+	# 只设锚点保持 rect=(0,0)，offsets 被反算成 (0,0,-800,-480) → 根 size 恒 0：全屏 Shade
+	# 遮罩失效 + STOP 模态拦截失效（bg 绝对 offset 定位侥幸显示正常，掩盖了根塌缩）。
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截底层（模态，源 layer touchEnabled）
 	_content = CONTENT_SCENE.instantiate() as Control
 	add_child(_content)

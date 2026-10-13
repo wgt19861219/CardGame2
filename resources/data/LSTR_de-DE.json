@@ -340,6 +340,7 @@
   "EQUIP.REEL": "Schriftrolle",
   "EQUIP.INTELLIGENCE_PENDANT_REEL": "Anhänger der Intelligenz(Schriftrolle)",
   "EQUIP.CAN_BE_SYNTHESIZED_INTELLIGENCE_PENDANT": "Grundmaterial von Anhänger der Intelligenz",
+  "EQUIP.CAN_BE_SYNTHESIZED_S": "Kann zu %s synthetisiert werden",
   "EQUIP.AGILITY_LACING_REELS": "Band der Beweglichkeit(Schriftrolle)",
   "EQUIP.CAN_BE_SYNTHESIZED_AGILE_LACE": "Grundmaterial von Band der Beweglichkeit",
   "EQUIP.STRENGTH_WRIST_REEL": "Kräftiges Handgelenk(Schriftrolle)",

@@ -380,7 +380,10 @@ static func _record_stage_limit(player: PlayerData, sid: int, times: int) -> voi
 		return
 	if StageAccount.stage_type(sid) != StageAccount.STAGE_TYPE_ELITE:
 		return
-	player.stage_limit[sid] = int(player.stage_limit.get(sid, 0)) + times
+	# 键照源归一化（battle_engine.lua:1137 s=elite2NormalStage(stage) 后 addStageLimit）：
+	# 消耗/重置/读取三方统一 nid（sid-10000），精英 id 直存会与重置清零键错位。
+	player.stage_limit[StageResetData.elite_to_normal_stage(sid)] = \
+			int(player.stage_limit.get(StageResetData.elite_to_normal_stage(sid), 0)) + times
 
 
 ## 存档序列化。

@@ -399,7 +399,7 @@ func test_sweep_some_times_elite_stage_not_regressed() -> void:
 func test_count_title_refreshes_after_used_times_change() -> void:
 	var panel := _make_3star_panel(10001)
 	assert_true(panel._count_title.text.ends_with("30"), "初始剩余 30")
-	panel.player.stage_limit[10001] = 3
+	panel.player.stage_limit[1] = 3   # nid 键（2026-10-12 口径统一，源 elite2NormalStage）
 	panel._check_enabled()
 	assert_true(panel._count_title.text.ends_with("27"), "已用 3 次后刷新为 27（扫荡后联动）")
 	panel.remove_window()
@@ -408,7 +408,7 @@ func test_count_title_refreshes_after_used_times_change() -> void:
 # 批量扫荡按钮随剩余次数刷新（2026-10-07 cap 联动补）：精英关当日扫光后 disabled。
 func test_sweep_some_btn_disabled_when_elite_exhausted() -> void:
 	var panel := _make_3star_panel(10001)
-	panel.player.stage_limit[10001] = 30
+	panel.player.stage_limit[1] = 30   # nid 键（2026-10-12 口径统一，源 elite2NormalStage）
 	panel._check_enabled()
 	var cluster: Control = _content_of(panel).get_node("%SweepCluster") as Control
 	var some_btn: Button = cluster.get_node("%SweepSomeBtn") as Button

@@ -340,6 +340,7 @@
   "EQUIP.REEL": "Свиток",
   "EQUIP.INTELLIGENCE_PENDANT_REEL": "Свиток-амулет мудрости",
   "EQUIP.CAN_BE_SYNTHESIZED_INTELLIGENCE_PENDANT": "В совокупности дают амулет разума",
+  "EQUIP.CAN_BE_SYNTHESIZED_S": "В совокупности дают %s",
   "EQUIP.AGILITY_LACING_REELS": "Свиток с гибкой вязкой",
   "EQUIP.CAN_BE_SYNTHESIZED_AGILE_LACE": "В совокупности дают гибкую вязку",
   "EQUIP.STRENGTH_WRIST_REEL": "Свиток Напульсников Силы",

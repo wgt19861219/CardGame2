@@ -10,7 +10,7 @@ extends RefCounted
 
 const BUY_COST: int = 50           # 购买消耗钻石（源 local_server:1793）
 const BUY_AMOUNT: int = 120        # 购买获得体力
-const BUY_HARD_CAP: int = 9999     # 体力硬上限（可超 vitality_max 攒体）
+const BUY_HARD_CAP: int = 999      # 体力硬上限（2026-10-12 与自然恢复上限统一 999；旧 9999 攒体口径退役）
 const RECOVER_INTERVAL: int = 360  # 每 360s 恢复 1 点（源 parameterTable sync_vitality_gap=360）
 const DAY_KEY_YEAR_WEIGHT: int = 10000  # 本地日 key 权重（跨日清零 today_buy，照 ladder 范式）
 const DAY_KEY_MONTH_WEIGHT: int = 100
@@ -36,6 +36,8 @@ static func buy(pd: PlayerData, now: int = NOW_DEFAULT) -> bool:
 	var limit: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "Buy Vit Max", pd.cm))
 	if limit > 0 and pd.vitality_today_buy >= limit:
 		return false   # 超 VIP 当日上限
+	if pd.vitality >= BUY_HARD_CAP:
+		return false   # 已满 999（2026-10-12 上限统一后防白扣钻）
 	if pd.diamond < BUY_COST:
 		return false
 	pd.diamond -= BUY_COST

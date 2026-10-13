@@ -134,3 +134,42 @@ func test_classify_empty_player() -> void:
 	var r: Dictionary = EquipmentClassifier.classify(pd, cm)
 	assert_eq((r["prop"]["all"] as Array).size(), 0, "空玩家 prop.all 空")
 	assert_eq((r["fragment"]["all"] as Array).size(), 0, "空玩家 fragment.all 空")
+
+
+# 头像道具归消耗品 tab（2026-10-12 用户拍板；源 Category 脏值"头像框/头像"曾落入装备 tab）。
+func test_avatar_items_classified_as_consumables() -> void:
+	var pd := PlayerData.new(cm)
+	pd.add_item(441, 1)   # 大神的气息（头像框）
+	pd.add_item(468, 1)   # 水晶泰坦的凝视（头像）
+	pd.add_item(469, 1)   # 白银巨龙的面容（头像）
+	var both: Dictionary = EquipmentClassifier.classify(pd, cm)
+	var consume_ids: Array = []
+	for cell in both["prop"]["consume"]:
+		consume_ids.append(int(cell["id"]))
+	for eid in [441, 468, 469]:
+		assert_true(consume_ids.has(eid), "头像道具 %d 归消耗品 tab" % eid)
+	var equip_ids: Array = []
+	for cell in both["prop"]["equip"]:
+		equip_ids.append(int(cell["id"]))
+	for eid in [441, 468, 469]:
+		assert_false(equip_ids.has(eid), "头像道具 %d 不再混入装备 tab" % eid)
+
+
+# 23 阶合成材料归装备 tab（2026-10-12 用户拍板追节二轮：源 2.0 补丁错标 REEL 落卷轴 tab；
+# 对齐 12 阶材料装备惯例——配方同位材料 399/337 等本就是 PARTS 在装备 tab）。
+func test_t23_materials_classified_as_equip() -> void:
+	var pd := PlayerData.new(cm)
+	for eid in [443, 446, 449, 452, 455, 458, 461, 464]:
+		pd.add_item(eid, 1)
+	pd.add_item(114, 1)   # 12 阶卷轴对照（名字带卷轴，维持卷轴 tab）
+	var both: Dictionary = EquipmentClassifier.classify(pd, cm)
+	var equip_ids: Array = []
+	for cell in both["prop"]["equip"]:
+		equip_ids.append(int(cell["id"]))
+	var scroll_ids: Array = []
+	for cell in both["prop"]["scroll"]:
+		scroll_ids.append(int(cell["id"]))
+	for eid in [443, 446, 449, 452, 455, 458, 461, 464]:
+		assert_true(equip_ids.has(eid), "23 阶材料 %d 归装备 tab" % eid)
+		assert_false(scroll_ids.has(eid), "23 阶材料 %d 不再在卷轴 tab" % eid)
+	assert_true(scroll_ids.has(114), "12 阶卷轴 114 仍在卷轴 tab（不受扰动）")

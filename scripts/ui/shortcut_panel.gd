@@ -62,6 +62,12 @@ const TAG_NODE_NAMES: Dictionary = {
 
 signal open_requested(key: String)   # 按钮点击 → main_scene 路由（package/fragment→PackagePanel / heroPackage→hero_scene）
 
+# 展开态持久化（2026-10-12 用户需求「默认展开，除非手动收起」：首玩默认展开，此后记忆
+# 用户最后选择，跨启动保留——照 battle_speed_button user://battle.cfg 应用级 ConfigFile
+# 范式，不入玩家存档；cfg_path 可注入，测试隔离真实档）。
+const UI_CFG_PATH: String = "user://ui.cfg"
+var cfg_path: String = UI_CFG_PATH
+
 var _is_open: bool = false
 var _shade: ColorRect = null
 var _board: NinePatchRect = null
@@ -73,12 +79,14 @@ var _tags: Dictionary = {}    # key(String) -> TextureRect（源 createButtons _
 var _tween: Tween = null
 
 
-# 初始收起（源 isShortcutOpen = identity=="main"；本项目独立面板默认收起）。
+# 初始态读持久化偏好（源 isShortcutOpen = identity=="main"；本项目 2026-10-12 改记忆式：
+# open_initial 仅作无记录时的默认值——hud_overlay main 传 true=首玩默认展开，手动收起/
+# 展开后跨启动记住选择）。
 func setup_panel(open_initial: bool = false) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE   # 自身不吞，子节点（shade/board/button）各自 STOP 吞
 	_build_content()
-	if open_initial:
+	if _load_open_pref(open_initial):
 		_apply_open_instant()
 	else:
 		_apply_closed_instant()
@@ -128,6 +136,7 @@ func _toggle_open() -> void:
 
 func _open() -> void:
 	_is_open = true
+	_save_open_pref(true)
 	Events.bus.emit_tutorial_step(&"SUopenShortcut")
 	_shade.visible = true
 	_toggle_down.visible = false
@@ -149,6 +158,7 @@ func _open() -> void:
 
 func _close() -> void:
 	_is_open = false
+	_save_open_pref(false)
 	_toggle_down.visible = true
 	_toggle_up.visible = false
 	_kill_tween()
@@ -168,6 +178,22 @@ func _on_close_finished() -> void:
 	for key in _buttons:
 		(_buttons[key] as TextureButton).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	refresh_tags()
+
+
+# 读展开偏好（无记录返 fallback——hud_overlay main 传 true 即首玩默认展开）。
+func _load_open_pref(fallback: bool) -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(cfg_path) == OK:
+		return bool(cfg.get_value("shortcut", "open", fallback))
+	return fallback
+
+
+# 切换写回（跨启动记忆用户最后选择）。
+func _save_open_pref(open: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(cfg_path)   # 无档新建，有档合并写
+	cfg.set_value("shortcut", "open", open)
+	cfg.save(cfg_path)
 
 
 # 初始展开态（无动画，照源 isShortcutOpen=main）：板高 max，按钮竖排 opacity=1，up 可见 down 隐藏，shade 透明检测。

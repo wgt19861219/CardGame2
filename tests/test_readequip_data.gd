@@ -260,3 +260,36 @@ func test_enhance_equip_at_max_returns_false() -> void:
 	var gold_before: int = pd.hero_manager.gold
 	assert_eq(EquipCraftManager.enhance_equip(pd, iid, 0, {target_id: 1}), false, "已满级 → false（守卫前置）")
 	assert_eq(pd.hero_manager.gold, gold_before, "失败不扣金币")
+
+
+# ── 23 阶卷轴详情 fallback（2026-10-12 根修「23 阶物品无装备详情」）──
+# 8 件 23 阶卷轴（443-464）源 2.0 补丁数据缺 Description 且属性全 0 → 详情属性区空白；
+# 受控偏离照 12 阶"可以合成 XXX"模式从 Equipcraft 反查生成。
+
+# 23 阶卷轴：无属性 rows → fallback 反查配方生成"可以合成"+产物名。
+func test_scroll_compose_fallback_23reel() -> void:
+	var rows: Array = ReadequipData.get_description(443, 0, cm)
+	assert_eq(rows.size(), 1, "443 海军勋章卷轴 fallback 1 行")
+	assert_eq(String(rows[0]["att"]), "可以合成正义风衣", "文案=模板+Equipcraft[442] 产物名")
+	# 8 件 23 阶卷轴全生效
+	for eid in [443, 446, 449, 452, 455, 458, 461, 464]:
+		var r: Array = ReadequipData.get_description(eid, 0, cm)
+		assert_gt(r.size(), 0, "卷轴 %d 详情非空" % eid)
+		assert_true(String(r[0]["att"]).begins_with("可以合成"), "卷轴 %d 文案前缀" % eid)
+
+
+# fallback 不误伤：装备属性行走原逻辑；12 阶卷轴 Description 分支（equipboard 层）不受影响，
+# get_description 直接调用时 fallback 同样给出合理文案（非空、可合成语义）。
+func test_scroll_fallback_no_side_effect() -> void:
+	var equip_rows: Array = ReadequipData.get_description(442, 0, cm)
+	assert_eq(equip_rows.size(), 3, "442 装备属性 3 行不走 fallback")
+	assert_true(String(equip_rows[0]["att"]).begins_with("力量"), "装备属性行内容不变")
+	var old_reel: Array = ReadequipData.get_description(114, 0, cm)
+	assert_eq(String(old_reel[0]["att"]), "可以合成智力挂件", "12 阶卷轴 fallback 与源 Description 文案等义")
+
+
+# 非 Equipcraft 组件不触发 fallback（追节 23 阶材料改 PARTS 后判定与 Category 解耦）：
+# 魂石/碎片走 Fragment 表非合成组件，反查不中自然为空。
+func test_scroll_fallback_component_only() -> void:
+	var stone: Array = ReadequipData.get_description(466, 0, cm)
+	assert_true(stone.is_empty(), "魂石（Fragment 表体系非 Equipcraft 组件）不进 fallback")

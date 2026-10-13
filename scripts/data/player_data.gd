@@ -7,7 +7,8 @@ extends RefCounted
 const PlayerDataSerde = preload("res://scripts/data/player_data_serde.gd")
 
 const MAX_TEAM_LEVEL: int = 99            # 战队等级上限（源 2026-06 解除绑定）
-const VITALITY_DEFAULT_MAX: int = 120     # 体力上限（源 DEFAULT_DATA vitality=120）
+const VITALITY_DEFAULT_MAX: int = 120     # 初始体力（源 DEFAULT_DATA vitality=120）
+const VITALITY_MAX_STANDALONE: int = 999  # 体力上限（2026-10-12 用户指示单机固定 999，等级/VIP 成长退役）
 const SKILL_DEFAULT_POINTS: int = 5
 const TEAM_EXP_PER_LEVEL: int = 100       # 简化：每级 100 经验（PlayerLevel 表集成后续）
 const REWARD_MULTIPLIER: int = 10
@@ -37,7 +38,7 @@ var arena_point: int = 0    # 竞技场币（源 addPvpMoney→addPoint，shop_c
 var dungeonpoint: int = 0   # 副本硬币/龙鳞（源 addDungeonPoint→addPoint，副本奖励货币+钥匙消耗）
 var items: Dictionary = {}  # item_id(int) -> count(int)（源 Item 奖励/背包）
 var vitality: int = VITALITY_DEFAULT_MAX  # 新玩家初始体力（源 DEFAULT_DATA vitality=120；存档加载由 from_dict 覆盖）
-var vitality_max: int = VITALITY_DEFAULT_MAX
+var vitality_max: int = VITALITY_MAX_STANDALONE
 var vitality_last_recover: int = 0  # 上次恢复时间戳（秒）
 var vitality_today_buy: int = 0     # 今日买体力次数（源 todaybuy，受 VIP["Buy Vit Max"] 上限）
 var vitality_buy_day: int = 0       # 买体力日锚（本地日 key，跨日清零 today_buy；源服务器日重置的单机化）
@@ -165,16 +166,10 @@ func spend_vitality(amount: int) -> bool:
 	return true
 
 
-## 体力上限（照源 playerlimit.lua:26 maxVitality = PlayerLevel["Max Vitality"] + VIP["User Vitality Max"]；
-## 单机特权档满级取 VIP 加成）。表缺行兜底默认 120（不叠 VIP，防表空缩死上限）。
-## 2026-09-17 经济单机优化接线：此前恒 VITALITY_DEFAULT_MAX，PlayerLevel 60→160 等级成长未生效。
+## 体力上限：单机固定 999（2026-10-12 用户指示）。源 playerlimit.lua:26 等级+VIP 成长口径
+## 退役（2026-09-17 接线的 PlayerLevel 成长随之废止，上限不再随等级变化；初始体力仍 120）。
 func recalc_vitality_max() -> void:
-	var row: Dictionary = cm.get_raw_table(&"PlayerLevel").get(str(team_level), {})
-	if row.is_empty():
-		vitality_max = VITALITY_DEFAULT_MAX
-		return
-	var vip_bonus: int = int(VipData.get_vip_field(privilege_vip_level(), "User Vitality Max", cm))
-	vitality_max = int(row.get("Max Vitality", VITALITY_DEFAULT_MAX)) + vip_bonus
+	vitality_max = VITALITY_MAX_STANDALONE
 
 
 ## 精英关每日次数跨日清零（stage_limit 已打次数 + stage_reset_times 今日重置次数；源由服务器
