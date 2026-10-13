@@ -99,7 +99,7 @@ func _build_once() -> void:
 		Callable(self, "_on_gold_plus"))
 	# Shortcut：5 按钮抽屉，路由走 ShortcutRouter（parent 用 current_scene 顶层）。
 	_shortcut = ShortcutPanel.new()
-	_shortcut.setup_panel(true)   # main 默认展开
+	_shortcut.setup_panel(true)   # main 首玩默认展开；此后记忆用户最后选择（2026-10-12 手动收起持久化）
 	_shortcut.open_requested.connect(_on_shortcut_open)
 	add_child(_shortcut)
 	_refresh_status()
@@ -205,6 +205,9 @@ func _on_vitality_plus() -> void:
 		return
 	if not VitalityManager.can_buy(p):
 		Toast.show_message("今日购买体力次数已达上限")
+		return
+	if p.vitality >= p.vitality_max:
+		Toast.show_message("体力已满")   # 999 上限触达（2026-10-12 统一后新增场景，防 buy 静默失败）
 		return
 	if VitalityManager.buy(p):
 		Toast.show_message("购买体力 +120")   # 存档标脏已内聚 buy_vitality（save_hook，T2）

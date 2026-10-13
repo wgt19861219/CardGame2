@@ -398,8 +398,8 @@ func _apply_reward(player: PlayerData, rtype: String, rid: int, amount: int) -> 
 		"Diamond":
 			player.add_diamond(amount)
 		"Vitality":
-			# 攒体语义：硬上限 9999（源 player.lua:544 addVitality 任务分支无上限；与
-			# VitalityManager.buy 口径一致），不压 vitality_max（否则 600 配置值被截到 120）
+			# 攒体语义：硬上限 BUY_HARD_CAP=999（2026-10-12 与体力上限统一；源 player.lua:544
+			# addVitality 任务分支无上限，旧 9999 口径退役），不压 vitality_max
 			player.vitality = min(player.vitality + amount, VitalityManager.BUY_HARD_CAP)
 		"PlayerEXP":
 			player.add_team_exp(amount)

@@ -79,43 +79,32 @@ func test_buy_vitality_same_day_no_reset() -> void:
 	assert_eq(pd.vitality_today_buy, 2, "同日不清零")
 
 
-# ---- A4 体力上限等级成长（源 playerlimit：PlayerLevel["Max Vitality"] + VIP["User Vitality Max"]；
-# ---- 此前恒 120，表 60→160 的成长未接线）
+# ---- A4 体力上限（2026-10-12 用户指示：单机固定 999；源 playerlimit 等级+VIP 成长口径退役）----
 
-func test_vitality_max_formula_by_level() -> void:
+func test_vitality_max_fixed_999() -> void:
 	var pd := PlayerData.new(cm)
-	var vip_bonus: int = int(VipData.get_vip_field(pd.privilege_vip_level(), "User Vitality Max", cm))
 	pd.team_level = 1
 	pd.recalc_vitality_max()
-	assert_eq(pd.vitality_max, int(cm.get_raw_table("PlayerLevel")["1"]["Max Vitality"]) + vip_bonus, "Lv1 上限 = 表值 + VIP 满档加成")
+	assert_eq(pd.vitality_max, 999, "Lv1 上限 999（恒定不随等级）")
 	pd.team_level = 99
 	pd.recalc_vitality_max()
-	assert_eq(pd.vitality_max, int(cm.get_raw_table("PlayerLevel")["99"]["Max Vitality"]) + vip_bonus, "Lv99 上限随表成长")
+	assert_eq(pd.vitality_max, 999, "Lv99 上限仍 999")
 
 
-func test_add_team_exp_updates_vitality_max() -> void:
+func test_add_team_exp_keeps_vitality_max() -> void:
 	var pd := PlayerData.new(cm)
-	pd.team_level = 1
-	pd.recalc_vitality_max()
-	var max_at_lv1: int = pd.vitality_max
 	var exp_to_lv2: int = PlayerLevelData.get_level_exp(1, cm)
 	pd.add_team_exp(exp_to_lv2)   # 恰好升 1 级
 	assert_eq(pd.team_level, 2, "前置：升到 Lv2")
-	var expected: int = int(cm.get_raw_table("PlayerLevel")["2"]["Max Vitality"]) \
-			+ int(VipData.get_vip_field(pd.privilege_vip_level(), "User Vitality Max", cm))
-	assert_eq(pd.vitality_max, expected, "升级后上限按新等级重算")
-	assert_ne(expected, max_at_lv1, "前置：Lv2 与 Lv1 上限确有差（表成长非平坦）")
+	assert_eq(pd.vitality_max, 999, "升级后上限仍 999（旧等级成长口径已退役）")
 
 
 func test_serde_recalc_vitality_max_on_load() -> void:
 	var pd := PlayerData.new(cm)
-	pd.team_level = 50
 	var d: Dictionary = pd.to_dict()
 	d["vitality_max"] = 120   # 模拟老档存量失真值
 	var restored := PlayerData.from_dict(d, cm)
-	var expected: int = int(cm.get_raw_table("PlayerLevel")["50"]["Max Vitality"]) \
-			+ int(VipData.get_vip_field(pd.privilege_vip_level(), "User Vitality Max", cm))
-	assert_eq(restored.vitality_max, expected, "读档按等级重算上限（存量 120 失真矫正）")
+	assert_eq(restored.vitality_max, 999, "读档重算上限 999（存量 120 失真矫正）")
 
 
 # ---- B2 免费金抽 CD 46h→24h（2026-09-17 适度爽快拍板："每日 1 次"名义与 CD 一致化）----
