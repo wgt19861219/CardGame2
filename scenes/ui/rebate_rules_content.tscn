@@ -1,0 +1,102 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/main_vit_tips.png" id="1_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/pvp/pvp_tip_title_bg.png" id="2_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_1.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/common/common_tips_button_close_2.png" id="4_closep"]
+
+; 活动规则弹窗（源 rebateActivitiesConfig.lua rolUIRes）——挂详情 panel container 顶层
+[node name="RebateRulesContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 1
+
+; 源 rolUIRes layerColor ccc4(0,0,0,180) 全屏遮罩
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.705882)
+
+; rewardBg1 源：Scale9 main_vit_tips cap(15,20,45,15) scaleSize 550x360 中心 ccp(400,240)
+; 纹理 103x61 → patch l=15 t=20 r=43 b=26
+[node name="RewardBg" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 125.0
+offset_top = 60.0
+offset_right = 675.0
+offset_bottom = 420.0
+texture = ExtResource("1_bg")
+patch_margin_left = 15
+patch_margin_top = 20
+patch_margin_right = 43
+patch_margin_bottom = 26
+mouse_filter = 2
+
+; cExit 源：parent rewardBg1（原点=左下 Cocos(125,60)）@(532,342) → 中心 Cocos(657,402)
+; → Godot (657,78)；scalSize 40x40
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 637.0
+offset_top = 58.0
+offset_right = 677.0
+offset_bottom = 98.0
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
+
+; roletitle_bg 源：pvp_tip_title_bg cap(200,20,20,4) scaleSize 500x35 @(275,330)
+; → 中心 Cocos(400,390) → Godot (400,90)；纹理 474x44 → patch l=200 t=20 r=254 b=20
+[node name="RoleTitleBg" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 150.0
+offset_top = 72.5
+offset_right = 650.0
+offset_bottom = 107.5
+texture = ExtResource("2_titlebg")
+patch_margin_left = 200
+patch_margin_top = 20
+patch_margin_right = 254
+patch_margin_bottom = 20
+mouse_filter = 2
+
+; 标题 源：size22 ccc3(251,206,16) @(250,17) → 中心 Godot (400,90.5)；ActTitleLabel 20 近似
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 300.0
+offset_top = 80.5
+offset_right = 500.0
+offset_bottom = 100.5
+theme_type_variation = &"ActTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "活动规则说明"
+
+; roleListView 源：cliprect CCRectMake(60,20,480,240) → Cocos [170,60]~[650,300]
+; → Godot (170,180)-(650,420)；规则文本 500x240 垂直居中 → autowrap 左对齐
+[node name="RulesScroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 170.0
+offset_top = 180.0
+offset_right = 650.0
+offset_bottom = 420.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="RulesTextLabel" type="Label" parent="RulesScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(460, 0)
+theme_type_variation = &"ActBodyLabel18"
+mouse_filter = 2
+autowrap_mode = 3
+vertical_alignment = 1
+text = "活动规则文本"

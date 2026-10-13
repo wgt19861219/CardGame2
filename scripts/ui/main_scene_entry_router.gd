@@ -62,6 +62,15 @@ static func open_daily_login(scene: Node) -> void:
 	panel.show_window(scene)
 
 
+# 运营活动列表入口（源 showActivity framework.lua:349-357 → activitiesList.createlist）。
+# 返回面板供调用方连 tree_exited 刷红点。
+static func open_activities(scene: Node) -> ActivitiesListPanel:
+	var panel := ActivitiesListPanel.new("activities_list", {})
+	panel.setup_panel(GameData.player)
+	panel.show_window(scene)
+	return panel
+
+
 # 公会入口（2026-09-19 公会一期集成）：源 guild.lua:573-590 open_pannel——无会回 _list
 # 进公会列表（joinLayer 三 tab），有会回 _query 进主页（mainLayer）。单机化 GuildManager
 # NPC 公会/成员模拟（feature_catalog guild 已移入 DOMAINS）。

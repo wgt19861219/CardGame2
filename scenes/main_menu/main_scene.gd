@@ -270,9 +270,9 @@ func _build_hud() -> void:
 	dl_btn.position = DAILY_BTN_CENTER - dl_size / 2.0
 	dl_btn.pressed.connect(func() -> void: MainSceneEntryRouter.open_daily_login(self))
 	add_child(dl_btn)
-	# 聊天气泡入口（源 statusbar.lua:673-699 createHead chatTurnUp chat_entrance_1/2.png）。
-	# 中心照原版实机截图量取 @800 系 (52.5,340)（源 ccp(40,-327) 挂 head 容器的等价落点）；
-	# 单机化受控裁剪：源点击开联机聊天面板 getChatPanel，本项目仅保留入口视觉，不接 handler。
+	MainActivityEntry.create(self)   # 活动入口（源 statusbar activity，签到右侧 110px；组件头注有源引）
+	# 聊天气泡入口（源 statusbar.lua:673-699 createHead chatTurnUp chat_entrance_1/2.png，中心照
+	# 原版实机截图量取 @800 系 (52.5,340)；单机化受控裁剪仅保留入口视觉，不接 handler）。
 	var chat_size: Vector2 = (load(CHAT_BTN_RES) as Texture2D).get_size() / DAILY_BTN_CONTENT_SCALE
 	var chat_btn := UiButton.make(CHAT_BTN_RES, CHAT_BTN_PRESS_RES, CHAT_BTN_CENTER)
 	chat_btn.size = chat_size

@@ -1831,3 +1831,54 @@ GuildNameLabel/font_sizes/font_size = 26
 GuildHeadInfoLabel/base_type = &"Label"
 GuildHeadInfoLabel/colors/font_color = Color(0.34902, 0.290196, 0.243137, 1)
 GuildHeadInfoLabel/font_sizes/font_size = 16
+
+; ===== 活动系统（2026-10-13；源 fontconfigs.lua op_act_* / dark_* 照搬） =====
+; 面板标题（源 op_act_title1 :282：size20 金(250,205,16) 黑影(0,2)；详情 title 用 op_act_title :276 同色 18→UIRes 覆盖 20 统一）
+ActTitleLabel/base_type = &"Label"
+ActTitleLabel/colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
+ActTitleLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+ActTitleLabel/constants/shadow_offset_x = 0
+ActTitleLabel/constants/shadow_offset_y = 2
+ActTitleLabel/font_sizes/font_size = 20
+; 列表节标题（源 op_act_title :276 size18）
+ActSectionLabel/base_type = &"Label"
+ActSectionLabel/colors/font_color = Color(0.980392, 0.803922, 0.062745, 1)
+ActSectionLabel/colors/font_shadow_color = Color(0, 0, 0, 1)
+ActSectionLabel/constants/shadow_offset_x = 0
+ActSectionLabel/constants/shadow_offset_y = 2
+ActSectionLabel/font_sizes/font_size = 18
+; 行标题/门槛前缀/可获得（源 op_act_grey :288 size18 (53,46,48)）
+ActGreyLabel18/base_type = &"Label"
+ActGreyLabel18/colors/font_color = Color(0.207843, 0.180392, 0.188235, 1)
+ActGreyLabel18/font_sizes/font_size = 18
+; 行描述（源 op_act_red :316 size18 (138,56,1)）
+ActRedLabel18/base_type = &"Label"
+ActRedLabel18/colors/font_color = Color(0.541176, 0.219608, 0.003922, 1)
+ActRedLabel18/font_sizes/font_size = 18
+; 门槛数值（源 op_act_dark_blue :292 size18 (0,71,187)）
+ActBlueLabel18/base_type = &"Label"
+ActBlueLabel18/colors/font_color = Color(0, 0.278431, 0.733333, 1)
+ActBlueLabel18/font_sizes/font_size = 18
+; 奖励名（源 op_act_item_name :296 size18 (131,45,0)）
+ActItemNameLabel/base_type = &"Label"
+ActItemNameLabel/colors/font_color = Color(0.513725, 0.176471, 0, 1)
+ActItemNameLabel/font_sizes/font_size = 18
+; 已累计（源 op_act_light_blue :310 size18 (62,226,255) 黑影）
+ActLightBlueLabel18/base_type = &"Label"
+ActLightBlueLabel18/colors/font_color = Color(0.243137, 0.886275, 1, 1)
+ActLightBlueLabel18/colors/font_shadow_color = Color(0, 0, 0, 1)
+ActLightBlueLabel18/constants/shadow_offset_x = 0
+ActLightBlueLabel18/constants/shadow_offset_y = 2
+ActLightBlueLabel18/font_sizes/font_size = 18
+; 活动时间/介绍标签（源 dark_yellow :97 size17，UIRes base.size=20 覆盖）
+ActFieldLabel20/base_type = &"Label"
+ActFieldLabel20/colors/font_color = Color(0.933333, 0.8, 0.466667, 1)
+ActFieldLabel20/font_sizes/font_size = 20
+; 正文/时间值/规则文本（源 dark_white :101 size17，UIRes base.size=18 覆盖）
+ActBodyLabel18/base_type = &"Label"
+ActBodyLabel18/colors/font_color = Color(1, 1, 0.866667, 1)
+ActBodyLabel18/font_sizes/font_size = 18
+; 规则按钮文字（源 normal_button :85 size18 (235,223,207)）
+ActRulesBtnLabel/base_type = &"Label"
+ActRulesBtnLabel/colors/font_color = Color(0.921569, 0.87451, 0.811765, 1)
+ActRulesBtnLabel/font_sizes/font_size = 18

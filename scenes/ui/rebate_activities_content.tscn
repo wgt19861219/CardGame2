@@ -1,0 +1,192 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_herolist_bg.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/act/act_popup_bg.png" id="2_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/activity/recharge_list_mask.png" id="5_listmask"]
+
+[node name="RebateActivitiesContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; frame1 源 rebateActivitiesConfig.lua UIRes：Scale9 中心 ccp(400,250) scaleSize 580x420
+; cap(20,20,300,300) 纹理 700x485 → patch right=380 bottom=165
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 110.0
+offset_top = 20.0
+offset_right = 690.0
+offset_bottom = 440.0
+texture = ExtResource("1_frame")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 380
+patch_margin_bottom = 165
+mouse_filter = 2
+
+; cExit 源：parent frame1（原点=左下 Cocos(110,40)）anchor(0.5,0.5) @(576,394)
+; → 屏幕 Cocos(686,434) → Godot 中心 (686,46)；65x66 ÷CS=50.73x51.51
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 660.63
+offset_top = 20.24
+offset_right = 711.37
+offset_bottom = 71.76
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
+
+; title_bg 源：act_popup_bg cap(200,20,70,4) scaleSize 560x35，中心 Cocos(400,424)
+; → Godot 中心 (400,56)；纹理 734x44 → patch l=200 t=20 r=464 b=20
+[node name="TitleBg" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 120.0
+offset_top = 38.5
+offset_right = 680.0
+offset_bottom = 73.5
+texture = ExtResource("2_titlebg")
+patch_margin_left = 200
+patch_margin_top = 20
+patch_margin_right = 464
+patch_margin_bottom = 20
+mouse_filter = 2
+
+; title 源：parent title_bg anchor(0.5,0.5) @(280,17) → 中心 Godot (400,56.5)；size20 op_act_title
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 300.0
+offset_top = 46.5
+offset_right = 500.0
+offset_bottom = 66.5
+theme_type_variation = &"ActTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "活动标题"
+
+; goto 规则按钮 源：tavern_button_normal_1/2 cap(14,20,60,23) scaleSize 100x48
+; anchor(0,0.5) @(20,17) 相对 title_bg → Godot rect (140,32.5)-(240,80.5)
+; 三态走 DailyLoginExplainBtn（同贴图先例，源 dailylogin explain 同 tavern_button_normal）
+[node name="RulesBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 140.0
+offset_top = 32.5
+offset_right = 240.0
+offset_bottom = 80.5
+theme_type_variation = &"DailyLoginExplainBtn"
+
+[node name="RulesBtnLabel" type="Label" parent="RulesBtn"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"ActRulesBtnLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "活动规则"
+
+; ui 源："活动时间：" size20 dark_yellow anchor(0,0.5) @(40,346) → 左中 Cocos(150,386)
+; → Godot 中心 y=94
+[node name="TimeFieldLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 84.0
+offset_right = 250.0
+offset_bottom = 104.0
+theme_type_variation = &"ActFieldLabel20"
+mouse_filter = 2
+text = "活动时间："
+
+; ptime 源：size18 dark_white anchor(0,0.5) @(130,346) → Godot (240,94)
+[node name="TimeValueLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 240.0
+offset_top = 85.0
+offset_right = 660.0
+offset_bottom = 103.0
+theme_type_variation = &"ActBodyLabel18"
+mouse_filter = 2
+text = "开始时间~结束时间"
+
+; pui 源："活动介绍：" size20 dark_yellow anchor(0,1) @(40,328) → 左上 Cocos(150,368)
+; → Godot top=112
+[node name="DescFieldLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 150.0
+offset_top = 112.0
+offset_right = 250.0
+offset_bottom = 132.0
+theme_type_variation = &"ActFieldLabel20"
+mouse_filter = 2
+text = "活动介绍："
+
+; pdesc 源：size18 dark_white anchor(0,1) @(130,328) dimension 440x260 垂直居中
+[node name="DescValueLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 240.0
+offset_top = 112.0
+offset_right = 680.0
+offset_bottom = 372.0
+theme_type_variation = &"ActBodyLabel18"
+mouse_filter = 2
+vertical_alignment = 1
+text = "活动介绍内容"
+
+; listbg 源：recharge_list_mask cap(15,15,8,8) scaleSize 556x216 anchor(0,0.5) @(12,174)
+; 相对 frame1 → 左中 Cocos(122,214) → Godot rect (122,158)-(678,374)；纹理 44x44 patch l=15 t=15 r=21 b=21
+[node name="ListBg" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 122.0
+offset_top = 158.0
+offset_right = 678.0
+offset_bottom = 374.0
+texture = ExtResource("5_listmask")
+patch_margin_left = 15
+patch_margin_top = 15
+patch_margin_right = 21
+patch_margin_bottom = 21
+mouse_filter = 2
+
+; prizeListView 源：parent listbg cliprect CCRectMake(20,8,600,201) → Cocos [142,114]~[742,315]
+; 右缘 742 超出 listbg 视觉（678）为源容错值，收齐 listbg 右缘 → Godot (142,165)-(678,366)
+[node name="PrizeScroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 142.0
+offset_top = 165.0
+offset_right = 678.0
+offset_bottom = 366.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+[node name="PrizeHost" type="VBoxContainer" parent="PrizeScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+; hasdone 源：op_act_light_blue anchor(0.5,0.5) @(370,50) 相对 frame1 → 中心 Cocos(480,90)
+; → Godot (480,390)（"已累计 X"复合，fill 单 Label 组串）
+[node name="HasDoneLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 380.0
+offset_top = 380.0
+offset_right = 580.0
+offset_bottom = 400.0
+theme_type_variation = &"ActLightBlueLabel18"
+mouse_filter = 2
+text = "已累计消费 0 钻石"

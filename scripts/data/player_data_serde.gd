@@ -35,6 +35,7 @@ static func to_dict(pd: PlayerData) -> Dictionary:
 		"tutorial_manager": pd.tutorial_manager.to_dict(),
 		"task_manager": pd.task_manager.to_dict(),
 		"daily_login": pd.daily_login.to_dict(),
+		"activity": pd.activity.to_dict(),
 		"midas": pd.midas.to_dict(),
 		"stage_manager": pd.stage_manager.to_dict(),
 		"handbook": pd.handbook.to_dict(),
@@ -103,6 +104,7 @@ static func from_dict(data: Dictionary, cm: ConfigManager) -> PlayerData:
 	pd.tutorial_manager = TutorialManager.from_dict(td_data)
 	pd.task_manager = TaskManager.from_dict(data.get("task_manager", {}))
 	pd.daily_login = DailyLoginManager.from_dict(data.get("daily_login", {}))
+	pd.activity = ActivityManager.from_dict(data.get("activity", {}))
 	pd.midas = MidasManager.from_dict(data.get("midas", {}), cm)
 	pd.stage_manager = StageManager.from_dict(data.get("stage_manager", {}), cm)
 	pd.handbook = HandbookManager.from_dict(data.get("handbook", {}))
