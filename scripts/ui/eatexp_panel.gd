@@ -16,6 +16,11 @@ extends PopWindow
 const CONTENT_SCENE: PackedScene = preload("res://scenes/ui/eatexp_content.tscn")
 const ITEM_SCENE: PackedScene = preload("res://scenes/ui/eatexp_item.tscn")
 
+# 本次弹窗吃掉 ≥1 颗经验药，关闭时通知上层刷新（源 package.lua:104-106 heroList.consumeAmount
+# 回调的单机等价物——源经 eat_exp 网络回包实时刷新背包；单机化丢此链路致群反馈：吃完提示
+# "已吃完"但背包格子残留旧数量快照）。挂 remove_window 覆盖关闭按钮/点外关闭两条路径。
+signal consumed
+
 # ── 动画/长按时序（源 getBarAction animDuration=0.5 + keepeatHandler delay=0.5）──
 const ANIM_DUR: float = 0.4
 const ANIM_FILL_RATIO: float = 0.4   # 升级动画填满段时长占比
@@ -67,6 +72,7 @@ var _press_dragged: bool = false          # 按下期间拖动超阈值（拖动
 var _did_keepeat: bool = false            # 长按已开始连吃（release 不再补吃单击颗）
 var _scroll: ScrollContainer = null       # %ScrollHost 拖动滚动宿主（2026-10-08 #6 接线）
 var _drag_state: Dictionary = {}          # DragScrollHelper 拖拽滚动跨帧基准
+var _eaten_any: bool = false              # 本次弹窗已吃 ≥1 颗（关闭时据此 emit consumed）
 
 
 # LSTR 解析包装（源 T(LSTR(key)) 等价；cm 缺失返空串避免 null 解引用）。
@@ -229,6 +235,7 @@ func do_eat_hero(inst_id: int) -> void:
 		return
 	pd.hero_manager.add_hero_exp(inst_id, _exp_per_pill)
 	GameData.save()
+	_eaten_any = true
 	_play_bar_anim(inst_id, olevel, oexp, hero.level, hero.exp)
 	_show_eat_amount(inst_id)
 
@@ -374,6 +381,14 @@ func _on_close_pressed() -> void:
 	_stop_keepeat()
 	AudioPlayer.play_sfx("common_close_popup_window")
 	remove_window()
+
+
+# 关窗前结算 consumed（remove_window 两入口——close 按钮 / shade 点外关闭——都经此，
+# package 级联销毁不走此路径但彼时背包已不存在，无需刷新）。
+func remove_window() -> void:
+	if _eaten_any:
+		consumed.emit()
+	super.remove_window()
 
 
 func _load_tex(path: String) -> Texture2D:

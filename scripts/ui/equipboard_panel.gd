@@ -385,10 +385,25 @@ func _open_detail() -> void:
 
 
 # 使用经验药（源 param.doUse → eatexplist.create(id, amount, param)）。第 27 段接 EatexpPanel。
+# consumed 接线（源 package.lua:104-106 heroList.consumeAmount 回调）：吃完关闭 eatexp 时
+# 通知 package 重 classify（0 数量格子消失）+ 浮层自处（0 关窗 / 有剩刷数量）。
 func _open_eatexp() -> void:
 	var panel := EatexpPanel.new("eatexp", {})
 	panel.setup_panel(_item_id, cm, pd)
+	panel.consumed.connect(_on_eatexp_consumed)
 	panel.show_window(get_parent())
+
+
+# 经验药消耗结算（照源 consumeAmount :55-70：currentAmount<=0 equipLayer:popout，
+# >0 refreshAmount 刷数量）。used.emit 令 PackagePanel 重 classify + 重填 grid。
+func _on_eatexp_consumed() -> void:
+	used.emit(_item_id)
+	var cur: int = int(pd.items.get(_item_id, 0))
+	if cur <= 0:
+		remove_window()
+		return
+	_cell_data["amount"] = cur
+	_refresh_content()
 
 
 func _on_close_pressed() -> void:
