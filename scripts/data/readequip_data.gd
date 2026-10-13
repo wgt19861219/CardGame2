@@ -6,6 +6,7 @@ extends RefCounted
 ## HeroInstance.equip_slots: Array[int] item_id（0=空）。
 
 const STREN_HEALTH_RATIO: int = 19
+const COMPONENT_SLOTS: int = 4   # Equipcraft Component1-4（同 EquipdetailQuery 口径）
 
 
 # hero.equip_exp(Array[float]) → exp_map(slot→exp) 供 get_hero_equip_gs/hp（桥接 HeroInstance 与查询）。
@@ -95,7 +96,37 @@ static func get_description(item_id: int, level: int, cm: Variant) -> Array:
 			rows.append({"att": element, "add": " +" + str(int(add_v)), "suffix": BaseresData.get_att_suffix(key)})
 		else:
 			rows.append({"att": element + BaseresData.get_att_suffix(key), "add": "", "suffix": ""})
+	if rows.is_empty():
+		rows = _scroll_compose_row(item_id, cm)
 	return rows
+
+
+# 无属性行 fallback（2026-10-12 根修「23 阶物品无装备详情」+追节分类修正）：2.0 补丁的 8 件
+# 23 阶合成材料（443-464 海军勋章/冥王之眼等）源数据缺 Description 且属性全 0 → 详情属性区
+# 空白；12 阶材料靠 Description "可以合成 XXX" 显示用途。受控偏离补齐：rows 空且该物品是
+# Equipcraft 配方组件（材料位）时反查产物生成同义文案（LSTR 模板 EQUIP.CAN_BE_SYNTHESIZED_S，
+# 产物名已 8 语言化）。不限定 Category：23 阶材料追节已改 PARTS（用户拍板归装备 tab，对齐
+# 12 阶材料装备惯例），魂石/碎片非 Equipcraft 组件（走 Fragment 表）反查不中自然不触发。
+static func _scroll_compose_row(item_id: int, cm: Variant) -> Array:
+	var craft: Dictionary = cm.get_raw_table("Equipcraft")
+	for tid_str in craft:
+		var row: Dictionary = craft[tid_str]
+		var matched: bool = false
+		for i in range(1, COMPONENT_SLOTS + 1):
+			if int(row.get("Component" + str(i), 0)) == item_id:
+				matched = true
+				break
+		if not matched:
+			continue
+		var product: Dictionary = cm.get_raw_table("Equip").get(tid_str, {})
+		# 不过滤 Hide：23 阶全族源数据 Hide=true（2.0 补丁隐藏标记），过滤会使 fallback
+		# 对 23 阶卷轴永远失效；文案说明用途与图鉴可见性（那边照源过滤）解耦。
+		var name_lstr: String = String(product.get("Name", ""))
+		if name_lstr.is_empty():
+			continue
+		var text: String = String(cm.get_lstr("EQUIP.CAN_BE_SYNTHESIZED_S")) % String(cm.get_lstr(name_lstr))
+		return [{"att": text, "add": "", "suffix": ""}]
+	return []
 
 
 static func get_equip_level_exp(item_id: int, cm: Variant) -> Dictionary:

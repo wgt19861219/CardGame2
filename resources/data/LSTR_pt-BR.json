@@ -340,6 +340,7 @@
   "EQUIP.REEL": "Carretel",
   "EQUIP.INTELLIGENCE_PENDANT_REEL": "Carretel de Pingente da Inteligência",
   "EQUIP.CAN_BE_SYNTHESIZED_INTELLIGENCE_PENDANT": "Material de Ofício do Pingente da Inteligência",
+  "EQUIP.CAN_BE_SYNTHESIZED_S": "Pode ser sintetizado em %s",
   "EQUIP.AGILITY_LACING_REELS": "Carretel de Torc da Agilidade",
   "EQUIP.CAN_BE_SYNTHESIZED_AGILE_LACE": "Material de Ofício de Torc da Agilidade",
   "EQUIP.STRENGTH_WRIST_REEL": "Carretel de Braçadeira da Força",

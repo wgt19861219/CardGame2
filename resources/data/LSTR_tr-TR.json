@@ -340,6 +340,7 @@
   "EQUIP.REEL": "Makara",
   "EQUIP.INTELLIGENCE_PENDANT_REEL": "Zeka Kolye Ucu Makarası",
   "EQUIP.CAN_BE_SYNTHESIZED_INTELLIGENCE_PENDANT": "Zeka Kolye Ucu materyal Zanaatı",
+  "EQUIP.CAN_BE_SYNTHESIZED_S": "%s için zanaat malzemesi",
   "EQUIP.AGILITY_LACING_REELS": "Çeviklik Torku Makarası",
   "EQUIP.CAN_BE_SYNTHESIZED_AGILE_LACE": "Çeviklik Torku materyal Zanaatı",
   "EQUIP.STRENGTH_WRIST_REEL": "Güç Kolluğu Makarası",
