@@ -45,7 +45,9 @@ func test_panel_fills_announcement() -> void:
 	assert_eq(section.text, "进行中", "节标题=进行中")
 	var row := host.get_child(1)
 	assert_eq(String((row.get_node("%NameLabel") as Label).text), "公告:", "公告行标题")
-	assert_eq(String((row.get_node("%DescLabel") as Label).text), "欢迎体验！更多精彩活动敬请期待。", "公告行描述")
+	assert_eq(String((row.get_node("%DescLabel") as Label).text),
+			String(cm.get_raw_table(&"ActivitiesConfig").get("announcement", {}).get("desc", "")),
+			"公告行描述（2026-10-13 实际公告文案，与 loading 启动公告同源对照）")
 	panel.remove_window()
 	panel.get_parent().queue_free()
 
