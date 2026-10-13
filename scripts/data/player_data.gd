@@ -57,6 +57,7 @@ var crusade_manager: CrusadeManager
 var tutorial_manager: TutorialManager
 var task_manager: TaskManager
 var daily_login: DailyLoginManager
+var activity: ActivityManager
 var midas: MidasManager
 var stage_manager: StageManager
 var handbook: HandbookManager
@@ -89,6 +90,7 @@ func _init(p_cm: ConfigManager) -> void:
 	tutorial_manager = TutorialManager.new(TutorialData.default_steps())
 	task_manager = TaskManager.new()
 	daily_login = DailyLoginManager.new()
+	activity = ActivityManager.new()
 	midas = MidasManager.new(cm)
 	stage_manager = StageManager.new(cm)
 	handbook = HandbookManager.new()
@@ -154,6 +156,7 @@ func spend_diamond(amount: int) -> bool:
 	if diamond < amount:
 		return false
 	diamond -= amount
+	if activity != null: activity.on_diamond_spent(amount)   # 消费返利进度（源 trackDiamondSpent :4698）
 	return true
 
 
@@ -263,6 +266,7 @@ func draw_tavern(tavern_type: String, is_ten: bool, is_free: bool, count: int, c
 		return {"ok": false}
 	if task_manager != null:
 		task_manager.record_by_type(cm, "TavernGroupUse")
+	if activity != null: activity.on_tavern_draw(tavern_type, is_ten)   # 青铜抽卡优惠进度（源 buildTavernBonusActivity）
 	return {"ok": true, "chest_group": int(row.get("Chest Group ID", 0))}
 
 

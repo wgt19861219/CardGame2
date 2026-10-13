@@ -3,14 +3,17 @@ extends RefCounted
 
 ## 功能清单（盘点自源 local_server.lua 的 71 个 M.handlers.* 命令）。
 ## 作玩法模块的校验基准：每个非 SKIPPED handler 应对应一个实现，缺失即功能遗漏。
-## 源 71 = 非 SKIPPED 52（DOMAINS 登记）+ SKIPPED 19（单机裁剪：社交/付费/SDK/活动/上报）。
+## 源 71 = 非 SKIPPED 53（DOMAINS 登记）+ SKIPPED 18（单机裁剪：社交/付费/SDK/上报）。
 ## 单机化是唯一允许的偏差（复刻铁律）：联机/付费/时效活动 handler 归 SKIPPED_HANDLERS。
 ## 注：ladder/top_arena/query_ranklist 源为单机 NPC 假榜（AI_NAMES 生成），归 DOMAINS 不裁剪。
 ## 注：cdkey_gift（源 :3984 恒 success 无校验）/ system_setting（源 :2202 空响应）/ get_svr_time（源 :612 返本地时间戳）——源本身就是空 stub 或本地数据，单机版天然等价，不单独实现。
 ## 注：guild 2026-09-19 公会一期翻转入 DOMAINS（用户拍板核心闭环分期——NPC 公会/成员模拟+
 ## 免审批即入大幅简化；公会聊天 chat 与公会日志 request_guild_log 永久裁剪留在 SKIPPED）。
+## 注：activity 2026-10-13 活动系统完整迁移翻转入 DOMAINS（用户拍板）——ask_activity_info
+## 单机化为 ActivityManager（ActivitiesConfig 表 + 周常进度/领取）；worldcup/fb_attention 等
+## 联机时效活动仍留 SKIPPED。
 
-# 域 → handler 命令名（盘点自 local_server.lua，单机版需实现的 51 个）
+# 域 → handler 命令名（盘点自 local_server.lua，单机版需实现的 53 个）
 const DOMAINS: Dictionary = {
 	"battle": ["enter_stage", "exit_stage", "enter_act_stage", "sweep_stage", "reset_elite", "tbc", "ladder", "top_arena", "excavate"],
 	"hero": ["hero_upgrade", "hero_evolve", "consume_item", "skill_levelup", "buy_skill_stren_point", "sync_skill_stren", "split_hero", "query_split_data", "query_split_return"],
@@ -23,6 +26,7 @@ const DOMAINS: Dictionary = {
 	"tutorial": ["tutorial"],
 	"player": ["login", "get_svr_time", "set_name", "set_avatar", "system_setting", "query_ranklist", "gm_cmd", "ask_daily_login", "cdkey_gift", "chapter_star_reward", "query_replay"],
 	"guild": ["guild"],
+	"activity": ["ask_activity_info"],
 }
 
 # 单机版裁剪的 19 个 handler（联机社交/付费/SDK 登录/时效活动/暂停上报）
@@ -35,10 +39,10 @@ const SKIPPED_HANDLERS: Array[String] = [
 	"sdk_login", "change_server",
 	# VIP（源已移除，保留空 handler）
 	"get_vip_gift",
-	# 时效活动 / 推广
+	# 时效活动 / 推广（activity 系 2026-10-13 完整迁移翻出；worldcup/fb_attention 仍裁剪）
 	"worldcup", "fb_attention", "activity_info", "activity_lotto_info",
 	"activity_lotto_reward", "activity_bigpackage_info", "activity_bigpackage_reward",
-	"activity_bigpackage_reset", "ask_activity_info", "every_day_happy",
+	"activity_bigpackage_reset", "every_day_happy",
 	# 暂停上报（客户端→服务端，单机无意义）
 	"suspend_report",
 ]
@@ -78,6 +82,7 @@ const IMPLEMENTATIONS: Dictionary = {
 	"cdkey_gift": "stub", "chapter_star_reward": "StageManager.claim_chapter_star_reward",
 	"query_replay": "stub",
 	"guild": "GuildManager",
+	"ask_activity_info": "ActivityManager.get_activities",
 }
 
 func get_domains() -> Array:

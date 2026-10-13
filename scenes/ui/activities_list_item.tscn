@@ -1,0 +1,49 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/guild/guild_guildlist_member_bg.png" id="1_rowbg"]
+
+; 活动列表数据行（源 activitiesListConfig.lua itemConfig1）：490x50
+; bg1 源：Scale9 guild_guildlist_member_bg scaleSize 490x50 cap(20,20,300,50)
+; 纹理 803x97 → patch right=803-320=483 bottom=97-70=27
+[node name="ActivitiesListItem" type="Control"]
+layout_mode = 3
+custom_minimum_size = Vector2(490, 50)
+mouse_filter = 1
+
+[node name="Bg" type="NinePatchRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+texture = ExtResource("1_rowbg")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 483
+patch_margin_bottom = 27
+mouse_filter = 2
+
+; name1 源：anchor(0,1) @(20,-15) → 行左上内缩 (20,15)；op_act_grey size18
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 195.0
+offset_bottom = 35.0
+theme_type_variation = &"ActGreyLabel18"
+mouse_filter = 2
+text = "活动标题"
+
+; info1 源：anchor(0,1) @(200,-15) dimension 400x18 左对齐（源超行宽 600，收紧行右界 490）
+[node name="DescLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 200.0
+offset_top = 16.0
+offset_right = 475.0
+offset_bottom = 34.0
+theme_type_variation = &"ActRedLabel18"
+mouse_filter = 2
+text = "活动描述"

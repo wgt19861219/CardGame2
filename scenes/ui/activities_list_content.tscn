@@ -1,0 +1,112 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_herolist_bg.png" id="1_frame"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/task_window_title_bg.png" id="2_titlebg"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close.png" id="3_close"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/herodetail-detail-close-p.png" id="4_closep"]
+[ext_resource type="Texture2D" path="res://assets/ui/alpha/HVGA/package_list_shade.png" id="5_shade"]
+
+[node name="ActivitiesListContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+; framelist 源 activitiesListConfig.lua UIRes：Scale9 中心 ccp(400,200) scaleSize 540x300
+; cap(20,20,300,300) 纹理 700x485 → patch right=700-320=380 bottom=485-320=165
+[node name="Frame" type="NinePatchRect" parent="."]
+layout_mode = 3
+offset_left = 130.0
+offset_top = 130.0
+offset_right = 670.0
+offset_bottom = 430.0
+texture = ExtResource("1_frame")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 380
+patch_margin_bottom = 165
+mouse_filter = 2
+
+; title_bg 源：parent framelist（原点=frame 左下角 Cocos(130,50)）anchor(0.5,0) @(270,303)
+; → 屏幕底边中心 (400,353) → Godot 底 y=127；纹理 667x50 ÷CS=520.59x39.02
+[node name="TitleBg" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 139.70
+offset_top = 87.98
+offset_right = 660.30
+offset_bottom = 127.00
+texture = ExtResource("2_titlebg")
+expand_mode = 1
+mouse_filter = 2
+
+; title 源：parent title_bg（原点=左下 Cocos(139.70,353)）anchor(0.5,0.5) @(263,18)
+; → 中心 Cocos(402.70,371) → Godot (402.70,109)；size20 op_act_title1
+[node name="TitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 332.70
+offset_top = 99.00
+offset_right = 472.70
+offset_bottom = 119.00
+theme_type_variation = &"ActTitleLabel"
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "精彩活动"
+
+; findListView 源：parent framelist cliprect CCRectMake(25,30,490,250)（Cocos 左下原点）
+; → Cocos [155,80]~[645,330] → Godot (155,150)-(645,400)；滚动条走引擎自带（mail 先例）
+[node name="ListScroll" type="ScrollContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 155.0
+offset_top = 150.0
+offset_right = 645.0
+offset_bottom = 400.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
+
+; 行宿主（fill：节标题 Label + activities_list_item.tscn 数据行；源 itemConfig1/2）
+[node name="ListHost" type="VBoxContainer" parent="ListScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+; upShade 源：package_list_shade 贴 scroll 顶（mail TopMask 同款，宽铺满 scroll 490）
+[node name="TopMask" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 155.0
+offset_top = 150.0
+offset_right = 645.0
+offset_bottom = 170.29
+texture = ExtResource("5_shade")
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
+
+; downShade 源：同贴图贴 scroll 底
+[node name="BottomMask" type="TextureRect" parent="."]
+layout_mode = 3
+offset_left = 155.0
+offset_top = 379.71
+offset_right = 645.0
+offset_bottom = 400.0
+texture = ExtResource("5_shade")
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
+
+; cExit 源：parent framelist anchor(0.5,0.5) @(536,274) → 屏幕 Cocos(666,324)
+; → Godot 中心 (666,156)；65x66 ÷CS=50.73x51.51（骑框右上角，daily_login 同款）
+[node name="CloseBtn" type="TextureButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+offset_left = 640.63
+offset_top = 130.24
+offset_right = 691.37
+offset_bottom = 181.76
+texture_normal = ExtResource("3_close")
+texture_pressed = ExtResource("4_closep")
+ignore_texture_size = true
+stretch_mode = 0
