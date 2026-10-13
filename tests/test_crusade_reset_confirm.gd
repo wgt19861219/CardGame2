@@ -154,3 +154,17 @@ func test_confirm_signal_and_close() -> void:
 	cancel_btn.pressed.emit()
 	assert_signal_not_emitted(panel2, "confirmed", "Cancel 仅关窗（源 left 无 handler 仅 destroy）")
 	assert_true(panel2.is_queued_for_deletion(), "Cancel 后 queue_free")
+
+
+# 根塌缩守卫（2026-10-12 根修，stage_reset 同坑）：挂已入树全屏父后根/Shade 铺满
+# （旧 set_anchors_preset 入树后只设锚点 rect 仍 (0,0) → 遮罩/模态失效）。
+func test_root_fills_screen_after_mount() -> void:
+	var host := Control.new()
+	host.size = Vector2(800, 480)
+	add_child_autofree(host)
+	var panel: CrusadeResetConfirm = CrusadeResetConfirm.new()
+	host.add_child(panel)
+	await get_tree().process_frame
+	assert_eq(panel.size, Vector2(800, 480), "根铺满父（修复前 size 恒 (0,0)）")
+	var shade: ColorRect = panel.get_node("CrusadeResetConfirmContent/Shade") as ColorRect
+	assert_eq(shade.size, Vector2(800, 480), "全屏 Shade 遮罩恢复")

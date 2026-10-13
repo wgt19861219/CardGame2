@@ -23,7 +23,9 @@ signal confirmed
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# set_anchors_and_offsets_preset（2026-10-12 根修，stage_reset 同坑）：旧 set_anchors_preset
+	# 入树后只设锚点 rect 仍 (0,0)，根 size 恒 0 → Shade 遮罩/模态拦截失效（bg 侥幸正常显示）。
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP   # 拦截底层（模态，源 layer touchEnabled）
 	var content: Control = CONTENT_SCENE.instantiate() as Control
 	add_child(content)   # Control 非 PopWindow：content 挂 panel 自身

@@ -71,3 +71,43 @@ func test_stage_table_has_no_reset_cost_field() -> void:
 	assert_false(stage_row.has("Reset Cost"), "Stage.json 无 Reset Cost 字段（旧版读错表）")
 	assert_true(cm.get_raw_table("GradientPrice").has("1"), "GradientPrice.json 有 key=1（照源）")
 	assert_true(cm.get_raw_table("GradientPrice")["1"].has("Elite Reset"), "GradientPrice[1] 含 Elite Reset")
+
+
+# ── 全链键口径守卫（2026-10-12 根修「购买后次数不重置」）──
+# 源 player.lua 全链 stage_limit/stage_reset_times 键统一 nid（elite2NormalStage=sid-10000）：
+# 消耗累加（battle_engine :1137）/重置清零（refreshStageEliteLimit）/读取（getStageLimit）。
+# 旧错位：消耗写精英 id（碰巧与详情显示一致故消耗看着正常）+ 重置清 nid → 购买后次数不变。
+
+# 消耗累加写 nid 键（_record_stage_limit 归一化）。
+func test_record_stage_limit_uses_normal_id_key() -> void:
+	var pd := PlayerData.new(cm)
+	StageManager._record_stage_limit(pd, 10001, 2)
+	assert_false(pd.stage_limit.has(10001), "精英 id 不再直存（旧键口径）")
+	assert_eq(int(pd.stage_limit.get(1, 0)), 2, "消耗累加写 nid=1（源 elite2NormalStage）")
+
+
+# 端到端：消耗 → 重置 → 消耗次数清零、重置计次 +1（购买后次数恢复的直接实证）。
+func test_consume_then_reset_restores_left_times() -> void:
+	var pd := PlayerData.new(cm)
+	StageManager._record_stage_limit(pd, 10001, 30)   # 当日打满 30
+	StageResetData.refresh_elite_limit(pd, 10001)   # 花钻重置
+	assert_eq(int(pd.stage_limit.get(1, 0)), 0, "重置后已用次数清 0（同键可见）")
+	assert_eq(int(pd.stage_reset_times.get(1, 0)), 1, "重置计次 +1（梯度计费推进）")
+	assert_eq(StageResetData.get_reset_cost(pd, 10001), int(cm.get_raw_table("GradientPrice")["2"]["Elite Reset"]), "第 2 次重置读梯度第 2 档")
+
+
+# 详情面板读取口径：_used_times 读 nid（重置后剩余次数恢复满）。
+func test_detail_used_times_reads_normal_id_key() -> void:
+	var root := Node.new()
+	add_child(root)
+	var pd := PlayerData.new(cm)
+	var detail := StageDetailPanel.new("stagedetail", {})
+	detail.setup_panel(10001, pd.stage_manager, pd, BattleRng.new(1))
+	detail.show_window(root)
+	pd.stage_limit[1] = 30   # 预置在 setup 之后（setup:80 跨日清零会洗掉预置）
+	assert_eq(detail._used_times(), 30, "详情读 nid 键（旧读精英 id 恒 0 → 重置后显示不变）")
+	StageResetData.refresh_elite_limit(pd, 10001)
+	detail._check_enabled()
+	assert_eq(detail._left_times(), 30, "重置后剩余次数恢复满（购买生效的直接实证）")
+	detail.remove_window()
+	root.queue_free()

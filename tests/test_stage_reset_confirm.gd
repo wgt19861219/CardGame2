@@ -180,3 +180,50 @@ func test_confirm_signal_and_close() -> void:
 	cancel_btn.pressed.emit()
 	assert_signal_not_emitted(panel2, "confirmed", "Cancel 仅关窗（源 left 无 handler 仅 destroy）")
 	assert_true(panel2.is_queued_for_deletion(), "Cancel 后 queue_free")
+
+
+# ── 根塌缩 + 挂载层级守卫（2026-10-12 根修「确认窗口在地图外面+按钮不对齐」）──
+# 旧 _ready 用 set_anchors_preset 只设锚点，入树后 rect 保持 (0,0)、offsets 反算
+# (0,0,-800,-480) → 根 size 恒 0：全屏 Shade 遮罩失效+STOP 模态拦截失效。
+
+# 挂到已入树的全屏父后，根与 Shade 均铺满父 rect（遮罩/模态恢复）。
+func test_root_fills_screen_after_mount() -> void:
+	var host := Control.new()
+	host.size = Vector2(800, 480)
+	add_child_autofree(host)
+	var panel: StageResetConfirm = StageResetConfirm.new()
+	host.add_child(panel)
+	await get_tree().process_frame
+	assert_eq(panel.size, Vector2(800, 480), "根铺满父（修复前 size 恒 (0,0)）")
+	var content: Control = panel.get_node("StageResetConfirmContent")
+	assert_eq(content.size, Vector2(800, 480), "content 铺满根")
+	var shade: ColorRect = content.get_node("Shade") as ColorRect
+	assert_eq(shade.size, Vector2(800, 480), "全屏 Shade 遮罩恢复（源 CCLayerColor 全屏）")
+
+
+# 确认框挂详情弹窗自身（z 随栈位恒压选关地图/详情；修复前挂 MainScene z=0 被盖）。
+func test_mount_on_detail_panel_z_above_map() -> void:
+	var ms := Control.new()
+	ms.size = Vector2(800, 480)
+	add_child_autofree(ms)
+	var pd := PlayerData.new(cm)
+	var detail := StageDetailPanel.new("stagedetail", {})
+	detail.setup_panel(10001, pd.stage_manager, pd, BattleRng.new(1))
+	detail.show_window(ms)
+	await get_tree().process_frame
+	detail._on_reset_pressed()
+	await get_tree().process_frame
+	var popup: StageResetConfirm = null
+	for c in detail.get_children():
+		if c is StageResetConfirm:
+			popup = c
+			break
+	assert_not_null(popup, "确认框挂详情弹窗自身（修复前挂 MainScene z=0）")
+	if popup == null:
+		detail.remove_window()
+		return
+	assert_eq(popup.get_parent(), detail, "父=详情弹窗 → z 随栈位（detail z=100+）")
+	assert_gt(popup.get_index(), detail.container.get_index(), "树序在 container 之后=后绘制恒压详情内容")
+	var bg: Control = popup.get_node("StageResetConfirmContent/Bg")
+	assert_eq(bg.get_global_rect().get_center(), Vector2(400, 240), "bg 全局居中（800x480 屏中心）")
+	detail.remove_window()

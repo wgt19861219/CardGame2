@@ -212,7 +212,7 @@ func _check_enabled() -> void:
 	var power: int = _stage_data.vitality_cost if _stage_data != null else 0
 	_is_vitality_enabled = player.vitality >= power
 	var count_limit: int = _daily_limit()
-	_is_count_enabled = count_limit > int(player.stage_limit.get(stage_id, 0)) or count_limit <= 0
+	_is_count_enabled = count_limit > _used_times() or count_limit <= 0
 	if _reset_btn != null:
 		_reset_btn.visible = not _is_count_enabled
 	if _power_number != null and _is_vitality_enabled and _is_count_enabled:
@@ -249,7 +249,8 @@ func _used_times() -> int:
 			StageDungeonLogic.check_act_times_daily_reset(mgr, int(Time.get_unix_time_from_system()))
 			return int(mgr.act_times.get(_act_group_id(), 0))
 		return 0
-	return int(player.stage_limit.get(stage_id, 0))
+	# 键照源归一化（getStageLimit id=elite2NormalStage）：消耗/重置/读取同一 nid，错位则购买后次数不恢复（2026-10-12 根修）。
+	return int(player.stage_limit.get(StageResetData.elite_to_normal_stage(stage_id), 0))
 
 
 func _act_group_id() -> int:
@@ -396,9 +397,10 @@ func _on_reset_pressed() -> void:
 	var popup := StageResetConfirm.new()
 	popup.setup_msg(msg, player.cm)
 	popup.confirmed.connect(_do_reset_elite.bind(cost))
-	var parent: Node = get_parent()
-	if parent != null:
-		parent.add_child(popup)
+	# 挂详情弹窗自身（2026-10-12 根修「确认窗口在地图外面」）：旧挂 get_parent()（=MainScene
+	# z=0）不入弹窗 z 栈，被选关地图（z=100）与本详情（z=200）全屏盖住——层级错乱即用户
+	# 所报症状；挂自身后 z 随栈位且子树序后绘，恒压详情内容（源 layer touch 优先级语义）。
+	add_child(popup)
 
 
 # 单机化：源走 netdata/netreply 网络流程，项目直接本地执行（doResetEliteLimit handler 内逻辑）。
